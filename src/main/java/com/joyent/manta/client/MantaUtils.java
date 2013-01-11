@@ -12,6 +12,8 @@ import java.io.StringWriter;
 import org.apache.commons.io.IOUtils;
 
 /**
+ * Manta utilities.
+ * 
  * @author Yunong Xiao
  */
 public class MantaUtils {
