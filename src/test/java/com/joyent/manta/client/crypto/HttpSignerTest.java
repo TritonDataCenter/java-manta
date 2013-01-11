@@ -1,5 +1,5 @@
 /**
- * 
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client.crypto;
 
@@ -17,8 +17,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.joyent.manta.exception.MantaCryptoException;
 
 /**
- * @author yunong
- * 
+ * @author Yunong Xiao
  */
 public class HttpSignerTest {
 

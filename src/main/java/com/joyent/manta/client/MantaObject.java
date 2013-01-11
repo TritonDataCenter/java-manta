@@ -1,5 +1,5 @@
 /**
- * 
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
 
@@ -17,6 +17,28 @@ import com.google.api.client.util.Key;
 
 /**
  * A Manta storage object.
+ * <p>
+ * I/O is performed via the getDataInputStream() and setDataInputStream() methods. Importantly, the stream isn't
+ * automatically closed, so consumers must call close() when done to avoid memory leaks. Example get usage:
+ * </p>
+ * 
+ * <pre>
+ * MantaClient client = MantaClient.getInstance(...);
+ * MantaObject object = client.get(&quot;/user/stor/foo&quot;);
+ * // inputStreamToString() closes the inputstream.
+ * String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
+ * </pre>
+ * <p>
+ * Example put usage:
+ * </p>
+ * 
+ * <pre>
+ * MantaClient client = MantaClient.getInstance(...);
+ * MantaObject object = new MantaObject(&quot;user/stor/foo&quot;);
+ * InputStream is = new FileInputStream(new File(TEST_FILE));
+ * object.setDataInputStream(is);
+ * client.put(object, null);
+ * </pre>
  * 
  * @author Yunong Xiao
  */
@@ -53,6 +75,9 @@ public class MantaObject implements Serializable {
         private String dataInputString_;
         private HttpHeaders httpHeaders_;
 
+        /**
+         * Empty constructor for the JSON parser.
+         */
         public MantaObject() {
         }
 

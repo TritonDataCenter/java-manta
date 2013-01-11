@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013, Joyent, Inc.  All rights reserved.
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
 
@@ -13,12 +13,10 @@ import org.apache.commons.io.IOUtils;
 
 /**
  * @author Yunong Xiao
- * 
  */
 public class MantaUtils {
         /**
-         * Read from an {@link InputStream} to a {@link String}. Closes the
-         * {@link InputStream} when done.
+         * Read from an {@link InputStream} to a {@link String}. Closes the {@link InputStream} when done.
          * 
          * @param is
          *                The {@link InputStream}
@@ -36,8 +34,7 @@ public class MantaUtils {
         }
 
         /**
-         * Reads from an {@link InputStream} and writes to a {@link File}.
-         * Closes the {@link InputStream} when done.
+         * Reads from an {@link InputStream} and writes to a {@link File}. Closes the {@link InputStream} when done.
          * 
          * @param is
          *                The {@link InputStream}
