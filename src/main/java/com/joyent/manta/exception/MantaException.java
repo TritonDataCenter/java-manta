@@ -1,19 +1,15 @@
 /**
- * 
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.exception;
 
 /**
- * @author yunong
- *
+ * @author Yunong Xiao
  */
 public class MantaException extends Exception {
 
         private static final long serialVersionUID = -2045814978953401214L;
 
-        /**
-         * 
-         */
         public MantaException() {
         }
 

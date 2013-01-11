@@ -6,24 +6,24 @@ package com.joyent.manta.exception;
 /**
  * @author Yunong Xiao
  */
-public class MantaCryptoException extends MantaClientException {
+public class MantaObjectException extends MantaException {
 
-        private static final long serialVersionUID = -5734849034194919231L;
+        private static final long serialVersionUID = 6799144229159150444L;
 
-        public MantaCryptoException() {
+        public MantaObjectException() {
         }
 
         /**
          * @param message
          */
-        public MantaCryptoException(String message) {
+        public MantaObjectException(String message) {
                 super(message);
         }
 
         /**
          * @param cause
          */
-        public MantaCryptoException(Throwable cause) {
+        public MantaObjectException(Throwable cause) {
                 super(cause);
         }
 
@@ -31,7 +31,7 @@ public class MantaCryptoException extends MantaClientException {
          * @param message
          * @param cause
          */
-        public MantaCryptoException(String message, Throwable cause) {
+        public MantaObjectException(String message, Throwable cause) {
                 super(message, cause);
         }
 
@@ -41,7 +41,7 @@ public class MantaCryptoException extends MantaClientException {
          * @param enableSuppression
          * @param writableStackTrace
          */
-        public MantaCryptoException(String message, Throwable cause, boolean enableSuppression,
+        public MantaObjectException(String message, Throwable cause, boolean enableSuppression,
                                     boolean writableStackTrace) {
                 super(message, cause, enableSuppression, writableStackTrace);
         }

@@ -1,22 +1,15 @@
 /**
- * 
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.exception;
 
 /**
- * @author yunong
- *
+ * @author Yunong Xiao
  */
 public class MantaClientException extends MantaException {
 
-        /**
-         * 
-         */
         private static final long serialVersionUID = 4004550753800130185L;
 
-        /**
-         * 
-         */
         public MantaClientException() {
         }
 
@@ -49,7 +42,7 @@ public class MantaClientException extends MantaException {
          * @param writableStackTrace
          */
         public MantaClientException(String message, Throwable cause, boolean enableSuppression,
-                        boolean writableStackTrace) {
+                                    boolean writableStackTrace) {
                 super(message, cause, enableSuppression, writableStackTrace);
         }
 

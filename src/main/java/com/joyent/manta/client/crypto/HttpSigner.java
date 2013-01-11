@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client.crypto;
 
 import java.io.BufferedReader;
@@ -26,22 +29,38 @@ import com.google.api.client.http.HttpRequest;
 import com.joyent.manta.exception.MantaCryptoException;
 
 /**
+ * Joyent HTTP authorization signer. This adheres to the specs of the joyent-http-signature spec.
  * 
- * @author yunong
- * 
+ * @author Yunong Xiao
  */
 public class HttpSigner {
         private static final Log LOG = LogFactory.getLog(HttpSigner.class);
-        private static final DateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy");
+        private static final DateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy zzz");
         private static final String AUTHZ_HEADER = "Signature keyId=\"/%s/keys/%s\",algorithm=\"rsa-sha256\" %s";
         private static final String AUTHZ_PATTERN = "algorithm=\"rsa-sha256\" ";
         static final String SIGNING_ALGORITHM = "SHA256WithRSAEncryption";
 
         /**
+         * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
+         * joyent-http-signature spec.
          * 
+         * @param keyPath
+         *                The path to the rsa key on disk.
+         * @param fingerPrint
+         *                The fingerprint of the rsa key.
+         * @param login
+         *                The login of the user account.
+         * @return An instance of {@link HttpSigner}.
+         * @throws IOException
+         *                 If the key is invalid.
          */
+        public static final HttpSigner newInstance(String keyPath, String fingerPrint, String login) throws IOException {
+                return new HttpSigner(keyPath, fingerPrint, login);
+        }
+
         final KeyPair keyPair_;
         private final String login_;
+
         private final String fingerPrint_;
 
         /**
@@ -61,13 +80,22 @@ public class HttpSigner {
          * @return
          * @throws IOException
          */
-        public static final HttpSigner newInstance(String keyPath, String fingerPrint, String login) throws IOException {
-                return new HttpSigner(keyPath, fingerPrint, login);
+        private final KeyPair getKeyPair(String keyPath) throws IOException {
+                BufferedReader br = new BufferedReader(new FileReader(keyPath));
+                Security.addProvider(new BouncyCastleProvider());
+                PEMReader pemReader = new PEMReader(br);
+                KeyPair kp = (KeyPair) pemReader.readObject();
+                pemReader.close();
+                return kp;
         }
 
         /**
+         * Sign an {@link HttpRequest}.
+         * 
          * @param request
+         *                The {@link HttpRequest} to sign.
          * @throws MantaCryptoException
+         *                 If unable to sign the request.
          */
         public final void signRequest(HttpRequest request) throws MantaCryptoException {
                 LOG.debug("signing request: " + request.getHeaders());
@@ -75,6 +103,7 @@ public class HttpSigner {
                 if (date == null) {
                         Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
                         date = DATE_FORMAT.format(now);
+                        LOG.debug("setting date header: " + date);
                         request.getHeaders().setDate(date);
                 }
                 Signature sig;
@@ -96,10 +125,13 @@ public class HttpSigner {
         }
 
         /**
+         * Verify a signed {@link HttpRequest}.
          * 
          * @param request
-         * @return
+         *                The signed {@link HttpRequest}.
+         * @return True if the request is valid, false if not.
          * @throws MantaCryptoException
+         *                 If unable to verify the request.
          */
         public final boolean verifyRequest(HttpRequest request) throws MantaCryptoException {
                 LOG.debug("verifying request: " + request.getHeaders());
@@ -125,19 +157,5 @@ public class HttpSigner {
                          | SignatureException e) {
                         throw new MantaCryptoException("unable to verify request", e);
                 }
-        }
-
-        /**
-         * @param keyPath
-         * @return
-         * @throws IOException
-         */
-        private final KeyPair getKeyPair(String keyPath) throws IOException {
-                BufferedReader br = new BufferedReader(new FileReader(keyPath));
-                Security.addProvider(new BouncyCastleProvider());
-                PEMReader pemReader = new PEMReader(br);
-                KeyPair kp = (KeyPair) pemReader.readObject();
-                pemReader.close();
-                return kp;
         }
 }
