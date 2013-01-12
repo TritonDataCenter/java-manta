@@ -4,11 +4,11 @@
 
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>jar</packaging>
 
   <name>java-manta</name>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/joyent/java-manta</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -70,4 +70,72 @@
       <version>2.4</version>
     </dependency>
   </dependencies>
+  <description>Java Manta SDK.</description>
+  <organization>
+    <name>Joyent</name>
+    <url>www.joyent.com</url>
+  </organization>
+  <inceptionYear>2012</inceptionYear>
+  <issueManagement>
+    <system>github.com</system>
+    <url>https://github.com/joyent/java-manta/issues</url>
+  </issueManagement>
+  <scm>
+    <url>git@github.com:joyent/java-manta.git</url>
+    <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
+  </scm>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.0</version>
+        <configuration>
+          <source>7</source>
+          <target>7</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <filters>
+            <filter>
+              <artifact>junit:junit</artifact>
+              <includes>
+                <include>junit/framework/**</include>
+                <include>org/junit/**</include>
+              </includes>
+              <excludes>
+                <exclude>org/junit/experimental/**</exclude>
+                <exclude>org/junit/runners/**</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <createSourcesJar>true</createSourcesJar>
+          <transformers>
+            <transformer
+              implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+          </transformers>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

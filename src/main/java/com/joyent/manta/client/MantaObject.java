@@ -19,13 +19,14 @@ import com.google.api.client.util.Key;
  * A Manta storage object.
  * <p>
  * I/O is performed via the getDataInputStream() and setDataInputStream() methods. Importantly, the stream isn't
- * automatically closed, so consumers must call close() when done to avoid memory leaks. Example get usage:
+ * automatically closed, specifically, the http connection remains open until the stream is closed -- so consumers must
+ * call close() when done to avoid memory leaks. Example get usage:
  * </p>
  * 
  * <pre>
  * MantaClient client = MantaClient.getInstance(...);
  * MantaObject object = client.get(&quot;/user/stor/foo&quot;);
- * // inputStreamToString() closes the inputstream.
+ * // MantaUtils.inputStreamToString() closes the inputstream.
  * String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
  * </pre>
  * <p>
