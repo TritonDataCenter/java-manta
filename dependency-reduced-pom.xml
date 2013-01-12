@@ -42,6 +42,12 @@
           </execution>
         </executions>
         <configuration>
+          <transformers>
+            <transformer>
+              <resource>data/cacerts</resource>
+              <file>data/cacerts</file>
+            </transformer>
+          </transformers>
           <filters>
             <filter>
               <artifact>junit:junit</artifact>
@@ -64,9 +70,6 @@
             </filter>
           </filters>
           <createSourcesJar>true</createSourcesJar>
-          <transformers>
-            <transformer />
-          </transformers>
         </configuration>
       </plugin>
     </plugins>

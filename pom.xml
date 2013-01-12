@@ -108,6 +108,13 @@
           </execution>
         </executions>
         <configuration>
+          <transformers>
+            <transformer
+              implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+              <resource>data/cacerts</resource>
+              <file>data/cacerts</file>
+            </transformer>
+          </transformers>
           <filters>
             <filter>
               <artifact>junit:junit</artifact>
@@ -130,10 +137,6 @@
             </filter>
           </filters>
           <createSourcesJar>true</createSourcesJar>
-          <transformers>
-            <transformer
-              implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
-          </transformers>
         </configuration>
       </plugin>
     </plugins>

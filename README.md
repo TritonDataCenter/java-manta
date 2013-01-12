@@ -5,9 +5,10 @@ java-manta
 [manta](http://joyent.github.com/java-manta) is the Java SDK for interacting with Joyent's Manta system.
 
 # Installation
-You'll need to install [Maven](https://maven.apache.org/) first.
+Download the [jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar) and add it as a dependency to your Java project.
 
 # Usage
+Since the Manta-beta's certificate isn't recognized by the Java certificate authority, you'll need to  
 
 ## License
 
