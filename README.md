@@ -6,7 +6,7 @@ At present, this SDK only supports the Manta data plane, and not the Marlin
 compute component.
 
 # Installation
-You'll need [ Java2
+You'll need [ Java
 1.7.0.11](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 or higher. Download the [java-manta
 jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar)
