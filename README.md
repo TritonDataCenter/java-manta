@@ -1,14 +1,53 @@
-java-manta
-==========
+# Java Manta Client SDK
+[manta](http://joyent.github.com/java-manta) is the Java SDK for interacting
+with Joyent's Manta system.
 
-# Java Manta Client API
-[manta](http://joyent.github.com/java-manta) is the Java SDK for interacting with Joyent's Manta system.
+At present, this SDK only supports the Manta data plane, and not with the
+Marlin compute component.
 
 # Installation
-Download the [jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar) and add it as a dependency to your Java project.
+You'll need Java 1.7.0.12 or higher. Download the
+[jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar)
+and add it as a dependency to your Java project.
+
+If you prefer to build from source, you'll also need
+[maven](https://maven.apache.org/), and then invoke:
+
+        $mvn package
+
+Which will compile the jar ./targets/java-manta-1.0.jar
 
 # Usage
-Since the Manta-beta's certificate isn't recognized by the Java certificate authority, you'll need to  
+
+You'll need a manta login, an associated rsa key, and the corresponding key
+fingerprint.
+
+For detailed usage instructions, consult the provided javadoc.
+
+## Example Get Request
+
+        private static final String URL = "https://manta-beta.joyentcloud.com";
+        private static final String LOGIN = "yunong";
+        private static final String KEY_PATH = "src/test/java/data/id_rsa";
+        private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+
+        public static void main(String... args) {
+                CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+                MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
+                String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
+                System.out.println(data);
+        }
+
+## Logging
+
+The SDK utilizes [log4j](https://logging.apache.org/log4j/1.2/), and logging
+can be configured via the usual methods. The underlying
+[google-http-java-client](https://code.google.com/p/google-http-java-client/)
+utilizes
+[java.util.logging.Logger](http://docs.oracle.com/javase/7/docs/api/java/util/logging/Logger.html),
+which can be configured
+[accordingly](https://code.google.com/p/google-http-java-client/wiki/HTTP).
+
 
 ## License
 
