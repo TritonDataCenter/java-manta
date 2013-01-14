@@ -2,8 +2,8 @@
 [java-manta](http://joyent.github.com/java-manta) is the Java SDK for interacting
 with Joyent's Manta system.
 
-At present, this SDK only supports the Manta data plane, and not with the
-Marlin compute component.
+At present, this SDK only supports the Manta data plane, and not the Marlin
+compute component.
 
 # Installation
 You'll need Java 1.7.0.12 or higher. Download the
