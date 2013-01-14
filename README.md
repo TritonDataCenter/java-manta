@@ -1,5 +1,5 @@
 # Java Manta Client SDK
-[manta](http://joyent.github.com/java-manta) is the Java SDK for interacting
+[java-manta](http://joyent.github.com/java-manta) is the Java SDK for interacting
 with Joyent's Manta system.
 
 At present, this SDK only supports the Manta data plane, and not with the
