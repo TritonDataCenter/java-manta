@@ -6,8 +6,10 @@ At present, this SDK only supports the Manta data plane, and not the Marlin
 compute component.
 
 # Installation
-You'll need Java 1.7.0.12 or higher. Download the
-[jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar)
+You'll need [ Java2
+1.7.0.11](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+or higher. Download the [java-manta
+jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar)
 and add it as a dependency to your Java project.
 
 If you prefer to build from source, you'll also need
@@ -15,11 +17,11 @@ If you prefer to build from source, you'll also need
 
         $mvn package
 
-Which will compile the jar ./targets/java-manta-1.0.jar
+Which will compile the jar to ./targets/java-manta-1.0.jar
 
 # Usage
 
-You'll need a manta login, an associated rsa key, and the corresponding key
+You'll need a manta login, an associated rsa key, and its corresponding key
 fingerprint.
 
 For detailed usage instructions, consult the provided javadoc.
@@ -37,6 +39,8 @@ For detailed usage instructions, consult the provided javadoc.
                 String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
                 System.out.println(data);
         }
+
+For more examples, check the included unit tests.
 
 ## Logging
 
