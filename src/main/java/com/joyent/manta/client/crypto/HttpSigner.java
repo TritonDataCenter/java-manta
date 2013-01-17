@@ -44,6 +44,8 @@ public class HttpSigner {
          * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
          * joyent-http-signature spec.
          * 
+         * @see <a
+         *      href="http://github.com/joyent/node-http-signature/blob/master/http_signing.md">node-http-signature</a>
          * @param keyPath
          *                The path to the rsa key on disk.
          * @param fingerPrint
@@ -106,17 +108,14 @@ public class HttpSigner {
                         LOG.debug("setting date header: " + date);
                         request.getHeaders().setDate(date);
                 }
-                Signature sig;
-                byte[] signedDate;
                 try {
-                        sig = Signature.getInstance(SIGNING_ALGORITHM);
+                        Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
                         sig.initSign(keyPair_.getPrivate());
                         sig.update(date.getBytes("UTF-8"));
-                        signedDate = sig.sign();
+                        byte[] signedDate = sig.sign();
                         byte[] encodedSignedDate = Base64.encode(signedDate);
                         String authzHeader = String.format(AUTHZ_HEADER, login_, fingerPrint_, new String(
                                 encodedSignedDate));
-                        LOG.debug("authorization header is: " + authzHeader);
                         request.getHeaders().setAuthorization(authzHeader);
                 } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException
                          | UnsupportedEncodingException e) {
@@ -149,7 +148,6 @@ public class HttpSigner {
                                 throw new MantaCryptoException("invalid authorization header " + authzHeader);
                         }
                         String encodedSignedDate = authzHeader.substring(startIndex + AUTHZ_PATTERN.length());
-                        LOG.debug("got encoded signed date: " + encodedSignedDate);
                         byte[] signedDate = Base64.decode(encodedSignedDate.getBytes("UTF-8"));
                         verify.update(date.getBytes("UTF-8"));
                         return verify.verify(signedDate);

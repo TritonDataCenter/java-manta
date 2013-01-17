@@ -2,7 +2,7 @@
 [java-manta](http://joyent.github.com/java-manta) is the Java SDK for interacting
 with Joyent's Manta system.
 
-At present, this SDK only supports the Manta data plane, and not the Marlin
+At present, this SDK only supports the Manta data plane, and not the Manta
 compute component.
 
 # Installation
@@ -27,18 +27,28 @@ fingerprint.
 For detailed usage instructions, consult the provided javadoc.
 
 ## Example Get Request
+        import java.io.IOException;
 
-        private static final String URL = "https://manta-beta.joyentcloud.com";
-        private static final String LOGIN = "yunong";
-        private static final String KEY_PATH = "src/test/java/data/id_rsa";
-        private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+        import com.joyent.manta.client.MantaClient;
+        import com.joyent.manta.client.MantaObject;
+        import com.joyent.manta.client.MantaUtils;
+        import com.joyent.manta.exception.MantaCryptoException;
 
-        public static void main(String... args) {
-                CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
-                MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
-                String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
-                System.out.println(data);
+        public class App {
+                private static MantaClient CLIENT;
+                private static final String URL = "https://manta-beta.joyentcloud.com";
+                private static final String LOGIN = "yunong";
+                private static final String KEY_PATH = "src/test/java/data/id_rsa";
+                private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+
+                public static void main(String... args) throws IOException, MantaCryptoException {
+                        CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+                        MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
+                        String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
+                        System.out.println(data);
+                }
         }
+
 
 For more examples, check the included unit tests.
 
@@ -56,7 +66,7 @@ which can be configured
 ## License
 
 The MIT License (MIT)
-Copyright (c) 2012 Joyent
+Copyright (c) 2013 Joyent
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

@@ -95,7 +95,7 @@ public class MantaClient {
                         throws IOException {
                 LOG.debug(String.format("entering newInstance with url %s, login %s, keyPath %s, fingerPrint %s, timeout %s",
                                         url, login, keyPath, fingerPrint, timeout));
-                MantaClient c = new MantaClient(url, login, keyPath, fingerPrint);
+                MantaClient c = new MantaClient(url, login, keyPath, fingerPrint, timeout);
                 return c;
         }
 
@@ -137,6 +137,7 @@ public class MantaClient {
                 LOG.debug(String.format("entering delete with path %s", path));
                 GenericUrl url = new GenericUrl(url_ + path);
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildDeleteRequest(url);
+                // TODO: make an interceptor that sets these timeouts before each API call.
                 request.setReadTimeout(httpTimeout_);
                 request.setConnectTimeout(httpTimeout_);
                 httpSigner_.signRequest(request);
@@ -280,7 +281,10 @@ public class MantaClient {
                                                                                     MantaObject.class);
                                 // need to prefix the obj name with the fully qualified path, since Manta only returns
                                 // the explicit name of the object.
-                                obj.setPath(path + "/" + obj.getPath());
+                                if (!path.endsWith("/")) {
+                                        path += "/";
+                                }
+                                obj.setPath(path + obj.getPath());
                                 objs.add(obj);
                         }
                         return objs;
@@ -349,18 +353,24 @@ public class MantaClient {
          * 
          * @param path
          *                The fully qualified path of the Manta directory.
+         * @param headers
+         *                Optional {@link HttpHeaders}. Consult the Manta api for more header information.
          * @throws IOException
          * @throws MantaCryptoException
          *                 If there's an exception while signing the request.
          * @throws HttpResponseException
          *                 If a http status code > 300 is returned.
          */
-        public void putDirectory(String path) throws IOException, MantaCryptoException, HttpResponseException {
+        public void putDirectory(String path, HttpHeaders headers) throws IOException, MantaCryptoException,
+                        HttpResponseException {
                 LOG.debug(String.format("entering putDirectory with directory %s", path));
                 GenericUrl url = new GenericUrl(url_ + path);
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, new EmptyContent());
                 request.setReadTimeout(httpTimeout_);
                 request.setConnectTimeout(httpTimeout_);
+                if (headers != null) {
+                        request.setHeaders(headers);
+                }
                 httpSigner_.signRequest(request);
                 request.getHeaders().setContentType(DIRECTORY_CONTENT_TYPE);
                 HttpResponse response = null;
@@ -382,18 +392,23 @@ public class MantaClient {
          *                The fully qualified path of the new snaplink.
          * @param objectPath
          *                The fully qualified path of the object to link against.
+         * @param headers
+         *                Optional {@link HttpHeaders}. Consult the Manta api for more header information.
          * @throws IOException
          * @throws MantaCryptoException
          *                 If there's an exception while signing the request.
          * @throws HttpResponseException
          *                 If a http status code > 300 is returned.
          */
-        public void putLink(String linkPath, String objectPath) throws IOException, MantaCryptoException,
-                        HttpResponseException {
+        public void putSnapLink(String linkPath, String objectPath, HttpHeaders headers) throws IOException,
+                        MantaCryptoException, HttpResponseException {
                 LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
                 GenericUrl url = new GenericUrl(url_ + linkPath);
                 HttpContent content = new EmptyContent();
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, content);
+                if (headers != null) {
+                        request.setHeaders(headers);
+                }
                 httpSigner_.signRequest(request);
                 request.getHeaders().setContentType(LINK_CONTENT_TYPE);
                 request.getHeaders().setLocation(objectPath);

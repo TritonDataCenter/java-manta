@@ -43,7 +43,7 @@ public class MantaClientTest {
         public static void beforeClass() throws IOException, MantaCryptoException {
                 CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
                 BasicConfigurator.configure();
-                CLIENT.putDirectory(TEST_DIR_PATH);
+                CLIENT.putDirectory(TEST_DIR_PATH, null);
         }
 
         @Test
@@ -133,7 +133,7 @@ public class MantaClientTest {
                 CLIENT.put(original, null);
 
                 String link = UUID.randomUUID().toString();
-                CLIENT.putLink(TEST_DIR_PATH + link, TEST_DIR_PATH + name);
+                CLIENT.putSnapLink(TEST_DIR_PATH + link, TEST_DIR_PATH + name, null);
                 MantaObject linkObj = CLIENT.get(TEST_DIR_PATH + link);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(linkObj.getDataInputStream()));
                 String data = null;
@@ -145,11 +145,11 @@ public class MantaClientTest {
         @Test
         public void testList() throws MantaCryptoException, IOException, MantaObjectException {
                 String pathPrefix = TEST_DIR_PATH + "/" + UUID.randomUUID().toString();
-                CLIENT.putDirectory(pathPrefix);
+                CLIENT.putDirectory(pathPrefix, null);
                 CLIENT.put(new MantaObject(pathPrefix + "/" + UUID.randomUUID().toString()), null);
                 CLIENT.put(new MantaObject(pathPrefix + "/" + UUID.randomUUID().toString()), null);
                 String subDir = pathPrefix + "/" + UUID.randomUUID().toString();
-                CLIENT.putDirectory(subDir);
+                CLIENT.putDirectory(subDir, null);
                 CLIENT.put(new MantaObject(subDir + "/" + UUID.randomUUID().toString()), null);
                 Collection<MantaObject> objs = CLIENT.listObjects(pathPrefix);
                 for (MantaObject mantaObject : objs) {
