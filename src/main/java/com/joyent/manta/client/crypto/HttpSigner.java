@@ -117,9 +117,14 @@ public class HttpSigner {
                         String authzHeader = String.format(AUTHZ_HEADER, login_, fingerPrint_, new String(
                                 encodedSignedDate));
                         request.getHeaders().setAuthorization(authzHeader);
-                } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException
-                         | UnsupportedEncodingException e) {
-                        throw new MantaCryptoException("unable to sign request", e);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new MantaCryptoException("invalid algorithm", e);
+                } catch (InvalidKeyException e) {
+                    throw new MantaCryptoException("invalid key", e);
+                } catch (SignatureException e) {
+                    throw new MantaCryptoException("invalid signature", e);
+                } catch (UnsupportedEncodingException e) {
+                    throw new MantaCryptoException("invalid encoding", e);
                 }
         }
 
@@ -151,9 +156,14 @@ public class HttpSigner {
                         byte[] signedDate = Base64.decode(encodedSignedDate.getBytes("UTF-8"));
                         verify.update(date.getBytes("UTF-8"));
                         return verify.verify(signedDate);
-                } catch (NoSuchAlgorithmException | InvalidKeyException | UnsupportedEncodingException
-                         | SignatureException e) {
-                        throw new MantaCryptoException("unable to verify request", e);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new MantaCryptoException("invalid algorithm", e);
+                } catch (InvalidKeyException e) {
+                    throw new MantaCryptoException("invalid key", e);
+                } catch (SignatureException e) {
+                    throw new MantaCryptoException("invalid signature", e);
+                } catch (UnsupportedEncodingException e) {
+                    throw new MantaCryptoException("invalid encoding", e);
                 }
         }
 }

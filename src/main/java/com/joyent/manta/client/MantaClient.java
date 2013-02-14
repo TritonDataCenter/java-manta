@@ -273,7 +273,7 @@ public class MantaClient {
                                 throw new MantaObjectException("Object is not a directory");
                         }
 
-                        ArrayList<MantaObject> objs = new ArrayList<>();
+                        ArrayList<MantaObject> objs = new ArrayList<MantaObject>();
                         BufferedReader br = new BufferedReader(new InputStreamReader(response.getContent()));
                         String line;
                         while ((line = br.readLine()) != null) {
