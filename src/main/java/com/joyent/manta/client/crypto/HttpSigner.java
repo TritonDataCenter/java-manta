@@ -118,13 +118,13 @@ public class HttpSigner {
                                 encodedSignedDate));
                         request.getHeaders().setAuthorization(authzHeader);
                 } catch (NoSuchAlgorithmException e) {
-                    throw new MantaCryptoException("invalid algorithm", e);
+                        throw new MantaCryptoException("invalid algorithm", e);
                 } catch (InvalidKeyException e) {
-                    throw new MantaCryptoException("invalid key", e);
+                        throw new MantaCryptoException("invalid key", e);
                 } catch (SignatureException e) {
-                    throw new MantaCryptoException("invalid signature", e);
+                        throw new MantaCryptoException("invalid signature", e);
                 } catch (UnsupportedEncodingException e) {
-                    throw new MantaCryptoException("invalid encoding", e);
+                        throw new MantaCryptoException("invalid encoding", e);
                 }
         }
 
@@ -157,13 +157,13 @@ public class HttpSigner {
                         verify.update(date.getBytes("UTF-8"));
                         return verify.verify(signedDate);
                 } catch (NoSuchAlgorithmException e) {
-                    throw new MantaCryptoException("invalid algorithm", e);
+                        throw new MantaCryptoException("invalid algorithm", e);
                 } catch (InvalidKeyException e) {
-                    throw new MantaCryptoException("invalid key", e);
+                        throw new MantaCryptoException("invalid key", e);
                 } catch (SignatureException e) {
-                    throw new MantaCryptoException("invalid signature", e);
+                        throw new MantaCryptoException("invalid signature", e);
                 } catch (UnsupportedEncodingException e) {
-                    throw new MantaCryptoException("invalid encoding", e);
+                        throw new MantaCryptoException("invalid encoding", e);
                 }
         }
 }
