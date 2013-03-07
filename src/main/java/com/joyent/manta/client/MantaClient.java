@@ -197,7 +197,7 @@ public class MantaClient {
          * @throws HttpResponseException
          *                 If a http status code > 300 is returned.
          */
-        public MantaObject get(String path) throws IOException, MantaCryptoException, HttpResponseException {
+        public MantaObject get(String path) throws IOException, MantaCryptoException, HttpResponseException, MantaObjectException {
                 LOG.debug(String.format("entering get with path %s", path));
                 GenericUrl url = new GenericUrl(url_ + path);
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
@@ -226,7 +226,7 @@ public class MantaClient {
          * @throws HttpResponseException
          *                 If a http status code > 300 is returned.
          */
-        public MantaObject head(String path) throws MantaCryptoException, IOException, HttpResponseException {
+        public MantaObject head(String path) throws MantaCryptoException, IOException, HttpResponseException, MantaObjectException {
                 LOG.debug(String.format("entering get with path %s", path));
                 GenericUrl url = new GenericUrl(url_ + path);
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildHeadRequest(url);
@@ -312,10 +312,14 @@ public class MantaClient {
         public void put(MantaObject object, HttpHeaders headers) throws MantaCryptoException, IOException,
                         HttpResponseException {
                 LOG.debug(String.format("entering put with manta object %s, headers %s", object, headers));
-                String contentType = null;
-                if (headers != null) {
-                        contentType = headers.getContentType();
+                HttpHeaders requestHeaders = new HttpHeaders();
+                if (object.getDurabilityLevel() != null) {
+                        requestHeaders.put(MantaObject.DURABILITY_LEVEL, object.getDurabilityLevel());
                 }
+                if (headers != null) {
+                        requestHeaders.putAll(headers);
+                }
+                String contentType = requestHeaders.getContentType();
                 HttpContent content = null;
                 if (object.getDataInputStream() != null) {
                         content = new InputStreamContent(contentType, object.getDataInputStream());
@@ -331,9 +335,7 @@ public class MantaClient {
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, content);
                 request.setReadTimeout(httpTimeout_);
                 request.setConnectTimeout(httpTimeout_);
-                if (headers != null) {
-                        request.setHeaders(headers);
-                }
+                request.setHeaders(requestHeaders);
                 httpSigner_.signRequest(request);
                 HttpResponse response = null;
                 try {
