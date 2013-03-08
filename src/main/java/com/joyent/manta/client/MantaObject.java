@@ -9,11 +9,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
 
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.util.Key;
+import com.joyent.manta.exception.MantaObjectException;
 
 /**
  * A Manta storage object.
@@ -51,6 +53,7 @@ public class MantaObject implements Serializable {
          */
         public static final String DIRECTORY = "directory";
         public static final String DIRECTORY_HEADER = "application/x-json-stream; type=directory";
+        public static final String DURABILITY_LEVEL = "durability-level";
 
         /**
          * JSON object metadata fields returned by Manta.
@@ -74,6 +77,7 @@ public class MantaObject implements Serializable {
         private InputStream dataInputStream_;
         private File dataInputFile_;
         private String dataInputString_;
+        private Integer durabilityLevel_;
         private HttpHeaders httpHeaders_;
 
         /**
@@ -100,7 +104,7 @@ public class MantaObject implements Serializable {
          * @param headers
          *                Optional {@link HttpHeaders}.
          */
-        public MantaObject(String path, HttpHeaders headers) {
+        public MantaObject(String path, HttpHeaders headers) throws MantaObjectException {
                 path_ = path;
                 httpHeaders_ = headers;
                 mtime_ = headers.getLastModified();
@@ -108,6 +112,16 @@ public class MantaObject implements Serializable {
                 etag_ = headers.getETag();
                 contentMd5_ = headers.getContentMD5();
                 contentLength_ = headers.getContentLength();
+                ArrayList durability = (ArrayList) headers.get(DURABILITY_LEVEL);
+                int arraySize = durability.size();
+                if (arraySize == 0) {
+                    durabilityLevel_ = null;
+                } else if (arraySize == 1) {
+                    durabilityLevel_ = new Integer((String) durability.get(0));
+                } else {
+                    throw new MantaObjectException("More than one durability "
+                            + "level is present in the HTTP headers");
+                }
         }
 
         /*
@@ -167,6 +181,11 @@ public class MantaObject implements Serializable {
                         if (other.contentType_ != null)
                                 return false;
                 } else if (!contentType_.equals(other.contentType_))
+                        return false;
+                if (durabilityLevel_ == null) {
+                        if (other.durabilityLevel_ != null)
+                                return false;
+                } else if (!durabilityLevel_.equals(other.durabilityLevel_))
                         return false;
                 return true;
         }
@@ -248,6 +267,13 @@ public class MantaObject implements Serializable {
         }
 
         /**
+         * @return the durability level
+         */
+        public final Integer getDurabilityLevel() {
+                return durabilityLevel_;
+        }
+
+        /**
          * @return the httpHeaders
          */
         public final HttpHeaders getHttpHeaders() {
@@ -285,6 +311,7 @@ public class MantaObject implements Serializable {
                 result = prime * result + ((path_ == null) ? 0 : path_.hashCode());
                 result = prime * result + ((contentLength_ == null) ? 0 : contentLength_.hashCode());
                 result = prime * result + ((contentType_ == null) ? 0 : contentType_.hashCode());
+                result = prime * result + ((durabilityLevel_ == null) ? 0 : durabilityLevel_.hashCode());
                 return result;
         }
 
@@ -326,6 +353,17 @@ public class MantaObject implements Serializable {
                         httpHeaders_ = new HttpHeaders();
                 }
                 httpHeaders_.setContentType(contentType);
+        }
+
+        /**
+         * @param durabilityLevel the durability level to set
+         */
+        public final void setDurabilityLevel(int durabilityLevel) {
+                this.durabilityLevel_ = durabilityLevel;
+                if (httpHeaders_ == null) {
+                        httpHeaders_ = new HttpHeaders();
+                }
+                httpHeaders_.set(DURABILITY_LEVEL, durabilityLevel);
         }
 
         /**
@@ -384,7 +422,8 @@ public class MantaObject implements Serializable {
                                 .append(", size_=").append(contentLength_).append(", md5_=").append(contentMd5_)
                                 .append(", dataInputStream_=").append(dataInputStream_).append(", dataInputFile_=")
                                 .append(dataInputFile_).append(", dataInputString_=").append(dataInputString_)
-                                .append(", httpHeaders_=").append(httpHeaders_).append("]");
+                                .append(", httpHeaders_=").append(httpHeaders_).append("]").append(", durabilityLevel_=")
+                                .append(durabilityLevel_).append("]");
                 return builder.toString();
         }
 

@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.UUID;
 
+import com.google.api.client.http.HttpHeaders;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.AfterClass;
@@ -47,7 +48,7 @@ public class MantaClientTest {
         }
 
         @Test
-        public void testCRUDObject() throws MantaCryptoException, IOException {
+        public void testCRUDObject() throws MantaCryptoException, IOException, MantaObjectException {
                 String name = UUID.randomUUID().toString();
                 MantaObject mantaObject = new MantaObject(TEST_DIR_PATH + name);
                 mantaObject.setDataInputString(TEST_DATA);
@@ -67,7 +68,7 @@ public class MantaClientTest {
         }
 
         @Test
-        public void testCRUDWithFileObject() throws MantaCryptoException, IOException {
+        public void testCRUDWithFileObject() throws MantaCryptoException, IOException, MantaObjectException {
                 String name = UUID.randomUUID().toString();
                 MantaObject mantaObject = new MantaObject(TEST_DIR_PATH + name);
                 mantaObject.setDataInputString(TEST_DATA);
@@ -89,7 +90,7 @@ public class MantaClientTest {
         }
 
         @Test
-        public void testRecursiveDeleteObject() throws MantaCryptoException, HttpResponseException, IOException {
+        public void testRecursiveDeleteObject() throws MantaCryptoException, HttpResponseException, IOException, MantaObjectException {
                 String name = UUID.randomUUID().toString();
                 MantaObject mantaObject = new MantaObject(TEST_DIR_PATH + name);
                 mantaObject.setDataInputString(TEST_DATA);
@@ -116,7 +117,35 @@ public class MantaClientTest {
         }
 
         @Test
-        public void testHead() throws MantaCryptoException, IOException {
+        public void testPutWithDurability() throws MantaCryptoException, HttpResponseException, IOException, MantaObjectException {
+                String name = UUID.randomUUID().toString();
+                String testPath = TEST_DIR_PATH + name;
+                MantaObject mantaObject = new MantaObject(testPath);
+                InputStream is = new FileInputStream(new File(TEST_FILE));
+                mantaObject.setDataInputStream(is);
+                mantaObject.setDurabilityLevel(3);
+                CLIENT.put(mantaObject, null);
+                MantaObject obj = CLIENT.get(testPath);
+                assertEquals((Integer) 3, obj.getDurabilityLevel());
+        }
+
+        @Test
+        public void testPutWithDurabilityHeader() throws MantaCryptoException, HttpResponseException, IOException, MantaObjectException {
+                String name = UUID.randomUUID().toString();
+                String testPath = TEST_DIR_PATH + name;
+                MantaObject mantaObject = new MantaObject(testPath);
+                InputStream is = new FileInputStream(new File(TEST_FILE));
+                mantaObject.setDataInputStream(is);
+                mantaObject.setDurabilityLevel(4);
+                HttpHeaders headers = new HttpHeaders();
+                headers.put(MantaObject.DURABILITY_LEVEL, 3);
+                CLIENT.put(mantaObject, headers);
+                MantaObject obj = CLIENT.get(testPath);
+                assertEquals((Integer) 3, obj.getDurabilityLevel());
+        }
+
+        @Test
+        public void testHead() throws MantaCryptoException, IOException, HttpResponseException, MantaObjectException {
                 String name = UUID.randomUUID().toString();
                 MantaObject mantaObject = new MantaObject(TEST_DIR_PATH + name);
                 mantaObject.setDataInputString(TEST_DATA);
@@ -126,7 +155,7 @@ public class MantaClientTest {
         }
 
         @Test
-        public void testPutLink() throws MantaCryptoException, IOException {
+        public void testPutLink() throws MantaCryptoException, IOException, HttpResponseException, MantaObjectException {
                 String name = UUID.randomUUID().toString();
                 MantaObject original = new MantaObject(TEST_DIR_PATH + name);
                 original.setDataInputString(TEST_DATA);
