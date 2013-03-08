@@ -50,16 +50,17 @@ public class MantaObject implements Serializable {
          * Metadata names used by Manta.
          */
         public static final String DIRECTORY = "directory";
+
         public static final String DIRECTORY_HEADER = "application/x-json-stream; type=directory";
 
         /**
-         * JSON object metadata fields returned by Manta.
+         * JSON object metadata fields returned by {@link MantaClient}.listDir().
          */
         @Key("name")
         private String path_;
 
-        @Key("mtime")
-        private String mtime_;
+        @Key("size")
+        private Long contentLength_;
 
         @Key("type")
         private String contentType_;
@@ -67,13 +68,18 @@ public class MantaObject implements Serializable {
         @Key("etag")
         private String etag_;
 
-        @Key("size")
-        private Long contentLength_;
+        @Key("mtime")
+        private String mtime_;
 
-        private String contentMd5_;
-        private InputStream dataInputStream_;
+        /**
+         * Other private members.
+         */
         private File dataInputFile_;
+
+        private InputStream dataInputStream_;
+
         private String dataInputString_;
+
         private HttpHeaders httpHeaders_;
 
         /**
@@ -90,6 +96,7 @@ public class MantaObject implements Serializable {
          */
         public MantaObject(String path) {
                 path_ = path;
+                httpHeaders_ = new HttpHeaders();
         }
 
         /**
@@ -98,20 +105,16 @@ public class MantaObject implements Serializable {
          * @param path
          *                The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
          * @param headers
-         *                Optional {@link HttpHeaders}.
+         *                Optional {@link HttpHeaders}. Use this to set any additional headers on the Manta object. For
+         *                the full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta
+         *                API</a>.
          */
         public MantaObject(String path, HttpHeaders headers) {
                 path_ = path;
                 httpHeaders_ = headers;
-                mtime_ = headers.getLastModified();
-                contentType_ = headers.getContentType();
-                etag_ = headers.getETag();
-                contentMd5_ = headers.getContentMD5();
-                contentLength_ = headers.getContentLength();
         }
 
-        /*
-         * (non-Javadoc)
+        /* (non-Javadoc)
          * @see java.lang.Object#equals(java.lang.Object)
          */
         @Override
@@ -123,10 +126,25 @@ public class MantaObject implements Serializable {
                 if (!(obj instanceof MantaObject))
                         return false;
                 MantaObject other = (MantaObject) obj;
+                if (contentLength_ == null) {
+                        if (other.contentLength_ != null)
+                                return false;
+                } else if (!contentLength_.equals(other.contentLength_))
+                        return false;
+                if (contentType_ == null) {
+                        if (other.contentType_ != null)
+                                return false;
+                } else if (!contentType_.equals(other.contentType_))
+                        return false;
                 if (dataInputFile_ == null) {
                         if (other.dataInputFile_ != null)
                                 return false;
                 } else if (!dataInputFile_.equals(other.dataInputFile_))
+                        return false;
+                if (dataInputStream_ == null) {
+                        if (other.dataInputStream_ != null)
+                                return false;
+                } else if (!dataInputStream_.equals(other.dataInputStream_))
                         return false;
                 if (dataInputString_ == null) {
                         if (other.dataInputString_ != null)
@@ -143,11 +161,6 @@ public class MantaObject implements Serializable {
                                 return false;
                 } else if (!httpHeaders_.equals(other.httpHeaders_))
                         return false;
-                if (contentMd5_ == null) {
-                        if (other.contentMd5_ != null)
-                                return false;
-                } else if (!contentMd5_.equals(other.contentMd5_))
-                        return false;
                 if (mtime_ == null) {
                         if (other.mtime_ != null)
                                 return false;
@@ -158,16 +171,6 @@ public class MantaObject implements Serializable {
                                 return false;
                 } else if (!path_.equals(other.path_))
                         return false;
-                if (contentLength_ == null) {
-                        if (other.contentLength_ != null)
-                                return false;
-                } else if (!contentLength_.equals(other.contentLength_))
-                        return false;
-                if (contentType_ == null) {
-                        if (other.contentType_ != null)
-                                return false;
-                } else if (!contentType_.equals(other.contentType_))
-                        return false;
                 return true;
         }
 
@@ -176,13 +179,6 @@ public class MantaObject implements Serializable {
          */
         public final Long getContentLength() {
                 return contentLength_;
-        }
-
-        /**
-         * @return the md5
-         */
-        public final String getContentMd5() {
-                return contentMd5_;
         }
 
         /**
@@ -248,6 +244,17 @@ public class MantaObject implements Serializable {
         }
 
         /**
+         * This really just delegates to {@link HttpHeaders}.get.
+         * 
+         * @param fieldName
+         *                the custom header to get from the Manta object.
+         * @return the value of the header.
+         */
+        public final Object getHeader(String fieldName) {
+                return httpHeaders_.get(fieldName);
+        }
+
+        /**
          * @return the httpHeaders
          */
         public final HttpHeaders getHttpHeaders() {
@@ -268,64 +275,27 @@ public class MantaObject implements Serializable {
                 return path_;
         }
 
-        /*
-         * (non-Javadoc)
+        /* (non-Javadoc)
          * @see java.lang.Object#hashCode()
          */
         @Override
         public int hashCode() {
                 final int prime = 31;
                 int result = 1;
+                result = prime * result + ((contentLength_ == null) ? 0 : contentLength_.hashCode());
+                result = prime * result + ((contentType_ == null) ? 0 : contentType_.hashCode());
                 result = prime * result + ((dataInputFile_ == null) ? 0 : dataInputFile_.hashCode());
+                result = prime * result + ((dataInputStream_ == null) ? 0 : dataInputStream_.hashCode());
                 result = prime * result + ((dataInputString_ == null) ? 0 : dataInputString_.hashCode());
                 result = prime * result + ((etag_ == null) ? 0 : etag_.hashCode());
                 result = prime * result + ((httpHeaders_ == null) ? 0 : httpHeaders_.hashCode());
-                result = prime * result + ((contentMd5_ == null) ? 0 : contentMd5_.hashCode());
                 result = prime * result + ((mtime_ == null) ? 0 : mtime_.hashCode());
                 result = prime * result + ((path_ == null) ? 0 : path_.hashCode());
-                result = prime * result + ((contentLength_ == null) ? 0 : contentLength_.hashCode());
-                result = prime * result + ((contentType_ == null) ? 0 : contentType_.hashCode());
                 return result;
         }
 
         public final boolean isDirectory() {
                 return contentType_.equals(DIRECTORY) || contentType_.equals(DIRECTORY_HEADER);
-        }
-
-        /**
-         * @param contentMd5
-         *                the md5 to set
-         */
-        public final void setContentMd5(String contentMd5) {
-                this.contentMd5_ = contentMd5;
-                if (httpHeaders_ == null) {
-                        httpHeaders_ = new HttpHeaders();
-                }
-                httpHeaders_.setContentMD5(contentMd5);
-        }
-
-        /**
-         * @param size_
-         *                the size_ to set
-         */
-        public final void setContentSize(Long contentSize) {
-                this.contentLength_ = contentSize;
-                if (httpHeaders_ == null) {
-                        httpHeaders_ = new HttpHeaders();
-                }
-                httpHeaders_.setContentLength(contentSize);
-        }
-
-        /**
-         * @param contentType
-         *                the type to set
-         */
-        public final void setContentType(String contentType) {
-                this.contentType_ = contentType;
-                if (httpHeaders_ == null) {
-                        httpHeaders_ = new HttpHeaders();
-                }
-                httpHeaders_.setContentType(contentType);
         }
 
         /**
@@ -355,7 +325,22 @@ public class MantaObject implements Serializable {
         }
 
         /**
-         * Sets the {@link HttpHeaders} in this object. Note any previous headers will be lost.
+         * Sets custom headers on the Manta object. This really just delegates to setting the {@link HttpHeaders}
+         * object. For the full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta
+         * API</a>.
+         * 
+         * @param fieldName
+         *                the field name.
+         * @param value
+         *                the field value.
+         */
+        public final void setHeader(String fieldName, Object value) {
+                this.httpHeaders_.set(fieldName, value);
+        }
+
+        /**
+         * Sets the {@link HttpHeaders} in this object. Note any previous headers will be lost. For the full list of
+         * Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
          * 
          * @param httpHeaders
          *                the httpHeaders_ to set
@@ -372,19 +357,17 @@ public class MantaObject implements Serializable {
                 this.path_ = path;
         }
 
-        /*
-         * (non-Javadoc)
+        /* (non-Javadoc)
          * @see java.lang.Object#toString()
          */
         @Override
         public String toString() {
                 StringBuilder builder = new StringBuilder();
-                builder.append("MantaObject [path_=").append(path_).append(", mtime_=").append(mtime_)
-                                .append(", type_=").append(contentType_).append(", etag_=").append(etag_)
-                                .append(", size_=").append(contentLength_).append(", md5_=").append(contentMd5_)
-                                .append(", dataInputStream_=").append(dataInputStream_).append(", dataInputFile_=")
-                                .append(dataInputFile_).append(", dataInputString_=").append(dataInputString_)
-                                .append(", httpHeaders_=").append(httpHeaders_).append("]");
+                builder.append("MantaObject [path_=").append(path_).append(", contentLength_=").append(contentLength_)
+                                .append(", contentType_=").append(contentType_).append(", etag_=").append(etag_)
+                                .append(", mtime_=").append(mtime_).append(", dataInputFile_=").append(dataInputFile_)
+                                .append(", dataInputStream_=").append(dataInputStream_).append(", dataInputString_=")
+                                .append(dataInputString_).append(", httpHeaders_=").append(httpHeaders_).append("]");
                 return builder.toString();
         }
 

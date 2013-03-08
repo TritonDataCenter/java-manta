@@ -301,20 +301,18 @@ public class MantaClient {
          * @param object
          *                The stored Manta object. This must contain the fully qualified path of the object, along with
          *                optional data either stored as an {@link InputStream}, {@link File}, or {@link String}.
-         * @param headers
-         *                Optional {@link HttpHeaders}. Consult the Manta api for more header information.
          * @throws IOException
          * @throws MantaCryptoException
          *                 If there's an exception while signing the request.
          * @throws HttpResponseException
          *                 If a http status code > 300 is returned.
          */
-        public void put(MantaObject object, HttpHeaders headers) throws MantaCryptoException, IOException,
-                        HttpResponseException {
-                LOG.debug(String.format("entering put with manta object %s, headers %s", object, headers));
+        public void put(MantaObject object) throws MantaCryptoException, IOException, HttpResponseException {
+                LOG.debug(String.format("entering put with manta object %s, headers %s", object,
+                                        object.getHttpHeaders()));
                 String contentType = null;
-                if (headers != null) {
-                        contentType = headers.getContentType();
+                if (object.getHttpHeaders() != null) {
+                        contentType = object.getHttpHeaders().getContentType();
                 }
                 HttpContent content = null;
                 if (object.getDataInputStream() != null) {
@@ -331,8 +329,8 @@ public class MantaClient {
                 HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, content);
                 request.setReadTimeout(httpTimeout_);
                 request.setConnectTimeout(httpTimeout_);
-                if (headers != null) {
-                        request.setHeaders(headers);
+                if (object.getHttpHeaders() != null) {
+                        request.setHeaders(object.getHttpHeaders());
                 }
                 httpSigner_.signRequest(request);
                 HttpResponse response = null;
