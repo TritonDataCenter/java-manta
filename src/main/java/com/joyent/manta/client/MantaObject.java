@@ -36,6 +36,7 @@ import com.google.api.client.util.Key;
  * <pre>
  * MantaClient client = MantaClient.getInstance(...);
  * MantaObject object = new MantaObject(&quot;user/stor/foo&quot;);
+ * object.setHeader("durability-level", 3);
  * InputStream is = new FileInputStream(new File(TEST_FILE));
  * object.setDataInputStream(is);
  * client.put(object, null);
