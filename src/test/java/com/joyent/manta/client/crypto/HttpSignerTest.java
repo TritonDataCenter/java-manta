@@ -21,23 +21,23 @@ import com.joyent.manta.exception.MantaCryptoException;
  */
 public class HttpSignerTest {
 
-        private static final String KEY_PATH = "src/test/java/data/id_rsa";
-        private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
-        private static final String LOGIN = "yunong";
-        private static final HttpRequestFactory REQUEST_FACTORY = new NetHttpTransport().createRequestFactory();
-        private static HttpSigner HTTP_SIGNER;
+    private static final String KEY_PATH = "src/test/java/data/id_rsa";
+    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+    private static final String LOGIN = "yunong";
+    private static final HttpRequestFactory REQUEST_FACTORY = new NetHttpTransport().createRequestFactory();
+    private static HttpSigner HTTP_SIGNER;
 
-        @BeforeClass
-        public static void beforeClass() throws IOException {
-                HTTP_SIGNER = HttpSigner.newInstance(KEY_PATH, KEY_FINGERPRINT, LOGIN);
-                BasicConfigurator.configure();
-        }
+    @BeforeClass
+    public static void beforeClass() throws IOException {
+        HTTP_SIGNER = HttpSigner.newInstance(KEY_PATH, KEY_FINGERPRINT, LOGIN);
+        BasicConfigurator.configure();
+    }
 
-        @Test
-        public void testSignData() throws IOException, MantaCryptoException {
-                HttpRequest req = REQUEST_FACTORY.buildGetRequest(new GenericUrl());
-                HTTP_SIGNER.signRequest(req);
-                boolean verified = HTTP_SIGNER.verifyRequest(req);
-                Assert.assertTrue("unable to verify signed authorization header", verified);
-        }
+    @Test
+    public void testSignData() throws IOException, MantaCryptoException {
+        HttpRequest req = REQUEST_FACTORY.buildGetRequest(new GenericUrl());
+        HTTP_SIGNER.signRequest(req);
+        boolean verified = HTTP_SIGNER.verifyRequest(req);
+        Assert.assertTrue("unable to verify signed authorization header", verified);
+    }
 }

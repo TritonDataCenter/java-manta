@@ -8,31 +8,31 @@ package com.joyent.manta.exception;
  */
 public class MantaException extends Exception {
 
-        private static final long serialVersionUID = -2045814978953401214L;
+    private static final long serialVersionUID = -2045814978953401214L;
 
-        public MantaException() {
-        }
+    public MantaException() {
+    }
 
-        /**
-         * @param message
-         */
-        public MantaException(String message) {
-                super(message);
-        }
+    /**
+     * @param message
+     */
+    public MantaException(String message) {
+        super(message);
+    }
 
-        /**
-         * @param cause
-         */
-        public MantaException(Throwable cause) {
-                super(cause);
-        }
+    /**
+     * @param cause
+     */
+    public MantaException(Throwable cause) {
+        super(cause);
+    }
 
-        /**
-         * @param message
-         * @param cause
-         */
-        public MantaException(String message, Throwable cause) {
-                super(message, cause);
-        }
+    /**
+     * @param message
+     * @param cause
+     */
+    public MantaException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
 }
