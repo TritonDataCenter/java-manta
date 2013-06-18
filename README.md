@@ -22,7 +22,10 @@ Which will compile the jar to ./targets/java-manta-1.0.jar
 # Usage
 
 You'll need a manta login, an associated rsa key, and its corresponding key
-fingerprint.
+fingerprint. Note that this api currently only supports rsa ssh keys --
+enterprising individuals wishing to use dsa keys can contribute to this repo by
+consulting the [node-http-signing
+spec](https://github.com/joyent/node-http-signature/blob/master/http_signing.md).
 
 For detailed usage instructions, consult the provided javadoc.
 
@@ -36,7 +39,7 @@ For detailed usage instructions, consult the provided javadoc.
 
         public class App {
                 private static MantaClient CLIENT;
-                private static final String URL = "https://manta-beta.joyentcloud.com";
+                private static final String URL = "https://us-east.manta.joyent.com";
                 private static final String LOGIN = "yunong";
                 private static final String KEY_PATH = "src/test/java/data/id_rsa";
                 private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
