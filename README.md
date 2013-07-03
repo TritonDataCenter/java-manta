@@ -9,7 +9,7 @@ compute component.
 You'll need [ Java
 1.6](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 or higher. Download the [java-manta
-jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.0.jar)
+jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.3.jar)
 and add it as a dependency to your Java project.
 
 If you prefer to build from source, you'll also need
