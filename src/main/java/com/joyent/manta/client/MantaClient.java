@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -131,7 +133,7 @@ public class MantaClient {
      */
     public void delete(String path) throws IOException, MantaCryptoException, HttpResponseException {
         LOG.debug(String.format("entering delete with path %s", path));
-        GenericUrl url = new GenericUrl(url_ + path);
+        GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildDeleteRequest(url);
         // TODO: make an interceptor that sets these timeouts before each API call.
         request.setReadTimeout(httpTimeout_);
@@ -194,7 +196,7 @@ public class MantaClient {
      */
     public MantaObject get(String path) throws IOException, MantaCryptoException, HttpResponseException {
         LOG.debug(String.format("entering get with path %s", path));
-        GenericUrl url = new GenericUrl(url_ + path);
+        GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
         request.setReadTimeout(httpTimeout_);
         request.setConnectTimeout(httpTimeout_);
@@ -223,7 +225,7 @@ public class MantaClient {
      */
     public MantaObject head(String path) throws MantaCryptoException, IOException, HttpResponseException {
         LOG.debug(String.format("entering get with path %s", path));
-        GenericUrl url = new GenericUrl(url_ + path);
+        GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildHeadRequest(url);
         request.setReadTimeout(httpTimeout_);
         request.setConnectTimeout(httpTimeout_);
@@ -253,7 +255,7 @@ public class MantaClient {
     public Collection<MantaObject> listObjects(String path) throws MantaCryptoException, IOException,
             HttpResponseException, MantaObjectException {
         LOG.debug(String.format("entering listDirectory with directory %s", path));
-        GenericUrl url = new GenericUrl(url_ + path);
+        GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
         request.setReadTimeout(httpTimeout_);
         request.setConnectTimeout(httpTimeout_);
@@ -316,7 +318,7 @@ public class MantaClient {
         } else {
             content = new EmptyContent();
         }
-        GenericUrl url = new GenericUrl(url_ + object.getPath());
+        GenericUrl url = new GenericUrl(url_ + formatPath(object.getPath()));
 
         HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, content);
         request.setReadTimeout(httpTimeout_);
@@ -353,7 +355,7 @@ public class MantaClient {
     public void putDirectory(String path, HttpHeaders headers) throws IOException, MantaCryptoException,
             HttpResponseException {
         LOG.debug(String.format("entering putDirectory with directory %s", path));
-        GenericUrl url = new GenericUrl(url_ + path);
+        GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, new EmptyContent());
         request.setReadTimeout(httpTimeout_);
         request.setConnectTimeout(httpTimeout_);
@@ -391,7 +393,7 @@ public class MantaClient {
     public void putSnapLink(String linkPath, String objectPath, HttpHeaders headers) throws IOException,
             MantaCryptoException, HttpResponseException {
         LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
-        GenericUrl url = new GenericUrl(url_ + linkPath);
+        GenericUrl url = new GenericUrl(url_ + formatPath(linkPath));
         HttpContent content = new EmptyContent();
         HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, content);
         if (headers != null) {
@@ -399,7 +401,7 @@ public class MantaClient {
         }
         httpSigner_.signRequest(request);
         request.getHeaders().setContentType(LINK_CONTENT_TYPE);
-        request.getHeaders().setLocation(objectPath);
+        request.getHeaders().setLocation(formatPath(objectPath));
         HttpResponse response = null;
         try {
             response = request.execute();
@@ -409,5 +411,24 @@ public class MantaClient {
                 response.disconnect();
             }
         }
+    }
+    
+    /**
+     * Format the path according to RFC3986
+     * @param path the raw path string.
+     * @return the URI formatted string with the exception of '/' which is special in manta.
+     * @throws UnsupportedEncodingException If UTF-8 is not supported on this system.
+     */
+    private static String formatPath(String path) throws UnsupportedEncodingException {
+        // first split the path by slashes.
+        String[] elements = path.split("/");
+        StringBuilder encodedPath = new StringBuilder();
+        for (String string : elements) {
+            if (string.equals("")) {
+                continue;
+            }
+            encodedPath.append("/").append(URLEncoder.encode(string, "UTF-8"));
+        }
+        return encodedPath.toString();
     }
 }

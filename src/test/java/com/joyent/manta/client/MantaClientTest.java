@@ -34,7 +34,7 @@ public class MantaClientTest {
     private static final String URL = "https://us-east.manta.joyent.com";
     private static final String LOGIN = "yunong";
     private static final String KEY_PATH = "src/test/java/data/id_rsa";
-    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+    private static final String KEY_FINGERPRINT = "9d:1c:f4:69:66:cb:bf:1a:40:b5:d2:c2:6a:0a:eb:2d";
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
     private static final String TEST_FILE = "src/test/java/data/Master-Yoda.jpg";
     private static final String TEST_DIR_PATH = "/yunong/stor/" + UUID.randomUUID().toString() + "/";
@@ -187,6 +187,26 @@ public class MantaClientTest {
         mantaObject.setDataInputString(TEST_DATA);
         CLIENT.put(mantaObject);
         CLIENT.listObjects(mantaObject.getPath());
+    }
+    
+    @Test
+    public void testRFC3986() throws MantaCryptoException, IOException {
+        String name = "spaces in the name of the file";
+        MantaObject mantaObject = new MantaObject(TEST_DIR_PATH + name);
+        mantaObject.setDataInputString(TEST_DATA);
+        CLIENT.put(mantaObject);
+        MantaObject gotObject = CLIENT.get(TEST_DIR_PATH + name);
+        String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
+        assertEquals(mantaObject.getDataInputString(), data);
+        CLIENT.delete(mantaObject.getPath());
+        boolean thrown = false;
+        try {
+            CLIENT.get(TEST_DIR_PATH + name);
+        } catch (HttpResponseException e) {
+            assertEquals(404, e.getStatusCode());
+            thrown = true;
+        }
+        assertTrue(thrown);
     }
 
     @AfterClass
