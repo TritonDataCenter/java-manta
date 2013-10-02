@@ -26,7 +26,7 @@
       <organizationUrl>joyent.com</organizationUrl>
       <url>yunong.ca</url>
       <id>yunong</id>
-  </developer>
+    </developer>
   </developers>
 
   <properties>
@@ -105,6 +105,18 @@
   </scm>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>

@@ -12,6 +12,16 @@
     <url>https://github.com/joyent/java-manta/issues</url>
   </issueManagement>
   <inceptionYear>2012</inceptionYear>
+  <developers>
+    <developer>
+      <id>yunong</id>
+      <name>Yunong Xiao</name>
+      <email>yjxiao@gmail.com</email>
+      <url>yunong.ca</url>
+      <organization>Joyent</organization>
+      <organizationUrl>joyent.com</organizationUrl>
+    </developer>
+  </developers>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -30,6 +40,17 @@
   </organization>
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>2.9.1</version>
