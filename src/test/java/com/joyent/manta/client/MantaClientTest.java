@@ -92,13 +92,13 @@ public class MantaClientTest {
     public void testCRUDObjectWithHeaders() throws MantaCryptoException, IOException {
         String name = UUID.randomUUID().toString();
         MantaObject mantaObject = new MantaObject(TEST_DIR_PATH + name);
-        mantaObject.setHeader("durability-level", 6);
+        mantaObject.setHeader("durability-level", 4);
         mantaObject.setDataInputString(TEST_DATA);
         CLIENT.put(mantaObject);
         MantaObject gotObject = CLIENT.get(TEST_DIR_PATH + name);
         String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
         assertEquals(mantaObject.getDataInputString(), data);
-        assertEquals(6, mantaObject.getHeader("durability-level"));
+        assertEquals(4, mantaObject.getHeader("durability-level"));
         CLIENT.delete(mantaObject.getPath());
         boolean thrown = false;
         try {
