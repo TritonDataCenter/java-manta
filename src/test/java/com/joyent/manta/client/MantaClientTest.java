@@ -33,7 +33,8 @@ public class MantaClientTest {
 
     private static final String URL = "https://us-east.manta.joyent.com";
     private static final String LOGIN = "yunong";
-    private static final String KEY_PATH = "src/test/java/data/id_rsa";
+//    private static final String KEY_PATH = "src/test/java/data/id_rsa";
+    private static final String KEY_PATH = "/Users/yunong/.ssh/id_rsa";
     private static final String KEY_FINGERPRINT = "9d:1c:f4:69:66:cb:bf:1a:40:b5:d2:c2:6a:0a:eb:2d";
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
     private static final String TEST_FILE = "src/test/java/data/Master-Yoda.jpg";
