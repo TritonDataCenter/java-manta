@@ -17,6 +17,13 @@
       <comments>Copyright (c) 2013 Joyent</comments>
     </license>
   </licenses>
+  <description>Java Manta SDK.</description>
+
+  <organization>
+    <name>Joyent</name>
+    <url>joyent.com</url>
+  </organization>
+  <inceptionYear>2012</inceptionYear>
 
   <developers>
     <developer>
@@ -29,9 +36,25 @@
     </developer>
   </developers>
 
+  <scm>
+    <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
+    <developerConnection>scm:git:git://github.com/joyent/java-manta.git</developerConnection>
+    <url>git@github.com:joyent/java-manta.git</url>
+  </scm>
+  <issueManagement>
+    <system>github.com</system>
+    <url>https://github.com/joyent/java-manta/issues</url>
+  </issueManagement>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
 
   <dependencies>
     <dependency>
@@ -89,20 +112,7 @@
       <version>2.4</version>
     </dependency>
   </dependencies>
-  <description>Java Manta SDK.</description>
-  <organization>
-    <name>Joyent</name>
-    <url>www.joyent.com</url>
-  </organization>
-  <inceptionYear>2012</inceptionYear>
-  <issueManagement>
-    <system>github.com</system>
-    <url>https://github.com/joyent/java-manta/issues</url>
-  </issueManagement>
-  <scm>
-    <url>git@github.com:joyent/java-manta.git</url>
-    <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
-  </scm>
+
   <build>
     <plugins>
       <plugin>
@@ -179,7 +189,36 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <versionRange>[1.0.0,)</versionRange>
+                    <goals>
+                      <goal>enforce</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
+
   <reporting>
     <plugins>
       <plugin>
