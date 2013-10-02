@@ -10,13 +10,24 @@
   <name>java-manta</name>
   <url>https://github.com/joyent/java-manta</url>
   <licenses>
-  <license>
-  <name>The MIT License (MIT)</name>
-  <url>http://opensource.org/licenses/MIT</url>
-  <distribution>repo</distribution>
-  <comments>Copyright (c) 2013 Joyent</comments>
-  </license>
+    <license>
+      <name>The MIT License (MIT)</name>
+      <url>http://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+      <comments>Copyright (c) 2013 Joyent</comments>
+    </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <email>yjxiao@gmail.com</email>
+      <name>Yunong Xiao</name>
+      <organization>Joyent</organization>
+      <organizationUrl>joyent.com</organizationUrl>
+      <url>yunong.ca</url>
+      <id>yunong</id>
+  </developer>
+  </developers>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
