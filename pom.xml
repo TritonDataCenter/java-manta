@@ -3,7 +3,7 @@
 
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
-  <version>1.4.0-SNAPSHOT</version>
+  <version>1.4.0</version>
   <packaging>jar</packaging>
 
   <name>java-manta</name>
