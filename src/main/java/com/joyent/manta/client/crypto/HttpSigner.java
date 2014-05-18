@@ -3,10 +3,7 @@
  */
 package com.joyent.manta.client.crypto;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -23,6 +20,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PasswordFinder;
 import org.bouncycastle.util.encoders.Base64;
 
 import com.google.api.client.http.HttpRequest;
@@ -61,6 +59,27 @@ public class HttpSigner {
         return new HttpSigner(keyPath, fingerPrint, login);
     }
 
+    /**
+     * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
+     * joyent-http-signature spec.
+     *
+     * @see <a href="http://github.com/joyent/node-http-signature/blob/master/http_signing.md">node-http-signature</a>
+     * @param privateKeyContent
+     *              The actual private key.
+     * @param fingerPrint
+     *              The fingerprint of the rsa key.
+     * @param keyPassword
+     *              The password to the key (optional)
+     * @param login
+     *              The login of the user account.
+     * @return An instance of {@link HttpSigner}
+     * @throws IOException
+     */
+    public static final HttpSigner newInstance(String privateKeyContent, String fingerPrint, char[] keyPassword,
+                                               String login) throws IOException {
+        return new HttpSigner(privateKeyContent, fingerPrint, keyPassword, login);
+    }
+
     final KeyPair keyPair_;
     private final String login_;
 
@@ -79,6 +98,22 @@ public class HttpSigner {
     }
 
     /**
+     * @param privateKeyContent
+     * @param fingerPrint
+     * @param password
+     * @param login
+     * @throws IOException
+     */
+    private HttpSigner(String privateKeyContent, String fingerPrint, char[] password, String login) throws IOException {
+        // not logging sensitive stuff like key and password
+        LOG.debug(String.format("initializing HttpSigner with private key, fingerprint: %s, password and login: %s",
+                fingerPrint, login));
+        login_ = login;
+        fingerPrint_ = fingerPrint;
+        keyPair_ = getKeyPair(privateKeyContent, password);
+    }
+
+    /**
      * @param keyPath
      * @return
      * @throws IOException
@@ -90,6 +125,36 @@ public class HttpSigner {
         KeyPair kp = (KeyPair) pemReader.readObject();
         pemReader.close();
         return kp;
+    }
+
+    /**
+     * Read KeyPair from a string, optionally using password
+     * @param privateKeyContent
+     * @param password
+     * @return
+     * @throws IOException
+     */
+    private final KeyPair getKeyPair(String privateKeyContent, final char[] password) throws IOException {
+        BufferedReader reader = null;
+        PEMReader pemReader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(privateKeyContent.getBytes())));
+            pemReader = new PEMReader(reader, password == null ? null : new PasswordFinder() {
+                @Override public char[] getPassword() {
+                    return password;
+                }
+            });
+            return (KeyPair) pemReader.readObject();
+
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+            if (pemReader != null) {
+                pemReader.close();
+            }
+        }
+
     }
 
     /**

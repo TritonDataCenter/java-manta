@@ -58,6 +58,8 @@ public class MantaClient {
     private static final String LINK_CONTENT_TYPE = "application/json; type=link";
     private static final String DIRECTORY_CONTENT_TYPE = "application/json; type=directory";
 
+    private static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+
     /**
      * Creates a new instance of a Manta client.
      * 
@@ -74,7 +76,7 @@ public class MantaClient {
      */
     public static MantaClient newInstance(String url, String login, String keyPath, String fingerPrint)
             throws IOException {
-        return newInstance(url, login, keyPath, fingerPrint, 20 * 1000);
+        return newInstance(url, login, keyPath, fingerPrint, DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
@@ -89,7 +91,7 @@ public class MantaClient {
      * @param fingerPrint
      *            The fingerprint of the user rsa private key.
      * @param timeout
-     *            The http timeout in miliseconds.
+     *            The http timeout in milliseconds.
      * @return An instance of {@link MantaClient}
      * @throws IOException
      */
@@ -97,8 +99,51 @@ public class MantaClient {
             throws IOException {
         LOG.debug(String.format("entering newInstance with url %s, login %s, keyPath %s, fingerPrint %s, timeout %s",
                                 url, login, keyPath, fingerPrint, timeout));
-        MantaClient c = new MantaClient(url, login, keyPath, fingerPrint, timeout);
-        return c;
+        return new MantaClient(url, login, keyPath, fingerPrint, timeout);
+    }
+
+    /**
+     * Creates a new instance of a Manta client
+     * @param url
+     *            The url of the Manta endpoint.
+     * @param login
+     *            The user login name.
+     * @param privateKeyContent
+     *            The user's rsa private key as a string.
+     * @param fingerPrint
+     *            The fingerprint of the user rsa private key.
+     * @param password
+     *            The private key password (optional).
+     * @return An instance of {@link MantaClient}
+     * @throws IOException
+     */
+    public static MantaClient newInstance(String url, String login, String privateKeyContent, String fingerPrint,
+                                          char [] password) throws IOException {
+        return newInstance(url, login, privateKeyContent, fingerPrint, password, DEFAULT_HTTP_TIMEOUT);
+    }
+
+    /**
+     * Creates a new instance of a Manta client
+     * @param url
+     *            The url of the Manta endpoint.
+     * @param login
+     *            The user login name.
+     * @param privateKeyContent
+     *            The private key as a string.
+     * @param fingerPrint
+     *            The fingerprint of the user rsa private key.
+     * @param password
+     *            The private key password (optional).
+     * @param httpTimeout
+     *            The HTTP timeout in milliseconds.
+     * @return An instance of {@link MantaClient}
+     * @throws IOException
+     */
+    public static MantaClient newInstance(String url, String login, String privateKeyContent, String fingerPrint,
+                                          char [] password, int httpTimeout) throws IOException {
+        LOG.debug(String.format("entering newInstance with url %s, login %s, privateKey ?, fingerPrint %s, password ?, " +
+                        "timeout %d", url, login, fingerPrint, httpTimeout));
+        return new MantaClient(url, login, privateKeyContent, fingerPrint, password, httpTimeout);
     }
 
     private final String url_;
@@ -107,12 +152,6 @@ public class MantaClient {
 
     private final int httpTimeout_;
 
-    private MantaClient(String url, String login, String keyPath, String fingerPrint) throws IOException {
-        url_ = url;
-        httpSigner_ = HttpSigner.newInstance(keyPath, fingerPrint, login);
-        httpTimeout_ = 20 * 1000;
-    }
-
     private MantaClient(String url, String login, String keyPath, String fingerPrint, int httpTimeout)
                                                                                                       throws IOException {
         url_ = url;
@@ -120,6 +159,12 @@ public class MantaClient {
         httpTimeout_ = httpTimeout;
     }
 
+    private MantaClient(String url, String login, String privateKeyContent, String keyName, char [] password,
+                        int httpTimeout) throws IOException {
+        url_ = url;
+        httpSigner_ = HttpSigner.newInstance(privateKeyContent, keyName, password, login);
+        httpTimeout_ = httpTimeout;
+    }
     /**
      * Deletes an object from Manta.
      * 
