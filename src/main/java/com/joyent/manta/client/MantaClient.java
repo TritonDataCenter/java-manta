@@ -134,16 +134,16 @@ public class MantaClient {
      *            The fingerprint of the user rsa private key.
      * @param password
      *            The private key password (optional).
-     * @param httpTimeout
+     * @param timeout
      *            The HTTP timeout in milliseconds.
      * @return An instance of {@link MantaClient}
      * @throws IOException
      */
     public static MantaClient newInstance(String url, String login, String privateKeyContent, String fingerPrint,
-                                          char [] password, int httpTimeout) throws IOException {
+                                          char [] password, int timeout) throws IOException {
         LOG.debug(String.format("entering newInstance with url %s, login %s, privateKey ?, fingerPrint %s, password ?, " +
-                        "timeout %d", url, login, fingerPrint, httpTimeout));
-        return new MantaClient(url, login, privateKeyContent, fingerPrint, password, httpTimeout);
+                        "timeout %d", url, login, fingerPrint, timeout));
+        return new MantaClient(url, login, privateKeyContent, fingerPrint, password, timeout);
     }
 
     private final String url_;

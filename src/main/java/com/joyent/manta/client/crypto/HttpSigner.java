@@ -3,7 +3,12 @@
  */
 package com.joyent.manta.client.crypto;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -117,6 +122,7 @@ public class HttpSigner {
      * @param keyPath
      * @return
      * @throws IOException
+     *          If unable to read the private key from the file
      */
     private final KeyPair getKeyPair(String keyPath) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(keyPath));
@@ -133,6 +139,7 @@ public class HttpSigner {
      * @param password
      * @return
      * @throws IOException
+     *          If unable to read the private key from the string
      */
     private final KeyPair getKeyPair(String privateKeyContent, final char[] password) throws IOException {
         BufferedReader reader = null;
