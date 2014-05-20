@@ -66,7 +66,7 @@ public class HttpSignerTest {
     public void testSignDataWithInMemSigner() throws IOException, MantaCryptoException {
         HttpRequest req = REQUEST_FACTORY.buildGetRequest(new GenericUrl());
         HTTP_SIGNER_MEM.signRequest(req);
-        boolean verified = HTTP_SIGNER.verifyRequest(req);
+        boolean verified = HTTP_SIGNER_MEM.verifyRequest(req);
         Assert.assertTrue("unable to verify signed authorization header", verified);
     }
 
