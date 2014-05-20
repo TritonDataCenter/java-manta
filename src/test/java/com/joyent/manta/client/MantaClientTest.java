@@ -212,6 +212,8 @@ public class MantaClientTest {
 
     @AfterClass
     public static void afterClass() throws MantaCryptoException, HttpResponseException, IOException {
-        CLIENT.deleteRecursive(TEST_DIR_PATH);
+        if (CLIENT != null) {
+            CLIENT.deleteRecursive(TEST_DIR_PATH);
+        }
     }
 }

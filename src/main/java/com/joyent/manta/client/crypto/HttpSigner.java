@@ -175,6 +175,9 @@ public class HttpSigner {
     public final void signRequest(HttpRequest request) throws MantaCryptoException {
         LOG.debug("signing request: " + request.getHeaders());
         String date = request.getHeaders().getDate();
+        if (keyPair_ == null) {
+            throw new MantaCryptoException("keys not loaded");
+        }
         if (date == null) {
             Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
             date = DATE_FORMAT.format(now);
