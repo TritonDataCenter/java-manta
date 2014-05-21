@@ -7,8 +7,10 @@ import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponseException;
 
 /**
- * @author Yunong Xiao Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't
- *         have to depend on the underlying HTTP client implementation.
+ * Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't have to depend on the
+ * underlying HTTP client implementation.
+ * 
+ * @author Yunong Xiao
  */
 public class MantaClientHttpResponseException extends MantaClientException {
 
@@ -26,8 +28,6 @@ public class MantaClientHttpResponseException extends MantaClientException {
 
     /**
      * Returns whether received a successful HTTP status code {@code >= 200 && < 300} (see {@link #getStatusCode()}).
-     * 
-     * @since 1.7
      */
     public final boolean isSuccessStatusCode() {
         return exception_.isSuccessStatusCode();

@@ -35,7 +35,7 @@ public class MantaClientTest {
     private static final String LOGIN = "yunong";
     /** TODO: change this to a valid key when testing */
     private static final String KEY_PATH = "src/test/java/data/id_rsa";
-    private static final String KEY_FINGERPRINT = "2b:6d:a6:06:35:f7:a6:62:62:b4:5a:85:d7:58:6e:bb";
+    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
     private static final String TEST_FILE = "src/test/java/data/Master-Yoda.jpg";
     private static final String TEST_DIR_PATH = "/yunong/stor/" + UUID.randomUUID().toString() + "/";

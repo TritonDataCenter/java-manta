@@ -197,11 +197,7 @@ public class MantaClient {
             throw new MantaClientHttpResponseException(e);
         } finally {
             if (response != null) {
-                try {
-                    response.disconnect();
-                } catch (HttpResponseException e) {
-                    throw new MantaClientHttpResponseException(e);
-                }
+                response.disconnect();
             }
         }
     }
