@@ -10,28 +10,31 @@ public class MantaClientException extends MantaException {
 
     private static final long serialVersionUID = 4004550753800130185L;
 
+    /**
+     * Create an empty exception.
+     */
     public MantaClientException() {
     }
 
     /**
-     * @param message
+     * @param message The error message.
      */
-    public MantaClientException(String message) {
+    public MantaClientException(final String message) {
         super(message);
     }
 
     /**
-     * @param cause
+     * @param cause The cause of the exception.
      */
-    public MantaClientException(Throwable cause) {
+    public MantaClientException(final Throwable cause) {
         super(cause);
     }
 
     /**
-     * @param message
-     * @param cause
+     * @param message The error message.
+     * @param cause The cause.
      */
-    public MantaClientException(String message, Throwable cause) {
+    public MantaClientException(final String message, final Throwable cause) {
         super(message, cause);
     }
 

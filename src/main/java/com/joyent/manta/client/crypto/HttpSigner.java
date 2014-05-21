@@ -33,22 +33,25 @@ import com.joyent.manta.exception.MantaCryptoException;
 
 /**
  * Joyent HTTP authorization signer. This adheres to the specs of the node-http-signature spec.
- * 
+ *
  * @author Yunong Xiao
  */
-public class HttpSigner {
+public final class HttpSigner {
     private static final Log LOG = LogFactory.getLog(HttpSigner.class);
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy zzz");
     private static final String AUTHZ_HEADER = "Signature keyId=\"/%s/keys/%s\",algorithm=\"rsa-sha256\","
-        + "signature=\"%s\"";
+            + "signature=\"%s\"";
     private static final String AUTHZ_SIGNING_STRING = "date: %s";
     private static final String AUTHZ_PATTERN = "signature=\"";
+    /**
+     * The signing algorithm.
+     */
     static final String SIGNING_ALGORITHM = "SHA256WithRSAEncryption";
 
     /**
      * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
      * joyent-http-signature spec.
-     * 
+     *
      * @see <a href="http://github.com/joyent/node-http-signature/blob/master/http_signing.md">node-http-signature</a>
      * @param keyPath
      *            The path to the rsa key on disk.
@@ -60,7 +63,8 @@ public class HttpSigner {
      * @throws IOException
      *             If the key is invalid.
      */
-    public static final HttpSigner newInstance(String keyPath, String fingerPrint, String login) throws IOException {
+    public static HttpSigner newInstance(final String keyPath, final String fingerPrint, final String login)
+            throws IOException {
         return new HttpSigner(keyPath, fingerPrint, login);
     }
 
@@ -70,21 +74,25 @@ public class HttpSigner {
      *
      * @see <a href="http://github.com/joyent/node-http-signature/blob/master/http_signing.md">node-http-signature</a>
      * @param privateKeyContent
-     *              The actual private key.
+     *            The actual private key.
      * @param fingerPrint
-     *              The fingerprint of the rsa key.
+     *            The fingerprint of the rsa key.
      * @param keyPassword
-     *              The password to the key (optional)
+     *            The password to the key (optional)
      * @param login
-     *              The login of the user account.
+     *            The login of the user account.
      * @return An instance of {@link HttpSigner}
      * @throws IOException
+     *             If an IO exception has occured.
      */
-    public static final HttpSigner newInstance(String privateKeyContent, String fingerPrint, char[] keyPassword,
-                                               String login) throws IOException {
+    public static HttpSigner newInstance(final String privateKeyContent, final String fingerPrint,
+                                         final char[] keyPassword, final String login) throws IOException {
         return new HttpSigner(privateKeyContent, fingerPrint, keyPassword, login);
     }
 
+    /**
+     * Keypair used to sign requests.
+     */
     final KeyPair keyPair_;
     private final String login_;
 
@@ -94,12 +102,12 @@ public class HttpSigner {
      * @param keyPath
      * @throws IOException
      */
-    private HttpSigner(String keyPath, String fingerprint, String login) throws IOException {
+    private HttpSigner(final String keyPath, final String fingerprint, final String login) throws IOException {
         LOG.debug(String.format("initializing HttpSigner with keypath: %s, fingerprint: %s, login: %s", keyPath,
                                 fingerprint, login));
-        fingerPrint_ = fingerprint;
-        login_ = login;
-        keyPair_ = getKeyPair(keyPath);
+        this.fingerPrint_ = fingerprint;
+        this.login_ = login;
+        this.keyPair_ = this.getKeyPair(keyPath);
     }
 
     /**
@@ -109,45 +117,48 @@ public class HttpSigner {
      * @param login
      * @throws IOException
      */
-    private HttpSigner(String privateKeyContent, String fingerPrint, char[] password, String login) throws IOException {
+    private HttpSigner(final String privateKeyContent, final String fingerPrint, final char[] password,
+                       final String login) throws IOException {
         // not logging sensitive stuff like key and password
         LOG.debug(String.format("initializing HttpSigner with private key, fingerprint: %s, password and login: %s",
-                fingerPrint, login));
-        login_ = login;
-        fingerPrint_ = fingerPrint;
-        keyPair_ = getKeyPair(privateKeyContent, password);
+                                fingerPrint, login));
+        this.login_ = login;
+        this.fingerPrint_ = fingerPrint;
+        this.keyPair_ = this.getKeyPair(privateKeyContent, password);
     }
 
     /**
      * @param keyPath
      * @return
      * @throws IOException
-     *          If unable to read the private key from the file
+     *             If unable to read the private key from the file
      */
-    private final KeyPair getKeyPair(String keyPath) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(keyPath));
+    private KeyPair getKeyPair(final String keyPath) throws IOException {
+        final BufferedReader br = new BufferedReader(new FileReader(keyPath));
         Security.addProvider(new BouncyCastleProvider());
-        PEMReader pemReader = new PEMReader(br);
-        KeyPair kp = (KeyPair) pemReader.readObject();
+        final PEMReader pemReader = new PEMReader(br);
+        final KeyPair kp = (KeyPair) pemReader.readObject();
         pemReader.close();
         return kp;
     }
 
     /**
-     * Read KeyPair from a string, optionally using password
+     * Read KeyPair from a string, optionally using password.
+     *
      * @param privateKeyContent
      * @param password
      * @return
      * @throws IOException
-     *          If unable to read the private key from the string
+     *             If unable to read the private key from the string
      */
-    private final KeyPair getKeyPair(String privateKeyContent, final char[] password) throws IOException {
+    private KeyPair getKeyPair(final String privateKeyContent, final char[] password) throws IOException {
         BufferedReader reader = null;
         PEMReader pemReader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(privateKeyContent.getBytes())));
             pemReader = new PEMReader(reader, password == null ? null : new PasswordFinder() {
-                @Override public char[] getPassword() {
+                @Override
+                public char[] getPassword() {
                     return password;
                 }
             });
@@ -166,54 +177,55 @@ public class HttpSigner {
 
     /**
      * Sign an {@link HttpRequest}.
-     * 
+     *
      * @param request
      *            The {@link HttpRequest} to sign.
      * @throws MantaCryptoException
      *             If unable to sign the request.
      */
-    public final void signRequest(HttpRequest request) throws MantaCryptoException {
+    public void signRequest(final HttpRequest request) throws MantaCryptoException {
         LOG.debug("signing request: " + request.getHeaders());
         String date = request.getHeaders().getDate();
-        if (keyPair_ == null) {
+        if (this.keyPair_ == null) {
             throw new MantaCryptoException("keys not loaded");
         }
         if (date == null) {
-            Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
+            final Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
             date = DATE_FORMAT.format(now);
             LOG.debug("setting date header: " + date);
             request.getHeaders().setDate(date);
         }
         try {
-            Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
-            sig.initSign(keyPair_.getPrivate());
-            String signingString = String.format(AUTHZ_SIGNING_STRING, date);
+            final Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
+            sig.initSign(this.keyPair_.getPrivate());
+            final String signingString = String.format(AUTHZ_SIGNING_STRING, date);
             sig.update(signingString.getBytes("UTF-8"));
-            byte[] signedDate = sig.sign();
-            byte[] encodedSignedDate = Base64.encode(signedDate);
-            String authzHeader = String.format(AUTHZ_HEADER, login_, fingerPrint_, new String(encodedSignedDate));
+            final byte[] signedDate = sig.sign();
+            final byte[] encodedSignedDate = Base64.encode(signedDate);
+            final String authzHeader = String.format(AUTHZ_HEADER, this.login_, this.fingerPrint_,
+                                                     new String(encodedSignedDate));
             request.getHeaders().setAuthorization(authzHeader);
-        } catch (NoSuchAlgorithmException e) {
+        } catch (final NoSuchAlgorithmException e) {
             throw new MantaCryptoException("invalid algorithm", e);
-        } catch (InvalidKeyException e) {
+        } catch (final InvalidKeyException e) {
             throw new MantaCryptoException("invalid key", e);
-        } catch (SignatureException e) {
+        } catch (final SignatureException e) {
             throw new MantaCryptoException("invalid signature", e);
-        } catch (UnsupportedEncodingException e) {
+        } catch (final UnsupportedEncodingException e) {
             throw new MantaCryptoException("invalid encoding", e);
         }
     }
 
     /**
      * Verify a signed {@link HttpRequest}.
-     * 
+     *
      * @param request
      *            The signed {@link HttpRequest}.
      * @return True if the request is valid, false if not.
      * @throws MantaCryptoException
      *             If unable to verify the request.
      */
-    public final boolean verifyRequest(HttpRequest request) throws MantaCryptoException {
+    public boolean verifyRequest(final HttpRequest request) throws MantaCryptoException {
         LOG.debug("verifying request: " + request.getHeaders());
         String date = request.getHeaders().getDate();
         if (date == null) {
@@ -223,25 +235,25 @@ public class HttpSigner {
         date = String.format(AUTHZ_SIGNING_STRING, date);
 
         try {
-            Signature verify = Signature.getInstance(SIGNING_ALGORITHM);
-            verify.initVerify(keyPair_.getPublic());
-            String authzHeader = request.getHeaders().getAuthorization();
-            int startIndex = authzHeader.indexOf(AUTHZ_PATTERN);
+            final Signature verify = Signature.getInstance(SIGNING_ALGORITHM);
+            verify.initVerify(this.keyPair_.getPublic());
+            final String authzHeader = request.getHeaders().getAuthorization();
+            final int startIndex = authzHeader.indexOf(AUTHZ_PATTERN);
             if (startIndex == -1) {
                 throw new MantaCryptoException("invalid authorization header " + authzHeader);
             }
-            String encodedSignedDate = authzHeader.substring(startIndex + AUTHZ_PATTERN.length(),
-                                                             authzHeader.length() - 1);
-            byte[] signedDate = Base64.decode(encodedSignedDate.getBytes("UTF-8"));
+            final String encodedSignedDate = authzHeader.substring(startIndex + AUTHZ_PATTERN.length(),
+                                                                   authzHeader.length() - 1);
+            final byte[] signedDate = Base64.decode(encodedSignedDate.getBytes("UTF-8"));
             verify.update(date.getBytes("UTF-8"));
             return verify.verify(signedDate);
-        } catch (NoSuchAlgorithmException e) {
+        } catch (final NoSuchAlgorithmException e) {
             throw new MantaCryptoException("invalid algorithm", e);
-        } catch (InvalidKeyException e) {
+        } catch (final InvalidKeyException e) {
             throw new MantaCryptoException("invalid key", e);
-        } catch (SignatureException e) {
+        } catch (final SignatureException e) {
             throw new MantaCryptoException("invalid signature", e);
-        } catch (UnsupportedEncodingException e) {
+        } catch (final UnsupportedEncodingException e) {
             throw new MantaCryptoException("invalid encoding", e);
         }
     }

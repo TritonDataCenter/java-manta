@@ -13,20 +13,24 @@ import org.apache.commons.io.IOUtils;
 
 /**
  * Manta utilities.
- * 
+ *
  * @author Yunong Xiao
  */
-public class MantaUtils {
+public final class MantaUtils {
+    private MantaUtils() {
+    }
+
     /**
      * Read from an {@link InputStream} to a {@link String}. Closes the {@link InputStream} when done.
-     * 
+     *
      * @param is
      *            The {@link InputStream}
      * @return The contents of the {@link InputStream}.
      * @throws IOException
+     *             If an IO exception has occured.
      */
-    public static String inputStreamToString(InputStream is) throws IOException {
-        StringWriter writer = new StringWriter();
+    public static String inputStreamToString(final InputStream is) throws IOException {
+        final StringWriter writer = new StringWriter();
         try {
             IOUtils.copy(is, writer);
         } finally {
@@ -37,14 +41,15 @@ public class MantaUtils {
 
     /**
      * Reads from an {@link InputStream} and writes to a {@link File}. Closes the {@link InputStream} when done.
-     * 
+     *
      * @param is
      *            The {@link InputStream}
      * @param outputFile
      *            The {@link File} to write to.
      * @throws IOException
+     *             If an IO exception has occured.
      */
-    public static void inputStreamToFile(InputStream is, File outputFile) throws IOException {
+    public static void inputStreamToFile(final InputStream is, final File outputFile) throws IOException {
         FileWriter fileWriter = null;
         try {
             fileWriter = new FileWriter(outputFile);

@@ -4,34 +4,38 @@
 package com.joyent.manta.exception;
 
 /**
+ * The base MantaException class.
  * @author Yunong Xiao
  */
 public class MantaException extends Exception {
 
     private static final long serialVersionUID = -2045814978953401214L;
 
+    /**
+     * Default constructor.
+     */
     public MantaException() {
     }
 
     /**
-     * @param message
+     * @param message The exception message.
      */
-    public MantaException(String message) {
+    public MantaException(final String message) {
         super(message);
     }
 
     /**
-     * @param cause
+     * @param cause The exception cause.
      */
-    public MantaException(Throwable cause) {
+    public MantaException(final Throwable cause) {
         super(cause);
     }
 
     /**
-     * @param message
-     * @param cause
+     * @param message The exception message.
+     * @param cause The exception cause.
      */
-    public MantaException(String message, Throwable cause) {
+    public MantaException(final String message, final Throwable cause) {
         super(message, cause);
     }
 

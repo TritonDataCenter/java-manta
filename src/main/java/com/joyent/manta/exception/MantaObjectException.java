@@ -10,29 +10,31 @@ public class MantaObjectException extends MantaException {
 
     private static final long serialVersionUID = 6799144229159150444L;
 
+    /**
+     * Default constructor.
+     */
     public MantaObjectException() {
     }
 
     /**
-     * @param message
+     * @param message The exception message.
      */
-    public MantaObjectException(String message) {
+    public MantaObjectException(final String message) {
         super(message);
     }
 
     /**
-     * @param cause
+     * @param cause The exception cause.
      */
-    public MantaObjectException(Throwable cause) {
+    public MantaObjectException(final Throwable cause) {
         super(cause);
     }
 
     /**
-     * @param message
-     * @param cause
+     * @param message The exception message.
+     * @param cause The exception cause.
      */
-    public MantaObjectException(String message, Throwable cause) {
+    public MantaObjectException(final String message, final Throwable cause) {
         super(message, cause);
     }
-
 }
