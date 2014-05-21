@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2014, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
 
@@ -34,6 +34,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.joyent.manta.client.crypto.HttpSigner;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 
@@ -104,6 +105,7 @@ public class MantaClient {
 
     /**
      * Creates a new instance of a Manta client
+     * 
      * @param url
      *            The url of the Manta endpoint.
      * @param login
@@ -118,12 +120,13 @@ public class MantaClient {
      * @throws IOException
      */
     public static MantaClient newInstance(String url, String login, String privateKeyContent, String fingerPrint,
-                                          char [] password) throws IOException {
+                                          char[] password) throws IOException {
         return newInstance(url, login, privateKeyContent, fingerPrint, password, DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
      * Creates a new instance of a Manta client
+     * 
      * @param url
      *            The url of the Manta endpoint.
      * @param login
@@ -140,9 +143,10 @@ public class MantaClient {
      * @throws IOException
      */
     public static MantaClient newInstance(String url, String login, String privateKeyContent, String fingerPrint,
-                                          char [] password, int timeout) throws IOException {
-        LOG.debug(String.format("entering newInstance with url %s, login %s, privateKey ?, fingerPrint %s, password ?, " +
-                        "timeout %d", url, login, fingerPrint, timeout));
+                                          char[] password, int timeout) throws IOException {
+        LOG.debug(String
+                .format("entering newInstance with url %s, login %s, privateKey ?, fingerPrint %s, password ?, "
+                    + "timeout %d", url, login, fingerPrint, timeout));
         return new MantaClient(url, login, privateKeyContent, fingerPrint, password, timeout);
     }
 
@@ -159,12 +163,13 @@ public class MantaClient {
         httpTimeout_ = httpTimeout;
     }
 
-    private MantaClient(String url, String login, String privateKeyContent, String keyName, char [] password,
+    private MantaClient(String url, String login, String privateKeyContent, String keyName, char[] password,
                         int httpTimeout) throws IOException {
         url_ = url;
         httpSigner_ = HttpSigner.newInstance(privateKeyContent, keyName, password, login);
         httpTimeout_ = httpTimeout;
     }
+
     /**
      * Deletes an object from Manta.
      * 
@@ -173,14 +178,14 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
-     *             If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException
+     *             If an HTTP status code > 300 is returned.
      */
-    public void delete(String path) throws IOException, MantaCryptoException, HttpResponseException {
+    public void delete(String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering delete with path %s", path));
         GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildDeleteRequest(url);
-        // TODO: make an interceptor that sets these timeouts before each API call.
+        // TODO: make an intercepter that sets these timeouts before each API call.
         request.setReadTimeout(httpTimeout_);
         request.setConnectTimeout(httpTimeout_);
         httpSigner_.signRequest(request);
@@ -188,9 +193,15 @@ public class MantaClient {
         try {
             response = request.execute();
             LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(), response.getHeaders()));
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
         } finally {
             if (response != null) {
-                response.disconnect();
+                try {
+                    response.disconnect();
+                } catch (HttpResponseException e) {
+                    throw new MantaClientHttpResponseException(e);
+                }
             }
         }
     }
@@ -203,10 +214,10 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
+     * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public void deleteRecursive(String path) throws MantaCryptoException, HttpResponseException, IOException {
+    public void deleteRecursive(String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering deleteRecursive with path %s", path));
         Collection<MantaObject> objs = null;
         try {
@@ -236,10 +247,10 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
+     * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public MantaObject get(String path) throws IOException, MantaCryptoException, HttpResponseException {
+    public MantaObject get(String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering get with path %s", path));
         GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
@@ -247,7 +258,11 @@ public class MantaClient {
         request.setConnectTimeout(httpTimeout_);
         httpSigner_.signRequest(request);
         HttpResponse response = null;
-        response = request.execute();
+        try {
+            response = request.execute();
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
+        }
         MantaObject mantaObject = new MantaObject(path, response.getHeaders());
         mantaObject.setDataInputStream(response.getContent());
         mantaObject.setHttpHeaders(response.getHeaders());
@@ -265,10 +280,10 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
+     * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public MantaObject head(String path) throws MantaCryptoException, IOException, HttpResponseException {
+    public MantaObject head(String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering get with path %s", path));
         GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildHeadRequest(url);
@@ -276,7 +291,11 @@ public class MantaClient {
         request.setConnectTimeout(httpTimeout_);
         httpSigner_.signRequest(request);
         HttpResponse response = null;
-        response = request.execute();
+        try {
+            response = request.execute();
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
+        }
         MantaObject mantaObject = new MantaObject(path, response.getHeaders());
         LOG.debug(String.format("got response code %s, MantaObject %s, header %s", response.getStatusCode(),
                                 mantaObject, response.getHeaders()));
@@ -292,13 +311,13 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
-     *             If a http status code > 300 is returned.
      * @throws MantaObjectException
      *             If the path isn't a directory
+     * @throws MantaClientHttpResponseException
+     *             If a http status code > 300 is returned.
      */
-    public Collection<MantaObject> listObjects(String path) throws MantaCryptoException, IOException,
-            HttpResponseException, MantaObjectException {
+    public Collection<MantaObject> listObjects(String path) throws MantaCryptoException, MantaObjectException,
+            MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering listDirectory with directory %s", path));
         GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
@@ -328,6 +347,8 @@ public class MantaClient {
                 objs.add(obj);
             }
             return objs;
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -344,10 +365,10 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
+     * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public void put(MantaObject object) throws MantaCryptoException, IOException, HttpResponseException {
+    public void put(MantaObject object) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering put with manta object %s, headers %s", object, object.getHttpHeaders()));
         String contentType = null;
         if (object.getHttpHeaders() != null) {
@@ -377,6 +398,8 @@ public class MantaClient {
             LOG.debug(String.format("sending request %s", request));
             response = request.execute();
             LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(), response.getHeaders()));
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -394,11 +417,11 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
+     * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public void putDirectory(String path, HttpHeaders headers) throws IOException, MantaCryptoException,
-            HttpResponseException {
+    public void putDirectory(String path, HttpHeaders headers) throws MantaCryptoException,
+            MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering putDirectory with directory %s", path));
         GenericUrl url = new GenericUrl(url_ + formatPath(path));
         HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, new EmptyContent());
@@ -413,6 +436,8 @@ public class MantaClient {
         try {
             response = request.execute();
             LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(), response.getHeaders()));
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -432,11 +457,11 @@ public class MantaClient {
      * @throws IOException
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
-     * @throws HttpResponseException
+     * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public void putSnapLink(String linkPath, String objectPath, HttpHeaders headers) throws IOException,
-            MantaCryptoException, HttpResponseException {
+    public void putSnapLink(String linkPath, String objectPath, HttpHeaders headers) throws MantaCryptoException,
+            MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
         GenericUrl url = new GenericUrl(url_ + formatPath(linkPath));
         HttpContent content = new EmptyContent();
@@ -451,18 +476,23 @@ public class MantaClient {
         try {
             response = request.execute();
             LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(), response.getHeaders()));
+        } catch (HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
         } finally {
             if (response != null) {
                 response.disconnect();
             }
         }
     }
-    
+
     /**
      * Format the path according to RFC3986
-     * @param path the raw path string.
+     * 
+     * @param path
+     *            the raw path string.
      * @return the URI formatted string with the exception of '/' which is special in manta.
-     * @throws UnsupportedEncodingException If UTF-8 is not supported on this system.
+     * @throws UnsupportedEncodingException
+     *             If UTF-8 is not supported on this system.
      */
     private static String formatPath(String path) throws UnsupportedEncodingException {
         // first split the path by slashes.
