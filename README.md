@@ -6,18 +6,31 @@ At present, this SDK only supports the Manta data plane, and not the Manta
 compute component.
 
 # Installation
-You'll need [ Java
-1.6](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-or higher. Download the [java-manta
-jar](https://github.com/joyent/java-manta/blob/master/target/java-manta-1.3.jar)
-and add it as a dependency to your Java project.
+## Requirements.
+* [Java 1.6](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
+* [Maven](https://maven.apache.org/)
 
+## Using Maven
+Add the latest java-manta dependency to your Maven `pom.xml`.
+
+```xml
+<dependency>
+    <groupId>com.joyent.manta</groupId>
+    <artifactId>java-manta</artifactId>
+    <version>1.5.0</version>
+</dependency>
+```
+
+## From Source
 If you prefer to build from source, you'll also need
-[maven](https://maven.apache.org/), and then invoke:
+[Maven](https://maven.apache.org/), and then invoke:
 
-        $mvn package
+``` bash
+# mvn package
+```
 
-Which will compile the jar to ./targets/java-manta-1.0.jar
+Which will compile the jar to ./targets/java-manta-<version>.jar. You can then
+add it as a dependency to your Java project.
 
 # Usage
 
@@ -30,32 +43,33 @@ spec](https://github.com/joyent/node-http-signature/blob/master/http_signing.md)
 For detailed usage instructions, consult the provided javadoc.
 
 ## Example Get Request
-        import java.io.IOException;
+``` java
+import java.io.IOException;
 
-        import com.joyent.manta.client.MantaClient;
-        import com.joyent.manta.client.MantaObject;
-        import com.joyent.manta.client.MantaUtils;
-        import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.exception.MantaCryptoException;
 
-        public class App {
-                private static MantaClient CLIENT;
-                private static final String URL = "https://us-east.manta.joyent.com";
-                private static final String LOGIN = "yunong";
-                private static final String KEY_PATH = "src/test/java/data/id_rsa";
-                private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+public class App {
+        private static MantaClient CLIENT;
+        private static final String URL = "https://us-east.manta.joyent.com";
+        private static final String LOGIN = "yunong";
+        private static final String KEY_PATH = "src/test/java/data/id_rsa";
+        private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
 
-                public static void main(String... args) throws IOException, MantaCryptoException {
-                        CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
-                        MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
-                        String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
-                        System.out.println(data);
-                }
+        public static void main(String... args) throws IOException, MantaCryptoException {
+                CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+                MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
+                String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
+                System.out.println(data);
         }
-
+}
+```
 
 For more examples, check the included unit tests.
 
-## Logging
+# Logging
 
 The SDK utilizes [log4j](https://logging.apache.org/log4j/1.2/), and logging
 can be configured via the usual methods. The underlying
@@ -65,8 +79,13 @@ utilizes
 which can be configured
 [accordingly](https://code.google.com/p/google-http-java-client/wiki/HTTP).
 
+# Contributions
 
-## License
+Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle` runs
+clean with no warnings or errors.
+
+
+# License
 
 The MIT License (MIT)
 Copyright (c) 2013 Joyent
@@ -89,7 +108,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## Bugs
+# Bugs
 
 See <https://github.com/joyent/java-manta/issues>.
 
