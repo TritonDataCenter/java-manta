@@ -65,7 +65,7 @@
     <dependency>
       <groupId>com.google.http-client</groupId>
       <artifactId>google-http-client</artifactId>
-      <version>1.13.1-beta</version>
+      <version>1.19.0</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
@@ -104,7 +104,7 @@
     <dependency>
       <groupId>com.google.http-client</groupId>
       <artifactId>google-http-client-jackson2</artifactId>
-      <version>1.13.1-beta</version>
+      <version>1.19.0</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
