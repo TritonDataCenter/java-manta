@@ -6,7 +6,6 @@ package com.joyent.manta.client;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,7 +68,7 @@ public class MantaClientTest {
         final MantaObject gotObject = client.get(TEST_DIR_PATH + name);
         final File file = new File("/tmp/" + name);
         MantaUtils.inputStreamToFile(gotObject.getDataInputStream(), file);
-        final String data = FileUtils.readFileToString(file);
+        final String data = MantaUtils.readFileToString(file);
         assertEquals(mantaObject.getDataInputString(), data);
         client.delete(mantaObject.getPath());
         boolean thrown = false;

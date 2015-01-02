@@ -4,12 +4,13 @@
 package com.joyent.manta.client;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 
-import org.apache.commons.io.IOUtils;
+import static java.nio.file.Files.readAllBytes;
 
 /**
  * Manta utilities.
@@ -30,13 +31,13 @@ public final class MantaUtils {
      *             If an IO exception has occured.
      */
     public static String inputStreamToString(final InputStream is) throws IOException {
-        final StringWriter writer = new StringWriter();
-        try {
-            IOUtils.copy(is, writer);
-        } finally {
-            is.close();
+        StringBuilder buffer = new StringBuilder();
+        char[] read = new char[128];
+        try (InputStreamReader ir = new InputStreamReader(is, Charset.defaultCharset())) {
+            for (int i; -1 != (i = ir.read(read)); buffer.append(read, 0, i));
         }
-        return writer.toString();
+
+        return buffer.toString();
     }
 
     /**
@@ -50,16 +51,10 @@ public final class MantaUtils {
      *             If an IO exception has occured.
      */
     public static void inputStreamToFile(final InputStream is, final File outputFile) throws IOException {
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(outputFile);
-            IOUtils.copy(is, fileWriter);
+        Files.copy(is, outputFile.toPath());
+    }
 
-        } finally {
-            is.close();
-            if (fileWriter != null) {
-                fileWriter.close();
-            }
-        }
+    public static String readFileToString(File file) throws IOException {
+        return new String(readAllBytes(file.toPath()));
     }
 }
