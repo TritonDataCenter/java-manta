@@ -54,7 +54,7 @@ public final class MantaUtils {
         Files.copy(is, outputFile.toPath());
     }
 
-    public static String readFileToString(File file) throws IOException {
+    public static String readFileToString(final File file) throws IOException {
         return new String(readAllBytes(file.toPath()));
     }
 }
