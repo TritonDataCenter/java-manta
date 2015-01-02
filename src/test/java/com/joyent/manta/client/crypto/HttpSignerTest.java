@@ -3,20 +3,18 @@
  */
 package com.joyent.manta.client.crypto;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-
-import org.apache.log4j.BasicConfigurator;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.joyent.manta.exception.MantaCryptoException;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 /**
  * @author Yunong Xiao
@@ -54,7 +52,6 @@ public class HttpSignerTest {
     public static void beforeClass() throws IOException {
         httpSigner = HttpSigner.newInstance(KEY_PATH, KEY_FINGERPRINT, LOGIN);
         httpInMemeSigner = HttpSigner.newInstance(readFile(KEY_PATH), KEY_FINGERPRINT, null, LOGIN);
-        BasicConfigurator.configure();
     }
 
     @Test

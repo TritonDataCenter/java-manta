@@ -3,26 +3,19 @@
  */
 package com.joyent.manta.client;
 
-import static org.junit.Assert.*;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.UUID;
-
+import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.exception.MantaObjectException;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.BasicConfigurator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaCryptoException;
-import com.joyent.manta.exception.MantaObjectException;
+import java.io.*;
+import java.util.Collection;
+import java.util.UUID;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Yunong Xiao
@@ -43,7 +36,6 @@ public class MantaClientTest {
     @BeforeClass
     public static void beforeClass() throws IOException, MantaCryptoException, MantaClientHttpResponseException {
         client = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
-        BasicConfigurator.configure();
         client.putDirectory(TEST_DIR_PATH, null);
     }
 

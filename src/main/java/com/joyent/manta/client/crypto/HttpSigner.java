@@ -3,33 +3,22 @@
  */
 package com.joyent.manta.client.crypto;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.io.InputStreamReader;
-import java.io.ByteArrayInputStream;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
+import com.google.api.client.http.HttpRequest;
+import com.joyent.manta.exception.MantaCryptoException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PasswordFinder;
+import org.bouncycastle.util.encoders.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.security.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.openssl.PasswordFinder;
-import org.bouncycastle.util.encoders.Base64;
-
-import com.google.api.client.http.HttpRequest;
-import com.joyent.manta.exception.MantaCryptoException;
 
 /**
  * Joyent HTTP authorization signer. This adheres to the specs of the node-http-signature spec.
@@ -37,7 +26,7 @@ import com.joyent.manta.exception.MantaCryptoException;
  * @author Yunong Xiao
  */
 public final class HttpSigner {
-    private static final Log LOG = LogFactory.getLog(HttpSigner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSigner.class);
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy zzz");
     private static final String AUTHZ_HEADER = "Signature keyId=\"/%s/keys/%s\",algorithm=\"rsa-sha256\","
             + "signature=\"%s\"";

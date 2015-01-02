@@ -35,6 +35,8 @@ import com.joyent.manta.client.crypto.HttpSigner;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manta Http client.
@@ -42,7 +44,7 @@ import com.joyent.manta.exception.MantaObjectException;
  * @author Yunong Xiao
  */
 public final class MantaClient {
-    private static final Log LOG = LogFactory.getLog(MantaClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final HttpRequestFactory HTTP_REQUEST_FACTORY = new NetHttpTransport()
