@@ -3,7 +3,7 @@
 
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
-  <version>1.5.1-SNAPSHOT</version>
+  <version>1.5.2-SNAPSHOT-1</version>
   <packaging>jar</packaging>
 
   <name>java-manta</name>
@@ -96,6 +96,47 @@
   </dependencies>
 
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.3</version>
+        <configuration>
+          <minimizeJar>true</minimizeJar>
+          <artifactSet>
+            <excludes>
+              <exclude>com.google.code.findbugs:jsr305</exclude>
+              <exclude>junit:junit</exclude>
+              <exclude>org.slf4j:*</exclude>
+              <exclude>org.bouncycastle:*</exclude>
+            </excludes>
+          </artifactSet>
+          <relocations>
+            <relocation>
+              <pattern>com.google</pattern>
+              <shadedPattern>com.joyent.manta.com.google</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.apache</pattern>
+              <shadedPattern>com.joyent.manta.org.apache</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.fasterxml</pattern>
+              <shadedPattern>com.joyent.manta.com.fasterxml</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
     <pluginManagement>
       <plugins>
         <plugin>
@@ -120,10 +161,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.0</version>
+          <version>3.2</version>
           <configuration>
-            <source>7</source>
-            <target>7</target>
+            <source>1.7</source>
+            <target>1.7</target>
           </configuration>
         </plugin>
         <plugin>
