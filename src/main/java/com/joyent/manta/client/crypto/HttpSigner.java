@@ -6,8 +6,12 @@ package com.joyent.manta.client.crypto;
 import com.google.api.client.http.HttpRequest;
 import com.joyent.manta.exception.MantaCryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.openssl.PasswordFinder;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.bouncycastle.util.encoders.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +40,8 @@ public final class HttpSigner {
      * The signing algorithm.
      */
     static final String SIGNING_ALGORITHM = "SHA256WithRSAEncryption";
+
+    private final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 
     /**
      * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
@@ -125,10 +131,14 @@ public final class HttpSigner {
     private KeyPair getKeyPair(final String keyPath) throws IOException {
         final BufferedReader br = new BufferedReader(new FileReader(keyPath));
         Security.addProvider(new BouncyCastleProvider());
-        final PEMReader pemReader = new PEMReader(br);
-        final KeyPair kp = (KeyPair) pemReader.readObject();
-        pemReader.close();
-        return kp;
+
+        try (final PEMParser pemParser = new PEMParser(br)) {
+            final Object object = pemParser.readObject();
+
+            KeyPair kp = converter.getKeyPair((PEMKeyPair) object);
+
+            return kp;
+        }
     }
 
     /**
@@ -141,27 +151,27 @@ public final class HttpSigner {
      *             If unable to read the private key from the string
      */
     private KeyPair getKeyPair(final String privateKeyContent, final char[] password) throws IOException {
-        BufferedReader reader = null;
-        PEMReader pemReader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(privateKeyContent.getBytes())));
-            pemReader = new PEMReader(reader, password == null ? null : new PasswordFinder() {
-                @Override
-                public char[] getPassword() {
-                    return password;
-                }
-            });
-            return (KeyPair) pemReader.readObject();
+        byte[] pKeyBytes = privateKeyContent.getBytes();
 
-        } finally {
-            if (reader != null) {
-                reader.close();
+        try (InputStream byteArrayStream = new ByteArrayInputStream(pKeyBytes);
+             Reader inputStreamReader = new InputStreamReader(byteArrayStream);
+             BufferedReader reader = new BufferedReader(inputStreamReader);
+             PEMParser pemParser = new PEMParser(reader)) {
+
+            PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(password);
+
+            Object object = pemParser.readObject();
+
+            final KeyPair kp;
+            if (object instanceof PEMEncryptedKeyPair) {
+                kp = converter.getKeyPair(((PEMEncryptedKeyPair) object).decryptKeyPair(decProv));
+            } else {
+                kp = converter.getKeyPair((PEMKeyPair) object);
             }
-            if (pemReader != null) {
-                pemReader.close();
-            }
+
+            return kp;
+
         }
-
     }
 
     /**
