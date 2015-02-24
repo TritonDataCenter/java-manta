@@ -3,26 +3,18 @@
  */
 package com.joyent.manta.client;
 
-import static org.junit.Assert.*;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.UUID;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.BasicConfigurator;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.exception.MantaObjectException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaCryptoException;
-import com.joyent.manta.exception.MantaObjectException;
+import java.io.*;
+import java.util.Collection;
+import java.util.UUID;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Yunong Xiao
@@ -43,7 +35,6 @@ public class MantaClientTest {
     @BeforeClass
     public static void beforeClass() throws IOException, MantaCryptoException, MantaClientHttpResponseException {
         client = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
-        BasicConfigurator.configure();
         client.putDirectory(TEST_DIR_PATH, null);
     }
 
@@ -77,7 +68,7 @@ public class MantaClientTest {
         final MantaObject gotObject = client.get(TEST_DIR_PATH + name);
         final File file = new File("/tmp/" + name);
         MantaUtils.inputStreamToFile(gotObject.getDataInputStream(), file);
-        final String data = FileUtils.readFileToString(file);
+        final String data = MantaUtils.readFileToString(file);
         assertEquals(mantaObject.getDataInputString(), data);
         client.delete(mantaObject.getPath());
         boolean thrown = false;

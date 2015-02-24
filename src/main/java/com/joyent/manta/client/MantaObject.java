@@ -3,17 +3,10 @@
  */
 package com.joyent.manta.client;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
-
-import org.apache.commons.io.FileUtils;
-
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.util.Key;
+
+import java.io.*;
 
 /**
  * A Manta storage object.
@@ -256,12 +249,11 @@ public class MantaObject implements Serializable {
             if (this.dataInputStream_ != null) {
                 this.dataInputString_ = MantaUtils.inputStreamToString(this.dataInputStream_);
             } else if (this.dataInputFile_ != null) {
-                this.dataInputString_ = FileUtils.readFileToString(this.dataInputFile_);
+                this.dataInputString_ = MantaUtils.readFileToString(this.dataInputFile_);
             }
         }
         return this.dataInputString_;
     }
-
     /**
      * @return the etag
      */
@@ -401,5 +393,4 @@ public class MantaObject implements Serializable {
         .append(this.httpHeaders_).append("]");
         return builder.toString();
     }
-
 }

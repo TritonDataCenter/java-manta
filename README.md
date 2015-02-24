@@ -8,7 +8,7 @@ compute component.
 
 # Installation
 ## Requirements.
-* [Java 1.6](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
+* [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
 * [Maven](https://maven.apache.org/)
 
 ## Using Maven
@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>1.5.0</version>
+    <version>1.5.2</version>
 </dependency>
 ```
 
@@ -72,8 +72,8 @@ For more examples, check the included unit tests.
 
 # Logging
 
-The SDK utilizes [log4j](https://logging.apache.org/log4j/1.2/), and logging
-can be configured via the usual methods. The underlying
+The SDK utilizes [slf4j](http://www.slf4j.org/), and logging
+can be configured using a SLF4J implementation. The underlying
 [google-http-java-client](https://code.google.com/p/google-http-java-client/)
 utilizes
 [java.util.logging.Logger](http://docs.oracle.com/javase/7/docs/api/java/util/logging/Logger.html),
