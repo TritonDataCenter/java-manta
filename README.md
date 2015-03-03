@@ -33,6 +33,16 @@ If you prefer to build from source, you'll also need
 Which will compile the jar to ./targets/java-manta-version.jar. You can then
 add it as a dependency to your Java project.
 
+### Test Suite:
+By default, the test suite invokes the java manta client against the live manta service.
+In order to run the test suite, you must edit the test suite configuration parameters located in
+`./src/test/resources/testng.xml` to change the manta.accountName property to your account name for
+the manta service, and you must install the public key located at `./src/test/resources/manta-test_rsa.pub`
+into your account.  The `testng.xml` file has other parameters that can be changed to point to a desired
+manta endpoint, as well as change the keys used to authenticate against the manta service.
+
+If you want to skip running of the test suite, use the `-DskipTests` property.
+
 # Usage
 
 You'll need a manta login, an associated rsa key, and its corresponding key
