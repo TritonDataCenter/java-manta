@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>1.5.2</version>
+    <version>1.5.3</version>
 </dependency>
 ```
 
@@ -85,6 +85,63 @@ which can be configured
 Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle` runs
 clean with no warnings or errors.
 
+## Testing
+
+When running the unit tests, you will need an active account on the Joyent public 
+cloud or a private Manta instance. Please be sure that all of the environment
+variables needed for the Manta CLI SDK are set (`MANTA_URL`, `MANTA_USER`,
+`MANTA_KEY_ID`). In addition to those environment variables, you will also need to
+set `MANTA_KEY_PATH` with the path to the private key associated with the
+`MANTA_KEY_ID` value.
+
+To test:
+```
+# Assuming you have already set your environment variables
+mvn test
+```
+
+## Releasing
+
+In order to release to Maven central, you will need an account and your gpg signing
+keys registered to your account. Once that is setup be sure to have the following
+settings in your `$HOME/.m2/settings.xml`:
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+      <id>ossrh</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <!-- Change to executable name -->
+        <gpg.executable>gpg</gpg.executable>
+        <gpg.passphrase>passphrase</gpg.passphrase>
+        <gpg.secretKeyring>${env.HOME}/.gnupg/secring.gpg</gpg.secretKeyring>
+      </properties>
+    </profile>
+  </profiles>
+  <servers>
+    <server>
+      <id>ossrh</id>
+      <username>username</username>
+      <password>password</password>
+    </server>
+  </servers>
+</settings>
+```
+
+To perform a release:
+
+```
+mvn clean deploy -P release
+```
+
+Then go to the [OSS Sonatype site](https://oss.sonatype.org) to verify and release.
 
 # License
 

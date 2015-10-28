@@ -23,14 +23,23 @@ public class MantaClientTest {
 
     private static MantaClient client;
 
-    private static final String URL = "https://us-east.manta.joyent.com";
-    private static final String LOGIN = "yunong";
+    private static final String URL;
+    private static final String LOGIN;
     /** XXX: change this to a valid key when testing. */
-    private static final String KEY_PATH = "src/test/java/data/id_rsa_test";
-    private static final String KEY_FINGERPRINT = "2b:6d:a6:06:35:f7:a6:62:62:b4:5a:85:d7:58:6e:bb";
+    private static final String KEY_PATH;
+    private static final String KEY_FINGERPRINT;
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
     private static final String TEST_FILE = "src/test/java/data/Master-Yoda.jpg";
-    private static final String TEST_DIR_PATH = "/yunong/stor/" + UUID.randomUUID().toString() + "/";
+    private static final String TEST_DIR_PATH;
+
+    static {
+        ConfigContext config = new EnvVarConfigContext();
+        URL = config.mantaURL();
+        LOGIN = config.mantaUser();
+        KEY_PATH = config.mantaKeyPath();
+        KEY_FINGERPRINT = config.mantaKeyId();
+        TEST_DIR_PATH =String.format("%s/stor/%s/", LOGIN, UUID.randomUUID());
+    }
 
     @BeforeClass
     public static void beforeClass() throws IOException, MantaCryptoException, MantaClientHttpResponseException {
