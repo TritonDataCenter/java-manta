@@ -135,6 +135,14 @@ settings in your `$HOME/.m2/settings.xml`:
 </settings>
 ```
 
+To perform a release:
+
+```
+mvn clean deploy -P release
+```
+
+Then go to the [OSS Sonatype site](https://oss.sonatype.org) to verify and release.
+
 # License
 
 The MIT License (MIT)
