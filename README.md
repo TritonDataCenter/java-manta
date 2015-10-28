@@ -85,6 +85,20 @@ which can be configured
 Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle` runs
 clean with no warnings or errors.
 
+## Testing
+
+When running the unit tests, you will need an active account on the Joyent public 
+cloud or a private Manta instance. Please be sure that all of the environment
+variables needed for the Manta CLI SDK are set (`MANTA_URL`, `MANTA_USER`,
+`MANTA_KEY_ID`). In addition to those environment variables, you will also need to
+set `MANTA_KEY_PATH` with the path to the private key associated with the
+`MANTA_KEY_ID` value.
+
+To test:
+```
+# Assuming you have already set your environment variables
+mvn test
+```
 
 # License
 
