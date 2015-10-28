@@ -100,6 +100,41 @@ To test:
 mvn test
 ```
 
+## Releasing
+
+In order to release to Maven central, you will need an account and your gpg signing
+keys registered to your account. Once that is setup be sure to have the following
+settings in your `$HOME/.m2/settings.xml`:
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+      <id>ossrh</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <!-- Change to executable name -->
+        <gpg.executable>gpg</gpg.executable>
+        <gpg.passphrase>passphrase</gpg.passphrase>
+        <gpg.secretKeyring>${env.HOME}/.gnupg/secring.gpg</gpg.secretKeyring>
+      </properties>
+    </profile>
+  </profiles>
+  <servers>
+    <server>
+      <id>ossrh</id>
+      <username>username</username>
+      <password>password</password>
+    </server>
+  </servers>
+</settings>
+```
+
 # License
 
 The MIT License (MIT)
