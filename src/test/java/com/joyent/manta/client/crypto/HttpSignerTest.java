@@ -10,6 +10,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.joyent.manta.exception.MantaCryptoException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
 import org.testng.annotations.Test;
 import org.testng.annotations.Parameters;
 
@@ -31,11 +32,12 @@ public class HttpSignerTest {
 
 
     @BeforeClass
-    @Parameters({"manta.key.private.filename", "manta.key.fingerprint", "manta.accountName"})
-    public void beforeClass(String privateKeyFilename, String keyFingerPrint, String accountName) throws IOException, NoSuchAlgorithmException {
+    @Parameters({"manta.test.key.private.filename", "manta.test.key.fingerprint", "manta.accountName"})
+    public void beforeClass(String privateKeyFilename, String keyFingerPrint, @Optional String accountName)
+            throws IOException, NoSuchAlgorithmException {
         URL privateKeyUrl = Thread.currentThread().getContextClassLoader().getResource(privateKeyFilename);
         Assert.assertNotNull(privateKeyUrl);
-        Assert.assertNotEquals(accountName, "YourAccountName", "You need to set your account name in testng.xml to run the test suite against the manta service.");
+
         httpSigner = HttpSigner.newInstance(privateKeyUrl.getFile(), keyFingerPrint, accountName);
         String privateKeyContent = readFile(privateKeyUrl.getFile());
         httpSignerInitializedWithInMemoryKeyData = HttpSigner.newInstance(privateKeyContent, keyFingerPrint, null, accountName);

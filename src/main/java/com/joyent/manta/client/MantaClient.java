@@ -3,11 +3,7 @@
  */
 package com.joyent.manta.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +25,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.joyent.manta.client.crypto.HttpSigner;
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -56,7 +53,20 @@ public final class MantaClient {
     private static final String LINK_CONTENT_TYPE = "application/json; type=link";
     private static final String DIRECTORY_CONTENT_TYPE = "application/json; type=directory";
 
-    private static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+    /**
+     * Creates a new instance of a Manta client.
+     * @param config
+     *               The configuration context that provides all of the configuration values.
+     * @return An instance of {@link MantaClient}
+     * @throws IOException
+     *             If unable to instantiate the client.
+     */
+    public static MantaClient newInstance(final ConfigContext config) throws IOException {
+        return newInstance(config.getMantaURL(),
+                           config.getMantaUser(),
+                           config.getMantaKeyPath(),
+                           config.getMantaKeyId());
+    }
 
     /**
      * Creates a new instance of a Manta client.
@@ -75,7 +85,7 @@ public final class MantaClient {
      */
     public static MantaClient newInstance(final String url, final String login, final String keyPath,
                                           final String fingerPrint) throws IOException {
-        return newInstance(url, login, keyPath, fingerPrint, DEFAULT_HTTP_TIMEOUT);
+        return newInstance(url, login, keyPath, fingerPrint, ConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
@@ -121,7 +131,7 @@ public final class MantaClient {
      */
     public static MantaClient newInstance(final String url, final String login, final String privateKeyContent,
                                           final String fingerPrint, final char[] password) throws IOException {
-        return newInstance(url, login, privateKeyContent, fingerPrint, password, DEFAULT_HTTP_TIMEOUT);
+        return newInstance(url, login, privateKeyContent, fingerPrint, password, ConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
@@ -433,8 +443,12 @@ public final class MantaClient {
      * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public void putDirectory(final String path, final HttpHeaders headers) throws MantaCryptoException,
-    MantaClientHttpResponseException, IOException {
+    public void putDirectory(final String path, final HttpHeaders headers)
+            throws MantaCryptoException, MantaClientHttpResponseException, IOException {
+        if (path == null) {
+            throw new IllegalArgumentException("PUT directory path can't be null");
+        }
+
         LOG.debug(String.format("entering putDirectory with directory %s", path));
         final GenericUrl url = new GenericUrl(this.url_ + formatPath(path));
         final HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, new EmptyContent());

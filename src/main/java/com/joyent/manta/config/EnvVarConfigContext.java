@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.config;
 
 /**
@@ -8,34 +11,33 @@ public class EnvVarConfigContext implements ConfigContext {
     public EnvVarConfigContext() {
     }
 
-    private static String getAndCheckEnvVar(String var) {
-        String url = System.getenv(var);
-
-        if (url == null || url.isEmpty()) {
-            String msg = String.format("%s environment variable must be set", var);
-            throw new IllegalArgumentException(msg);
-        }
-
-        return url;
+    private static String getEnv(String var) {
+        return System.getenv(var);
     }
 
     @Override
-    public String mantaURL() {
-        return getAndCheckEnvVar("MANTA_URL");
+    public String getMantaURL() {
+        return getEnv("MANTA_URL");
     }
 
     @Override
-    public String mantaUser() {
-        return getAndCheckEnvVar("MANTA_USER");
+    public String getMantaUser() {
+        return getEnv("MANTA_USER");
     }
 
     @Override
-    public String mantaKeyId() {
-        return getAndCheckEnvVar("MANTA_KEY_ID");
+    public String getMantaKeyId() {
+        return getEnv("MANTA_KEY_ID");
     }
 
     @Override
-    public String mantaKeyPath() {
-        return getAndCheckEnvVar("MANTA_KEY_PATH");
+    public String getMantaKeyPath() {
+        return getEnv("MANTA_KEY_PATH");
+    }
+
+    @Override
+    public int getTimeout() {
+        // NOTE: We may want to think about offering this as an environment variable
+        return DEFAULT_HTTP_TIMEOUT;
     }
 }

@@ -3,14 +3,15 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.config.ChainedContext;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.EnvVarConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.*;
 import java.net.URL;
@@ -23,32 +24,39 @@ import java.util.UUID;
  */
 public class MantaClientTest {
 
-    private static MantaClient client;
-
-    private static final String URL = "https://us-east.manta.joyent.com";
-    private static final String LOGIN = "yunong";
-    /** XXX: change this to a valid key when testing. */
-    private static final String KEY_PATH = "src/test/java/data/id_rsa_test";
-    private static final String KEY_FINGERPRINT = "2b:6d:a6:06:35:f7:a6:62:62:b4:5a:85:d7:58:6e:bb";
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
-
     private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
     private MantaClient mantaClient;
 
     private String testDirPath;
 
-
     @BeforeClass
     @Parameters({"manta.url", "manta.accountName", "manta.key.private.filename", "manta.key.fingerprint"})
-    public void beforeClass(String mantaUrl, String accountName, String privateKeyFilename, String keyFingerPrint) throws IOException, MantaClientHttpResponseException, MantaCryptoException {
-        URL privateKeyUrl = Thread.currentThread().getContextClassLoader().getResource(privateKeyFilename);
-        Assert.assertNotNull(privateKeyUrl);
-        Assert.assertNotEquals(accountName, "YourAccountName", "You need to set your account name in testng.xml to run the test suite against the manta service.");
-        mantaClient = MantaClient.newInstance(mantaUrl, accountName, privateKeyUrl.getFile(), keyFingerPrint);
-        testDirPath = "/" + accountName + "/stor/" + UUID.randomUUID().toString() + "/";
-        mantaClient.putDirectory(testDirPath, null);
+    public void beforeClass(@Optional("https://us-east.manta.joyent.com") String mantaUrl,
+                            @Optional String mantaUser,
+                            @Optional String mantaKeyPath,
+                            @Optional String mantaKeyId)
+            throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+        URL privateKeyUrl = mantaKeyPath == null ?
+                null :
+                Thread.currentThread().getContextClassLoader().getResource(mantaKeyPath);
 
+        ConfigContext envConfig = new EnvVarConfigContext();
+
+        StandardConfigContext testNgConfig = new StandardConfigContext()
+                .setMantaURL(mantaUrl)
+                .setMantaUser(mantaUser)
+                .setMantaKeyId(mantaKeyId);
+
+        if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
+
+        // Let TestNG configuration take precedence over environment variables
+        ConfigContext config = new ChainedContext(envConfig, testNgConfig);
+
+        mantaClient = MantaClient.newInstance(config);
+        testDirPath = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());
+        mantaClient.putDirectory(testDirPath, null);
     }
 
 

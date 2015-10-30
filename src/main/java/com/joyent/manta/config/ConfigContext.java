@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.config;
 
 import com.joyent.manta.client.MantaClient;
@@ -7,8 +10,11 @@ import com.joyent.manta.client.MantaClient;
  * {@link MantaClient}.
  */
 public interface ConfigContext {
-    String mantaURL();
-    String mantaUser();
-    String mantaKeyId();
-    String mantaKeyPath();
+    int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+
+    String getMantaURL();
+    String getMantaUser();
+    String getMantaKeyId();
+    String getMantaKeyPath();
+    int getTimeout();
 }
