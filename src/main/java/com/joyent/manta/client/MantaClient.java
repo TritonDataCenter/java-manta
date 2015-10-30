@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Yunong Xiao
  */
-public final class MantaClient {
+public class MantaClient {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
