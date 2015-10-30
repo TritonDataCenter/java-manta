@@ -1,4 +1,6 @@
-package com.joyent.manta.client;
+package com.joyent.manta.config;
+
+import com.joyent.manta.client.MantaClient;
 
 /**
  * Interface representing the configuration properties needed to configure a

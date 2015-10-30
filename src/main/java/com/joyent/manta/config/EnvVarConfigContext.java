@@ -1,4 +1,4 @@
-package com.joyent.manta.client;
+package com.joyent.manta.config;
 
 /**
  * An implementation of {@link ConfigContext} that reads its configuration

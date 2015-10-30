@@ -1,0 +1,17 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Java Manta Client SDK Test Suite" verbose="1">
+    <parameter name="manta.url" value="https://us-east.manta.joyent.com"/>
+    <parameter name="manta.key.private.filename" value="manta-test_id_rsa"/>
+    <parameter name="manta.key.fingerprint" value="7d:dd:93:d0:a8:62:e7:e0:e5:82:34:98:67:23:cd:22"/>
+    <parameter name="manta.accountName" value="YourAccountName"/>
+    <test name="Http Signer">
+        <classes>
+            <class name="com.joyent.manta.client.crypto.HttpSignerTest"/>
+        </classes>
+    </test>
+    <test name="Manta Client Test">
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientTest"/>
+        </classes>
+    </test>
+</suite>
