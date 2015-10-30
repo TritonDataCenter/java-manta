@@ -231,7 +231,7 @@ public final class MantaClient {
     public void deleteRecursive(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
         LOG.debug(String.format("entering deleteRecursive with path %s", path));
-        Collection<MantaObject> objs = null;
+        Collection<MantaObject> objs;
         try {
             objs = this.listObjects(path);
         } catch (final MantaObjectException e) {
@@ -271,7 +271,7 @@ public final class MantaClient {
         request.setReadTimeout(this.httpTimeout_);
         request.setConnectTimeout(this.httpTimeout_);
         this.httpSigner_.signRequest(request);
-        HttpResponse response = null;
+        HttpResponse response;
         try {
             response = request.execute();
         } catch (final HttpResponseException e) {
@@ -306,7 +306,7 @@ public final class MantaClient {
         request.setReadTimeout(this.httpTimeout_);
         request.setConnectTimeout(this.httpTimeout_);
         this.httpSigner_.signRequest(request);
-        HttpResponse response = null;
+        HttpResponse response;
         try {
             response = request.execute();
         } catch (final HttpResponseException e) {
@@ -335,9 +335,8 @@ public final class MantaClient {
      */
     public Collection<MantaObject> listObjects(final String path) throws MantaCryptoException, MantaObjectException,
     MantaClientHttpResponseException, IOException {
-        String myPath = new String(path);
-        LOG.debug(String.format("entering listDirectory with directory %s", myPath));
-        final GenericUrl url = new GenericUrl(this.url_ + formatPath(myPath));
+        LOG.debug(String.format("entering listDirectory with directory %s", path));
+        final GenericUrl url = new GenericUrl(this.url_ + formatPath(path));
         final HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
         request.setReadTimeout(this.httpTimeout_);
         request.setConnectTimeout(this.httpTimeout_);
@@ -352,17 +351,18 @@ public final class MantaClient {
                 throw new MantaObjectException("Object is not a directory");
             }
 
-            final ArrayList<MantaObject> objs = new ArrayList<MantaObject>();
+            final ArrayList<MantaObject> objs = new ArrayList<>();
             final BufferedReader br = new BufferedReader(new InputStreamReader(response.getContent()));
             String line;
+            StringBuilder myPath = new StringBuilder(path);
             while ((line = br.readLine()) != null) {
                 final MantaObject obj = request.getParser().parseAndClose(new StringReader(line), MantaObject.class);
                 // need to prefix the obj name with the fully qualified path, since Manta only returns
                 // the explicit name of the object.
-                if (!myPath.endsWith("/")) {
-                    myPath += "/";
+                if (!myPath.subSequence(myPath.length() - 1, myPath.length()).equals("/")) {
+                    myPath.append('/');
                 }
-                obj.setPath(myPath + obj.getPath());
+                obj.setPath(myPath.append(obj.getPath()).toString());
                 objs.add(obj);
             }
             return objs;
@@ -395,7 +395,7 @@ public final class MantaClient {
         if (object.getHttpHeaders() != null) {
             contentType = object.getHttpHeaders().getContentType();
         }
-        HttpContent content = null;
+        HttpContent content;
         if (object.getDataInputStream() != null) {
             content = new InputStreamContent(contentType, object.getDataInputStream());
         } else if (object.getDataInputFile() != null) {
