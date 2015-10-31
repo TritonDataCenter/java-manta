@@ -94,8 +94,8 @@ public final class HttpSigner {
     private final String fingerPrint_;
 
     /**
-     * @param keyPath
-     * @throws IOException
+     * @param keyPath The path to the rsa key on disk.
+     * @throws IOException thrown on network error or on filesystem error
      */
     private HttpSigner(final String keyPath, final String fingerprint, final String login) throws IOException {
         LOG.debug(String.format("initializing HttpSigner with keypath: %s, fingerprint: %s, login: %s", keyPath,
@@ -106,11 +106,11 @@ public final class HttpSigner {
     }
 
     /**
-     * @param privateKeyContent
-     * @param fingerPrint
-     * @param password
-     * @param login
-     * @throws IOException
+     * @param privateKeyContent private key content as a string
+     * @param fingerPrint rsa key fingerprint
+     * @param password password associated with key
+     * @param login account name associated with Manta account
+     * @throws IOException thrown on network error or on filesystem error
      */
     private HttpSigner(final String privateKeyContent, final String fingerPrint, final char[] password,
                        final String login) throws IOException {
@@ -123,30 +123,38 @@ public final class HttpSigner {
     }
 
     /**
-     * @param keyPath
-     * @return
+     * @param keyPath The path to the rsa key on disk.
+     * @return public-private keypair object
      * @throws IOException
      *             If unable to read the private key from the file
      */
     private KeyPair getKeyPair(final String keyPath) throws IOException {
-        final BufferedReader br = new BufferedReader(new FileReader(keyPath));
+        if (keyPath == null) throw new FileNotFoundException("No key file path specified");
+
+        File keyFile = new File(keyPath);
+
+        if (!keyFile.exists()) throw new FileNotFoundException(
+                String.format("No key file available at path: %s", keyFile));
+
+        if (!keyFile.canRead()) throw new IOException(
+                String.format("Can't read key file from path: %s", keyFile));
+
+        final BufferedReader br = new BufferedReader(new FileReader(keyFile));
         Security.addProvider(new BouncyCastleProvider());
 
         try (final PEMParser pemParser = new PEMParser(br)) {
             final Object object = pemParser.readObject();
 
-            KeyPair kp = converter.getKeyPair((PEMKeyPair) object);
-
-            return kp;
+            return converter.getKeyPair((PEMKeyPair) object);
         }
     }
 
     /**
      * Read KeyPair from a string, optionally using password.
      *
-     * @param privateKeyContent
-     * @param password
-     * @return
+     * @param privateKeyContent private key content as a string
+     * @param password password associated with key
+     * @return public-private keypair object
      * @throws IOException
      *             If unable to read the private key from the string
      */

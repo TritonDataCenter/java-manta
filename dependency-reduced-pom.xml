@@ -10,7 +10,7 @@
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
   <name>java-manta</name>
-  <version>1.5.3</version>
+  <version>1.5.4</version>
   <description>Java Manta SDK.</description>
   <url>https://github.com/joyent/java-manta</url>
   <issueManagement>
@@ -24,6 +24,12 @@
       <name>Yunong Xiao</name>
       <email>yjxiao@gmail.com</email>
       <url>yunong.ca</url>
+      <organization>Joyent</organization>
+      <organizationUrl>joyent.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Elijah Zuoancic</name>
+      <email>elijah@zupancic.name</email>
       <organization>Joyent</organization>
       <organizationUrl>joyent.com</organizationUrl>
     </developer>
@@ -60,8 +66,15 @@
           </configuration>
         </plugin>
         <plugin>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>2.8.1</version>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
@@ -132,6 +145,15 @@
     </pluginManagement>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.18.1</version>
+        <configuration>
+          <suiteXmlFiles>
+            <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+          </suiteXmlFiles>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.4.1</version>
         <executions>
@@ -189,7 +211,6 @@
           </plugin>
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.10.3</version>
             <executions>
               <execution>
                 <id>attach-javadocs</id>
@@ -218,14 +239,18 @@
   </profiles>
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.8.21</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <artifactId>hamcrest-core</artifactId>
-          <groupId>org.hamcrest</groupId>
+          <artifactId>bsh</artifactId>
+          <groupId>org.beanshell</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jcommander</artifactId>
+          <groupId>com.beust</groupId>
         </exclusion>
       </exclusions>
     </dependency>
