@@ -32,4 +32,19 @@ public class MantaUtilsTest {
 
         Assert.assertFalse(actual, "Matched last character in StringBuilder when we shouldn't have");
     }
+
+    @Test(expectedExceptions = { IllegalArgumentException.class })
+    public final void errorOnNullStringBuilder() {
+        MantaUtils.endsWith(null, 'c');
+    }
+
+    @Test
+    public final void doesntMatchOnEmptyStringBuilder() {
+        char match = '/';
+        StringBuilder builder = new StringBuilder();
+
+        boolean actual = MantaUtils.endsWith(builder, match);
+
+        Assert.assertFalse(actual, "Matched last character in StringBuilder when we shouldn't have because it was empty");
+    }
 }

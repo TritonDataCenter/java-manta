@@ -54,6 +54,12 @@ public final class MantaUtils {
         return new String(readAllBytes(file.toPath()));
     }
 
+    /**
+     * Checks to see if a {@link StringBuilder} ends with a given character.
+     * @param builder StringBuilder to check
+     * @param match character to match
+     * @return true if last character in StringBuilder matches
+     */
     public static boolean endsWith(StringBuilder builder, char match) {
         if (builder == null) throw new IllegalArgumentException("StringBuilder must not be null");
         if (builder.length() == 0) return false;
