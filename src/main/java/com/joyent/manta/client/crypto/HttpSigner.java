@@ -129,7 +129,17 @@ public final class HttpSigner {
      *             If unable to read the private key from the file
      */
     private KeyPair getKeyPair(final String keyPath) throws IOException {
-        final BufferedReader br = new BufferedReader(new FileReader(keyPath));
+        if (keyPath == null) throw new FileNotFoundException("No key file path specified");
+
+        File keyFile = new File(keyPath);
+
+        if (!keyFile.exists()) throw new FileNotFoundException(
+                String.format("No key file available at path: %s", keyFile));
+
+        if (!keyFile.canRead()) throw new IOException(
+                String.format("Can't read key file from path: %s", keyFile));
+
+        final BufferedReader br = new BufferedReader(new FileReader(keyFile));
         Security.addProvider(new BouncyCastleProvider());
 
         try (final PEMParser pemParser = new PEMParser(br)) {
