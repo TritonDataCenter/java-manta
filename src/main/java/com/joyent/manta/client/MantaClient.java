@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.EmptyContent;
@@ -24,6 +25,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.ObjectParser;
 import com.joyent.manta.client.crypto.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -246,7 +248,17 @@ public class MantaClient {
                 this.delete(mantaObject.getPath());
             }
         }
-        this.delete(path);
+
+        try {
+            this.delete(path);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 404 && LOG.isDebugEnabled()) {
+                LOG.debug("Couldn't delete object because it doesn't exist", e);
+            } else {
+                throw e;
+            }
+        }
+
         LOG.debug(String.format("finished deleting path %s", path));
     }
 
@@ -292,7 +304,7 @@ public class MantaClient {
      *            The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObject}.
      * @throws IOException
-     *             If an IO exception has occured.
+     *             If an IO exception has occurred.
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException
@@ -334,7 +346,7 @@ public class MantaClient {
      *             If a http status code > 300 is returned.
      */
     public Collection<MantaObject> listObjects(final String path) throws MantaCryptoException, MantaObjectException,
-    MantaClientHttpResponseException, IOException {
+            MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering listDirectory with directory %s", path));
         final GenericUrl url = new GenericUrl(this.url_ + formatPath(path));
         final HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
@@ -351,21 +363,9 @@ public class MantaClient {
                 throw new MantaObjectException("Object is not a directory");
             }
 
-            final ArrayList<MantaObject> objs = new ArrayList<>();
             final BufferedReader br = new BufferedReader(new InputStreamReader(response.getContent()));
-            String line;
-            StringBuilder myPath = new StringBuilder(path);
-            while ((line = br.readLine()) != null) {
-                final MantaObject obj = request.getParser().parseAndClose(new StringReader(line), MantaObject.class);
-                // need to prefix the obj name with the fully qualified path, since Manta only returns
-                // the explicit name of the object.
-                if (!myPath.subSequence(myPath.length() - 1, myPath.length()).equals("/")) {
-                    myPath.append('/');
-                }
-                obj.setPath(myPath.append(obj.getPath()).toString());
-                objs.add(obj);
-            }
-            return objs;
+            final ObjectParser parser = request.getParser();
+            return buildObjects(path, br, parser);
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -374,6 +374,37 @@ public class MantaClient {
             }
         }
     }
+
+    /**
+     * Creates a list of {@link MantaObject}s based on the HTTP response from Manta.
+     * @param path
+     *            The fully qualified path of the directory.
+     * @param content
+     *            The content of the response as a Reader.
+     * @param parser
+     *            Deserializer implementation that takes the raw content and turns it into a {@link MantaObject}
+     * @return List of {@link MantaObject}s for a given directory
+     * @throws IOException
+     *            If an IO exception has occurred.
+     */
+    protected static List<MantaObject> buildObjects(String path, BufferedReader content, ObjectParser parser) throws IOException {
+        final ArrayList<MantaObject> objs = new ArrayList<>();
+        String line;
+        StringBuilder myPath = new StringBuilder(path);
+        while ((line = content.readLine()) != null) {
+            final MantaObject obj = parser.parseAndClose(new StringReader(line), MantaObject.class);
+            // need to prefix the obj name with the fully qualified path, since Manta only returns
+            // the explicit name of the object.
+            if (!MantaUtils.endsWith(myPath, '/')) {
+                myPath.append('/');
+            }
+
+            obj.setPath(myPath + obj.getPath());
+            objs.add(obj);
+        }
+        return objs;
+    }
+
 
     /**
      * Puts an object into Manta.

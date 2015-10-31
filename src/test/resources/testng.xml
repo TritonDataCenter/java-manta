@@ -15,4 +15,9 @@
             <class name="com.joyent.manta.client.MantaClientTest"/>
         </classes>
     </test>
+    <test name="Manta Utils Test">
+        <classes>
+            <class name="com.joyent.manta.client.MantaUtilsTest"/>
+        </classes>
+    </test>
 </suite>
