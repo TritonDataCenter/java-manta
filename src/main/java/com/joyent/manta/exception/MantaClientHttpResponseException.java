@@ -26,6 +26,7 @@ public class MantaClientHttpResponseException extends MantaClientException {
      * @param exception The {@link HttpResponseException} to be wrapped.
      */
     public MantaClientHttpResponseException(final HttpResponseException exception) {
+        super(exception);
         this.exception_ = exception;
     }
 

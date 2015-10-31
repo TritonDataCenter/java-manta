@@ -3,14 +3,11 @@
  */
 package com.joyent.manta.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.EmptyContent;
@@ -28,7 +25,9 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.ObjectParser;
 import com.joyent.manta.client.crypto.HttpSigner;
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Yunong Xiao
  */
-public final class MantaClient {
+public class MantaClient {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
@@ -56,7 +55,20 @@ public final class MantaClient {
     private static final String LINK_CONTENT_TYPE = "application/json; type=link";
     private static final String DIRECTORY_CONTENT_TYPE = "application/json; type=directory";
 
-    private static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+    /**
+     * Creates a new instance of a Manta client.
+     * @param config
+     *               The configuration context that provides all of the configuration values.
+     * @return An instance of {@link MantaClient}
+     * @throws IOException
+     *             If unable to instantiate the client.
+     */
+    public static MantaClient newInstance(final ConfigContext config) throws IOException {
+        return newInstance(config.getMantaURL(),
+                           config.getMantaUser(),
+                           config.getMantaKeyPath(),
+                           config.getMantaKeyId());
+    }
 
     /**
      * Creates a new instance of a Manta client.
@@ -75,7 +87,7 @@ public final class MantaClient {
      */
     public static MantaClient newInstance(final String url, final String login, final String keyPath,
                                           final String fingerPrint) throws IOException {
-        return newInstance(url, login, keyPath, fingerPrint, DEFAULT_HTTP_TIMEOUT);
+        return newInstance(url, login, keyPath, fingerPrint, ConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
@@ -121,7 +133,7 @@ public final class MantaClient {
      */
     public static MantaClient newInstance(final String url, final String login, final String privateKeyContent,
                                           final String fingerPrint, final char[] password) throws IOException {
-        return newInstance(url, login, privateKeyContent, fingerPrint, password, DEFAULT_HTTP_TIMEOUT);
+        return newInstance(url, login, privateKeyContent, fingerPrint, password, ConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
@@ -221,7 +233,7 @@ public final class MantaClient {
     public void deleteRecursive(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
         LOG.debug(String.format("entering deleteRecursive with path %s", path));
-        Collection<MantaObject> objs = null;
+        Collection<MantaObject> objs;
         try {
             objs = this.listObjects(path);
         } catch (final MantaObjectException e) {
@@ -236,7 +248,17 @@ public final class MantaClient {
                 this.delete(mantaObject.getPath());
             }
         }
-        this.delete(path);
+
+        try {
+            this.delete(path);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 404 && LOG.isDebugEnabled()) {
+                LOG.debug("Couldn't delete object because it doesn't exist", e);
+            } else {
+                throw e;
+            }
+        }
+
         LOG.debug(String.format("finished deleting path %s", path));
     }
 
@@ -261,7 +283,7 @@ public final class MantaClient {
         request.setReadTimeout(this.httpTimeout_);
         request.setConnectTimeout(this.httpTimeout_);
         this.httpSigner_.signRequest(request);
-        HttpResponse response = null;
+        HttpResponse response;
         try {
             response = request.execute();
         } catch (final HttpResponseException e) {
@@ -282,7 +304,7 @@ public final class MantaClient {
      *            The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObject}.
      * @throws IOException
-     *             If an IO exception has occured.
+     *             If an IO exception has occurred.
      * @throws MantaCryptoException
      *             If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException
@@ -296,7 +318,7 @@ public final class MantaClient {
         request.setReadTimeout(this.httpTimeout_);
         request.setConnectTimeout(this.httpTimeout_);
         this.httpSigner_.signRequest(request);
-        HttpResponse response = null;
+        HttpResponse response;
         try {
             response = request.execute();
         } catch (final HttpResponseException e) {
@@ -324,10 +346,9 @@ public final class MantaClient {
      *             If a http status code > 300 is returned.
      */
     public Collection<MantaObject> listObjects(final String path) throws MantaCryptoException, MantaObjectException,
-    MantaClientHttpResponseException, IOException {
-        String myPath = new String(path);
-        LOG.debug(String.format("entering listDirectory with directory %s", myPath));
-        final GenericUrl url = new GenericUrl(this.url_ + formatPath(myPath));
+            MantaClientHttpResponseException, IOException {
+        LOG.debug(String.format("entering listDirectory with directory %s", path));
+        final GenericUrl url = new GenericUrl(this.url_ + formatPath(path));
         final HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(url);
         request.setReadTimeout(this.httpTimeout_);
         request.setConnectTimeout(this.httpTimeout_);
@@ -342,20 +363,9 @@ public final class MantaClient {
                 throw new MantaObjectException("Object is not a directory");
             }
 
-            final ArrayList<MantaObject> objs = new ArrayList<MantaObject>();
             final BufferedReader br = new BufferedReader(new InputStreamReader(response.getContent()));
-            String line;
-            while ((line = br.readLine()) != null) {
-                final MantaObject obj = request.getParser().parseAndClose(new StringReader(line), MantaObject.class);
-                // need to prefix the obj name with the fully qualified path, since Manta only returns
-                // the explicit name of the object.
-                if (!myPath.endsWith("/")) {
-                    myPath += "/";
-                }
-                obj.setPath(myPath + obj.getPath());
-                objs.add(obj);
-            }
-            return objs;
+            final ObjectParser parser = request.getParser();
+            return buildObjects(path, br, parser);
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -364,6 +374,37 @@ public final class MantaClient {
             }
         }
     }
+
+    /**
+     * Creates a list of {@link MantaObject}s based on the HTTP response from Manta.
+     * @param path
+     *            The fully qualified path of the directory.
+     * @param content
+     *            The content of the response as a Reader.
+     * @param parser
+     *            Deserializer implementation that takes the raw content and turns it into a {@link MantaObject}
+     * @return List of {@link MantaObject}s for a given directory
+     * @throws IOException
+     *            If an IO exception has occurred.
+     */
+    protected static List<MantaObject> buildObjects(String path, BufferedReader content, ObjectParser parser) throws IOException {
+        final ArrayList<MantaObject> objs = new ArrayList<>();
+        String line;
+        StringBuilder myPath = new StringBuilder(path);
+        while ((line = content.readLine()) != null) {
+            final MantaObject obj = parser.parseAndClose(new StringReader(line), MantaObject.class);
+            // need to prefix the obj name with the fully qualified path, since Manta only returns
+            // the explicit name of the object.
+            if (!MantaUtils.endsWith(myPath, '/')) {
+                myPath.append('/');
+            }
+
+            obj.setPath(myPath + obj.getPath());
+            objs.add(obj);
+        }
+        return objs;
+    }
+
 
     /**
      * Puts an object into Manta.
@@ -385,7 +426,7 @@ public final class MantaClient {
         if (object.getHttpHeaders() != null) {
             contentType = object.getHttpHeaders().getContentType();
         }
-        HttpContent content = null;
+        HttpContent content;
         if (object.getDataInputStream() != null) {
             content = new InputStreamContent(contentType, object.getDataInputStream());
         } else if (object.getDataInputFile() != null) {
@@ -433,8 +474,12 @@ public final class MantaClient {
      * @throws MantaClientHttpResponseException
      *             If a http status code > 300 is returned.
      */
-    public void putDirectory(final String path, final HttpHeaders headers) throws MantaCryptoException,
-    MantaClientHttpResponseException, IOException {
+    public void putDirectory(final String path, final HttpHeaders headers)
+            throws MantaCryptoException, MantaClientHttpResponseException, IOException {
+        if (path == null) {
+            throw new IllegalArgumentException("PUT directory path can't be null");
+        }
+
         LOG.debug(String.format("entering putDirectory with directory %s", path));
         final GenericUrl url = new GenericUrl(this.url_ + formatPath(path));
         final HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(url, new EmptyContent());

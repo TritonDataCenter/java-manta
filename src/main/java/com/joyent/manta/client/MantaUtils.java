@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.Scanner;
 
 import static java.nio.file.Files.readAllBytes;
 
@@ -31,13 +32,8 @@ public final class MantaUtils {
      *             If an IO exception has occured.
      */
     public static String inputStreamToString(final InputStream is) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        char[] read = new char[128];
-        try (InputStreamReader ir = new InputStreamReader(is, Charset.defaultCharset())) {
-            for (int i; -1 != (i = ir.read(read)); buffer.append(read, 0, i));
-        }
-
-        return buffer.toString();
+        final Scanner scanner = new Scanner(is).useDelimiter("\\A");
+        return scanner.hasNext() ? scanner.next() : "";
     }
 
     /**
@@ -56,5 +52,19 @@ public final class MantaUtils {
 
     public static String readFileToString(final File file) throws IOException {
         return new String(readAllBytes(file.toPath()));
+    }
+
+    /**
+     * Checks to see if a {@link StringBuilder} ends with a given character.
+     * @param builder StringBuilder to check
+     * @param match character to match
+     * @return true if last character in StringBuilder matches
+     */
+    public static boolean endsWith(StringBuilder builder, char match) {
+        if (builder == null) throw new IllegalArgumentException("StringBuilder must not be null");
+        if (builder.length() == 0) return false;
+
+        final char last = builder.subSequence(builder.length() - 1, builder.length()).charAt(0);
+        return last == match;
     }
 }

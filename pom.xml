@@ -3,7 +3,7 @@
 
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
-  <version>1.5.3</version>
+  <version>1.5.4</version>
   <packaging>jar</packaging>
 
   <name>java-manta</name>
@@ -33,6 +33,12 @@
       <url>yunong.ca</url>
       <id>yunong</id>
     </developer>
+    <developer>
+      <email>elijah@zupancic.name</email>
+      <name>Elijah Zuoancic</name>
+      <organization>Joyent</organization>
+      <organizationUrl>joyent.com</organizationUrl>
+    </developer>
   </developers>
 
   <scm>
@@ -57,9 +63,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.8.21</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -108,6 +114,16 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.18.1</version>
+        <configuration>
+          <suiteXmlFiles>
+            <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+          </suiteXmlFiles>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -164,8 +180,15 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>2.8.1</version>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
