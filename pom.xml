@@ -33,6 +33,12 @@
       <url>yunong.ca</url>
       <id>yunong</id>
     </developer>
+    <developer>
+      <email>elijah@zupancic.name</email>
+      <name>Elijah Zuoancic</name>
+      <organization>Joyent</organization>
+      <organizationUrl>joyent.com</organizationUrl>
+    </developer>
   </developers>
 
   <scm>
