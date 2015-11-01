@@ -47,7 +47,13 @@ public class MantaClientTest {
         if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new SystemSettingsConfigContext(testNgConfig);
+        ConfigContext config = new ChainedConfigContext(
+                // First read TestNG settings
+                testNgConfig,
+                // Then read Java system settings
+                new SystemSettingsConfigContext(),
+                // Then read environment variables
+                new EnvVarConfigContext());
 
         mantaClient = MantaClient.newInstance(config);
         testDirPath = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());
