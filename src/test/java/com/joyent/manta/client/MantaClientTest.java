@@ -29,7 +29,7 @@ public class MantaClientTest {
     private String testDirPath;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.accountName", "manta.key.private.filename", "manta.key.fingerprint"})
+    @Parameters({"manta.url", "manta.accountName", "manta.test.key.private.filename", "manta.test.key.fingerprint"})
     public void beforeClass(@Optional("https://us-east.manta.joyent.com") String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
