@@ -43,8 +43,11 @@ public class HttpSignerTest {
                 .setMantaUser(accountName)
                 .setMantaKeyId(keyFingerPrint);
 
-        if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
-
+        if (privateKeyUrl != null) {
+            testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
+        } else {
+            testNgConfig.setMantaKeyPath(privateKeyFilename);
+        }
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new ChainedConfigContext(
                 // First read TestNG settings

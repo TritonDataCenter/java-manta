@@ -44,7 +44,11 @@ public class MantaClientTest {
                 .setMantaUser(mantaUser)
                 .setMantaKeyId(mantaKeyId);
 
-        if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
+        if (privateKeyUrl != null) {
+            testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
+        } else {
+            testNgConfig.setMantaKeyPath(mantaKeyPath);
+        }
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new ChainedConfigContext(
