@@ -28,6 +28,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.manta.client.crypto.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -87,7 +88,7 @@ public class MantaClient {
      */
     public static MantaClient newInstance(final String url, final String login, final String keyPath,
                                           final String fingerPrint) throws IOException {
-        return newInstance(url, login, keyPath, fingerPrint, ConfigContext.DEFAULT_HTTP_TIMEOUT);
+        return newInstance(url, login, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
     /**
@@ -133,7 +134,7 @@ public class MantaClient {
      */
     public static MantaClient newInstance(final String url, final String login, final String privateKeyContent,
                                           final String fingerPrint, final char[] password) throws IOException {
-        return newInstance(url, login, privateKeyContent, fingerPrint, password, ConfigContext.DEFAULT_HTTP_TIMEOUT);
+        return newInstance(url, login, privateKeyContent, fingerPrint, password, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
     /**

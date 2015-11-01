@@ -3,10 +3,7 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.ChainedContext;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.EnvVarConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.config.*;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -42,9 +39,7 @@ public class MantaClientTest {
                 null :
                 Thread.currentThread().getContextClassLoader().getResource(mantaKeyPath);
 
-        ConfigContext envConfig = new EnvVarConfigContext();
-
-        StandardConfigContext testNgConfig = new StandardConfigContext()
+        BaseChainedConfigContext testNgConfig = new StandardConfigContext()
                 .setMantaURL(mantaUrl)
                 .setMantaUser(mantaUser)
                 .setMantaKeyId(mantaKeyId);
@@ -52,7 +47,7 @@ public class MantaClientTest {
         if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new ChainedContext(envConfig, testNgConfig);
+        ConfigContext config = new SystemSettingsConfigContext(testNgConfig);
 
         mantaClient = MantaClient.newInstance(config);
         testDirPath = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());

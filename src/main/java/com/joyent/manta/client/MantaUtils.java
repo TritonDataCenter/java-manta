@@ -3,6 +3,9 @@
  */
 package com.joyent.manta.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,5 +69,50 @@ public final class MantaUtils {
 
         final char last = builder.subSequence(builder.length() - 1, builder.length()).charAt(0);
         return last == match;
+    }
+
+    /**
+     * Converts an object's toString value to a String. If an empty string, the return null;
+     * @param value object to parse .toString() value from
+     * @return null if toString() returns empty or if the passed in value is null, otherwise toString() value
+     */
+    public static String toStringEmptyToNull(Object value) {
+        if (value == null) return null;
+
+        String stringValue = value.toString();
+
+        if (stringValue.isEmpty()) return null;
+
+        return stringValue;
+    }
+
+    /**
+     * Parses an arbitrary object for an integer. If it can't be found,
+     * return null.
+     * @param value Object to parse for an integer
+     * @return if parsing fails, return null
+     */
+    public static Integer parseIntegerOrNull(Object value) {
+        if (value == null) return null;
+
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+
+        String string = toStringEmptyToNull(value);
+        if (string == null) return null;
+
+        Integer parsed;
+
+        try {
+            parsed = Integer.parseInt(string);
+        } catch (Exception e) {
+            Logger logger = LoggerFactory.getLogger(MantaUtils.class);
+            String msg = "Error parsing value as integer. Value: %s";
+            logger.warn(String.format(msg, value), e);
+            parsed = null;
+        }
+
+        return parsed;
     }
 }
