@@ -7,6 +7,7 @@ import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import com.joyent.manta.config.*;
 import com.joyent.manta.exception.MantaCryptoException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -35,12 +36,27 @@ public class HttpSignerTest {
     @Parameters({"manta.test.key.private.filename", "manta.test.key.fingerprint", "manta.accountName"})
     public void beforeClass(String privateKeyFilename, String keyFingerPrint, @Optional String accountName)
             throws IOException, NoSuchAlgorithmException {
-        URL privateKeyUrl = Thread.currentThread().getContextClassLoader().getResource(privateKeyFilename);
-        Assert.assertNotNull(privateKeyUrl);
 
-        httpSigner = HttpSigner.newInstance(privateKeyUrl.getFile(), keyFingerPrint, accountName);
-        String privateKeyContent = readFile(privateKeyUrl.getFile());
-        httpSignerInitializedWithInMemoryKeyData = HttpSigner.newInstance(privateKeyContent, keyFingerPrint, null, accountName);
+        URL privateKeyUrl = Thread.currentThread().getContextClassLoader().getResource(privateKeyFilename);
+
+        BaseChainedConfigContext testNgConfig = new StandardConfigContext()
+                .setMantaUser(accountName)
+                .setMantaKeyId(keyFingerPrint);
+
+        if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
+
+        // Let TestNG configuration take precedence over environment variables
+        ConfigContext config = new ChainedConfigContext(
+                // First read TestNG settings
+                testNgConfig,
+                // Then read Java system settings
+                new SystemSettingsConfigContext(),
+                // Then read environment variables
+                new EnvVarConfigContext());
+
+        httpSigner = HttpSigner.newInstance(config.getMantaKeyPath(), config.getMantaKeyId(), config.getMantaUser());
+        String privateKeyContent = readFile(config.getMantaKeyPath());
+        httpSignerInitializedWithInMemoryKeyData = HttpSigner.newInstance(privateKeyContent, config.getMantaKeyId(), null, config.getMantaUser());
     }
 
 

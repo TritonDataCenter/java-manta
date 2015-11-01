@@ -53,9 +53,9 @@ Each of these properties can be overridden with corresponding environment variab
 The URL of the manta service endpoint to test against
 * `manta.accountName` ( **MANTA_USER** )
 The account name used to access the manta service
-* `manta.test.key.fingerprint`: ( **MANTA_KEY_ID**)
+* `manta.key.fingerprint`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
-* `manta.test.key.private.filename` ( **MANTA_KEY_PATH** )
+* `manta.key.private.filename` ( **MANTA_KEY_PATH** )
 The name of the file that will be searched in the classpath containing the private key content
 for the account used to access the manta service.
  

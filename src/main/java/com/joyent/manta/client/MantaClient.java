@@ -173,6 +173,12 @@ public class MantaClient {
 
     private MantaClient(final String url, final String login, final String keyPath, final String fingerPrint,
                         final int httpTimeout) throws IOException {
+        if (login == null) throw new IllegalArgumentException("Manta username must be specified");
+        if (url == null) throw new IllegalArgumentException("Manta URL must be specified");
+        if (keyPath == null) throw new IllegalArgumentException("Manta key path must be specified");
+        if (fingerPrint == null) throw new IllegalArgumentException("Manta key id must be specified");
+        if (httpTimeout < 0) throw new IllegalArgumentException("Manta timeout must be 0 or greater");
+
         this.url_ = url;
         this.httpSigner_ = HttpSigner.newInstance(keyPath, fingerPrint, login);
         this.httpTimeout_ = httpTimeout;
@@ -180,6 +186,12 @@ public class MantaClient {
 
     private MantaClient(final String url, final String login, final String privateKeyContent, final String keyName,
                         final char[] password, final int httpTimeout) throws IOException {
+        if (login == null) throw new IllegalArgumentException("Manta username must be specified");
+        if (url == null) throw new IllegalArgumentException("Manta URL must be specified");
+        if (keyName == null) throw new IllegalArgumentException("Manta key name must be specified");
+        if (password == null) throw new IllegalArgumentException("Manta key password must be specified");
+        if (httpTimeout < 0) throw new IllegalArgumentException("Manta timeout must be 0 or greater");
+
         this.url_ = url;
         this.httpSigner_ = HttpSigner.newInstance(privateKeyContent, keyName, password, login);
         this.httpTimeout_ = httpTimeout;
