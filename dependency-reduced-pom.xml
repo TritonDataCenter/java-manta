@@ -10,7 +10,7 @@
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
   <name>java-manta</name>
-  <version>1.5.4</version>
+  <version>1.6.0-SNAPSHOT</version>
   <description>Java Manta SDK.</description>
   <url>https://github.com/joyent/java-manta</url>
   <issueManagement>

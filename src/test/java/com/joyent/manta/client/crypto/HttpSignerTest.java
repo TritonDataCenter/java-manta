@@ -62,7 +62,6 @@ public class HttpSignerTest {
     }
 
 
-
     private String readFile(final String path) throws IOException {
         BufferedReader br = null;
         final StringBuilder result = new StringBuilder();
