@@ -18,7 +18,11 @@
   <name>java-manta</name>
   <description>Java Manta SDK.</description>
   <url>https://github.com/joyent/java-manta</url>
-
+  <inceptionYear>2012</inceptionYear>
+  <organization>
+    <name>Joyent</name>
+    <url>joyent.com</url>
+  </organization>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -27,12 +31,6 @@
       <comments>Copyright (c) 2015 Joyent</comments>
     </license>
   </licenses>
-
-  <organization>
-    <name>Joyent</name>
-    <url>joyent.com</url>
-  </organization>
-  <inceptionYear>2012</inceptionYear>
 
   <developers>
     <developer>
@@ -60,10 +58,24 @@
     <system>github.com</system>
     <url>https://github.com/joyent/java-manta/issues</url>
   </issueManagement>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <java.min.version>1.7</java.min.version>
+    <maven.min.version>3.3</maven.min.version>
+    <maven.test.skip>false</maven.test.skip>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <surefire.forkCount>1</surefire.forkCount>
+    <surefire.useSystemClassLoader>true</surefire.useSystemClassLoader>
     <!-- Dependency versions -->
     <dependency.bouncycastle.version>1.53</dependency.bouncycastle.version>
     <dependency.google-http-client.version>1.20.0</dependency.google-http-client.version>
@@ -71,12 +83,15 @@
     <dependency.testng.version>6.9.9</dependency.testng.version>
     <!-- Plugin versions -->
     <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
-    <maven-clean-plugin.version>2.6.1</maven-clean-plugin.version>
+    <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
-    <maven-enforcer-plugin.version>1.0</maven-enforcer-plugin.version>
+    <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
+    <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
+    <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
     <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
     <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
     <maven-jar-plugin.version>2.6</maven-jar-plugin.version>
+    <maven-jarsigner-plugin.version>1.4</maven-jarsigner-plugin.version>
     <maven-javadoc-plugin.version>2.10.3</maven-javadoc-plugin.version>
     <maven-jxr-plugin.version>2.5</maven-jxr-plugin.version>
     <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
@@ -84,7 +99,7 @@
     <maven-shade-plugin.version>2.4.2</maven-shade-plugin.version>
     <maven-nexus-staging-plugin.version>1.6.6</maven-nexus-staging-plugin.version>
     <maven-source-plugin.version>2.4</maven-source-plugin.version>
-    <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>2.19</maven-surefire-plugin.version>
   </properties>
 
   <dependencies>
@@ -127,17 +142,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
 
   <build>
     <plugins>
@@ -182,6 +186,39 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven-dependency-plugin.version}</version>
+      </plugin>
+
+      <!-- This might interfere with sonatype nexus staging plugin... leave it commented out until testing can be done. -->
+      <!--<plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>${maven-deploy-plugin.version}</version>
+      </plugin>-->
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>enforce-maven</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>[${maven.min.version},)</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-install-plugin</artifactId>
         <version>${maven-install-plugin.version}</version>
       </plugin>
@@ -189,6 +226,11 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <version>${maven-jar-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jarsigner-plugin</artifactId>
+        <version>${maven-jarsigner-plugin.version}</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -255,9 +297,15 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven-surefire-plugin.version}</version>
         <configuration>
+          <forkCount>${surefire.forkCount}</forkCount>
+          <skip>${maven.test.skip}</skip>
+          <systemPropertyVariables>
+            <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
+          </systemPropertyVariables>
           <suiteXmlFiles>
             <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
           </suiteXmlFiles>
+          <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
         </configuration>
       </plugin>
       <plugin>
@@ -272,36 +320,7 @@
         </configuration>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <versionRange>[1.0.0,)</versionRange>
-                    <goals>
-                      <goal>enforce</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
-
 
   <reporting>
     <plugins>
