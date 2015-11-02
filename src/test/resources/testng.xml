@@ -15,6 +15,9 @@
         </classes>
     </test>
     <test name="Configuration Context Tests">
+        <groups>
+            <define name="config" />
+        </groups>
         <packages>
             <package name="com.joyent.manta.client.config.*" />
         </packages>

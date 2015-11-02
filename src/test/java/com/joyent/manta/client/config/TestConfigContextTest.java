@@ -11,6 +11,27 @@ import static org.testng.Assert.assertEquals;
 public class TestConfigContextTest {
 
     @Test(groups = { "config" })
+    public void testNGparamsOverwriteDefaults() {
+        ConfigContext testNgContext = TestConfigContext.buildTestContext(
+                "https://us-west.manta.joyent.com",
+                "bob",
+                "/home/bob/.ssh/bar_rsa",
+                "11:11",
+                12);
+
+        Properties properties = new Properties();
+
+        ConfigContext config = new TestConfigContext(testNgContext, properties,
+                false);
+
+        assertEquals(config.getMantaURL(), "https://us-west.manta.joyent.com");
+        assertEquals(config.getMantaUser(), "bob");
+        assertEquals(config.getMantaKeyId(), "11:11");
+        assertEquals(config.getMantaKeyPath(), "/home/bob/.ssh/bar_rsa");
+        assertEquals((int)config.getTimeout(), 12);
+    }
+
+    @Test(groups = { "config" })
     public void systemPropsTakePrecedenceOverTestNGparams() {
         ConfigContext testNgContext = TestConfigContext.buildTestContext(
                 "https://us-west.manta.joyent.com",
