@@ -3,6 +3,8 @@
  */
 package com.joyent.manta.config;
 
+import java.util.Properties;
+
 /**
  * Implementation of {@link ConfigContext} that inherits from defaults,
  * environment variables and from Java system properties.
@@ -15,11 +17,26 @@ public class SystemSettingsConfigContext extends BaseChainedConfigContext {
      * properties.
      */
     public SystemSettingsConfigContext() {
-        // load defaults
+        this(true, System.getProperties());
+    }
+
+    /**
+     * Populate configuration from defaults, environment variables and system
+     * properties.
+     * @param properties properties to load into context
+     * @param includeEnvironmentVars flag indicated if we include the environment into the context
+     */
+    public SystemSettingsConfigContext(boolean includeEnvironmentVars,
+                                       Properties properties) {
         super();
+        // load defaults
+        overwriteWithContext(DEFAULT_CONFIG);
         // overwrite with system properties
-        overwriteWithContext(new MapConfigContext(System.getProperties()));
-        overwriteWithContext(new EnvVarConfigContext());
+        overwriteWithContext(new MapConfigContext(properties));
+
+        if (includeEnvironmentVars) {
+            overwriteWithContext(new EnvVarConfigContext());
+        }
     }
 
     /**

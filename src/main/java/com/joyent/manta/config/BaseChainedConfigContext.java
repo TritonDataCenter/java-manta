@@ -16,7 +16,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private String mantaKeyId;
     private String mantaKeyPath;
     private Integer timeout;
-    
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -26,7 +26,6 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * values.
      */
     public BaseChainedConfigContext() {
-        this(DEFAULT_CONFIG);
     }
 
     /**
@@ -74,19 +73,19 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         if (isPresent(context.getMantaURL())) {
             this.mantaURL = context.getMantaURL();
         }
-        
+
         if (isPresent(context.getMantaUser())) {
             this.mantaUser = context.getMantaUser();
         }
-        
+
         if (isPresent(context.getMantaKeyId())) {
             this.mantaKeyId = context.getMantaKeyId();
         }
-        
+
         if (isPresent(context.getMantaKeyPath())) {
             this.mantaKeyPath = context.getMantaKeyPath();
         }
-        
+
         if (context.getTimeout() != null) {
             this.timeout = context.getTimeout();
         }
@@ -121,7 +120,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    public BaseChainedConfigContext setTimeout(int timeout) {
+    public BaseChainedConfigContext setTimeout(Integer timeout) {
         this.timeout = timeout;
         return this;
     }

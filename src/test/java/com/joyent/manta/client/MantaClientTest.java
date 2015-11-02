@@ -3,7 +3,8 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.*;
+import com.joyent.manta.client.config.TestConfigContext;
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -11,7 +12,6 @@ import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.*;
-import java.net.URL;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -29,31 +29,17 @@ public class MantaClientTest {
     private String testDirPath;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.accountName", "manta.key.private.filename", "manta.key.fingerprint"})
-    public void beforeClass(@Optional("https://us-east.manta.joyent.com") String mantaUrl,
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
+    public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId)
+                            @Optional String mantaKeyId,
+                            @Optional Integer mantaTimeout)
             throws IOException, MantaClientHttpResponseException, MantaCryptoException {
-        URL privateKeyUrl = mantaKeyPath == null ?
-                null :
-                Thread.currentThread().getContextClassLoader().getResource(mantaKeyPath);
-
-        BaseChainedConfigContext testNgConfig = new StandardConfigContext()
-                .setMantaURL(mantaUrl)
-                .setMantaUser(mantaUser)
-                .setMantaKeyId(mantaKeyId);
-
-        if (privateKeyUrl != null) testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new ChainedConfigContext(
-                // First read TestNG settings
-                testNgConfig,
-                // Then read Java system settings
-                new SystemSettingsConfigContext(),
-                // Then read environment variables
-                new EnvVarConfigContext());
+        ConfigContext config = new TestConfigContext(
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = MantaClient.newInstance(config);
         testDirPath = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());

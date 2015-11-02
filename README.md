@@ -35,29 +35,31 @@ add it as a dependency to your Java project.
 
 ### Test Suite
 By default, the test suite invokes the java manta client against the live manta
-service.  In order to run the test suite, the account name used to access the
-manta service must be specified.  This can be done by setting the MANTA_USER
-environment variable to the account name or specifying the account name as a
-TestNG configuration parameter named `manta.accountName` in the test suite
-configuration parameters located in `./src/test/resources/testng.xml`.
-The public key for testing located at `./src/test/resources/manta-test_rsa.pub`
-must also be installed into the joyent account that will access the manta
-service.  The `testng.xml` file has other parameters that can be changed to point
-to a desired manta endpoint, as well as change the keys used to authenticate
-against the manta service.
+service.  In order to run the test suite, you will need to specify environment
+variables, system properties or TestNG parameters to tell the library how to
+authenticate against Manta.
 
-The test suite configuration file defines properties used to configure the manta client for testing.
-Each of these properties can be overridden with corresponding environment variables.
+Configuration parameters take precedence from left to right - values on the
+left are overridden by values on the right.
+
+| Default                          | TestNG Param   | System Property | Environment Variable |
+|----------------------------------|----------------|-----------------|----------------------|
+| https://us-east.manta.joyent.com | manta.url      | manta.url       | MANTA_URL            |
+|                                  | manta.user     | manta.url       | MANTA_USER           |
+|                                  | manta.key_id   | manta.key_id    | MANTA_KEY_ID         |
+|                                  | manta.key_path | manta.key_path  | MANTA_KEY_PATH       |
+| 20000                            | manta.timeout  | manta.timeout   | MANTA_TIMEOUT        | 
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
-* `manta.accountName` ( **MANTA_USER** )
+* `manta.user` ( **MANTA_USER** )
 The account name used to access the manta service
-* `manta.test.key.fingerprint`: ( **MANTA_KEY_ID**)
+* `manta.key_id`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
-* `manta.test.key.private.filename` ( **MANTA_KEY_PATH** )
-The name of the file that will be searched in the classpath containing the private key content
-for the account used to access the manta service.
+* `manta.key_path` ( **MANTA_KEY_PATH** )
+The name of the file that will be loaded for the account used to access the manta service.
+* `manta.timeout` ( **MANTA_TIMEOUT**)
+The number of milliseconds to wait after a request was made to Manta before failing.
  
 If you want to skip running of the test suite, use the `-DskipTests` property.
 
