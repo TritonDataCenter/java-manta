@@ -52,13 +52,14 @@ left are overridden by values on the right.
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
-* `manta.accountName` ( **MANTA_USER** )
+* `manta.user` ( **MANTA_USER** )
 The account name used to access the manta service
-* `manta.key.fingerprint`: ( **MANTA_KEY_ID**)
+* `manta.key_id`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
-* `manta.key.private.filename` ( **MANTA_KEY_PATH** )
-The name of the file that will be searched in the classpath containing the private key content
-for the account used to access the manta service.
+* `manta.key_path` ( **MANTA_KEY_PATH** )
+The name of the file that will be loaded for the account used to access the manta service.
+* `manta.timeout` ( **MANTA_TIMEOUT**)
+The number of milliseconds to wait after a request was made to Manta before failing.
  
 If you want to skip running of the test suite, use the `-DskipTests` property.
 
