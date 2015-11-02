@@ -3,7 +3,8 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.*;
+import com.joyent.manta.client.config.TestConfigContext;
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -11,7 +12,6 @@ import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.*;
-import java.net.URL;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -35,29 +35,10 @@ public class MantaClientTest {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId)
             throws IOException, MantaClientHttpResponseException, MantaCryptoException {
-        URL privateKeyUrl = mantaKeyPath == null ?
-                null :
-                Thread.currentThread().getContextClassLoader().getResource(mantaKeyPath);
-
-        BaseChainedConfigContext testNgConfig = new StandardConfigContext()
-                .setMantaURL(mantaUrl)
-                .setMantaUser(mantaUser)
-                .setMantaKeyId(mantaKeyId);
-
-        if (privateKeyUrl != null) {
-            testNgConfig.setMantaKeyPath(privateKeyUrl.getFile());
-        } else {
-            testNgConfig.setMantaKeyPath(mantaKeyPath);
-        }
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new ChainedConfigContext(
-                // First read TestNG settings
-                testNgConfig,
-                // Then read Java system settings
-                new SystemSettingsConfigContext(),
-                // Then read environment variables
-                new EnvVarConfigContext());
+        ConfigContext config = new TestConfigContext(
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId);
 
         mantaClient = MantaClient.newInstance(config);
         testDirPath = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());

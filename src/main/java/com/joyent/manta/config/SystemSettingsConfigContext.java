@@ -15,8 +15,9 @@ public class SystemSettingsConfigContext extends BaseChainedConfigContext {
      * properties.
      */
     public SystemSettingsConfigContext() {
-        // load defaults
         super();
+        // load defaults
+        overwriteWithContext(DEFAULT_CONFIG);
         // overwrite with system properties
         overwriteWithContext(new MapConfigContext(System.getProperties()));
         overwriteWithContext(new EnvVarConfigContext());
