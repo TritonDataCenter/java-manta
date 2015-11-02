@@ -43,7 +43,7 @@ Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
 | Default                          | TestNG Param   | System Property | Environment Variable |
-|==================================|================|=================|======================|
+|----------------------------------|----------------|-----------------|----------------------|
 | https://us-east.manta.joyent.com | manta.url      | manta.url       | MANTA_URL            |
 |                                  | manta.user     | manta.url       | MANTA_USER           |
 |                                  | manta.key_id   | manta.key_id    | MANTA_KEY_ID         |
