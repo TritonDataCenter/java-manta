@@ -29,16 +29,17 @@ public class MantaClientTest {
     private String testDirPath;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.accountName", "manta.key.private.filename", "manta.key.fingerprint"})
-    public void beforeClass(@Optional("https://us-east.manta.joyent.com") String mantaUrl,
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
+    public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId)
+                            @Optional String mantaKeyId,
+                            @Optional Integer mantaTimeout)
             throws IOException, MantaClientHttpResponseException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new TestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = MantaClient.newInstance(config);
         testDirPath = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());

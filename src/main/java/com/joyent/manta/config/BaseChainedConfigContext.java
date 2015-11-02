@@ -120,7 +120,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    public BaseChainedConfigContext setTimeout(int timeout) {
+    public BaseChainedConfigContext setTimeout(Integer timeout) {
         this.timeout = timeout;
         return this;
     }

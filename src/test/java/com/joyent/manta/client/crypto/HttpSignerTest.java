@@ -35,13 +35,15 @@ public class HttpSignerTest {
 
 
     @BeforeClass
-    @Parameters({"manta.test.key.private.filename", "manta.test.key.fingerprint", "manta.accountName"})
-    public void beforeClass(String privateKeyFilename, String keyFingerPrint, @Optional String accountName)
+    @Parameters({"manta.key_path", "manta.key_id", "manta.user"})
+    public void beforeClass(@Optional String privateKeyFilename,
+                            @Optional String keyFingerPrint,
+                            @Optional String accountName)
             throws IOException, NoSuchAlgorithmException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new TestConfigContext(
-                null, accountName, privateKeyFilename, keyFingerPrint);
+                null, accountName, privateKeyFilename, keyFingerPrint, null);
 
         httpSigner = HttpSigner.newInstance(config.getMantaKeyPath(),
                 config.getMantaKeyId(), config.getMantaUser());
