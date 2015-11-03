@@ -112,7 +112,7 @@ which can be configured
 
 # Contributions
 
-Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle` runs
+Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle -Dcheckstyle.skip=false` runs
 clean with no warnings or errors.
 
 ## Testing

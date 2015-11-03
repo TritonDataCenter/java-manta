@@ -70,6 +70,7 @@
     </distributionManagement>
 
     <properties>
+        <checkstyle.skip>true</checkstyle.skip>   <!-- for now, leave checkstyle turned off by default -->
         <java.min.version>1.7</java.min.version>
         <maven.min.version>3.3</maven.min.version>
         <maven.test.skip>false</maven.test.skip>
@@ -150,15 +151,11 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
                 <configuration>
-                    <skip>true</skip> <!-- leave checkstyle turned off for now -->
-                    <encoding>UTF-8</encoding>
+                    <configLocation>checkstyle.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError>
-                    <failOnViolation>true</failOnViolation>
+                    <skip>${checkstyle.skip}</skip>
+                    <suppressionsLocation>suppressions.xml</suppressionsLocation>
                     <violationSeverity>warning</violationSeverity>
-                    <logViolationsToConsole>true</logViolationsToConsole>
-                    <linkXRef>true</linkXRef>
-                    <configLocation>./checkstyle.xml</configLocation>
                 </configuration>
                 <executions>
                     <execution>

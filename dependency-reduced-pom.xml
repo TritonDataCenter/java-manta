@@ -66,15 +66,11 @@
           </execution>
         </executions>
         <configuration>
-          <skip>true</skip>
-          <encoding>UTF-8</encoding>
+          <configLocation>checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <skip>${checkstyle.skip}</skip>
+          <suppressionsLocation>suppressions.xml</suppressionsLocation>
           <violationSeverity>warning</violationSeverity>
-          <logViolationsToConsole>true</logViolationsToConsole>
-          <linkXRef>true</linkXRef>
-          <configLocation>./checkstyle.xml</configLocation>
         </configuration>
       </plugin>
       <plugin>
@@ -330,6 +326,7 @@
     <maven-jarsigner-plugin.version>1.4</maven-jarsigner-plugin.version>
     <surefire.useSystemClassLoader>true</surefire.useSystemClassLoader>
     <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
+    <checkstyle.skip>true</checkstyle.skip>
     <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
     <dependency.slfj.version>1.7.12</dependency.slfj.version>
     <maven-resources-plugin.version>2.7</maven-resources-plugin.version>
