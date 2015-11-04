@@ -20,43 +20,69 @@ import static java.nio.file.Files.readAllBytes;
  * @author Yunong Xiao
  */
 public final class MantaUtils {
+
+
+    /**
+     * Default no-args constructor.
+     */
     private MantaUtils() {
     }
 
-    /**
-     * Read from an {@link InputStream} to a {@link String}. Closes the {@link InputStream} when done.
-     *
-     * @param is
-     *            The {@link InputStream}
-     * @return The contents of the {@link InputStream}.
-     * @throws IOException
-     *             If an IO exception has occured.
-     */
-    public static String inputStreamToString(final InputStream is) throws IOException {
-        final Scanner scanner = new Scanner(is).useDelimiter("\\A");
-        return scanner.hasNext() ? scanner.next() : "";
-    }
 
     /**
-     * Reads from an {@link InputStream} and writes to a {@link File}. Closes the {@link InputStream} when done.
+     * Read from an {@link java.io.InputStream} to a {@link java.lang.String}.
+     * Closes the {@link java.io.InputStream} when done.
      *
-     * @param is
-     *            The {@link InputStream}
-     * @param outputFile
-     *            The {@link File} to write to.
-     * @throws IOException
-     *             If an IO exception has occured.
+     * @param inputStream The {@link java.io.InputStream}
+     * @return The contents of the {@link java.io.InputStream}
+     * @throws IOException If an IO exception has occurred
      */
-    public static void inputStreamToFile(final InputStream is, final File outputFile) throws IOException {
-        Files.copy(is, outputFile.toPath());
+    public static String inputStreamToString(final InputStream inputStream) throws IOException {
+        final Scanner scanner = new Scanner(inputStream)
+                .useDelimiter("\\A");
+        String nextToken = "";
+        if (scanner.hasNext()) {
+            nextToken = scanner.next();
+        }
+        return nextToken;
     }
 
+
+    /**
+     * Reads from an {@link java.io.InputStream} and writes to a {@link java.io.File}.
+     * Closes the {@link java.io.InputStream} when done.
+     *
+     * @param inputStream The {@link java.io.InputStream}
+     * @param outputFile The {@link java.io.File} to write to
+     * @throws IOException If an IO exception has occurred
+     */
+    public static void inputStreamToFile(final InputStream inputStream, final File outputFile) throws IOException {
+        Files.copy(
+                inputStream,
+                outputFile.toPath()
+        );
+    }
+
+
+    /**
+     * Reads the contents of the specified {@link java.io.File} into a {@link java.lang.String}.
+     *
+     * @param file the {@link java.io.File} to read from
+     * @return a {@link java.lang.String} containing the contents of the specified {@link java.io.File}
+     * @throws IOException if an IO exception has occurred
+     */
     public static String readFileToString(final File file) throws IOException {
-        return new String(readAllBytes(file.toPath()));
+        return new String(
+                readAllBytes(
+                        file.toPath()
+                )
+        );
     }
+
 
     /**
      * Checks to see if a {@link StringBuilder} ends with a given character.
+     *
      * @param builder StringBuilder to check
      * @param match character to match
      * @return true if last character in StringBuilder matches
@@ -73,8 +99,10 @@ public final class MantaUtils {
         return last == match;
     }
 
+
     /**
-     * Converts an object's toString value to a String. If an empty string, the return null;
+     * Converts an object's toString value to a String. If an empty string, the return null.
+     *
      * @param value object to parse .toString() value from
      * @return null if toString() returns empty or if the passed in value is null, otherwise toString() value
      */
@@ -93,8 +121,8 @@ public final class MantaUtils {
     }
 
     /**
-     * Parses an arbitrary object for an integer. If it can't be found,
-     * return null.
+     * Parses an arbitrary object for an integer. If it can't be found, return null.
+     *
      * @param value Object to parse for an integer
      * @return if parsing fails, return null
      */
@@ -125,4 +153,6 @@ public final class MantaUtils {
 
         return parsed;
     }
+
+
 }
