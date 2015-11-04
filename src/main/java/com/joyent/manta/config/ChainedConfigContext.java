@@ -11,7 +11,7 @@ package com.joyent.manta.config;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class ChainedConfigContext extends BaseChainedConfigContext {
-    public ChainedConfigContext(ConfigContext... contexts) {
+    public ChainedConfigContext(final ConfigContext... contexts) {
         for (ConfigContext c : contexts) {
             overwriteWithContext(c);
         }

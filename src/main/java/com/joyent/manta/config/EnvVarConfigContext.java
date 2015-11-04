@@ -26,7 +26,7 @@ public class EnvVarConfigContext implements ConfigContext {
     public EnvVarConfigContext() {
     }
 
-    private static String getEnv(String var) {
+    private static String getEnv(final String var) {
         return MantaUtils.toStringEmptyToNull(System.getenv(var));
     }
 

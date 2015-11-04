@@ -3,11 +3,9 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MantaClient;
-
 /**
  * Interface representing the configuration properties needed to configure a
- * {@link MantaClient}.
+ * {@link com.joyent.manta.client.MantaClient}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */

@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Scanner;
 
@@ -63,9 +61,13 @@ public final class MantaUtils {
      * @param match character to match
      * @return true if last character in StringBuilder matches
      */
-    public static boolean endsWith(StringBuilder builder, char match) {
-        if (builder == null) throw new IllegalArgumentException("StringBuilder must not be null");
-        if (builder.length() == 0) return false;
+    public static boolean endsWith(final StringBuilder builder, final char match) {
+        if (builder == null) {
+            throw new IllegalArgumentException("StringBuilder must not be null");
+        }
+        if (builder.length() == 0) {
+            return false;
+        }
 
         final char last = builder.subSequence(builder.length() - 1, builder.length()).charAt(0);
         return last == match;
@@ -76,12 +78,16 @@ public final class MantaUtils {
      * @param value object to parse .toString() value from
      * @return null if toString() returns empty or if the passed in value is null, otherwise toString() value
      */
-    public static String toStringEmptyToNull(Object value) {
-        if (value == null) return null;
+    public static String toStringEmptyToNull(final Object value) {
+        if (value == null) {
+            return null;
+        }
 
         String stringValue = value.toString();
 
-        if (stringValue.isEmpty()) return null;
+        if (stringValue.isEmpty()) {
+            return null;
+        }
 
         return stringValue;
     }
@@ -92,15 +98,19 @@ public final class MantaUtils {
      * @param value Object to parse for an integer
      * @return if parsing fails, return null
      */
-    public static Integer parseIntegerOrNull(Object value) {
-        if (value == null) return null;
+    public static Integer parseIntegerOrNull(final Object value) {
+        if (value == null) {
+            return null;
+        }
 
         if (value instanceof Number) {
             return ((Number) value).intValue();
         }
 
         String string = toStringEmptyToNull(value);
-        if (string == null) return null;
+        if (string == null) {
+            return null;
+        }
 
         Integer parsed;
 

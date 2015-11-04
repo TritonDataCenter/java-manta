@@ -19,42 +19,42 @@ public class MantaClientHttpResponseException extends MantaClientException {
     /**
      * The underlying {@link HttpResponseException}.
      * */
-    private final HttpResponseException exception_;
+    private final HttpResponseException innerException;
 
     /**
      *
-     * @param exception The {@link HttpResponseException} to be wrapped.
+     * @param innerException The {@link HttpResponseException} to be wrapped.
      */
-    public MantaClientHttpResponseException(final HttpResponseException exception) {
-        super(exception);
-        this.exception_ = exception;
+    public MantaClientHttpResponseException(final HttpResponseException innerException) {
+        super(innerException);
+        this.innerException = innerException;
     }
 
     /**
      * @return Whether received a successful HTTP status code {@code >= 200 && < 300} (see {@link #getStatusCode()}).
      */
     public final boolean isSuccessStatusCode() {
-        return this.exception_.isSuccessStatusCode();
+        return this.innerException.isSuccessStatusCode();
     }
 
     /**
      * @return The HTTP status code or {@code 0} for none.
      */
     public final int getStatusCode() {
-        return this.exception_.getStatusCode();
+        return this.innerException.getStatusCode();
     }
 
     /**
      * @return The HTTP status message or {@code null} for none.
      */
     public final String getStatusMessage() {
-        return this.exception_.getStatusMessage();
+        return this.innerException.getStatusMessage();
     }
 
     /**
      * @return The HTTP response headers.
      */
     public final HttpHeaders getHeaders() {
-        return this.exception_.getHeaders();
+        return this.innerException.getHeaders();
     }
 }
