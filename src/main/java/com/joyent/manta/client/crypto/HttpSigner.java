@@ -16,8 +16,22 @@ import org.bouncycastle.util.encoders.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.security.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -30,114 +44,171 @@ import java.util.TimeZone;
  * @author Yunong Xiao
  */
 public final class HttpSigner {
+
+    /**
+     * The static logger instance.
+     */
     private static final Logger LOG = LoggerFactory.getLogger(HttpSigner.class);
+
+    /**
+     * The format for the http date header.
+     */
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy zzz");
-    private static final String AUTHZ_HEADER = "Signature keyId=\"/%s/keys/%s\",algorithm=\"rsa-sha256\","
-            + "signature=\"%s\"";
+
+    /**
+     * The template for the Authorization header.
+     */
+    private static final String AUTHZ_HEADER =
+            "Signature keyId=\"/%s/keys/%s\",algorithm=\"rsa-sha256\",signature=\"%s\"";
+
+    /**
+     * The template for the authorization signing signing string.
+     */
     private static final String AUTHZ_SIGNING_STRING = "date: %s";
+
+    /**
+     * The prefix for the signature component of the authorization header.
+     */
     private static final String AUTHZ_PATTERN = "signature=\"";
+
     /**
      * The signing algorithm.
      */
     static final String SIGNING_ALGORITHM = "SHA256WithRSAEncryption";
 
+    /**
+     * The key format converter to use when reading key pairs.
+     */
     private final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 
+
     /**
-     * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
-     * joyent-http-signature spec.
+     * Returns a new {@link com.joyent.manta.client.crypto.HttpSigner} instance that can be used to sign and verify
+     * requests according to the joyent-http-signature spec.
      *
      * @see <a href="http://github.com/joyent/node-http-signature/blob/master/http_signing.md">node-http-signature</a>
-     * @param keyPath
-     *            The path to the rsa key on disk.
-     * @param fingerPrint
-     *            The fingerprint of the rsa key.
-     * @param login
-     *            The login of the user account.
-     * @return An instance of {@link HttpSigner}.
-     * @throws IOException
-     *             If the key is invalid.
+     * @param keyPath The path to the rsa key on disk.
+     * @param fingerPrint The fingerprint of the rsa key.
+     * @param login The login of the user account.
+     * @return An instance of {@link com.joyent.manta.client.crypto.HttpSigner}.
+     * @throws IOException If the key is invalid.
      */
     public static HttpSigner newInstance(final String keyPath, final String fingerPrint, final String login)
             throws IOException {
         return new HttpSigner(keyPath, fingerPrint, login);
     }
 
+
     /**
-     * Returns a new {@link HttpSigner} instance that can be used to sign and verify requests according to the
-     * joyent-http-signature spec.
+     * Returns a new {@link com.joyent.manta.client.crypto.HttpSigner} instance that can be used to sign and verify
+     * requests according to the joyent-http-signature spec.
      *
      * @see <a href="http://github.com/joyent/node-http-signature/blob/master/http_signing.md">node-http-signature</a>
-     * @param privateKeyContent
-     *            The actual private key.
-     * @param fingerPrint
-     *            The fingerprint of the rsa key.
-     * @param keyPassword
-     *            The password to the key (optional)
-     * @param login
-     *            The login of the user account.
-     * @return An instance of {@link HttpSigner}
+     * @param privateKeyContent The actual private key.
+     * @param fingerPrint The fingerprint of the rsa key.
+     * @param keyPassword The password to the key (optional)
+     * @param login The login of the user account.
+     * @return An instance of {@link com.joyent.manta.client.crypto.HttpSigner}
      * @throws IOException
      *             If an IO exception has occured.
      */
-    public static HttpSigner newInstance(final String privateKeyContent, final String fingerPrint,
-                                         final char[] keyPassword, final String login) throws IOException {
+    public static HttpSigner newInstance(final String privateKeyContent,
+                                         final String fingerPrint,
+                                         final char[] keyPassword,
+                                         final String login)
+            throws IOException {
         return new HttpSigner(privateKeyContent, fingerPrint, keyPassword, login);
     }
+
 
     /**
      * Keypair used to sign requests.
      */
-    final KeyPair keyPair_;
-    private final String login_;
+    private final KeyPair keyPair;
 
-    private final String fingerPrint_;
 
     /**
-     * @param keyPath The path to the rsa key on disk.
+     * The account name associated with Manta account.
+     */
+    private final String login;
+
+    /**
+     * The RSA key fingerprint.
+     */
+    private final String fingerprint;
+
+
+    /**
+     * Creates a new instance of the HttpSigner.
+     *
+     * @param keyPath The path to the rsa key on disk
+     * @param fingerprint rsa key fingerprint
+     * @param login account name associated with Manta account
      * @throws IOException thrown on network error or on filesystem error
      */
     private HttpSigner(final String keyPath, final String fingerprint, final String login) throws IOException {
-        LOG.debug(String.format("initializing HttpSigner with keypath: %s, fingerprint: %s, login: %s", keyPath,
-                                fingerprint, login));
-        this.fingerPrint_ = fingerprint;
-        this.login_ = login;
-        this.keyPair_ = this.getKeyPair(keyPath);
+        LOG.debug(
+                String.format(
+                        "initializing HttpSigner with keypath: %s, fingerprint: %s, login: %s",
+                        keyPath,
+                        fingerprint,
+                        login
+                )
+        );
+        this.fingerprint = fingerprint;
+        this.login = login;
+        this.keyPair = this.getKeyPair(keyPath);
     }
 
+
     /**
+     * Creates a new instance of the HttpSigner.
+     *
      * @param privateKeyContent private key content as a string
-     * @param fingerPrint rsa key fingerprint
+     * @param fingerprint rsa key fingerprint
      * @param password password associated with key
      * @param login account name associated with Manta account
      * @throws IOException thrown on network error or on filesystem error
      */
-    private HttpSigner(final String privateKeyContent, final String fingerPrint, final char[] password,
+    private HttpSigner(final String privateKeyContent, final String fingerprint, final char[] password,
                        final String login) throws IOException {
         // not logging sensitive stuff like key and password
-        LOG.debug(String.format("initializing HttpSigner with private key, fingerprint: %s, password and login: %s",
-                                fingerPrint, login));
-        this.login_ = login;
-        this.fingerPrint_ = fingerPrint;
-        this.keyPair_ = this.getKeyPair(privateKeyContent, password);
+        LOG.debug(
+                String.format(
+                        "initializing HttpSigner with private key, fingerprint: %s, password and login: %s",
+                        fingerprint,
+                        login
+                )
+        );
+        this.login = login;
+        this.fingerprint = fingerprint;
+        this.keyPair = this.getKeyPair(privateKeyContent, password);
     }
 
+
     /**
-     * @param keyPath The path to the rsa key on disk.
+     * Read KeyPair located at the specified path.
+     *
+     * @param keyPath The path to the rsa key on disk
      * @return public-private keypair object
-     * @throws IOException
-     *             If unable to read the private key from the file
+     * @throws IOException If unable to read the private key from the file
      */
     private KeyPair getKeyPair(final String keyPath) throws IOException {
-        if (keyPath == null) throw new FileNotFoundException("No key file path specified");
+        if (keyPath == null) {
+            throw new FileNotFoundException("No key file path specified");
+        }
 
         File keyFile = new File(keyPath);
 
-        if (!keyFile.exists()) throw new FileNotFoundException(
-                String.format("No key file available at path: %s", keyFile));
+        if (!keyFile.exists()) {
+            throw new FileNotFoundException(
+                    String.format("No key file available at path: %s", keyFile));
+        }
 
-        if (!keyFile.canRead()) throw new IOException(
-                String.format("Can't read key file from path: %s", keyFile));
+        if (!keyFile.canRead()) {
+            throw new IOException(
+                    String.format("Can't read key file from path: %s", keyFile));
+        }
 
         final BufferedReader br = new BufferedReader(new FileReader(keyFile));
         Security.addProvider(new BouncyCastleProvider());
@@ -149,14 +220,14 @@ public final class HttpSigner {
         }
     }
 
+
     /**
      * Read KeyPair from a string, optionally using password.
      *
      * @param privateKeyContent private key content as a string
      * @param password password associated with key
      * @return public-private keypair object
-     * @throws IOException
-     *             If unable to read the private key from the string
+     * @throws IOException If unable to read the private key from the string
      */
     private KeyPair getKeyPair(final String privateKeyContent, final char[] password) throws IOException {
         byte[] pKeyBytes = privateKeyContent.getBytes();
@@ -182,18 +253,17 @@ public final class HttpSigner {
         }
     }
 
+
     /**
-     * Sign an {@link HttpRequest}.
+     * Sign an {@link com.google.api.client.http.HttpRequest}.
      *
-     * @param request
-     *            The {@link HttpRequest} to sign.
-     * @throws MantaCryptoException
-     *             If unable to sign the request.
+     * @param request The {@link com.google.api.client.http.HttpRequest} to sign.
+     * @throws MantaCryptoException If unable to sign the request.
      */
     public void signRequest(final HttpRequest request) throws MantaCryptoException {
         LOG.debug("signing request: " + request.getHeaders());
         String date = request.getHeaders().getDate();
-        if (this.keyPair_ == null) {
+        if (this.keyPair == null) {
             throw new MantaCryptoException("keys not loaded");
         }
         if (date == null) {
@@ -204,12 +274,12 @@ public final class HttpSigner {
         }
         try {
             final Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
-            sig.initSign(this.keyPair_.getPrivate());
+            sig.initSign(this.keyPair.getPrivate());
             final String signingString = String.format(AUTHZ_SIGNING_STRING, date);
             sig.update(signingString.getBytes("UTF-8"));
             final byte[] signedDate = sig.sign();
             final byte[] encodedSignedDate = Base64.encode(signedDate);
-            final String authzHeader = String.format(AUTHZ_HEADER, this.login_, this.fingerPrint_,
+            final String authzHeader = String.format(AUTHZ_HEADER, this.login, this.fingerprint,
                                                      new String(encodedSignedDate));
             request.getHeaders().setAuthorization(authzHeader);
         } catch (final NoSuchAlgorithmException e) {
@@ -223,14 +293,13 @@ public final class HttpSigner {
         }
     }
 
+
     /**
-     * Verify a signed {@link HttpRequest}.
+     * Verify a signed {@link com.google.api.client.http.HttpRequest}.
      *
-     * @param request
-     *            The signed {@link HttpRequest}.
+     * @param request The signed {@link com.google.api.client.http.HttpRequest}.
      * @return True if the request is valid, false if not.
-     * @throws MantaCryptoException
-     *             If unable to verify the request.
+     * @throws MantaCryptoException If unable to verify the request.
      */
     public boolean verifyRequest(final HttpRequest request) throws MantaCryptoException {
         LOG.debug("verifying request: " + request.getHeaders());
@@ -243,7 +312,7 @@ public final class HttpSigner {
 
         try {
             final Signature verify = Signature.getInstance(SIGNING_ALGORITHM);
-            verify.initVerify(this.keyPair_.getPublic());
+            verify.initVerify(this.keyPair.getPublic());
             final String authzHeader = request.getHeaders().getAuthorization();
             final int startIndex = authzHeader.indexOf(AUTHZ_PATTERN);
             if (startIndex == -1) {
@@ -264,4 +333,6 @@ public final class HttpSigner {
             throw new MantaCryptoException("invalid encoding", e);
         }
     }
+
+
 }

@@ -329,8 +329,8 @@ public class MantaObject implements Serializable {
      * @return whether this object is a Manta directory.
      */
     public final boolean isDirectory() {
-        return DIRECTORY.equals(contentType) ||
-                DIRECTORY_HEADER.equals(contentType);
+        return DIRECTORY.equals(contentType)
+                || DIRECTORY_HEADER.equals(contentType);
     }
 
 
