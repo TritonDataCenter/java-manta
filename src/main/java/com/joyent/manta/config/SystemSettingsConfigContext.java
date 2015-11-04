@@ -26,8 +26,8 @@ public class SystemSettingsConfigContext extends BaseChainedConfigContext {
      * @param properties properties to load into context
      * @param includeEnvironmentVars flag indicated if we include the environment into the context
      */
-    public SystemSettingsConfigContext(boolean includeEnvironmentVars,
-                                       Properties properties) {
+    public SystemSettingsConfigContext(final boolean includeEnvironmentVars,
+                                       final Properties properties) {
         super();
         // load defaults
         overwriteWithContext(DEFAULT_CONFIG);
@@ -45,7 +45,7 @@ public class SystemSettingsConfigContext extends BaseChainedConfigContext {
      *
      * @param context additional context to layer on top
      */
-    public SystemSettingsConfigContext(ConfigContext context) {
+    public SystemSettingsConfigContext(final ConfigContext context) {
         // load all of the chained defaults
         this();
         // now load in an additional context

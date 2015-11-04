@@ -19,7 +19,7 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_KEY_ID_KEY = "manta.key_id";
     public static final String MANTA_KEY_PATH_KEY = "manta.key_path";
     public static final String MANTA_TIMEOUT_KEY = "manta.timeout";
-    
+
     // I know manually adding them all sucks, but it is the simplest operation
     // for a shared library. We could do all sorts of complicated reflection
     // or annotation processing, but they are error-prone.
@@ -33,7 +33,7 @@ public class MapConfigContext implements ConfigContext {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public MapConfigContext(Map<?, ?> backingMap) {
+    public MapConfigContext(final Map<?, ?> backingMap) {
         this.backingMap = backingMap;
     }
 
@@ -61,7 +61,9 @@ public class MapConfigContext implements ConfigContext {
     public Integer getTimeout() {
         Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TIMEOUT_KEY));
 
-        if (mapValue != null) return mapValue;
+        if (mapValue != null) {
+            return mapValue;
+        }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TIMEOUT_ENV_KEY));
     }
@@ -78,9 +80,14 @@ public class MapConfigContext implements ConfigContext {
      * @param value configuration value
      * @return return value of the put() operation from the backing map
      */
-    Object put(String key, String value) {
-        if (key == null) throw new IllegalArgumentException("Config key can't be null");
-        if (key.isEmpty()) throw new IllegalArgumentException("Config key can't be blank");
+    Object put(final String key, final String value) {
+        if (key == null) {
+            throw new IllegalArgumentException("Config key can't be null");
+        }
+
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("Config key can't be blank");
+        }
 
         // Java generics can be stupid
         @SuppressWarnings("unchecked")
@@ -88,10 +95,12 @@ public class MapConfigContext implements ConfigContext {
         return map.put(key, value);
     }
 
-    private String normalizeEmptyAndNullAndDefaultToStringValue(Object... keys) {
+    private String normalizeEmptyAndNullAndDefaultToStringValue(final Object... keys) {
         for (Object k : keys) {
             String value = MantaUtils.toStringEmptyToNull(backingMap.get(k));
-            if (value == null) continue;
+            if (value == null) {
+                continue;
+            }
 
             return value;
         }

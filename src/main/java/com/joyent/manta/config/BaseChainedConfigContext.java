@@ -34,7 +34,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      *
      * @param defaultingContext context that provides default values
      */
-    public BaseChainedConfigContext(ConfigContext defaultingContext) {
+    public BaseChainedConfigContext(final ConfigContext defaultingContext) {
         overwriteWithContext(defaultingContext);
     }
 
@@ -69,7 +69,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      *
      * @param context context to overwrite configuration with
      */
-    public void overwriteWithContext(ConfigContext context) {
+    public void overwriteWithContext(final ConfigContext context) {
         if (isPresent(context.getMantaURL())) {
             this.mantaURL = context.getMantaURL();
         }
@@ -96,31 +96,31 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * @param string string to check
      * @return true when string is non-null and not empty
      */
-    protected static boolean isPresent(String string) {
+    protected static boolean isPresent(final String string) {
         return string != null && !string.isEmpty();
     }
 
-    public BaseChainedConfigContext setMantaURL(String mantaURL) {
+    public BaseChainedConfigContext setMantaURL(final String mantaURL) {
         this.mantaURL = mantaURL;
         return this;
     }
 
-    public BaseChainedConfigContext setMantaUser(String mantaUser) {
+    public BaseChainedConfigContext setMantaUser(final String mantaUser) {
         this.mantaUser = mantaUser;
         return this;
     }
 
-    public BaseChainedConfigContext setMantaKeyId(String mantaKeyId) {
+    public BaseChainedConfigContext setMantaKeyId(final String mantaKeyId) {
         this.mantaKeyId = mantaKeyId;
         return this;
     }
 
-    public BaseChainedConfigContext setMantaKeyPath(String mantaKeyPath) {
+    public BaseChainedConfigContext setMantaKeyPath(final String mantaKeyPath) {
         this.mantaKeyPath = mantaKeyPath;
         return this;
     }
 
-    public BaseChainedConfigContext setTimeout(Integer timeout) {
+    public BaseChainedConfigContext setTimeout(final Integer timeout) {
         this.timeout = timeout;
         return this;
     }
