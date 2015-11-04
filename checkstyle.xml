@@ -64,10 +64,10 @@
 
         <!-- Checks for Javadoc comments.                     -->
         <!-- See http://checkstyle.sf.net/config_javadoc.html -->
-        <!--<module name="JavadocMethod"/>-->
-        <!--<module name="JavadocType" />-->
-        <!--<module name="JavadocVariable"/>-->
-        <!--<module name="JavadocStyle" />-->
+        <module name="JavadocMethod"/>
+        <module name="JavadocType" />
+        <module name="JavadocVariable"/>
+        <module name="JavadocStyle" />
 
         <!-- Checks for Naming Conventions.                  -->
         <!-- See http://checkstyle.sf.net/config_naming.html -->
@@ -83,7 +83,7 @@
 
         <!-- Checks for imports                              -->
         <!-- See http://checkstyle.sf.net/config_import.html -->
-        <!--<module name="AvoidStarImport"/>-->
+        <module name="AvoidStarImport"/>
         <module name="IllegalImport"/> <!-- defaults to sun.* packages -->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
@@ -127,14 +127,17 @@
 
         <!-- Checks for common coding problems               -->
         <!-- See http://checkstyle.sf.net/config_coding.html -->
-        <!--<module name="AvoidInlineConditionals"/>-->
+        <module name="AvoidInlineConditionals"/>
         <module name="EmptyStatement"/>
         <module name="EqualsHashCode"/>
-        <!--<module name="HiddenField"/>-->
+        <module name="HiddenField">
+            <property name="ignoreSetter" value="true" />
+            <property name="ignoreConstructorParameter" value="true" />
+        </module>
         <module name="IllegalInstantiation"/>
         <module name="InnerAssignment"/>
-        <!--<module name="MagicNumber"/>-->
-        <!--<module name="MissingSwitchDefault"/>-->
+        <module name="MagicNumber"/>
+        <module name="MissingSwitchDefault"/>
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
 
@@ -142,7 +145,7 @@
         <!-- See http://checkstyle.sf.net/config_design.html -->
         <!--<module name="DesignForExtension"/>-->
         <module name="FinalClass"/>
-        <!--<module name="HideUtilityClassConstructor"/>-->
+        <module name="HideUtilityClassConstructor"/>
         <module name="InterfaceIsType"/>
         <module name="VisibilityModifier"/>
 

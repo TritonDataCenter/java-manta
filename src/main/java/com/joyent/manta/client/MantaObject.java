@@ -6,7 +6,13 @@ package com.joyent.manta.client;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.util.Key;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+
 
 /**
  * A Manta storage object.
@@ -38,6 +44,7 @@ import java.io.*;
  * @author Yunong Xiao
  */
 public class MantaObject implements Serializable {
+
     private static final long serialVersionUID = 1465638185667442505L;
 
     /**
@@ -54,30 +61,30 @@ public class MantaObject implements Serializable {
      * JSON object metadata fields returned by {@link MantaClient}.listDir().
      */
     @Key("name")
-    private String path_;
+    private String path;
 
     @Key("size")
-    private Long contentLength_;
+    private Long contentLength;
 
     @Key("type")
-    private String contentType_;
+    private String contentType;
 
     @Key("etag")
-    private String etag_;
+    private String etag;
 
     @Key("mtime")
-    private String mtime_;
+    private String mtime;
 
     /**
      * Other private members.
      */
-    private File dataInputFile_;
+    private File dataInputFile;
 
-    private InputStream dataInputStream_;
+    private InputStream dataInputStream;
 
-    private String dataInputString_;
+    private String dataInputString;
 
-    private HttpHeaders httpHeaders_;
+    private HttpHeaders httpHeaders;
 
     /**
      * Empty constructor for the JSON parser.
@@ -92,8 +99,8 @@ public class MantaObject implements Serializable {
      *            The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
     public MantaObject(final String path) {
-        this.path_ = path;
-        this.httpHeaders_ = new HttpHeaders();
+        this.path = path;
+        this.httpHeaders = new HttpHeaders();
     }
 
     /**
@@ -106,8 +113,8 @@ public class MantaObject implements Serializable {
      *            list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
     public MantaObject(final String path, final HttpHeaders headers) {
-        this.path_ = path;
-        this.httpHeaders_ = headers;
+        this.path = path;
+        this.httpHeaders = headers;
     }
 
     /*
@@ -126,67 +133,67 @@ public class MantaObject implements Serializable {
             return false;
         }
         final MantaObject other = (MantaObject) obj;
-        if (this.contentLength_ == null) {
-            if (other.contentLength_ != null) {
+        if (this.contentLength == null) {
+            if (other.contentLength != null) {
                 return false;
             }
-        } else if (!this.contentLength_.equals(other.contentLength_)) {
+        } else if (!this.contentLength.equals(other.contentLength)) {
             return false;
         }
-        if (this.contentType_ == null) {
-            if (other.contentType_ != null) {
+        if (this.contentType == null) {
+            if (other.contentType != null) {
                 return false;
             }
-        } else if (!this.contentType_.equals(other.contentType_)) {
+        } else if (!this.contentType.equals(other.contentType)) {
             return false;
         }
-        if (this.dataInputFile_ == null) {
-            if (other.dataInputFile_ != null) {
+        if (this.dataInputFile == null) {
+            if (other.dataInputFile != null) {
                 return false;
             }
-        } else if (!this.dataInputFile_.equals(other.dataInputFile_)) {
+        } else if (!this.dataInputFile.equals(other.dataInputFile)) {
             return false;
         }
-        if (this.dataInputStream_ == null) {
-            if (other.dataInputStream_ != null) {
+        if (this.dataInputStream == null) {
+            if (other.dataInputStream != null) {
                 return false;
             }
-        } else if (!this.dataInputStream_.equals(other.dataInputStream_)) {
+        } else if (!this.dataInputStream.equals(other.dataInputStream)) {
             return false;
         }
-        if (this.dataInputString_ == null) {
-            if (other.dataInputString_ != null) {
+        if (this.dataInputString == null) {
+            if (other.dataInputString != null) {
                 return false;
             }
-        } else if (!this.dataInputString_.equals(other.dataInputString_)) {
+        } else if (!this.dataInputString.equals(other.dataInputString)) {
             return false;
         }
-        if (this.etag_ == null) {
-            if (other.etag_ != null) {
+        if (this.etag == null) {
+            if (other.etag != null) {
                 return false;
             }
-        } else if (!this.etag_.equals(other.etag_)) {
+        } else if (!this.etag.equals(other.etag)) {
             return false;
         }
-        if (this.httpHeaders_ == null) {
-            if (other.httpHeaders_ != null) {
+        if (this.httpHeaders == null) {
+            if (other.httpHeaders != null) {
                 return false;
             }
-        } else if (!this.httpHeaders_.equals(other.httpHeaders_)) {
+        } else if (!this.httpHeaders.equals(other.httpHeaders)) {
             return false;
         }
-        if (this.mtime_ == null) {
-            if (other.mtime_ != null) {
+        if (this.mtime == null) {
+            if (other.mtime != null) {
                 return false;
             }
-        } else if (!this.mtime_.equals(other.mtime_)) {
+        } else if (!this.mtime.equals(other.mtime)) {
             return false;
         }
-        if (this.path_ == null) {
-            if (other.path_ != null) {
+        if (this.path == null) {
+            if (other.path != null) {
                 return false;
             }
-        } else if (!this.path_.equals(other.path_)) {
+        } else if (!this.path.equals(other.path)) {
             return false;
         }
         return true;
@@ -196,14 +203,14 @@ public class MantaObject implements Serializable {
      * @return the size
      */
     public final Long getContentLength() {
-        return this.contentLength_;
+        return this.contentLength;
     }
 
     /**
      * @return the type
      */
     public final String getContentType() {
-        return this.contentType_;
+        return this.contentType;
     }
 
     /**
@@ -212,7 +219,7 @@ public class MantaObject implements Serializable {
      * @return the dataInputFile
      */
     public final File getDataInputFile() {
-        return this.dataInputFile_;
+        return this.dataInputFile;
     }
 
     /**
@@ -224,14 +231,14 @@ public class MantaObject implements Serializable {
      *             If an IO exception has occured.
      */
     public final InputStream getDataInputStream() throws IOException {
-        if (this.dataInputStream_ == null) {
-            if (this.dataInputFile_ != null) {
-                this.dataInputStream_ = new FileInputStream(this.dataInputFile_);
-            } else if (this.dataInputString_ != null) {
-                this.dataInputStream_ = new ByteArrayInputStream(this.dataInputString_.getBytes("UTF-8"));
+        if (this.dataInputStream == null) {
+            if (this.dataInputFile != null) {
+                this.dataInputStream = new FileInputStream(this.dataInputFile);
+            } else if (this.dataInputString != null) {
+                this.dataInputStream = new ByteArrayInputStream(this.dataInputString.getBytes("UTF-8"));
             }
         }
-        return this.dataInputStream_;
+        return this.dataInputStream;
     }
 
     /**
@@ -245,20 +252,20 @@ public class MantaObject implements Serializable {
      *             If an IO exception has occured.
      */
     public final String getDataInputString() throws IOException {
-        if (this.dataInputString_ == null) {
-            if (this.dataInputStream_ != null) {
-                this.dataInputString_ = MantaUtils.inputStreamToString(this.dataInputStream_);
-            } else if (this.dataInputFile_ != null) {
-                this.dataInputString_ = MantaUtils.readFileToString(this.dataInputFile_);
+        if (this.dataInputString == null) {
+            if (this.dataInputStream != null) {
+                this.dataInputString = MantaUtils.inputStreamToString(this.dataInputStream);
+            } else if (this.dataInputFile != null) {
+                this.dataInputString = MantaUtils.readFileToString(this.dataInputFile);
             }
         }
-        return this.dataInputString_;
+        return this.dataInputString;
     }
     /**
      * @return the etag
      */
     public final String getEtag() {
-        return this.etag_;
+        return this.etag;
     }
 
     /**
@@ -269,28 +276,28 @@ public class MantaObject implements Serializable {
      * @return the value of the header.
      */
     public final Object getHeader(final String fieldName) {
-        return this.httpHeaders_.get(fieldName);
+        return this.httpHeaders.get(fieldName);
     }
 
     /**
      * @return the httpHeaders
      */
     public final HttpHeaders getHttpHeaders() {
-        return this.httpHeaders_;
+        return this.httpHeaders;
     }
 
     /**
      * @return the mtime
      */
     public final String getMtime() {
-        return this.mtime_;
+        return this.mtime;
     }
 
     /**
      * @return the path
      */
     public final String getPath() {
-        return this.path_;
+        return this.path;
     }
 
     /*
@@ -301,41 +308,43 @@ public class MantaObject implements Serializable {
     public final int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((this.contentLength_ == null) ? 0 : this.contentLength_.hashCode());
-        result = (prime * result) + ((this.contentType_ == null) ? 0 : this.contentType_.hashCode());
-        result = (prime * result) + ((this.dataInputFile_ == null) ? 0 : this.dataInputFile_.hashCode());
-        result = (prime * result) + ((this.dataInputStream_ == null) ? 0 : this.dataInputStream_.hashCode());
-        result = (prime * result) + ((this.dataInputString_ == null) ? 0 : this.dataInputString_.hashCode());
-        result = (prime * result) + ((this.etag_ == null) ? 0 : this.etag_.hashCode());
-        result = (prime * result) + ((this.httpHeaders_ == null) ? 0 : this.httpHeaders_.hashCode());
-        result = (prime * result) + ((this.mtime_ == null) ? 0 : this.mtime_.hashCode());
-        result = (prime * result) + ((this.path_ == null) ? 0 : this.path_.hashCode());
+        result = (prime * result) + ((this.contentLength == null) ? 0 : this.contentLength.hashCode());
+        result = (prime * result) + ((this.contentType == null) ? 0 : this.contentType.hashCode());
+        result = (prime * result) + ((this.dataInputFile == null) ? 0 : this.dataInputFile.hashCode());
+        result = (prime * result) + ((this.dataInputStream == null) ? 0 : this.dataInputStream.hashCode());
+        result = (prime * result) + ((this.dataInputString == null) ? 0 : this.dataInputString.hashCode());
+        result = (prime * result) + ((this.etag == null) ? 0 : this.etag.hashCode());
+        result = (prime * result) + ((this.httpHeaders == null) ? 0 : this.httpHeaders.hashCode());
+        result = (prime * result) + ((this.mtime == null) ? 0 : this.mtime.hashCode());
+        result = (prime * result) + ((this.path == null) ? 0 : this.path.hashCode());
         return result;
     }
+
+
 
     /**
      * @return whether this object is a Manta directory.
      */
     public final boolean isDirectory() {
-        return this.contentType_.equals(DIRECTORY) || this.contentType_.equals(DIRECTORY_HEADER);
+        return this.contentType.equals(DIRECTORY) || this.contentType.equals(DIRECTORY_HEADER);
     }
 
     /**
      * @param dataInputFile
-     *            the dataInputFile_ to set
+     *            the dataInputFile to set
      */
     public final void setDataInputFile(final File dataInputFile) {
-        this.dataInputFile_ = dataInputFile;
+        this.dataInputFile = dataInputFile;
     }
 
     /**
      * Sets the {@link InputStream} containing the data content of this object.
      *
      * @param dataInputStream
-     *            the dataInputStream_ to set
+     *            the dataInputStream to set
      */
     public final void setDataInputStream(final InputStream dataInputStream) {
-        this.dataInputStream_ = dataInputStream;
+        this.dataInputStream = dataInputStream;
     }
 
     /**
@@ -343,7 +352,7 @@ public class MantaObject implements Serializable {
      *            the dataInputString to set
      */
     public final void setDataInputString(final String dataInputString) {
-        this.dataInputString_ = dataInputString;
+        this.dataInputString = dataInputString;
     }
 
     /**
@@ -356,7 +365,7 @@ public class MantaObject implements Serializable {
      *            the field value.
      */
     public final void setHeader(final String fieldName, final Object value) {
-        this.httpHeaders_.set(fieldName, value);
+        this.httpHeaders.set(fieldName, value);
     }
 
     /**
@@ -364,10 +373,10 @@ public class MantaObject implements Serializable {
      * headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      *
      * @param httpHeaders
-     *            the httpHeaders_ to set
+     *            the httpHeaders to set
      */
     public final void setHttpHeaders(final HttpHeaders httpHeaders) {
-        this.httpHeaders_ = httpHeaders;
+        this.httpHeaders = httpHeaders;
     }
 
     /**
@@ -375,7 +384,7 @@ public class MantaObject implements Serializable {
      *            the path to set
      */
     public final void setPath(final String path) {
-        this.path_ = path;
+        this.path = path;
     }
 
     /*
@@ -385,12 +394,12 @@ public class MantaObject implements Serializable {
     @Override
     public final String toString() {
         final StringBuilder builder = new StringBuilder();
-        builder.append("MantaObject [path_=").append(this.path_).append(", contentLength_=")
-        .append(this.contentLength_).append(", contentType_=").append(this.contentType_).append(", etag_=")
-        .append(this.etag_).append(", mtime_=").append(this.mtime_).append(", dataInputFile_=")
-        .append(this.dataInputFile_).append(", dataInputStream_=").append(this.dataInputStream_)
-        .append(", dataInputString_=").append(this.dataInputString_).append(", httpHeaders_=")
-        .append(this.httpHeaders_).append("]");
+        builder.append("MantaObject [path=").append(this.path).append(", contentLength=")
+        .append(this.contentLength).append(", contentType=").append(this.contentType).append(", etag=")
+        .append(this.etag).append(", mtime=").append(this.mtime).append(", dataInputFile=")
+        .append(this.dataInputFile).append(", dataInputStream=").append(this.dataInputStream)
+        .append(", dataInputString=").append(this.dataInputString).append(", httpHeaders=")
+        .append(this.httpHeaders).append("]");
         return builder.toString();
     }
 }
