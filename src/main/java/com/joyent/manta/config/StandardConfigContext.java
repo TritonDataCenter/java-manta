@@ -9,6 +9,10 @@ package com.joyent.manta.config;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class StandardConfigContext extends BaseChainedConfigContext {
+    /**
+     * Creates a new {@link ConfigContext} implementation that allows for
+     * programmatic configuration.
+     */
     public StandardConfigContext() {
         super();
     }

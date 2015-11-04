@@ -12,13 +12,19 @@ import java.io.File;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class DefaultsConfigContext implements ConfigContext {
-    /** The default Manta service endpoint. */
+    /**
+     * The default Manta service endpoint.
+     */
     public static final String DEFAULT_MANTA_URL = "https://us-east.manta.joyent.com";
 
-    /** The default timeout for accessing the Manta service. */
+    /**
+     * The default timeout for accessing the Manta service.
+     */
     public static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
 
-    /** We assume the default rsa key in the user's home directory. */
+    /**
+     * We assume the default rsa key in the user's home directory.
+     */
     public static final String MANTA_KEY_PATH;
 
     static {
@@ -34,6 +40,10 @@ public class DefaultsConfigContext implements ConfigContext {
         }
     }
 
+    /**
+     * Creates a new instance with all of the defaults assigned to the beans
+     * defined in {@link ConfigContext}.
+     */
     public DefaultsConfigContext() {
     }
 

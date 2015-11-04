@@ -1,11 +1,14 @@
 package com.joyent.manta.config;
 
 import com.joyent.manta.client.MantaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.*;
 
-import static com.joyent.manta.config.EnvVarConfigContext.*;
+import java.util.Map;
+
+import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_ID_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_PATH_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.MANTA_TIMEOUT_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.MANTA_URL_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.MANTA_USER_ENV_KEY;
 
 /**
  * {@link ConfigContext} implementation that is used for configuring instances
@@ -14,25 +17,53 @@ import static com.joyent.manta.config.EnvVarConfigContext.*;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MapConfigContext implements ConfigContext {
+    /**
+     * Property key for looking up a Manta URL.
+     */
     public static final String MANTA_URL_KEY = "manta.url";
+
+    /**
+     * Property key for looking up a Manta user account.
+     */
     public static final String MANTA_USER_KEY = "manta.user";
+
+    /**
+     * Property key for looking up a RSA fingerprint.
+     */
     public static final String MANTA_KEY_ID_KEY = "manta.key_id";
+
+    /**
+     * Property key for looking up a RSA private key path.
+     */
     public static final String MANTA_KEY_PATH_KEY = "manta.key_path";
+
+    /**
+     * Property key for looking up a Manta timeout.
+     */
     public static final String MANTA_TIMEOUT_KEY = "manta.timeout";
 
     // I know manually adding them all sucks, but it is the simplest operation
     // for a shared library. We could do all sorts of complicated reflection
     // or annotation processing, but they are error-prone.
-    /** List of all properties that we read from configuration. */
+    /**
+     * List of all properties that we read from configuration.
+     */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
             MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY
     };
 
+    /**
+     * Internal map used as the source of the configuration bean values.
+     */
     private final Map<?, ?> backingMap;
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
+    /**
+     * Creates a new instance using the passed {@link Map} implementation as
+     * a backing store.
+     *
+     * @param backingMap Map implementation used for the values of the configuration beans
+     */
     public MapConfigContext(final Map<?, ?> backingMap) {
         this.backingMap = backingMap;
     }
@@ -95,6 +126,11 @@ public class MapConfigContext implements ConfigContext {
         return map.put(key, value);
     }
 
+    /**
+     * Normalizes a value pulled from the backingMap.
+     * @param keys key to use to pull value from backing map
+     * @return null on empty string or null, otherwise value from backing map
+     */
     private String normalizeEmptyAndNullAndDefaultToStringValue(final Object... keys) {
         for (Object k : keys) {
             String value = MantaUtils.toStringEmptyToNull(backingMap.get(k));
