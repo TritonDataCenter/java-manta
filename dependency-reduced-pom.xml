@@ -20,20 +20,25 @@
   <inceptionYear>2012</inceptionYear>
   <developers>
     <developer>
-      <id>yunong</id>
-      <name>Yunong Xiao</name>
-      <email>yjxiao@gmail.com</email>
-      <url>yunong.ca</url>
-      <organization>Joyent</organization>
-      <organizationUrl>joyent.com</organizationUrl>
-    </developer>
-    <developer>
-      <name>Elijah Zuoancic</name>
+      <name>Elijah Zupancic</name>
       <email>elijah@zupancic.name</email>
       <organization>Joyent</organization>
       <organizationUrl>joyent.com</organizationUrl>
     </developer>
+    <developer>
+      <name>Phillip Ross</name>
+      <email>phillip.w.g.ross at gmail.com</email>
+      <organization>Luminosity Labs LLC</organization>
+      <timezone>US/Eastern</timezone>
+    </developer>
   </developers>
+  <contributors>
+    <contributor>
+      <name>Yunong Xiao</name>
+      <email>yjxiao@gmail.com</email>
+      <url>yunong.ca</url>
+    </contributor>
+  </contributors>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>

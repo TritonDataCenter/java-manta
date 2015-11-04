@@ -34,20 +34,25 @@
 
     <developers>
         <developer>
-            <email>yjxiao@gmail.com</email>
-            <name>Yunong Xiao</name>
+            <name>Elijah Zupancic</name>
+            <email>elijah@zupancic.name</email>
             <organization>Joyent</organization>
             <organizationUrl>joyent.com</organizationUrl>
-            <url>yunong.ca</url>
-            <id>yunong</id>
         </developer>
         <developer>
-            <email>elijah@zupancic.name</email>
-            <name>Elijah Zuoancic</name>
-            <organization>Joyent</organization>
-            <organizationUrl>joyent.com</organizationUrl>
+            <name>Phillip Ross</name>
+            <email>phillip.w.g.ross at gmail.com</email>
+            <organization>Luminosity Labs LLC</organization>
+            <timezone>US/Eastern</timezone>
         </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>Yunong Xiao</name>
+            <email>yjxiao@gmail.com</email>
+            <url>yunong.ca</url>
+        </contributor>
+    </contributors>
 
     <scm>
         <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
