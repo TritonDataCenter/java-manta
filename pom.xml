@@ -247,8 +247,9 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>${maven-release-plugin.version}</version>
                 <configuration>
-                    <releaseProfiles>release</releaseProfiles>
+                    <localCheckout>true</localCheckout>
                     <pushChanges>false</pushChanges>
+                    <releaseProfiles>release</releaseProfiles>
                 </configuration>
             </plugin>
             <plugin>
@@ -330,7 +331,7 @@
 
     <profiles>
         <!--
-        The release-sign-artifacts profile only needs activated when cutting a release for maven central.
+        The release profile only needs activated when cutting a release for maven central.
         It will generate additional artifacts for javadoc and source as well as GPG signatures for each artifact.
         This profile also assumes that the properties for the gpg plugin (such as gpg.keyname and gpg.passphrase
         are either defined in a settings.xml file or similar facility.
