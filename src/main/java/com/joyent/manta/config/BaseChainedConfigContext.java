@@ -11,10 +11,29 @@ package com.joyent.manta.config;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public abstract class BaseChainedConfigContext implements ConfigContext {
+    /**
+     * Manta service endpoint.
+     */
     private String mantaURL;
+
+    /**
+     * User account associated with the Manta service.
+     */
     private String mantaUser;
+
+    /**
+     * RSA key fingerprint of the private key used to access Manta.
+     */
     private String mantaKeyId;
+
+    /**
+     * Path on the filesystem to the private RSA key used to access Manta.
+     */
     private String mantaKeyPath;
+
+    /**
+     * General connection timeout for the Manta service.
+     */
     private Integer timeout;
 
     /** Singleton instance of default configuration for easy reference. */
@@ -100,26 +119,51 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return string != null && !string.isEmpty();
     }
 
+    /**
+     * Sets the Manta service endpoint.
+     * @param mantaURL Manta service endpoint
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
     public BaseChainedConfigContext setMantaURL(final String mantaURL) {
         this.mantaURL = mantaURL;
         return this;
     }
 
+    /**
+     * Sets the User account associated with the Manta service.
+     * @param mantaUser Manta user account
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
     public BaseChainedConfigContext setMantaUser(final String mantaUser) {
         this.mantaUser = mantaUser;
         return this;
     }
 
+    /**
+     * Sets the RSA key fingerprint of the private key used to access Manta.
+     * @param mantaKeyId RSA key fingerprint
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
     public BaseChainedConfigContext setMantaKeyId(final String mantaKeyId) {
         this.mantaKeyId = mantaKeyId;
         return this;
     }
 
+    /**
+     * Sets the path on the filesystem to the private RSA key used to access Manta.
+     * @param mantaKeyPath path on the filesystem
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
     public BaseChainedConfigContext setMantaKeyPath(final String mantaKeyPath) {
         this.mantaKeyPath = mantaKeyPath;
         return this;
     }
 
+    /**
+     * Sets the general connection timeout for the Manta service.
+     * @param timeout timeout in milliseconds
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
     public BaseChainedConfigContext setTimeout(final Integer timeout) {
         this.timeout = timeout;
         return this;

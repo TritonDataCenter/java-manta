@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 /**
  * Manta Java client package.

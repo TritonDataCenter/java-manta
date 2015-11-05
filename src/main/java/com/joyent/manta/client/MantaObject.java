@@ -6,7 +6,14 @@ package com.joyent.manta.client;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.util.Key;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.Objects;
+
 
 /**
  * A Manta storage object.
@@ -38,7 +45,8 @@ import java.io.*;
  * @author Yunong Xiao
  */
 public class MantaObject implements Serializable {
-    private static final long serialVersionUID = 1465638185667442505L;
+
+    private static final long serialVersionUID = -4129858089749197223L;
 
     /**
      * Metadata names used by Manta.
@@ -51,33 +59,56 @@ public class MantaObject implements Serializable {
     public static final String DIRECTORY_HEADER = "application/x-json-stream; type=directory";
 
     /**
-     * JSON object metadata fields returned by {@link MantaClient}.listDir().
+     * The name value for this object.
      */
     @Key("name")
-    private String path_;
-
-    @Key("size")
-    private Long contentLength_;
-
-    @Key("type")
-    private String contentType_;
-
-    @Key("etag")
-    private String etag_;
-
-    @Key("mtime")
-    private String mtime_;
+    private String path;
 
     /**
-     * Other private members.
+     * The content length (size) value for this object.
      */
-    private File dataInputFile_;
+    @Key("size")
+    private Long contentLength;
 
-    private InputStream dataInputStream_;
+    /**
+     * The type value for this object.
+     */
+    @Key("type")
+    private String contentType;
 
-    private String dataInputString_;
+    /**
+     * The etag value for this object.
+     */
+    @Key("etag")
+    private String etag;
 
-    private HttpHeaders httpHeaders_;
+    /**
+     * The mtime value for this object.
+     */
+    @Key("mtime")
+    private String mtime;
+
+    /**
+     * The content of the object's data as a {@link java.io.File}.
+     */
+    private File dataInputFile;
+
+    /**
+     * The content of the object's data as an {@link java.io.InputStream}.
+     */
+    private InputStream dataInputStream;
+
+    /**
+     * The content of the object's data as a {@link java.lang.String}.
+     */
+    private String dataInputString;
+
+
+    /**
+     * The http headers associated with this object.
+     */
+    private HttpHeaders httpHeaders;
+
 
     /**
      * Empty constructor for the JSON parser.
@@ -85,312 +116,309 @@ public class MantaObject implements Serializable {
     public MantaObject() {
     }
 
+
     /**
      * Creates a MantaObject.
      *
-     * @param path
-     *            The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
+     * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
     public MantaObject(final String path) {
-        this.path_ = path;
-        this.httpHeaders_ = new HttpHeaders();
+        this.path = path;
+        this.httpHeaders = new HttpHeaders();
     }
+
 
     /**
      * Creates a MantaObject.
      *
-     * @param path
-     *            The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
-     * @param headers
-     *            Optional {@link HttpHeaders}. Use this to set any additional headers on the Manta object. For the full
-     *            list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
+     * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
+     * @param headers Optional {@link HttpHeaders}. Use this to set any additional headers on the Manta object.  For the
+     *                full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
     public MantaObject(final String path, final HttpHeaders headers) {
-        this.path_ = path;
-        this.httpHeaders_ = headers;
+        this.path = path;
+        this.httpHeaders = headers;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.lang.Object#equals(java.lang.Object)
+
+    /**
+     * Returns the path value.
+     *
+     * @return the path
      */
-    @Override
-    public final boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (!(obj instanceof MantaObject)) {
-            return false;
-        }
-        final MantaObject other = (MantaObject) obj;
-        if (this.contentLength_ == null) {
-            if (other.contentLength_ != null) {
-                return false;
-            }
-        } else if (!this.contentLength_.equals(other.contentLength_)) {
-            return false;
-        }
-        if (this.contentType_ == null) {
-            if (other.contentType_ != null) {
-                return false;
-            }
-        } else if (!this.contentType_.equals(other.contentType_)) {
-            return false;
-        }
-        if (this.dataInputFile_ == null) {
-            if (other.dataInputFile_ != null) {
-                return false;
-            }
-        } else if (!this.dataInputFile_.equals(other.dataInputFile_)) {
-            return false;
-        }
-        if (this.dataInputStream_ == null) {
-            if (other.dataInputStream_ != null) {
-                return false;
-            }
-        } else if (!this.dataInputStream_.equals(other.dataInputStream_)) {
-            return false;
-        }
-        if (this.dataInputString_ == null) {
-            if (other.dataInputString_ != null) {
-                return false;
-            }
-        } else if (!this.dataInputString_.equals(other.dataInputString_)) {
-            return false;
-        }
-        if (this.etag_ == null) {
-            if (other.etag_ != null) {
-                return false;
-            }
-        } else if (!this.etag_.equals(other.etag_)) {
-            return false;
-        }
-        if (this.httpHeaders_ == null) {
-            if (other.httpHeaders_ != null) {
-                return false;
-            }
-        } else if (!this.httpHeaders_.equals(other.httpHeaders_)) {
-            return false;
-        }
-        if (this.mtime_ == null) {
-            if (other.mtime_ != null) {
-                return false;
-            }
-        } else if (!this.mtime_.equals(other.mtime_)) {
-            return false;
-        }
-        if (this.path_ == null) {
-            if (other.path_ != null) {
-                return false;
-            }
-        } else if (!this.path_.equals(other.path_)) {
-            return false;
-        }
-        return true;
+    public final String getPath() {
+        return this.path;
+    }
+
+
+    /**
+     * Sets the path value.
+     *
+     * @param path the path to set
+     */
+    public final void setPath(final String path) {
+        this.path = path;
+    }
+
+
+    /**
+     * Returns the content length (size) value.
+     *
+     * @return content length (size)
+     */
+    public final Long getContentLength() {
+        return this.contentLength;
     }
 
     /**
-     * @return the size
-     */
-    public final Long getContentLength() {
-        return this.contentLength_;
-    }
+     * Returns the content type value.
+     *
 
     /**
      * @return the type
      */
     public final String getContentType() {
-        return this.contentType_;
+        return this.contentType;
     }
 
+
     /**
-     * Returns a {@link File} containing this object's data, if such a file has been provided. Otherwise returns null.
+     * Returns the etag value.
+     *
+     * @return the etag
+     */
+    public final String getEtag() {
+        return this.etag;
+    }
+
+
+    /**
+     * Returns the mtime value.
+     *
+     * @return the mtime
+     */
+    public final String getMtime() {
+        return this.mtime;
+    }
+
+
+    /**
+     * Returns a {@link java.io.File} containing this object's data, if such a file has been provided.
+     * Otherwise returns null.
      *
      * @return the dataInputFile
      */
     public final File getDataInputFile() {
-        return this.dataInputFile_;
+        return this.dataInputFile;
     }
 
+
     /**
-     * Returns an {@link InputStream} containing this object's data, or null if there is no data associated with this
-     * object.
+     * @param dataInputFile the dataInputFile to set
+     */
+    public final void setDataInputFile(final File dataInputFile) {
+        this.dataInputFile = dataInputFile;
+    }
+
+
+    /**
+     * Returns an {@link java.io.InputStream} containing this object's data,
+     * or null if there is no data associated with this object.
      *
      * @return the dataInputStream
-     * @throws IOException
-     *             If an IO exception has occured.
+     * @throws IOException If an IO exception has occured.
      */
     public final InputStream getDataInputStream() throws IOException {
-        if (this.dataInputStream_ == null) {
-            if (this.dataInputFile_ != null) {
-                this.dataInputStream_ = new FileInputStream(this.dataInputFile_);
-            } else if (this.dataInputString_ != null) {
-                this.dataInputStream_ = new ByteArrayInputStream(this.dataInputString_.getBytes("UTF-8"));
+        if (this.dataInputStream == null) {
+            if (this.dataInputFile != null) {
+                this.dataInputStream = new FileInputStream(this.dataInputFile);
+            } else if (this.dataInputString != null) {
+                this.dataInputStream = new ByteArrayInputStream(this.dataInputString.getBytes("UTF-8"));
             }
         }
-        return this.dataInputStream_;
+        return this.dataInputStream;
     }
 
+
     /**
-     * Return the {@link String} containing this object's data. If the object's data is contained in the
-     * {@link InputStream}, then the data is read from the {@link InputStream}, returned as this {@link String} and the
-     * {@link InputStream} is closed. If the object's data is contained in a {@link File}, then the file is read back
-     * into the {@link String} .
+     * Sets the {@link java.io.InputStream} containing the data content of this object.
+     *
+     * @param dataInputStream the dataInputStream to set
+     */
+    public final void setDataInputStream(final InputStream dataInputStream) {
+        this.dataInputStream = dataInputStream;
+    }
+
+
+    /**
+     * Return the {@link java.lang.String} containing this object's data. If the object's data is contained in the
+     * {@link java.io.InputStream}, then the data is read from the {@link java.io.InputStream}, returned as this
+     * {@link java.lang.String} and the {@link java.io.InputStream} is closed. If the object's data is contained in a
+     * {@link java.io.File}, then the file is read back into the {@link java.lang.String}.
      *
      * @return the dataInputString
-     * @throws IOException
-     *             If an IO exception has occured.
+     * @throws IOException If an IO exception has occured.
      */
     public final String getDataInputString() throws IOException {
-        if (this.dataInputString_ == null) {
-            if (this.dataInputStream_ != null) {
-                this.dataInputString_ = MantaUtils.inputStreamToString(this.dataInputStream_);
-            } else if (this.dataInputFile_ != null) {
-                this.dataInputString_ = MantaUtils.readFileToString(this.dataInputFile_);
+        if (this.dataInputString == null) {
+            if (this.dataInputStream != null) {
+                this.dataInputString = MantaUtils.inputStreamToString(this.dataInputStream);
+            } else if (this.dataInputFile != null) {
+                this.dataInputString = MantaUtils.readFileToString(this.dataInputFile);
             }
         }
-        return this.dataInputString_;
+        return this.dataInputString;
     }
+
+
     /**
-     * @return the etag
+     * @param dataInputString the dataInputString to set
      */
-    public final String getEtag() {
-        return this.etag_;
+    public final void setDataInputString(final String dataInputString) {
+        this.dataInputString = dataInputString;
     }
 
     /**
-     * This really just delegates to {@link HttpHeaders}.get.
+     * Returns the http headers.
      *
-     * @param fieldName
-     *            the custom header to get from the Manta object.
-     * @return the value of the header.
-     */
-    public final Object getHeader(final String fieldName) {
-        return this.httpHeaders_.get(fieldName);
-    }
 
     /**
      * @return the httpHeaders
      */
     public final HttpHeaders getHttpHeaders() {
-        return this.httpHeaders_;
+        return this.httpHeaders;
     }
+
 
     /**
-     * @return the mtime
+     * Sets the {@link com.google.api.client.http.HttpHeaders} in this object. Note any previous headers will be lost.
+     * For the full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
+     *
+     * @param httpHeaders the httpHeaders to set.
      */
-    public final String getMtime() {
-        return this.mtime_;
+    public final void setHttpHeaders(final HttpHeaders httpHeaders) {
+        this.httpHeaders = httpHeaders;
     }
+
 
     /**
-     * @return the path
+     * This really just delegates to {@link com.google.api.client.http.HttpHeaders} get.
+     *
+     * @param fieldName the custom header to get from the Manta object.
+     * @return the value of the header.
      */
-    public final String getPath() {
-        return this.path_;
+    public final Object getHeader(final String fieldName) {
+        return this.httpHeaders.get(fieldName);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.lang.Object#hashCode()
+
+    /**
+     * Sets custom headers on the Manta object. This really just delegates to setting the
+     * {@link com.google.api.client.http.HttpHeaders} object.  For the full list of Manta headers see the
+     * <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
+     *
+     * @param fieldName the field name.
+     * @param value the field value.
      */
-    @Override
-    public final int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = (prime * result) + ((this.contentLength_ == null) ? 0 : this.contentLength_.hashCode());
-        result = (prime * result) + ((this.contentType_ == null) ? 0 : this.contentType_.hashCode());
-        result = (prime * result) + ((this.dataInputFile_ == null) ? 0 : this.dataInputFile_.hashCode());
-        result = (prime * result) + ((this.dataInputStream_ == null) ? 0 : this.dataInputStream_.hashCode());
-        result = (prime * result) + ((this.dataInputString_ == null) ? 0 : this.dataInputString_.hashCode());
-        result = (prime * result) + ((this.etag_ == null) ? 0 : this.etag_.hashCode());
-        result = (prime * result) + ((this.httpHeaders_ == null) ? 0 : this.httpHeaders_.hashCode());
-        result = (prime * result) + ((this.mtime_ == null) ? 0 : this.mtime_.hashCode());
-        result = (prime * result) + ((this.path_ == null) ? 0 : this.path_.hashCode());
-        return result;
+    public final void setHeader(final String fieldName, final Object value) {
+        this.httpHeaders.set(fieldName, value);
     }
+
 
     /**
      * @return whether this object is a Manta directory.
      */
     public final boolean isDirectory() {
-        return this.contentType_.equals(DIRECTORY) || this.contentType_.equals(DIRECTORY_HEADER);
+        return DIRECTORY.equals(contentType)
+                || DIRECTORY_HEADER.equals(contentType);
     }
 
-    /**
-     * @param dataInputFile
-     *            the dataInputFile_ to set
-     */
-    public final void setDataInputFile(final File dataInputFile) {
-        this.dataInputFile_ = dataInputFile;
-    }
 
-    /**
-     * Sets the {@link InputStream} containing the data content of this object.
-     *
-     * @param dataInputStream
-     *            the dataInputStream_ to set
-     */
-    public final void setDataInputStream(final InputStream dataInputStream) {
-        this.dataInputStream_ = dataInputStream;
-    }
-
-    /**
-     * @param dataInputString
-     *            the dataInputString to set
-     */
-    public final void setDataInputString(final String dataInputString) {
-        this.dataInputString_ = dataInputString;
-    }
-
-    /**
-     * Sets custom headers on the Manta object. This really just delegates to setting the {@link HttpHeaders} object.
-     * For the full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
-     *
-     * @param fieldName
-     *            the field name.
-     * @param value
-     *            the field value.
-     */
-    public final void setHeader(final String fieldName, final Object value) {
-        this.httpHeaders_.set(fieldName, value);
-    }
-
-    /**
-     * Sets the {@link HttpHeaders} in this object. Note any previous headers will be lost. For the full list of Manta
-     * headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
-     *
-     * @param httpHeaders
-     *            the httpHeaders_ to set
-     */
-    public final void setHttpHeaders(final HttpHeaders httpHeaders) {
-        this.httpHeaders_ = httpHeaders;
-    }
-
-    /**
-     * @param path
-     *            the path to set
-     */
-    public final void setPath(final String path) {
-        this.path_ = path;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see java.lang.Object#toString()
-     */
+    /** {@inheritDoc} */
     @Override
+    @SuppressWarnings("checkstyle:designforextension")
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MantaObject)) {
+            return false;
+        }
+        MantaObject that = (MantaObject)o;
+        return Objects.equals(path, that.path)
+                && Objects.equals(contentLength, that.contentLength)
+                && Objects.equals(contentType, that.contentType)
+                && Objects.equals(etag, that.etag)
+                && Objects.equals(mtime, that.mtime)
+                && Objects.equals(dataInputFile, that.dataInputFile)
+                && Objects.equals(dataInputStream, that.dataInputStream)
+                && Objects.equals(dataInputString, that.dataInputString)
+                && Objects.equals(httpHeaders, that.httpHeaders);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    @SuppressWarnings("checkstyle:designforextension")
+    public int hashCode() {
+        return Objects.hash(
+                path,
+                contentLength,
+                contentType,
+                etag,
+                mtime,
+                dataInputFile,
+                dataInputStream,
+                dataInputString,
+                httpHeaders);
+    }
+
+
+    @Override
+    @SuppressWarnings("checkstyle:designforextension")
+    public String toString() {
+        final StringBuilder sb = new StringBuilder(getClass().getName());
+        sb.append('{');
+        sb.append("path='").append(path).append('\'');
+        sb.append(", contentLength=").append(contentLength);
+        sb.append(", contentType='").append(contentType).append('\'');
+        sb.append(", etag='").append(etag).append('\'');
+        sb.append(", mtime='").append(mtime).append('\'');
+        sb.append(", dataInputFile=").append(dataInputFile);
+        sb.append(", dataInputStream=").append(dataInputStream);
+        sb.append(", dataInputString='").append(dataInputString).append('\'');
+        sb.append(", httpHeaders=").append(httpHeaders);
+        sb.append(", directory=").append(isDirectory());
+        sb.append('}');
+        return sb.toString();
+    }
+
+
+    /** {@inheritDoc} */
+    /*@Override
     public final String toString() {
         final StringBuilder builder = new StringBuilder();
-        builder.append("MantaObject [path_=").append(this.path_).append(", contentLength_=")
-        .append(this.contentLength_).append(", contentType_=").append(this.contentType_).append(", etag_=")
-        .append(this.etag_).append(", mtime_=").append(this.mtime_).append(", dataInputFile_=")
-        .append(this.dataInputFile_).append(", dataInputStream_=").append(this.dataInputStream_)
-        .append(", dataInputString_=").append(this.dataInputString_).append(", httpHeaders_=")
-        .append(this.httpHeaders_).append("]");
+        builder.append("MantaObject [path=")
+                .append(this.path)
+                .append(", contentLength=")
+                .append(this.contentLength)
+                .append(", contentType=")
+                .append(this.contentType)
+                .append(", etag=")
+                .append(this.etag)
+                .append(", mtime=")
+                .append(this.mtime)
+                .append(", dataInputFile=")
+                .append(this.dataInputFile)
+                .append(", dataInputStream=")
+                .append(this.dataInputStream)
+                .append(", dataInputString=")
+                .append(this.dataInputString)
+                .append(", httpHeaders=")
+                .append(this.httpHeaders)
+                .append("]");
         return builder.toString();
-    }
+    }*/
+
+
 }
