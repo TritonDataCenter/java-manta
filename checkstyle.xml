@@ -137,10 +137,11 @@
         <module name="EqualsHashCode"/>
         <!-- Disabling this check because it doesn't understand fluent
              setters. -->
-        <!--<module name="HiddenField">-->
-            <!--<property name="ignoreSetter" value="true" />-->
-            <!--<property name="ignoreConstructorParameter" value="true" />-->
-        <!--</module>-->
+        <module name="HiddenField">
+            <property name="ignoreSetter" value="true" />
+            <property name="ignoreConstructorParameter" value="true" />
+            <property name="setterCanReturnItsClass" value="true"/>
+        </module>
         <module name="IllegalInstantiation"/>
         <module name="InnerAssignment"/>
         <module name="MagicNumber"/>
