@@ -140,7 +140,7 @@ public class MantaObject implements Serializable {
         this.httpHeaders = headers;
     }
 
-    
+
     /**
      * Returns the path value.
      *
@@ -212,7 +212,7 @@ public class MantaObject implements Serializable {
 
     /**
      * Sets the dataInputFile value.
-     * 
+     *
      * @param dataInputFile the dataInputFile to set
      */
     public final void setDataInputFile(final File dataInputFile) {
@@ -396,5 +396,5 @@ public class MantaObject implements Serializable {
         return sb.toString();
     }
 
-    
+
 }
