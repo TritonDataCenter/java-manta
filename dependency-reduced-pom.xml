@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <artifactId>oss-parent</artifactId>
-    <groupId>org.sonatype.oss</groupId>
-    <version>9</version>
-    <relativePath>../pom.xml/pom.xml</relativePath>
-  </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.joyent.manta</groupId>
   <artifactId>java-manta</artifactId>
@@ -20,20 +14,25 @@
   <inceptionYear>2012</inceptionYear>
   <developers>
     <developer>
-      <id>yunong</id>
-      <name>Yunong Xiao</name>
-      <email>yjxiao@gmail.com</email>
-      <url>yunong.ca</url>
-      <organization>Joyent</organization>
-      <organizationUrl>joyent.com</organizationUrl>
-    </developer>
-    <developer>
-      <name>Elijah Zuoancic</name>
+      <name>Elijah Zupancic</name>
       <email>elijah@zupancic.name</email>
       <organization>Joyent</organization>
       <organizationUrl>joyent.com</organizationUrl>
     </developer>
+    <developer>
+      <name>Phillip Ross</name>
+      <email>phillip.w.g.ross at gmail.com</email>
+      <organization>Luminosity Labs LLC</organization>
+      <timezone>US/Eastern</timezone>
+    </developer>
   </developers>
+  <contributors>
+    <contributor>
+      <name>Yunong Xiao</name>
+      <email>yjxiao@gmail.com</email>
+      <url>yunong.ca</url>
+    </contributor>
+  </contributors>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -97,6 +96,10 @@
         <version>${maven-dependency-plugin.version}</version>
       </plugin>
       <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>${maven-deploy-plugin.version}</version>
+      </plugin>
+      <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>${maven-enforcer-plugin.version}</version>
         <executions>
@@ -114,6 +117,10 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>${maven-gpg-plugin.version}</version>
       </plugin>
       <plugin>
         <artifactId>maven-install-plugin</artifactId>
@@ -135,10 +142,7 @@
         <artifactId>maven-release-plugin</artifactId>
         <version>${maven-release-plugin.version}</version>
         <configuration>
-          <autoVersionSubmodules>true</autoVersionSubmodules>
-          <useReleaseProfile>true</useReleaseProfile>
           <releaseProfiles>release</releaseProfiles>
-          <goals>deploy</goals>
           <pushChanges>false</pushChanges>
         </configuration>
       </plugin>
@@ -184,6 +188,10 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>${maven-source-plugin.version}</version>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven-surefire-plugin.version}</version>
         <configuration>
@@ -198,17 +206,6 @@
           <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>${maven-nexus-staging-plugin.version}</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <profiles>
@@ -218,7 +215,6 @@
         <plugins>
           <plugin>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>${maven-gpg-plugin.version}</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -231,7 +227,6 @@
           </plugin>
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>${maven-javadoc-plugin.version}</version>
             <executions>
               <execution>
                 <id>attach-javadocs</id>
@@ -243,7 +238,6 @@
           </plugin>
           <plugin>
             <artifactId>maven-source-plugin</artifactId>
-            <version>${maven-source-plugin.version}</version>
             <executions>
               <execution>
                 <id>attach-sources</id>
@@ -356,7 +350,6 @@
     <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
     <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-    <maven-nexus-staging-plugin.version>1.6.6</maven-nexus-staging-plugin.version>
     <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
     <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
     <dependency.bouncycastle.version>1.53</dependency.bouncycastle.version>

@@ -4,12 +4,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>9</version>
-    </parent>
-
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
     <version>1.6.0-SNAPSHOT</version>
@@ -34,20 +28,25 @@
 
     <developers>
         <developer>
-            <email>yjxiao@gmail.com</email>
-            <name>Yunong Xiao</name>
+            <name>Elijah Zupancic</name>
+            <email>elijah@zupancic.name</email>
             <organization>Joyent</organization>
             <organizationUrl>joyent.com</organizationUrl>
-            <url>yunong.ca</url>
-            <id>yunong</id>
         </developer>
         <developer>
-            <email>elijah@zupancic.name</email>
-            <name>Elijah Zuoancic</name>
-            <organization>Joyent</organization>
-            <organizationUrl>joyent.com</organizationUrl>
+            <name>Phillip Ross</name>
+            <email>phillip.w.g.ross at gmail.com</email>
+            <organization>Luminosity Labs LLC</organization>
+            <timezone>US/Eastern</timezone>
         </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>Yunong Xiao</name>
+            <email>yjxiao@gmail.com</email>
+            <url>yunong.ca</url>
+        </contributor>
+    </contributors>
 
     <scm>
         <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
@@ -99,7 +98,6 @@
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
         <maven-resources-plugin.version>2.7</maven-resources-plugin.version>
         <maven-shade-plugin.version>2.4.2</maven-shade-plugin.version>
-        <maven-nexus-staging-plugin.version>1.6.6</maven-nexus-staging-plugin.version>
         <maven-source-plugin.version>2.4</maven-source-plugin.version>
         <maven-surefire-plugin.version>2.19</maven-surefire-plugin.version>
     </properties>
@@ -194,14 +192,11 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>${maven-dependency-plugin.version}</version>
             </plugin>
-
-            <!-- This might interfere with sonatype nexus staging plugin... leave it commented out until testing can be done. -->
-            <!--<plugin>
+            <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-deploy-plugin</artifactId>
               <version>${maven-deploy-plugin.version}</version>
-            </plugin>-->
-
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -221,6 +216,11 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>${maven-gpg-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -247,11 +247,9 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>${maven-release-plugin.version}</version>
                 <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <useReleaseProfile>true</useReleaseProfile>
-                    <releaseProfiles>release</releaseProfiles>
-                    <goals>deploy</goals>
+                    <localCheckout>true</localCheckout>
                     <pushChanges>false</pushChanges>
+                    <releaseProfiles>release</releaseProfiles>
                 </configuration>
             </plugin>
             <plugin>
@@ -299,6 +297,11 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
@@ -311,17 +314,6 @@
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${maven-nexus-staging-plugin.version}</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
         </plugins>
@@ -338,8 +330,12 @@
     </reporting>
 
     <profiles>
-        <!-- We setup a release profile so that we don't have to build javadocs/sources and sign
-             on every run of the package goal. -->
+        <!--
+        The release profile only needs activated when cutting a release for maven central.
+        It will generate additional artifacts for javadoc and source as well as GPG signatures for each artifact.
+        This profile also assumes that the properties for the gpg plugin (such as gpg.keyname and gpg.passphrase
+        are either defined in a settings.xml file or similar facility.
+        -->
         <profile>
             <id>release</id>
             <build>
@@ -347,7 +343,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>${maven-gpg-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -361,7 +356,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${maven-javadoc-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -374,7 +368,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>${maven-source-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>

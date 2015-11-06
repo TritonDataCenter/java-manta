@@ -280,7 +280,7 @@ public class MantaClient {
      * @param path The fully qualified path of the Manta object.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If an HTTP status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering delete with path %s", path));
@@ -311,7 +311,7 @@ public class MantaClient {
      * @param path The fully qualified path of the Manta object.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void deleteRecursive(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
@@ -353,7 +353,7 @@ public class MantaClient {
      * @return The {@link MantaObject}.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObject get(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
@@ -384,7 +384,7 @@ public class MantaClient {
      * @return The {@link MantaObject}.
      * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObject head(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
@@ -415,7 +415,7 @@ public class MantaClient {
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaObjectException If the path isn't a directory
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public Collection<MantaObject> listObjects(final String path) throws MantaCryptoException, MantaObjectException,
             MantaClientHttpResponseException, IOException {
@@ -485,7 +485,7 @@ public class MantaClient {
      *               or {@link java.lang.String}.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void put(final MantaObject object)
             throws MantaCryptoException, MantaClientHttpResponseException, IOException {
@@ -536,7 +536,7 @@ public class MantaClient {
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String path, final HttpHeaders headers)
             throws MantaCryptoException, MantaClientHttpResponseException, IOException {
@@ -577,7 +577,7 @@ public class MantaClient {
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code > 300 is returned.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putSnapLink(final String linkPath, final String objectPath, final HttpHeaders headers)
             throws MantaCryptoException, MantaClientHttpResponseException, IOException {

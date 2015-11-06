@@ -150,7 +150,6 @@ public class MantaObject implements Serializable {
         return this.path;
     }
 
-
     /**
      * Sets the path value.
      *
@@ -173,8 +172,6 @@ public class MantaObject implements Serializable {
     /**
      * Returns the content type value.
      *
-
-    /**
      * @return the type
      */
     public final String getContentType() {
@@ -214,6 +211,8 @@ public class MantaObject implements Serializable {
 
 
     /**
+     * Sets the dataInputFile value.
+     *
      * @param dataInputFile the dataInputFile to set
      */
     public final void setDataInputFile(final File dataInputFile) {
@@ -226,7 +225,8 @@ public class MantaObject implements Serializable {
      * or null if there is no data associated with this object.
      *
      * @return the dataInputStream
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException
+     *             If an IO exception has occured.
      */
     public final InputStream getDataInputStream() throws IOException {
         if (this.dataInputStream == null) {
@@ -251,13 +251,14 @@ public class MantaObject implements Serializable {
 
 
     /**
-     * Return the {@link java.lang.String} containing this object's data. If the object's data is contained in the
-     * {@link java.io.InputStream}, then the data is read from the {@link java.io.InputStream}, returned as this
-     * {@link java.lang.String} and the {@link java.io.InputStream} is closed. If the object's data is contained in a
-     * {@link java.io.File}, then the file is read back into the {@link java.lang.String}.
+     * Return the {@link String} containing this object's data. If the object's data is contained in the
+     * {@link InputStream}, then the data is read from the {@link InputStream}, returned as this {@link String} and the
+     * {@link InputStream} is closed. If the object's data is contained in a {@link File}, then the file is read back
+     * into the {@link String} .
      *
      * @return the dataInputString
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException
+     *             If an IO exception has occured.
      */
     public final String getDataInputString() throws IOException {
         if (this.dataInputString == null) {
@@ -272,17 +273,18 @@ public class MantaObject implements Serializable {
 
 
     /**
+     * Sets the dataInputStrint value.
+     *
      * @param dataInputString the dataInputString to set
      */
     public final void setDataInputString(final String dataInputString) {
         this.dataInputString = dataInputString;
     }
 
+
     /**
      * Returns the http headers.
      *
-
-    /**
      * @return the httpHeaders
      */
     public final HttpHeaders getHttpHeaders() {
@@ -357,6 +359,7 @@ public class MantaObject implements Serializable {
     }
 
 
+
     /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
@@ -392,33 +395,6 @@ public class MantaObject implements Serializable {
         sb.append('}');
         return sb.toString();
     }
-
-
-    /** {@inheritDoc} */
-    /*@Override
-    public final String toString() {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("MantaObject [path=")
-                .append(this.path)
-                .append(", contentLength=")
-                .append(this.contentLength)
-                .append(", contentType=")
-                .append(this.contentType)
-                .append(", etag=")
-                .append(this.etag)
-                .append(", mtime=")
-                .append(this.mtime)
-                .append(", dataInputFile=")
-                .append(this.dataInputFile)
-                .append(", dataInputStream=")
-                .append(this.dataInputStream)
-                .append(", dataInputString=")
-                .append(this.dataInputString)
-                .append(", httpHeaders=")
-                .append(this.httpHeaders)
-                .append("]");
-        return builder.toString();
-    }*/
 
 
 }
