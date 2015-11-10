@@ -32,7 +32,7 @@ import java.util.List;
  *
  * @author Yunong Xiao
  */
-public class MantaClient {
+public class MantaClient implements AutoCloseable {
 
     /**
      * The static logger instance.
@@ -561,7 +561,7 @@ public class MantaClient {
      * @param linkPath The fully qualified path of the new snaplink.
      * @param objectPath The fully qualified path of the object to link against.
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
@@ -614,4 +614,8 @@ public class MantaClient {
     }
 
 
+    @Override
+    public void close() throws Exception {
+        this.httpRequestFactoryProvider.close();
+    }
 }
