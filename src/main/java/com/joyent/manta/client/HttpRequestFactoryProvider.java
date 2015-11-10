@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2014, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client;
 
 import com.google.api.client.http.HttpExecuteInterceptor;
@@ -27,49 +30,107 @@ import java.io.IOException;
 import java.net.ProxySelector;
 
 /**
- * @author Elijah Zupancic
- * @since 1.0.0
+ * Provider class that provides a configured implementation of
+ * {@link HttpRequestFactory} and the underlying {@link HttpClient}
+ * that backs it.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class HttpRequestFactoryProvider implements AutoCloseable {
+    /**
+     * The size of the internal socket buffer used to buffer data
+     * while receiving / transmitting HTTP messages.
+     */
+    private static final int SOCKET_BUFFER_SIZE = 8192;
+
+    /**
+     * Default port to connect to for HTTP connections outbound.
+     */
+    private static final int HTTP_PORT = 80;
+
+    /**
+     * Default port to connect to for HTTPS connections outbound.
+     */
+    private static final int HTTPS_PORT = 443;
+
+    /**
+     * Maximum number of total concurrent connections.
+     */
+    private static final int MAX_CONNECTIONS = 20;
+
+    /**
+     * Maximum number of total concurrent connections per route.
+     */
+    private static final int MAX_CONNECTIONS_PER_ROUTE = 200;
+
     /**
      * The JSON factory instance used by the http library for handling JSON.
      */
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
+
+    /**
+     * Apache HTTP Client 4.1 method of configuration HTTP Clients.
+     */
     private static final HttpParams HTTP_PARAMS = buildHttpParams();
 
+    /**
+     * Apache HTTP Client instance.
+     */
     private final HttpClient httpClient;
+
+    /**
+     * Google HTTP Client request factory.
+     */
     private final HttpRequestFactory requestFactory;
 
+    /**
+     * Creates a new instance of class configured using the passed
+     * {@link HttpSigner}.
+     *
+     * @param httpSigner HTTP Signer used to sign Google HTTP requests
+     * @throws IOException thrown when the instance can't be setup properly
+     */
     public HttpRequestFactoryProvider(final HttpSigner httpSigner)
             throws IOException {
         this.httpClient = buildHttpClient();
         this.requestFactory = buildRequestFactory(httpSigner, httpClient);
     }
 
+    /**
+     * Creates the parameters used to configure the Apache HTTP Client.
+     *
+     * @return Configuration parameters object
+     */
     private static HttpParams buildHttpParams() {
         final HttpParams params = new BasicHttpParams();
         // Turn off stale checking. Our connections break all the time anyway,
         // and it's not worth it to pay the penalty of checking every time.
         HttpConnectionParams.setStaleCheckingEnabled(params, false);
-        HttpConnectionParams.setSocketBufferSize(params, 8192);
+        HttpConnectionParams.setSocketBufferSize(params, SOCKET_BUFFER_SIZE);
         HttpConnectionParams.setTcpNoDelay(params, true);
 
         return params;
     }
 
+    /**
+     * Creates and configures an Apache HTTP Client {@link HttpClient}.
+     *
+     * @return a configured instance of {@link HttpClient}
+     */
     private static HttpClient buildHttpClient() {
         final HttpParams params = HTTP_PARAMS;
         final SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
+        final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
         final ProxySelector proxySelector = ProxySelector.getDefault();
 
         // See http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html
         final SchemeRegistry registry = new SchemeRegistry();
-        registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
-        registry.register(new Scheme("https", 443, socketFactory));
+        registry.register(new Scheme("http", HTTP_PORT, plainSocketFactory));
+        registry.register(new Scheme("https", HTTPS_PORT, socketFactory));
 
         final ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager();
-        connectionManager.setMaxTotal(20);
-        connectionManager.setDefaultMaxPerRoute(200);
+        connectionManager.setMaxTotal(MAX_CONNECTIONS);
+        connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
 
         final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
         defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(0, false));
@@ -81,31 +142,47 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         return defaultHttpClient;
     }
 
+    /**
+     * Builds a configured instance of {@link HttpRequestFactory}.
+     *
+     * @param httpSigner HTTP Signer used to sign Google HTTP requests
+     * @param httpClient Apache HTTP Client instance used to back Google HTTP Client
+     * @return configured instance of {@link HttpRequestFactory}
+     * @throws IOException thrown when the instance can't be setup properly
+     */
     private static HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner,
-                                                         final HttpClient httpClient)
+                                                          final HttpClient httpClient)
             throws IOException {
         final HttpTransport transport = new ApacheHttpTransport(httpClient);
+        final HttpExecuteInterceptor signingInterceptor = new HttpExecuteInterceptor() {
+            @Override
+            public void intercept(final HttpRequest request) throws IOException {
+                httpSigner.signRequest(request);
+            }
+        };
+
         final HttpRequestInitializer initializer = new HttpRequestInitializer() {
             @Override
             public void initialize(final HttpRequest request) throws IOException {
-                request.setInterceptor(new HttpExecuteInterceptor() {
-                    @Override
-                    public void intercept(HttpRequest request) throws IOException {
-                        httpSigner.signRequest(request);
-                    }
-                });
+                request.setInterceptor(signingInterceptor);
                 request.setParser(new JsonObjectParser(JSON_FACTORY));
             }
         };
 
-        // TODO: Call shutdown method
         return transport.createRequestFactory(initializer);
     }
 
+
+    /**
+     * @return the Apache HTTP Client instance backing the {@link HttpRequestFactory}
+     */
     public HttpClient getHttpClient() {
         return httpClient;
     }
 
+    /**
+     * @return configured instance of {@link HttpRequestFactory}
+     */
     public HttpRequestFactory getRequestFactory() {
         return requestFactory;
     }

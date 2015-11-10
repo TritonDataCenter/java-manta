@@ -3,7 +3,17 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.*;
+import com.google.api.client.http.ByteArrayContent;
+import com.google.api.client.http.EmptyContent;
+import com.google.api.client.http.FileContent;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
+import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
