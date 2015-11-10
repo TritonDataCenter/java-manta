@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static com.joyent.manta.client.HttpRequestFactoryProvider.newDefaultHttpClient;
-
 /**
  * Manta Http client.
  *
@@ -42,9 +40,9 @@ public class MantaClient {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     /**
-     * The Request factory used for handling http requests.
+     * The provide for http requests setup, metadata and request initialization.
      */
-    private final HttpRequestFactory httpRequestFactory;
+    private final HttpRequestFactoryProvider httpRequestFactoryProvider;
 
     /**
      * The standard http status code representing that the resource could not be found.
@@ -210,7 +208,7 @@ public class MantaClient {
         this.url = url;
         KeyPair keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
         this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
-        this.httpRequestFactory = newDefaultHttpClient(httpSigner);
+        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner);
         this.httpTimeout = httpTimeout;
     }
 
@@ -252,7 +250,7 @@ public class MantaClient {
         KeyPair keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, password);
         this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
         this.httpTimeout = httpTimeout;
-        this.httpRequestFactory = newDefaultHttpClient(httpSigner);
+        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner);
     }
 
 
@@ -267,6 +265,7 @@ public class MantaClient {
     public void delete(final String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering delete with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildDeleteRequest(genericUrl);
         // XXX: make an intercepter that sets these timeouts before each API call.
         request.setReadTimeout(this.httpTimeout);
@@ -341,6 +340,7 @@ public class MantaClient {
     IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
@@ -372,6 +372,7 @@ public class MantaClient {
     IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
@@ -403,6 +404,7 @@ public class MantaClient {
             MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering listDirectory with directory %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
@@ -488,6 +490,7 @@ public class MantaClient {
         }
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(object.getPath()));
 
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
@@ -528,6 +531,7 @@ public class MantaClient {
 
         LOG.debug(String.format("entering putDirectory with directory %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, new EmptyContent());
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
@@ -566,6 +570,7 @@ public class MantaClient {
         LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(linkPath));
         final HttpContent content = new EmptyContent();
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
         if (headers != null) {
             request.setHeaders(headers);

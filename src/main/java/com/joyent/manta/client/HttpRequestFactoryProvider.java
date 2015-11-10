@@ -10,6 +10,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
+import org.apache.http.client.HttpClient;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -29,37 +30,61 @@ import java.net.ProxySelector;
  * @author Elijah Zupancic
  * @since 1.0.0
  */
-public class HttpRequestFactoryProvider {
+public class HttpRequestFactoryProvider implements AutoCloseable {
     /**
      * The JSON factory instance used by the http library for handling JSON.
      */
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
+    private static final HttpParams HTTP_PARAMS = buildHttpParams();
 
-    public static HttpRequestFactory newDefaultHttpClient(final HttpSigner httpSigner)
+    private final HttpClient httpClient;
+    private final HttpRequestFactory requestFactory;
+
+    public HttpRequestFactoryProvider(final HttpSigner httpSigner)
             throws IOException {
-        SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
-        ProxySelector proxySelector = ProxySelector.getDefault();
-        HttpParams params = new BasicHttpParams();
+        this.httpClient = buildHttpClient();
+        this.requestFactory = buildRequestFactory(httpSigner, httpClient);
+    }
+
+    private static HttpParams buildHttpParams() {
+        final HttpParams params = new BasicHttpParams();
         // Turn off stale checking. Our connections break all the time anyway,
         // and it's not worth it to pay the penalty of checking every time.
         HttpConnectionParams.setStaleCheckingEnabled(params, false);
         HttpConnectionParams.setSocketBufferSize(params, 8192);
+        HttpConnectionParams.setTcpNoDelay(params, true);
+
+        return params;
+    }
+
+    private static HttpClient buildHttpClient() {
+        final HttpParams params = HTTP_PARAMS;
+        final SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
+        final ProxySelector proxySelector = ProxySelector.getDefault();
 
         // See http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html
-        SchemeRegistry registry = new SchemeRegistry();
+        final SchemeRegistry registry = new SchemeRegistry();
         registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
         registry.register(new Scheme("https", 443, socketFactory));
-        ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager(registry);
+
+        final ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager();
         connectionManager.setMaxTotal(20);
         connectionManager.setDefaultMaxPerRoute(200);
-        DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
+
+        final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
         defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(0, false));
 
         if (proxySelector != null) {
             defaultHttpClient.setRoutePlanner(new ProxySelectorRoutePlanner(registry, proxySelector));
         }
 
-        final HttpTransport transport = new ApacheHttpTransport(defaultHttpClient);
+        return defaultHttpClient;
+    }
+
+    private static HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner,
+                                                         final HttpClient httpClient)
+            throws IOException {
+        final HttpTransport transport = new ApacheHttpTransport(httpClient);
         final HttpRequestInitializer initializer = new HttpRequestInitializer() {
             @Override
             public void initialize(final HttpRequest request) throws IOException {
@@ -75,5 +100,20 @@ public class HttpRequestFactoryProvider {
 
         // TODO: Call shutdown method
         return transport.createRequestFactory(initializer);
+    }
+
+    public HttpClient getHttpClient() {
+        return httpClient;
+    }
+
+    public HttpRequestFactory getRequestFactory() {
+        return requestFactory;
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (httpClient.getConnectionManager() != null) {
+            httpClient.getConnectionManager().shutdown();
+        }
     }
 }
