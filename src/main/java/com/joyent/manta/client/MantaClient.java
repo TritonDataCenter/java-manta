@@ -65,9 +65,14 @@ public class MantaClient implements AutoCloseable {
     private static final String LINK_CONTENT_TYPE = "application/json; type=link";
 
     /**
-     * The content-type used to represent Manta directory resources.
+     * The content-type used to represent Manta directory resources in http requests.
      */
-    private static final String DIRECTORY_CONTENT_TYPE = "application/json; type=directory";
+    private static final String DIRECTORY_REQUEST_CONTENT_TYPE = "application/json; type=directory";
+
+    /**
+     * The content-type used to represent Manta directory resources in http responses.
+     */
+    private static final String DIRECTORY_RESPONSE_CONTENT_TYPE = "application/x-json-stream; type=directory";
 
     /**
      * A string representation of the manta service endpoint URL.
@@ -362,6 +367,9 @@ public class MantaClient implements AutoCloseable {
             throw new MantaClientHttpResponseException(e);
         }
         final MantaObject mantaObject = new MantaObject(path, response.getHeaders());
+        if (response.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            mantaObject.setType("directory");
+        }
         mantaObject.setDataInputStream(response.getContent());
         mantaObject.setHttpHeaders(response.getHeaders());
         mantaObject.setContentLength(response.getHeaders().getContentLength());
@@ -398,8 +406,12 @@ public class MantaClient implements AutoCloseable {
             throw new MantaClientHttpResponseException(e);
         }
         final MantaObject mantaObject = new MantaObject(path, response.getHeaders());
-        LOG.debug(String.format("got response code %s, MantaObject %s, header %s", response.getStatusCode(),
-                                mantaObject, response.getHeaders()));
+        if (response.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            mantaObject.setType("directory");
+        }
+        mantaObject.setContentLength(response.getHeaders().getContentLength());
+        mantaObject.setEtag(response.getHeaders().getETag());
+        mantaObject.setMtime(response.getHeaders().getLastModified());
         return mantaObject;
     }
 
@@ -553,7 +565,7 @@ public class MantaClient implements AutoCloseable {
             request.setHeaders(headers);
         }
 
-        request.getHeaders().setContentType(DIRECTORY_CONTENT_TYPE);
+        request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
         HttpResponse response = null;
         try {
             response = request.execute();
