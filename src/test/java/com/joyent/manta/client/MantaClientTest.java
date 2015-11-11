@@ -219,7 +219,6 @@ public class MantaClientTest {
         Assert.assertEquals(mantaObjectHead.getContentType(), mantaLinkHead.getContentType());
         Assert.assertEquals(mantaObjectHead.getContentLength(), mantaLinkHead.getContentLength());
         Assert.assertEquals(mantaObjectHead.getEtag(), mantaLinkHead.getEtag());
-        Assert.assertEquals(mantaObjectHead.getMtime(), mantaLinkHead.getMtime());
     }
 
 
