@@ -46,12 +46,17 @@ import java.util.Objects;
  */
 public class MantaObject implements Serializable {
 
-    private static final long serialVersionUID = -4129858089749197223L;
+    private static final long serialVersionUID = -3553874816118187027L;
 
     /**
-     * Metadata names used by Manta.
+     * The type value for data objects within the manta service.
      */
-    public static final String DIRECTORY = "directory";
+    public static final String MANTA_OBJECT_TYPE_OBJECT = "object";
+
+    /**
+     * The type value for directory objects within the manta service.
+     */
+    public static final String MANTA_OBJECT_TYPE_DIRECTORY = "directory";
 
     /**
      * Manta directory header.
@@ -64,17 +69,13 @@ public class MantaObject implements Serializable {
     @Key("name")
     private String path;
 
+
     /**
      * The content length (size) value for this object.
      */
     @Key("size")
     private Long contentLength;
 
-    /**
-     * The type value for this object.
-     */
-    @Key("type")
-    private String contentType;
 
     /**
      * The etag value for this object.
@@ -82,11 +83,20 @@ public class MantaObject implements Serializable {
     @Key("etag")
     private String etag;
 
+
     /**
      * The mtime value for this object.
      */
     @Key("mtime")
     private String mtime;
+
+
+    /**
+     * The type value for this object.
+     */
+    @Key("type")
+    private String type;
+
 
     /**
      * The content of the object's data as a {@link java.io.File}.
@@ -150,6 +160,7 @@ public class MantaObject implements Serializable {
         return this.path;
     }
 
+
     /**
      * Sets the path value.
      *
@@ -166,8 +177,19 @@ public class MantaObject implements Serializable {
      * @return content length (size)
      */
     public final Long getContentLength() {
-        return this.contentLength;
+        return contentLength;
     }
+
+
+    /**
+     * Sets the content length (size) value.
+     *
+     * @param contentLength the content length (size) value.
+     */
+    public void setContentLength(final Long contentLength) {
+        this.contentLength = contentLength;
+    }
+
 
     /**
      * Returns the content type value.
@@ -175,7 +197,11 @@ public class MantaObject implements Serializable {
      * @return the type
      */
     public final String getContentType() {
-        return this.contentType;
+        String contentType = null;
+        if (getHttpHeaders() != null) {
+            contentType = getHttpHeaders().getContentType();
+        }
+        return contentType;
     }
 
 
@@ -185,7 +211,17 @@ public class MantaObject implements Serializable {
      * @return the etag
      */
     public final String getEtag() {
-        return this.etag;
+        return etag;
+    }
+
+
+    /**
+     * Sets the etag value.
+     *
+     * @param etag the mtime value.
+     */
+    public void setEtag(final String etag) {
+        this.etag = etag;
     }
 
 
@@ -195,7 +231,37 @@ public class MantaObject implements Serializable {
      * @return the mtime
      */
     public final String getMtime() {
-        return this.mtime;
+        return mtime;
+    }
+
+
+    /**
+     * Sets the mtime value.
+     *
+     * @param mtime the mtime value.
+     */
+    public void setMtime(final String mtime) {
+        this.mtime = mtime;
+    }
+
+
+    /**
+     * Returns the type value.
+     *
+     * @return the type
+     */
+    public String getType() {
+        return type;
+    }
+
+
+    /**
+     * Sets the type value.
+     *
+     * @param type the type value.
+     */
+    public void setType(final String type) {
+        this.type = type;
     }
 
 
@@ -331,8 +397,7 @@ public class MantaObject implements Serializable {
      * @return whether this object is a Manta directory.
      */
     public final boolean isDirectory() {
-        return DIRECTORY.equals(contentType)
-                || DIRECTORY_HEADER.equals(contentType);
+        return MANTA_OBJECT_TYPE_DIRECTORY.equals(type);
     }
 
 
@@ -348,10 +413,10 @@ public class MantaObject implements Serializable {
         }
         MantaObject that = (MantaObject)o;
         return Objects.equals(path, that.path)
-                && Objects.equals(contentLength, that.contentLength)
-                && Objects.equals(contentType, that.contentType)
-                && Objects.equals(etag, that.etag)
-                && Objects.equals(mtime, that.mtime)
+                && Objects.equals(getContentLength(), that.getContentLength())
+                && Objects.equals(getContentType(), that.getContentType())
+                && Objects.equals(getEtag(), that.getEtag())
+                && Objects.equals(getMtime(), that.getMtime())
                 && Objects.equals(dataInputFile, that.dataInputFile)
                 && Objects.equals(dataInputStream, that.dataInputStream)
                 && Objects.equals(dataInputString, that.dataInputString)
@@ -366,10 +431,10 @@ public class MantaObject implements Serializable {
     public int hashCode() {
         return Objects.hash(
                 path,
-                contentLength,
-                contentType,
-                etag,
-                mtime,
+                getContentLength(),
+                getContentType(),
+                getEtag(),
+                getMtime(),
                 dataInputFile,
                 dataInputStream,
                 dataInputString,
@@ -383,10 +448,10 @@ public class MantaObject implements Serializable {
         final StringBuilder sb = new StringBuilder(getClass().getName());
         sb.append('{');
         sb.append("path='").append(path).append('\'');
-        sb.append(", contentLength=").append(contentLength);
-        sb.append(", contentType='").append(contentType).append('\'');
-        sb.append(", etag='").append(etag).append('\'');
-        sb.append(", mtime='").append(mtime).append('\'');
+        sb.append(", contentLength=").append(getContentLength());
+        sb.append(", contentType='").append(getContentType()).append('\'');
+        sb.append(", etag='").append(getEtag()).append('\'');
+        sb.append(", mtime='").append(getMtime()).append('\'');
         sb.append(", dataInputFile=").append(dataInputFile);
         sb.append(", dataInputStream=").append(dataInputStream);
         sb.append(", dataInputString='").append(dataInputString).append('\'');

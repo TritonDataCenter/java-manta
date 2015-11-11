@@ -364,6 +364,10 @@ public class MantaClient implements AutoCloseable {
         final MantaObject mantaObject = new MantaObject(path, response.getHeaders());
         mantaObject.setDataInputStream(response.getContent());
         mantaObject.setHttpHeaders(response.getHeaders());
+        mantaObject.setContentLength(response.getHeaders().getContentLength());
+        mantaObject.setEtag(response.getHeaders().getETag());
+        mantaObject.setMtime(response.getHeaders().getLastModified());
+
         LOG.debug(String.format("got response code %s, MantaObject %s, header %s ", response.getStatusCode(),
                                 mantaObject, response.getHeaders()));
         return mantaObject;
