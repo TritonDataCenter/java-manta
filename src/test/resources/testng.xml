@@ -22,11 +22,6 @@
             <package name="com.joyent.manta.client.config.*" />
         </packages>
     </test>
-    <test name="Http Signer">
-        <classes>
-            <class name="com.joyent.manta.client.crypto.HttpSignerTest"/>
-        </classes>
-    </test>
     <test name="Manta Client Test">
         <classes>
             <class name="com.joyent.manta.client.MantaClientTest"/>

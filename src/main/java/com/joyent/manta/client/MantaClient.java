@@ -3,16 +3,6 @@
  */
 package com.joyent.manta.client;
 
-import java.io.BufferedReader;
-import java.io.StringReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.EmptyContent;
 import com.google.api.client.http.FileContent;
@@ -21,16 +11,12 @@ import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.InputStreamContent;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.JsonObjectParser;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ObjectParser;
-import com.joyent.manta.client.crypto.HttpSigner;
+import com.joyent.http.signature.HttpSignerUtils;
+import com.joyent.http.signature.google.httpclient.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -39,12 +25,24 @@ import com.joyent.manta.exception.MantaObjectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Manta Http client.
  *
  * @author Yunong Xiao
  */
-public class MantaClient {
+public class MantaClient implements AutoCloseable {
 
     /**
      * The static logger instance.
@@ -52,20 +50,9 @@ public class MantaClient {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     /**
-     * The JSON factory instance used by the http library for handling JSON.
+     * The provide for http requests setup, metadata and request initialization.
      */
-    private static final JsonFactory JSON_FACTORY = new JacksonFactory();
-
-    /**
-     * The Request factory used for handling http requests.
-     */
-    private static final HttpRequestFactory HTTP_REQUEST_FACTORY = new NetHttpTransport()
-            .createRequestFactory(new HttpRequestInitializer() {
-                @Override
-                public void initialize(final HttpRequest request) throws IOException {
-                    request.setParser(new JsonObjectParser(JSON_FACTORY));
-                }
-            });
+    private final HttpRequestFactoryProvider httpRequestFactoryProvider;
 
     /**
      * The standard http status code representing that the resource could not be found.
@@ -98,7 +85,6 @@ public class MantaClient {
      * The timeout (in milliseconds) for accessing the Manta service.
      */
     private final int httpTimeout;
-
 
     /**
      * Creates a new instance of a Manta client.
@@ -145,7 +131,7 @@ public class MantaClient {
     public static MantaClient newInstance(final String url, final String login, final String keyPath,
                                           final String fingerPrint, final int timeout) throws IOException {
         LOG.debug(String.format("entering newInstance with url %s, login %s, keyPath %s, fingerPrint %s, timeout %s",
-                                url, login, keyPath, fingerPrint, timeout));
+                url, login, keyPath, fingerPrint, timeout));
         return new MantaClient(url, login, keyPath, fingerPrint, timeout);
     }
 
@@ -204,15 +190,15 @@ public class MantaClient {
      * @param url The url of the Manta endpoint.
      * @param login The user login name.
      * @param keyPath The path to the user rsa private key on disk.
-     * @param fingerPrint The fingerprint of the user rsa private key.
+     * @param fingerprint The fingerprint of the user rsa private key.
      * @param httpTimeout The HTTP timeout in milliseconds.
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
-                        final String login,
-                        final String keyPath,
-                        final String fingerPrint,
-                        final int httpTimeout) throws IOException {
+                       final String login,
+                       final String keyPath,
+                       final String fingerprint,
+                       final int httpTimeout) throws IOException {
         if (login == null) {
             throw new IllegalArgumentException("Manta username must be specified");
         }
@@ -222,7 +208,7 @@ public class MantaClient {
         if (keyPath == null) {
             throw new IllegalArgumentException("Manta key path must be specified");
         }
-        if (fingerPrint == null) {
+        if (fingerprint == null) {
             throw new IllegalArgumentException("Manta key id must be specified");
         }
         if (httpTimeout < 0) {
@@ -230,7 +216,9 @@ public class MantaClient {
         }
 
         this.url = url;
-        this.httpSigner = HttpSigner.newInstance(keyPath, fingerPrint, login);
+        KeyPair keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
+        this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
+        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner);
         this.httpTimeout = httpTimeout;
     }
 
@@ -241,7 +229,7 @@ public class MantaClient {
      * @param url The url of the Manta endpoint.
      * @param login The user login name.
      * @param privateKeyContent The private key as a string.
-     * @param keyName The name of the key.
+     * @param fingerprint The name of the key.
      * @param password The private key password (optional).
      * @param httpTimeout The HTTP timeout in milliseconds.
      * @throws IOException If unable to instantiate the client.
@@ -249,7 +237,7 @@ public class MantaClient {
     public MantaClient(final String url,
                         final String login,
                         final String privateKeyContent,
-                        final String keyName,
+                        final String fingerprint,
                         final char[] password,
                         final int httpTimeout) throws IOException {
         if (login == null) {
@@ -258,8 +246,8 @@ public class MantaClient {
         if (url == null) {
             throw new IllegalArgumentException("Manta URL must be specified");
         }
-        if (keyName == null) {
-            throw new IllegalArgumentException("Manta key name must be specified");
+        if (fingerprint == null) {
+            throw new IllegalArgumentException("Manta fingerprint must be specified");
         }
         if (password == null) {
             throw new IllegalArgumentException("Manta key password must be specified");
@@ -269,8 +257,10 @@ public class MantaClient {
         }
 
         this.url = url;
-        this.httpSigner = HttpSigner.newInstance(privateKeyContent, keyName, password, login);
+        KeyPair keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, password);
+        this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
         this.httpTimeout = httpTimeout;
+        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner);
     }
 
 
@@ -285,11 +275,12 @@ public class MantaClient {
     public void delete(final String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering delete with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildDeleteRequest(genericUrl);
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildDeleteRequest(genericUrl);
         // XXX: make an intercepter that sets these timeouts before each API call.
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
-        this.httpSigner.signRequest(request);
+
         HttpResponse response = null;
         try {
             response = request.execute();
@@ -359,10 +350,11 @@ public class MantaClient {
     IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(genericUrl);
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
-        this.httpSigner.signRequest(request);
+
         HttpResponse response;
         try {
             response = request.execute();
@@ -390,10 +382,11 @@ public class MantaClient {
     IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildHeadRequest(genericUrl);
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
-        this.httpSigner.signRequest(request);
+
         HttpResponse response;
         try {
             response = request.execute();
@@ -421,10 +414,11 @@ public class MantaClient {
             MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering listDirectory with directory %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildGetRequest(genericUrl);
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
-        this.httpSigner.signRequest(request);
+
         HttpResponse response = null;
         try {
             response = request.execute();
@@ -506,13 +500,14 @@ public class MantaClient {
         }
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(object.getPath()));
 
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(genericUrl, content);
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
         if (object.getHttpHeaders() != null) {
             request.setHeaders(object.getHttpHeaders());
         }
-        this.httpSigner.signRequest(request);
+
         HttpResponse response = null;
         try {
             LOG.debug(String.format("sending request %s", request));
@@ -546,13 +541,14 @@ public class MantaClient {
 
         LOG.debug(String.format("entering putDirectory with directory %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(genericUrl, new EmptyContent());
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, new EmptyContent());
         request.setReadTimeout(this.httpTimeout);
         request.setConnectTimeout(this.httpTimeout);
         if (headers != null) {
             request.setHeaders(headers);
         }
-        this.httpSigner.signRequest(request);
+
         request.getHeaders().setContentType(DIRECTORY_CONTENT_TYPE);
         HttpResponse response = null;
         try {
@@ -575,7 +571,7 @@ public class MantaClient {
      * @param linkPath The fully qualified path of the new snaplink.
      * @param objectPath The fully qualified path of the object to link against.
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
@@ -584,11 +580,12 @@ public class MantaClient {
         LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(linkPath));
         final HttpContent content = new EmptyContent();
-        final HttpRequest request = HTTP_REQUEST_FACTORY.buildPutRequest(genericUrl, content);
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
         if (headers != null) {
             request.setHeaders(headers);
         }
-        this.httpSigner.signRequest(request);
+
         request.getHeaders().setContentType(LINK_CONTENT_TYPE);
         request.getHeaders().setLocation(formatPath(objectPath));
         HttpResponse response = null;
@@ -627,4 +624,8 @@ public class MantaClient {
     }
 
 
+    @Override
+    public void close() throws Exception {
+        this.httpRequestFactoryProvider.close();
+    }
 }
