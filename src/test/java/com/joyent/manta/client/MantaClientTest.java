@@ -132,6 +132,14 @@ public class MantaClientTest {
 
 
     @Test
+    public final void testDirectoryIsMarkedAsSuch() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+        MantaObject dir = mantaClient.get(testPathPrefix);
+        Assert.assertTrue(dir.isDirectory(),
+                String.format("Directory should be marked as such [%s]", testPathPrefix));
+    }
+
+
+    @Test
     public final void testRecursiveDeleteObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
 
         final MantaObject mantaObject = new MantaObject(testPathPrefix + UUID.randomUUID().toString());
