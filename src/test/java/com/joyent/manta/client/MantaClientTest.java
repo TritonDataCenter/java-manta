@@ -184,12 +184,41 @@ public class MantaClientTest {
 
     @Test
     public final void testHead() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
-        final String name = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final String objectName = UUID.randomUUID().toString();
+        final MantaObject mantaObject = new MantaObject(testPathPrefix + objectName);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
-        final MantaObject obj = mantaClient.head(mantaObject.getPath());
-        Assert.assertNotNull(obj);
+        final MantaObject mantaObjectHead = mantaClient.head(testPathPrefix + objectName);
+        Assert.assertNotNull(mantaObjectHead);
+        Assert.assertNotNull(mantaObjectHead.getContentType());
+        Assert.assertNotNull(mantaObjectHead.getContentLength());
+        Assert.assertNotNull(mantaObjectHead.getEtag());
+        Assert.assertNotNull(mantaObjectHead.getMtime());
+        Assert.assertNotNull(mantaObjectHead.getPath());
+
+        final String directoryName = UUID.randomUUID().toString();
+        mantaClient.putDirectory(testPathPrefix + directoryName, null);
+        final MantaObject mantaDirectoryHead = mantaClient.head(testPathPrefix + directoryName);
+        Assert.assertNotNull(mantaDirectoryHead);
+        Assert.assertNotNull(mantaDirectoryHead.getContentType());
+        Assert.assertNull(mantaDirectoryHead.getContentLength());
+        Assert.assertNull(mantaDirectoryHead.getEtag());
+        Assert.assertNotNull(mantaDirectoryHead.getMtime());
+        Assert.assertNotNull(mantaDirectoryHead.getPath());
+
+        final String linkName = UUID.randomUUID().toString();
+        mantaClient.putSnapLink(testPathPrefix + linkName, testPathPrefix + objectName, null);
+        final MantaObject mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
+        Assert.assertNotNull(mantaLinkHead);
+        Assert.assertNotNull(mantaLinkHead.getContentType());
+        Assert.assertNotNull(mantaLinkHead.getContentLength());
+        Assert.assertNotNull(mantaLinkHead.getEtag());
+        Assert.assertNotNull(mantaLinkHead.getMtime());
+        Assert.assertNotNull(mantaLinkHead.getPath());
+
+        Assert.assertEquals(mantaObjectHead.getContentType(), mantaLinkHead.getContentType());
+        Assert.assertEquals(mantaObjectHead.getContentLength(), mantaLinkHead.getContentLength());
+        Assert.assertEquals(mantaObjectHead.getEtag(), mantaLinkHead.getEtag());
     }
 
 
