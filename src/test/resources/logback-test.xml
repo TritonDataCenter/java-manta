@@ -8,7 +8,8 @@
         </encoder>
     </appender>
 
-    <logger name="org.apache.http.wire" level="INFO" additivity="false" />
+    <logger name="com.joyent" level="ERROR" additivity="false" />
+    <logger name="org.apache" level="ERROR" additivity="false" />
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
