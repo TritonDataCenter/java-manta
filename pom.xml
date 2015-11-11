@@ -301,7 +301,7 @@
                         <excludes>
                             <exclude>com.google.code.findbugs:jsr305</exclude>
                             <exclude>junit:junit</exclude>
-                            <exclude>org.slf4j:*</exclude>
+                            <exclude>org.slf4j:slf4j-api</exclude>
                             <exclude>org.bouncycastle:*</exclude>
                             <exclude>com.joyent:*</exclude>
                         </excludes>
