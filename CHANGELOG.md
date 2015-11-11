@@ -18,6 +18,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
  - [README specifies incorrect system property name for manta user](https://github.com/joyent/java-manta/issues/48)
  - [manta client recursive delete does not work](https://github.com/joyent/java-manta/issues/49)
  - [manta client listObjects method does not completely populate manta objects](https://github.com/joyent/java-manta/issues/51)
+ - [Convert MantaObject.getMtime() to use an actual Java time type](https://github.com/joyent/java-manta/issues/33)
 
 ## [1.5.4] - 2015-10-31
 ### Changed

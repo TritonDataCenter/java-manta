@@ -5,6 +5,10 @@ package com.joyent.manta.client;
 
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.util.Key;
+import org.apache.http.impl.cookie.DateParseException;
+import org.apache.http.impl.cookie.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -12,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Objects;
 
 
@@ -244,6 +249,39 @@ public class MantaObject implements Serializable {
         this.mtime = mtime;
     }
 
+    /**
+     * Get the mtime value (last modified time) as a {@link java.util.Date} object.
+     *
+     * @return null if not available or unable to parse, otherwise last modified date in UTC
+     */
+    public Date getLastModifiedTime() {
+        final String lastModified = getMtime();
+        if (lastModified == null) {
+            return null;
+        }
+
+        try {
+            return DateUtils.parseDate(lastModified);
+        } catch (DateParseException e) {
+            Logger logger = LoggerFactory.getLogger(getClass());
+            logger.warn(String.format("Error parsing mtime value: %s", lastModified), e);
+
+            return null;
+        }
+    }
+
+    /**
+     * Sets the mtime value (last modified time) from a {@link java.util.Date} object.
+     * @param lastModified null or a Date object
+     */
+    public void setLastModifiedTime(final Date lastModified) {
+        if (lastModified == null) {
+            this.mtime = null;
+            return;
+        }
+
+        this.mtime = DateUtils.formatDate(lastModified);
+    }
 
     /**
      * Returns the type value.

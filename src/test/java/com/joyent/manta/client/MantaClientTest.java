@@ -8,11 +8,14 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
+import org.apache.http.impl.cookie.DateParseException;
+import org.apache.http.impl.cookie.DateUtils;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.*;
 import java.util.Collection;
+import java.util.Date;
 import java.util.UUID;
 
 
@@ -288,4 +291,51 @@ public class MantaClientTest {
     }
 
 
+    @Test(groups = { "mtime" })
+    public final void testGetLastModifiedDate() throws DateParseException {
+        final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
+        final Date expected = DateUtils.parseDate(mtime);
+        final MantaObject obj = new MantaObject(testPathPrefix);
+        obj.setMtime(mtime);
+
+        Assert.assertEquals(obj.getLastModifiedTime(), expected,
+                "Last modified date should equal input to mtime");
+    }
+
+
+    @Test(groups = { "mtime" })
+    public final void testGetNullLastModifiedDate() throws DateParseException {
+        final MantaObject obj = new MantaObject(testPathPrefix);
+        obj.setMtime(null);
+
+        Assert.assertNull(obj.getLastModifiedTime(),
+                "Last modified date should be null when mtime is null");
+    }
+
+
+    @Test(groups = { "mtime" })
+    public final void testGetLastModifiedDateWithUnparseableMtime() throws DateParseException {
+        final String mtime = "Bad unparseable string";
+        final MantaObject obj = new MantaObject(testPathPrefix);
+        obj.setMtime(mtime);
+
+        Assert.assertNull(obj.getLastModifiedTime(),
+                "Last modified date should be null when mtime is null");
+    }
+
+
+    @Test(groups = { "mtime" })
+    public final void testSetLastModifiedDate() throws DateParseException {
+        final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
+        final Date input = DateUtils.parseDate(mtime);
+        final MantaObject obj = new MantaObject(testPathPrefix);
+
+        obj.setLastModifiedTime(input);
+
+        Assert.assertEquals(obj.getLastModifiedTime(), input,
+                "Last modified date should equal input to mtime");
+        Assert.assertEquals(obj.getMtime(), mtime,
+                "Mtime should equal input to Last modified date");
+
+    }
 }
