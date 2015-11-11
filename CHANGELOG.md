@@ -13,6 +13,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added chained configuration context support.
 - Added configuration context unit tests.
 
+### Fixed
+ - [HTTP Content-Type header is not being read correctly](https://github.com/joyent/java-manta/issues/39)
+ - [README specifies incorrect system property name for manta user](https://github.com/joyent/java-manta/issues/48)
+ - [manta client recursive delete does not work](https://github.com/joyent/java-manta/issues/49)
+ - [manta client listObjects method does not completely populate manta objects](https://github.com/joyent/java-manta/issues/51)
+
 ## [1.5.4] - 2015-10-31
 ### Changed
 - Project came under new leadership.
