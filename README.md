@@ -45,7 +45,7 @@ left are overridden by values on the right.
 | Default                          | TestNG Param   | System Property | Environment Variable |
 |----------------------------------|----------------|-----------------|----------------------|
 | https://us-east.manta.joyent.com | manta.url      | manta.url       | MANTA_URL            |
-|                                  | manta.user     | manta.url       | MANTA_USER           |
+|                                  | manta.user     | manta.user      | MANTA_USER           |
 |                                  | manta.key_id   | manta.key_id    | MANTA_KEY_ID         |
 |                                  | manta.key_path | manta.key_path  | MANTA_KEY_PATH       |
 | 20000                            | manta.timeout  | manta.timeout   | MANTA_TIMEOUT        | 
