@@ -346,12 +346,12 @@ public class MantaClient implements AutoCloseable {
      * Get a Manta object.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return The {@link MantaObject}.
+     * @return The {@link MantaMetadata}.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public MantaObject get(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
+    public MantaMetadata get(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
@@ -366,7 +366,7 @@ public class MantaClient implements AutoCloseable {
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         }
-        final MantaObject mantaObject = new MantaObject(path, response.getHeaders());
+        final MantaMetadata mantaObject = new MantaMetadata(path, response.getHeaders());
         if (response.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
             mantaObject.setType("directory");
         }
@@ -385,12 +385,12 @@ public class MantaClient implements AutoCloseable {
      * Get the metadata associated with a Manta object.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return The {@link MantaObject}.
+     * @return The {@link MantaMetadata}.
      * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public MantaObject head(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
+    public MantaMetadata head(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
     IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
@@ -405,7 +405,7 @@ public class MantaClient implements AutoCloseable {
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         }
-        final MantaObject mantaObject = new MantaObject(path, response.getHeaders());
+        final MantaMetadata mantaObject = new MantaMetadata(path, response.getHeaders());
         if (response.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
             mantaObject.setType("directory");
         }
@@ -420,7 +420,7 @@ public class MantaClient implements AutoCloseable {
      * Return the contents of a directory in Manta.
      *
      * @param path The fully qualified path of the directory.
-     * @return A {@link Collection} of {@link MantaObject} listing the contents of the directory.
+     * @return A {@link Collection} of {@link MantaMetadata} listing the contents of the directory.
      * @throws IOException If an IO exception has occured.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaObjectException If the path isn't a directory
@@ -459,11 +459,11 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Creates a list of {@link MantaObject}s based on the HTTP response from Manta.
+     * Creates a list of {@link MantaMetadata}s based on the HTTP response from Manta.
      * @param path The fully qualified path of the directory.
      * @param content The content of the response as a Reader.
-     * @param parser Deserializer implementation that takes the raw content and turns it into a {@link MantaObject}
-     * @return List of {@link MantaObject}s for a given directory
+     * @param parser Deserializer implementation that takes the raw content and turns it into a {@link MantaMetadata}
+     * @return List of {@link MantaMetadata}s for a given directory
      * @throws IOException If an IO exception has occurred.
      */
     protected static List<MantaObject> buildObjects(final String path,
@@ -473,7 +473,7 @@ public class MantaClient implements AutoCloseable {
         String line;
         StringBuilder myPath = new StringBuilder(path);
         while ((line = content.readLine()) != null) {
-            final MantaObject obj = parser.parseAndClose(new StringReader(line), MantaObject.class);
+            final MantaMetadata obj = parser.parseAndClose(new StringReader(line), MantaMetadata.class);
             // need to prefix the obj name with the fully qualified path, since Manta only returns
             // the explicit name of the object.
             if (!MantaUtils.endsWith(myPath, '/')) {
@@ -497,7 +497,7 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void put(final MantaObject object)
+    public void put(final MantaMetadata object)
             throws MantaCryptoException, MantaClientHttpResponseException, IOException {
         LOG.debug(String.format("entering put with manta object %s, headers %s", object, object.getHttpHeaders()));
         String contentType = null;

@@ -62,11 +62,11 @@ public class MantaClientTest {
     @Test
     public final void testCRUDObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String name = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
 
-        final MantaObject gotObject = mantaClient.get(testPathPrefix + name);
+        final MantaMetadata gotObject = mantaClient.get(testPathPrefix + name);
         Assert.assertNotNull(gotObject);
         Assert.assertNotNull(gotObject.getContentType());
         Assert.assertNotNull(gotObject.getContentLength());
@@ -91,10 +91,10 @@ public class MantaClientTest {
     @Test
     public final void testCRUDWithFileObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String name = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
-        final MantaObject gotObject = mantaClient.get(testPathPrefix + name);
+        final MantaMetadata gotObject = mantaClient.get(testPathPrefix + name);
         final File file = new File("/tmp/" + name);
         MantaUtils.inputStreamToFile(gotObject.getDataInputStream(), file);
         final String data = MantaUtils.readFileToString(file);
@@ -114,11 +114,11 @@ public class MantaClientTest {
     @Test
     public final void testCRUDObjectWithHeaders() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String name = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setHeader("durability-level", 4);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
-        final MantaObject gotObject = mantaClient.get(testPathPrefix + name);
+        final MantaMetadata gotObject = mantaClient.get(testPathPrefix + name);
         final String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
         Assert.assertEquals(mantaObject.getDataInputString(), data);
         Assert.assertEquals(4, mantaObject.getHeader("durability-level"));
@@ -145,20 +145,20 @@ public class MantaClientTest {
     @Test
     public final void testRecursiveDeleteObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
 
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + UUID.randomUUID().toString());
+        final MantaObject mantaObject = new MantaMetadata(testPathPrefix + UUID.randomUUID().toString());
 
         mantaClient.putDirectory(testPathPrefix + "1", null);
-        final MantaObject mantaObject1 = new MantaObject(testPathPrefix + "1/"+ UUID.randomUUID().toString());
+        final MantaMetadata mantaObject1 = new MantaMetadata(testPathPrefix + "1/"+ UUID.randomUUID().toString());
         mantaObject1.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject1);
 
         mantaClient.putDirectory(testPathPrefix + "1/2", null);
-        final MantaObject mantaObject2 = new MantaObject(testPathPrefix + "1/2/" + UUID.randomUUID().toString());
+        final MantaMetadata mantaObject2 = new MantaMetadata(testPathPrefix + "1/2/" + UUID.randomUUID().toString());
         mantaObject2.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject2);
 
         mantaClient.putDirectory(testPathPrefix + "1/2/3", null);
-        final MantaObject mantaObject3 = new MantaObject(testPathPrefix + "1/2/3/" + UUID.randomUUID().toString());
+        final MantaMetadata mantaObject3 = new MantaMetadata(testPathPrefix + "1/2/3/" + UUID.randomUUID().toString());
         mantaObject3.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject3);
 
@@ -178,7 +178,7 @@ public class MantaClientTest {
     @Test
     public final void testPutWithStream() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String name = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         final InputStream testDataInputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(TEST_FILENAME);
         mantaObject.setDataInputStream(testDataInputStream);
         mantaClient.put(mantaObject);
@@ -188,10 +188,10 @@ public class MantaClientTest {
     @Test
     public final void testHead() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String objectName = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + objectName);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + objectName);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
-        final MantaObject mantaObjectHead = mantaClient.head(testPathPrefix + objectName);
+        final MantaMetadata mantaObjectHead = mantaClient.head(testPathPrefix + objectName);
         Assert.assertNotNull(mantaObjectHead);
         Assert.assertNotNull(mantaObjectHead.getContentType());
         Assert.assertNotNull(mantaObjectHead.getContentLength());
@@ -201,7 +201,7 @@ public class MantaClientTest {
 
         final String directoryName = UUID.randomUUID().toString();
         mantaClient.putDirectory(testPathPrefix + directoryName, null);
-        final MantaObject mantaDirectoryHead = mantaClient.head(testPathPrefix + directoryName);
+        final MantaMetadata mantaDirectoryHead = mantaClient.head(testPathPrefix + directoryName);
         Assert.assertNotNull(mantaDirectoryHead);
         Assert.assertNotNull(mantaDirectoryHead.getContentType());
         Assert.assertNull(mantaDirectoryHead.getContentLength());
@@ -211,7 +211,7 @@ public class MantaClientTest {
 
         final String linkName = UUID.randomUUID().toString();
         mantaClient.putSnapLink(testPathPrefix + linkName, testPathPrefix + objectName, null);
-        final MantaObject mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
+        final MantaMetadata mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
         Assert.assertNotNull(mantaLinkHead);
         Assert.assertNotNull(mantaLinkHead.getContentType());
         Assert.assertNotNull(mantaLinkHead.getContentLength());
@@ -228,13 +228,13 @@ public class MantaClientTest {
     @Test
     public final void testPutLink() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String name = UUID.randomUUID().toString();
-        final MantaObject original = new MantaObject(testPathPrefix + name);
+        final MantaMetadata original = new MantaMetadata(testPathPrefix + name);
         original.setDataInputString(TEST_DATA);
         mantaClient.put(original);
 
         final String link = UUID.randomUUID().toString();
         mantaClient.putSnapLink(testPathPrefix + link, testPathPrefix + name, null);
-        final MantaObject linkObj = mantaClient.get(testPathPrefix + link);
+        final MantaMetadata linkObj = mantaClient.get(testPathPrefix + link);
         final BufferedReader reader = new BufferedReader(new InputStreamReader(linkObj.getDataInputStream()));
         String data;
         while ((data = reader.readLine()) != null) {
@@ -247,11 +247,11 @@ public class MantaClientTest {
     public final void testList() throws IOException, MantaClientHttpResponseException, MantaCryptoException, MantaObjectException {
         final String pathPrefix = testPathPrefix + "/" + UUID.randomUUID().toString();
         mantaClient.putDirectory(pathPrefix, null);
-        mantaClient.put(new MantaObject(pathPrefix + "/" + UUID.randomUUID().toString()));
-        mantaClient.put(new MantaObject(pathPrefix + "/" + UUID.randomUUID().toString()));
+        mantaClient.put(new MantaMetadata(pathPrefix + "/" + UUID.randomUUID().toString()));
+        mantaClient.put(new MantaMetadata(pathPrefix + "/" + UUID.randomUUID().toString()));
         final String subDir = pathPrefix + "/" + UUID.randomUUID().toString();
         mantaClient.putDirectory(subDir, null);
-        mantaClient.put(new MantaObject(subDir + "/" + UUID.randomUUID().toString()));
+        mantaClient.put(new MantaMetadata(subDir + "/" + UUID.randomUUID().toString()));
         final Collection<MantaObject> objs = mantaClient.listObjects(pathPrefix);
         for (final MantaObject mantaObject : objs) {
             Assert.assertTrue(mantaObject.getPath().startsWith(testPathPrefix));
@@ -263,7 +263,7 @@ public class MantaClientTest {
     @Test(expectedExceptions = MantaObjectException.class)
     public final void testListNotADir() throws IOException, MantaClientHttpResponseException,MantaCryptoException, MantaObjectException {
         final String name = UUID.randomUUID().toString();
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
         mantaClient.listObjects(mantaObject.getPath());
@@ -273,10 +273,10 @@ public class MantaClientTest {
     @Test
     public final void testRFC3986() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
         final String name = "spaces in the name of the file";
-        final MantaObject mantaObject = new MantaObject(testPathPrefix + name);
+        final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
         mantaClient.put(mantaObject);
-        final MantaObject gotObject = mantaClient.get(testPathPrefix + name);
+        final MantaMetadata gotObject = mantaClient.get(testPathPrefix + name);
         final String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
         Assert.assertEquals(mantaObject.getDataInputString(), data);
         mantaClient.delete(mantaObject.getPath());
@@ -295,7 +295,7 @@ public class MantaClientTest {
     public final void testGetLastModifiedDate() throws DateParseException {
         final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
         final Date expected = DateUtils.parseDate(mtime);
-        final MantaObject obj = new MantaObject(testPathPrefix);
+        final MantaMetadata obj = new MantaMetadata(testPathPrefix);
         obj.setMtime(mtime);
 
         Assert.assertEquals(obj.getLastModifiedTime(), expected,
@@ -305,7 +305,7 @@ public class MantaClientTest {
 
     @Test(groups = { "mtime" })
     public final void testGetNullLastModifiedDate() throws DateParseException {
-        final MantaObject obj = new MantaObject(testPathPrefix);
+        final MantaMetadata obj = new MantaMetadata(testPathPrefix);
         obj.setMtime(null);
 
         Assert.assertNull(obj.getLastModifiedTime(),
@@ -316,7 +316,7 @@ public class MantaClientTest {
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDateWithUnparseableMtime() throws DateParseException {
         final String mtime = "Bad unparseable string";
-        final MantaObject obj = new MantaObject(testPathPrefix);
+        final MantaMetadata obj = new MantaMetadata(testPathPrefix);
         obj.setMtime(mtime);
 
         Assert.assertNull(obj.getLastModifiedTime(),
@@ -328,7 +328,7 @@ public class MantaClientTest {
     public final void testSetLastModifiedDate() throws DateParseException {
         final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
         final Date input = DateUtils.parseDate(mtime);
-        final MantaObject obj = new MantaObject(testPathPrefix);
+        final MantaMetadata obj = new MantaMetadata(testPathPrefix);
 
         obj.setLastModifiedTime(input);
 
