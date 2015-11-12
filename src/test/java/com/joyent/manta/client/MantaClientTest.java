@@ -39,7 +39,7 @@ public class MantaClientTest {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+            throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new TestConfigContext(
@@ -52,7 +52,7 @@ public class MantaClientTest {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public void afterClass() throws IOException, MantaCryptoException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
         }
@@ -60,7 +60,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testCRUDObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testCRUDObject() throws IOException {
         final String name = UUID.randomUUID().toString();
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
@@ -89,7 +89,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testCRUDWithFileObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testCRUDWithFileObject() throws IOException {
         final String name = UUID.randomUUID().toString();
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
@@ -112,7 +112,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testCRUDObjectWithHeaders() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testCRUDObjectWithHeaders() throws IOException {
         final String name = UUID.randomUUID().toString();
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setHeader("durability-level", 4);
@@ -135,7 +135,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testDirectoryIsMarkedAsSuch() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testDirectoryIsMarkedAsSuch() throws IOException {
         MantaObject dir = mantaClient.get(testPathPrefix);
         Assert.assertTrue(dir.isDirectory(),
                 String.format("Directory should be marked as such [%s]", testPathPrefix));
@@ -143,7 +143,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testRecursiveDeleteObject() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testRecursiveDeleteObject() throws IOException {
 
         final MantaObject mantaObject = new MantaMetadata(testPathPrefix + UUID.randomUUID().toString());
 
@@ -176,7 +176,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testPutWithStream() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testPutWithStream() throws IOException {
         final String name = UUID.randomUUID().toString();
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         final InputStream testDataInputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(TEST_FILENAME);
@@ -186,7 +186,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testHead() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testHead() throws IOException {
         final String objectName = UUID.randomUUID().toString();
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + objectName);
         mantaObject.setDataInputString(TEST_DATA);
@@ -226,7 +226,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testPutLink() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testPutLink() throws IOException {
         final String name = UUID.randomUUID().toString();
         final MantaMetadata original = new MantaMetadata(testPathPrefix + name);
         original.setDataInputString(TEST_DATA);
@@ -244,7 +244,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testList() throws IOException, MantaClientHttpResponseException, MantaCryptoException, MantaObjectException {
+    public final void testList() throws IOException {
         final String pathPrefix = testPathPrefix + "/" + UUID.randomUUID().toString();
         mantaClient.putDirectory(pathPrefix, null);
         mantaClient.put(new MantaMetadata(pathPrefix + "/" + UUID.randomUUID().toString()));
@@ -261,7 +261,7 @@ public class MantaClientTest {
 
 
     @Test(expectedExceptions = MantaObjectException.class)
-    public final void testListNotADir() throws IOException, MantaClientHttpResponseException,MantaCryptoException, MantaObjectException {
+    public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);
@@ -271,7 +271,7 @@ public class MantaClientTest {
 
 
     @Test
-    public final void testRFC3986() throws IOException, MantaClientHttpResponseException, MantaCryptoException {
+    public final void testRFC3986() throws IOException {
         final String name = "spaces in the name of the file";
         final MantaMetadata mantaObject = new MantaMetadata(testPathPrefix + name);
         mantaObject.setDataInputString(TEST_DATA);

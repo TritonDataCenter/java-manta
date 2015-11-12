@@ -273,11 +273,11 @@ public class MantaClient implements AutoCloseable {
      * Deletes an object from Manta.
      *
      * @param path The fully qualified path of the Manta object.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If an HTTP status code {@literal > 300} is returned.
      */
-    public void delete(final String path) throws MantaCryptoException, MantaClientHttpResponseException, IOException {
+    public void delete(final String path) throws IOException {
         LOG.debug(String.format("entering delete with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -305,12 +305,11 @@ public class MantaClient implements AutoCloseable {
      * Recursively deletes an object in Manta.
      *
      * @param path The fully qualified path of the Manta object.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void deleteRecursive(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
-    IOException {
+    public void deleteRecursive(final String path) throws IOException {
         LOG.debug(String.format("entering deleteRecursive with path %s", path));
         Collection<MantaObject> objs;
         try {
@@ -347,12 +346,11 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaMetadata}.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public MantaMetadata get(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
-    IOException {
+    public MantaMetadata get(final String path) throws IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -390,8 +388,7 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public MantaMetadata head(final String path) throws MantaCryptoException, MantaClientHttpResponseException,
-    IOException {
+    public MantaMetadata head(final String path) throws IOException {
         LOG.debug(String.format("entering get with path %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -421,13 +418,12 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the directory.
      * @return A {@link Collection} of {@link MantaMetadata} listing the contents of the directory.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaObjectException If the path isn't a directory
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public Collection<MantaObject> listObjects(final String path) throws MantaCryptoException, MantaObjectException,
-            MantaClientHttpResponseException, IOException {
+    public Collection<MantaObject> listObjects(final String path) throws IOException {
         LOG.debug(String.format("entering listDirectory with directory %s", path));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -493,12 +489,11 @@ public class MantaClient implements AutoCloseable {
      * @param object The stored Manta object. This must contain the fully qualified path of the object, along with
      *               optional data either stored as an {@link java.io.InputStream}, {@link java.io.File},
      *               or {@link java.lang.String}.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void put(final MantaMetadata object)
-            throws MantaCryptoException, MantaClientHttpResponseException, IOException {
+    public void put(final MantaMetadata object) throws IOException {
         LOG.debug(String.format("entering put with manta object %s, headers %s", object, object.getHttpHeaders()));
         String contentType = null;
         if (object.getHttpHeaders() != null) {
@@ -545,12 +540,12 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the Manta directory.
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an IO exception has occured.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String path, final HttpHeaders headers)
-            throws MantaCryptoException, MantaClientHttpResponseException, IOException {
+            throws IOException {
         if (path == null) {
             throw new IllegalArgumentException("PUT directory path can't be null");
         }
@@ -592,7 +587,7 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putSnapLink(final String linkPath, final String objectPath, final HttpHeaders headers)
-            throws MantaCryptoException, MantaClientHttpResponseException, IOException {
+            throws IOException {
         LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(linkPath));
         final HttpContent content = new EmptyContent();
