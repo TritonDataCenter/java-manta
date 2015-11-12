@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.6.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>java-manta</name>
@@ -52,7 +50,8 @@
         <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
         <developerConnection>scm:git:git://github.com/joyent/java-manta.git</developerConnection>
         <url>git@github.com:joyent/java-manta.git</url>
-    </scm>
+      <tag>HEAD</tag>
+  </scm>
     <issueManagement>
         <system>github.com</system>
         <url>https://github.com/joyent/java-manta/issues</url>
@@ -386,7 +385,7 @@
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
-                                <phase>package</phase>
+                                <phase>verify</phase>
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>

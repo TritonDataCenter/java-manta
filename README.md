@@ -9,7 +9,7 @@ compute component.
 # Installation
 ## Requirements.
 * [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
-* [Maven](https://maven.apache.org/)
+* [Maven 3.3.x](https://maven.apache.org/)
 
 ## Using Maven
 Add the latest java-manta dependency to your Maven `pom.xml`.
@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>1.5.4</version>
+    <version>1.6.0</version>
 </dependency>
 ```
 

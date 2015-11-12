@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.6.0] - ?
+## [1.6.0] - 2015-11-11
 ### Changed
 - Massive reformatting and clean up of the entire code base.
 - We now use Apache HTTP Client to make all of our HTTP requests.
