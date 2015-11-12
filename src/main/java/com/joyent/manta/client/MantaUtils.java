@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.Objects;
 import java.util.Scanner;
 
 import static java.nio.file.Files.readAllBytes;
@@ -34,17 +36,34 @@ public final class MantaUtils {
      * Closes the {@link java.io.InputStream} when done.
      *
      * @param inputStream The {@link java.io.InputStream}
+     * @param charsetName The encoding type used to convert bytes from the
+     *        stream into characters to be scanned
      * @return The contents of the {@link java.io.InputStream}
      * @throws IOException If an IO exception has occurred
      */
-    public static String inputStreamToString(final InputStream inputStream) throws IOException {
-        final Scanner scanner = new Scanner(inputStream)
+    public static String inputStreamToString(final InputStream inputStream,
+                                             final String charsetName) throws IOException {
+        final Scanner scanner = new Scanner(inputStream, charsetName)
                 .useDelimiter("\\A");
         String nextToken = "";
         if (scanner.hasNext()) {
             nextToken = scanner.next();
         }
         return nextToken;
+    }
+
+
+    /**
+     * Read from an {@link java.io.InputStream} to a {@link java.lang.String}
+     * using the default encoding. Closes the {@link java.io.InputStream} when done.
+     *
+     * @param inputStream The {@link java.io.InputStream}
+     * @return The contents of the {@link java.io.InputStream}
+     * @throws IOException If an IO exception has occurred
+     */
+    public static String inputStreamToString(final InputStream inputStream) throws IOException {
+        Objects.requireNonNull(inputStream, "InputStream should be present");
+        return inputStreamToString(inputStream, Charset.defaultCharset().name());
     }
 
 
