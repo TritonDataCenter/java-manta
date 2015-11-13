@@ -7,6 +7,8 @@ import com.google.api.client.http.HttpExecuteInterceptor;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseInterceptor;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.apache.ApacheHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -25,9 +27,12 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.net.ProxySelector;
+
+import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 
 /**
  * Provider class that provides a configured implementation of
@@ -158,6 +163,17 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             @Override
             public void intercept(final HttpRequest request) throws IOException {
                 httpSigner.signRequest(request);
+                final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    MDC.put("mantaRequestId", requestId.toString());
+                }
+            }
+        };
+
+        final HttpResponseInterceptor responseInterceptor = new HttpResponseInterceptor() {
+            @Override
+            public void interceptResponse(HttpResponse response) throws IOException {
+                MDC.remove("mantaRequestId");
             }
         };
 
@@ -165,6 +181,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             @Override
             public void initialize(final HttpRequest request) throws IOException {
                 request.setInterceptor(signingInterceptor);
+                request.setResponseInterceptor(responseInterceptor);
                 request.setParser(new JsonObjectParser(JSON_FACTORY));
             }
         };

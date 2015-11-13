@@ -60,6 +60,15 @@ public interface MantaObject extends Serializable {
      */
     Date getLastModifiedTime();
 
+
+    /**
+     * Returns the mtime value.
+     *
+     * @return the mtime
+     */
+    String getMtime();
+
+
     /**
      * Returns the type value.
      *
@@ -81,6 +90,14 @@ public interface MantaObject extends Serializable {
      * @return the value of the header.
      */
     Object getHeader(String fieldName);
+
+
+    /**
+     * Unique request id made to Manta.
+     *
+     * @return UUID string representing a request id
+     */
+    String getRequestId();
 
     /**
      * @return whether this object is a Manta directory.

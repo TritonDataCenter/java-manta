@@ -10,13 +10,10 @@ import org.apache.http.impl.cookie.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.Objects;
+
+import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 
 
 /**
@@ -48,9 +45,14 @@ import java.util.Objects;
  *
  * @author Yunong Xiao
  */
-public class MantaMetadata implements MantaObject {
+public class MantaObjectMetadata implements MantaObject {
 
     private static final long serialVersionUID = -5690762948837343786L;
+
+    /**
+     * The content-type used to represent Manta directory resources in http responses.
+     */
+    public static final String DIRECTORY_RESPONSE_CONTENT_TYPE = "application/x-json-stream; type=directory";
 
     /**
      * The name value for this object.
@@ -88,20 +90,9 @@ public class MantaMetadata implements MantaObject {
 
 
     /**
-     * The content of the object's data as a {@link java.io.File}.
+     * Unique request id made to Manta.
      */
-    private File dataInputFile;
-
-    /**
-     * The content of the object's data as an {@link java.io.InputStream}.
-     */
-    private InputStream dataInputStream;
-
-    /**
-     * The content of the object's data as a {@link java.lang.String}.
-     */
-    private String dataInputString;
-
+    private String requestId;
 
     /**
      * The http headers associated with this object.
@@ -112,7 +103,7 @@ public class MantaMetadata implements MantaObject {
     /**
      * Empty constructor for the JSON parser.
      */
-    public MantaMetadata() {
+    public MantaObjectMetadata() {
     }
 
 
@@ -121,7 +112,11 @@ public class MantaMetadata implements MantaObject {
      *
      * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
-    public MantaMetadata(final String path) {
+    public MantaObjectMetadata(final String path) {
+        if (path == null) {
+            throw new IllegalArgumentException("Path must be present");
+        }
+
         this.path = path;
         this.httpHeaders = new HttpHeaders();
     }
@@ -134,9 +129,24 @@ public class MantaMetadata implements MantaObject {
      * @param headers Optional {@link HttpHeaders}. Use this to set any additional headers on the Manta object.  For the
      *                full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
-    public MantaMetadata(final String path, final HttpHeaders headers) {
+    public MantaObjectMetadata(final String path, final HttpHeaders headers) {
+        if (path == null) {
+            throw new IllegalArgumentException("Path must be present");
+        }
+        if (headers == null) {
+            throw new IllegalArgumentException("Headers must be present");
+        }
+
         this.path = path;
         this.httpHeaders = headers;
+        this.contentLength = headers.getContentLength();
+        this.etag = headers.getETag();
+        this.mtime = headers.getLastModified();
+        this.requestId = headers.getFirstHeaderStringValue(X_REQUEST_ID_HEADER);
+
+        if (headers.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            this.type ="directory";
+        }
     }
 
 
@@ -263,89 +273,6 @@ public class MantaMetadata implements MantaObject {
     }
 
 
-    /**
-     * Returns a {@link java.io.File} containing this object's data, if such a file has been provided.
-     * Otherwise returns null.
-     *
-     * @return the dataInputFile
-     */
-    public final File getDataInputFile() {
-        return this.dataInputFile;
-    }
-
-
-    /**
-     * Sets the dataInputFile value.
-     *
-     * @param dataInputFile the dataInputFile to set
-     */
-    public final void setDataInputFile(final File dataInputFile) {
-        this.dataInputFile = dataInputFile;
-    }
-
-
-    /**
-     * Returns an {@link java.io.InputStream} containing this object's data,
-     * or null if there is no data associated with this object.
-     *
-     * @return the dataInputStream
-     * @throws IOException
-     *             If an IO exception has occured.
-     */
-    public final InputStream getDataInputStream() throws IOException {
-        if (this.dataInputStream == null) {
-            if (this.dataInputFile != null) {
-                this.dataInputStream = new FileInputStream(this.dataInputFile);
-            } else if (this.dataInputString != null) {
-                this.dataInputStream = new ByteArrayInputStream(this.dataInputString.getBytes("UTF-8"));
-            }
-        }
-        return this.dataInputStream;
-    }
-
-
-    /**
-     * Sets the {@link java.io.InputStream} containing the data content of this object.
-     *
-     * @param dataInputStream the dataInputStream to set
-     */
-    public final void setDataInputStream(final InputStream dataInputStream) {
-        this.dataInputStream = dataInputStream;
-    }
-
-
-    /**
-     * Return the {@link String} containing this object's data. If the object's data is contained in the
-     * {@link InputStream}, then the data is read from the {@link InputStream}, returned as this {@link String} and the
-     * {@link InputStream} is closed. If the object's data is contained in a {@link File}, then the file is read back
-     * into the {@link String} .
-     *
-     * @return the dataInputString
-     * @throws IOException
-     *             If an IO exception has occured.
-     */
-    public final String getDataInputString() throws IOException {
-        if (this.dataInputString == null) {
-            if (this.dataInputStream != null) {
-                this.dataInputString = MantaUtils.inputStreamToString(this.dataInputStream);
-            } else if (this.dataInputFile != null) {
-                this.dataInputString = MantaUtils.readFileToString(this.dataInputFile);
-            }
-        }
-        return this.dataInputString;
-    }
-
-
-    /**
-     * Sets the dataInputStrint value.
-     *
-     * @param dataInputString the dataInputString to set
-     */
-    public final void setDataInputString(final String dataInputString) {
-        this.dataInputString = dataInputString;
-    }
-
-
     @Override
     public final HttpHeaders getHttpHeaders() {
         return this.httpHeaders;
@@ -388,6 +315,12 @@ public class MantaMetadata implements MantaObject {
     }
 
 
+    @Override
+    public String getRequestId() {
+        return null;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
@@ -398,15 +331,12 @@ public class MantaMetadata implements MantaObject {
         if (!(o instanceof MantaObject)) {
             return false;
         }
-        MantaMetadata that = (MantaMetadata)o;
+        MantaObjectMetadata that = (MantaObjectMetadata)o;
         return Objects.equals(path, that.path)
                 && Objects.equals(getContentLength(), that.getContentLength())
                 && Objects.equals(getContentType(), that.getContentType())
                 && Objects.equals(getEtag(), that.getEtag())
                 && Objects.equals(getMtime(), that.getMtime())
-                && Objects.equals(dataInputFile, that.dataInputFile)
-                && Objects.equals(dataInputStream, that.dataInputStream)
-                && Objects.equals(dataInputString, that.dataInputString)
                 && Objects.equals(httpHeaders, that.httpHeaders);
     }
 
@@ -422,9 +352,6 @@ public class MantaMetadata implements MantaObject {
                 getContentType(),
                 getEtag(),
                 getMtime(),
-                dataInputFile,
-                dataInputStream,
-                dataInputString,
                 httpHeaders);
     }
 
@@ -439,9 +366,7 @@ public class MantaMetadata implements MantaObject {
         sb.append(", contentType='").append(getContentType()).append('\'');
         sb.append(", etag='").append(getEtag()).append('\'');
         sb.append(", mtime='").append(getMtime()).append('\'');
-        sb.append(", dataInputFile=").append(dataInputFile);
-        sb.append(", dataInputStream=").append(dataInputStream);
-        sb.append(", dataInputString='").append(dataInputString).append('\'');
+        sb.append(", requestId='").append(getRequestId()).append('\'');
         sb.append(", httpHeaders=").append(httpHeaders);
         sb.append(", directory=").append(isDirectory());
         sb.append('}');
