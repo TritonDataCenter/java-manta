@@ -719,7 +719,7 @@ public class MantaClient implements AutoCloseable {
             contentType = headers.getContentType();
         }
 
-        return defaultContentType;
+        return contentType;
     }
 
 
