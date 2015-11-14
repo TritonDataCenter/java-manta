@@ -442,6 +442,13 @@ public class MantaClient implements AutoCloseable {
                 httpRequestFactoryProvider.getRequestFactory());
     }
 
+    /**
+     * Executes an HTTP GET against the remote Manta API.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     protected HttpResponse httpGet(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
@@ -601,6 +608,15 @@ public class MantaClient implements AutoCloseable {
         httpPut(path, headers, content);
     }
 
+    /**
+     * Executes an HTTP PUT against the remote Manta API.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers optional HTTP headers to include when copying the object
+     * @param content Google HTTP Client content object
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem sending the object over the wire
+     */
     protected HttpResponse httpPut(final String path,
                                    final HttpHeaders headers,
                                    final HttpContent content) throws IOException {
@@ -640,12 +656,28 @@ public class MantaClient implements AutoCloseable {
     }
 
 
-    public void put(final String path,
-                    final InputStream source) throws IOException {
+    /**
+     * Copies the supplied {@link InputStream} to a remote Manta object at the
+     * specified path.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param source the {@link InputStream} to copy data from
+     * @throws IOException when there is a problem sending the object over the wire
+     */
+    public void put(final String path, final InputStream source) throws IOException {
         put(path, source, null);
     }
 
 
+    /**
+     * Copies the supplied {@link String} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string string to copy
+     * @param headers optional HTTP headers to include when copying the object
+     * @throws IOException when there is a problem sending the object over the wire
+     */
     public void put(final String path,
                     final String string,
                     final HttpHeaders headers) throws IOException {
@@ -654,6 +686,15 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
+
+    /**
+     * Copies the supplied {@link String} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string string to copy
+     * @throws IOException when there is a problem sending the object over the wire
+     */
     public void put(final String path,
                     final String string) throws IOException {
         put(path, string, null);
@@ -744,6 +785,14 @@ public class MantaClient implements AutoCloseable {
     }
 
 
+    /**
+     * Finds the content type set in {@link HttpHeaders} and returns that if it
+     * is not null. Otherwise, it will return the specified default content type.
+     *
+     * @param headers headers to parse for content type
+     * @param defaultContentType content type to default to
+     * @return content type as string
+     */
     protected static String findOrDefaultContentType(final HttpHeaders headers,
                                                      final String defaultContentType) {
         final String contentType;
