@@ -72,7 +72,7 @@ public class MantaClientTest {
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
 
-        try (final MantaObjectInputStream gotObject = mantaClient.getInputStream(path)) {
+        try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
             Assert.assertNotNull(gotObject);
             Assert.assertNotNull(gotObject.getContentType());
             Assert.assertNotNull(gotObject.getContentLength());
@@ -126,7 +126,7 @@ public class MantaClientTest {
         headers.set("durability-level", 4);
 
         mantaClient.put(path, TEST_DATA, headers);
-        try (final MantaObjectInputStream gotObject = mantaClient.getInputStream(path)) {
+        try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
             final String data = MantaUtils.inputStreamToString(gotObject);
             Assert.assertEquals(data, TEST_DATA);
             Assert.assertEquals("4", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));

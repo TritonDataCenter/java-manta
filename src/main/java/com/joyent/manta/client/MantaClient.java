@@ -295,7 +295,8 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Get a Manta object.
+     * Get the metadata for a Manta object. The difference with this method vs head() is
+     * that the request being made against the Manta API is done via a GET.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectMetadata}.
@@ -308,7 +309,16 @@ public class MantaClient implements AutoCloseable {
         return new MantaObjectMetadata(path, response.getHeaders());
     }
 
-    public MantaObjectInputStream getInputStream(final String path) throws IOException {
+    /**
+     * Get a Manta object's data as an {@link InputStream}. This method allows you to
+     * stream data from the Manta storage service in a memory efficient manner to your
+     * application.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return {@link InputStream} that extends {@link MantaObjectMetadata}.
+     * @throws IOException when there is a problem getting the object over the wire
+     */
+    public MantaObjectInputStream getAsInputStream(final String path) throws IOException {
         final HttpResponse response = httpGet(path);
         final MantaObjectMetadata metadata = new MantaObjectMetadata(path, response.getHeaders());
 
@@ -322,20 +332,52 @@ public class MantaClient implements AutoCloseable {
         return new MantaObjectInputStream(metadata, response);
     }
 
+
+    /**
+     * Get a Manta object's data as a {@link String} using the JVM's default encoding.
+     * This method is not memory efficient, by loading the data into a String you are
+     * loading all of the Object's data into memory.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return String containing the entire Manta object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     public String getAsString(final String path) throws IOException {
-        try (InputStream is = getInputStream(path)) {
+        try (InputStream is = getAsInputStream(path)) {
             return MantaUtils.inputStreamToString(is);
         }
     }
 
+
+    /**
+     * Get a Manta object's data as a {@link String} using the specified encoding.
+     * This method is not memory efficient, by loading the data into a String you are
+     * loading all of the Object's data into memory.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param charsetName The encoding type used to convert bytes from the
+     *        stream into characters to be scanned
+     * @return String containing the entire Manta object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     public String getAsString(final String path, final String charsetName) throws IOException {
-        try (InputStream is = getInputStream(path)) {
+        try (InputStream is = getAsInputStream(path)) {
             return MantaUtils.inputStreamToString(is, charsetName);
         }
     }
 
+
+    /**
+     * Copies Manta object's data to a temporary file on the file system and return
+     * a reference to the file using a NIO {@link Path}. This method is memory
+     * efficient because it uses streams to do the copy.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return reference to the temporary file as a {@link Path} object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     public Path getToTempPath(final String path) throws IOException {
-        try (InputStream is = getInputStream(path)) {
+        try (InputStream is = getAsInputStream(path)) {
             final Path temp = Files.createTempFile("manta-object", "tmp");
 
             Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
@@ -344,10 +386,31 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
+
+    /**
+     * Copies Manta object's data to a temporary file on the file system and return
+     * a reference to the file using a {@link File}. This method is memory
+     * efficient because it uses streams to do the copy.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return reference to the temporary file as a {@link File} object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     public File getToTempFile(final String path) throws IOException {
         return getToTempPath(path).toFile();
     }
 
+
+    /**
+     * Get a Manta object's data as an NIO {@link SeekableByteChannel}. This method
+     * allows you to stream data from the Manta storage service in a memory efficient
+     * manner to your application. Unlike an {@link InputStream}, this will allow you
+     * to stream data by moving between arbitrary position in the Manta object data.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return seekable stream of object data
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     public SeekableByteChannel getSeekableByteChannel(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
@@ -357,6 +420,18 @@ public class MantaClient implements AutoCloseable {
                 httpRequestFactoryProvider.getRequestFactory());
     }
 
+
+    /**
+     * Get a Manta object's data as an NIO {@link SeekableByteChannel}. This method
+     * allows you to stream data from the Manta storage service in a memory efficient
+     * manner to your application. Unlike an {@link InputStream}, this will allow you
+     * to stream data by moving between arbitrary position in the Manta object data.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param position The starting position (in number of bytes) to read from
+     * @return seekable stream of object data
+     * @throws IOException when there is a problem getting the object over the wire
+     */
     public SeekableByteChannel getSeekableByteChannel(final String path,
                                                       final long position) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
@@ -502,6 +577,8 @@ public class MantaClient implements AutoCloseable {
      * Puts an object into Manta.
      *
      * @param path The path to the Manta object.
+     * @param source {@link InputStream} to copy object data from
+     * @param headers optional HTTP headers to include when copying the object
      * @throws IOException If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.

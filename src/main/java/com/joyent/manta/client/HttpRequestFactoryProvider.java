@@ -159,14 +159,14 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      * Builds a configured instance of {@link HttpRequestFactory}.
      *
      * @param httpSigner HTTP Signer used to sign Google HTTP requests
-     * @param httpClient Apache HTTP Client instance used to back Google HTTP Client
+     * @param apacheHttpClient Apache HTTP Client instance used to back Google HTTP Client
      * @return configured instance of {@link HttpRequestFactory}
      * @throws IOException thrown when the instance can't be setup properly
      */
     private HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner,
-                                                          final HttpClient httpClient)
+                                                   final HttpClient apacheHttpClient)
             throws IOException {
-        final HttpTransport transport = new ApacheHttpTransport(httpClient);
+        final HttpTransport transport = new ApacheHttpTransport(apacheHttpClient);
         final HttpExecuteInterceptor signingInterceptor = new HttpExecuteInterceptor() {
             @Override
             public void intercept(final HttpRequest request) throws IOException {
