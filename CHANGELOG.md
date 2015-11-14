@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - MantaClientHttpResponseException now inherits from IOException.
 - MantaUtils.inputStreamToString now supports specifying a Charset.
 
+### Added
+- Added read-only support for NIO SeekableByteChannel streams.
+
 ## [1.6.0] - 2015-11-11
 ### Changed
 - Massive reformatting and clean up of the entire code base.
