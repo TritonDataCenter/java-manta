@@ -13,7 +13,7 @@
     </appender>
 
     <logger name="com.joyent" level="error" />
-    <logger name="org.apache" level="error"  />
+    <logger name="org.apache" level="debug"  />
     <!-- lower this to debug in order to enable most logs -->
     <logger name="com.google.api.client.http" level="error" />
 

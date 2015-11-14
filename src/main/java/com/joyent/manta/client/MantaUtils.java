@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Objects;
@@ -174,4 +176,23 @@ public final class MantaUtils {
     }
 
 
+    /**
+     * Format the path according to RFC3986.
+     *
+     * @param path the raw path string.
+     * @return the URI formatted string with the exception of '/' which is special in manta.
+     * @throws UnsupportedEncodingException If UTF-8 is not supported on this system.
+     */
+    public static String formatPath(final String path) throws UnsupportedEncodingException {
+        // first split the path by slashes.
+        final String[] elements = path.split("/");
+        final StringBuilder encodedPath = new StringBuilder();
+        for (final String string : elements) {
+            if (string.equals("")) {
+                continue;
+            }
+            encodedPath.append("/").append(URLEncoder.encode(string, "UTF-8"));
+        }
+        return encodedPath.toString();
+    }
 }

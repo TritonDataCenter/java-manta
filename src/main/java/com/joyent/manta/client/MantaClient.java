@@ -3,7 +3,15 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.*;
+import com.google.api.client.http.EmptyContent;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
+import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
@@ -24,8 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -34,6 +41,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import static com.joyent.manta.client.MantaUtils.formatPath;
 
 /**
  * Manta Http client.
@@ -388,6 +397,25 @@ public class MantaClient implements AutoCloseable {
         return getToTempPath(path).toFile();
     }
 
+    public SeekableByteChannel getSeekableByteChannel(final String path) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+
+        return new MantaSeekableByteChannel(genericUrl,
+                httpRequestFactoryProvider.getRequestFactory());
+    }
+
+    public SeekableByteChannel getSeekableByteChannel(final String path,
+                                                      final long position) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+
+        return new MantaSeekableByteChannel(genericUrl, position,
+                httpRequestFactoryProvider.getRequestFactory());
+    }
+
     protected HttpResponse httpGet(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
@@ -536,17 +564,7 @@ public class MantaClient implements AutoCloseable {
                     final HttpHeaders headers) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        LOG.debug("PUT {}", path);
-
-        final HttpHeaders httpHeaders = headers == null ? new HttpHeaders() : headers;
-
-        final String contentType;
-
-        if (httpHeaders.getContentType() == null) {
-            contentType = HTTP.OCTET_STREAM_TYPE;
-        } else {
-            contentType = httpHeaders.getContentType();
-        }
+        final String contentType = findOrDefaultContentType(headers, HTTP.OCTET_STREAM_TYPE);
 
         final HttpContent content;
 
@@ -555,6 +573,16 @@ public class MantaClient implements AutoCloseable {
         } else {
             content = new InputStreamContent(contentType, source);
         }
+
+        httpPut(path, headers, content);
+    }
+
+    protected HttpResponse httpPut(final String path,
+                                   final HttpHeaders headers,
+                                   final HttpContent content) throws IOException {
+        LOG.debug("PUT {}", path);
+
+        final HttpHeaders httpHeaders = headers == null ? new HttpHeaders() : headers;
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
 
@@ -569,7 +597,7 @@ public class MantaClient implements AutoCloseable {
             LOG.debug(String.format("sending request %s", request));
             response = request.execute();
             LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(),
-                                    response.getHeaders()));
+                    response.getHeaders()));
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -577,6 +605,8 @@ public class MantaClient implements AutoCloseable {
                 response.disconnect();
             }
         }
+
+        return response;
     }
 
 
@@ -584,6 +614,7 @@ public class MantaClient implements AutoCloseable {
                     final InputStream source) throws IOException {
         put(path, source, null);
     }
+
 
     public void put(final String path,
                     final String string,
@@ -678,24 +709,17 @@ public class MantaClient implements AutoCloseable {
     }
 
 
-    /**
-     * Format the path according to RFC3986.
-     *
-     * @param path the raw path string.
-     * @return the URI formatted string with the exception of '/' which is special in manta.
-     * @throws UnsupportedEncodingException If UTF-8 is not supported on this system.
-     */
-    private static String formatPath(final String path) throws UnsupportedEncodingException {
-        // first split the path by slashes.
-        final String[] elements = path.split("/");
-        final StringBuilder encodedPath = new StringBuilder();
-        for (final String string : elements) {
-            if (string.equals("")) {
-                continue;
-            }
-            encodedPath.append("/").append(URLEncoder.encode(string, "UTF-8"));
+    protected static String findOrDefaultContentType(HttpHeaders headers,
+                                                     String defaultContentType) {
+        final String contentType;
+
+        if (headers == null || headers.getContentType() == null) {
+            contentType = defaultContentType;
+        } else {
+            contentType = headers.getContentType();
         }
-        return encodedPath.toString();
+
+        return defaultContentType;
     }
 
 

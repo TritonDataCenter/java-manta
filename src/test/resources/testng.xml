@@ -11,7 +11,7 @@
 
     <test name="Manta Utils Test">
         <classes>
-            <class name="com.joyent.manta.client.MantaUtilsTest"/>
+            <class name="com.joyent.manta.client.MantaUtilsTest" />
         </classes>
     </test>
     <test name="Configuration Context Tests">
@@ -24,7 +24,8 @@
     </test>
     <test name="Manta Client Test">
         <classes>
-            <class name="com.joyent.manta.client.MantaClientTest"/>
+            <class name="com.joyent.manta.client.MantaClientTest" />
+            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelTest" />
         </classes>
     </test>
 </suite>
