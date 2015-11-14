@@ -174,7 +174,8 @@ public class MantaClient implements AutoCloseable {
         this.url = url;
         KeyPair keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
         this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
-        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner);
+        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
+                httpTimeout);
         this.httpTimeout = httpTimeout;
     }
 
@@ -216,7 +217,8 @@ public class MantaClient implements AutoCloseable {
         KeyPair keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, password);
         this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
         this.httpTimeout = httpTimeout;
-        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner);
+        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
+                httpTimeout);
     }
 
 
@@ -234,9 +236,6 @@ public class MantaClient implements AutoCloseable {
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildDeleteRequest(genericUrl);
-        // XXX: make an intercepter that sets these timeouts before each API call.
-        request.setReadTimeout(this.httpTimeout);
-        request.setConnectTimeout(this.httpTimeout);
 
         HttpResponse response = null;
         try {
@@ -377,9 +376,6 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
 
-        request.setReadTimeout(this.httpTimeout);
-        request.setConnectTimeout(this.httpTimeout);
-
         final HttpResponse response;
 
         try {
@@ -414,9 +410,6 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
 
-        request.setReadTimeout(this.httpTimeout);
-        request.setConnectTimeout(this.httpTimeout);
-
         HttpResponse response;
         try {
             response = request.execute();
@@ -448,8 +441,6 @@ public class MantaClient implements AutoCloseable {
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
-        request.setReadTimeout(this.httpTimeout);
-        request.setConnectTimeout(this.httpTimeout);
 
         HttpResponse response = null;
         try {
@@ -550,8 +541,7 @@ public class MantaClient implements AutoCloseable {
 
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
-        request.setReadTimeout(this.httpTimeout);
-        request.setConnectTimeout(this.httpTimeout);
+
         request.setHeaders(httpHeaders);
 
         HttpResponse response = null;
@@ -612,8 +602,7 @@ public class MantaClient implements AutoCloseable {
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, new EmptyContent());
-        request.setReadTimeout(this.httpTimeout);
-        request.setConnectTimeout(this.httpTimeout);
+
         if (headers != null) {
             request.setHeaders(headers);
         }
