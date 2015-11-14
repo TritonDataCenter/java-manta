@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - MantaException now inherits from RuntimeException.
 - MantaClientHttpResponseException now inherits from IOException.
 - MantaUtils.inputStreamToString now supports specifying a Charset.
+- Changed newInstance() methods to constructors in MantaClient. 
 
 ### Added
 - Added read-only support for NIO SeekableByteChannel streams.

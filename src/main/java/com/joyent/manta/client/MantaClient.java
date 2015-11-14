@@ -44,7 +44,8 @@ import java.util.Objects;
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
 /**
- * Manta Http client.
+ * Manta client object that allows for doing CRUD operations against the Manta HTTP
+ * API. Using this client you can retrieve implementations of {@link MantaObject}.
  *
  * @author Yunong Xiao
  */
@@ -96,14 +97,11 @@ public class MantaClient implements AutoCloseable {
      * Creates a new instance of a Manta client.
      *
      * @param config The configuration context that provides all of the configuration values.
-     * @return An instance of {@link com.joyent.manta.client.MantaClient}
      * @throws IOException If unable to instantiate the client.
      */
-    public static MantaClient newInstance(final ConfigContext config) throws IOException {
-        return newInstance(config.getMantaURL(),
-                           config.getMantaUser(),
-                           config.getMantaKeyPath(),
-                           config.getMantaKeyId());
+    public MantaClient(final ConfigContext config) throws IOException {
+        this(config.getMantaURL(), config.getMantaUser(), config.getMantaKeyPath(),
+             config.getMantaKeyId());
     }
 
 
@@ -114,31 +112,11 @@ public class MantaClient implements AutoCloseable {
      * @param login The user login name.
      * @param keyPath The path to the user rsa private key on disk.
      * @param fingerPrint The fingerprint of the user rsa private key.
-     * @return An instance of {@link com.joyent.manta.client.MantaClient}
      * @throws IOException If unable to instantiate the client.
      */
-    public static MantaClient newInstance(final String url, final String login, final String keyPath,
-                                          final String fingerPrint) throws IOException {
-        return newInstance(url, login, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
-    }
-
-
-    /**
-     * Creates a new instance of a Manta client.
-     *
-     * @param url The url of the Manta endpoint.
-     * @param login The user login name.
-     * @param keyPath The path to the user rsa private key on disk.
-     * @param fingerPrint The fingerprint of the user rsa private key.
-     * @param timeout The http timeout in milliseconds.
-     * @return An instance of {@link com.joyent.manta.client.MantaClient}
-     * @throws IOException If unable to instantiate the client.
-     */
-    public static MantaClient newInstance(final String url, final String login, final String keyPath,
-                                          final String fingerPrint, final int timeout) throws IOException {
-        LOG.debug(String.format("entering newInstance with url %s, login %s, keyPath %s, fingerPrint %s, timeout %s",
-                url, login, keyPath, fingerPrint, timeout));
-        return new MantaClient(url, login, keyPath, fingerPrint, timeout);
+    public MantaClient(final String url, final String login, final String keyPath,
+                              final String fingerPrint) throws IOException {
+        this(url, login, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
 
@@ -150,43 +128,15 @@ public class MantaClient implements AutoCloseable {
      * @param privateKeyContent The user's rsa private key as a string.
      * @param fingerPrint The fingerprint of the user rsa private key.
      * @param password The private key password (optional).
-     * @return An instance of {@link com.joyent.manta.client.MantaClient}
      * @throws IOException If unable to instantiate the client.
      */
-    public static MantaClient newInstance(final String url,
-                                          final String login,
-                                          final String privateKeyContent,
-                                          final String fingerPrint,
-                                          final char[] password) throws IOException {
-        return newInstance(url,
-                login,
-                privateKeyContent,
-                fingerPrint,
-                password,
-                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT
-        );
-    }
-
-
-    /**
-     * Creates a new instance of a Manta client.
-     *
-     * @param url The url of the Manta endpoint.
-     * @param login The user login name.
-     * @param privateKeyContent The private key as a string.
-     * @param fingerPrint The fingerprint of the user rsa private key.
-     * @param password The private key password (optional).
-     * @param timeout The HTTP timeout in milliseconds.
-     * @return An instance of {@link com.joyent.manta.client.MantaClient}
-     * @throws IOException If unable to instantiate the client.
-     */
-    public static MantaClient newInstance(final String url, final String login, final String privateKeyContent,
-                                          final String fingerPrint, final char[] password, final int timeout)
-                                                  throws IOException {
-        LOG.debug(String
-                  .format("entering newInstance with url %s, login %s, privateKey ?, fingerPrint %s, password ?, "
-                          + "timeout %d", url, login, fingerPrint, timeout));
-        return new MantaClient(url, login, privateKeyContent, fingerPrint, password, timeout);
+    public MantaClient(final String url,
+                       final String login,
+                       final String privateKeyContent,
+                       final String fingerPrint,
+                       final char[] password) throws IOException {
+        this(url, login, privateKeyContent, fingerPrint, password,
+             DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
 
@@ -241,11 +191,11 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
-                        final String login,
-                        final String privateKeyContent,
-                        final String fingerprint,
-                        final char[] password,
-                        final int httpTimeout) throws IOException {
+                       final String login,
+                       final String privateKeyContent,
+                       final String fingerprint,
+                       final char[] password,
+                       final int httpTimeout) throws IOException {
         if (login == null) {
             throw new IllegalArgumentException("Manta username must be specified");
         }

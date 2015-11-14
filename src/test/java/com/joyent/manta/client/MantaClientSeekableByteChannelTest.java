@@ -46,7 +46,7 @@ public class MantaClientSeekableByteChannelTest {
         ConfigContext config = new TestConfigContext(
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
-        mantaClient = MantaClient.newInstance(config);
+        mantaClient = new MantaClient(config);
         testPathPrefix = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, null);
     }
