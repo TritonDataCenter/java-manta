@@ -19,7 +19,6 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
@@ -276,7 +275,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the Manta object.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String path) throws IOException {
@@ -308,7 +307,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the Manta object.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void deleteRecursive(final String path) throws IOException {
@@ -349,7 +348,7 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectMetadata}.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObjectMetadata get(final String path) throws IOException {
@@ -362,8 +361,8 @@ public class MantaClient implements AutoCloseable {
         final MantaObjectMetadata metadata = new MantaObjectMetadata(path, response.getHeaders());
 
         if (metadata.isDirectory()) {
-            String msg = String.format("Directories do not have data, so " +
-                    "data streams from them doesn't work. Path requested: %s",
+            String msg = String.format("Directories do not have data, so "
+                    + "data streams from them doesn't work. Path requested: %s",
                     path);
             throw new MantaClientException(msg);
         }
@@ -450,7 +449,7 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectMetadata}.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObjectMetadata head(final String path) throws IOException {
@@ -487,7 +486,7 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the directory.
      * @return A {@link Collection} of {@link MantaObjectMetadata} listing the contents of the directory.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaObjectException If the path isn't a directory
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
@@ -526,7 +525,8 @@ public class MantaClient implements AutoCloseable {
      * Creates a list of {@link MantaObjectMetadata}s based on the HTTP response from Manta.
      * @param path The fully qualified path of the directory.
      * @param content The content of the response as a Reader.
-     * @param parser Deserializer implementation that takes the raw content and turns it into a {@link MantaObjectMetadata}
+     * @param parser Deserializer implementation that takes the raw content
+     *               and turns it into a {@link MantaObjectMetadata}
      * @return List of {@link MantaObjectMetadata}s for a given directory
      * @throws IOException If an IO exception has occurred.
      */
@@ -556,7 +556,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The path to the Manta object.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void put(final String path,
@@ -582,7 +582,13 @@ public class MantaClient implements AutoCloseable {
                                    final HttpContent content) throws IOException {
         LOG.debug("PUT {}", path);
 
-        final HttpHeaders httpHeaders = headers == null ? new HttpHeaders() : headers;
+        final HttpHeaders httpHeaders;
+
+        if (headers == null) {
+            httpHeaders = new HttpHeaders();
+        } else {
+            httpHeaders = headers;
+        }
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
 
@@ -618,7 +624,7 @@ public class MantaClient implements AutoCloseable {
 
     public void put(final String path,
                     final String string,
-                    HttpHeaders headers) throws IOException {
+                    final HttpHeaders headers) throws IOException {
         try (InputStream is = new ByteArrayInputStream(string.getBytes())) {
             put(path, is, headers);
         }
@@ -636,7 +642,7 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the Manta directory.
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String path, final HttpHeaders headers)
@@ -678,10 +684,11 @@ public class MantaClient implements AutoCloseable {
      * @param objectPath The fully qualified path of the object to link against.
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaCryptoException If there's an exception while signing the request.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void putSnapLink(final String linkPath, final String objectPath, final HttpHeaders headers)
+    public void putSnapLink(final String linkPath, final String objectPath,
+                            final HttpHeaders headers)
             throws IOException {
         LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(linkPath));

@@ -65,7 +65,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public Object getHeader(String fieldName) {
+    public Object getHeader(final String fieldName) {
         return metadata.getHeader(fieldName);
     }
 

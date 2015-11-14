@@ -145,7 +145,7 @@ public class MantaObjectMetadata implements MantaObject {
         this.requestId = headers.getFirstHeaderStringValue(X_REQUEST_ID_HEADER);
 
         if (headers.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
-            this.type ="directory";
+            this.type = "directory";
         }
     }
 

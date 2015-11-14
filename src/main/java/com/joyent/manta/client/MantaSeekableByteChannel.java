@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @ThreadSafe
 public class MantaSeekableByteChannel implements SeekableByteChannel {
-    private static int EOF = -1;
+    private static final int EOF = -1;
 
     private volatile boolean open = true;
     private final GenericUrl objectUri;
@@ -60,7 +60,7 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
     }
 
     @Override
-    public int read(ByteBuffer dst) throws IOException {
+    public int read(final ByteBuffer dst) throws IOException {
         if (!open) {
             throw new ClosedChannelException();
         }
@@ -82,7 +82,7 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
     }
 
     @Override
-    public int write(ByteBuffer src) throws IOException {
+    public int write(final ByteBuffer src) throws IOException {
         // This is a read-only channel
         throw new NonWritableChannelException();
     }
@@ -93,7 +93,7 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
     }
 
     @Override
-    public SeekableByteChannel position(long newPosition) throws IOException {
+    public SeekableByteChannel position(final long newPosition) throws IOException {
         return new MantaSeekableByteChannel(new AtomicReference<HttpResponse>(),
                 objectUri, newPosition, httpRequestFactory);
     }
@@ -115,7 +115,7 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
     }
 
     @Override
-    public SeekableByteChannel truncate(long newSize) throws IOException {
+    public SeekableByteChannel truncate(final long newSize) throws IOException {
         throw new NonWritableChannelException();
     }
 
