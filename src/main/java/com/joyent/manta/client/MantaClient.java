@@ -709,8 +709,8 @@ public class MantaClient implements AutoCloseable {
     }
 
 
-    protected static String findOrDefaultContentType(HttpHeaders headers,
-                                                     String defaultContentType) {
+    protected static String findOrDefaultContentType(final HttpHeaders headers,
+                                                     final String defaultContentType) {
         final String contentType;
 
         if (headers == null || headers.getContentType() == null) {

@@ -172,7 +172,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
         final HttpResponseInterceptor responseInterceptor = new HttpResponseInterceptor() {
             @Override
-            public void interceptResponse(HttpResponse response) throws IOException {
+            public void interceptResponse(final HttpResponse response) throws IOException {
                 MDC.remove("mantaRequestId");
             }
         };

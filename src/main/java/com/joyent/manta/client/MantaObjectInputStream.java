@@ -85,17 +85,17 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public int read(byte[] b) throws IOException {
+    public int read(final byte[] b) throws IOException {
         return backingStream.read(b);
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public int read(final byte[] b, final int off, final int len) throws IOException {
         return backingStream.read(b, off, len);
     }
 
     @Override
-    public long skip(long n) throws IOException {
+    public long skip(final long n) throws IOException {
         return backingStream.skip(n);
     }
 
@@ -111,7 +111,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public void mark(int readlimit) {
+    public void mark(final int readlimit) {
         backingStream.mark(readlimit);
     }
 
