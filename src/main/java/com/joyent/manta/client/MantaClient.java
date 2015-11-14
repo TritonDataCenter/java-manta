@@ -229,7 +229,8 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String path) throws IOException {
-        LOG.debug(String.format("entering delete with path %s", path));
+        LOG.debug("DELETE {}", path);
+
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildDeleteRequest(genericUrl);
@@ -240,8 +241,10 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            LOG.debug(String.format("got response code %s, header %s ",
-                                    response.getStatusCode(), response.getHeaders()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("DELETE {} response [{}] {} ", path, response.getStatusCode(),
+                        response.getStatusMessage());
+            }
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -261,13 +264,13 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void deleteRecursive(final String path) throws IOException {
-        LOG.debug(String.format("entering deleteRecursive with path %s", path));
+        LOG.debug("DELETE {} [recursive]", path);
         Collection<MantaObject> objs;
         try {
             objs = this.listObjects(path);
         } catch (final MantaObjectException e) {
             this.delete(path);
-            LOG.debug(String.format("finished deleting path %s", path));
+            LOG.debug("Finished deleting path {}", path);
             return;
         }
         for (final MantaObject mantaObject : objs) {
@@ -288,7 +291,7 @@ public class MantaClient implements AutoCloseable {
             }
         }
 
-        LOG.debug(String.format("finished deleting path %s", path));
+        LOG.debug("Finished deleting path {}", path);
     }
 
 
@@ -368,7 +371,7 @@ public class MantaClient implements AutoCloseable {
     protected HttpResponse httpGet(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        LOG.debug("GET  {}", path);
+        LOG.debug("GET    {}", path);
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -383,7 +386,7 @@ public class MantaClient implements AutoCloseable {
             response = request.execute();
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("GET  {} response [{}] {} ", path, response.getStatusCode(),
+                LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
                         response.getStatusMessage());
             }
         } catch (final HttpResponseException e) {
@@ -405,7 +408,7 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectMetadata head(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        LOG.debug("HEAD {}", path);
+        LOG.debug("HEAD   {}", path);
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -419,7 +422,7 @@ public class MantaClient implements AutoCloseable {
             response = request.execute();
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("HEAD {} response [{}] {} ", path, response.getStatusCode(),
+                LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
                         response.getStatusMessage());
             }
         } catch (final HttpResponseException e) {
@@ -441,7 +444,7 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public Collection<MantaObject> listObjects(final String path) throws IOException {
-        LOG.debug(String.format("entering listDirectory with directory %s", path));
+        LOG.debug("GET    {} [list]", path);
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
@@ -451,8 +454,11 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(),
-                                    response.getHeaders()));
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
+                        response.getStatusMessage());
+            }
 
             if (!response.getContentType().equals(MantaObject.DIRECTORY_HEADER)) {
                 throw new MantaObjectException("Object is not a directory");
@@ -530,7 +536,7 @@ public class MantaClient implements AutoCloseable {
     protected HttpResponse httpPut(final String path,
                                    final HttpHeaders headers,
                                    final HttpContent content) throws IOException {
-        LOG.debug("PUT {}", path);
+        LOG.debug("PUT    {}", path);
 
         final HttpHeaders httpHeaders;
 
@@ -550,10 +556,11 @@ public class MantaClient implements AutoCloseable {
 
         HttpResponse response = null;
         try {
-            LOG.debug(String.format("sending request %s", request));
             response = request.execute();
-            LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(),
-                    response.getHeaders()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
+                        response.getStatusMessage());
+            }
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -601,7 +608,7 @@ public class MantaClient implements AutoCloseable {
             throw new IllegalArgumentException("PUT directory path can't be null");
         }
 
-        LOG.debug(String.format("entering putDirectory with directory %s", path));
+        LOG.debug("PUT    {} [directory]", path);
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, new EmptyContent());
@@ -615,8 +622,10 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(),
-                                    response.getHeaders()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
+                        response.getStatusMessage());
+            }
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -640,7 +649,7 @@ public class MantaClient implements AutoCloseable {
     public void putSnapLink(final String linkPath, final String objectPath,
                             final HttpHeaders headers)
             throws IOException {
-        LOG.debug(String.format("entering putLink with link %s, path %s", linkPath, objectPath));
+        LOG.debug("PUT    {} -> {} [snaplink]", objectPath, linkPath);
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(linkPath));
         final HttpContent content = new EmptyContent();
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
@@ -654,8 +663,11 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            LOG.debug(String.format("got response code %s, header %s ", response.getStatusCode(),
-                                    response.getHeaders()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("PUT    {} -> {} response [{}] {} ", objectPath, linkPath,
+                        response.getStatusCode(),
+                        response.getStatusMessage());
+            }
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
