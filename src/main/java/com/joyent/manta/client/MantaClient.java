@@ -3,14 +3,7 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.EmptyContent;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.http.InputStreamContent;
+import com.google.api.client.http.*;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
@@ -19,6 +12,10 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
+import org.apache.http.Header;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,10 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
@@ -74,6 +68,14 @@ public class MantaClient implements AutoCloseable {
      * The content-type used to represent Manta directory resources in http requests.
      */
     private static final String DIRECTORY_REQUEST_CONTENT_TYPE = "application/json; type=directory";
+
+
+    /**
+     * HTTP metadata headers that violate the Manta API contract.
+     */
+    private static final String[] ILLEGAL_METADATA_HEADERS = new String[] {
+            HTTP.CONTENT_LEN, "Content-MD5", "Durability-Level"
+    };
 
     /**
      * A string representation of the manta service endpoint URL.
@@ -582,13 +584,14 @@ public class MantaClient implements AutoCloseable {
      * @param path The path to the Manta object.
      * @param source {@link InputStream} to copy object data from
      * @param headers optional HTTP headers to include when copying the object
+     * @return Manta response/metadata object
      * @throws IOException If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void put(final String path,
-                    final InputStream source,
-                    final MantaHttpHeaders headers) throws IOException {
+    public MantaObjectMetadata put(final String path,
+                                   final InputStream source,
+                                   final MantaHttpHeaders headers) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
         final String contentType = findOrDefaultContentType(headers, HTTP.OCTET_STREAM_TYPE);
@@ -601,8 +604,9 @@ public class MantaClient implements AutoCloseable {
             content = new InputStreamContent(contentType, source);
         }
 
-        httpPut(path, headers, content);
+        return httpPut(path, headers, content);
     }
+
 
     /**
      * Executes an HTTP PUT against the remote Manta API.
@@ -610,12 +614,30 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param headers optional HTTP headers to include when copying the object
      * @param content Google HTTP Client content object
-     * @return Google HTTP Client response object
+     * @return Manta response/metadata object
      * @throws IOException when there is a problem sending the object over the wire
      */
-    protected HttpResponse httpPut(final String path,
+    protected MantaObjectMetadata httpPut(final String path,
                                    final MantaHttpHeaders headers,
                                    final HttpContent content) throws IOException {
+        final GenericUrl url = new GenericUrl(this.url + formatPath(path));
+        return httpPut(url, headers, content);
+    }
+
+
+    /**
+     * Executes an HTTP PUT against the remote Manta API.
+     *
+     * @param url Full URL to the object on the Manta API
+     * @param headers optional HTTP headers to include when copying the object
+     * @param content Google HTTP Client content object
+     * @return Manta response/metadata object
+     * @throws IOException when there is a problem sending the object over the wire
+     */
+    protected MantaObjectMetadata httpPut(final GenericUrl url,
+                                   final MantaHttpHeaders headers,
+                                   final HttpContent content) throws IOException {
+        final String path = url.getRawPath();
         LOG.debug("PUT    {}", path);
 
         final MantaHttpHeaders httpHeaders;
@@ -626,10 +648,8 @@ public class MantaClient implements AutoCloseable {
             httpHeaders = headers;
         }
 
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
+        final HttpRequest request = httpRequestFactory.buildPutRequest(url, content);
 
         request.setHeaders(httpHeaders);
 
@@ -638,7 +658,8 @@ public class MantaClient implements AutoCloseable {
             response = request.execute();
             LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
                     response.getStatusMessage());
-
+            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getHeaders());
+            return new MantaObjectMetadata(path, responseHeaders);
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -646,8 +667,6 @@ public class MantaClient implements AutoCloseable {
                 response.disconnect();
             }
         }
-
-        return response;
     }
 
 
@@ -657,10 +676,11 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param source the {@link InputStream} to copy data from
+     * @return Manta response/metadata object
      * @throws IOException when there is a problem sending the object over the wire
      */
-    public void put(final String path, final InputStream source) throws IOException {
-        put(path, source, null);
+    public MantaObjectMetadata put(final String path, final InputStream source) throws IOException {
+        return put(path, source, null);
     }
 
 
@@ -671,13 +691,14 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
      * @param headers optional HTTP headers to include when copying the object
+     * @return Manta response/metadata object
      * @throws IOException when there is a problem sending the object over the wire
      */
-    public void put(final String path,
-                    final String string,
-                    final MantaHttpHeaders headers) throws IOException {
+    public MantaObjectMetadata put(final String path,
+                                   final String string,
+                                   final MantaHttpHeaders headers) throws IOException {
         try (InputStream is = new ByteArrayInputStream(string.getBytes())) {
-            put(path, is, headers);
+            return put(path, is, headers);
         }
     }
 
@@ -688,13 +709,53 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
+     * @return Manta response/metadata object
      * @throws IOException when there is a problem sending the object over the wire
      */
-    public void put(final String path,
-                    final String string) throws IOException {
-        put(path, string, null);
+    public MantaObjectMetadata put(final String path,
+                                   final String string) throws IOException {
+        return put(path, string, null);
     }
 
+    /**
+     *
+     * @param path
+     * @param metadata
+     * @return Manta response/metadata object
+     * @throws IOException when there is a problem sending the metadata over the wire
+     */
+    public MantaObjectMetadata putMetadata(final String path, Map<? extends String, ?> metadata)
+            throws IOException {
+        Objects.requireNonNull(metadata, "Metadata must be present");
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders(metadata);
+        return putMetadata(path, headers);
+    }
+
+
+    /**
+     *
+     * @param path
+     * @param metadata
+     * @return Manta response/metadata object
+     * @throws IOException when there is a problem sending the metadata over the wire
+     */
+    public MantaObjectMetadata putMetadata(final String path, MantaHttpHeaders metadata)
+            throws IOException {
+        Objects.requireNonNull(metadata, "Metadata must be present");
+
+        for (String header : ILLEGAL_METADATA_HEADERS) {
+            if (metadata.containsKey(header)) {
+                String msg = String.format("Critical header [%s] can't be changed", header);
+                throw new IllegalArgumentException(msg);
+            }
+        }
+
+        metadata.setContentEncoding("chunked");
+        HttpContent content = new EmptyContent();
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        return httpPut(genericUrl, metadata, content);
+    }
 
     /**
      * Creates a directory in Manta.

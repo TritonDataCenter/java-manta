@@ -119,9 +119,10 @@ public class MantaObjectMetadata implements MantaObject {
         this.contentLength = headers.getContentLength();
         this.etag = headers.getETag();
         this.mtime = headers.getLastModified();
-        this.requestId = headers.getFirstHeaderStringValue(X_REQUEST_ID_HEADER);
+        this.requestId = headers.getRequestId();
 
-        if (headers.getContentType().equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+        final String contentType = headers.getContentType();
+        if (contentType != null && contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
             this.type = "directory";
         }
     }
@@ -318,7 +319,6 @@ public class MantaObjectMetadata implements MantaObject {
     }
 
 
-
     /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
@@ -349,6 +349,4 @@ public class MantaObjectMetadata implements MantaObject {
         sb.append('}');
         return sb.toString();
     }
-
-
 }

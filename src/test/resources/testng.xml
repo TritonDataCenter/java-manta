@@ -26,6 +26,7 @@
         <classes>
             <class name="com.joyent.manta.client.MantaClientTest" />
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelTest" />
+            <class name="com.joyent.manta.client.MantaClientMetadataTest" />
         </classes>
     </test>
 </suite>

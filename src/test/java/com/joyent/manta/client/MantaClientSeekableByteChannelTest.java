@@ -22,11 +22,13 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.UUID;
 
 /**
- * @author Elijah Zupancic
+ * Tests for verifying the behavior of {@link SeekableByteChannel} with
+ * {@link MantaClient}.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaClientSeekableByteChannelTest {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
-    private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
     private MantaClient mantaClient;
 
