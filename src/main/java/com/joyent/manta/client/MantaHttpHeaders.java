@@ -3,6 +3,7 @@ package com.joyent.manta.client;
 import com.google.api.client.http.HttpHeaders;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Object encapsulating the HTTP headers to be sent to the Manta API.
@@ -25,7 +26,18 @@ public class MantaHttpHeaders extends HttpHeaders {
      * @param headers headers to prepopulate
      */
     public MantaHttpHeaders(final Map<? extends String, ?> headers) {
+        Objects.requireNonNull(headers, "Headers should be present");
         putAll(headers);
+    }
+
+    /**
+     * Creates an instance with headers prepopulated from an existing
+     * {@link MantaObject} instance
+     *
+     * @param mantaObject Manta object to read headers from
+     */
+    public MantaHttpHeaders(final MantaObject mantaObject) {
+        this(mantaObject.getHttpHeaders());
     }
 
 
@@ -35,7 +47,9 @@ public class MantaHttpHeaders extends HttpHeaders {
      *
      * @param headers headers to prepopulate
      */
-    MantaHttpHeaders(HttpHeaders headers) {
-        fromHttpHeaders(headers);
+    MantaHttpHeaders(final HttpHeaders headers) {
+        if (headers != null) {
+            fromHttpHeaders(headers);
+        }
     }
 }

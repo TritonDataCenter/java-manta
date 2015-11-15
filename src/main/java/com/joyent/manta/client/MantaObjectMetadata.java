@@ -3,7 +3,6 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.util.Key;
 import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
@@ -103,8 +102,9 @@ public class MantaObjectMetadata implements MantaObject {
      * Creates a MantaObject.
      *
      * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
-     * @param headers Optional {@link MantaHttpHeaders}. Use this to set any additional headers on the Manta object.  For the
-     *                full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
+     * @param headers Optional {@link MantaHttpHeaders}. Use this to set any additional headers on the Manta object.
+     *                For the full list of Manta headers see the
+     *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
     public MantaObjectMetadata(final String path, final MantaHttpHeaders headers) {
         if (path == null) {

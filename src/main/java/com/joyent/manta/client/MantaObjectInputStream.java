@@ -1,6 +1,5 @@
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponse;
 
 import java.io.IOException;
