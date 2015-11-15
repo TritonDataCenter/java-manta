@@ -304,7 +304,12 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaObjectMetadata get(final String path) throws IOException {
         final HttpResponse response = httpGet(path);
-        return new MantaObjectMetadata(path, response.getHeaders());
+
+        try {
+            return new MantaObjectMetadata(path, response.getHeaders());
+        } finally {
+            response.disconnect();
+        }
     }
 
     /**
