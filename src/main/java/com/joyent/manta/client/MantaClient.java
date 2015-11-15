@@ -57,7 +57,7 @@ public class MantaClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     /**
-     * The provide for http requests setup, metadata and request initialization.
+     * The provider for http requests setup, metadata and request initialization.
      */
     private final HttpRequestFactoryProvider httpRequestFactoryProvider;
 

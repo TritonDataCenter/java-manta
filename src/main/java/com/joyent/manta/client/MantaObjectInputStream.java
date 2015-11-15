@@ -8,15 +8,38 @@ import java.io.InputStream;
 import java.util.Date;
 
 /**
- * @author Elijah Zupancic
+ * {@link InputStream} implementation that wraps the input stream provided
+ * from {@link MantaClient} and implements {@link MantaObject} so that you
+ * can obtain metadata information.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject {
     private static final long serialVersionUID = 5300041609801576485L;
 
+    /**
+     * Metadata from request.
+     */
     private final MantaObjectMetadata metadata;
+
+    /**
+     * The backing {@link InputStream} implementation.
+     */
     private final InputStream backingStream;
+
+    /**
+     * The HTTP response sent from the Manta API.
+     */
     private final HttpResponse httpResponse;
 
+    /**
+     * Create a new instance from the results of a GET HTTP call to the
+     * Manta API.
+     *
+     * @param metadata Metadata object built from request
+     * @param httpResponse Response object created
+     * @throws IOException thrown when there is a network problem
+     */
     MantaObjectInputStream(final MantaObjectMetadata metadata,
                            final HttpResponse httpResponse) throws IOException {
         this.metadata = metadata;

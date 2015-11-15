@@ -26,14 +26,45 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @ThreadSafe
 public class MantaSeekableByteChannel implements SeekableByteChannel {
+    /**
+     * Constant representing the value returned when we have reached the
+     * end of a stream.
+     */
     private static final int EOF = -1;
 
+    /**
+     * Flag indicating if the channel is open. Marked as volatile so
+     * that different threads can flip its state.
+     */
     private volatile boolean open = true;
+
+    /**
+     * URL of the object on the Manta API.
+     */
     private final GenericUrl objectUri;
+
+    /**
+     * Current position in bytes from the start of the file.
+     */
     private volatile long position = 0L;
+
+    /**
+     * The provider for http requests setup, metadata and request initialization.
+     */
     private final HttpRequestFactory httpRequestFactory;
+
+    /**
+     * Threadsafe reference to the Manta API HTTP response object.
+     */
     private final AtomicReference<HttpResponse> responseRef;
 
+    /**
+     * Creates a new instance of a read-only seekable byte channel.
+     *
+     * @param objectUri URL of the object on the Manta API
+     * @param position starting position in bytes from the start of the file
+     * @param httpRequestFactory provider for http requests setup, metadata and request initialization
+     */
     public MantaSeekableByteChannel(final GenericUrl objectUri,
                                     final long position,
                                     final HttpRequestFactory httpRequestFactory) {
@@ -44,11 +75,27 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
 
     }
 
+
+    /**
+     * Creates a new instance of a read-only seekable byte channel.
+     *
+     * @param objectUri URL of the object on the Manta API
+     * @param httpRequestFactory provider for http requests setup, metadata and request initialization
+     */
     public MantaSeekableByteChannel(final GenericUrl objectUri,
                                     final HttpRequestFactory httpRequestFactory) {
         this(objectUri, 0L, httpRequestFactory);
     }
 
+    /**
+     * Constructor used for creating a new instance of a read-only seekable byte
+     * channel from within this class. This is used when position() is called.
+     *
+     * @param responseRef reference to existing HTTP response
+     * @param objectUri URL of the object on the Manta API
+     * @param position starting position in bytes from the start of the file
+     * @param httpRequestFactory provider for http requests setup, metadata and request initialization
+     */
     protected MantaSeekableByteChannel(final AtomicReference<HttpResponse> responseRef,
                                        final GenericUrl objectUri,
                                        final long position,
@@ -138,6 +185,14 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
     }
 
 
+    /**
+     * Connects to the Manta API, updates the atomic reference and returns a
+     * response if the atomic reference hasn't been set. Otherwise, it just returns
+     * the response embedded in the atomic reference.
+     *
+     * @return HTTP response object
+     * @throws IOException thrown when there are network problems connecting to the remote API
+     */
     protected HttpResponse connectOrGetResponse() throws IOException {
         if (responseRef.get() != null) {
             return responseRef.get();
