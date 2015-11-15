@@ -1,7 +1,5 @@
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpHeaders;
-
 import java.io.Serializable;
 import java.util.Date;
 
@@ -81,10 +79,10 @@ public interface MantaObject extends Serializable {
      *
      * @return the httpHeaders
      */
-    HttpHeaders getHttpHeaders();
+    MantaHttpHeaders getHttpHeaders();
 
     /**
-     * This really just delegates to {@link HttpHeaders} get.
+     * This really just delegates to {@link MantaHttpHeaders} get.
      *
      * @param fieldName the custom header to get from the Manta object.
      * @return the value of the header.

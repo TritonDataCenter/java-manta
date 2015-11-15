@@ -6,7 +6,6 @@ package com.joyent.manta.client;
 import com.google.api.client.http.EmptyContent;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
@@ -306,7 +305,8 @@ public class MantaClient implements AutoCloseable {
         final HttpResponse response = httpGet(path);
 
         try {
-            return new MantaObjectMetadata(path, response.getHeaders());
+            final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
+            return new MantaObjectMetadata(path, headers);
         } finally {
             response.disconnect();
         }
@@ -323,7 +323,8 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaObjectInputStream getAsInputStream(final String path) throws IOException {
         final HttpResponse response = httpGet(path);
-        final MantaObjectMetadata metadata = new MantaObjectMetadata(path, response.getHeaders());
+        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
+        final MantaObjectMetadata metadata = new MantaObjectMetadata(path, headers);
 
         if (metadata.isDirectory()) {
             String msg = String.format("Directories do not have data, so "
@@ -501,7 +502,8 @@ public class MantaClient implements AutoCloseable {
             throw new MantaClientHttpResponseException(e);
         }
 
-        return new MantaObjectMetadata(path, response.getHeaders());
+        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
+        return new MantaObjectMetadata(path, headers);
     }
 
 
@@ -586,7 +588,7 @@ public class MantaClient implements AutoCloseable {
      */
     public void put(final String path,
                     final InputStream source,
-                    final HttpHeaders headers) throws IOException {
+                    final MantaHttpHeaders headers) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
         final String contentType = findOrDefaultContentType(headers, HTTP.OCTET_STREAM_TYPE);
@@ -612,14 +614,14 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException when there is a problem sending the object over the wire
      */
     protected HttpResponse httpPut(final String path,
-                                   final HttpHeaders headers,
+                                   final MantaHttpHeaders headers,
                                    final HttpContent content) throws IOException {
         LOG.debug("PUT    {}", path);
 
-        final HttpHeaders httpHeaders;
+        final MantaHttpHeaders httpHeaders;
 
         if (headers == null) {
-            httpHeaders = new HttpHeaders();
+            httpHeaders = new MantaHttpHeaders();
         } else {
             httpHeaders = headers;
         }
@@ -673,7 +675,7 @@ public class MantaClient implements AutoCloseable {
      */
     public void put(final String path,
                     final String string,
-                    final HttpHeaders headers) throws IOException {
+                    final MantaHttpHeaders headers) throws IOException {
         try (InputStream is = new ByteArrayInputStream(string.getBytes())) {
             put(path, is, headers);
         }
@@ -706,16 +708,17 @@ public class MantaClient implements AutoCloseable {
         putDirectory(path, null);
     }
 
+
     /**
      * Creates a directory in Manta.
      *
      * @param path The fully qualified path of the Manta directory.
-     * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
+     * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void putDirectory(final String path, final HttpHeaders headers)
+    public void putDirectory(final String path, final MantaHttpHeaders headers)
             throws IOException {
         if (path == null) {
             throw new IllegalArgumentException("PUT directory path can't be null");
@@ -751,13 +754,13 @@ public class MantaClient implements AutoCloseable {
      *
      * @param linkPath The fully qualified path of the new snaplink.
      * @param objectPath The fully qualified path of the object to link against.
-     * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
+     * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putSnapLink(final String linkPath, final String objectPath,
-                            final HttpHeaders headers)
+                            final MantaHttpHeaders headers)
             throws IOException {
         LOG.debug("PUT    {} -> {} [snaplink]", objectPath, linkPath);
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(linkPath));
@@ -787,14 +790,14 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Finds the content type set in {@link HttpHeaders} and returns that if it
+     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
      * is not null. Otherwise, it will return the specified default content type.
      *
      * @param headers headers to parse for content type
      * @param defaultContentType content type to default to
      * @return content type as string
      */
-    protected static String findOrDefaultContentType(final HttpHeaders headers,
+    protected static String findOrDefaultContentType(final MantaHttpHeaders headers,
                                                      final String defaultContentType) {
         final String contentType;
 

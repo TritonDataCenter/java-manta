@@ -96,6 +96,23 @@ public class MantaClientTest {
     }
 
 
+    @Test()
+    public final void testManyOperations() throws IOException {
+        String dir = String.format("%s/multiple", testPathPrefix);
+        mantaClient.putDirectory(dir);
+
+        for (int i = 0; i < 100; i++) {
+            final String name = UUID.randomUUID().toString();
+            final String path = String.format("%s/%s", dir, name);
+            mantaClient.put(path, TEST_DATA);
+            String actual = mantaClient.getAsString(path);
+            Assert.assertEquals(actual, TEST_DATA);
+        }
+
+        mantaClient.deleteRecursive(dir);
+    }
+
+
     @Test
     public final void testCRUDWithFileObject() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -122,7 +139,7 @@ public class MantaClientTest {
     public final void testCRUDObjectWithHeaders() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final HttpHeaders headers = new HttpHeaders();
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.set("durability-level", 4);
 
         mantaClient.put(path, TEST_DATA, headers);

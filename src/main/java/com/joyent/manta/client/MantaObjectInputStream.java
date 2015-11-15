@@ -83,7 +83,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public HttpHeaders getHttpHeaders() {
+    public MantaHttpHeaders getHttpHeaders() {
         return metadata.getHttpHeaders();
     }
 

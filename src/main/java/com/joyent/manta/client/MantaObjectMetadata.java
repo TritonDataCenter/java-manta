@@ -18,30 +18,7 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 
 /**
  * A Manta storage object.
- * <p>
- * I/O is performed via the getDataInputStream() and setDataInputStream() methods. Importantly, the stream isn't
- * automatically closed, specifically, the http connection remains open until the stream is closed -- so consumers must
- * call close() when done to avoid memory leaks. Example get usage:
- * </p>
- *
- * <pre>
- * MantaClient client = MantaClient.getInstance(...);
- * MantaObject object = client.get(&quot;/user/stor/foo&quot;);
- * // MantaUtils.inputStreamToString() closes the inputstream.
- * String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
- * </pre>
- * <p>
- * Example put usage:
- * </p>
- *
- * <pre>
- * MantaClient client = MantaClient.getInstance(...);
- * MantaObject object = new MantaObject(&quot;user/stor/foo&quot;);
- * object.setHeader("durability-level", 3);
- * InputStream is = new FileInputStream(new File(TEST_FILE));
- * object.setDataInputStream(is);
- * client.put(object, null);
- * </pre>
+ * <p>I/O is performed via the methods on the {@link MantaClient} class.</p>
  *
  * @author Yunong Xiao
  */
@@ -97,7 +74,7 @@ public class MantaObjectMetadata implements MantaObject {
     /**
      * The http headers associated with this object.
      */
-    private HttpHeaders httpHeaders;
+    private MantaHttpHeaders httpHeaders;
 
 
     /**
@@ -118,7 +95,7 @@ public class MantaObjectMetadata implements MantaObject {
         }
 
         this.path = path;
-        this.httpHeaders = new HttpHeaders();
+        this.httpHeaders = new MantaHttpHeaders();
     }
 
 
@@ -126,10 +103,10 @@ public class MantaObjectMetadata implements MantaObject {
      * Creates a MantaObject.
      *
      * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
-     * @param headers Optional {@link HttpHeaders}. Use this to set any additional headers on the Manta object.  For the
+     * @param headers Optional {@link MantaHttpHeaders}. Use this to set any additional headers on the Manta object.  For the
      *                full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
-    public MantaObjectMetadata(final String path, final HttpHeaders headers) {
+    public MantaObjectMetadata(final String path, final MantaHttpHeaders headers) {
         if (path == null) {
             throw new IllegalArgumentException("Path must be present");
         }
@@ -274,7 +251,7 @@ public class MantaObjectMetadata implements MantaObject {
 
 
     @Override
-    public final HttpHeaders getHttpHeaders() {
+    public final MantaHttpHeaders getHttpHeaders() {
         return this.httpHeaders;
     }
 
@@ -285,7 +262,7 @@ public class MantaObjectMetadata implements MantaObject {
      *
      * @param httpHeaders the httpHeaders to set.
      */
-    public final void setHttpHeaders(final HttpHeaders httpHeaders) {
+    public final void setHttpHeaders(final MantaHttpHeaders httpHeaders) {
         this.httpHeaders = httpHeaders;
     }
 
@@ -298,7 +275,7 @@ public class MantaObjectMetadata implements MantaObject {
 
     /**
      * Sets custom headers on the Manta object. This really just delegates to setting the
-     * {@link com.google.api.client.http.HttpHeaders} object.  For the full list of Manta headers see the
+     * {@link MantaHttpHeaders} object.  For the full list of Manta headers see the
      * <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      *
      * @param fieldName the field name.
