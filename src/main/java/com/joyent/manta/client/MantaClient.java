@@ -240,10 +240,8 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("DELETE {} response [{}] {} ", path, response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("DELETE {} response [{}] {} ", path, response.getStatusCode(),
+                    response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -462,11 +460,8 @@ public class MantaClient implements AutoCloseable {
 
         try {
             response = request.execute();
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
+                    response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         }
@@ -495,11 +490,8 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response;
         try {
             response = request.execute();
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
+                    response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         }
@@ -527,11 +519,8 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
+                    response.getStatusMessage());
 
             if (!response.getContentType().equals(MantaObject.DIRECTORY_HEADER)) {
                 throw new MantaObjectException("Object is not a directory");
@@ -640,10 +629,9 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
+                    response.getStatusMessage());
+
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -729,10 +717,8 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
+                    response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
@@ -770,11 +756,9 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
         try {
             response = request.execute();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("PUT    {} -> {} response [{}] {} ", objectPath, linkPath,
-                        response.getStatusCode(),
-                        response.getStatusMessage());
-            }
+            LOG.debug("PUT    {} -> {} response [{}] {} ", objectPath, linkPath,
+                    response.getStatusCode(),
+                    response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
