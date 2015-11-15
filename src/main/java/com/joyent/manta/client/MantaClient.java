@@ -698,6 +698,18 @@ public class MantaClient implements AutoCloseable {
      * Creates a directory in Manta.
      *
      * @param path The fully qualified path of the Manta directory.
+     * @throws IOException If an IO exception has occurred.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     */
+    public void putDirectory(final String path) throws IOException {
+        putDirectory(path, null);
+    }
+
+    /**
+     * Creates a directory in Manta.
+     *
+     * @param path The fully qualified path of the Manta directory.
      * @param headers Optional {@link HttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
