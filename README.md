@@ -8,7 +8,7 @@ compute component.
 
 # Installation
 ## Requirements.
-* [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
+* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
 * [Maven 3.3.x](https://maven.apache.org/)
 
 ## Using Maven
