@@ -17,9 +17,9 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     private static final long serialVersionUID = 5300041609801576485L;
 
     /**
-     * Metadata from request.
+     * Response from request to the Manta API.
      */
-    private final MantaObjectMetadata metadata;
+    private final MantaObjectResponse response;
 
     /**
      * The backing {@link InputStream} implementation.
@@ -35,75 +35,80 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
      * Create a new instance from the results of a GET HTTP call to the
      * Manta API.
      *
-     * @param metadata Metadata object built from request
+     * @param response Metadata object built from request
      * @param httpResponse Response object created
      * @throws IOException thrown when there is a network problem
      */
-    MantaObjectInputStream(final MantaObjectMetadata metadata,
+    MantaObjectInputStream(final MantaObjectResponse response,
                            final HttpResponse httpResponse) throws IOException {
-        this.metadata = metadata;
+        this.response = response;
         this.httpResponse = httpResponse;
         this.backingStream = httpResponse.getContent();
     }
 
     @Override
     public String getPath() {
-        return metadata.getPath();
+        return response.getPath();
     }
 
     @Override
     public Long getContentLength() {
-        return metadata.getContentLength();
+        return response.getContentLength();
     }
 
     @Override
     public String getContentType() {
-        return metadata.getContentType();
+        return response.getContentType();
     }
 
     @Override
     public String getEtag() {
-        return metadata.getEtag();
+        return response.getEtag();
     }
 
     @Override
     public Date getLastModifiedTime() {
-        return metadata.getLastModifiedTime();
+        return response.getLastModifiedTime();
     }
 
     @Override
     public String getMtime() {
-        return metadata.getMtime();
+        return response.getMtime();
     }
 
     @Override
     public String getType() {
-        return metadata.getType();
+        return response.getType();
     }
 
     @Override
     public MantaHttpHeaders getHttpHeaders() {
-        return metadata.getHttpHeaders();
+        return response.getHttpHeaders();
     }
 
     @Override
     public Object getHeader(final String fieldName) {
-        return metadata.getHeader(fieldName);
+        return response.getHeader(fieldName);
     }
 
     @Override
     public String getHeaderAsString(String fieldName) {
-        return metadata.getHeaderAsString(fieldName);
+        return response.getHeaderAsString(fieldName);
+    }
+
+    @Override
+    public MantaMetadata getMetadata() {
+        return response.getMetadata();
     }
 
     @Override
     public boolean isDirectory() {
-        return metadata.isDirectory();
+        return response.isDirectory();
     }
 
     @Override
     public String getRequestId() {
-        return metadata.getRequestId();
+        return response.getRequestId();
     }
 
     @Override

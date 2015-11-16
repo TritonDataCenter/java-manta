@@ -3,7 +3,6 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpHeaders;
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -218,7 +217,7 @@ public class MantaClientTest {
         final String path = testPathPrefix + objectName;
 
         mantaClient.put(path, TEST_DATA);
-        final MantaObjectMetadata mantaObjectHead = mantaClient.head(testPathPrefix + objectName);
+        final MantaObjectResponse mantaObjectHead = mantaClient.head(testPathPrefix + objectName);
         Assert.assertNotNull(mantaObjectHead);
         Assert.assertNotNull(mantaObjectHead.getContentType());
         Assert.assertNotNull(mantaObjectHead.getContentLength());
@@ -228,7 +227,7 @@ public class MantaClientTest {
 
         final String directoryName = UUID.randomUUID().toString();
         mantaClient.putDirectory(testPathPrefix + directoryName, null);
-        final MantaObjectMetadata mantaDirectoryHead = mantaClient.head(testPathPrefix + directoryName);
+        final MantaObjectResponse mantaDirectoryHead = mantaClient.head(testPathPrefix + directoryName);
         Assert.assertNotNull(mantaDirectoryHead);
         Assert.assertNotNull(mantaDirectoryHead.getContentType());
         Assert.assertNull(mantaDirectoryHead.getContentLength());
@@ -238,7 +237,7 @@ public class MantaClientTest {
 
         final String linkName = UUID.randomUUID().toString();
         mantaClient.putSnapLink(testPathPrefix + linkName, testPathPrefix + objectName, null);
-        final MantaObjectMetadata mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
+        final MantaObjectResponse mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
         Assert.assertNotNull(mantaLinkHead);
         Assert.assertNotNull(mantaLinkHead.getContentType());
         Assert.assertNotNull(mantaLinkHead.getContentLength());
@@ -319,7 +318,7 @@ public class MantaClientTest {
     public final void testGetLastModifiedDate() throws DateParseException {
         final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
         final Date expected = DateUtils.parseDate(mtime);
-        final MantaObjectMetadata obj = new MantaObjectMetadata(testPathPrefix);
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
         obj.setMtime(mtime);
 
         Assert.assertEquals(obj.getLastModifiedTime(), expected,
@@ -329,7 +328,7 @@ public class MantaClientTest {
 
     @Test(groups = { "mtime" })
     public final void testGetNullLastModifiedDate() throws DateParseException {
-        final MantaObjectMetadata obj = new MantaObjectMetadata(testPathPrefix);
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
         obj.setMtime(null);
 
         Assert.assertNull(obj.getLastModifiedTime(),
@@ -340,27 +339,11 @@ public class MantaClientTest {
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDateWithUnparseableMtime() throws DateParseException {
         final String mtime = "Bad unparseable string";
-        final MantaObjectMetadata obj = new MantaObjectMetadata(testPathPrefix);
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
         obj.setMtime(mtime);
 
         Assert.assertNull(obj.getLastModifiedTime(),
                 "Last modified date should be null when mtime is null");
-    }
-
-
-    @Test(groups = { "mtime" })
-    public final void testSetLastModifiedDate() throws DateParseException {
-        final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
-        final Date input = DateUtils.parseDate(mtime);
-        final MantaObjectMetadata obj = new MantaObjectMetadata(testPathPrefix);
-
-        obj.setLastModifiedTime(input);
-
-        Assert.assertEquals(obj.getLastModifiedTime(), input,
-                "Last modified date should equal input to mtime");
-        Assert.assertEquals(obj.getMtime(), mtime,
-                "Mtime should equal input to Last modified date");
-
     }
 
 

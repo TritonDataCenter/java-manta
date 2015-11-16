@@ -207,7 +207,7 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
         final HttpResponse response = responseRef.get();
         final String contentType = response.getHeaders().getContentType();
 
-        if (MantaObjectMetadata.DIRECTORY_RESPONSE_CONTENT_TYPE.equals(contentType)) {
+        if (MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE.equals(contentType)) {
             throw new MantaClientException("Can't get SeekableByteChannel for directory objects");
         }
 

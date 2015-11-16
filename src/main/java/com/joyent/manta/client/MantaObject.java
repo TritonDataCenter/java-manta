@@ -14,10 +14,12 @@ public interface MantaObject extends Serializable {
      * The type value for data objects within the manta service.
      */
     String MANTA_OBJECT_TYPE_OBJECT = "object";
+
     /**
      * The type value for directory objects within the manta service.
      */
     String MANTA_OBJECT_TYPE_DIRECTORY = "directory";
+
     /**
      * Manta directory header.
      */
@@ -90,7 +92,20 @@ public interface MantaObject extends Serializable {
     Object getHeader(String fieldName);
 
 
+    /**
+     * Get a header in its {@link String} representation.
+     *
+     * @param fieldName header name
+     * @return header as string
+     */
     String getHeaderAsString(String fieldName);
+
+
+    /**
+     * Get the user-supplied metadata for this object.
+     */
+    MantaMetadata getMetadata();
+
 
     /**
      * Unique request id made to Manta.

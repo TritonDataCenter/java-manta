@@ -115,7 +115,7 @@ public class MantaHttpHeaders {
                 continue;
             }
 
-            final Class<? extends Object> valueClass = value.getClass();
+            final Class<?> valueClass = value.getClass();
 
             if (value instanceof Iterable<?> || valueClass.isArray()) {
                 for (Object multiple : Types.iterableOf(value)) {
@@ -155,7 +155,7 @@ public class MantaHttpHeaders {
                 }
 
                 if (itr.hasNext()) {
-                    sb.append("; ");
+                    sb.append(",");
                 }
             }
 
@@ -203,6 +203,12 @@ public class MantaHttpHeaders {
         }
 
         return metadata;
+    }
+
+    public void putAllMetadata(final MantaMetadata metadata) {
+        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+            put(entry.getKey(), entry.getValue());
+        }
     }
 
     public String getRequestId() {

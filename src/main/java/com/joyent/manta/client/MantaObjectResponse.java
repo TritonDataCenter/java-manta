@@ -12,16 +12,13 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.Objects;
 
-import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
-
-
 /**
  * A Manta storage object.
  * <p>I/O is performed via the methods on the {@link MantaClient} class.</p>
  *
  * @author Yunong Xiao
  */
-public class MantaObjectMetadata implements MantaObject {
+public class MantaObjectResponse implements MantaObject {
 
     private static final long serialVersionUID = -5690762948837343786L;
 
@@ -70,16 +67,23 @@ public class MantaObjectMetadata implements MantaObject {
      */
     private String requestId;
 
+
     /**
-     * The http headers associated with this object.
+     * The HTTP headers associated with this object.
      */
     private MantaHttpHeaders httpHeaders;
 
 
     /**
+     * The metadata associated with this object.
+     */
+    private MantaMetadata metadata;
+
+
+    /**
      * Empty constructor for the JSON parser.
      */
-    public MantaObjectMetadata() {
+    public MantaObjectResponse() {
     }
 
 
@@ -88,7 +92,7 @@ public class MantaObjectMetadata implements MantaObject {
      *
      * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
-    public MantaObjectMetadata(final String path) {
+    public MantaObjectResponse(final String path) {
         if (path == null) {
             throw new IllegalArgumentException("Path must be present");
         }
@@ -106,13 +110,24 @@ public class MantaObjectMetadata implements MantaObject {
      *                For the full list of Manta headers see the
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
-    public MantaObjectMetadata(final String path, final MantaHttpHeaders headers) {
-        if (path == null) {
-            throw new IllegalArgumentException("Path must be present");
-        }
-        if (headers == null) {
-            throw new IllegalArgumentException("Headers must be present");
-        }
+    public MantaObjectResponse(final String path, final MantaHttpHeaders headers) {
+        this(path, headers, null);
+    }
+
+
+    /**
+     * Creates a MantaObject.
+     *
+     * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
+     * @param headers Optional {@link MantaHttpHeaders}. Use this to set any additional headers on the Manta object.
+     *                For the full list of Manta headers see the
+     *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
+     * @param metadata User set metadata associated with object
+     */
+    public MantaObjectResponse(final String path, final MantaHttpHeaders headers,
+                               final MantaMetadata metadata) {
+        Objects.requireNonNull(path, "Path must be present");
+        Objects.requireNonNull(headers, "Headers must be present");
 
         this.path = path;
         this.httpHeaders = headers;
@@ -124,6 +139,12 @@ public class MantaObjectMetadata implements MantaObject {
         final String contentType = headers.getContentType();
         if (contentType != null && contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
             this.type = "directory";
+        }
+
+        if (metadata != null) {
+            this.metadata = metadata;
+        } else {
+            this.metadata = new MantaMetadata(headers.metadataAsStrings());
         }
     }
 
@@ -150,16 +171,6 @@ public class MantaObjectMetadata implements MantaObject {
     }
 
 
-    /**
-     * Sets the content length (size) value.
-     *
-     * @param contentLength the content length (size) value.
-     */
-    public void setContentLength(final Long contentLength) {
-        this.contentLength = contentLength;
-    }
-
-
     @Override
     public final String getContentType() {
         String contentType = null;
@@ -173,16 +184,6 @@ public class MantaObjectMetadata implements MantaObject {
     @Override
     public final String getEtag() {
         return etag;
-    }
-
-
-    /**
-     * Sets the etag value.
-     *
-     * @param etag the mtime value.
-     */
-    public void setEtag(final String etag) {
-        this.etag = etag;
     }
 
 
@@ -222,18 +223,6 @@ public class MantaObjectMetadata implements MantaObject {
         }
     }
 
-    /**
-     * Sets the mtime value (last modified time) from a {@link java.util.Date} object.
-     * @param lastModified null or a Date object
-     */
-    public void setLastModifiedTime(final Date lastModified) {
-        if (lastModified == null) {
-            this.mtime = null;
-            return;
-        }
-
-        this.mtime = DateUtils.formatDate(lastModified);
-    }
 
     @Override
     public String getType() {
@@ -241,30 +230,9 @@ public class MantaObjectMetadata implements MantaObject {
     }
 
 
-    /**
-     * Sets the type value.
-     *
-     * @param type the type value.
-     */
-    public void setType(final String type) {
-        this.type = type;
-    }
-
-
     @Override
     public final MantaHttpHeaders getHttpHeaders() {
         return this.httpHeaders;
-    }
-
-
-    /**
-     * Sets the {@link com.google.api.client.http.HttpHeaders} in this object. Note any previous headers will be lost.
-     * For the full list of Manta headers see the <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
-     *
-     * @param httpHeaders the httpHeaders to set.
-     */
-    public final void setHttpHeaders(final MantaHttpHeaders httpHeaders) {
-        this.httpHeaders = httpHeaders;
     }
 
 
@@ -279,6 +247,11 @@ public class MantaObjectMetadata implements MantaObject {
         return this.httpHeaders.getAsString(fieldName);
     }
 
+
+    @Override
+    public MantaMetadata getMetadata() {
+        return this.metadata;
+    }
 
     @Override
     public final boolean isDirectory() {
@@ -302,7 +275,7 @@ public class MantaObjectMetadata implements MantaObject {
         if (!(o instanceof MantaObject)) {
             return false;
         }
-        MantaObjectMetadata that = (MantaObjectMetadata)o;
+        MantaObjectResponse that = (MantaObjectResponse)o;
         return Objects.equals(path, that.path)
                 && Objects.equals(getContentLength(), that.getContentLength())
                 && Objects.equals(getContentType(), that.getContentType())
