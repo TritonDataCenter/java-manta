@@ -11,7 +11,7 @@
 
     <test name="Manta Utils Test">
         <classes>
-            <class name="com.joyent.manta.client.MantaUtilsTest"/>
+            <class name="com.joyent.manta.client.MantaUtilsTest" />
         </classes>
     </test>
     <test name="Configuration Context Tests">
@@ -22,9 +22,16 @@
             <package name="com.joyent.manta.client.config.*" />
         </packages>
     </test>
-    <test name="Manta Client Test">
+    <test name="Manta Client Tests">
         <classes>
-            <class name="com.joyent.manta.client.MantaClientTest"/>
+            <class name="com.joyent.manta.client.MantaClientTest" />
+            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelTest" />
+            <class name="com.joyent.manta.client.MantaClientMetadataTest" />
+        </classes>
+    </test>
+    <test name="Collection Tests">
+        <classes>
+            <class name="com.joyent.manta.client.MantaMetadataTest" />
         </classes>
     </test>
 </suite>

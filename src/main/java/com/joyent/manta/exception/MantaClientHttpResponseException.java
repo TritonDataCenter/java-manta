@@ -6,15 +6,17 @@ package com.joyent.manta.exception;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponseException;
 
+import java.io.IOException;
+
 /**
  * Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't have to depend on the
  * underlying HTTP client implementation.
  *
  * @author Yunong Xiao
  */
-public class MantaClientHttpResponseException extends MantaClientException {
+public class MantaClientHttpResponseException extends IOException {
 
-    private static final long serialVersionUID = -7189613417468699L;
+    private static final long serialVersionUID = -7548643531099250374L;
 
     /**
      * The underlying {@link HttpResponseException}.

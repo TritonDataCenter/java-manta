@@ -9,7 +9,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.Objects;
 import java.util.Scanner;
 
 import static java.nio.file.Files.readAllBytes;
@@ -34,17 +38,34 @@ public final class MantaUtils {
      * Closes the {@link java.io.InputStream} when done.
      *
      * @param inputStream The {@link java.io.InputStream}
+     * @param charsetName The encoding type used to convert bytes from the
+     *        stream into characters to be scanned
      * @return The contents of the {@link java.io.InputStream}
      * @throws IOException If an IO exception has occurred
      */
-    public static String inputStreamToString(final InputStream inputStream) throws IOException {
-        final Scanner scanner = new Scanner(inputStream)
+    public static String inputStreamToString(final InputStream inputStream,
+                                             final String charsetName) throws IOException {
+        final Scanner scanner = new Scanner(inputStream, charsetName)
                 .useDelimiter("\\A");
         String nextToken = "";
         if (scanner.hasNext()) {
             nextToken = scanner.next();
         }
         return nextToken;
+    }
+
+
+    /**
+     * Read from an {@link java.io.InputStream} to a {@link java.lang.String}
+     * using the default encoding. Closes the {@link java.io.InputStream} when done.
+     *
+     * @param inputStream The {@link java.io.InputStream}
+     * @return The contents of the {@link java.io.InputStream}
+     * @throws IOException If an IO exception has occurred
+     */
+    public static String inputStreamToString(final InputStream inputStream) throws IOException {
+        Objects.requireNonNull(inputStream, "InputStream should be present");
+        return inputStreamToString(inputStream, Charset.defaultCharset().name());
     }
 
 
@@ -155,4 +176,23 @@ public final class MantaUtils {
     }
 
 
+    /**
+     * Format the path according to RFC3986.
+     *
+     * @param path the raw path string.
+     * @return the URI formatted string with the exception of '/' which is special in manta.
+     * @throws UnsupportedEncodingException If UTF-8 is not supported on this system.
+     */
+    public static String formatPath(final String path) throws UnsupportedEncodingException {
+        // first split the path by slashes.
+        final String[] elements = path.split("/");
+        final StringBuilder encodedPath = new StringBuilder();
+        for (final String string : elements) {
+            if (string.equals("")) {
+                continue;
+            }
+            encodedPath.append("/").append(URLEncoder.encode(string, "UTF-8"));
+        }
+        return encodedPath.toString();
+    }
 }

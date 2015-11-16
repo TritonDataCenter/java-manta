@@ -7,9 +7,9 @@ package com.joyent.manta.exception;
  * The base MantaException class.
  * @author Yunong Xiao
  */
-public class MantaException extends Exception {
+public class MantaException extends RuntimeException {
 
-    private static final long serialVersionUID = -2045814978953401214L;
+    private static final long serialVersionUID = 146894136987570504L;
 
     /**
      * Default constructor.

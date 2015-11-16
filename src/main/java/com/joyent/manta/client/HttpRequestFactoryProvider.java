@@ -7,6 +7,8 @@ import com.google.api.client.http.HttpExecuteInterceptor;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseInterceptor;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.apache.ApacheHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -25,9 +27,12 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.net.ProxySelector;
+
+import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 
 /**
  * Provider class that provides a configured implementation of
@@ -84,16 +89,24 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     private final HttpRequestFactory requestFactory;
 
     /**
+     * The HTTP timeout in milliseconds.
+     */
+    private final int httpTimeout;
+
+    /**
      * Creates a new instance of class configured using the passed
      * {@link HttpSigner}.
      *
      * @param httpSigner HTTP Signer used to sign Google HTTP requests
+     * @param httpTimeout The HTTP timeout in milliseconds.
      * @throws IOException thrown when the instance can't be setup properly
      */
-    public HttpRequestFactoryProvider(final HttpSigner httpSigner)
+    public HttpRequestFactoryProvider(final HttpSigner httpSigner,
+                                      final int httpTimeout)
             throws IOException {
         this.httpClient = buildHttpClient();
         this.requestFactory = buildRequestFactory(httpSigner, httpClient);
+        this.httpTimeout = httpTimeout;
     }
 
     /**
@@ -146,18 +159,34 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      * Builds a configured instance of {@link HttpRequestFactory}.
      *
      * @param httpSigner HTTP Signer used to sign Google HTTP requests
-     * @param httpClient Apache HTTP Client instance used to back Google HTTP Client
+     * @param apacheHttpClient Apache HTTP Client instance used to back Google HTTP Client
      * @return configured instance of {@link HttpRequestFactory}
      * @throws IOException thrown when the instance can't be setup properly
      */
-    private static HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner,
-                                                          final HttpClient httpClient)
+    private HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner,
+                                                   final HttpClient apacheHttpClient)
             throws IOException {
-        final HttpTransport transport = new ApacheHttpTransport(httpClient);
+        final HttpTransport transport = new ApacheHttpTransport(apacheHttpClient);
         final HttpExecuteInterceptor signingInterceptor = new HttpExecuteInterceptor() {
             @Override
             public void intercept(final HttpRequest request) throws IOException {
+                // Set timeouts
+                request.setReadTimeout(httpTimeout);
+                request.setConnectTimeout(httpTimeout);
+                // Sign request
                 httpSigner.signRequest(request);
+                // Load request ID into MDC so that it can be logged
+                final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    MDC.put("mantaRequestId", requestId.toString());
+                }
+            }
+        };
+
+        final HttpResponseInterceptor responseInterceptor = new HttpResponseInterceptor() {
+            @Override
+            public void interceptResponse(final HttpResponse response) throws IOException {
+                MDC.remove("mantaRequestId");
             }
         };
 
@@ -165,6 +194,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             @Override
             public void initialize(final HttpRequest request) throws IOException {
                 request.setInterceptor(signingInterceptor);
+                request.setResponseInterceptor(responseInterceptor);
                 request.setParser(new JsonObjectParser(JSON_FACTORY));
             }
         };

@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>1.6.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -90,7 +90,7 @@ public class App {
         private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
 
         public static void main(String... args) throws IOException, MantaCryptoException {
-                CLIENT = MantaClient.newInstance(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+                CLIENT = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
                 MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
                 String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
                 System.out.println(data);
