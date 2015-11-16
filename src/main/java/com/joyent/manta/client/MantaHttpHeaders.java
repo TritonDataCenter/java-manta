@@ -6,8 +6,6 @@ import com.google.api.client.util.Types;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
-import org.apache.http.message.BufferedHeader;
-import org.apache.http.protocol.HTTP;
 
 import java.util.*;
 
@@ -20,7 +18,9 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaHttpHeaders extends HttpHeaders {
+public class MantaHttpHeaders {
+    private final HttpHeaders wrappedHeaders = new HttpHeaders();
+
     /**
      * Creates an empty instance.
      */
@@ -35,7 +35,7 @@ public class MantaHttpHeaders extends HttpHeaders {
      */
     public MantaHttpHeaders(final Map<? extends String, ?> headers) {
         Objects.requireNonNull(headers, "Headers should be present");
-        putAll(headers);
+        wrappedHeaders.putAll(headers);
     }
 
     /**
@@ -45,7 +45,7 @@ public class MantaHttpHeaders extends HttpHeaders {
      * @param mantaObject Manta object to read headers from
      */
     public MantaHttpHeaders(final MantaObject mantaObject) {
-        this(mantaObject.getHttpHeaders());
+        wrappedHeaders.putAll(mantaObject.getHttpHeaders().wrappedHeaders);
     }
 
 
@@ -57,7 +57,7 @@ public class MantaHttpHeaders extends HttpHeaders {
      */
     MantaHttpHeaders(final HttpHeaders headers) {
         if (headers != null) {
-            fromHttpHeaders(headers);
+            wrappedHeaders.fromHttpHeaders(headers);
         }
     }
 
@@ -74,22 +74,22 @@ public class MantaHttpHeaders extends HttpHeaders {
             }
 
             if (header.getValue() == null) {
-                put(header.getName(), null);
+                wrappedHeaders.put(header.getName(), null);
             }
 
             switch (header.getName().toLowerCase()) {
                 case "content-length":
-                    setContentLength(Long.parseLong(header.getValue()));
+                    wrappedHeaders.setContentLength(Long.parseLong(header.getValue()));
                     break;
                 case "age":
-                    setAge(Long.parseLong(header.getValue()));
+                    wrappedHeaders.setAge(Long.parseLong(header.getValue()));
                     break;
                 default:
                     List<String> values = new ArrayList<>();
                     for (HeaderElement e : header.getElements()) {
                         values.add(e.getValue());
                     }
-                    set(header.getName(), values);
+                    wrappedHeaders.set(header.getName(), values);
             }
         }
     }
@@ -98,12 +98,12 @@ public class MantaHttpHeaders extends HttpHeaders {
     Header[] asApacheHttpHeaders() {
         final ArrayList<Header> headers = new ArrayList<>();
 
-        for (Map.Entry<String, ?> entry : getUnknownKeys().entrySet()) {
+        for (Map.Entry<String, ?> entry : wrappedHeaders.getUnknownKeys().entrySet()) {
             final String name = entry.getKey();
             final Object value = entry.getValue();
 
             final String displayName;
-            FieldInfo fieldInfo = this.getClassInfo().getFieldInfo(name);
+            FieldInfo fieldInfo = wrappedHeaders.getClassInfo().getFieldInfo(name);
             if (fieldInfo != null) {
                 displayName = fieldInfo.getName();
             } else {
@@ -134,6 +134,10 @@ public class MantaHttpHeaders extends HttpHeaders {
         return array;
     }
 
+    HttpHeaders asGoogleClientHttpHeaders() {
+        return wrappedHeaders;
+    }
+
     private static String asString(Object value) {
         if (value instanceof Enum<?>) {
             return FieldInfo.of((Enum<?>) value).getName();
@@ -143,7 +147,7 @@ public class MantaHttpHeaders extends HttpHeaders {
     }
 
     public String getRequestId() {
-        Object requestId = get(X_REQUEST_ID_HEADER);
+        Object requestId = wrappedHeaders.get(X_REQUEST_ID_HEADER);
         if (requestId == null) {
             return null;
         }
@@ -157,5 +161,346 @@ public class MantaHttpHeaders extends HttpHeaders {
         }
 
         return itr.next();
+    }
+
+    public String getAccept() {
+        return wrappedHeaders.getAccept();
+    }
+
+    public MantaHttpHeaders setAccept(String accept) {
+        wrappedHeaders.setAccept(accept);
+        return this;
+    }
+
+    public String getAcceptEncoding() {
+        return wrappedHeaders.getAcceptEncoding();
+    }
+
+    public MantaHttpHeaders setAcceptEncoding(String acceptEncoding) {
+        wrappedHeaders.setAcceptEncoding(acceptEncoding);
+        return this;
+    }
+
+    public String getAuthorization() {
+        return wrappedHeaders.getAuthorization();
+    }
+
+    public List<String> getAuthorizationAsList() {
+        return wrappedHeaders.getAuthorizationAsList();
+    }
+
+    public MantaHttpHeaders setAuthorization(String authorization) {
+        wrappedHeaders.setAuthorization(authorization);
+        return this;
+    }
+
+    public MantaHttpHeaders setAuthorization(List<String> authorization) {
+        wrappedHeaders.setAuthorization(authorization);
+        return this;
+    }
+
+    public String getCacheControl() {
+        return wrappedHeaders.getCacheControl();
+    }
+
+    public MantaHttpHeaders setCacheControl(String cacheControl) {
+        wrappedHeaders.setCacheControl(cacheControl);
+        return this;
+    }
+
+    public String getContentEncoding() {
+        return wrappedHeaders.getContentEncoding();
+    }
+
+    public MantaHttpHeaders setContentEncoding(String contentEncoding) {
+        wrappedHeaders.setContentEncoding(contentEncoding);
+        return this;
+    }
+
+    public Long getContentLength() {
+        return wrappedHeaders.getContentLength();
+    }
+
+    public MantaHttpHeaders setContentLength(Long contentLength) {
+        wrappedHeaders.setContentLength(contentLength);
+        return this;
+    }
+
+    public String getContentMD5() {
+        return wrappedHeaders.getContentMD5();
+    }
+
+    public MantaHttpHeaders setContentMD5(String contentMD5) {
+        wrappedHeaders.setContentMD5(contentMD5);
+        return this;
+    }
+
+    public String getContentRange() {
+        return wrappedHeaders.getContentRange();
+    }
+
+    public MantaHttpHeaders setContentRange(String contentRange) {
+        wrappedHeaders.setContentRange(contentRange);
+        return this;
+    }
+
+    public String getContentType() {
+        return wrappedHeaders.getContentType();
+    }
+
+    public MantaHttpHeaders setContentType(String contentType) {
+        wrappedHeaders.setContentType(contentType);
+        return this;
+    }
+
+    public String getCookie() {
+        return wrappedHeaders.getCookie();
+    }
+
+    public MantaHttpHeaders setCookie(String cookie) {
+        wrappedHeaders.setCookie(cookie);
+        return this;
+    }
+
+    public String getDate() {
+        return wrappedHeaders.getDate();
+    }
+
+    public MantaHttpHeaders setDate(String date) {
+        wrappedHeaders.setDate(date);
+        return this;
+    }
+
+    public String getETag() {
+        return wrappedHeaders.getETag();
+    }
+
+    public MantaHttpHeaders setETag(String etag) {
+        wrappedHeaders.setETag(etag);
+        return this;
+    }
+
+    public String getExpires() {
+        return wrappedHeaders.getExpires();
+    }
+
+    public MantaHttpHeaders setExpires(String expires) {
+        wrappedHeaders.setExpires(expires);
+        return this;
+    }
+
+    public String getIfModifiedSince() {
+        return wrappedHeaders.getIfModifiedSince();
+    }
+
+    public MantaHttpHeaders setIfModifiedSince(String ifModifiedSince) {
+        wrappedHeaders.setIfModifiedSince(ifModifiedSince);
+        return this;
+    }
+
+    public String getIfMatch() {
+        return wrappedHeaders.getIfMatch();
+    }
+
+    public MantaHttpHeaders setIfMatch(String ifMatch) {
+        wrappedHeaders.setIfMatch(ifMatch);
+        return this;
+    }
+
+    public String getIfNoneMatch() {
+        return wrappedHeaders.getIfNoneMatch();
+    }
+
+    public MantaHttpHeaders setIfNoneMatch(String ifNoneMatch) {
+        wrappedHeaders.setIfNoneMatch(ifNoneMatch);
+        return this;
+    }
+
+    public String getIfUnmodifiedSince() {
+        return wrappedHeaders.getIfUnmodifiedSince();
+    }
+
+    public MantaHttpHeaders setIfUnmodifiedSince(String ifUnmodifiedSince) {
+        wrappedHeaders.setIfUnmodifiedSince(ifUnmodifiedSince);
+        return this;
+    }
+
+    public String getIfRange() {
+        return wrappedHeaders.getIfRange();
+    }
+
+    public MantaHttpHeaders setIfRange(String ifRange) {
+        wrappedHeaders.setIfRange(ifRange);
+        return this;
+    }
+
+    public String getLastModified() {
+        return wrappedHeaders.getLastModified();
+    }
+
+    public MantaHttpHeaders setLastModified(String lastModified) {
+        wrappedHeaders.setLastModified(lastModified);
+        return this;
+    }
+
+    public String getLocation() {
+        return wrappedHeaders.getLocation();
+    }
+
+    public MantaHttpHeaders setLocation(String location) {
+        wrappedHeaders.setLocation(location);
+        return this;
+    }
+
+    public String getMimeVersion() {
+        return wrappedHeaders.getMimeVersion();
+    }
+
+    public MantaHttpHeaders setMimeVersion(String mimeVersion) {
+        wrappedHeaders.setMimeVersion(mimeVersion);
+        return this;
+    }
+
+    public String getRange() {
+        return wrappedHeaders.getRange();
+    }
+
+    public MantaHttpHeaders setRange(String range) {
+        wrappedHeaders.setRange(range);
+        return this;
+    }
+
+    public String getRetryAfter() {
+        return wrappedHeaders.getRetryAfter();
+    }
+
+    public MantaHttpHeaders setRetryAfter(String retryAfter) {
+        wrappedHeaders.setRetryAfter(retryAfter);
+        return this;
+    }
+
+    public String getUserAgent() {
+        return wrappedHeaders.getUserAgent();
+    }
+
+    public MantaHttpHeaders setUserAgent(String userAgent) {
+        wrappedHeaders.setUserAgent(userAgent);
+        return this;
+    }
+
+    public String getAuthenticate() {
+        return wrappedHeaders.getAuthenticate();
+    }
+
+    public List<String> getAuthenticateAsList() {
+        return wrappedHeaders.getAuthenticateAsList();
+    }
+
+    public MantaHttpHeaders setAuthenticate(String authenticate) {
+        wrappedHeaders.setAuthenticate(authenticate);
+        return this;
+    }
+
+    public Long getAge() {
+        return wrappedHeaders.getAge();
+    }
+
+    public MantaHttpHeaders setAge(Long age) {
+        wrappedHeaders.setAge(age);
+        return this;
+    }
+
+    public MantaHttpHeaders setBasicAuthentication(String username, String password) {
+        wrappedHeaders.setBasicAuthentication(username, password);
+        return this;
+    }
+
+    public String getFirstHeaderStringValue(String name) {
+        return wrappedHeaders.getFirstHeaderStringValue(name);
+    }
+
+    public List<String> getHeaderStringValues(String name) {
+        return wrappedHeaders.getHeaderStringValues(name);
+    }
+
+    public Object get(Object name) {
+        return wrappedHeaders.get(name);
+    }
+
+    public Object put(String fieldName, Object value) {
+        return wrappedHeaders.put(fieldName, value);
+    }
+
+    public void putAll(Map<? extends String, ?> map) {
+        wrappedHeaders.putAll(map);
+    }
+
+    public Object remove(Object name) {
+        return wrappedHeaders.remove(name);
+    }
+
+    public Set<Map.Entry<String, Object>> entrySet() {
+        return wrappedHeaders.entrySet();
+    }
+
+    public Map<String, Object> getUnknownKeys() {
+        return wrappedHeaders.getUnknownKeys();
+    }
+
+    public void setUnknownKeys(Map<String, Object> unknownFields) {
+        wrappedHeaders.setUnknownKeys(unknownFields);
+    }
+
+    public int size() {
+        return wrappedHeaders.size();
+    }
+
+    public boolean isEmpty() {
+        return wrappedHeaders.isEmpty();
+    }
+
+    public boolean containsValue(Object value) {
+        return wrappedHeaders.containsValue(value);
+    }
+
+    public boolean containsKey(Object key) {
+        return wrappedHeaders.containsKey(key);
+    }
+
+    public void clear() {
+        wrappedHeaders.clear();
+    }
+
+    public Set<String> keySet() {
+        return wrappedHeaders.keySet();
+    }
+
+    public Collection<Object> values() {
+        return wrappedHeaders.values();
+    }
+
+    public MantaHttpHeaders set(String fieldName, Object value) {
+        wrappedHeaders.set(fieldName, value);
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MantaHttpHeaders headers = (MantaHttpHeaders) o;
+        return Objects.equals(wrappedHeaders, headers.wrappedHeaders);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(wrappedHeaders);
+    }
+
+    @Override
+    public String toString() {
+        return "MantaHttpHeaders{" +
+                "wrappedHeaders=" + wrappedHeaders +
+                '}';
     }
 }

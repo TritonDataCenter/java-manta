@@ -274,19 +274,6 @@ public class MantaObjectMetadata implements MantaObject {
     }
 
 
-    /**
-     * Sets custom headers on the Manta object. This really just delegates to setting the
-     * {@link MantaHttpHeaders} object.  For the full list of Manta headers see the
-     * <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
-     *
-     * @param fieldName the field name.
-     * @param value the field value.
-     */
-    public final void setHeader(final String fieldName, final Object value) {
-        this.httpHeaders.set(fieldName, value);
-    }
-
-
     @Override
     public final boolean isDirectory() {
         return MANTA_OBJECT_TYPE_DIRECTORY.equals(type);

@@ -651,7 +651,7 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(url, content);
 
-        request.setHeaders(httpHeaders);
+        request.setHeaders(httpHeaders.asGoogleClientHttpHeaders());
 
         HttpResponse response = null;
         try {
@@ -791,7 +791,7 @@ public class MantaClient implements AutoCloseable {
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, new EmptyContent());
 
         if (headers != null) {
-            request.setHeaders(headers);
+            request.setHeaders(headers.asGoogleClientHttpHeaders());
         }
 
         request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
@@ -829,7 +829,7 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
         if (headers != null) {
-            request.setHeaders(headers);
+            request.setHeaders(headers.asGoogleClientHttpHeaders());
         }
 
         request.getHeaders().setContentType(LINK_CONTENT_TYPE);
