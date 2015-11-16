@@ -90,6 +90,8 @@ public interface MantaObject extends Serializable {
     Object getHeader(String fieldName);
 
 
+    String getHeaderAsString(String fieldName);
+
     /**
      * Unique request id made to Manta.
      *

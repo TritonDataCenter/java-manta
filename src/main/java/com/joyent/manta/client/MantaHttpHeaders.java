@@ -98,7 +98,7 @@ public class MantaHttpHeaders {
     Header[] asApacheHttpHeaders() {
         final ArrayList<Header> headers = new ArrayList<>();
 
-        for (Map.Entry<String, ?> entry : wrappedHeaders.getUnknownKeys().entrySet()) {
+        for (Map.Entry<String, ?> entry : wrappedHeaders.entrySet()) {
             final String name = entry.getKey();
             final Object value = entry.getValue();
 
@@ -139,11 +139,70 @@ public class MantaHttpHeaders {
     }
 
     private static String asString(Object value) {
-        if (value instanceof Enum<?>) {
+        if (value == null) {
+            return null;
+        } else if (value instanceof Enum<?>) {
             return FieldInfo.of((Enum<?>) value).getName();
+        } else if (value instanceof Iterable<?>) {
+            StringBuilder sb = new StringBuilder();
+
+            Iterator<?> itr = ((Iterable<?>) value).iterator();
+            while (itr.hasNext()) {
+                Object next = itr.next();
+
+                if (next != null) {
+                    sb.append(next.toString());
+                }
+
+                if (itr.hasNext()) {
+                    sb.append("; ");
+                }
+            }
+
+            return sb.toString();
+        } else if (value.getClass().isArray()) {
+            Object[] array = (Object[])value;
+
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < array.length; i++) {
+                Object next = array[i];
+
+                if (next != null) {
+                    sb.append(next.toString());
+                }
+
+                if (i < array.length - 1) {
+                    sb.append("; ");
+                }
+            }
+
+            return sb.toString();
         }
 
         return value.toString();
+    }
+
+    public Map<String, ?> metadata() {
+        final Map<String, Object> metadata = new HashMap<>();
+        for (Map.Entry<String, Object> entry : wrappedHeaders.entrySet()) {
+            if (entry.getKey().startsWith("m-")) {
+                metadata.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return metadata;
+    }
+
+    public Map<String, String> metadataAsStrings() {
+        final Map<String, String> metadata = new HashMap<>();
+        for (Map.Entry<String, Object> entry : wrappedHeaders.entrySet()) {
+            if (entry.getKey().startsWith("m-")) {
+                metadata.put(entry.getKey(), asString(entry.getValue()));
+            }
+        }
+
+        return metadata;
     }
 
     public String getRequestId() {
@@ -425,6 +484,10 @@ public class MantaHttpHeaders {
 
     public Object get(Object name) {
         return wrappedHeaders.get(name);
+    }
+
+    public String getAsString(Object name) {
+        return asString(wrappedHeaders.get(name));
     }
 
     public Object put(String fieldName, Object value) {

@@ -275,6 +275,12 @@ public class MantaObjectMetadata implements MantaObject {
 
 
     @Override
+    public String getHeaderAsString(String fieldName) {
+        return this.httpHeaders.getAsString(fieldName);
+    }
+
+
+    @Override
     public final boolean isDirectory() {
         return MANTA_OBJECT_TYPE_DIRECTORY.equals(type);
     }

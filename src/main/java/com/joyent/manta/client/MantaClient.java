@@ -659,6 +659,9 @@ public class MantaClient implements AutoCloseable {
             LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
                     response.getStatusMessage());
             final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getHeaders());
+            // We add back in the metadata made in the request so that it is easily available
+            responseHeaders.putAll(httpHeaders.metadata());
+
             return new MantaObjectMetadata(path, responseHeaders);
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);

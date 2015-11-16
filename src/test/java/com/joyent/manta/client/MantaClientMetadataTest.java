@@ -3,6 +3,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
+import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.IOException;
@@ -51,22 +52,19 @@ public class MantaClientMetadataTest {
         final String path = testPathPrefix + name;
 
         MantaHttpHeaders headers = new MantaHttpHeaders();
-        headers.put("Yoda", "Master");
-        headers.put("Droids", 1);
-        headers.put("force", true);
+        headers.put("m-Yoda", "Master");
+        headers.put("m-Droids", 1);
+        headers.put("m-force", true);
 
         final MantaObject result = mantaClient.put(path, TEST_DATA, headers);
-//        final MantaObject head = mantaClient.head(path);
-//        final MantaObject get = mantaClient.get(path);
-
-        MantaHttpHeaders headers2 = new MantaHttpHeaders();
-        headers2.put("Yoda", "Master");
-        headers2.put("Droids", 1);
-        headers2.put("force", true);
-
-        mantaClient.putMetadata(path, headers2);
-        final MantaObject head2 = mantaClient.head(path);
-        final MantaObject get2 = mantaClient.get(path);
+        Assert.assertEquals(result.getHeaderAsString("m-Yoda"), "Master");
+        Assert.assertEquals(result.getHeaderAsString("m-Droids"), "1");
+        Assert.assertEquals(result.getHeaderAsString("m-force"), "true");
+        
+        final MantaObject head = mantaClient.head(path);
+        Assert.assertEquals(head.getHeaderAsString("m-Yoda"), "Master");
+        Assert.assertEquals(head.getHeaderAsString("m-Droids"), "1");
+        Assert.assertEquals(head.getHeaderAsString("m-force"), "true");
 
         mantaClient.delete(path);
     }
