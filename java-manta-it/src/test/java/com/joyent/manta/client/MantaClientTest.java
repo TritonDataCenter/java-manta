@@ -204,6 +204,7 @@ public class MantaClientTest {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
         try (InputStream testDataInputStream = classLoader.getResourceAsStream(TEST_FILENAME)) {
             mantaClient.put(path, testDataInputStream);
