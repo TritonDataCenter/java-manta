@@ -11,6 +11,7 @@
 
     <test name="Manta Client Tests">
         <classes>
+            <class name="com.joyent.manta.client.TestSuiteSetup" />
             <class name="com.joyent.manta.client.MantaClientTest" />
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelTest" />
             <class name="com.joyent.manta.client.MantaClientMetadataTest" />
