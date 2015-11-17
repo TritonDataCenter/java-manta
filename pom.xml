@@ -50,6 +50,7 @@
 
     <modules>
         <module>java-manta-client</module>
+        <module>java-manta-it</module>
     </modules>
 
     <scm>
