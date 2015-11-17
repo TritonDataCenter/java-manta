@@ -103,6 +103,8 @@ public interface MantaObject extends Serializable {
 
     /**
      * Get the user-supplied metadata for this object.
+     *
+     * @return the user-supplied metadata
      */
     MantaMetadata getMetadata();
 

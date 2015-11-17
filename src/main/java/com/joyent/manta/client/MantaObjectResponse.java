@@ -20,7 +20,7 @@ import java.util.Objects;
  */
 public class MantaObjectResponse implements MantaObject {
 
-    private static final long serialVersionUID = -5690762948837343786L;
+    private static final long serialVersionUID = 2752480890369898121L;
 
     /**
      * The content-type used to represent Manta directory resources in http responses.
@@ -124,8 +124,7 @@ public class MantaObjectResponse implements MantaObject {
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      * @param metadata User set metadata associated with object
      */
-    public MantaObjectResponse(final String path, final MantaHttpHeaders headers,
-                               final MantaMetadata metadata) {
+    public MantaObjectResponse(final String path, final MantaHttpHeaders headers, final MantaMetadata metadata) {
         Objects.requireNonNull(path, "Path must be present");
         Objects.requireNonNull(headers, "Headers must be present");
 
@@ -243,7 +242,7 @@ public class MantaObjectResponse implements MantaObject {
 
 
     @Override
-    public String getHeaderAsString(String fieldName) {
+    public String getHeaderAsString(final String fieldName) {
         return this.httpHeaders.getAsString(fieldName);
     }
 

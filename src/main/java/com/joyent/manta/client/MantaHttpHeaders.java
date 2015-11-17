@@ -7,7 +7,15 @@ import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
 
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 
@@ -19,6 +27,10 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaHttpHeaders {
+
+    /**
+     * HttpHeaders delegate which is wrapped by this class.
+     */
     private final HttpHeaders wrappedHeaders = new HttpHeaders();
 
     /**
@@ -40,7 +52,7 @@ public class MantaHttpHeaders {
 
     /**
      * Creates an instance with headers prepopulated from an existing
-     * {@link MantaObject} instance
+     * {@link MantaObject} instance.
      *
      * @param mantaObject Manta object to read headers from
      */
@@ -95,6 +107,11 @@ public class MantaHttpHeaders {
     }
 
 
+    /**
+     * Returns the headers as an array of {@link org.apache.http.Header} instances.
+     *
+     * @return an array of {@link org.apache.http.Header} instances
+     */
     Header[] asApacheHttpHeaders() {
         final ArrayList<Header> headers = new ArrayList<>();
 
@@ -134,11 +151,16 @@ public class MantaHttpHeaders {
         return array;
     }
 
+
+    /**
+     * Returns the headers as an instance of {@link com.google.api.client.http.HttpHeaders}.
+     * @return an instance of {@link com.google.api.client.http.HttpHeaders}
+     */
     HttpHeaders asGoogleClientHttpHeaders() {
         return wrappedHeaders;
     }
 
-    private static String asString(Object value) {
+    private static String asString(final Object value) {
         if (value == null) {
             return null;
         } else if (value instanceof Enum<?>) {
@@ -232,7 +254,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getAccept();
     }
 
-    public MantaHttpHeaders setAccept(String accept) {
+    public MantaHttpHeaders setAccept(final String accept) {
         wrappedHeaders.setAccept(accept);
         return this;
     }
@@ -241,7 +263,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getAcceptEncoding();
     }
 
-    public MantaHttpHeaders setAcceptEncoding(String acceptEncoding) {
+    public MantaHttpHeaders setAcceptEncoding(final String acceptEncoding) {
         wrappedHeaders.setAcceptEncoding(acceptEncoding);
         return this;
     }
@@ -254,12 +276,12 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getAuthorizationAsList();
     }
 
-    public MantaHttpHeaders setAuthorization(String authorization) {
+    public MantaHttpHeaders setAuthorization(final String authorization) {
         wrappedHeaders.setAuthorization(authorization);
         return this;
     }
 
-    public MantaHttpHeaders setAuthorization(List<String> authorization) {
+    public MantaHttpHeaders setAuthorization(final List<String> authorization) {
         wrappedHeaders.setAuthorization(authorization);
         return this;
     }
@@ -268,7 +290,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getCacheControl();
     }
 
-    public MantaHttpHeaders setCacheControl(String cacheControl) {
+    public MantaHttpHeaders setCacheControl(final String cacheControl) {
         wrappedHeaders.setCacheControl(cacheControl);
         return this;
     }
@@ -277,7 +299,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getContentEncoding();
     }
 
-    public MantaHttpHeaders setContentEncoding(String contentEncoding) {
+    public MantaHttpHeaders setContentEncoding(final String contentEncoding) {
         wrappedHeaders.setContentEncoding(contentEncoding);
         return this;
     }
@@ -286,7 +308,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getContentLength();
     }
 
-    public MantaHttpHeaders setContentLength(Long contentLength) {
+    public MantaHttpHeaders setContentLength(final Long contentLength) {
         wrappedHeaders.setContentLength(contentLength);
         return this;
     }
@@ -295,7 +317,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getContentMD5();
     }
 
-    public MantaHttpHeaders setContentMD5(String contentMD5) {
+    public MantaHttpHeaders setContentMD5(final String contentMD5) {
         wrappedHeaders.setContentMD5(contentMD5);
         return this;
     }
@@ -304,7 +326,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getContentRange();
     }
 
-    public MantaHttpHeaders setContentRange(String contentRange) {
+    public MantaHttpHeaders setContentRange(final String contentRange) {
         wrappedHeaders.setContentRange(contentRange);
         return this;
     }
@@ -313,7 +335,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getContentType();
     }
 
-    public MantaHttpHeaders setContentType(String contentType) {
+    public MantaHttpHeaders setContentType(final String contentType) {
         wrappedHeaders.setContentType(contentType);
         return this;
     }
@@ -322,7 +344,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getCookie();
     }
 
-    public MantaHttpHeaders setCookie(String cookie) {
+    public MantaHttpHeaders setCookie(final String cookie) {
         wrappedHeaders.setCookie(cookie);
         return this;
     }
@@ -331,7 +353,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getDate();
     }
 
-    public MantaHttpHeaders setDate(String date) {
+    public MantaHttpHeaders setDate(final String date) {
         wrappedHeaders.setDate(date);
         return this;
     }
@@ -340,7 +362,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getETag();
     }
 
-    public MantaHttpHeaders setETag(String etag) {
+    public MantaHttpHeaders setETag(final String etag) {
         wrappedHeaders.setETag(etag);
         return this;
     }
@@ -349,7 +371,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getExpires();
     }
 
-    public MantaHttpHeaders setExpires(String expires) {
+    public MantaHttpHeaders setExpires(final String expires) {
         wrappedHeaders.setExpires(expires);
         return this;
     }
@@ -358,7 +380,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getIfModifiedSince();
     }
 
-    public MantaHttpHeaders setIfModifiedSince(String ifModifiedSince) {
+    public MantaHttpHeaders setIfModifiedSince(final String ifModifiedSince) {
         wrappedHeaders.setIfModifiedSince(ifModifiedSince);
         return this;
     }
@@ -367,7 +389,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getIfMatch();
     }
 
-    public MantaHttpHeaders setIfMatch(String ifMatch) {
+    public MantaHttpHeaders setIfMatch(final String ifMatch) {
         wrappedHeaders.setIfMatch(ifMatch);
         return this;
     }
@@ -376,7 +398,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getIfNoneMatch();
     }
 
-    public MantaHttpHeaders setIfNoneMatch(String ifNoneMatch) {
+    public MantaHttpHeaders setIfNoneMatch(final String ifNoneMatch) {
         wrappedHeaders.setIfNoneMatch(ifNoneMatch);
         return this;
     }
@@ -385,7 +407,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getIfUnmodifiedSince();
     }
 
-    public MantaHttpHeaders setIfUnmodifiedSince(String ifUnmodifiedSince) {
+    public MantaHttpHeaders setIfUnmodifiedSince(final String ifUnmodifiedSince) {
         wrappedHeaders.setIfUnmodifiedSince(ifUnmodifiedSince);
         return this;
     }
@@ -394,7 +416,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getIfRange();
     }
 
-    public MantaHttpHeaders setIfRange(String ifRange) {
+    public MantaHttpHeaders setIfRange(final String ifRange) {
         wrappedHeaders.setIfRange(ifRange);
         return this;
     }
@@ -403,7 +425,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getLastModified();
     }
 
-    public MantaHttpHeaders setLastModified(String lastModified) {
+    public MantaHttpHeaders setLastModified(final String lastModified) {
         wrappedHeaders.setLastModified(lastModified);
         return this;
     }
@@ -412,7 +434,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getLocation();
     }
 
-    public MantaHttpHeaders setLocation(String location) {
+    public MantaHttpHeaders setLocation(final String location) {
         wrappedHeaders.setLocation(location);
         return this;
     }
@@ -421,7 +443,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getMimeVersion();
     }
 
-    public MantaHttpHeaders setMimeVersion(String mimeVersion) {
+    public MantaHttpHeaders setMimeVersion(final String mimeVersion) {
         wrappedHeaders.setMimeVersion(mimeVersion);
         return this;
     }
@@ -430,7 +452,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getRange();
     }
 
-    public MantaHttpHeaders setRange(String range) {
+    public MantaHttpHeaders setRange(final String range) {
         wrappedHeaders.setRange(range);
         return this;
     }
@@ -439,7 +461,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getRetryAfter();
     }
 
-    public MantaHttpHeaders setRetryAfter(String retryAfter) {
+    public MantaHttpHeaders setRetryAfter(final String retryAfter) {
         wrappedHeaders.setRetryAfter(retryAfter);
         return this;
     }
@@ -448,7 +470,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getUserAgent();
     }
 
-    public MantaHttpHeaders setUserAgent(String userAgent) {
+    public MantaHttpHeaders setUserAgent(final String userAgent) {
         wrappedHeaders.setUserAgent(userAgent);
         return this;
     }
@@ -461,7 +483,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getAuthenticateAsList();
     }
 
-    public MantaHttpHeaders setAuthenticate(String authenticate) {
+    public MantaHttpHeaders setAuthenticate(final String authenticate) {
         wrappedHeaders.setAuthenticate(authenticate);
         return this;
     }
@@ -470,41 +492,41 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getAge();
     }
 
-    public MantaHttpHeaders setAge(Long age) {
+    public MantaHttpHeaders setAge(final Long age) {
         wrappedHeaders.setAge(age);
         return this;
     }
 
-    public MantaHttpHeaders setBasicAuthentication(String username, String password) {
+    public MantaHttpHeaders setBasicAuthentication(final String username, final String password) {
         wrappedHeaders.setBasicAuthentication(username, password);
         return this;
     }
 
-    public String getFirstHeaderStringValue(String name) {
+    public String getFirstHeaderStringValue(final String name) {
         return wrappedHeaders.getFirstHeaderStringValue(name);
     }
 
-    public List<String> getHeaderStringValues(String name) {
+    public List<String> getHeaderStringValues(final String name) {
         return wrappedHeaders.getHeaderStringValues(name);
     }
 
-    public Object get(Object name) {
+    public Object get(final Object name) {
         return wrappedHeaders.get(name);
     }
 
-    public String getAsString(Object name) {
+    public String getAsString(final Object name) {
         return asString(wrappedHeaders.get(name));
     }
 
-    public Object put(String fieldName, Object value) {
+    public Object put(final String fieldName, final Object value) {
         return wrappedHeaders.put(fieldName, value);
     }
 
-    public void putAll(Map<? extends String, ?> map) {
+    public void putAll(final Map<? extends String, ?> map) {
         wrappedHeaders.putAll(map);
     }
 
-    public Object remove(Object name) {
+    public Object remove(final Object name) {
         return wrappedHeaders.remove(name);
     }
 
@@ -516,7 +538,7 @@ public class MantaHttpHeaders {
         return wrappedHeaders.getUnknownKeys();
     }
 
-    public void setUnknownKeys(Map<String, Object> unknownFields) {
+    public void setUnknownKeys(final Map<String, Object> unknownFields) {
         wrappedHeaders.setUnknownKeys(unknownFields);
     }
 
@@ -528,11 +550,11 @@ public class MantaHttpHeaders {
         return wrappedHeaders.isEmpty();
     }
 
-    public boolean containsValue(Object value) {
+    public boolean containsValue(final Object value) {
         return wrappedHeaders.containsValue(value);
     }
 
-    public boolean containsKey(Object key) {
+    public boolean containsKey(final Object key) {
         return wrappedHeaders.containsKey(key);
     }
 
@@ -548,17 +570,24 @@ public class MantaHttpHeaders {
         return wrappedHeaders.values();
     }
 
-    public MantaHttpHeaders set(String fieldName, Object value) {
+    public MantaHttpHeaders set(final String fieldName, final Object value) {
         wrappedHeaders.set(fieldName, value);
         return this;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         MantaHttpHeaders headers = (MantaHttpHeaders) o;
-        return Objects.equals(wrappedHeaders, headers.wrappedHeaders);
+        return Objects.equals(
+                wrappedHeaders,
+                headers.wrappedHeaders
+        );
     }
 
     @Override
@@ -568,8 +597,9 @@ public class MantaHttpHeaders {
 
     @Override
     public String toString() {
-        return "MantaHttpHeaders{" +
-                "wrappedHeaders=" + wrappedHeaders +
-                '}';
+        return "MantaHttpHeaders{"
+                + "wrappedHeaders="
+                + wrappedHeaders
+                + '}';
     }
 }

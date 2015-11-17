@@ -14,7 +14,7 @@ import java.util.Date;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject {
-    private static final long serialVersionUID = 5300041609801576485L;
+    private static final long serialVersionUID = 4129729453592380566L;
 
     /**
      * Response from request to the Manta API.
@@ -92,7 +92,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public String getHeaderAsString(String fieldName) {
+    public String getHeaderAsString(final String fieldName) {
         return response.getHeaderAsString(fieldName);
     }
 

@@ -19,7 +19,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * <p></p>Class for storing Manta metadata information. All metadata keys must start
+ * <p>Class for storing Manta metadata information. All metadata keys must start
  * with the string "m-". Case insensitive {@link Map} implementation that checks
  * for valid metadata key names.</p>
  *
@@ -31,13 +31,15 @@ import java.util.function.Function;
  */
 @NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
-    private static final long serialVersionUID = -8455066896469193612L;
+    private static final long serialVersionUID = -5828336629480323042L;
 
-    static char[] ILLEGAL_KEY_CHARS = "()<>@,;:</[]?={}\\ \n\t\r".toCharArray();
+    static final char[] ILLEGAL_KEY_CHARS = "()<>@,;:</[]?={}\\ \n\t\r".toCharArray();
+
+    private static final char ASCIICODE_32_SPACE = ' ';
 
     private final PredicatedMap<String, String> innerMap;
 
-    public MantaMetadata(Map<? extends String, ? extends String> m) {
+    public MantaMetadata(final Map<? extends String, ? extends String> m) {
         this();
         innerMap.putAll(m);
     }
@@ -55,16 +57,15 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
     protected class HttpHeaderNameKeyPredicate implements Predicate<String> {
         @Override
-        public boolean evaluate(String object) {
-            return object != null &&
-                   !object.isEmpty() &&
-                   !hasIllegalChars(object) &&
-                   isIso88591(object) &&
-                   validPrefix(object);
+        public boolean evaluate(final String object) {
+            return object != null
+                    && !object.isEmpty()
+                    && !hasIllegalChars(object)
+                    && isIso88591(object)
+                    && validPrefix(object);
         }
 
-        private boolean isIso88591(final String input)
-        {
+        private boolean isIso88591(final String input) {
             try {
                 final byte[] bytes = input.getBytes("ISO-8859-1");
                 final String result = new String(bytes, "ISO-8859-1");
@@ -86,8 +87,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
                     return true;
                 }
 
-                for (char ILLEGAL_KEY_CHAR : ILLEGAL_KEY_CHARS) {
-                    if (c == ILLEGAL_KEY_CHAR) {
+                for (char illegalKeyChar : ILLEGAL_KEY_CHARS) {
+                    if (c == illegalKeyChar) {
                         return true;
                     }
                 }
@@ -98,7 +99,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
         private boolean isControlCharacter(final char c) {
             final int intVal = (int)c;
-            return intVal < 32;
+            return intVal < ASCIICODE_32_SPACE;
         }
     }
 
@@ -112,57 +113,65 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public String merge(String key, String value, BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
+    public String merge(final String key,
+                        final String value,
+                        final BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
         return innerMap.merge(key, value, remappingFunction);
     }
 
     @Override
-    public String compute(String key, BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
+    public String compute(final String key,
+                          final BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
         return innerMap.compute(key, remappingFunction);
     }
 
     @Override
-    public String computeIfPresent(String key, BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
+    public String computeIfPresent(final String key,
+                                   final BiFunction<
+                                           ? super String,
+                                           ? super String,
+                                           ? extends String
+                                           > remappingFunction) {
         return innerMap.computeIfPresent(key, remappingFunction);
     }
 
     @Override
-    public String computeIfAbsent(String key, Function<? super String, ? extends String> mappingFunction) {
+    public String computeIfAbsent(final String key, final Function<? super String, ? extends String> mappingFunction) {
         return innerMap.computeIfAbsent(key, mappingFunction);
     }
 
     @Override
-    public String replace(String key, String value) {
+    public String replace(final String key, final String value) {
         return innerMap.replace(key, value);
     }
 
     @Override
-    public boolean replace(String key, String oldValue, String newValue) {
+    public boolean replace(final String key, final String oldValue, final String newValue) {
         return innerMap.replace(key, oldValue, newValue);
     }
 
     @Override
-    public boolean remove(Object key, Object value) {
+    public boolean remove(final Object key, final Object value) {
         return innerMap.remove(key, value);
     }
 
     @Override
-    public String putIfAbsent(String key, String value) {
+    public String putIfAbsent(final String key, final String value) {
         return innerMap.putIfAbsent(key, value);
     }
 
     @Override
-    public void replaceAll(BiFunction<? super String, ? super String, ? extends String> function) {
+    public void replaceAll(final BiFunction<? super String, ? super String, ? extends String> function) {
         innerMap.replaceAll(function);
     }
 
     @Override
-    public void forEach(BiConsumer<? super String, ? super String> action) {
+    public void forEach(final BiConsumer<? super String, ? super String> action) {
         innerMap.forEach(action);
     }
 
     @Override
-    public String getOrDefault(Object key, String defaultValue) {
+    public String getOrDefault(final Object key, final String defaultValue) {
         return innerMap.getOrDefault(key, defaultValue);
     }
 
@@ -177,7 +186,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         return innerMap.equals(object);
     }
 
@@ -192,7 +201,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public String remove(Object key) {
+    public String remove(final Object key) {
         return innerMap.remove(key);
     }
 
@@ -207,17 +216,17 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public String get(Object key) {
+    public String get(final Object key) {
         return innerMap.get(key);
     }
 
     @Override
-    public boolean containsValue(Object value) {
+    public boolean containsValue(final Object value) {
         return innerMap.containsValue(value);
     }
 
     @Override
-    public boolean containsKey(Object key) {
+    public boolean containsKey(final Object key) {
         return innerMap.containsKey(key);
     }
 
@@ -227,12 +236,12 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public String put(String key, String value) {
+    public String put(final String key, final String value) {
         return innerMap.put(key, value);
     }
 
     @Override
-    public void putAll(Map<? extends String, ? extends String> mapToCopy) {
+    public void putAll(final Map<? extends String, ? extends String> mapToCopy) {
         innerMap.putAll(mapToCopy);
     }
 

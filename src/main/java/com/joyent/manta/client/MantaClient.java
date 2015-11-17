@@ -689,27 +689,27 @@ public class MantaClient implements AutoCloseable {
                                           final HttpContent content,
                                           final MantaMetadata metadata)
             throws IOException {
-        final GenericUrl url = new GenericUrl(this.url + formatPath(path));
-        return httpPut(url, headers, content, metadata);
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        return httpPut(genericUrl, headers, content, metadata);
     }
 
 
     /**
      * Executes an HTTP PUT against the remote Manta API.
      *
-     * @param url Full URL to the object on the Manta API
+     * @param genericUrl Full URL to the object on the Manta API
      * @param headers optional HTTP headers to include when copying the object
      * @param content Google HTTP Client content object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
      */
-    protected MantaObjectResponse httpPut(final GenericUrl url,
+    protected MantaObjectResponse httpPut(final GenericUrl genericUrl,
                                           final MantaHttpHeaders headers,
                                           final HttpContent content,
                                           final MantaMetadata metadata)
             throws IOException {
-        final String path = url.getRawPath();
+        final String path = genericUrl.getRawPath();
         LOG.debug("PUT    {}", path);
 
         final MantaHttpHeaders httpHeaders;
@@ -725,7 +725,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildPutRequest(url, content);
+        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
 
         request.setHeaders(httpHeaders.asGoogleClientHttpHeaders());
 
@@ -843,7 +843,7 @@ public class MantaClient implements AutoCloseable {
      * @return Manta response object
      * @throws IOException when there is a problem sending the metadata over the wire
      */
-    public MantaObjectResponse putMetadata(final String path, MantaMetadata metadata)
+    public MantaObjectResponse putMetadata(final String path, final MantaMetadata metadata)
             throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders(metadata);
         return putMetadata(path, headers, metadata);
@@ -861,8 +861,8 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException when there is a problem sending the metadata over the wire
      */
     public MantaObjectResponse putMetadata(final String path,
-                                           MantaHttpHeaders headers,
-                                           MantaMetadata metadata)
+                                           final MantaHttpHeaders headers,
+                                           final MantaMetadata metadata)
             throws IOException {
         Objects.requireNonNull(headers, "Headers must be present");
         Objects.requireNonNull(metadata, "Metadata must be present");
