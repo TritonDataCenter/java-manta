@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/joyent/java-manta.svg?branch=travis)](https://travis-ci.org/joyent/java-manta)
+
 # Java Manta Client SDK
 
 [java-manta](http://joyent.github.com/java-manta) is a community-maintained Java
