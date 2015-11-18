@@ -23,8 +23,9 @@ import java.util.function.Function;
  * with the string "m-". Case insensitive {@link Map} implementation that checks
  * for valid metadata key names.</p>
  *
- * <p><em>Note:</em> In order to specify multiple headers (as a list) you will
- * need to use commas to delineate the values.</p>
+ * <p><em>Note:</em> Manta doesn't support multiple values for HTTP header based
+ * metadata. It accepts them without throwing an error, but it will only
+ * ingest a single value out of multiple values.</p>
  *
  * @author Elijah Zupancic
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
