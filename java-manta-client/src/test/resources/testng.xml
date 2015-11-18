@@ -1,0 +1,22 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Java Manta Client Test Suite" verbose="1">
+
+    <test name="Manta Utils Test">
+        <classes>
+            <class name="com.joyent.manta.client.MantaUtilsTest" />
+        </classes>
+    </test>
+    <test name="Configuration Context Tests">
+        <groups>
+            <define name="config" />
+        </groups>
+        <packages>
+            <package name="com.joyent.manta.client.config.*" />
+        </packages>
+    </test>
+    <test name="Collection Tests">
+        <classes>
+            <class name="com.joyent.manta.client.MantaMetadataTest" />
+        </classes>
+    </test>
+</suite>

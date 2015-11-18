@@ -1,0 +1,24 @@
+<configuration>
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <!-- reset all previous level configurations of all j.u.l. loggers -->
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>[%thread] %-5level %logger [%X{mantaRequestId}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.joyent" level="error" />
+    <!-- lower these to debug in order to enable most logs -->
+    <logger name="com.joyent.manta.client.MantaClient" level="error" />
+    <logger name="com.joyent.manta.com.google.api.client.http" level="error" />
+    <logger name="com.joyent.manta.org.apache" level="error" />
+
+    <root level="debug">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
