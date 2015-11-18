@@ -15,7 +15,7 @@
     <packaging>jar</packaging>
 
     <name>java-manta-client-it</name>
-    <description>Integration and funcional tests for Java Manta SDK</description>
+    <description>Integration and functional tests for Java Manta SDK</description>
 
     <properties>
         <!-- Dependency versions -->
@@ -72,12 +72,7 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
-                </configuration>
+                <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
