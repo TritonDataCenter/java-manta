@@ -28,7 +28,7 @@ import java.util.UUID;
 /**
  * @author Yunong Xiao
  */
-public class MantaClientTest {
+public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
     private static final String TEST_FILENAME = "Master-Yoda.jpg";
