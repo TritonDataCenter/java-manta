@@ -34,4 +34,33 @@ public interface ConfigContext {
      * @return General connection timeout for the Manta service.
      */
     Integer getTimeout();
+
+    /**
+     * @return String of home directory based on Manta username.
+     */
+    String getMantaHomeDirectory();
+
+    /**
+     * Extracts the home directory based on the Manta account name.
+     *
+     * @param mantaUser user associated with account
+     * @return the root account holder name prefixed with a slash or null
+     *         upon null mantaUser
+     */
+    static String deriveHomeDirectoryFromUser(final String mantaUser) {
+        if (mantaUser == null) {
+            return null;
+        }
+
+        final String home;
+
+        if (mantaUser.contains("/")) {
+            final String accountUser = mantaUser.split("/")[0];
+            home = String.format("/%s", accountUser);
+        } else {
+            home = String.format("/%s", mantaUser);
+        }
+
+        return home;
+    }
 }

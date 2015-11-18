@@ -71,4 +71,9 @@ public class DefaultsConfigContext implements ConfigContext {
     public Integer getTimeout() {
         return DEFAULT_HTTP_TIMEOUT;
     }
+
+    @Override
+    public String getMantaHomeDirectory() {
+        return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
+    }
 }
