@@ -282,7 +282,7 @@
                         <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
                     </systemPropertyVariables>
                     <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+                        <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
