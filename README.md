@@ -57,7 +57,7 @@ left are overridden by values on the right.
 The URL of the manta service endpoint to test against
 * `manta.user` ( **MANTA_USER** )
 The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
-you will specify the username as "<account>/<subuser>".
+you will specify the username as "\<account\>/\<subuser\>".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
 * `manta.key_path` ( **MANTA_KEY_PATH** )
@@ -127,7 +127,7 @@ which can be configured
 
 ## Subuser Difficulties
 
-If you are using subusers, be sure to specify the Manta username as `<account>/<subuser>`.
+If you are using subusers, be sure to specify the Manta username as `\<account\>/\<subuser\>`.
 Also, a common problem is that you haven't granted the subuser access to the
 path within Manta. Typically this is done via the [Manta CLI Tools](https://apidocs.joyent.com/manta/commands-reference.html)
 using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md). 
