@@ -161,14 +161,6 @@ public class MantaClientIT {
 
 
     @Test
-    public final void testDirectoryIsMarkedAsSuch() throws IOException {
-        MantaObject dir = mantaClient.get(testPathPrefix);
-        Assert.assertTrue(dir.isDirectory(),
-                String.format("Directory should be marked as such [%s]", testPathPrefix));
-    }
-
-
-    @Test
     public final void testRecursiveDeleteObject() throws IOException {
         final String dir1 = String.format("%s1", testPathPrefix);
                 mantaClient.putDirectory(testPathPrefix + "1", null);

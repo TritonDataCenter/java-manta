@@ -33,10 +33,12 @@ import java.io.StringReader;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -75,11 +77,10 @@ public class MantaClient implements AutoCloseable {
      */
     private static final String DIRECTORY_REQUEST_CONTENT_TYPE = "application/json; type=directory";
 
-
     /**
      * HTTP metadata headers that violate the Manta API contract.
      */
-    private static final String[] ILLEGAL_METADATA_HEADERS = new String[] {
+    private static final String[] ILLEGAL_METADATA_HEADERS = new String[]{
             HTTP.CONTENT_LEN, "Content-MD5", "Durability-Level"
     };
 
@@ -100,6 +101,7 @@ public class MantaClient implements AutoCloseable {
      */
     private final int httpTimeout;
 
+
     /**
      * Creates a new instance of a Manta client.
      *
@@ -108,21 +110,21 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaClient(final ConfigContext config) throws IOException {
         this(config.getMantaURL(), config.getMantaUser(), config.getMantaKeyPath(),
-             config.getMantaKeyId());
+                config.getMantaKeyId());
     }
 
 
     /**
      * Creates a new instance of a Manta client.
      *
-     * @param url The url of the Manta endpoint.
-     * @param login The user login name.
-     * @param keyPath The path to the user rsa private key on disk.
+     * @param url         The url of the Manta endpoint.
+     * @param login       The user login name.
+     * @param keyPath     The path to the user rsa private key on disk.
      * @param fingerPrint The fingerprint of the user rsa private key.
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url, final String login, final String keyPath,
-                              final String fingerPrint) throws IOException {
+                       final String fingerPrint) throws IOException {
         this(url, login, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
@@ -130,11 +132,11 @@ public class MantaClient implements AutoCloseable {
     /**
      * Creates a new instance of a Manta client.
      *
-     * @param url The url of the Manta endpoint.
-     * @param login The user login name.
+     * @param url               The url of the Manta endpoint.
+     * @param login             The user login name.
      * @param privateKeyContent The user's rsa private key as a string.
-     * @param fingerPrint The fingerprint of the user rsa private key.
-     * @param password The private key password (optional).
+     * @param fingerPrint       The fingerprint of the user rsa private key.
+     * @param password          The private key password (optional).
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
@@ -143,16 +145,16 @@ public class MantaClient implements AutoCloseable {
                        final String fingerPrint,
                        final char[] password) throws IOException {
         this(url, login, privateKeyContent, fingerPrint, password,
-             DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
 
     /**
      * Instantiates a new Manta client instance.
      *
-     * @param url The url of the Manta endpoint.
-     * @param login The user login name.
-     * @param keyPath The path to the user rsa private key on disk.
+     * @param url         The url of the Manta endpoint.
+     * @param login       The user login name.
+     * @param keyPath     The path to the user rsa private key on disk.
      * @param fingerprint The fingerprint of the user rsa private key.
      * @param httpTimeout The HTTP timeout in milliseconds.
      * @throws IOException If unable to instantiate the client.
@@ -190,12 +192,12 @@ public class MantaClient implements AutoCloseable {
     /**
      * Instantiates a new Manta client instance.
      *
-     * @param url The url of the Manta endpoint.
-     * @param login The user login name.
+     * @param url               The url of the Manta endpoint.
+     * @param login             The user login name.
      * @param privateKeyContent The private key as a string.
-     * @param fingerprint The name of the key.
-     * @param password The private key password (optional).
-     * @param httpTimeout The HTTP timeout in milliseconds.
+     * @param fingerprint       The name of the key.
+     * @param password          The private key password (optional).
+     * @param httpTimeout       The HTTP timeout in milliseconds.
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
@@ -233,9 +235,9 @@ public class MantaClient implements AutoCloseable {
      * Deletes an object from Manta.
      *
      * @param path The fully qualified path of the Manta object.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If an HTTP status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String path) throws IOException {
         LOG.debug("DELETE {}", path);
@@ -244,18 +246,7 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildDeleteRequest(genericUrl);
 
-        HttpResponse response = null;
-        try {
-            response = request.execute();
-            LOG.debug("DELETE {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } finally {
-            if (response != null) {
-                response.disconnect();
-            }
-        }
+        executeAndCloseRequest(request, "DELETE {} response [{}] {} ", path);
     }
 
 
@@ -263,9 +254,9 @@ public class MantaClient implements AutoCloseable {
      * Recursively deletes an object in Manta.
      *
      * @param path The fully qualified path of the Manta object.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public void deleteRecursive(final String path) throws IOException {
         LOG.debug("DELETE {} [recursive]", path);
@@ -305,9 +296,9 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectResponse}.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String path) throws IOException {
         final HttpResponse response = httpGet(path);
@@ -336,7 +327,7 @@ public class MantaClient implements AutoCloseable {
 
         if (metadata.isDirectory()) {
             String msg = String.format("Directories do not have data, so "
-                    + "data streams from them doesn't work. Path requested: %s",
+                            + "data streams from them doesn't work. Path requested: %s",
                     path);
             throw new MantaClientException(msg);
         }
@@ -366,9 +357,9 @@ public class MantaClient implements AutoCloseable {
      * This method is not memory efficient, by loading the data into a String you are
      * loading all of the Object's data into memory.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path        The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param charsetName The encoding type used to convert bytes from the
-     *        stream into characters to be scanned
+     *                    stream into characters to be scanned
      * @return String containing the entire Manta object
      * @throws IOException when there is a problem getting the object over the wire
      */
@@ -439,7 +430,7 @@ public class MantaClient implements AutoCloseable {
      * manner to your application. Unlike an {@link InputStream}, this will allow you
      * to stream data by moving between arbitrary position in the Manta object data.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param position The starting position (in number of bytes) to read from
      * @return seekable stream of object data
      * @throws IOException when there is a problem getting the object over the wire
@@ -488,9 +479,9 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectResponse}.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse head(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
@@ -520,10 +511,10 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the directory.
      * @return A {@link Collection} of {@link MantaObjectResponse} listing the contents of the directory.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaObjectException If the path isn't a directory
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaObjectException                            If the path isn't a directory
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public Collection<MantaObject> listObjects(final String path) throws IOException {
         LOG.debug("GET    {} [list]", path);
@@ -556,10 +547,11 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Creates a list of {@link MantaObjectResponse}s based on the HTTP response from Manta.
-     * @param path The fully qualified path of the directory.
+     *
+     * @param path    The fully qualified path of the directory.
      * @param content The content of the response as a Reader.
-     * @param parser Deserializer implementation that takes the raw content
-     *               and turns it into a {@link MantaObjectResponse}
+     * @param parser  Deserializer implementation that takes the raw content
+     *                and turns it into a {@link MantaObjectResponse}
      * @return List of {@link MantaObjectResponse}s for a given directory
      * @throws IOException If an IO exception has occurred.
      */
@@ -587,13 +579,13 @@ public class MantaClient implements AutoCloseable {
     /**
      * Puts an object into Manta.
      *
-     * @param path The path to the Manta object.
-     * @param source {@link InputStream} to copy object data from
+     * @param path    The path to the Manta object.
+     * @param source  {@link InputStream} to copy object data from
      * @param headers optional HTTP headers to include when copying the object
      * @return Manta response object
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
@@ -616,13 +608,13 @@ public class MantaClient implements AutoCloseable {
     /**
      * Puts an object into Manta.
      *
-     * @param path The path to the Manta object.
-     * @param source {@link InputStream} to copy object data from
+     * @param path     The path to the Manta object.
+     * @param source   {@link InputStream} to copy object data from
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
@@ -646,14 +638,14 @@ public class MantaClient implements AutoCloseable {
     /**
      * Puts an object into Manta.
      *
-     * @param path The path to the Manta object.
-     * @param source {@link InputStream} to copy object data from
-     * @param headers optional HTTP headers to include when copying the object
+     * @param path     The path to the Manta object.
+     * @param source   {@link InputStream} to copy object data from
+     * @param headers  optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
@@ -677,9 +669,9 @@ public class MantaClient implements AutoCloseable {
     /**
      * Executes an HTTP PUT against the remote Manta API.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers optional HTTP headers to include when copying the object
-     * @param content Google HTTP Client content object
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers  optional HTTP headers to include when copying the object
+     * @param content  Google HTTP Client content object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
@@ -698,9 +690,9 @@ public class MantaClient implements AutoCloseable {
      * Executes an HTTP PUT against the remote Manta API.
      *
      * @param genericUrl Full URL to the object on the Manta API
-     * @param headers optional HTTP headers to include when copying the object
-     * @param content Google HTTP Client content object
-     * @param metadata optional user-supplied metadata for object
+     * @param headers    optional HTTP headers to include when copying the object
+     * @param content    Google HTTP Client content object
+     * @param metadata   optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
      */
@@ -753,7 +745,7 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link InputStream} to a remote Manta object at the
      * specified path.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param source the {@link InputStream} to copy data from
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
@@ -767,8 +759,8 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param string string to copy
+     * @param path    The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string  string to copy
      * @param headers optional HTTP headers to include when copying the object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
@@ -786,8 +778,8 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param string string to copy
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string   string to copy
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
@@ -805,9 +797,9 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param string string to copy
-     * @param headers optional HTTP headers to include when copying the object
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string   string to copy
+     * @param headers  optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
@@ -825,7 +817,7 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the wire
@@ -838,7 +830,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * Appends the specified metadata to an existing Manta object.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param metadata user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the metadata over the wire
@@ -854,8 +846,8 @@ public class MantaClient implements AutoCloseable {
      * Appends the specified metadata to an existing Manta object using the
      * specified HTTP headers.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers HTTP headers to include when copying the object
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers  HTTP headers to include when copying the object
      * @param metadata user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the metadata over the wire
@@ -886,9 +878,9 @@ public class MantaClient implements AutoCloseable {
      * Creates a directory in Manta.
      *
      * @param path The fully qualified path of the Manta directory.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String path) throws IOException {
         putDirectory(path, null);
@@ -898,17 +890,15 @@ public class MantaClient implements AutoCloseable {
     /**
      * Creates a directory in Manta.
      *
-     * @param path The fully qualified path of the Manta directory.
+     * @param path    The fully qualified path of the Manta directory.
      * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an IO exception has occurred.
+     * @throws IOException                                     If an IO exception has occurred.
      * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String path, final MantaHttpHeaders headers)
             throws IOException {
-        if (path == null) {
-            throw new IllegalArgumentException("PUT directory path can't be null");
-        }
+        Objects.requireNonNull("PUT directory path must be present");
 
         LOG.debug("PUT    {} [directory]", path);
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
@@ -920,16 +910,60 @@ public class MantaClient implements AutoCloseable {
         }
 
         request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
-        HttpResponse response = null;
-        try {
-            response = request.execute();
-            LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } finally {
-            if (response != null) {
-                response.disconnect();
+        executeAndCloseRequest(request, "PUT    {} response [{}] {} ", path);
+    }
+
+
+    /**
+     * Creates a directory in Manta.
+     *
+     * @param path The fully qualified path of the Manta directory.
+     * @param recursive recursive create all of the directories specified in the path
+     * @throws IOException If an IO exception has occurred.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     */
+    public void putDirectory(final String path, final boolean recursive)
+            throws IOException {
+        putDirectory(path, recursive, null);
+    }
+
+
+    /**
+     * Creates a directory in Manta.
+     *
+     * @param path The fully qualified path of the Manta directory.
+     * @param recursive recursive create all of the directories specified in the path
+     * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
+     * @throws IOException If an IO exception has occurred.
+     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     */
+    public void putDirectory(final String path, final boolean recursive,
+                             final MantaHttpHeaders headers)
+            throws IOException {
+        if (!recursive) {
+            putDirectory(path, headers);
+            return;
+        }
+
+        final String separator = "/";
+        final String[] parts = path.split(separator);
+        final Iterator<Path> itr = Paths.get("", parts).iterator();
+        final StringBuilder sb = new StringBuilder(separator);
+
+        for (int i = 0; itr.hasNext(); i++) {
+            final String part = itr.next().toString();
+            sb.append(part);
+
+            // This means we aren't in the home nor in the reserved
+            // directory path (stor, public, jobs, etc)
+            if (i > 1) {
+                putDirectory(sb.toString(), headers);
+            }
+
+            if (itr.hasNext()) {
+                sb.append(separator);
             }
         }
     }
@@ -959,19 +993,8 @@ public class MantaClient implements AutoCloseable {
 
         request.getHeaders().setContentType(LINK_CONTENT_TYPE);
         request.getHeaders().setLocation(formatPath(objectPath));
-        HttpResponse response = null;
-        try {
-            response = request.execute();
-            LOG.debug("PUT    {} -> {} response [{}] {} ", objectPath, linkPath,
-                    response.getStatusCode(),
-                    response.getStatusMessage());
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } finally {
-            if (response != null) {
-                response.disconnect();
-            }
-        }
+        executeAndCloseRequest(request, "PUT    {} -> {} response [{}] {} ",
+                objectPath, linkPath);
     }
 
 
@@ -994,6 +1017,40 @@ public class MantaClient implements AutoCloseable {
         }
 
         return contentType;
+    }
+
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request and returns back the
+     * response.
+     *
+     * @param request request object
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the wire
+     */
+    protected HttpResponse executeAndCloseRequest(final HttpRequest request,
+                                                  final String logMessage,
+                                                  final Object... logParameters)
+            throws IOException {
+        HttpResponse response = null;
+
+        try {
+            response = request.execute();
+            LOG.debug(logMessage, logParameters, response.getStatusCode(),
+                      response.getStatusMessage());
+
+            return response;
+        } catch (final HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
+        } finally {
+            if (response != null) {
+                response.disconnect();
+            }
+        }
     }
 
 
