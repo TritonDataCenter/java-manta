@@ -8,12 +8,13 @@ SDK for interacting with Joyent's Manta system.
 At present, this SDK only supports the Manta data plane, and not the Manta
 compute component.
 
-# Installation
-## Requirements.
+## Installation 
+
+### Requirements
 * [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
 * [Maven 3.3.x](https://maven.apache.org/)
 
-## Using Maven
+### Using Maven
 Add the latest java-manta dependency to your Maven `pom.xml`.
 
 ```xml
@@ -24,7 +25,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 </dependency>
 ```
 
-## From Source
+### From Source
 If you prefer to build from source, you'll also need
 [Maven](https://maven.apache.org/), and then invoke:
 
@@ -35,7 +36,7 @@ If you prefer to build from source, you'll also need
 Which will compile the jar to ./targets/java-manta-version.jar. You can then
 add it as a dependency to your Java project.
 
-### Test Suite
+## Test Suite
 By default, the test suite invokes the java manta client against the live manta
 service.  In order to run the test suite, you will need to specify environment
 variables, system properties or TestNG parameters to tell the library how to
@@ -55,7 +56,8 @@ left are overridden by values on the right.
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
 * `manta.user` ( **MANTA_USER** )
-The account name used to access the manta service
+The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
+you will specify the username as "<account>/<subuser>".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
 * `manta.key_path` ( **MANTA_KEY_PATH** )
@@ -65,7 +67,7 @@ The number of milliseconds to wait after a request was made to Manta before fail
  
 If you want to skip running of the test suite, use the `-DskipTests` property.
 
-# Usage
+## Usage
 
 You'll need a manta login, an associated rsa key, and its corresponding key
 fingerprint. Note that this api currently only supports rsa ssh keys --
@@ -75,34 +77,45 @@ spec](https://github.com/joyent/node-http-signature/blob/master/http_signing.md)
 
 For detailed usage instructions, consult the provided javadoc.
 
-## Example Get Request
+### Example Get Request
 ``` java
-import java.io.IOException;
-
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaUtils;
-import com.joyent.manta.exception.MantaCryptoException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Scanner;
 
 public class App {
-        private static MantaClient CLIENT;
-        private static final String URL = "https://us-east.manta.joyent.com";
-        private static final String LOGIN = "yunong";
-        private static final String KEY_PATH = "src/test/java/data/id_rsa";
-        private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+    private static final String URL = "https://us-east.manta.joyent.com";
+    // If there is no subuser, then just use the account name
+    private static final String LOGIN = "account/subuser";
+    private static final String KEY_PATH = "src/test/java/data/id_rsa";
+    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
 
-        public static void main(String... args) throws IOException, MantaCryptoException {
-                CLIENT = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
-                MantaObject gotObject = CLIENT.get("/yunong/stor/foo");
-                String data = MantaUtils.inputStreamToString(gotObject.getDataInputStream());
-                System.out.println(data);
+    public static void main(String... args) throws IOException {
+        MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+
+        String mantaFile = "/account/stor/foo";
+
+        // Print out every line from file streamed real-time from Manta
+        try (InputStream is = client.getAsInputStream(mantaFile);
+             Scanner scanner = new Scanner(is)) {
+
+            while (scanner.hasNextLine()) {
+                System.out.println(scanner.nextLine());
+            }
         }
+
+        // Load file into memory as a string directly from Manta
+        String data = client.getAsString(mantaFile);
+        System.out.println(data);
+    }
 }
 ```
 
-For more examples, check the included unit tests.
+For more examples, check the included integration tests.
 
-# Logging
+### Logging
 
 The SDK utilizes [slf4j](http://www.slf4j.org/), and logging
 can be configured using a SLF4J implementation. The underlying
@@ -112,12 +125,24 @@ utilizes
 which can be configured
 [accordingly](https://code.google.com/p/google-http-java-client/wiki/HTTP).
 
-# Contributions
+## Subuser Difficulties
+
+If you are using subusers, be sure to specify the Manta username as `<account>/<subuser>`.
+Also, a common problem is that you haven't granted the subuser access to the
+path within Manta. Typically this is done via the [Manta CLI Tools](https://apidocs.joyent.com/manta/commands-reference.html)
+using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md). 
+For example:
+
+```bash
+mchmod +subusername /account/stor/my_directory
+```
+
+## Contributions
 
 Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle -Dcheckstyle.skip=false` runs
 clean with no warnings or errors.
 
-## Testing
+### Testing
 
 When running the unit tests, you will need an active account on the Joyent public 
 cloud or a private Manta instance. To test:
@@ -126,7 +151,7 @@ cloud or a private Manta instance. To test:
 mvn test
 ```
 
-## Releasing
+### Releasing
 
 In order to release to [Maven central](https://search.maven.org/), you will need [an account] (https://issues.sonatype.org) with [Sonatype OSSRH](http://central.sonatype.org/pages/ossrh-guide.html).
 If you do not already have an account, you can click the signup link from the login screen
@@ -226,7 +251,11 @@ github repo, doing a merge via pull request will not also copy the tags that
 were created during the release process.  The tags will have to be created in
 the primary repo separately, but this may be preferred anyway.
 
-# License
+### Bugs
+
+See <https://github.com/joyent/java-manta/issues>.
+
+## License
 
 The MIT License (MIT)
 Copyright (c) 2013 Joyent
@@ -248,8 +277,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-# Bugs
-
-See <https://github.com/joyent/java-manta/issues>.
 
