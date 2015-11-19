@@ -5,6 +5,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -132,5 +133,26 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(cleared, head.getMetadata());
 
         mantaClient.delete(path);
+    }
+
+    @Test(groups = { "metadata", "directory" })
+    public void cantAddMetadataToDirectory() throws IOException {
+        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.putDirectory(dir);
+
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put("m-test", "value");
+
+        boolean thrown = false;
+
+        try {
+            mantaClient.putMetadata(dir, metadata);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 400) {
+                thrown = true;
+            }
+        }
+
+        Assert.assertTrue(thrown, "Expected exception indication 400 was not thrown");
     }
 }

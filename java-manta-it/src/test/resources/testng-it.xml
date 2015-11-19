@@ -12,6 +12,7 @@
     <test name="Manta Client Tests">
         <classes>
             <class name="com.joyent.manta.client.TestSuiteSetup" />
+            <class name="com.joyent.manta.client.MantaClientDirectoriesIT" />
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />

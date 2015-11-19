@@ -7,10 +7,21 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - MantaException now inherits from RuntimeException.
 - MantaClientHttpResponseException now inherits from IOException.
 - MantaUtils.inputStreamToString now supports specifying a Charset.
-- Changed newInstance() methods to constructors in MantaClient. 
+- Changed newInstance() methods to constructors in MantaClient.
+- Changed to a multi-module Maven project.
+- Broke out integration tests into a separate Maven module so that we can
+  test classes in their shaded state.
+- Bumped minimum Java version to 1.8.
+
 
 ### Added
 - Added read-only support for NIO SeekableByteChannel streams.
+- Added support for recursive directory creation.
+- Added support for home directory path look up in ConfigContext.
+- Added MantaMetadata class for handling object metadata.
+- Added MantaHttpHeaders class for handling custom HTTP headers.
+- Added build to Travis CI.
+
 
 ## [1.6.0] - 2015-11-11
 ### Changed
