@@ -84,6 +84,11 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
+    public String getMantaHomeDirectory() {
+        return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
+    }
+
+    @Override
     public Integer getTimeout() {
         String timeoutString = getEnv(MANTA_TIMEOUT_ENV_KEY);
         return MantaUtils.parseIntegerOrNull(timeoutString);

@@ -42,7 +42,8 @@ public class MantaClientMetadataIT {
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());
+        testPathPrefix = String.format("/%s/stor/%s/",
+                config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, null);
     }
 
