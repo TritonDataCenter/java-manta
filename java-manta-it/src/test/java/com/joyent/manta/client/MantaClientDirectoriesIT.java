@@ -2,6 +2,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -64,6 +65,29 @@ public class MantaClientDirectoriesIT {
         Assert.assertEquals(dir, response.getPath());
     }
 
+
+    @Test(groups = { "directory" }, dependsOnMethods = { "canCreateDirectory" })
+    public void canDeleteDirectory() throws IOException {
+        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.putDirectory(dir);
+
+        MantaObject response = mantaClient.head(dir);
+        Assert.assertEquals(dir, response.getPath());
+
+        mantaClient.delete(dir);
+
+        boolean thrown = false;
+
+        try {
+            mantaClient.head(dir);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                thrown = true;
+            }
+        }
+
+        Assert.assertTrue(thrown, "Expected exception indicating 404 was not thrown");
+    }
 
     @Test(groups = { "directory" }, dependsOnMethods = { "canCreateDirectory" })
     public void wontErrorWhenWeCreateOverAnExistingDirectory() throws IOException {
