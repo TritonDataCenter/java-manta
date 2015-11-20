@@ -5,7 +5,8 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -51,7 +52,10 @@ public class MantaClientMetadataIT {
 
     @AfterClass
     public void cleanup() throws IOException {
-        mantaClient.deleteRecursive(testPathPrefix);
+        if (mantaClient != null) {
+            mantaClient.deleteRecursive(testPathPrefix);
+            mantaClient.closeQuietly();
+        }
     }
 
 
@@ -143,16 +147,7 @@ public class MantaClientMetadataIT {
         MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-test", "value");
 
-        boolean thrown = false;
-
-        try {
-            mantaClient.putMetadata(dir, metadata);
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == 400) {
-                thrown = true;
-            }
-        }
-
-        Assert.assertTrue(thrown, "Expected exception indication 400 was not thrown");
+        MantaAssert.assertResponseFailureStatusCode(400,
+                (MantaFunction<Object>) () -> mantaClient.putMetadata(dir, metadata));
     }
 }

@@ -5,9 +5,10 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 import org.testng.Assert;
@@ -63,6 +64,7 @@ public class MantaClientIT {
     public void afterClass() throws IOException, MantaCryptoException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
+            mantaClient.closeQuietly();
         }
     }
 
@@ -86,14 +88,9 @@ public class MantaClientIT {
         }
 
         mantaClient.delete(path);
-        boolean thrown = false;
-        try {
-            mantaClient.get(testPathPrefix + name);
-        } catch (final MantaClientHttpResponseException e) {
-            Assert.assertEquals(404, e.getStatusCode());
-            thrown = true;
-        }
-        Assert.assertTrue(thrown);
+
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
 
@@ -125,14 +122,9 @@ public class MantaClientIT {
         final String data = MantaUtils.readFileToString(file);
         Assert.assertEquals(data, TEST_DATA);
         mantaClient.delete(path);
-        boolean thrown = false;
-        try {
-            mantaClient.get(testPathPrefix + name);
-        } catch (final MantaClientHttpResponseException e) {
-            Assert.assertEquals(404, e.getStatusCode());
-            thrown = true;
-        }
-        Assert.assertTrue(thrown);
+
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
 
@@ -151,14 +143,8 @@ public class MantaClientIT {
             mantaClient.delete(gotObject.getPath());
         }
 
-        boolean thrown = false;
-        try {
-            mantaClient.get(testPathPrefix + name);
-        } catch (final MantaClientHttpResponseException e) {
-            Assert.assertEquals(404, e.getStatusCode());
-            thrown = true;
-        }
-        Assert.assertTrue(thrown);
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
 
@@ -182,14 +168,8 @@ public class MantaClientIT {
 
         mantaClient.deleteRecursive(testPathPrefix + "1");
 
-        boolean thrown = false;
-        try {
-            mantaClient.get(testPathPrefix + "1");
-        } catch (final MantaClientHttpResponseException e) {
-            Assert.assertEquals(404, e.getStatusCode());
-            thrown = true;
-        }
-        Assert.assertTrue(thrown);
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
     }
 
 
@@ -298,14 +278,9 @@ public class MantaClientIT {
 
         Assert.assertEquals(actual, TEST_DATA);
         mantaClient.delete(path);
-        boolean thrown = false;
-        try {
-            mantaClient.get(testPathPrefix + name);
-        } catch (final MantaClientHttpResponseException e) {
-            Assert.assertEquals(404, e.getStatusCode());
-            thrown = true;
-        }
-        Assert.assertTrue(thrown);
+
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
 

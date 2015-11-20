@@ -2,8 +2,9 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -20,6 +21,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@Test(groups = { "directory" })
 public class MantaClientDirectoriesIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -51,11 +53,12 @@ public class MantaClientDirectoriesIT {
     public void afterClass() throws IOException, MantaCryptoException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
+            mantaClient.closeQuietly();
         }
     }
 
 
-    @Test(groups = { "directory" })
+    @Test()
     public void canCreateDirectory() throws IOException {
         mantaClient.putDirectory(testPathPrefix);
 
@@ -67,7 +70,7 @@ public class MantaClientDirectoriesIT {
     }
 
 
-    @Test(groups = { "directory" }, dependsOnMethods = { "canCreateDirectory" })
+    @Test(dependsOnMethods = { "canCreateDirectory" })
     public void canDeleteDirectory() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
@@ -77,20 +80,11 @@ public class MantaClientDirectoriesIT {
 
         mantaClient.delete(dir);
 
-        boolean thrown = false;
-
-        try {
-            mantaClient.head(dir);
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == 404) {
-                thrown = true;
-            }
-        }
-
-        Assert.assertTrue(thrown, "Expected exception indicating 404 was not thrown");
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.head(dir));
     }
 
-    @Test(groups = { "directory" }, dependsOnMethods = { "canCreateDirectory" })
+    @Test(dependsOnMethods = { "canCreateDirectory" })
     public void wontErrorWhenWeCreateOverAnExistingDirectory() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
@@ -106,7 +100,7 @@ public class MantaClientDirectoriesIT {
      * behavior. As a user of Manta, you will need to check to see if a
      * file exists before attempting to write a directory over the top of it.
      */
-    @Test(groups = { "directory" }, dependsOnMethods = { "canCreateDirectory" })
+    @Test(dependsOnMethods = { "canCreateDirectory" })
     public void noErrorWhenWeOverwriteAnExistingFile() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
@@ -117,7 +111,7 @@ public class MantaClientDirectoriesIT {
     }
 
 
-    @Test(groups = { "directory" }, dependsOnMethods = { "canCreateDirectory" })
+    @Test(dependsOnMethods = { "canCreateDirectory" })
     public void directoryIsMarkedAsSuch() throws IOException {
         MantaObject dir = mantaClient.head(testPathPrefix);
         Assert.assertTrue(dir.isDirectory(),
@@ -125,7 +119,7 @@ public class MantaClientDirectoriesIT {
     }
 
 
-    @Test(groups = { "directory" }, dependsOnMethods = { "wontErrorWhenWeCreateOverAnExistingDirectory" })
+    @Test(dependsOnMethods = { "wontErrorWhenWeCreateOverAnExistingDirectory" })
     public void canRecursivelyCreateDirectory() throws IOException {
         String dir = String.format("%s/%s/%s/%s/%s/%s", testPathPrefix,
                 UUID.randomUUID(),
