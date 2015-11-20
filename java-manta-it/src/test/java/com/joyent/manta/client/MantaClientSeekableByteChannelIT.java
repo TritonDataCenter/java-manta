@@ -28,6 +28,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@Test(groups = { "seekable" })
 public class MantaClientSeekableByteChannelIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -60,11 +61,12 @@ public class MantaClientSeekableByteChannelIT {
     public void afterClass() throws IOException, MantaCryptoException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
+            mantaClient.closeQuietly();
         }
     }
 
 
-    @Test( groups = { "seekable" } )
+    @Test
     public final void seekableByteSize() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -79,7 +81,7 @@ public class MantaClientSeekableByteChannelIT {
     }
 
 
-    @Test( groups = { "seekable" } )
+    @Test
     public final void getAllSeekableBytes() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -92,7 +94,7 @@ public class MantaClientSeekableByteChannelIT {
     }
 
 
-    @Test( groups = { "seekable" } )
+    @Test
     public final void getAllSeekableBytesAtPosition() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -108,7 +110,7 @@ public class MantaClientSeekableByteChannelIT {
     }
 
 
-    @Test( groups = { "seekable" }, expectedExceptions = ClosedChannelException.class)
+    @Test(expectedExceptions = ClosedChannelException.class)
     public final void closeAndAttemptToRead() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -125,7 +127,7 @@ public class MantaClientSeekableByteChannelIT {
     }
 
 
-    @Test( groups = { "seekable" }, expectedExceptions = ClosedChannelException.class)
+    @Test(expectedExceptions = ClosedChannelException.class)
     public final void closeAndAttemptToSize() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -143,7 +145,7 @@ public class MantaClientSeekableByteChannelIT {
     }
 
 
-    @Test( groups = { "seekable" }, expectedExceptions = NonWritableChannelException.class)
+    @Test(expectedExceptions = NonWritableChannelException.class)
     public final void attemptToWrite() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
