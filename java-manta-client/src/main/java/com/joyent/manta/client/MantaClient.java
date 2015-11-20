@@ -1058,4 +1058,16 @@ public class MantaClient implements AutoCloseable {
     public void close() throws Exception {
         this.httpRequestFactoryProvider.close();
     }
+
+    /**
+     * Closes the Manta client resource and logs any problems to the debug
+     * logger. No exceptions are thrown on failure.
+     */
+    public void closeQuietly() {
+        try {
+            close();
+        } catch (Exception e) {
+            LOG.debug("Error closing connection", e);
+        }
+    }
 }
