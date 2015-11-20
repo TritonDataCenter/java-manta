@@ -8,6 +8,7 @@ import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
@@ -15,6 +16,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * Tests for verifying the correct behavior of error handling from Manta API
@@ -25,7 +27,10 @@ import java.util.Properties;
 @Test(groups = { "error" })
 public class MantaClientErrorIT {
     private MantaClient mantaClient;
+
     private ConfigContext config;
+
+    private String testPathPrefix;
 
     @BeforeClass
     @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
@@ -41,6 +46,17 @@ public class MantaClientErrorIT {
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
+        testPathPrefix = String.format("/%s/stor/%s",
+                config.getMantaHomeDirectory(), UUID.randomUUID());
+        mantaClient.putDirectory(testPathPrefix);
+    }
+
+    @AfterClass
+    public void afterClass() throws IOException, MantaCryptoException {
+        if (mantaClient != null) {
+            mantaClient.deleteRecursive(testPathPrefix);
+            mantaClient.closeQuietly();
+        }
     }
 
     @Test
@@ -61,5 +77,30 @@ public class MantaClientErrorIT {
 
         MantaAssert.assertResponseFailureStatusCode(403,
                 (MantaFunction<Object>) () -> badClient.head(path));
+    }
+
+    @Test
+    public void badHomeDirectory() throws IOException {
+        String path = "/badpath";
+
+        MantaAssert.assertResponseFailureStatusCode(403,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
+    }
+
+    @Test
+    public void fileNotFoundWithNoContent() throws IOException {
+        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
+    }
+
+
+    @Test
+    public void fileNotFoundWithContent() throws IOException {
+        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+
+        MantaAssert.assertResponseFailureStatusCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }
