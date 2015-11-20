@@ -195,4 +195,31 @@ public final class MantaUtils {
         }
         return encodedPath.toString();
     }
+
+    /**
+     * Parses username and subuser from an account name.
+     * @param account account name to parse
+     * @return an array of containing first the username, then optionally
+     *         the subuser (if it exists)
+     */
+    public static String[] parseAccount(final String account) {
+        Objects.requireNonNull(account, "Account must be present");
+
+        final int slashPos = account.indexOf("/");
+
+        if (account.isEmpty()) {
+            throw new IllegalArgumentException("Username can't be empty");
+        } else if (slashPos == -1) {
+            return new String[] { account };
+        } else if (slashPos == 0) {
+            throw new IllegalArgumentException("Username can't begin with /");
+        } else if (account.charAt(account.length() -1) == '/') {
+            throw new IllegalArgumentException("Username can't end with /");
+        }
+
+        final String username = account.substring(0, slashPos);
+        final String subuser = account.substring(slashPos + 1);
+
+        return new String[] { username, subuser };
+    }
 }

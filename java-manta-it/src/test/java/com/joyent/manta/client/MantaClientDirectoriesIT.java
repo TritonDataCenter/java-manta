@@ -42,7 +42,8 @@ public class MantaClientDirectoriesIT {
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s/", config.getMantaUser(), UUID.randomUUID());
+        testPathPrefix = String.format("/%s/stor/%s",
+                config.getMantaHomeDirectory(), UUID.randomUUID());
     }
 
 
@@ -56,7 +57,7 @@ public class MantaClientDirectoriesIT {
 
     @Test(groups = { "directory" })
     public void canCreateDirectory() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, null);
+        mantaClient.putDirectory(testPathPrefix);
 
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
