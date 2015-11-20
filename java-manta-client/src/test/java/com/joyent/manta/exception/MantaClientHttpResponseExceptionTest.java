@@ -1,4 +1,4 @@
-package com.joyent.manta.client.exception;
+package com.joyent.manta.exception;
 
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
@@ -8,7 +8,7 @@ import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -25,27 +25,68 @@ import java.util.Set;
 public class MantaClientHttpResponseExceptionTest {
 
     @Test
-    public void simulate404() throws IOException {
+    public void simulate404WithContent() throws IOException {
         final String json = "{\"code\":\"ResourceNotFound\",\"message\":"
-                + "\"/elijah.zupancic/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e "
+                + "\"/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e "
                 + "was not found\"}";
 
         MockLowLevelHttpRequest lowLevelHttpRequest = new MockLowLevelHttpRequest();
         MockLowLevelHttpResponse lowLevelHttpResponse = new MockLowLevelHttpResponse();
 
+        final String reasonPhrase = "Not Found";
+        final int httpErrorCode = 404;
+        final String method = "GET";
+
         lowLevelHttpResponse.setContent(json);
-        lowLevelHttpResponse.setStatusCode(404);
-        lowLevelHttpResponse.setReasonPhrase("404 Not Found");
+        lowLevelHttpResponse.setStatusCode(httpErrorCode);
+        lowLevelHttpResponse.setReasonPhrase(reasonPhrase);
 
         HttpResponse response = fakeResponse(lowLevelHttpRequest, lowLevelHttpResponse,
-                "GET");
+                method);
 
         HttpResponseException httpResponseException =
                 new HttpResponseException(response);
         MantaClientHttpResponseException exception =
                 new MantaClientHttpResponseException(httpResponseException);
 
-        System.out.println(exception.toString());
+        Assert.assertEquals(exception.getContent(), json);
+        Assert.assertEquals(exception.getServerCode(), "ResourceNotFound");
+        Assert.assertEquals(exception.getServerMessage(),
+                "/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e was not found");
+        Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
+        Assert.assertEquals(exception.getStatusCode(), httpErrorCode);
+        Assert.assertEquals(exception.getMessage(),
+                "404 Not Found - [ResourceNotFound] "
+                + "/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e was not found");
+    }
+
+    @Test
+    public void simulate404WithNoContent() throws IOException {
+        MockLowLevelHttpRequest lowLevelHttpRequest = new MockLowLevelHttpRequest();
+        MockLowLevelHttpResponse lowLevelHttpResponse = new MockLowLevelHttpResponse();
+
+        final String reasonPhrase = "Not Found";
+        final int httpErrorCode = 404;
+        final String method = "GET";
+
+        lowLevelHttpResponse.setStatusCode(httpErrorCode);
+        lowLevelHttpResponse.setReasonPhrase(reasonPhrase);
+
+        HttpResponse response = fakeResponse(lowLevelHttpRequest, lowLevelHttpResponse,
+                method);
+
+        HttpResponseException httpResponseException =
+                new HttpResponseException(response);
+        MantaClientHttpResponseException exception =
+                new MantaClientHttpResponseException(httpResponseException);
+
+        Assert.assertNull(exception.getContent());
+        Assert.assertEquals(exception.getServerCode(),
+                MantaClientHttpResponseException.UNKNOWN_SERVER_CODE);
+        Assert.assertNull(exception.getServerMessage());
+        Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
+        Assert.assertEquals(exception.getStatusCode(), httpErrorCode);
+        Assert.assertEquals(exception.getMessage(), "404 Not Found");
     }
 
     private static HttpResponse fakeResponse(MockLowLevelHttpRequest lowLevelHttpRequest,

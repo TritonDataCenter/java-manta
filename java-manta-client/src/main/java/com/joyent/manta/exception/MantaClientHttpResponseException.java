@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.exception;
 
+
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.json.GenericJson;
 import com.google.api.client.json.JsonObjectParser;
@@ -45,7 +46,7 @@ public class MantaClientHttpResponseException extends IOException {
     /**
      * Default server code when no code is available.
      */
-    private static final String UNKNOWN_SERVER_CODE = "Unknown";
+    static final String UNKNOWN_SERVER_CODE = "Unknown";
 
 
     /**
@@ -77,7 +78,12 @@ public class MantaClientHttpResponseException extends IOException {
 
         this.innerException = innerException;
         this.serverCode = serverErrorInfo.getOrDefault("code", UNKNOWN_SERVER_CODE).toString();
-        this.message = serverErrorInfo.getOrDefault("message", "Unknown error").toString();
+
+        if (serverErrorInfo.containsKey("message")) {
+            this.message = serverErrorInfo.get("message").toString();
+        } else {
+            this.message = null;
+        }
     }
 
 
@@ -150,7 +156,7 @@ public class MantaClientHttpResponseException extends IOException {
     /**
      * Error message returned from Manta API.
      *
-     * @return error message, if unavailable a default string will be returned
+     * @return server error message, if unavailable null
      */
     public String getServerMessage() {
         return this.message;

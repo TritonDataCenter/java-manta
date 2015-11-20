@@ -19,4 +19,9 @@
             <class name="com.joyent.manta.client.MantaMetadataTest" />
         </classes>
     </test>
+    <test name="Exception Tests">
+        <classes>
+            <class name="com.joyent.manta.exception.MantaClientHttpResponseExceptionTest" />
+        </classes>
+    </test>
 </suite>
