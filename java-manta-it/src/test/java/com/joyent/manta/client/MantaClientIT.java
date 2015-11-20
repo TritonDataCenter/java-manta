@@ -28,6 +28,7 @@ import java.util.UUID;
 /**
  * @author Yunong Xiao
  */
+@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -38,7 +39,7 @@ public class MantaClientIT {
     private String testPathPrefix;
 
 
-    @BeforeClass
+    @BeforeClass()
     @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,

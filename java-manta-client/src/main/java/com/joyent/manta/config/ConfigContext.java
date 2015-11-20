@@ -3,6 +3,8 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.MantaUtils;
+
 /**
  * Interface representing the configuration properties needed to configure a
  * {@link com.joyent.manta.client.MantaClient}.
@@ -52,15 +54,7 @@ public interface ConfigContext {
             return null;
         }
 
-        final String home;
-
-        if (mantaUser.contains("/")) {
-            final String accountUser = mantaUser.split("/")[0];
-            home = String.format("/%s", accountUser);
-        } else {
-            home = String.format("/%s", mantaUser);
-        }
-
-        return home;
+        final String[] accountParts = MantaUtils.parseAccount(mantaUser);
+        return String.format("/%s", accountParts[0]);
     }
 }

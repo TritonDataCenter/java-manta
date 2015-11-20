@@ -47,4 +47,52 @@ public class MantaUtilsTest {
 
         Assert.assertFalse(actual, "Matched last character in StringBuilder when we shouldn't have because it was empty");
     }
+
+    @Test
+    public final void canParseAccountWithNoSubuser() {
+        final String account = "username";
+        final String[] parts = MantaUtils.parseAccount(account);
+
+        Assert.assertEquals(parts.length, 1,
+                "Only a single element should be present");
+        Assert.assertEquals(parts[0], account,
+                "First element should be username");
+    }
+
+    @Test
+    public final void canParseAccountWithSubuser() {
+        final String account = "username/subuser";
+        final String[] parts = MantaUtils.parseAccount(account);
+
+        Assert.assertEquals(parts.length, 2,
+                "Both username and subuser should be present");
+        Assert.assertEquals(parts[0], "username",
+                "Username was not parsed correctly");
+        Assert.assertEquals(parts[1], "subuser",
+                "Subuser was not parsed correctly");
+    }
+
+    @Test(expectedExceptions = { IllegalArgumentException.class })
+    public final void wontParseEmptyAccount() {
+        final String account = "";
+        MantaUtils.parseAccount(account);
+    }
+
+    @Test(expectedExceptions = { IllegalArgumentException.class })
+    public final void wontParseAccountWithStartingSlash() {
+        final String account = "/username/subuser";
+        MantaUtils.parseAccount(account);
+    }
+
+    @Test(expectedExceptions = { IllegalArgumentException.class })
+    public final void wontParseAccountWithTrailingSlash() {
+        final String account = "username/";
+        MantaUtils.parseAccount(account);
+    }
+
+    @Test(expectedExceptions = { IllegalArgumentException.class })
+    public final void wontParseAccountWithMiddleAndTrailingSlash() {
+        final String account = "username/subuser/";
+        MantaUtils.parseAccount(account);
+    }
 }
