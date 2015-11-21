@@ -17,6 +17,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 /**
  * Tests the deserialization of errors on the Manta API that return JSON.
  *
@@ -50,7 +53,7 @@ public class MantaClientHttpResponseExceptionTest {
                 new MantaClientHttpResponseException(httpResponseException);
 
         Assert.assertEquals(exception.getContent(), json);
-        Assert.assertEquals(exception.getServerCode(), "ResourceNotFound");
+        Assert.assertEquals(exception.getServerCode(), RESOURCE_NOT_FOUND_ERROR);
         Assert.assertEquals(exception.getServerMessage(),
                 "/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e was not found");
         Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
@@ -81,8 +84,7 @@ public class MantaClientHttpResponseExceptionTest {
                 new MantaClientHttpResponseException(httpResponseException);
 
         Assert.assertNull(exception.getContent());
-        Assert.assertEquals(exception.getServerCode(),
-                MantaClientHttpResponseException.UNKNOWN_SERVER_CODE);
+        Assert.assertEquals(exception.getServerCode(), NO_CODE_ERROR);
         Assert.assertNull(exception.getServerMessage());
         Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
         Assert.assertEquals(exception.getStatusCode(), httpErrorCode);

@@ -12,7 +12,7 @@ public class MantaErrorCodeTest {
     @Test
     public void valueOfCodeCanFindByMatchingCode() {
         final MantaErrorCode expected = MantaErrorCode.INVALID_LIMIT_ERROR;
-        final MantaErrorCode actual = MantaErrorCode.valueOfCode("InvalidLimitError");
+        final MantaErrorCode actual = MantaErrorCode.valueOfCode("InvalidLimit");
 
         Assert.assertEquals(actual, expected);
     }

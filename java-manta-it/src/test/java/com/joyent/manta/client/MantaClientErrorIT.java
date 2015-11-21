@@ -18,6 +18,10 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.ACCOUNT_DOES_NOT_EXIST_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 /**
  * Tests for verifying the correct behavior of error handling from Manta API
  * failures.
@@ -75,23 +79,23 @@ public class MantaClientErrorIT {
         final String path = String.format("%s/stor", config.getMantaHomeDirectory());
         final MantaClient badClient = new MantaClient(badConfig);
 
-        MantaAssert.assertResponseFailureStatusCode(403,
-                (MantaFunction<Object>) () -> badClient.head(path));
+        MantaAssert.assertResponseFailureStatusCode(403, ACCOUNT_DOES_NOT_EXIST_ERROR,
+                (MantaFunction<Object>) () -> badClient.get(path));
     }
 
     @Test
     public void badHomeDirectory() throws IOException {
         String path = "/badpath";
 
-        MantaAssert.assertResponseFailureStatusCode(403,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureStatusCode(403, ACCOUNT_DOES_NOT_EXIST_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test
     public void fileNotFoundWithNoContent() throws IOException {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, NO_CODE_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
@@ -100,7 +104,7 @@ public class MantaClientErrorIT {
     public void fileNotFoundWithContent() throws IOException {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

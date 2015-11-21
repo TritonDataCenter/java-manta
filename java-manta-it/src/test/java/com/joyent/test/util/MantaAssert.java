@@ -1,6 +1,7 @@
 package com.joyent.test.util;
 
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaException;
 
 import java.io.IOException;
@@ -15,33 +16,45 @@ public class MantaAssert {
      * {@link MantaClientHttpResponseException} and that it has the
      * correct status code.
      *
-     * @param statusCode HTTP status code to verify
+     * @param expectedStatusCode HTTP status code to verify
+     * @param expectedErrorCode error code as returned from Manta
      * @param function block to verify
      * @param <R> return type
      * @return return value of underlying block
      */
-    public static <R> R assertResponseFailureStatusCode(final int statusCode,
-                                                 final MantaFunction<R> function) {
+    public static <R> R assertResponseFailureStatusCode(
+            final int expectedStatusCode, final MantaErrorCode expectedErrorCode,
+            final MantaFunction<R> function) {
         boolean thrown = false;
-        int actualCode = -1;
+        int actualStatusCode = -1;
+        MantaErrorCode actualErrorCode = MantaErrorCode.UNDEFINED;
         R result = null;
 
         try {
             result = function.apply();
         } catch (MantaClientHttpResponseException e) {
-            actualCode = e.getStatusCode();
+            actualStatusCode = e.getStatusCode();
+            actualErrorCode = e.getServerCode();
             thrown = true;
         } catch (IOException e) {
             throw new MantaException(e);
         }
 
-        if (!thrown){
+        if (!thrown) {
             String msg = String.format("Expected %s to be thrown, but it was not thrown",
                     MantaClientHttpResponseException.class);
             throw new AssertionError(msg);
-        } else if (thrown && actualCode != statusCode) {
+        }
+
+        if (actualStatusCode != expectedStatusCode) {
             String msg = String.format("Expected HTTP status code [%d] was: %d",
-                    statusCode, actualCode);
+                    expectedStatusCode, actualStatusCode);
+            throw new AssertionError(msg);
+        }
+
+        if (!actualErrorCode.equals(expectedErrorCode)) {
+            String msg = String.format("Expected Manta error code [%s] was not received: %s",
+                    expectedErrorCode, actualErrorCode);
             throw new AssertionError(msg);
         }
 

@@ -17,6 +17,8 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.INVALID_UPDATE_ERROR;
+
 
 /**
  * Tests for verifying the behavior of metadata with {@link MantaClient}.
@@ -147,7 +149,7 @@ public class MantaClientMetadataIT {
         MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-test", "value");
 
-        MantaAssert.assertResponseFailureStatusCode(400,
+        MantaAssert.assertResponseFailureStatusCode(400, INVALID_UPDATE_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.putMetadata(dir, metadata));
     }
 }

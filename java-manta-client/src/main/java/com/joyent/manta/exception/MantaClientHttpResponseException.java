@@ -44,12 +44,6 @@ public class MantaClientHttpResponseException extends IOException {
 
 
     /**
-     * Default server code when no code is available.
-     */
-    static final String UNKNOWN_SERVER_CODE = "Unknown";
-
-
-    /**
      * The underlying {@link HttpResponseException}.
      * */
     private final HttpResponseException innerException;
@@ -58,7 +52,7 @@ public class MantaClientHttpResponseException extends IOException {
     /**
      * Server error code returned from Manta.
      */
-    private final String serverCode;
+    private final MantaErrorCode serverCode;
 
 
     /**
@@ -77,7 +71,7 @@ public class MantaClientHttpResponseException extends IOException {
         final Map<String, Object> serverErrorInfo = parseJsonResponse(jsonContent);
 
         this.innerException = innerException;
-        this.serverCode = serverErrorInfo.getOrDefault("code", UNKNOWN_SERVER_CODE).toString();
+        this.serverCode = MantaErrorCode.valueOfCode(serverErrorInfo.get("code"));
 
         if (serverErrorInfo.containsKey("message")) {
             this.message = serverErrorInfo.get("message").toString();
@@ -136,13 +130,18 @@ public class MantaClientHttpResponseException extends IOException {
 
     @Override
     public String getMessage() {
-        if (serverCode.equals(UNKNOWN_SERVER_CODE)) {
+        if (serverCode.equals(MantaErrorCode.NO_CODE_ERROR)) {
             return innerException.getMessage();
+        } else if (serverCode.equals(MantaErrorCode.UNKNOWN_ERROR)){
+            return String.format("%d %s - Unknown error content: %s",
+                    innerException.getStatusCode(),
+                    innerException.getStatusMessage(),
+                    innerException.getContent());
         } else {
             return String.format("%d %s - [%s] %s",
                     innerException.getStatusCode(),
                     innerException.getStatusMessage(),
-                    this.serverCode, this.message);
+                    this.serverCode.getCode(), this.message);
         }
     }
 
@@ -150,9 +149,9 @@ public class MantaClientHttpResponseException extends IOException {
     /**
      * Error code returned from server. This is a String constant defined by
      * Manta.
-     * @return error code, if unavailable the value of UNKNOWN_SERVER_CODE
+     * @return error code as an enum
      */
-    public String getServerCode() {
+    public MantaErrorCode getServerCode() {
         return this.serverCode;
     }
 

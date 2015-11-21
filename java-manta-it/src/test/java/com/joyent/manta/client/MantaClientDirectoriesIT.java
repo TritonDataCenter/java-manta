@@ -15,6 +15,8 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 /**
  * Tests for verifying the correct functioning of making remote requests
  * against Manta directories.
@@ -80,8 +82,8 @@ public class MantaClientDirectoriesIT {
 
         mantaClient.delete(dir);
 
-        MantaAssert.assertResponseFailureStatusCode(404,
-                (MantaFunction<Object>) () -> mantaClient.head(dir));
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(dir));
     }
 
     @Test(dependsOnMethods = { "canCreateDirectory" })
