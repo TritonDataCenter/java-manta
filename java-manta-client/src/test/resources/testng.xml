@@ -22,6 +22,7 @@
     <test name="Exception Tests">
         <classes>
             <class name="com.joyent.manta.exception.MantaClientHttpResponseExceptionTest" />
+            <class name="com.joyent.manta.exception.MantaErrorCodeTest" />
         </classes>
     </test>
 </suite>

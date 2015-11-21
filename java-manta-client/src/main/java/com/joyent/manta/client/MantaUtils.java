@@ -210,16 +210,16 @@ public final class MantaUtils {
         if (account.isEmpty()) {
             throw new IllegalArgumentException("Username can't be empty");
         } else if (slashPos == -1) {
-            return new String[] { account };
+            return new String[] {account};
         } else if (slashPos == 0) {
             throw new IllegalArgumentException("Username can't begin with /");
-        } else if (account.charAt(account.length() -1) == '/') {
+        } else if (account.charAt(account.length() - 1) == '/') {
             throw new IllegalArgumentException("Username can't end with /");
         }
 
         final String username = account.substring(0, slashPos);
         final String subuser = account.substring(slashPos + 1);
 
-        return new String[] { username, subuser };
+        return new String[] {username, subuser};
     }
 }

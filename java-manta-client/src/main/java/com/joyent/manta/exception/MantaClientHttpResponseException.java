@@ -118,7 +118,11 @@ public class MantaClientHttpResponseException extends IOException {
         return new MantaHttpHeaders(innerException.getHeaders());
     }
 
-
+    /**
+     * Content returned as part of the HTTP response.
+     *
+     * @return HTTP body
+     */
     public String getContent() {
         return innerException.getContent();
     }
