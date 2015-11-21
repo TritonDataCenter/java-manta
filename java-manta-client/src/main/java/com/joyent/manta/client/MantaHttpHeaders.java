@@ -7,15 +7,7 @@ import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
 
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 
@@ -31,6 +23,11 @@ public class MantaHttpHeaders {
      * HTTP header for Manta durability level.
      */
     public static final String HTTP_DURABILITY_LEVEL = "Durability-Level";
+
+    /**
+     * HTTP header for account roles.
+     */
+    public static final String HTTP_ROLE_TAG = "Role-Tag";
 
     /**
      * HttpHeaders delegate which is wrapped by this class.
@@ -205,7 +202,7 @@ public class MantaHttpHeaders {
                 }
 
                 if (i < array.length - 1) {
-                    sb.append("; ");
+                    sb.append(", ");
                 }
             }
 
@@ -314,6 +311,54 @@ public class MantaHttpHeaders {
         }
 
         return Integer.parseInt(value);
+    }
+
+
+    /**
+     * Sets the header defining account roles used for this object.
+     *
+     * @param roles roles associated with object
+     */
+    public void setRoles(final Set<String> roles) {
+        Objects.requireNonNull(roles, "Roles must be present");
+
+        if (roles.isEmpty()) {
+            return;
+        }
+
+        set(HTTP_ROLE_TAG, roles);
+    }
+
+
+    /**
+     * Gets the header defining account roles used for this object.
+     *
+     * @return roles associated with object
+     */
+    public Set<String> getRoles() {
+        final Object value = get(HTTP_ROLE_TAG);
+
+        if (value == null) {
+            return Collections.emptySet();
+        }
+
+        final HashSet roles = new HashSet<>();
+
+        if (value instanceof Iterable<?>) {
+            ((Iterable<?>)value).forEach(o -> {
+                if (o != null) {
+                    roles.add(o.toString());
+                }
+            });
+        } else if (value.getClass().isArray()) {
+            for (Object o : (Object[])value) {
+                if (o != null) {
+                    roles.add(o.toString());
+                }
+            }
+        }
+
+        return Collections.unmodifiableSet(roles);
     }
 
 
