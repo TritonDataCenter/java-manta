@@ -27,6 +27,10 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaHttpHeaders {
+    /**
+     * HTTP header for Manta durability level.
+     */
+    public static final String HTTP_DURABILITY_LEVEL = "Durability-Level";
 
     /**
      * HttpHeaders delegate which is wrapped by this class.
@@ -280,6 +284,36 @@ public class MantaHttpHeaders {
         }
 
         return itr.next();
+    }
+
+
+    /**
+     * Sets the number of replicated copies of the object in Manta.
+     *
+     * @param copies number of copies
+     */
+    public void setDurabilityLevel(final int copies) {
+        if (copies < 1) {
+            throw new IllegalArgumentException("Copies must be 1 or greater");
+        }
+
+        set(HTTP_DURABILITY_LEVEL, String.valueOf(copies));
+    }
+
+
+    /**
+     * Gets the number of replicated copies of the object in Manta.
+     *
+     * @return copies number of copies
+     */
+    public Integer getDurabilityLevel() {
+        final String value = getFirstHeaderStringValue(HTTP_DURABILITY_LEVEL);
+
+        if (value == null) {
+            return null;
+        }
+
+        return Integer.parseInt(value);
     }
 
 
