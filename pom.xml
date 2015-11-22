@@ -109,6 +109,7 @@
         <dependency.mockito.version>2.0.2-beta</dependency.mockito.version>
         <dependency.slfj.version>1.7.13</dependency.slfj.version>
         <dependency.testng.version>6.9.9</dependency.testng.version>
+        <dependency.commons-collections.version>4.0</dependency.commons-collections.version>
     </properties>
 
     <dependencies>
