@@ -12,6 +12,7 @@ import java.util.Set;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@Test(groups = { "headers" })
 public class MantaHttpHeadersTest {
     @Test
     public void canSetRoleTags() {

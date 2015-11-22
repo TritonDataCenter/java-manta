@@ -843,6 +843,23 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
+     * Appends metadata derived from HTTP headers to an existing Manta object.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers  HTTP headers to include when copying the object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the metadata over the wire
+     */
+    public MantaObjectResponse putMetadata(final String path, final MantaHttpHeaders headers)
+            throws IOException {
+        Objects.requireNonNull(headers, "Headers must be present");
+
+        final MantaMetadata metadata = new MantaMetadata(headers.metadataAsStrings());
+        return putMetadata(path, headers, metadata);
+    }
+
+
+    /**
      * Appends the specified metadata to an existing Manta object using the
      * specified HTTP headers.
      *

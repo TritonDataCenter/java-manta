@@ -322,11 +322,10 @@ public class MantaHttpHeaders {
     public void setRoles(final Set<String> roles) {
         Objects.requireNonNull(roles, "Roles must be present");
 
-        if (roles.isEmpty()) {
-            return;
-        }
-
-        set(HTTP_ROLE_TAG, roles);
+        /* Set roles as a single HTTP header with each role delineated by
+         * a comma.
+         */
+        set(HTTP_ROLE_TAG, asString(roles));
     }
 
 
@@ -342,7 +341,7 @@ public class MantaHttpHeaders {
             return Collections.emptySet();
         }
 
-        final HashSet roles = new HashSet<>();
+        final HashSet<String> roles = new HashSet<>();
 
         if (value instanceof Iterable<?>) {
             ((Iterable<?>)value).forEach(o -> {
@@ -354,6 +353,22 @@ public class MantaHttpHeaders {
             for (Object o : (Object[])value) {
                 if (o != null) {
                     roles.add(o.toString());
+                }
+            }
+        }
+
+        /* The result may come to us as a CSV. In that case we treat each
+         * value separated by a comma as a single role.
+         */
+        if (roles.size() == 1) {
+            String line = roles.iterator().next();
+
+            if (line.contains(",")) {
+                String[] parts = line.split(",\\s*");
+                roles.clear();
+
+                for (String part : parts) {
+                    roles.add(part);
                 }
             }
         }
