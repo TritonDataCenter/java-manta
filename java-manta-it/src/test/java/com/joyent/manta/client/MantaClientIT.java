@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 
 /**
  * @author Yunong Xiao
@@ -89,7 +91,7 @@ public class MantaClientIT {
 
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -123,7 +125,7 @@ public class MantaClientIT {
         Assert.assertEquals(data, TEST_DATA);
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -143,7 +145,7 @@ public class MantaClientIT {
             mantaClient.delete(gotObject.getPath());
         }
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -168,7 +170,7 @@ public class MantaClientIT {
 
         mantaClient.deleteRecursive(testPathPrefix + "1");
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
     }
 
@@ -279,7 +281,7 @@ public class MantaClientIT {
         Assert.assertEquals(actual, TEST_DATA);
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404,
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 

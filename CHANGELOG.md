@@ -21,7 +21,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added MantaMetadata class for handling object metadata.
 - Added MantaHttpHeaders class for handling custom HTTP headers.
 - Added build to Travis CI.
-- Added closeQuietly() to MantaClient
+- Added closeQuietly() to MantaClient.
+- Added parsing of JSON error responses from Manta API.
+- Added error response enum MantaErrorCode.
 
 
 ## [1.6.0] - 2015-11-11
