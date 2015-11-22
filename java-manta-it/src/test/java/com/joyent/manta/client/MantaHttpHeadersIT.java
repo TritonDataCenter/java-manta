@@ -5,8 +5,8 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
-import junit.framework.Assert;
 import org.apache.commons.collections4.CollectionUtils;
+import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -15,7 +15,6 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -109,8 +108,7 @@ public class MantaHttpHeadersIT {
         Set<String> actual = actualHeaders.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actual, roles)) {
-            Assert.failNotEquals("Input and output roles, should be equal",
-                    roles, actual);
+            Assert.fail("Input and output roles, should be equal");
         }
     }
 
@@ -142,8 +140,7 @@ public class MantaHttpHeadersIT {
         Set<String> actual = actualHeaders.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actual, roles)) {
-            Assert.failNotEquals("Input and output roles, should be equal",
-                    roles, actual);
+            Assert.fail("Input and output roles, should be equal");
         }
     }
 
@@ -174,8 +171,7 @@ public class MantaHttpHeadersIT {
             Set<String> actual = actualHeaders.getRoles();
 
             if (!CollectionUtils.isEqualCollection(actual, roles)) {
-                Assert.failNotEquals("Input and output roles, should be equal",
-                        roles, actual);
+                Assert.fail("Input and output roles, should be equal");
             }
         }
 
@@ -192,8 +188,7 @@ public class MantaHttpHeadersIT {
         Set<String> actualUpdatedRoles = actualUpdatedHeaders.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actualUpdatedRoles, updatedRoles)) {
-            Assert.failNotEquals("Roles should have been updated",
-                    roles, actualUpdatedRoles);
+            Assert.fail("Roles should have been updated");
         }
     }
 
@@ -229,8 +224,23 @@ public class MantaHttpHeadersIT {
         Set<String> actualUpdatedRoles = actualUpdatedHeaders.getRoles();
 
         if (!actualUpdatedRoles.isEmpty()) {
-            Assert.failNotEquals("Roles weren't removed", Collections.emptySet(),
-                    actualUpdatedRoles);
+            Assert.fail("Roles weren't removed");
         }
+    }
+
+    @Test
+    public void canSetDurability() throws IOException {
+        final int durability = 4;
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setDurabilityLevel(durability);
+
+        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+
+        mantaClient.put(path, TEST_DATA, headers);
+
+        MantaObject object = mantaClient.get(path);
+        MantaHttpHeaders actualHeaders = object.getHttpHeaders();
+        Assert.assertEquals(actualHeaders.getDurabilityLevel().intValue(), durability,
+                "Durability not set to value on put");
     }
 }
