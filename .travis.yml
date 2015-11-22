@@ -17,3 +17,5 @@ matrix:
       env:
         - DESC="oraclejdk8 unit tests"
         - CMD="mvn clean verify -DskipITs=true"
+
+script: ${CMD}
