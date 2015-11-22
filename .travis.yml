@@ -18,4 +18,4 @@ matrix:
         - DESC="oraclejdk8 unit tests"
         - CMD="mvn clean verify -DskipITs=true"
 
-script: ${CMD}
+script: echo ${CMD}; ${CMD}
