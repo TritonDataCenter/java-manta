@@ -27,8 +27,7 @@ public class MantaHttpHeadersTest {
         Set<String> actual = headers.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actual, roles)) {
-            Assert.failNotEquals("Input and output roles, should be equal",
-                    actual, roles);
+            Assert.fail("Input and output roles, should be equal");
         }
     }
 }

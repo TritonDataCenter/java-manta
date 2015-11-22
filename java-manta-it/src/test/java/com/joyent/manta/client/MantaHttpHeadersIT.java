@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.joyent.manta.client.MantaUtils.asString;
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
 
 /**
@@ -108,7 +109,11 @@ public class MantaHttpHeadersIT {
         Set<String> actual = actualHeaders.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actual, roles)) {
-            Assert.fail("Input and output roles, should be equal");
+            String msg = String.format("Input and output roles, should be equal.\n" +
+                                       "Actual:   [%s]\nExpected: [%s]",
+                                       asString(actual),
+                                       asString(roles));
+            Assert.fail(msg);
         }
     }
 
@@ -140,7 +145,11 @@ public class MantaHttpHeadersIT {
         Set<String> actual = actualHeaders.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actual, roles)) {
-            Assert.fail("Input and output roles, should be equal");
+            String msg = String.format("Input and output roles, should be equal.\n" +
+                            "Actual:   [%s]\nExpected: [%s]",
+                    asString(actual),
+                    asString(roles));
+            Assert.fail(msg);
         }
     }
 
@@ -188,7 +197,11 @@ public class MantaHttpHeadersIT {
         Set<String> actualUpdatedRoles = actualUpdatedHeaders.getRoles();
 
         if (!CollectionUtils.isEqualCollection(actualUpdatedRoles, updatedRoles)) {
-            Assert.fail("Roles should have been updated");
+            String msg = String.format("Roles should have been updated.\n" +
+                                       "Actual:   [%s]\nExpected: [%s]",
+                                       asString(actualUpdatedRoles),
+                                       asString(updatedRoles));
+            Assert.fail(msg);
         }
     }
 
@@ -224,7 +237,10 @@ public class MantaHttpHeadersIT {
         Set<String> actualUpdatedRoles = actualUpdatedHeaders.getRoles();
 
         if (!actualUpdatedRoles.isEmpty()) {
-            Assert.fail("Roles weren't removed");
+            String msg = String.format("Roles weren't removed.\n" +
+                                       "Actual:   [%s]\nExpected: []",
+                                       asString(actualUpdatedRoles));
+            Assert.fail(msg);
         }
     }
 

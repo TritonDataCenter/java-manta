@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client;
 
+import com.google.api.client.util.FieldInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -221,5 +226,81 @@ public final class MantaUtils {
         final String subuser = account.substring(slashPos + 1);
 
         return new String[] {username, subuser};
+    }
+
+    /**
+     * Serializes a specified value to a {@link String}.
+     * @param value the value to be serialized
+     * @return a serialized value as a {@link String}
+     */
+    public static String asString(final Object value) {
+        if (value == null) {
+            return null;
+        } else if (value instanceof Enum<?>) {
+            return FieldInfo.of((Enum<?>) value).getName();
+        } else if (value instanceof Iterable<?>) {
+            StringBuilder sb = new StringBuilder();
+
+            Iterator<?> itr = ((Iterable<?>) value).iterator();
+            while (itr.hasNext()) {
+                Object next = itr.next();
+
+                if (next != null) {
+                    sb.append(next.toString());
+                }
+
+                if (itr.hasNext()) {
+                    sb.append(",");
+                }
+            }
+
+            return sb.toString();
+        } else if (value.getClass().isArray()) {
+            Object[] array = (Object[])value;
+
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < array.length; i++) {
+                Object next = array[i];
+
+                if (next != null) {
+                    sb.append(next.toString());
+                }
+
+                if (i < array.length - 1) {
+                    sb.append(", ");
+                }
+            }
+
+            return sb.toString();
+        }
+
+        return value.toString();
+    }
+
+
+    /**
+     * Converts a naive CSV string to a collection.
+     *
+     * @param line CSV string
+     * @return collection containing each value between each comma
+     */
+    public static Collection<String> fromCsv(final String line) {
+        Objects.requireNonNull(line, "Line must be present");
+
+        final List<String> list = new ArrayList<>();
+
+        if (line.contains(",")) {
+            String[] parts = line.split(",\\s*");
+
+            for (String part : parts) {
+                list.add(part);
+            }
+        } else {
+            list.add(line);
+        }
+
+
+        return list;
     }
 }

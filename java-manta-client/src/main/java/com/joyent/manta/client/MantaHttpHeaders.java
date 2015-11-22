@@ -137,11 +137,11 @@ public class MantaHttpHeaders {
 
             if (value instanceof Iterable<?> || valueClass.isArray()) {
                 for (Object multiple : Types.iterableOf(value)) {
-                    final Header header = new BasicHeader(displayName, asString(multiple));
+                    final Header header = new BasicHeader(displayName, MantaUtils.asString(multiple));
                     headers.add(header);
                 }
             } else {
-                final Header header = new BasicHeader(displayName, asString(value));
+                final Header header = new BasicHeader(displayName, MantaUtils.asString(value));
                 headers.add(header);
             }
         }
@@ -159,57 +159,6 @@ public class MantaHttpHeaders {
      */
     HttpHeaders asGoogleClientHttpHeaders() {
         return wrappedHeaders;
-    }
-
-
-    /**
-     * Serializes a specified value to a {@link java.lang.String}.
-     * @param value the value to be serialized
-     * @return a serialized value as a {@link java.lang.String}
-     */
-    private static String asString(final Object value) {
-        if (value == null) {
-            return null;
-        } else if (value instanceof Enum<?>) {
-            return FieldInfo.of((Enum<?>) value).getName();
-        } else if (value instanceof Iterable<?>) {
-            StringBuilder sb = new StringBuilder();
-
-            Iterator<?> itr = ((Iterable<?>) value).iterator();
-            while (itr.hasNext()) {
-                Object next = itr.next();
-
-                if (next != null) {
-                    sb.append(next.toString());
-                }
-
-                if (itr.hasNext()) {
-                    sb.append(",");
-                }
-            }
-
-            return sb.toString();
-        } else if (value.getClass().isArray()) {
-            Object[] array = (Object[])value;
-
-            StringBuilder sb = new StringBuilder();
-
-            for (int i = 0; i < array.length; i++) {
-                Object next = array[i];
-
-                if (next != null) {
-                    sb.append(next.toString());
-                }
-
-                if (i < array.length - 1) {
-                    sb.append(", ");
-                }
-            }
-
-            return sb.toString();
-        }
-
-        return value.toString();
     }
 
 
@@ -241,7 +190,7 @@ public class MantaHttpHeaders {
         final Map<String, String> metadata = new HashMap<>();
         for (Map.Entry<String, Object> entry : wrappedHeaders.entrySet()) {
             if (entry.getKey().startsWith("m-")) {
-                metadata.put(entry.getKey(), asString(entry.getValue()));
+                metadata.put(entry.getKey(), MantaUtils.asString(entry.getValue()));
             }
         }
 
@@ -325,7 +274,7 @@ public class MantaHttpHeaders {
         /* Set roles as a single HTTP header with each role delineated by
          * a comma.
          */
-        set(HTTP_ROLE_TAG, asString(roles));
+        set(HTTP_ROLE_TAG, MantaUtils.asString(roles));
     }
 
 
@@ -355,6 +304,9 @@ public class MantaHttpHeaders {
                     roles.add(o.toString());
                 }
             }
+        } else {
+            String line = value.toString();
+            roles.addAll(MantaUtils.fromCsv(line));
         }
 
         /* The result may come to us as a CSV. In that case we treat each
@@ -362,15 +314,8 @@ public class MantaHttpHeaders {
          */
         if (roles.size() == 1) {
             String line = roles.iterator().next();
-
-            if (line.contains(",")) {
-                String[] parts = line.split(",\\s*");
-                roles.clear();
-
-                for (String part : parts) {
-                    roles.add(part);
-                }
-            }
+            roles.clear();
+            roles.addAll(MantaUtils.fromCsv(line));
         }
 
         return Collections.unmodifiableSet(roles);
@@ -1178,7 +1123,7 @@ public class MantaHttpHeaders {
      * @return the value serialized to a {@code java.lang.String}
      */
     public String getAsString(final Object name) {
-        return asString(wrappedHeaders.get(name));
+        return MantaUtils.asString(wrappedHeaders.get(name));
     }
 
 
