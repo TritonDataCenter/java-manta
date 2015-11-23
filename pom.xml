@@ -75,7 +75,7 @@
     </distributionManagement>
 
     <properties>
-        <checkstyle.skip>true</checkstyle.skip>   <!-- for now, leave checkstyle turned off by default -->
+        <checkstyle.skip>false</checkstyle.skip>
         <java.min.version>1.8</java.min.version>
         <maven.min.version>3.2</maven.min.version>
         <maven.test.skip>false</maven.test.skip>
