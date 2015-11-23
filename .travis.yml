@@ -16,6 +16,6 @@ matrix:
     - jdk: oraclejdk8
       env:
         - DESC="oraclejdk8 unit tests"
-        - CMD="mvn clean verify -DskipITs=true"
+        - CMD="mvn clean verify"
 
 script: echo ${CMD}; ${CMD}
