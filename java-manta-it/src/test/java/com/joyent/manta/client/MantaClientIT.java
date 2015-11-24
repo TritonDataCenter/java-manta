@@ -9,8 +9,7 @@ import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
-import org.apache.http.impl.cookie.DateParseException;
-import org.apache.http.impl.cookie.DateUtils;
+import org.apache.http.client.utils.DateUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -35,7 +34,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * @author Yunong Xiao
  */
-//@Test(dependsOnGroups = { "directory" })
+@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -314,7 +313,7 @@ public class MantaClientIT {
 
 
     @Test(groups = { "mtime" })
-    public final void testGetLastModifiedDate() throws DateParseException {
+    public final void testGetLastModifiedDate() {
         final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
         final Date expected = DateUtils.parseDate(mtime);
         final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
@@ -326,7 +325,7 @@ public class MantaClientIT {
 
 
     @Test(groups = { "mtime" })
-    public final void testGetNullLastModifiedDate() throws DateParseException {
+    public final void testGetNullLastModifiedDate() {
         final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
         obj.setMtime(null);
 
@@ -336,7 +335,7 @@ public class MantaClientIT {
 
 
     @Test(groups = { "mtime" })
-    public final void testGetLastModifiedDateWithUnparseableMtime() throws DateParseException {
+    public final void testGetLastModifiedDateWithUnparseableMtime() {
         final String mtime = "Bad unparseable string";
         final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
         obj.setMtime(mtime);

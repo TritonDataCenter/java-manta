@@ -19,6 +19,7 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
+import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -648,7 +649,8 @@ public class MantaClient implements AutoCloseable {
                                    final MantaHttpHeaders headers) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = findOrDefaultContentType(headers, HTTP.OCTET_STREAM_TYPE);
+        final String contentType = findOrDefaultContentType(headers,
+                ContentType.APPLICATION_OCTET_STREAM.toString());
 
         final HttpContent content;
 
@@ -677,7 +679,7 @@ public class MantaClient implements AutoCloseable {
                                    final MantaMetadata metadata) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = HTTP.OCTET_STREAM_TYPE;
+        final String contentType = ContentType.APPLICATION_OCTET_STREAM.toString();
 
         final HttpContent content;
 
@@ -709,7 +711,8 @@ public class MantaClient implements AutoCloseable {
                                    final MantaMetadata metadata) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = findOrDefaultContentType(headers, HTTP.OCTET_STREAM_TYPE);
+        final String contentType = findOrDefaultContentType(headers,
+                ContentType.APPLICATION_OCTET_STREAM.toString());
 
         final HttpContent content;
 
