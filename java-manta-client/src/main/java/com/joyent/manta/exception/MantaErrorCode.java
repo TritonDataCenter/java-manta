@@ -33,6 +33,7 @@ public enum MantaErrorCode {
     INVALID_JOB_ERROR("InvalidJob"),
     INVALID_LINK_ERROR("InvalidLink"),
     INVALID_LIMIT_ERROR("InvalidLimit"),
+    INVALID_ROLE_TAG_ERROR("InvalidRoleTag"),
     INVALID_SIGNATURE_ERROR("InvalidSignature"),
     INVALID_UPDATE_ERROR("InvalidUpdate"),
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),

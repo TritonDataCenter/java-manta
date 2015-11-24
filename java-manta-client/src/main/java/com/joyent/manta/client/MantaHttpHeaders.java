@@ -7,10 +7,11 @@ import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,15 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaHttpHeaders {
+    /**
+     * HTTP header for Manta durability level.
+     */
+    public static final String HTTP_DURABILITY_LEVEL = "Durability-Level";
+
+    /**
+     * HTTP header for account roles.
+     */
+    public static final String HTTP_ROLE_TAG = "Role-Tag";
 
     /**
      * HttpHeaders delegate which is wrapped by this class.
@@ -136,11 +146,11 @@ public class MantaHttpHeaders {
 
             if (value instanceof Iterable<?> || valueClass.isArray()) {
                 for (Object multiple : Types.iterableOf(value)) {
-                    final Header header = new BasicHeader(displayName, asString(multiple));
+                    final Header header = new BasicHeader(displayName, MantaUtils.asString(multiple));
                     headers.add(header);
                 }
             } else {
-                final Header header = new BasicHeader(displayName, asString(value));
+                final Header header = new BasicHeader(displayName, MantaUtils.asString(value));
                 headers.add(header);
             }
         }
@@ -158,57 +168,6 @@ public class MantaHttpHeaders {
      */
     HttpHeaders asGoogleClientHttpHeaders() {
         return wrappedHeaders;
-    }
-
-
-    /**
-     * Serializes a specified value to a {@link java.lang.String}.
-     * @param value the value to be serialized
-     * @return a serialized value as a {@link java.lang.String}
-     */
-    private static String asString(final Object value) {
-        if (value == null) {
-            return null;
-        } else if (value instanceof Enum<?>) {
-            return FieldInfo.of((Enum<?>) value).getName();
-        } else if (value instanceof Iterable<?>) {
-            StringBuilder sb = new StringBuilder();
-
-            Iterator<?> itr = ((Iterable<?>) value).iterator();
-            while (itr.hasNext()) {
-                Object next = itr.next();
-
-                if (next != null) {
-                    sb.append(next.toString());
-                }
-
-                if (itr.hasNext()) {
-                    sb.append(",");
-                }
-            }
-
-            return sb.toString();
-        } else if (value.getClass().isArray()) {
-            Object[] array = (Object[])value;
-
-            StringBuilder sb = new StringBuilder();
-
-            for (int i = 0; i < array.length; i++) {
-                Object next = array[i];
-
-                if (next != null) {
-                    sb.append(next.toString());
-                }
-
-                if (i < array.length - 1) {
-                    sb.append("; ");
-                }
-            }
-
-            return sb.toString();
-        }
-
-        return value.toString();
     }
 
 
@@ -240,7 +199,7 @@ public class MantaHttpHeaders {
         final Map<String, String> metadata = new HashMap<>();
         for (Map.Entry<String, Object> entry : wrappedHeaders.entrySet()) {
             if (entry.getKey().startsWith("m-")) {
-                metadata.put(entry.getKey(), asString(entry.getValue()));
+                metadata.put(entry.getKey(), MantaUtils.asString(entry.getValue()));
             }
         }
 
@@ -280,6 +239,95 @@ public class MantaHttpHeaders {
         }
 
         return itr.next();
+    }
+
+
+    /**
+     * Sets the number of replicated copies of the object in Manta.
+     *
+     * @param copies number of copies
+     */
+    public void setDurabilityLevel(final int copies) {
+        if (copies < 1) {
+            throw new IllegalArgumentException("Copies must be 1 or greater");
+        }
+
+        set(HTTP_DURABILITY_LEVEL, String.valueOf(copies));
+    }
+
+
+    /**
+     * Gets the number of replicated copies of the object in Manta.
+     *
+     * @return copies number of copies
+     */
+    public Integer getDurabilityLevel() {
+        final String value = getFirstHeaderStringValue(HTTP_DURABILITY_LEVEL);
+
+        if (value == null) {
+            return null;
+        }
+
+        return Integer.parseInt(value);
+    }
+
+
+    /**
+     * Sets the header defining account roles used for this object.
+     *
+     * @param roles roles associated with object
+     */
+    public void setRoles(final Set<String> roles) {
+        Objects.requireNonNull(roles, "Roles must be present");
+
+        /* Set roles as a single HTTP header with each role delineated by
+         * a comma.
+         */
+        set(HTTP_ROLE_TAG, MantaUtils.asString(roles));
+    }
+
+
+    /**
+     * Gets the header defining account roles used for this object.
+     *
+     * @return roles associated with object
+     */
+    public Set<String> getRoles() {
+        final Object value = get(HTTP_ROLE_TAG);
+
+        if (value == null) {
+            return Collections.emptySet();
+        }
+
+        final HashSet<String> roles = new HashSet<>();
+
+        if (value instanceof Iterable<?>) {
+            ((Iterable<?>)value).forEach(o -> {
+                if (o != null) {
+                    roles.add(o.toString());
+                }
+            });
+        } else if (value.getClass().isArray()) {
+            for (Object o : (Object[])value) {
+                if (o != null) {
+                    roles.add(o.toString());
+                }
+            }
+        } else {
+            String line = value.toString();
+            roles.addAll(MantaUtils.fromCsv(line));
+        }
+
+        /* The result may come to us as a CSV. In that case we treat each
+         * value separated by a comma as a single role.
+         */
+        if (roles.size() == 1) {
+            String line = roles.iterator().next();
+            roles.clear();
+            roles.addAll(MantaUtils.fromCsv(line));
+        }
+
+        return Collections.unmodifiableSet(roles);
     }
 
 
@@ -1084,7 +1132,7 @@ public class MantaHttpHeaders {
      * @return the value serialized to a {@code java.lang.String}
      */
     public String getAsString(final Object name) {
-        return asString(wrappedHeaders.get(name));
+        return MantaUtils.asString(wrappedHeaders.get(name));
     }
 
 

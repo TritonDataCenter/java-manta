@@ -49,6 +49,12 @@
             <version>${dependency.slfj.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>${dependency.commons-collections.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>com.google.http-client</groupId>
