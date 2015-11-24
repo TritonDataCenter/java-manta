@@ -22,7 +22,7 @@
         <dependency.apache-http-client.version>4.5.1</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.53</dependency.bouncycastle.version>
         <dependency.google-http-client.version>1.20.0</dependency.google-http-client.version>
-        <dependency.google-http-client-signature.version>1.0.0</dependency.google-http-client-signature.version>
+        <dependency.google-http-client-signature.version>1.0.1</dependency.google-http-client-signature.version>
     </properties>
 
     <dependencies>
@@ -102,7 +102,6 @@
                             <exclude>junit:junit</exclude>
                             <exclude>org.slf4j:slf4j-api</exclude>
                             <exclude>org.bouncycastle:*</exclude>
-                            <exclude>com.joyent:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>
@@ -119,6 +118,15 @@
                             <shadedPattern>com.joyent.manta.com.fasterxml</shadedPattern>
                         </relocation>
                     </relocations>
+                    <filters>
+                        <!-- explicitly remove class that causes security concerns -->
+                        <filter>
+                            <artifact>org.apache.commons:commons-collections4</artifact>
+                            <excludes>
+                                <exclude>org/apache/commons/collections4/functors/InvokerTransformer.class</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
                 <executions>
                     <execution>

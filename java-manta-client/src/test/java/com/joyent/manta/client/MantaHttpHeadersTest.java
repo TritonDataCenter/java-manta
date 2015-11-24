@@ -1,7 +1,7 @@
 package com.joyent.manta.client;
 
-import junit.framework.Assert;
 import org.apache.commons.collections4.CollectionUtils;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.HashSet;

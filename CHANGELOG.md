@@ -24,6 +24,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added closeQuietly() to MantaClient.
 - Added parsing of JSON error responses from Manta API.
 - Added error response enum MantaErrorCode.
+- Added support for signed URLs.
 
 
 ## [1.6.0] - 2015-11-11
