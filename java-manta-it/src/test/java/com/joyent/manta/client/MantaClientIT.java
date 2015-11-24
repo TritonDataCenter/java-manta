@@ -3,11 +3,6 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.apache.ApacheHttpTransport;
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
@@ -27,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLConnection;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -39,7 +35,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * @author Yunong Xiao
  */
-@Test(dependsOnGroups = { "directory" })
+//@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -284,20 +280,19 @@ public class MantaClientIT {
         final String path = testPathPrefix + name;
 
         mantaClient.put(path, TEST_DATA);
+
+        // This will throw an error if the newly inserted object isn't present
+        mantaClient.head(path);
+
         Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
         URI uri = mantaClient.getAsSignedURI(path, "GET", expires);
 
-        final GenericUrl genericUrl = new GenericUrl(uri);
-        final HttpRequestFactory factory = new ApacheHttpTransport().createRequestFactory();
-        final HttpRequest request = factory.buildGetRequest(genericUrl);
-
-        System.out.println(uri);
-        final HttpResponse response = request.execute();
-
-        try {
-            Assert.assertEquals(response.getStatusCode(), 200);
-        } finally {
-            response.disconnect();
+        URLConnection connection = uri.toURL().openConnection();
+        connection.setReadTimeout(3000);
+        connection.connect();
+        try (InputStream is = connection.getInputStream()) {
+            String actual = MantaUtils.inputStreamToString(is);
+            Assert.assertEquals(actual, TEST_DATA);
         }
     }
 
