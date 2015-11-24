@@ -75,11 +75,13 @@
     </distributionManagement>
 
     <properties>
-        <checkstyle.skip>true</checkstyle.skip>   <!-- for now, leave checkstyle turned off by default -->
+        <checkstyle.skip>false</checkstyle.skip>
         <java.min.version>1.8</java.min.version>
         <maven.min.version>3.2</maven.min.version>
         <maven.test.skip>false</maven.test.skip>
+        <maven.integration.test.skip>false</maven.integration.test.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <surefire.forkCount>1</surefire.forkCount>
         <failsafe.forkCount>1</failsafe.forkCount>
         <surefire.useSystemClassLoader>true</surefire.useSystemClassLoader>
@@ -215,6 +217,18 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-failsafe-plugin.version}</version>
+                <configuration>
+                    <forkCount>${failsafe.forkCount}</forkCount>
+                    <systemPropertyVariables>
+                        <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
+                    </systemPropertyVariables>
+                    <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
                 <version>${maven-gpg-plugin.version}</version>
             </plugin>
@@ -273,26 +287,7 @@
                     <systemPropertyVariables>
                         <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
                     </systemPropertyVariables>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>${maven-failsafe-plugin.version}</version>
-                <configuration>
-                    <forkCount>${failsafe.forkCount}</forkCount>
-                    <skip>${maven.test.skip}</skip>
-                    <systemPropertyVariables>
-                        <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
-                    </systemPropertyVariables>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
-                    </suiteXmlFiles>
-                    <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
             </plugin>
         </plugins>
