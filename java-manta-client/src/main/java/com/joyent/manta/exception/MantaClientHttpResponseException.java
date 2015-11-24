@@ -132,7 +132,7 @@ public class MantaClientHttpResponseException extends IOException {
     public String getMessage() {
         if (serverCode.equals(MantaErrorCode.NO_CODE_ERROR)) {
             return innerException.getMessage();
-        } else if (serverCode.equals(MantaErrorCode.UNKNOWN_ERROR)){
+        } else if (serverCode.equals(MantaErrorCode.UNKNOWN_ERROR)) {
             return String.format("%d %s - Unknown error content: %s",
                     innerException.getStatusCode(),
                     innerException.getStatusMessage(),
