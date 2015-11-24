@@ -479,7 +479,7 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * <p></p>Generates a URL that allows for the download of the resource specified
+     * <p>Generates a URL that allows for the download of the resource specified
      * in the path without any additional authentication.</p>
      *
      * <p>This could be useful for when you want to generate links that expire
@@ -503,7 +503,7 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * <p></p>Generates a URL that allows for the download of the resource specified
+     * <p>Generates a URL that allows for the download of the resource specified
      * in the path without any additional authentication.</p>
      *
      * <p>This could be useful for when you want to generate links that expire
