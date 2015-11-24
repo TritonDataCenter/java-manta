@@ -230,12 +230,17 @@ you will also have to revert any SCM commits that were done
 tags that were created (`git tag -l && git tag -d <tagName>` commands help
 with this).
 
-7. Perform the actual release:  
+7. Push tags to github:
+`git push --follow-tags`
+In order for the `release:perform` goal to complete successfully, you will need to
+push the tags created by the maven release plugin to the remote git server.
+
+8. Perform the actual release:  
 `mvn release:perform`
 A build will be performed and packaged and artifacts deployed to the sonatype
 staging repository.
 
-8. Log into the [Sonatype OSSHR Next](https://oss.sonatype.org) web interface
+9. Log into the [Sonatype OSSHR Next](https://oss.sonatype.org) web interface
 to [verify and promote](http://central.sonatype.org/pages/releasing-the-deployment.html)
 the build. 
 
