@@ -102,7 +102,6 @@
                             <exclude>junit:junit</exclude>
                             <exclude>org.slf4j:slf4j-api</exclude>
                             <exclude>org.bouncycastle:*</exclude>
-                            <exclude>com.joyent:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>
@@ -119,6 +118,15 @@
                             <shadedPattern>com.joyent.manta.com.fasterxml</shadedPattern>
                         </relocation>
                     </relocations>
+                    <filters>
+                        <!-- explicitly remove class that causes security concerns -->
+                        <filter>
+                            <artifact>org.apache.commons:commons-collections4</artifact>
+                            <excludes>
+                                <exclude>org/apache/commons/collections4/functors/InvokerTransformer.class</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
                 <executions>
                     <execution>
