@@ -4,8 +4,7 @@
 package com.joyent.manta.client;
 
 import com.google.api.client.util.Key;
-import org.apache.http.impl.cookie.DateParseException;
-import org.apache.http.impl.cookie.DateUtils;
+import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,14 +211,14 @@ public class MantaObjectResponse implements MantaObject {
             return null;
         }
 
-        try {
-            return DateUtils.parseDate(lastModified);
-        } catch (DateParseException e) {
-            Logger logger = LoggerFactory.getLogger(getClass());
-            logger.warn(String.format("Error parsing mtime value: %s", lastModified), e);
+        final Date parsed = DateUtils.parseDate(lastModified);
 
-            return null;
+        if (parsed == null) {
+            Logger logger = LoggerFactory.getLogger(getClass());
+            logger.warn("Error parsing mtime value: {}", lastModified);
         }
+
+        return parsed;
     }
 
 
