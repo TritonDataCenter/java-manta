@@ -3,6 +3,11 @@
  */
 package com.joyent.manta.client;
 
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.apache.ApacheHttpTransport;
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
@@ -21,6 +26,9 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
@@ -56,7 +64,7 @@ public class MantaClientIT {
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s/",
+        testPathPrefix = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, null);
     }
@@ -267,6 +275,30 @@ public class MantaClientIT {
 
         mantaClient.put(path, TEST_DATA);
         mantaClient.listObjects(path);
+    }
+
+
+    @Test
+    public final void testCanCreateSignedUriFromPath() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA);
+        Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
+        URI uri = mantaClient.getAsSignedURI(path, "GET", expires);
+
+        final GenericUrl genericUrl = new GenericUrl(uri);
+        final HttpRequestFactory factory = new ApacheHttpTransport().createRequestFactory();
+        final HttpRequest request = factory.buildGetRequest(genericUrl);
+
+        System.out.println(uri);
+        final HttpResponse response = request.execute();
+
+        try {
+            Assert.assertEquals(response.getStatusCode(), 200);
+        } finally {
+            response.disconnect();
+        }
     }
 
 
