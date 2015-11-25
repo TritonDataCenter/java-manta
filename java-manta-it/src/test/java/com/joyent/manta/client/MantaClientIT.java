@@ -34,7 +34,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * @author Yunong Xiao
  */
-@Test(dependsOnGroups = { "directory" })
+//@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -311,6 +311,39 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
+
+    @Test
+    public final void testFileExists() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA);
+
+        final boolean actual = mantaClient.existsAndIsAccessible(path);
+        Assert.assertTrue(actual, "File object should exist");
+    }
+
+
+    @Test
+    public final void testDirectoryExists() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+
+        mantaClient.putDirectory(dir);
+
+        final boolean actual = mantaClient.existsAndIsAccessible(dir);
+        Assert.assertTrue(actual, "File object should exist");
+    }
+
+
+    @Test
+    public final void testFileDoesntExist() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final boolean actual = mantaClient.existsAndIsAccessible(path);
+        Assert.assertFalse(actual, "File object shouldn't exist");
+    }
 
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDate() {
