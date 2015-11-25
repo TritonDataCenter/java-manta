@@ -8,7 +8,7 @@ import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_ID_ENV_KEY;
 import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_PATH_ENV_KEY;
 import static com.joyent.manta.config.EnvVarConfigContext.MANTA_TIMEOUT_ENV_KEY;
 import static com.joyent.manta.config.EnvVarConfigContext.MANTA_URL_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_USER_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.MANTA_ACCOUNT_ENV_KEY;
 
 /**
  * {@link ConfigContext} implementation that is used for configuring instances
@@ -23,7 +23,7 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_URL_KEY = "manta.url";
 
     /**
-     * Property key for looking up a Manta user account.
+     * Property key for looking up a Manta account.
      */
     public static final String MANTA_USER_KEY = "manta.user";
 
@@ -75,7 +75,7 @@ public class MapConfigContext implements ConfigContext {
 
     @Override
     public String getMantaUser() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(MANTA_USER_KEY, MANTA_USER_ENV_KEY);
+        return normalizeEmptyAndNullAndDefaultToStringValue(MANTA_USER_KEY, MANTA_ACCOUNT_ENV_KEY);
     }
 
     @Override

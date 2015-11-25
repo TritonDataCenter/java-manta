@@ -18,9 +18,9 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_URL_ENV_KEY = "MANTA_URL";
 
     /**
-     * Environment variable for looking up a Manta user account.
+     * Environment variable for looking up a Manta account.
      */
-    public static final String MANTA_USER_ENV_KEY = "MANTA_USER";
+    public static final String MANTA_ACCOUNT_ENV_KEY = "MANTA_USER";
 
     /**
      * Environment variable for looking up a RSA fingerprint.
@@ -41,7 +41,7 @@ public class EnvVarConfigContext implements ConfigContext {
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
-            MANTA_URL_ENV_KEY, MANTA_USER_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
+            MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
             MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY
     };
 
@@ -70,7 +70,7 @@ public class EnvVarConfigContext implements ConfigContext {
 
     @Override
     public String getMantaUser() {
-        return getEnv(MANTA_USER_ENV_KEY);
+        return getEnv(MANTA_ACCOUNT_ENV_KEY);
     }
 
     @Override

@@ -34,7 +34,7 @@ public class MantaHttpHeaders {
     public static final String HTTP_DURABILITY_LEVEL = "Durability-Level";
 
     /**
-     * HTTP header for account roles.
+     * HTTP header for RBAC roles.
      */
     public static final String HTTP_ROLE_TAG = "Role-Tag";
 
@@ -273,7 +273,7 @@ public class MantaHttpHeaders {
 
 
     /**
-     * Sets the header defining account roles used for this object.
+     * Sets the header defining RBAC roles used for this object.
      *
      * @param roles roles associated with object
      */
@@ -288,7 +288,7 @@ public class MantaHttpHeaders {
 
 
     /**
-     * Gets the header defining account roles used for this object.
+     * Gets the header defining RBAC roles used for this object.
      *
      * @return roles associated with object
      */
