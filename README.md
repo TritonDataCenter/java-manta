@@ -57,7 +57,7 @@ left are overridden by values on the right.
 The URL of the manta service endpoint to test against
 * `manta.user` ( **MANTA_USER** )
 The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
-you will specify the username as "account/subuser".
+you will specify the account name as "user/subuser".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
 * `manta.key_path` ( **MANTA_KEY_PATH** )
@@ -66,6 +66,22 @@ The name of the file that will be loaded for the account used to access the mant
 The number of milliseconds to wait after a request was made to Manta before failing.
  
 If you want to skip running of the test suite, use the `-DskipTests` property.
+
+## Accounts, Usernames and Subusers
+Joyent's SmartDataCenter account implementation is such that you can have a
+subuser as a dependency upon a user. This is part of SmartDataCenter's [RBAC
+implementation](https://docs.joyent.com/public-cloud/rbac/users). A subuser
+is a user with a unique username that is joined with the account holder's 
+username. Typically, this is in the format of "user/subuser".
+ 
+Within the Java Manta library, we refer to the account name as the entire
+string used to login - "user/subuser". When we use the term user it is in
+reference to the "user" portion of the account name and when we use the term
+subuser, it is in reference to the subuser portion of the account name.
+
+The notable exception is that in the configuration passed into the library,
+we have continued to use the terminology *Manta user* to refer to the
+account name because of historic compatibility concerns. 
 
 ## Usage
 
@@ -88,14 +104,14 @@ import java.util.Scanner;
 public class App {
     private static final String URL = "https://us-east.manta.joyent.com";
     // If there is no subuser, then just use the account name
-    private static final String LOGIN = "account/subuser";
+    private static final String LOGIN = "user/subuser";
     private static final String KEY_PATH = "src/test/java/data/id_rsa";
     private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
 
     public static void main(String... args) throws IOException {
         MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
 
-        String mantaFile = "/account/stor/foo";
+        String mantaFile = "/user/stor/foo";
 
         // Print out every line from file streamed real-time from Manta
         try (InputStream is = client.getAsInputStream(mantaFile);
@@ -127,14 +143,16 @@ which can be configured
 
 ## Subuser Difficulties
 
-If you are using subusers, be sure to specify the Manta username as `account/subuser`.
+If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
 Also, a common problem is that you haven't granted the subuser access to the
 path within Manta. Typically this is done via the [Manta CLI Tools](https://apidocs.joyent.com/manta/commands-reference.html)
-using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md). 
+using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md).
+This can also be done by adding roles on the `MantaHttpHeaders` object.
+
 For example:
 
 ```bash
-mchmod +subusername /account/stor/my_directory
+mchmod +subusername /user/stor/my_directory
 ```
 
 ## Contributions

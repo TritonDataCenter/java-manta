@@ -122,14 +122,14 @@ public class MantaClient implements AutoCloseable {
      * Creates a new instance of a Manta client.
      *
      * @param url         The url of the Manta endpoint.
-     * @param login       The user login name.
+     * @param account     The account used to login.
      * @param keyPath     The path to the user rsa private key on disk.
      * @param fingerPrint The fingerprint of the user rsa private key.
      * @throws IOException If unable to instantiate the client.
      */
-    public MantaClient(final String url, final String login, final String keyPath,
+    public MantaClient(final String url, final String account, final String keyPath,
                        final String fingerPrint) throws IOException {
-        this(url, login, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+        this(url, account, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
 
@@ -137,18 +137,18 @@ public class MantaClient implements AutoCloseable {
      * Creates a new instance of a Manta client.
      *
      * @param url               The url of the Manta endpoint.
-     * @param login             The user login name.
+     * @param account     The account used to login.
      * @param privateKeyContent The user's rsa private key as a string.
      * @param fingerPrint       The fingerprint of the user rsa private key.
      * @param password          The private key password (optional).
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
-                       final String login,
+                       final String account,
                        final String privateKeyContent,
                        final String fingerPrint,
                        final char[] password) throws IOException {
-        this(url, login, privateKeyContent, fingerPrint, password,
+        this(url, account, privateKeyContent, fingerPrint, password,
                 DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
     }
 
@@ -157,19 +157,19 @@ public class MantaClient implements AutoCloseable {
      * Instantiates a new Manta client instance.
      *
      * @param url         The url of the Manta endpoint.
-     * @param login       The user login name.
+     * @param account     The account used to login.
      * @param keyPath     The path to the user rsa private key on disk.
      * @param fingerprint The fingerprint of the user rsa private key.
      * @param httpTimeout The HTTP timeout in milliseconds.
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
-                       final String login,
+                       final String account,
                        final String keyPath,
                        final String fingerprint,
                        final int httpTimeout) throws IOException {
-        if (login == null) {
-            throw new IllegalArgumentException("Manta username must be specified");
+        if (account == null) {
+            throw new IllegalArgumentException("Manta account name must be specified");
         }
         if (url == null) {
             throw new IllegalArgumentException("Manta URL must be specified");
@@ -186,7 +186,7 @@ public class MantaClient implements AutoCloseable {
 
         this.url = url;
         KeyPair keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
-        this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
+        this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 httpTimeout);
         this.httpTimeout = httpTimeout;
@@ -197,7 +197,7 @@ public class MantaClient implements AutoCloseable {
      * Instantiates a new Manta client instance.
      *
      * @param url               The url of the Manta endpoint.
-     * @param login             The user login name.
+     * @param account     The account used to login.
      * @param privateKeyContent The private key as a string.
      * @param fingerprint       The name of the key.
      * @param password          The private key password (optional).
@@ -205,12 +205,12 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final String url,
-                       final String login,
+                       final String account,
                        final String privateKeyContent,
                        final String fingerprint,
                        final char[] password,
                        final int httpTimeout) throws IOException {
-        if (login == null) {
+        if (account == null) {
             throw new IllegalArgumentException("Manta username must be specified");
         }
         if (url == null) {
@@ -228,7 +228,7 @@ public class MantaClient implements AutoCloseable {
 
         this.url = url;
         KeyPair keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, password);
-        this.httpSigner = new HttpSigner(keyPair, login, fingerprint);
+        this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
         this.httpTimeout = httpTimeout;
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 httpTimeout);

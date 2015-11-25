@@ -17,9 +17,9 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private String mantaURL;
 
     /**
-     * User account associated with the Manta service.
+     * Account associated with the Manta service.
      */
-    private String mantaUser;
+    private String account;
 
     /**
      * RSA key fingerprint of the private key used to access Manta.
@@ -64,7 +64,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
     @Override
     public String getMantaUser() {
-        return this.mantaUser;
+        return this.account;
     }
 
     @Override
@@ -99,7 +99,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         }
 
         if (isPresent(context.getMantaUser())) {
-            this.mantaUser = context.getMantaUser();
+            this.account = context.getMantaUser();
         }
 
         if (isPresent(context.getMantaKeyId())) {
@@ -135,12 +135,12 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     /**
-     * Sets the User account associated with the Manta service.
+     * Sets the account associated with the Manta service.
      * @param mantaUser Manta user account
      * @return the current instance of {@link BaseChainedConfigContext}
      */
     public BaseChainedConfigContext setMantaUser(final String mantaUser) {
-        this.mantaUser = mantaUser;
+        this.account = mantaUser;
         return this;
     }
 

@@ -18,7 +18,7 @@ public interface ConfigContext {
     String getMantaURL();
 
     /**
-     * @return User account associated with the Manta service.
+     * @return account associated with the Manta service.
      */
     String getMantaUser();
 
