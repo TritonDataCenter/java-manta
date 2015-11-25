@@ -450,7 +450,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Executes an HTTP GET against the remote Manta API.
+     * Executes a HTTP GET against the remote Manta API.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return Google HTTP Client response object
@@ -541,6 +541,20 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse head(final String path) throws IOException {
+        final HttpResponse response = httpHead(path);
+        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
+        return new MantaObjectResponse(path, headers);
+    }
+
+
+    /**
+     * Executes a HTTP HEAD against the remote Manta API.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
+    protected HttpResponse httpHead(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
         LOG.debug("HEAD   {}", path);
@@ -549,17 +563,16 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
 
-        HttpResponse response;
+        final HttpResponse response;
+
         try {
             response = request.execute();
             LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
                     response.getStatusMessage());
+            return response;
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         }
-
-        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
-        return new MantaObjectResponse(path, headers);
     }
 
 
@@ -599,6 +612,25 @@ public class MantaClient implements AutoCloseable {
                 response.disconnect();
             }
         }
+    }
+
+
+    /**
+     * Convenience method that issues a HTTP HEAD request to see if a given
+     * object exists at the specified path.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return true if Manta returns a 2xx status code and false if Manta returns
+     *         any error status code or if there was a connection problem (IOException)
+     */
+    public boolean existsAndIsAccessible(final String path) {
+        try {
+            httpHead(path);
+        } catch (IOException e) {
+            return false;
+        }
+
+        return true;
     }
 
 
