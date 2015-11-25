@@ -34,7 +34,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * @author Yunong Xiao
  */
-//@Test(dependsOnGroups = { "directory" })
+@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
