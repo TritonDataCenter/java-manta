@@ -31,7 +31,7 @@ public class MantaJob {
     private Boolean tranzient;
     @Key
     private Map<String, Number> stats;
-//    @Key("timeCreated")
+    @Key("timeCreated")
     private Instant timeCreated;
     private Instant timeDone;
     private Instant timeArchiveStarted;
