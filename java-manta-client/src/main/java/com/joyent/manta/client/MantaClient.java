@@ -11,6 +11,9 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.InputStreamContent;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.JsonObjectParser;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
@@ -45,6 +48,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
@@ -101,9 +105,9 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * The timeout (in milliseconds) for accessing the Manta service.
+     * The home directory of the account.
      */
-    private final int httpTimeout;
+    private final String home;
 
 
     /**
@@ -189,7 +193,7 @@ public class MantaClient implements AutoCloseable {
         this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 httpTimeout);
-        this.httpTimeout = httpTimeout;
+        this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
     }
 
 
@@ -229,7 +233,7 @@ public class MantaClient implements AutoCloseable {
         this.url = url;
         KeyPair keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, password);
         this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
-        this.httpTimeout = httpTimeout;
+        this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 httpTimeout);
     }
@@ -457,6 +461,19 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException when there is a problem getting the object over the wire
      */
     protected HttpResponse httpGet(final String path) throws IOException {
+        return httpGet(path, null);
+    }
+
+    /**
+     * Executes a HTTP GET against the remote Manta API.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param parser Parser used for parsing response into a POJO
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the wire
+     */
+    protected HttpResponse httpGet(final String path,
+                                   final ObjectParser parser) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
         LOG.debug("GET    {}", path);
@@ -464,6 +481,10 @@ public class MantaClient implements AutoCloseable {
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
+
+        if (parser != null) {
+            request.setParser(parser);
+        }
 
         final HttpResponse response;
 
@@ -1105,6 +1126,19 @@ public class MantaClient implements AutoCloseable {
                 objectPath, linkPath);
     }
 
+
+    public MantaJob getJob(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Manta job id must not be null");
+        final String path = String.format("%s/jobs/%s/live/status",
+                home, jobId);
+
+        JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+        final ObjectParser parser = new JsonObjectParser(jsonFactory);
+        final HttpResponse response = httpGet(path, parser);
+        MantaJob job = response.parseAs(MantaJob.class);
+
+        return job;
+    }
 
     /**
      * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
