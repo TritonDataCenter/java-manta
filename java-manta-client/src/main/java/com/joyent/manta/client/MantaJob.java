@@ -3,6 +3,9 @@
  */
 package com.joyent.manta.client;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.api.client.util.Key;
 
 import java.time.Instant;
@@ -16,29 +19,22 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MantaJob {
-//    @Key("id")
     private UUID id;
-    @Key
     private String name;
-    @Key
     private String state;
-    @Key
     private Boolean cancelled;
-    @Key
     private Boolean inputDone;
-    @Key("transient")
+    @JsonProperty("transient")
     private Boolean tranzient;
-    @Key
+    @JsonProperty
     private Map<String, Number> stats;
-    @Key("timeCreated")
     private Instant timeCreated;
     private Instant timeDone;
     private Instant timeArchiveStarted;
     private Instant timeArchiveDone;
-    @Key
     private List<MantaJobPhase> phases;
-    @Key
     private Map<String, Object> options;
 
     public MantaJob() {

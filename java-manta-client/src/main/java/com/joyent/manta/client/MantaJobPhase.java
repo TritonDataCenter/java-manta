@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.api.client.util.Key;
 
 import java.util.List;
@@ -12,12 +13,10 @@ import java.util.Objects;
  * Class representing either a map or a reduce phase of a Manta Job.
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MantaJobPhase {
-    @Key
     private List<String> assets;
-    @Key
     private String exec;
-    @Key
     private String type;
 
 

@@ -51,7 +51,7 @@ public class MantaClientJobIT {
 
     @Test
     public void getJob() throws IOException {
-        UUID id = UUID.fromString("b35803a9-5e76-cf83-fbb9-f851c3ce8eb5");
+        UUID id = UUID.fromString("299a4e54-1070-cafe-8fcb-ee95a50a8ea4");
         MantaJob job = mantaClient.getJob(id);
         System.out.println(job);
     }

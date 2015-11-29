@@ -1132,8 +1132,7 @@ public class MantaClient implements AutoCloseable {
         final String path = String.format("%s/jobs/%s/live/status",
                 home, jobId);
 
-        JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-        final ObjectParser parser = new JsonObjectParser(jsonFactory);
+        final ObjectParser parser = new MantaObjectParser();
         final HttpResponse response = httpGet(path, parser);
         MantaJob job = response.parseAs(MantaJob.class);
 
