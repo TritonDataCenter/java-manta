@@ -146,9 +146,9 @@ public class MantaClientJobIT {
 
     private MantaJob buildJob() {
         List<MantaJobPhase> phases = new ArrayList<>();
-        MantaJobPhase map = new MantaJobPhase();
-        map.setType("map");
-        map.setExec("echo 'Hello World'");
+        MantaJobPhase map = new MantaJobPhase()
+            .setType("map")
+            .setExec("echo 'Hello World'");
         phases.add(map);
 
         String name = String.format("integration_test_%d", count.incrementAndGet());

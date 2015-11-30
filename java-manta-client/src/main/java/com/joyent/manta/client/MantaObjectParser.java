@@ -1,8 +1,12 @@
+/**
+ * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.api.client.util.ObjectParser;
 
@@ -13,9 +17,16 @@ import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 
 /**
+ * {@link ObjectParser} implementation that uses Jackson data binding. This
+ * is very useful because Jackson core doesn't provide much flexibility
+ * when de/serializing many different data types.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectParser implements ObjectParser {
+    /**
+     * Jackson data binding mapper instance.
+     */
     public static final ObjectMapper MAPPER;
 
     static {
@@ -31,8 +42,8 @@ public class MantaObjectParser implements ObjectParser {
     }
 
     @Override
-    public <T> T parseAndClose(InputStream in, Charset charset,
-                               Class<T> dataClass) throws IOException {
+    public <T> T parseAndClose(final InputStream in, final Charset charset,
+                               final Class<T> dataClass) throws IOException {
         try {
             return MAPPER.readValue(in, dataClass);
         } finally {
@@ -41,8 +52,8 @@ public class MantaObjectParser implements ObjectParser {
     }
 
     @Override
-    public Object parseAndClose(InputStream in, Charset charset,
-                                Type dataType) throws IOException {
+    public Object parseAndClose(final InputStream in, final Charset charset,
+                                final Type dataType) throws IOException {
         try {
             final Class clazz = Class.forName(dataType.getTypeName());
             return MAPPER.readValue(in, clazz);
@@ -56,7 +67,7 @@ public class MantaObjectParser implements ObjectParser {
     }
 
     @Override
-    public <T> T parseAndClose(Reader reader, Class<T> dataClass)
+    public <T> T parseAndClose(final Reader reader, final Class<T> dataClass)
             throws IOException {
         try {
             return MAPPER.readValue(reader, dataClass);
@@ -66,7 +77,7 @@ public class MantaObjectParser implements ObjectParser {
     }
 
     @Override
-    public Object parseAndClose(Reader reader, Type dataType)
+    public Object parseAndClose(final Reader reader, final Type dataType)
             throws IOException {
         try {
             final Class clazz = Class.forName(dataType.getTypeName());
