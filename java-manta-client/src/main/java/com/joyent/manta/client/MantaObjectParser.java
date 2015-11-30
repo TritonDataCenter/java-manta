@@ -1,5 +1,6 @@
 package com.joyent.manta.client;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -15,7 +16,7 @@ import java.nio.charset.Charset;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectParser implements ObjectParser {
-    private static final ObjectMapper MAPPER;
+    public static final ObjectMapper MAPPER;
 
     static {
         MAPPER = new ObjectMapper()
@@ -23,6 +24,10 @@ public class MantaObjectParser implements ObjectParser {
         MAPPER.getDeserializationConfig()
               .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
               .without(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES);
+        MAPPER.getSerializationConfig()
+              .with(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)
+              .without(SerializationFeature.WRITE_NULL_MAP_VALUES);
+        MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     @Override

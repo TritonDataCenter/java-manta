@@ -14,6 +14,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -302,5 +304,30 @@ public final class MantaUtils {
 
 
         return list;
+    }
+
+    /**
+     * Extracts the last file or directory from the path provided.
+     *
+     * @param path URL or Unix-style file path
+     * @return the last file or directory in path
+     */
+    public static String lastItemInPath(final String path) {
+        Objects.requireNonNull(path, "Path must be present");
+
+        if (path.isEmpty()) {
+            throw new IllegalArgumentException("Path must not be empty");
+        }
+
+        final Path asNioPath = Paths.get(path);
+        final int count = asNioPath.getNameCount();
+
+        if (count < 1) {
+            throw new IllegalArgumentException(
+                    "Path doesn't have a single element to parse");
+        }
+
+        final Path lastPart = asNioPath.getName(count - 1);
+        return lastPart.toString();
     }
 }
