@@ -124,7 +124,7 @@ public class MantaClientJobIT {
 
 
     @Test(dependsOnMethods = { "createJob" })
-    public void canAddAndGetInputs() throws IOException {
+    public void canAddAndGetInputsFromIterator() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
 
@@ -135,6 +135,27 @@ public class MantaClientJobIT {
 
         try {
             mantaClient.addJobInputs(jobId, inputs.iterator());
+            boolean ended = mantaClient.endJobInput(jobId);
+            Assert.assertTrue(ended, "Ending input wasn't accepted");
+            List<String> inputsResponse = mantaClient.getJobInputs(jobId);
+            Assert.assertEquals(inputsResponse, inputs);
+        } finally {
+            mantaClient.cancelJob(jobId);
+        }
+    }
+
+    @Test(dependsOnMethods = { "createJob" })
+    public void canAddAndGetInputsFromStream() throws IOException {
+        MantaJob job = buildJob();
+        UUID jobId = mantaClient.createJob(job);
+
+        List<String> inputs = new ArrayList<>();
+        String objPath = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.put(objPath, TEST_DATA);
+        inputs.add(objPath);
+
+        try {
+            mantaClient.addJobInputs(jobId, inputs.stream());
             boolean ended = mantaClient.endJobInput(jobId);
             Assert.assertTrue(ended, "Ending input wasn't accepted");
             List<String> inputsResponse = mantaClient.getJobInputs(jobId);

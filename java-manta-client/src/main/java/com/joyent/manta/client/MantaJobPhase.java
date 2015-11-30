@@ -153,6 +153,10 @@ public class MantaJobPhase {
             throw new IllegalArgumentException("Count can only be set for the reduce phase");
         }
 
+        if (count != null && count < 1) {
+            throw new IllegalArgumentException("Count must be null or greater than 1");
+        }
+
         this.count = count;
         return this;
     }
@@ -171,6 +175,10 @@ public class MantaJobPhase {
      * @return reference to the current instance
      */
     public MantaJobPhase setMemory(final Integer memory) {
+        if (memory != null && memory < 1) {
+            throw new IllegalArgumentException("Count must be null or greater than 1");
+        }
+
         this.memory = memory;
         return this;
     }
@@ -189,6 +197,10 @@ public class MantaJobPhase {
      * @return reference to the current instance
      */
     public MantaJobPhase setDisk(final Integer disk) {
+        if (disk != null && disk < 1) {
+            throw new IllegalArgumentException("Count must be null or greater than 1");
+        }
+
         this.disk = disk;
         return this;
     }
