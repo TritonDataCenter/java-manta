@@ -1372,8 +1372,8 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} from
-     * the Manta API. Make sure to close this stream when you are done with
-     * otherwise the HTTP socket will remain open.
+     * the Manta API. <strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong>
      *
      * @return a stream with all of the jobs
      * @throws IOException thrown when we can't get a list of jobs over the network
@@ -1385,8 +1385,8 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} from
-     * the Manta API. Make sure to close this stream when you are done with
-     * otherwise the HTTP socket will remain open.
+     * the Manta API. <strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong>
      *
      * @param runningOnly only get the running jobs when true
      * @return a stream with all of the jobs
@@ -1409,8 +1409,8 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
-     * the Manta API. Make sure to close this stream when you are done with
-     * otherwise the HTTP socket will remain open.
+     * the Manta API. <strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong>
      *
      * @return a stream with all of the job ids
      * @throws IOException thrown when we can't get a list of jobs over the network
@@ -1422,8 +1422,8 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
-     * the Manta API. Make sure to close this stream when you are done with
-     * otherwise the HTTP socket will remain open.
+     * the Manta API. <strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong>
      *
      * @param runningOnly only get the running jobs when true
      * @return a stream with all of the job ids
