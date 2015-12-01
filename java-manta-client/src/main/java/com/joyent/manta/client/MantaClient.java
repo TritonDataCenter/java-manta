@@ -28,13 +28,9 @@ import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.*;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -44,14 +40,9 @@ import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
@@ -482,6 +473,7 @@ public class MantaClient implements AutoCloseable {
         return httpGet(path, null);
     }
 
+
     /**
      * Executes a HTTP GET against the remote Manta API.
      *
@@ -494,9 +486,25 @@ public class MantaClient implements AutoCloseable {
                                    final ObjectParser parser) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        LOG.debug("GET    {}", path);
-
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        return httpGet(genericUrl, parser);
+    }
+
+
+    /**
+     * Executes a HTTP GET against the remote Manta API.
+     *
+     * @param genericUrl The URL to the object on Manta
+     * @param parser Parser used for parsing response into a POJO
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    protected HttpResponse httpGet(final GenericUrl genericUrl,
+                                   final ObjectParser parser) throws IOException {
+        Objects.requireNonNull(genericUrl, "URL must be present");
+
+        LOG.debug("GET    {}", genericUrl.getRawPath());
+
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
 
@@ -508,7 +516,9 @@ public class MantaClient implements AutoCloseable {
 
         try {
             response = request.execute();
-            LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
+            LOG.debug("GET    {} response [{}] {} ",
+                    genericUrl.getRawPath(),
+                    response.getStatusCode(),
                     response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
@@ -1258,16 +1268,20 @@ public class MantaClient implements AutoCloseable {
 
         HttpResponse response = httpGet(path);
 
-        ArrayList<String> inputs = new ArrayList<>();
+        try {
+            ArrayList<String> inputs = new ArrayList<>();
 
-        try (InputStream is = response.getContent();
-             Scanner scanner = new Scanner(is, "UTF-8")) {
-            while (scanner.hasNextLine()) {
-                inputs.add(scanner.nextLine());
+            try (InputStream is = response.getContent();
+                 Scanner scanner = new Scanner(is, "UTF-8")) {
+                while (scanner.hasNextLine()) {
+                    inputs.add(scanner.nextLine());
+                }
             }
-        }
 
-        return Collections.unmodifiableList(inputs);
+            return Collections.unmodifiableList(inputs);
+        } finally {
+            response.disconnect();
+        }
     }
 
     /**
@@ -1330,9 +1344,10 @@ public class MantaClient implements AutoCloseable {
                 home, jobId);
 
         MantaJob job;
+        HttpResponse response = null;
 
         try {
-            final HttpResponse response = httpGet(livePath, OBJECT_PARSER);
+            response = httpGet(livePath, OBJECT_PARSER);
             job = response.parseAs(MantaJob.class);
         } catch (MantaClientHttpResponseException e) {
             // If we can't get the live status of the job, we try to get the archived
@@ -1340,14 +1355,114 @@ public class MantaClient implements AutoCloseable {
             if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
                 final String archivePath = String.format("%s/jobs/%s/job.json",
                         home, jobId);
-                final HttpResponse response = httpGet(archivePath, OBJECT_PARSER);
+                response = httpGet(archivePath, OBJECT_PARSER);
                 job = response.parseAs(MantaJob.class);
             } else {
                 throw e;
             }
+        } finally {
+            if (response != null) {
+                response.disconnect();
+            }
         }
 
         return job;
+    }
+
+
+    /**
+     * Gets all of the Manta jobs as a real-time {@link Stream} from
+     * the Manta API. Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.
+     *
+     * @return a stream with all of the jobs
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
+    public Stream<MantaJob> getAllJobs() throws IOException {
+        return getAllJobs(false);
+    }
+
+
+    /**
+     * Gets all of the Manta jobs as a real-time {@link Stream} from
+     * the Manta API. Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.
+     *
+     * @param runningOnly only get the running jobs when true
+     * @return a stream with all of the jobs
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
+    public Stream<MantaJob> getAllJobs(final boolean runningOnly) throws IOException {
+        return getAllJobIds(runningOnly).map(id -> {
+            if (id == null) {
+                return null;
+            }
+
+            try {
+                return getJob(id);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+
+    /**
+     * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
+     * the Manta API. Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.
+     *
+     * @return a stream with all of the job ids
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
+    public Stream<UUID> getAllJobIds() throws IOException {
+        return getAllJobIds(false);
+    }
+
+
+    /**
+     * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
+     * the Manta API. Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.
+     *
+     * @param runningOnly only get the running jobs when true
+     * @return a stream with all of the job ids
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
+    public Stream<UUID> getAllJobIds(final boolean runningOnly) throws IOException {
+        final String state = runningOnly ? "?state=running" : "";
+        final String path = String.format("%s/jobs", home, state);
+
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path) +
+            state);
+
+        final HttpResponse response = httpGet(genericUrl, null);
+
+        final ObjectMapper mapper = MantaObjectParser.MAPPER;
+        final Reader reader = new InputStreamReader(response.getContent());
+        final BufferedReader br = new BufferedReader(reader);
+
+        return br.lines().map(s -> {
+            try {
+                final Map jobDetails = mapper.readValue(s, Map.class);
+                final Object value = jobDetails.get("name");
+
+                if (value == null) {
+                    return null;
+                }
+
+                return UUID.fromString(value.toString());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }).onClose(() -> {
+            try {
+                br.close();
+                response.disconnect();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
 

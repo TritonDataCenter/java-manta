@@ -56,6 +56,7 @@ public class StringIteratorHttpContent implements HttpContent {
 
     /**
      * Create a new instance based on a {@link Stream} of strings.
+     * Stream will be closed after all elements are read.
      *
      * @param stream stream of strings for each line
      * @param contentType content (mime) type associated with content
@@ -96,6 +97,10 @@ public class StringIteratorHttpContent implements HttpContent {
             }
         } finally {
             out.close();
+
+            if (stream != null) {
+                stream.close();
+            }
         }
     }
 

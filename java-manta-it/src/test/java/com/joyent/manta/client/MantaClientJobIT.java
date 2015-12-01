@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Tests the execution of Manta compute jobs.
@@ -162,6 +163,15 @@ public class MantaClientJobIT {
             Assert.assertEquals(inputsResponse, inputs);
         } finally {
             mantaClient.cancelJob(jobId);
+        }
+    }
+
+    @Test
+    public void canListJobs() throws IOException {
+        try (Stream<MantaJob> jobs = mantaClient.getAllJobs(false)) {
+            jobs.forEach(j -> {
+                System.out.println(j.getName());
+            });
         }
     }
 
