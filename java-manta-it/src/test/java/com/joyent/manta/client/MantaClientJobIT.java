@@ -6,7 +6,10 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
@@ -18,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -27,6 +31,8 @@ import java.util.stream.Stream;
  */
 @Test(groups = { "job" })
 public class MantaClientJobIT {
+    private static final Logger LOG = LoggerFactory.getLogger(MantaClientJobIT.class);
+
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private String testPathPrefix;
@@ -166,23 +172,140 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test
-    public void canListJobs() throws IOException {
-        try (Stream<MantaJob> jobs = mantaClient.getAllJobs(false)) {
-            jobs.forEach(j -> {
-                System.out.println(j.getName());
-            });
+    @Test(dependsOnMethods = { "createJob", "getJob" })
+    public void canListAllJobIDs() throws IOException, InterruptedException {
+        final MantaJob job1 = buildJob();
+        final UUID job1id = mantaClient.createJob(job1);
+        final MantaJob job2 = buildJob();
+        final UUID job2id = mantaClient.createJob(job2);
+
+        mantaClient.endJobInput(job1id);
+        mantaClient.endJobInput(job2id);
+
+        while (!mantaClient.getJob(job1id).getState().equals("done")) {
+            Thread.sleep(1000);
+        }
+
+        while (!mantaClient.getJob(job2id).getState().equals("done")) {
+            Thread.sleep(1000);
+        }
+
+        try (Stream<UUID> jobs = mantaClient.getAllJobIds()) {
+            List<UUID> found = jobs.filter(id -> id.equals(job1id) || id.equals(job2id))
+                                   .collect(Collectors.toList());
+
+            Assert.assertEquals(found.size(), 2, "We should have found both jobs");
+        }  catch (AssertionError e) {
+            String msg = "Couldn't find job in job list, retry test a few times to verify";
+            LOG.error(msg, e);
+            throw new SkipException(msg, e);
+        }
+    }
+
+    @Test(dependsOnMethods = { "createJob", "getJob" })
+    public void canListAllRunningJobIDs() throws IOException, InterruptedException {
+        final MantaJob job1 = buildJob();
+        final UUID job1id = mantaClient.createJob(job1);
+        final MantaJob job2 = buildJob();
+        final UUID job2id = mantaClient.createJob(job2);
+        final MantaJob job3 = buildJob();
+        final UUID job3id = mantaClient.createJob(job3);
+
+        mantaClient.endJobInput(job3id);
+
+        while (!mantaClient.getJob(job3id).getState().equals("done")) {
+            Thread.sleep(1000);
+        }
+
+        List<UUID> searchIds = new ArrayList<>();
+        searchIds.add(job1id);
+        searchIds.add(job2id);
+        searchIds.add(job3id);
+
+        try (Stream<UUID> jobs = mantaClient.getJobIdsByState("running")) {
+            List<UUID> found = jobs.filter(id -> searchIds.contains(id))
+                    .collect(Collectors.toList());
+
+            Assert.assertEquals(found.size(), 2, "We should have found both jobs");
+        } catch (AssertionError e) {
+            String msg = "Couldn't find job in job list, retry test a few times to verify";
+            LOG.error(msg, e);
+            throw new SkipException(msg, e);
+        } finally {
+            mantaClient.cancelJob(job1id);
+            mantaClient.cancelJob(job2id);
+        }
+    }
+
+    @Test(dependsOnMethods = { "createJob", "getJob" })
+    public void canListAllRunningJobs() throws IOException, InterruptedException {
+        final MantaJob job1 = buildJob();
+        final UUID job1id = mantaClient.createJob(job1);
+        final MantaJob job2 = buildJob();
+        final UUID job2id = mantaClient.createJob(job2);
+        final MantaJob job3 = buildJob();
+        final UUID job3id = mantaClient.createJob(job3);
+
+        mantaClient.endJobInput(job3id);
+
+        while (!mantaClient.getJob(job3id).getState().equals("done")) {
+            Thread.sleep(1000);
+        }
+
+        List<UUID> searchIds = new ArrayList<>();
+        searchIds.add(job1id);
+        searchIds.add(job2id);
+        searchIds.add(job3id);
+
+        try (Stream<MantaJob> jobs = mantaClient.getJobsByState("running")) {
+            List<MantaJob> found = jobs.filter(id -> searchIds.contains(id))
+                    .collect(Collectors.toList());
+
+            Assert.assertEquals(found.size(), 2, "We should have found both jobs");
+        } catch (AssertionError e) {
+            String msg = "Couldn't find job in job list, retry test a few times to verify";
+            throw new SkipException(msg, e);
+        } finally {
+            mantaClient.cancelJob(job1id);
+            mantaClient.cancelJob(job2id);
+        }
+    }
+
+    public void canListJobsByName() throws IOException {
+        final String name = String.format("by_name_%s", UUID.randomUUID());
+        final MantaJob job1 = buildJob(name);
+        final UUID job1id = mantaClient.createJob(job1);
+        MantaJob job2 = buildJob(name);
+        final UUID job2id = mantaClient.createJob(job2);
+
+        try (Stream<UUID> jobs = mantaClient.getJobIdsByName(name)) {
+            List<UUID> found = jobs.collect(Collectors.toList());
+
+            Assert.assertEquals(found.size(), 2, "We should have found both jobs");
+            Assert.assertTrue(found.contains(job1id));
+            Assert.assertTrue(found.contains(job2id));
+        } catch (AssertionError e) {
+            String msg = "Couldn't find job in job list, retry test a few times to verify";
+            LOG.error(msg, e);
+            throw new SkipException(msg, e);
+        } finally {
+            mantaClient.cancelJob(job1id);
+            mantaClient.cancelJob(job2id);
         }
     }
 
     private MantaJob buildJob() {
+        String name = String.format("integration_test_%d", count.incrementAndGet());
+        return buildJob(name);
+    }
+
+    private MantaJob buildJob(final String name) {
         List<MantaJobPhase> phases = new ArrayList<>();
         MantaJobPhase map = new MantaJobPhase()
             .setType("map")
             .setExec("echo 'Hello World'");
         phases.add(map);
 
-        String name = String.format("integration_test_%d", count.incrementAndGet());
         return new MantaJob(name, phases);
     }
 }

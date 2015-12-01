@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@SuppressWarnings("Duplicates")
 public class MantaObjectParser implements ObjectParser {
     /**
      * Jackson data binding mapper instance.

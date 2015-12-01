@@ -4,16 +4,7 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.ByteArrayContent;
-import com.google.api.client.http.EmptyContent;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.http.InputStreamContent;
+import com.google.api.client.http.*;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
@@ -28,9 +19,15 @@ import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Type;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -40,9 +37,15 @@ import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Scanner;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
@@ -93,6 +96,10 @@ public class MantaClient implements AutoCloseable {
             HTTP.CONTENT_LEN, "Content-MD5", "Durability-Level"
     };
 
+    /**
+     * Maximum number of job results to return per request of the jobs API.
+     */
+    private static final int MAX_JOB_RESULTS = 1024;
 
     /**
      * {@link ObjectParser} implementation used for parsing JSON HTTP responses.
@@ -1379,7 +1386,28 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<MantaJob> getAllJobs() throws IOException {
-        return getAllJobs(false);
+        return getAllJobs(MAX_JOB_RESULTS);
+    }
+
+
+    public Stream<MantaJob> getAllJobs(final int limit) throws IOException {
+        if (limit < 0 || limit > MAX_JOB_RESULTS) {
+            String msg = String.format("%d is invalid: must be between [1, %d]",
+                    limit, MAX_JOB_RESULTS);
+            throw new IllegalArgumentException(msg);
+        }
+
+        return getAllJobs("limit", String.valueOf(limit));
+    }
+
+
+    public Stream<MantaJob> getJobsByState(final String state) throws IOException {
+        return getAllJobs("state", state);
+    }
+
+
+    public Stream<MantaJob> getJobsByName(final String name) throws IOException {
+        return getAllJobs("name", name);
     }
 
 
@@ -1388,12 +1416,14 @@ public class MantaClient implements AutoCloseable {
      * the Manta API. <strong>Make sure to close this stream when you are done with
      * otherwise the HTTP socket will remain open.</strong>
      *
-     * @param runningOnly only get the running jobs when true
+     * @param filterName filter name to filter request by (if none, default to null)
+     * @param filter filter value to filter request by (if none, default to null)
      * @return a stream with all of the jobs
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
-    public Stream<MantaJob> getAllJobs(final boolean runningOnly) throws IOException {
-        return getAllJobIds(runningOnly).map(id -> {
+    public Stream<MantaJob> getAllJobs(final String filterName,
+                                       final String filter) throws IOException {
+        return getAllJobIds(filterName, filter).map(id -> {
             if (id == null) {
                 return null;
             }
@@ -1416,7 +1446,27 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<UUID> getAllJobIds() throws IOException {
-        return getAllJobIds(false);
+        return getAllJobIds(MAX_JOB_RESULTS);
+    }
+
+
+    public Stream<UUID> getAllJobIds(final int limit) throws IOException {
+        if (limit < 0 || limit > MAX_JOB_RESULTS) {
+            String msg = String.format("%d is invalid: must be between [1, %d]",
+                    limit, MAX_JOB_RESULTS);
+            throw new IllegalArgumentException(msg);
+        }
+        return getAllJobIds("limit", String.valueOf(limit));
+    }
+
+
+    public Stream<UUID> getJobIdsByState(final String state) throws IOException {
+        return getAllJobIds("state", state);
+    }
+
+
+    public Stream<UUID> getJobIdsByName(final String name) throws IOException {
+        return getAllJobIds("name", name);
     }
 
 
@@ -1425,16 +1475,23 @@ public class MantaClient implements AutoCloseable {
      * the Manta API. <strong>Make sure to close this stream when you are done with
      * otherwise the HTTP socket will remain open.</strong>
      *
-     * @param runningOnly only get the running jobs when true
+     * @param filterName filter name to filter request by (if none, default to null)
+     * @param filter filter value to filter request by (if none, default to null)
      * @return a stream with all of the job ids
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
-    public Stream<UUID> getAllJobIds(final boolean runningOnly) throws IOException {
-        final String state = runningOnly ? "?state=running" : "";
-        final String path = String.format("%s/jobs", home, state);
+    private Stream<UUID> getAllJobIds(final String filterName,
+                                      final String filter) throws IOException {
+        StringBuilder query = new StringBuilder("?");
+
+        if (filterName != null && filter != null) {
+            query.append(filterName).append("=").append(filter);
+        }
+
+        final String path = String.format("%s/jobs", home, query);
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path) +
-            state);
+            query);
 
         final HttpResponse response = httpGet(genericUrl, null);
 
