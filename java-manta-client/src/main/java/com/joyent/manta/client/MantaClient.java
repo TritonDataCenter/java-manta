@@ -4,7 +4,16 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.*;
+import com.google.api.client.http.ByteArrayContent;
+import com.google.api.client.http.EmptyContent;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
+import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
@@ -39,12 +48,10 @@ import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -1277,17 +1284,7 @@ public class MantaClient implements AutoCloseable {
         String path = String.format("%s/jobs/%s/live/in", home, jobId);
 
         HttpResponse response = httpGet(path);
-        final Reader reader = new InputStreamReader(response.getContent());
-        final BufferedReader br = new BufferedReader(reader);
-
-        return br.lines().onClose(() -> {
-            try {
-                br.close();
-                response.disconnect();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        return responseAsStream(response);
     }
 
     /**
@@ -1542,16 +1539,14 @@ public class MantaClient implements AutoCloseable {
 
         final String path = String.format("%s/jobs", home, query);
 
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path) +
-            query);
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path)
+                + query);
 
         final HttpResponse response = httpGet(genericUrl, null);
-
         final ObjectMapper mapper = MantaObjectParser.MAPPER;
-        final Reader reader = new InputStreamReader(response.getContent());
-        final BufferedReader br = new BufferedReader(reader);
+        final Stream<String> responseStream = responseAsStream(response);
 
-        return br.lines().map(s -> {
+        return responseStream.map(s -> {
             try {
                 final Map jobDetails = mapper.readValue(s, Map.class);
                 final Object value = jobDetails.get("name");
@@ -1561,13 +1556,6 @@ public class MantaClient implements AutoCloseable {
                 }
 
                 return UUID.fromString(value.toString());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }).onClose(() -> {
-            try {
-                br.close();
-                response.disconnect();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -1591,17 +1579,7 @@ public class MantaClient implements AutoCloseable {
         String path = String.format("%s/jobs/%s/live/out", home, jobId);
 
         HttpResponse response = httpGet(path);
-        final Reader reader = new InputStreamReader(response.getContent());
-        final BufferedReader br = new BufferedReader(reader);
-
-        return br.lines().onClose(() -> {
-            try {
-                br.close();
-                response.disconnect();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        return responseAsStream(response);
     }
 
 
@@ -1637,7 +1615,7 @@ public class MantaClient implements AutoCloseable {
      * <p><strong>Make sure to close this stream when you are done with
      * otherwise the HTTP socket will remain open.</strong></p>
      * @param jobId UUID of the Manta job
-     * @return stream of each output's input stream
+     * @return stream of each job output as a string
      * @throws IOException thrown when we can't get a list of outputs over the network
      */
     public Stream<String> getJobOutputsAsStrings(final UUID jobId) throws IOException {
@@ -1652,6 +1630,82 @@ public class MantaClient implements AutoCloseable {
                     }
                 });
     }
+
+
+    /**
+     * <p>Returns the current "live" set of failures from a job. Think of this
+     * like tail -f. The objects are returned as a stream. The stream is
+     * composed of a list of object names on Manta that contain the output
+     * of the job.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
+     *
+     * @param jobId UUID of the Manta job
+     * @return stream of Manta object names containing failure data
+     * @throws IOException thrown when we can't get a list of failures over the network
+     */
+    public Stream<String> getJobFailures(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Job id must be present");
+
+        String path = String.format("%s/jobs/%s/live/fail", home, jobId);
+
+        final HttpResponse response = httpGet(path);
+
+        return responseAsStream(response);
+    }
+
+
+    /**
+     * <p>Returns a stream of {@link InputStream} implementations for each
+     * failure returned from the Manta API for a job.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
+     *
+     * @param jobId UUID of the Manta job
+     * @return stream of each failure object's input stream
+     * @throws IOException thrown when we can't get a list of outputs over the network
+     */
+    public Stream<MantaObjectInputStream> getJobFailuresAsStreams(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Job id must be present");
+
+        return getJobFailures(jobId)
+                .map(obj -> {
+                    try {
+                        return getAsInputStream(obj);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+    }
+
+
+    /**
+     * <p>Returns a stream of strings containing all of the
+     * output returned from the Manta API for a job's failures. Be careful,
+     * this method is not memory-efficient.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
+     *
+     * @param jobId UUID of the Manta job
+     * @return stream of each failure object as a string
+     * @throws IOException thrown when we can't get a list of outputs over the network
+     */
+    public Stream<String> getJobFailuresAsStrings(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Job id must be present");
+
+        return getJobFailures(jobId)
+                .map(obj -> {
+                    try {
+                        return getAsString(obj);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+    }
+
 
     /**
      * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
@@ -1751,6 +1805,29 @@ public class MantaClient implements AutoCloseable {
                 response.disconnect();
             }
         }
+    }
+
+
+    /**
+     * Parses a HTTP response's content as a Java 8 stream of strings.
+     *
+     * @param response HTTP response object
+     * @return stream of strings representing each line of the response
+     * @throws IOException thrown when we can't access the response over the network
+     */
+    protected Stream<String> responseAsStream(final HttpResponse response)
+            throws IOException {
+        final Reader reader = new InputStreamReader(response.getContent());
+        final BufferedReader br = new BufferedReader(reader);
+
+        return br.lines().onClose(() -> {
+            try {
+                br.close();
+                response.disconnect();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
 
