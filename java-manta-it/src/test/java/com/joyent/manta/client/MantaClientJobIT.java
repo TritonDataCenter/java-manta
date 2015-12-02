@@ -144,7 +144,8 @@ public class MantaClientJobIT {
             mantaClient.addJobInputs(jobId, inputs.iterator());
             boolean ended = mantaClient.endJobInput(jobId);
             Assert.assertTrue(ended, "Ending input wasn't accepted");
-            List<String> inputsResponse = mantaClient.getJobInputs(jobId);
+            List<String> inputsResponse = mantaClient.getJobInputs(jobId)
+                    .collect(Collectors.toList());
             Assert.assertEquals(inputsResponse, inputs);
         } finally {
             mantaClient.cancelJob(jobId);
@@ -165,7 +166,8 @@ public class MantaClientJobIT {
             mantaClient.addJobInputs(jobId, inputs.stream());
             boolean ended = mantaClient.endJobInput(jobId);
             Assert.assertTrue(ended, "Ending input wasn't accepted");
-            List<String> inputsResponse = mantaClient.getJobInputs(jobId);
+            List<String> inputsResponse = mantaClient.getJobInputs(jobId)
+                    .collect(Collectors.toList());
             Assert.assertEquals(inputsResponse, inputs);
         } finally {
             mantaClient.cancelJob(jobId);
@@ -258,12 +260,13 @@ public class MantaClientJobIT {
         searchIds.add(job3id);
 
         try (Stream<MantaJob> jobs = mantaClient.getJobsByState("running")) {
-            List<MantaJob> found = jobs.filter(searchIds::contains)
+            List<MantaJob> found = jobs.filter(j -> searchIds.contains(j.getId()))
                     .collect(Collectors.toList());
 
             Assert.assertEquals(found.size(), 2, "We should have found both jobs");
         } catch (AssertionError e) {
             String msg = "Couldn't find job in job list, retry test a few times to verify";
+            LOG.error(msg, e);
             throw new SkipException(msg, e);
         } finally {
             mantaClient.cancelJob(job1id);

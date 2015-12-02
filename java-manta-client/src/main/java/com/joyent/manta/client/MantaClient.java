@@ -1263,32 +1263,31 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Get a list of all of the input objects submitted for a job.
+     * <p>Get a stream of all of the input objects submitted for a job.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
      *
      * @param jobId UUID of the Manta job
-     * @return List of input objects associated with a job
+     * @return Stream of input objects associated with a job
      * @throws IOException thrown when there is a problem getting objects over the network
      */
-    public List<String> getJobInputs(final UUID jobId) throws IOException {
+    public Stream<String> getJobInputs(final UUID jobId) throws IOException {
         Objects.requireNonNull(jobId, "Manta job id must not be null");
         String path = String.format("%s/jobs/%s/live/in", home, jobId);
 
         HttpResponse response = httpGet(path);
+        final Reader reader = new InputStreamReader(response.getContent());
+        final BufferedReader br = new BufferedReader(reader);
 
-        try {
-            ArrayList<String> inputs = new ArrayList<>();
-
-            try (InputStream is = response.getContent();
-                 Scanner scanner = new Scanner(is, "UTF-8")) {
-                while (scanner.hasNextLine()) {
-                    inputs.add(scanner.nextLine());
-                }
+        return br.lines().onClose(() -> {
+            try {
+                br.close();
+                response.disconnect();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-
-            return Collections.unmodifiableList(inputs);
-        } finally {
-            response.disconnect();
-        }
+        });
     }
 
     /**
