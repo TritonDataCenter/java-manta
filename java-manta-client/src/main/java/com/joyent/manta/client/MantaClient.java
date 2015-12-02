@@ -1390,6 +1390,15 @@ public class MantaClient implements AutoCloseable {
     }
 
 
+    /**
+     * Gets all of the Manta jobs as a real-time {@link Stream} that matches
+     * the supplied name from the Manta API. <strong>Make sure to close this stream
+     * when you are done with otherwise the HTTP socket will remain open.</strong>
+     *
+     * @param limit the maximum number of jobs to list 0-1024
+     * @return a stream with the amount of jobs as specified in the limit parameter
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
     public Stream<MantaJob> getAllJobs(final int limit) throws IOException {
         if (limit < 0 || limit > MAX_JOB_RESULTS) {
             String msg = String.format("%d is invalid: must be between [1, %d]",
@@ -1401,11 +1410,29 @@ public class MantaClient implements AutoCloseable {
     }
 
 
+    /**
+     * Gets all of the Manta jobs as a real-time {@link Stream} that match
+     * the supplied job state from the Manta API. <strong>Make sure to close this stream
+     * when you are done with otherwise the HTTP socket will remain open.</strong>
+     *
+     * @param state Manta job state
+     * @return a stream with all of the jobs (actually all that Manta will give us)
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
     public Stream<MantaJob> getJobsByState(final String state) throws IOException {
         return getAllJobs("state", state);
     }
 
 
+    /**
+     * Gets all of the Manta jobs as a real-time {@link Stream} that match
+     * the supplied name from the Manta API. <strong>Make sure to close this stream
+     * when you are done with otherwise the HTTP socket will remain open.</strong>
+     *
+     * @param name job name to search for
+     * @return a stream with all of the jobs (actually all that Manta will give us)
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
     public Stream<MantaJob> getJobsByName(final String name) throws IOException {
         return getAllJobs("name", name);
     }
@@ -1418,7 +1445,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param filterName filter name to filter request by (if none, default to null)
      * @param filter filter value to filter request by (if none, default to null)
-     * @return a stream with all of the jobs
+     * @return a stream with all of the jobs (actually all that Manta will give us)
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<MantaJob> getAllJobs(final String filterName,
@@ -1442,7 +1469,7 @@ public class MantaClient implements AutoCloseable {
      * the Manta API. <strong>Make sure to close this stream when you are done with
      * otherwise the HTTP socket will remain open.</strong>
      *
-     * @return a stream with all of the job ids
+     * @return a stream with all of the job IDs (actually all that Manta will give us)
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<UUID> getAllJobIds() throws IOException {
@@ -1450,6 +1477,15 @@ public class MantaClient implements AutoCloseable {
     }
 
 
+    /**
+     * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
+     * the Manta API. <strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong>
+     *
+     * @param limit the maximum number of job ids to list 0-1024
+     * @return a stream with the amount of jobs as specified in the limit parameter
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
     public Stream<UUID> getAllJobIds(final int limit) throws IOException {
         if (limit < 0 || limit > MAX_JOB_RESULTS) {
             String msg = String.format("%d is invalid: must be between [1, %d]",
@@ -1459,12 +1495,29 @@ public class MantaClient implements AutoCloseable {
         return getAllJobIds("limit", String.valueOf(limit));
     }
 
-
+    /**
+     * Gets all of the Manta jobs' IDs as a real-time {@link Stream} that match
+     * the supplied job state from the Manta API. <strong>Make sure to close this stream
+     * when you are done with otherwise the HTTP socket will remain open.</strong>
+     *
+     * @param state Manta job state
+     * @return a stream with all of the job IDs (actually all that Manta will give us)
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
     public Stream<UUID> getJobIdsByState(final String state) throws IOException {
         return getAllJobIds("state", state);
     }
 
 
+    /**
+     * Gets all of the Manta jobs' IDs as a real-time {@link Stream} that matches
+     * the supplied name from the Manta API. <strong>Make sure to close this stream
+     * when you are done with otherwise the HTTP socket will remain open.</strong>
+     *
+     * @param name job name to search for
+     * @return a stream with all of the job IDs (actually all that Manta will give us)
+     * @throws IOException thrown when we can't get a list of jobs over the network
+     */
     public Stream<UUID> getJobIdsByName(final String name) throws IOException {
         return getAllJobIds("name", name);
     }
@@ -1477,7 +1530,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param filterName filter name to filter request by (if none, default to null)
      * @param filter filter value to filter request by (if none, default to null)
-     * @return a stream with all of the job ids
+     * @return a stream with all of the job IDs (actually all that Manta will give us)
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     private Stream<UUID> getAllJobIds(final String filterName,
