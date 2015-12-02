@@ -1575,6 +1575,84 @@ public class MantaClient implements AutoCloseable {
         });
     }
 
+    /**
+     * <p>Returns the current "live" set of outputs from a job. Think of this
+     * like tail -f. The objects are returned as a stream. The stream is
+     * composed of a list of object names on Manta that contain the output
+     * of the job.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
+     * @param jobId UUID of the Manta job
+     * @return stream of object paths that refer to job output
+     * @throws IOException thrown when we can't get a list of outputs over the network
+     */
+    public Stream<String> getJobOutputs(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Job id must be present");
+        String path = String.format("%s/jobs/%s/live/out", home, jobId);
+
+        HttpResponse response = httpGet(path);
+        final Reader reader = new InputStreamReader(response.getContent());
+        final BufferedReader br = new BufferedReader(reader);
+
+        return br.lines().onClose(() -> {
+            try {
+                br.close();
+                response.disconnect();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+
+    /**
+     * <p>Returns a stream of {@link InputStream} implementations for each
+     * output returned from the Manta API for a job.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
+     * @param jobId UUID of the Manta job
+     * @return stream of each output's input stream
+     * @throws IOException thrown when we can't get a list of outputs over the network
+     */
+    public Stream<MantaObjectInputStream> getJobOutputsAsStreams(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Job id must be present");
+
+        return getJobOutputs(jobId)
+                .map(obj -> {
+                    try {
+                        return getAsInputStream(obj);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+    }
+
+
+    /**
+     * <p>Returns a stream of strings containing all of the
+     * output returned from the Manta API for a job. Be careful, this method
+     * is not memory-efficient.</p>
+     *
+     * <p><strong>Make sure to close this stream when you are done with
+     * otherwise the HTTP socket will remain open.</strong></p>
+     * @param jobId UUID of the Manta job
+     * @return stream of each output's input stream
+     * @throws IOException thrown when we can't get a list of outputs over the network
+     */
+    public Stream<String> getJobOutputsAsStrings(final UUID jobId) throws IOException {
+        Objects.requireNonNull(jobId, "Job id must be present");
+
+        return getJobOutputs(jobId)
+                .map(obj -> {
+                    try {
+                        return getAsString(obj);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+    }
 
     /**
      * Finds the content type set in {@link MantaHttpHeaders} and returns that if it

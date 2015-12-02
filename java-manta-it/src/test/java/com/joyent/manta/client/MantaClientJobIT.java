@@ -223,7 +223,7 @@ public class MantaClientJobIT {
         searchIds.add(job3id);
 
         try (Stream<UUID> jobs = mantaClient.getJobIdsByState("running")) {
-            List<UUID> found = jobs.filter(id -> searchIds.contains(id))
+            List<UUID> found = jobs.filter(searchIds::contains)
                     .collect(Collectors.toList());
 
             Assert.assertEquals(found.size(), 2, "We should have found both jobs");
@@ -258,7 +258,7 @@ public class MantaClientJobIT {
         searchIds.add(job3id);
 
         try (Stream<MantaJob> jobs = mantaClient.getJobsByState("running")) {
-            List<MantaJob> found = jobs.filter(id -> searchIds.contains(id))
+            List<MantaJob> found = jobs.filter(searchIds::contains)
                     .collect(Collectors.toList());
 
             Assert.assertEquals(found.size(), 2, "We should have found both jobs");
@@ -271,6 +271,7 @@ public class MantaClientJobIT {
         }
     }
 
+    @Test(dependsOnMethods = { "createJob", "getJob" })
     public void canListJobsByName() throws IOException {
         final String name = String.format("by_name_%s", UUID.randomUUID());
         final MantaJob job1 = buildJob(name);
@@ -294,6 +295,50 @@ public class MantaClientJobIT {
         }
     }
 
+    @Test
+    public void canListOutputsForJobWithNoInputs() throws IOException, InterruptedException {
+        final MantaJob job = buildJob();
+        final UUID jobId = mantaClient.createJob(job);
+        mantaClient.endJobInput(jobId);
+
+        while (!mantaClient.getJob(jobId).getState().equals("done")) {
+            Thread.sleep(1000);
+        }
+
+        List<String> outputs = mantaClient.getJobOutputs(jobId)
+                .collect(Collectors.toList());
+
+        Assert.assertEquals(outputs.size(), 0);
+    }
+
+    @Test
+    public void canListOutputsForJobWithOneInput() throws IOException, InterruptedException {
+        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.put(path, TEST_DATA);
+
+        final MantaJob job = buildJob();
+        final UUID jobId = mantaClient.createJob(job);
+
+        List<String> inputs = new ArrayList<>();
+        inputs.add(path);
+
+        mantaClient.addJobInputs(jobId, inputs.iterator());
+        mantaClient.endJobInput(jobId);
+
+        while (!mantaClient.getJob(jobId).getState().equals("done")) {
+            Thread.sleep(1000);
+        }
+
+        List<String> outputs = mantaClient.getJobOutputs(jobId)
+                .collect(Collectors.toList());
+
+        Assert.assertEquals(outputs.size(), 1);
+
+        String actual = mantaClient.getAsString(outputs.get(0));
+        Assert.assertEquals(actual, TEST_DATA,
+                "Output wasn't the same as input");
+    }
+
     private MantaJob buildJob() {
         String name = String.format("integration_test_%d", count.incrementAndGet());
         return buildJob(name);
@@ -303,7 +348,7 @@ public class MantaClientJobIT {
         List<MantaJobPhase> phases = new ArrayList<>();
         MantaJobPhase map = new MantaJobPhase()
             .setType("map")
-            .setExec("echo 'Hello World'");
+            .setExec("cat");
         phases.add(map);
 
         return new MantaJob(name, phases);
