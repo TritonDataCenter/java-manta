@@ -181,4 +181,55 @@ public class MantaDirectoryIteratorIT {
             afterClass();
         }
     }
+
+    @Test
+    public void canListEmptyDirectory() throws IOException {
+        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.putDirectory(dir);
+
+        String url = config.getMantaURL();
+
+        try (MantaDirectoryIterator itr = new MantaDirectoryIterator(url,
+                dir, httpHelper, 10)) {
+            Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
+
+            boolean failed = false;
+
+            try {
+                itr.next();
+            } catch (NoSuchElementException e) {
+                failed = true;
+            }
+
+            Assert.assertTrue(failed, "Iterator failed to throw NoSuchElementException");
+        }
+    }
+
+    @Test
+    public void canListDirectoryUsingSmallPagingSize() throws IOException {
+        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.putDirectory(dir);
+
+        final int MAX = 5;
+
+        // Add files 1-5
+        for (int i = 1; i <= MAX; i++) {
+            String name = String.format("%05d", i);
+            String path = String.format("%s/%s", dir, name);
+
+            mantaClient.put(path, TEST_DATA);
+        }
+
+        String url = config.getMantaURL();
+
+        try (MantaDirectoryIterator itr = new MantaDirectoryIterator(url,
+                dir, httpHelper, 2)) {
+
+            for (int i = 1; i < MAX; i++) {
+                Assert.assertTrue(itr.hasNext(), "We should have the next element");
+                Map<String, Object> next = itr.next();
+                Assert.assertEquals(next.get("name").toString(), String.format("%05d", i));
+            }
+        }
+    }
 }

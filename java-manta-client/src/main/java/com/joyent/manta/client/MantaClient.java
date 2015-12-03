@@ -12,7 +12,6 @@ import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
@@ -22,7 +21,6 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
-import com.joyent.manta.exception.MantaObjectException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
@@ -64,7 +62,8 @@ import static com.joyent.manta.client.MantaUtils.formatPath;
  * Manta client object that allows for doing CRUD operations against the Manta HTTP
  * API. Using this client you can retrieve implementations of {@link MantaObject}.
  *
- * @author Yunong Xiao
+ * @author <a href="https://github.com/yunong">Yunong Xiao</a>
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaClient implements AutoCloseable {
 
@@ -301,45 +300,49 @@ public class MantaClient implements AutoCloseable {
      */
     public void deleteRecursive(final String path) throws IOException {
         LOG.debug("DELETE {} [recursive]", path);
-        Collection<MantaObject> objs;
-        try {
-            objs = this.listObjects(path);
-        } catch (final MantaObjectException e) {
+
+        if (isDirectoryEmpty(path)) {
             this.delete(path);
             LOG.debug("Finished deleting path {}", path);
             return;
         }
 
-        for (final MantaObject mantaObject : objs) {
-            if (mantaObject.isDirectory()) {
-                this.deleteRecursive(mantaObject.getPath());
-            } else {
-                this.delete(mantaObject.getPath());
-            }
-        }
-
-        try {
-            this.delete(path);
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == HTTP_STATUSCODE_404_NOT_FOUND && LOG.isDebugEnabled()) {
-                LOG.debug("Couldn't delete object because it doesn't exist", e);
-            } else if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)
-                    && head(path).isDirectory()) {
+        try (Stream<MantaObject> objects = this.listObjects(path)) {
+            objects.forEach(obj -> {
                 try {
-                    final int waitTime = 400;
-                    Thread.sleep(waitTime);
-                    LOG.warn("First attempt to delete directory failed, retrying", e);
-                    // Re-attempt to delete the directory
-                    this.deleteRecursive(path);
-                } catch (InterruptedException ie) {
-                    // just continue throwing the exception that we were caught in
-                    throw e;
+                    if (obj.isDirectory()) {
+                        this.deleteRecursive(obj.getPath());
+                    } else {
+                        this.delete(obj.getPath());
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
 
-            } else {
-                throw e;
+        /* Once we have deleted all of the sub objects of this directory, let's
+         * make sure that all of the sub objects were in fact actually deleted -
+         * you know because distributed systems...
+         */
+        boolean pathExists = existsAndIsAccessible(path);
+
+        if (pathExists && isDirectoryEmpty(path)) {
+            this.delete(path);
+        } else if (pathExists) {
+            try {
+                final int waitTime = 400;
+                Thread.sleep(waitTime);
+                LOG.warn("First attempt to delete directory failed, retrying");
+                // Re-attempt to delete the directory
+                this.deleteRecursive(path);
+            } catch (InterruptedException ie) {
+                // We don't need to do anything, just exit
             }
         }
+
         LOG.debug("Finished deleting path {}", path);
     }
 
@@ -571,41 +574,78 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Return the contents of a directory in Manta.
+     * Return a stream of the contents of a directory in Manta.
      *
      * @param path The fully qualified path of the directory.
      * @return A {@link Collection} of {@link MantaObjectResponse} listing the contents of the directory.
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
-     * @throws MantaObjectException                            If the path isn't a directory
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException thrown when there is a problem getting the listing over the network
      */
-    public Collection<MantaObject> listObjects(final String path) throws IOException {
-        LOG.debug("GET    {} [list]", path);
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
+    public Stream<MantaObject> listObjects(final String path) throws IOException {
+        final MantaDirectoryIterator itr = new MantaDirectoryIterator(this.url,
+                path, httpHelper, MAX_RESULTS);
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
 
-        HttpResponse response = null;
-        try {
-            response = request.execute();
-            LOG.debug("GET    {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
+        return backingStream.map(item -> {
+            String name = Objects.toString(item.get("name"));
+            String mtime = Objects.toString(item.get("mtime"));
+            String type = Objects.toString(item.get("type"));
+            Objects.requireNonNull(name, "File name must be present");
+            String objPath = String.format("%s/%s", path, name);
+            MantaHttpHeaders headers = new MantaHttpHeaders();
+            headers.setLastModified(mtime);
 
-            if (!response.getContentType().equals(MantaObject.DIRECTORY_HEADER)) {
-                throw new MantaObjectException("Object is not a directory");
+            if (type.equals("directory")) {
+                headers.setContentType(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
+            } else {
+                headers.setContentType(ContentType.APPLICATION_OCTET_STREAM.toString());
             }
 
-            final BufferedReader br = new BufferedReader(new InputStreamReader(response.getContent()));
-            final ObjectParser parser = request.getParser();
-            return buildObjects(path, br, parser);
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } finally {
-            if (response != null) {
-                response.disconnect();
+            if (item.containsKey("etag")) {
+                headers.setETag(Objects.toString(item.get("etag")));
             }
+
+            if (item.containsKey("size")) {
+                long size = Long.parseLong(Objects.toString(item.get("size")));
+                headers.setContentLength(size);
+            }
+
+            if (item.containsKey("durability")) {
+                String durabilityString = Objects.toString(item.get("durability"));
+                if (durabilityString != null) {
+                    int durability = Integer.parseInt(durabilityString);
+                    headers.setDurabilityLevel(durability);
+                }
+            }
+
+            return new MantaObjectResponse(objPath, headers);
+        });
+    }
+
+
+    /**
+     * Return a boolean indicating if a directory is empty.
+     *
+     * @param path directory path
+     * @return true if directory is empty, otherwise false
+     * @throws IOException thrown when we are unable to list the directory over the network
+     */
+    public boolean isDirectoryEmpty(final String path) throws IOException {
+        final MantaObject object = this.head(path);
+
+        if (!object.isDirectory()) {
+            throw new MantaClientException("The requested object was not a directory");
         }
+
+        Long size = object.getHttpHeaders().getResultSetSize();
+
+        if (size == null) {
+            throw new MantaClientException("Expected result-set-size header to be present"
+                + "but it was not part of the response");
+        }
+
+        return size == 0;
     }
 
 
@@ -1303,17 +1343,21 @@ public class MantaClient implements AutoCloseable {
      */
     public Stream<MantaJob> getAllJobs(final String filterName,
                                        final String filter) throws IOException {
-        return getAllJobIds(filterName, filter).map(id -> {
-            if (id == null) {
-                return null;
-            }
+        try {
+            return getAllJobIds(filterName, filter).map(id -> {
+                if (id == null) {
+                    return null;
+                }
 
-            try {
-                return getJob(id);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+                try {
+                    return getJob(id);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
 
@@ -1405,7 +1449,7 @@ public class MantaClient implements AutoCloseable {
             query.append(filterName).append("=").append(filter);
         }
 
-        final String path = String.format("%s/jobs", home, query);
+        final String path = String.format("%s/jobs%s", home, query);
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path)
                 + query);
@@ -1414,20 +1458,24 @@ public class MantaClient implements AutoCloseable {
         final ObjectMapper mapper = MantaObjectParser.MAPPER;
         final Stream<String> responseStream = responseAsStream(response);
 
-        return responseStream.map(s -> {
-            try {
-                final Map jobDetails = mapper.readValue(s, Map.class);
-                final Object value = jobDetails.get("name");
+        try {
+            return responseStream.map(s -> {
+                try {
+                    final Map jobDetails = mapper.readValue(s, Map.class);
+                    final Object value = jobDetails.get("name");
 
-                if (value == null) {
-                    return null;
+                    if (value == null) {
+                        return null;
+                    }
+
+                    return UUID.fromString(value.toString());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
-
-                return UUID.fromString(value.toString());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     /**
@@ -1464,14 +1512,18 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaObjectInputStream> getJobOutputsAsStreams(final UUID jobId) throws IOException {
         Objects.requireNonNull(jobId, "Job id must be present");
 
-        return getJobOutputs(jobId)
-                .map(obj -> {
-                    try {
-                        return getAsInputStream(obj);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+        try {
+            return getJobOutputs(jobId)
+                    .map(obj -> {
+                        try {
+                            return getAsInputStream(obj);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
 
@@ -1489,14 +1541,18 @@ public class MantaClient implements AutoCloseable {
     public Stream<String> getJobOutputsAsStrings(final UUID jobId) throws IOException {
         Objects.requireNonNull(jobId, "Job id must be present");
 
-        return getJobOutputs(jobId)
-                .map(obj -> {
-                    try {
-                        return getAsString(obj);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+        try {
+            return getJobOutputs(jobId)
+                    .map(obj -> {
+                        try {
+                            return getAsString(obj);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
 
@@ -1547,14 +1603,18 @@ public class MantaClient implements AutoCloseable {
         final HttpResponse response = httpHelper.httpGet(path);
         final ObjectMapper mapper = MantaObjectParser.MAPPER;
 
-        return responseAsStream(response)
-                .map(err -> {
-                    try {
-                        return mapper.readValue(err, MantaJobError.class);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+        try {
+            return responseAsStream(response)
+                    .map(err -> {
+                        try {
+                            return mapper.readValue(err, MantaJobError.class);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
 
@@ -1592,14 +1652,18 @@ public class MantaClient implements AutoCloseable {
         final Reader reader = new InputStreamReader(response.getContent());
         final BufferedReader br = new BufferedReader(reader);
 
-        return br.lines().onClose(() -> {
-            try {
-                br.close();
-                response.disconnect();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        try {
+            return br.lines().onClose(() -> {
+                try {
+                    br.close();
+                    response.disconnect();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     /**

@@ -249,8 +249,10 @@ public class MantaHttpHeaders {
      * @param copies number of copies
      */
     public void setDurabilityLevel(final int copies) {
-        if (copies < 1) {
-            throw new IllegalArgumentException("Copies must be 1 or greater");
+        if (copies < 0) {
+            String msg = String.format("Copies must be 1 or greater for user objects. "
+                    + "For jobs and system objects it can be 0. Actual value: %d", copies);
+            throw new IllegalArgumentException(msg);
         }
 
         set(HTTP_DURABILITY_LEVEL, String.valueOf(copies));

@@ -5,6 +5,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.test.util.MantaAssert;
@@ -24,15 +25,18 @@ import java.net.URI;
 import java.net.URLConnection;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 
 /**
- * @author Yunong Xiao
+ * Tests the basic functionality of the {@link MantaClient} class.
+ *
+ * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  */
 @Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
@@ -255,11 +259,15 @@ public class MantaClientIT {
         final String subDir = pathPrefix + "/" + UUID.randomUUID().toString();
         mantaClient.putDirectory(subDir, null);
         mantaClient.put(String.format("%s/%s", subDir, UUID.randomUUID()), "");
-        final Collection<MantaObject> objs = mantaClient.listObjects(pathPrefix);
-        for (final MantaObject mantaObject : objs) {
-            Assert.assertTrue(mantaObject.getPath().startsWith(testPathPrefix));
-        }
-        Assert.assertEquals(3, objs.size());
+        final Stream<MantaObject> objs = mantaClient.listObjects(pathPrefix);
+
+        final AtomicInteger count = new AtomicInteger(0);
+        objs.forEach(obj -> {
+            count.incrementAndGet();
+            Assert.assertTrue(obj.getPath().startsWith(testPathPrefix));
+        });
+
+        Assert.assertEquals(3, count.get());
     }
 
 
@@ -269,7 +277,45 @@ public class MantaClientIT {
         final String path = testPathPrefix + name;
 
         mantaClient.put(path, TEST_DATA);
-        mantaClient.listObjects(path);
+
+        try (Stream<MantaObject> objects = mantaClient.listObjects(path)) {
+            objects.count();
+        }
+    }
+
+
+    @Test
+    public final void testIsDirectoryEmptyWithEmptyDir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+        mantaClient.putDirectory(dir);
+
+        Assert.assertTrue(mantaClient.isDirectoryEmpty(dir),
+                "Empty directory is not reported as empty");
+    }
+
+
+    @Test
+    public final void testIsDirectoryEmptyWithDirWithFiles() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+        mantaClient.putDirectory(dir);
+
+        mantaClient.put(String.format("%s/%s", dir, UUID.randomUUID()), TEST_DATA);
+
+        Assert.assertFalse(mantaClient.isDirectoryEmpty(dir),
+                "Empty directory is not reported as empty");
+    }
+
+
+    @Test(expectedExceptions = { MantaClientException.class })
+    public final void testIsDirectoryEmptyWithAFileNotDir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String file = testPathPrefix + name;
+
+        mantaClient.put(file, TEST_DATA);
+
+        mantaClient.isDirectoryEmpty(file);
     }
 
 
