@@ -83,6 +83,7 @@ public enum MantaErrorCode {
     UPLOAD_ABANDONED_ERROR("UploadAbandoned"),
     UPLOAD_TIMEOUT_ERROR("UploadTimeout"),
     USER_DOES_NOT_EXIST_ERROR("UserDoesNotExist"),
+    USER_TASK_ERROR("UserTaskError"),
 
     /**
      * Error code indicating that an error not in the list of enums was returned.

@@ -52,8 +52,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
@@ -104,9 +107,9 @@ public class MantaClient implements AutoCloseable {
     };
 
     /**
-     * Maximum number of job results to return per request of the jobs API.
+     * Maximum number of results to return for a directory listing.
      */
-    private static final int MAX_JOB_RESULTS = 1024;
+    private static final int MAX_RESULTS = 1024;
 
     /**
      * {@link ObjectParser} implementation used for parsing JSON HTTP responses.
@@ -126,6 +129,11 @@ public class MantaClient implements AutoCloseable {
      */
     private final HttpSigner httpSigner;
 
+
+    /**
+     * The instance of the http helper class used to simplify creating requests.
+     */
+    private final HttpHelper httpHelper;
 
     /**
      * The home directory of the account.
@@ -217,6 +225,7 @@ public class MantaClient implements AutoCloseable {
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 httpTimeout);
         this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
+        this.httpHelper = new HttpHelper(url, httpRequestFactoryProvider.getRequestFactory());
     }
 
 
@@ -259,6 +268,7 @@ public class MantaClient implements AutoCloseable {
         this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 httpTimeout);
+        this.httpHelper = new HttpHelper(url, httpRequestFactoryProvider.getRequestFactory());
     }
 
 
@@ -277,7 +287,7 @@ public class MantaClient implements AutoCloseable {
         final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
         final HttpRequest request = httpRequestFactory.buildDeleteRequest(genericUrl);
 
-        executeAndCloseRequest(request, "DELETE {} response [{}] {} ", path);
+        httpHelper.executeAndCloseRequest(request, "DELETE {} response [{}] {} ", path);
     }
 
 
@@ -299,6 +309,7 @@ public class MantaClient implements AutoCloseable {
             LOG.debug("Finished deleting path {}", path);
             return;
         }
+
         for (final MantaObject mantaObject : objs) {
             if (mantaObject.isDirectory()) {
                 this.deleteRecursive(mantaObject.getPath());
@@ -312,11 +323,23 @@ public class MantaClient implements AutoCloseable {
         } catch (MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HTTP_STATUSCODE_404_NOT_FOUND && LOG.isDebugEnabled()) {
                 LOG.debug("Couldn't delete object because it doesn't exist", e);
+            } else if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)
+                    && head(path).isDirectory()) {
+                try {
+                    final int waitTime = 400;
+                    Thread.sleep(waitTime);
+                    LOG.warn("First attempt to delete directory failed, retrying", e);
+                    // Re-attempt to delete the directory
+                    this.deleteRecursive(path);
+                } catch (InterruptedException ie) {
+                    // just continue throwing the exception that we were caught in
+                    throw e;
+                }
+
             } else {
                 throw e;
             }
         }
-
         LOG.debug("Finished deleting path {}", path);
     }
 
@@ -332,7 +355,7 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String path) throws IOException {
-        final HttpResponse response = httpGet(path);
+        final HttpResponse response = httpHelper.httpGet(path);
 
         try {
             final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
@@ -352,7 +375,7 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException when there is a problem getting the object over the network
      */
     public MantaObjectInputStream getAsInputStream(final String path) throws IOException {
-        final HttpResponse response = httpGet(path);
+        final HttpResponse response = httpHelper.httpGet(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
         final MantaObjectResponse metadata = new MantaObjectResponse(path, headers);
 
@@ -441,6 +464,29 @@ public class MantaClient implements AutoCloseable {
      * manner to your application. Unlike an {@link InputStream}, this will allow you
      * to stream data by moving between arbitrary position in the Manta object data.
      *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param position The starting position (in number of bytes) to read from
+     * @return seekable stream of object data
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    public SeekableByteChannel getSeekableByteChannel(final String path,
+                                                      final long position) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+
+        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
+        return new MantaSeekableByteChannel(genericUrl, position,
+                httpRequestFactory);
+    }
+
+
+    /**
+     * Get a Manta object's data as an NIO {@link SeekableByteChannel}. This method
+     * allows you to stream data from the Manta storage service in a memory efficient
+     * manner to your application. Unlike an {@link InputStream}, this will allow you
+     * to stream data by moving between arbitrary position in the Manta object data.
+     *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return seekable stream of object data
      * @throws IOException when there is a problem getting the object over the network
@@ -454,92 +500,6 @@ public class MantaClient implements AutoCloseable {
                 httpRequestFactoryProvider.getRequestFactory());
     }
 
-
-    /**
-     * Get a Manta object's data as an NIO {@link SeekableByteChannel}. This method
-     * allows you to stream data from the Manta storage service in a memory efficient
-     * manner to your application. Unlike an {@link InputStream}, this will allow you
-     * to stream data by moving between arbitrary position in the Manta object data.
-     *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param position The starting position (in number of bytes) to read from
-     * @return seekable stream of object data
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    public SeekableByteChannel getSeekableByteChannel(final String path,
-                                                      final long position) throws IOException {
-        Objects.requireNonNull(path, "Path must not be null");
-
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-
-        return new MantaSeekableByteChannel(genericUrl, position,
-                httpRequestFactoryProvider.getRequestFactory());
-    }
-
-    /**
-     * Executes a HTTP GET against the remote Manta API.
-     *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return Google HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    protected HttpResponse httpGet(final String path) throws IOException {
-        return httpGet(path, null);
-    }
-
-
-    /**
-     * Executes a HTTP GET against the remote Manta API.
-     *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param parser Parser used for parsing response into a POJO
-     * @return Google HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    protected HttpResponse httpGet(final String path,
-                                   final ObjectParser parser) throws IOException {
-        Objects.requireNonNull(path, "Path must not be null");
-
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        return httpGet(genericUrl, parser);
-    }
-
-
-    /**
-     * Executes a HTTP GET against the remote Manta API.
-     *
-     * @param genericUrl The URL to the object on Manta
-     * @param parser Parser used for parsing response into a POJO
-     * @return Google HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    protected HttpResponse httpGet(final GenericUrl genericUrl,
-                                   final ObjectParser parser) throws IOException {
-        Objects.requireNonNull(genericUrl, "URL must be present");
-
-        LOG.debug("GET    {}", genericUrl.getRawPath());
-
-        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
-
-        if (parser != null) {
-            request.setParser(parser);
-        }
-
-        final HttpResponse response;
-
-        try {
-            response = request.execute();
-            LOG.debug("GET    {} response [{}] {} ",
-                    genericUrl.getRawPath(),
-                    response.getStatusCode(),
-                    response.getStatusMessage());
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        }
-
-        return response;
-    }
 
 
     /**
@@ -604,38 +564,9 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse head(final String path) throws IOException {
-        final HttpResponse response = httpHead(path);
+        final HttpResponse response = httpHelper.httpHead(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
         return new MantaObjectResponse(path, headers);
-    }
-
-
-    /**
-     * Executes a HTTP HEAD against the remote Manta API.
-     *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return Google HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    protected HttpResponse httpHead(final String path) throws IOException {
-        Objects.requireNonNull(path, "Path must not be null");
-
-        LOG.debug("HEAD   {}", path);
-
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
-
-        final HttpResponse response;
-
-        try {
-            response = request.execute();
-            LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
-            return response;
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        }
     }
 
 
@@ -688,7 +619,7 @@ public class MantaClient implements AutoCloseable {
      */
     public boolean existsAndIsAccessible(final String path) {
         try {
-            httpHead(path);
+            httpHelper.httpHead(path);
         } catch (IOException e) {
             return false;
         }
@@ -755,7 +686,7 @@ public class MantaClient implements AutoCloseable {
             content = new InputStreamContent(contentType, source);
         }
 
-        return httpPut(path, headers, content, null);
+        return httpHelper.httpPut(path, headers, content, null);
     }
 
     /**
@@ -784,7 +715,7 @@ public class MantaClient implements AutoCloseable {
             content = new InputStreamContent(contentType, source);
         }
 
-        return httpPut(path, null, content, metadata);
+        return httpHelper.httpPut(path, null, content, metadata);
     }
 
 
@@ -817,81 +748,7 @@ public class MantaClient implements AutoCloseable {
             content = new InputStreamContent(contentType, source);
         }
 
-        return httpPut(path, headers, content, metadata);
-    }
-
-    /**
-     * Executes an HTTP PUT against the remote Manta API.
-     *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers  optional HTTP headers to include when copying the object
-     * @param content  Google HTTP Client content object
-     * @param metadata optional user-supplied metadata for object
-     * @return Manta response object
-     * @throws IOException when there is a problem sending the object over the network
-     */
-    protected MantaObjectResponse httpPut(final String path,
-                                          final MantaHttpHeaders headers,
-                                          final HttpContent content,
-                                          final MantaMetadata metadata)
-            throws IOException {
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        return httpPut(genericUrl, headers, content, metadata);
-    }
-
-
-    /**
-     * Executes an HTTP PUT against the remote Manta API.
-     *
-     * @param genericUrl Full URL to the object on the Manta API
-     * @param headers    optional HTTP headers to include when copying the object
-     * @param content    Google HTTP Client content object
-     * @param metadata   optional user-supplied metadata for object
-     * @return Manta response object
-     * @throws IOException when there is a problem sending the object over the network
-     */
-    protected MantaObjectResponse httpPut(final GenericUrl genericUrl,
-                                          final MantaHttpHeaders headers,
-                                          final HttpContent content,
-                                          final MantaMetadata metadata)
-            throws IOException {
-        final String path = genericUrl.getRawPath();
-        LOG.debug("PUT    {}", path);
-
-        final MantaHttpHeaders httpHeaders;
-
-        if (headers == null) {
-            httpHeaders = new MantaHttpHeaders();
-        } else {
-            httpHeaders = headers;
-        }
-
-        if (metadata != null) {
-            httpHeaders.putAll(metadata);
-        }
-
-        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
-
-        request.setHeaders(httpHeaders.asGoogleClientHttpHeaders());
-
-        HttpResponse response = null;
-        try {
-            response = request.execute();
-            LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
-            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getHeaders());
-            // We add back in the metadata made in the request so that it is easily available
-            responseHeaders.putAll(httpHeaders.metadata());
-
-            return new MantaObjectResponse(path, responseHeaders, metadata);
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } finally {
-            if (response != null) {
-                response.disconnect();
-            }
-        }
+        return httpHelper.httpPut(path, headers, content, metadata);
     }
 
 
@@ -1042,7 +899,7 @@ public class MantaClient implements AutoCloseable {
         headers.setContentEncoding("chunked");
         HttpContent content = new EmptyContent();
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        return httpPut(genericUrl, headers, content, metadata);
+        return httpHelper.httpPut(genericUrl, headers, content, metadata);
     }
 
     /**
@@ -1081,7 +938,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
-        executeAndCloseRequest(request, "PUT    {} response [{}] {} ", path);
+        httpHelper.executeAndCloseRequest(request, "PUT    {} response [{}] {} ", path);
     }
 
 
@@ -1164,7 +1021,7 @@ public class MantaClient implements AutoCloseable {
 
         request.getHeaders().setContentType(LINK_CONTENT_TYPE);
         request.getHeaders().setLocation(formatPath(objectPath));
-        executeAndCloseRequest(request, "PUT    {} -> {} response [{}] {} ",
+        httpHelper.executeAndCloseRequest(request, "PUT    {} -> {} response [{}] {} ",
                 objectPath, linkPath);
     }
 
@@ -1198,7 +1055,7 @@ public class MantaClient implements AutoCloseable {
         final HttpRequest request = httpRequestFactory.buildPostRequest(genericUrl, content);
         request.setContent(content);
 
-        HttpResponse response = executeAndCloseRequest(request,
+        HttpResponse response = httpHelper.executeAndCloseRequest(request,
                 "POST   {} response [{}] {} ", path);
 
         final String location = response.getHeaders().getLocation();
@@ -1265,7 +1122,7 @@ public class MantaClient implements AutoCloseable {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentEncoding("chunked");
 
-        httpPost(path, content, headers);
+        httpHelper.httpPost(path, content, headers);
     }
 
 
@@ -1283,7 +1140,7 @@ public class MantaClient implements AutoCloseable {
         Objects.requireNonNull(jobId, "Manta job id must not be null");
         String path = String.format("%s/jobs/%s/live/in", home, jobId);
 
-        HttpResponse response = httpGet(path);
+        HttpResponse response = httpHelper.httpGet(path);
         return responseAsStream(response);
     }
 
@@ -1299,7 +1156,7 @@ public class MantaClient implements AutoCloseable {
         String path = String.format("%s/jobs/%s/live/in/end", home, jobId);
 
         final HttpContent content = new EmptyContent();
-        HttpResponse response = httpPost(path, content);
+        HttpResponse response = httpHelper.httpPost(path, content);
 
         // We expect a return value of 202 when the cancel request was accepted
         return response.getStatusCode() == HTTP_STATUSCODE_202_ACCEPTED;
@@ -1326,7 +1183,7 @@ public class MantaClient implements AutoCloseable {
                 home, jobId);
 
         final HttpContent content = new EmptyContent();
-        HttpResponse response = httpPost(path, content);
+        HttpResponse response = httpHelper.httpPost(path, content);
 
         // We expect a return value of 202 when the cancel request was accepted
         return response.getStatusCode() == HTTP_STATUSCODE_202_ACCEPTED;
@@ -1350,7 +1207,7 @@ public class MantaClient implements AutoCloseable {
         HttpResponse response = null;
 
         try {
-            response = httpGet(livePath, OBJECT_PARSER);
+            response = httpHelper.httpGet(livePath, OBJECT_PARSER);
             job = response.parseAs(MantaJob.class);
         } catch (MantaClientHttpResponseException e) {
             // If we can't get the live status of the job, we try to get the archived
@@ -1358,7 +1215,7 @@ public class MantaClient implements AutoCloseable {
             if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
                 final String archivePath = String.format("%s/jobs/%s/job.json",
                         home, jobId);
-                response = httpGet(archivePath, OBJECT_PARSER);
+                response = httpHelper.httpGet(archivePath, OBJECT_PARSER);
                 job = response.parseAs(MantaJob.class);
             } else {
                 throw e;
@@ -1382,7 +1239,7 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<MantaJob> getAllJobs() throws IOException {
-        return getAllJobs(MAX_JOB_RESULTS);
+        return getAllJobs(MAX_RESULTS);
     }
 
 
@@ -1396,9 +1253,9 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<MantaJob> getAllJobs(final int limit) throws IOException {
-        if (limit < 0 || limit > MAX_JOB_RESULTS) {
+        if (limit < 0 || limit > MAX_RESULTS) {
             String msg = String.format("%d is invalid: must be between [1, %d]",
-                    limit, MAX_JOB_RESULTS);
+                    limit, MAX_RESULTS);
             throw new IllegalArgumentException(msg);
         }
 
@@ -1469,7 +1326,18 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<UUID> getAllJobIds() throws IOException {
-        return getAllJobIds(MAX_JOB_RESULTS);
+        final String path = String.format("%s/jobs", home);
+
+        final MantaDirectoryIterator itr = new MantaDirectoryIterator(this.url,
+                path, httpHelper, MAX_RESULTS);
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
+
+        return backingStream.map(item -> {
+            final String id = Objects.toString(item.get("name"));
+            return UUID.fromString(id);
+        });
     }
 
 
@@ -1483,9 +1351,9 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<UUID> getAllJobIds(final int limit) throws IOException {
-        if (limit < 0 || limit > MAX_JOB_RESULTS) {
+        if (limit < 0 || limit > MAX_RESULTS) {
             String msg = String.format("%d is invalid: must be between [1, %d]",
-                    limit, MAX_JOB_RESULTS);
+                    limit, MAX_RESULTS);
             throw new IllegalArgumentException(msg);
         }
         return getAllJobIds("limit", String.valueOf(limit));
@@ -1542,7 +1410,7 @@ public class MantaClient implements AutoCloseable {
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path)
                 + query);
 
-        final HttpResponse response = httpGet(genericUrl, null);
+        final HttpResponse response = httpHelper.httpGet(genericUrl, null);
         final ObjectMapper mapper = MantaObjectParser.MAPPER;
         final Stream<String> responseStream = responseAsStream(response);
 
@@ -1578,7 +1446,7 @@ public class MantaClient implements AutoCloseable {
         Objects.requireNonNull(jobId, "Job id must be present");
         String path = String.format("%s/jobs/%s/live/out", home, jobId);
 
-        HttpResponse response = httpGet(path);
+        HttpResponse response = httpHelper.httpGet(path);
         return responseAsStream(response);
     }
 
@@ -1638,11 +1506,15 @@ public class MantaClient implements AutoCloseable {
      * composed of a list of object names on Manta that contain the output
      * of the job.</p>
      *
+     * <p>Essentially, this method returns a stream of all of the Manta objects
+     * whose jobs failed. There are no details about the nature of the failures
+     * returned in this method.</p>
+     *
      * <p><strong>Make sure to close this stream when you are done with
      * otherwise the HTTP socket will remain open.</strong></p>
      *
      * @param jobId UUID of the Manta job
-     * @return stream of Manta object names containing failure data
+     * @return stream of Manta object names whose jobs failed
      * @throws IOException thrown when we can't get a list of failures over the network
      */
     public Stream<String> getJobFailures(final UUID jobId) throws IOException {
@@ -1650,56 +1522,35 @@ public class MantaClient implements AutoCloseable {
 
         String path = String.format("%s/jobs/%s/live/fail", home, jobId);
 
-        final HttpResponse response = httpGet(path);
+        final HttpResponse response = httpHelper.httpGet(path);
 
         return responseAsStream(response);
     }
 
 
     /**
-     * <p>Returns a stream of {@link InputStream} implementations for each
-     * failure returned from the Manta API for a job.</p>
+     * <p>Returns a list of failure details for each object in which a failure
+     * occurred.</p>
      *
      * <p><strong>Make sure to close this stream when you are done with
      * otherwise the HTTP socket will remain open.</strong></p>
      *
      * @param jobId UUID of the Manta job
-     * @return stream of each failure object's input stream
-     * @throws IOException thrown when we can't get a list of outputs over the network
+     * @return a stream of job error objects
+     * @throws IOException thrown when we can't get a list of errors over the network
      */
-    public Stream<MantaObjectInputStream> getJobFailuresAsStreams(final UUID jobId) throws IOException {
+    public Stream<MantaJobError> getJobErrors(final UUID jobId) throws IOException {
         Objects.requireNonNull(jobId, "Job id must be present");
 
-        return getJobFailures(jobId)
-                .map(obj -> {
+        final String path = String.format("%s/jobs/%s/live/err", home, jobId);
+
+        final HttpResponse response = httpHelper.httpGet(path);
+        final ObjectMapper mapper = MantaObjectParser.MAPPER;
+
+        return responseAsStream(response)
+                .map(err -> {
                     try {
-                        return getAsInputStream(obj);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-    }
-
-
-    /**
-     * <p>Returns a stream of strings containing all of the
-     * output returned from the Manta API for a job's failures. Be careful,
-     * this method is not memory-efficient.</p>
-     *
-     * <p><strong>Make sure to close this stream when you are done with
-     * otherwise the HTTP socket will remain open.</strong></p>
-     *
-     * @param jobId UUID of the Manta job
-     * @return stream of each failure object as a string
-     * @throws IOException thrown when we can't get a list of outputs over the network
-     */
-    public Stream<String> getJobFailuresAsStrings(final UUID jobId) throws IOException {
-        Objects.requireNonNull(jobId, "Job id must be present");
-
-        return getJobFailures(jobId)
-                .map(obj -> {
-                    try {
-                        return getAsString(obj);
+                        return mapper.readValue(err, MantaJobError.class);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -1730,85 +1581,6 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Utility method for handling HTTP POST to the Google HTTP Client.
-     *
-     * @param path path to post to (without hostname)
-     * @param content content object to post
-     * @return HTTP response object
-     * @throws IOException thrown when there is a problem POSTing over the network
-     */
-    protected HttpResponse httpPost(final String path,
-                                    final HttpContent content) throws IOException {
-        return httpPost(path, content, null);
-    }
-
-
-    /**
-     * Utility method for handling HTTP POST to the Google HTTP Client.
-     *
-     * @param path path to post to (without hostname)
-     * @param content content object to post
-     * @param headers HTTP headers to attach to request
-     * @return HTTP response object
-     * @throws IOException thrown when there is a problem POSTing over the network
-     */
-    protected HttpResponse httpPost(final String path,
-                                    final HttpContent content,
-                                    final HttpHeaders headers) throws IOException {
-        LOG.debug("POST   {}", path);
-
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequestFactory httpRequestFactory = httpRequestFactoryProvider.getRequestFactory();
-        final HttpRequest request = httpRequestFactory.buildPostRequest(genericUrl, content);
-
-        if (content != null) {
-            request.setContent(content);
-        }
-
-        if (headers != null) {
-            request.setHeaders(headers);
-        }
-
-        return executeAndCloseRequest(request,
-                "POST   {} response [{}] {} ", path);
-    }
-
-
-    /**
-     * Executes a {@link HttpRequest}, logs the request and returns back the
-     * response.
-     *
-     * @param request request object
-     * @param logMessage log message associated with request that must contain
-     *                   a substitution placeholder for status code and
-     *                   status message
-     * @param logParameters additional log placeholders
-     * @return response object
-     * @throws IOException thrown when we are unable to process the request on the network
-     */
-    protected HttpResponse executeAndCloseRequest(final HttpRequest request,
-                                                  final String logMessage,
-                                                  final Object... logParameters)
-            throws IOException {
-        HttpResponse response = null;
-
-        try {
-            response = request.execute();
-            LOG.debug(logMessage, logParameters, response.getStatusCode(),
-                      response.getStatusMessage());
-
-            return response;
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } finally {
-            if (response != null) {
-                response.disconnect();
-            }
-        }
-    }
-
-
-    /**
      * Parses a HTTP response's content as a Java 8 stream of strings.
      *
      * @param response HTTP response object
@@ -1830,6 +1602,14 @@ public class MantaClient implements AutoCloseable {
         });
     }
 
+    /**
+     * Accessor for the HttpRequestFactoryProvider - used primarily for testing.
+     *
+     * @return provider instance
+     */
+    HttpRequestFactoryProvider getHttpRequestFactoryProvider() {
+        return httpRequestFactoryProvider;
+    }
 
     @Override
     public void close() throws Exception {

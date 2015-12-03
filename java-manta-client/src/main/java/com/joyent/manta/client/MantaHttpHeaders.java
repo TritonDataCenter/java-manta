@@ -6,6 +6,7 @@ import com.google.api.client.util.Types;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -330,6 +331,28 @@ public class MantaHttpHeaders {
         return Collections.unmodifiableSet(roles);
     }
 
+
+    /**
+     * Parses the value of the Result-Set-Size HTTP header returned from Manta.
+     *
+     * @return long value of header value, or null if it can't be found or parsed
+     */
+    public Long getResultSetSize() {
+        final String size = wrappedHeaders.getFirstHeaderStringValue("result-set-size");
+
+        if (size == null) {
+            return null;
+        } else {
+            try {
+                return Long.parseLong(size);
+            } catch (NumberFormatException e) {
+                String msg = String.format("Error parsing result-set-size header "
+                        + "as long. Actual value: %s", size);
+                LoggerFactory.getLogger(getClass()).warn(msg, e);
+                return null;
+            }
+        }
+    }
 
     /**
      * Returns the first {@code "Accept"} header or {@code null} for none.
