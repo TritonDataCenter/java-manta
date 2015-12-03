@@ -146,7 +146,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
 
         final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
-        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(0, false));
+        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(3, false));
 
         if (proxySelector != null) {
             defaultHttpClient.setRoutePlanner(new ProxySelectorRoutePlanner(registry, proxySelector));
