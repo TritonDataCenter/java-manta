@@ -6,7 +6,9 @@ package com.joyent.manta.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpResponse;
+import com.joyent.manta.exception.MantaObjectException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
 /**
@@ -51,6 +54,12 @@ public class MantaDirectoryIterator implements Iterator<Map<String, Object>>,
         this.url = url;
         this.path = path;
         this.httpHelper = httpHelper;
+
+        if (pagingSize < 2) {
+            throw new IllegalArgumentException("Paging size must be greater than "
+                    + "1 and less than or equal to 1024");
+        }
+
         this.pagingSize = pagingSize;
     }
 
@@ -60,6 +69,14 @@ public class MantaDirectoryIterator implements Iterator<Map<String, Object>>,
             GenericUrl genericUrl = new GenericUrl(url + formatPath(path)
                     + query);
             currentResponse = httpHelper.httpGet(genericUrl, null);
+            HttpHeaders headers = currentResponse.getHeaders();
+
+            if (!headers.getContentType().contentEquals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+                String msg = String.format("Expected directory path, but was file path: %s",
+                        path);
+                throw new MantaObjectException(msg);
+            }
+
             Reader streamReader = new InputStreamReader(currentResponse.getContent(),
                     "UTF-8");
             br = new BufferedReader(streamReader);
