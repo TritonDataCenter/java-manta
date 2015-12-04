@@ -581,7 +581,7 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when there is a problem getting the listing over the network
      */
     public Stream<MantaObject> listObjects(final String path) throws IOException {
-        final MantaDirectoryIterator itr = new MantaDirectoryIterator(this.url,
+        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
                 path, httpHelper, MAX_RESULTS);
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
@@ -1372,7 +1372,7 @@ public class MantaClient implements AutoCloseable {
     public Stream<UUID> getAllJobIds() throws IOException {
         final String path = String.format("%s/jobs", home);
 
-        final MantaDirectoryIterator itr = new MantaDirectoryIterator(this.url,
+        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
                 path, httpHelper, MAX_RESULTS);
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(

@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaDirectoryIteratorIT {
+public class MantaDirectoryListingIteratorIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private MantaClient mantaClient;
@@ -87,7 +87,7 @@ public class MantaDirectoryIteratorIT {
 
         String url = config.getMantaURL();
 
-        try (MantaDirectoryIterator itr = new MantaDirectoryIterator(url,
+        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
                 dir, httpHelper, 5)) {
             // Make sure we can get the first element
             Assert.assertTrue(itr.hasNext(), "We should have the first element");
@@ -139,7 +139,7 @@ public class MantaDirectoryIteratorIT {
 
         String url = config.getMantaURL();
 
-        try (MantaDirectoryIterator itr = new MantaDirectoryIterator(url,
+        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
                 dir, httpHelper, 10)) {
 
             Runnable search = () -> {
@@ -189,7 +189,7 @@ public class MantaDirectoryIteratorIT {
 
         String url = config.getMantaURL();
 
-        try (MantaDirectoryIterator itr = new MantaDirectoryIterator(url,
+        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
                 dir, httpHelper, 10)) {
             Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
 
@@ -222,7 +222,7 @@ public class MantaDirectoryIteratorIT {
 
         String url = config.getMantaURL();
 
-        try (MantaDirectoryIterator itr = new MantaDirectoryIterator(url,
+        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
                 dir, httpHelper, 2)) {
 
             for (int i = 1; i < MAX; i++) {

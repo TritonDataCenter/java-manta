@@ -18,15 +18,33 @@ import java.util.Objects;
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
 /**
- * @author Elijah Zupancic
- * @since 1.0.0
+ * Helper class used for common HTTP operations against the Manta server.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class HttpHelper {
+    /**
+     * Logger instance.
+     */
     private static final Logger LOG = LoggerFactory.getLogger(HttpHelper.class);
 
+    /**
+     * Base Manta URL that all paths are appended to.
+     */
     private final String url;
+
+    /**
+     * Reference to the Google HTTP Client HTTP request creation class.
+     */
     private final HttpRequestFactory httpRequestFactory;
 
+
+    /**
+     * Creates a new instance of the helper class.
+     *
+     * @param url base Manta URL
+     * @param httpRequestFactory request creation class
+     */
     public HttpHelper(final String url,
                       final HttpRequestFactory httpRequestFactory) {
         this.url = url;

@@ -18,7 +18,7 @@
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
             <class name="com.joyent.manta.client.MantaClientJobIT" />
             <class name="com.joyent.manta.client.MantaHttpHeadersIT" />
-            <class name="com.joyent.manta.client.MantaDirectoryIteratorIT" />
+            <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
         </classes>
     </test>
 </suite>

@@ -69,6 +69,11 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     private static final int MAX_CONNECTIONS_PER_ROUTE = 200;
 
     /**
+     * Number of times to retry failed requests.
+     */
+    private static final int HTTP_RETRIES = 3;
+
+    /**
      * The JSON factory instance used by the http library for handling JSON.
      */
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
@@ -146,7 +151,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
 
         final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
-        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(3, false));
+        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(HTTP_RETRIES, false));
 
         if (proxySelector != null) {
             defaultHttpClient.setRoutePlanner(new ProxySelectorRoutePlanner(registry, proxySelector));
