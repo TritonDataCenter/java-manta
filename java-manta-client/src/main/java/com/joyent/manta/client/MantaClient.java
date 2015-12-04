@@ -1449,7 +1449,7 @@ public class MantaClient implements AutoCloseable {
             query.append(filterName).append("=").append(filter);
         }
 
-        final String path = String.format("%s/jobs%s", home, query);
+        final String path = String.format("%s/jobs", home);
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path)
                 + query);
@@ -1477,6 +1477,7 @@ public class MantaClient implements AutoCloseable {
             throw e.getCause();
         }
     }
+
 
     /**
      * <p>Returns the current "live" set of outputs from a job. Think of this

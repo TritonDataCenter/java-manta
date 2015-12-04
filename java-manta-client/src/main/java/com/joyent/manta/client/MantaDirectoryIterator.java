@@ -63,6 +63,7 @@ public class MantaDirectoryIterator implements Iterator<Map<String, Object>>,
         this.pagingSize = pagingSize;
     }
 
+
     private synchronized void selectReader() throws IOException {
         if (lastMarker == null) {
             String query = String.format("?limit=%d", pagingSize);
