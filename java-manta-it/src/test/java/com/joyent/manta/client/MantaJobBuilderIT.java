@@ -68,12 +68,18 @@ public class MantaJobBuilderIT {
                             .setExec("")
                             .setType("map"))
                .addInput("")
+               .validateInputs()
                .run()
                .waitUntilDone();
 
         List<String> outputs = finishedJob
-                .throwExceptionIfFailed()
+                .validateJobsSucceeded()
                 .outputs()
                 .collect(Collectors.toList());
+    }
+
+    @Test
+    public void canRerunOldJob() {
+
     }
 }
