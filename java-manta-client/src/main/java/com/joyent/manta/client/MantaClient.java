@@ -1279,7 +1279,21 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we can't get a list of jobs over the network
      */
     public Stream<MantaJob> getAllJobs() throws IOException {
-        return getAllJobs(MAX_RESULTS);
+        try {
+            return getAllJobIds().map(id -> {
+                if (id == null) {
+                    return null;
+                }
+
+                try {
+                    return getJob(id);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
 
@@ -1618,6 +1632,15 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
+    /**
+     * Creates an instance of a {@link MantaJobBuilder} class that allows you
+     * to fluently build Manta jobs.
+     *
+     * @return Manta job builder fluent interface class
+     */
+    public MantaJobBuilder jobBuilder() {
+        return new MantaJobBuilder(this);
+    }
 
     /**
      * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
