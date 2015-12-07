@@ -23,6 +23,7 @@
         <dependency.bouncycastle.version>1.53</dependency.bouncycastle.version>
         <dependency.google-http-client.version>1.20.0</dependency.google-http-client.version>
         <dependency.google-http-client-signature.version>1.0.1</dependency.google-http-client-signature.version>
+        <dependency.jackson.version>2.6.3</dependency.jackson.version>
     </properties>
 
     <dependencies>
@@ -70,17 +71,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.6.3</version>
+            <version>${dependency.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.6.3</version>
+            <version>${dependency.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.6.1</version>
+            <version>${dependency.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
