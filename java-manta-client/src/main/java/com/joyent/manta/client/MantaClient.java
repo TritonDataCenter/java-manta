@@ -1690,6 +1690,7 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
+
     /**
      * Accessor for the HttpRequestFactoryProvider - used primarily for testing.
      *
@@ -1699,10 +1700,12 @@ public class MantaClient implements AutoCloseable {
         return httpRequestFactoryProvider;
     }
 
+
     @Override
     public void close() throws Exception {
         this.httpRequestFactoryProvider.close();
     }
+
 
     /**
      * Closes the Manta client resource and logs any problems to the debug
