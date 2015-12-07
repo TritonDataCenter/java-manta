@@ -50,7 +50,6 @@ public class MantaJobBuilderIT {
         mantaClient.putDirectory(testPathPrefix, null);
     }
 
-
     @AfterClass
     public void cleanup() throws IOException {
         if (mantaClient != null) {
