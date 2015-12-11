@@ -17,6 +17,7 @@
     <logger name="com.joyent.manta.client.MantaClient" level="error" />
     <logger name="com.joyent.manta.com.google.api.client.http" level="error" />
     <logger name="com.joyent.manta.org.apache" level="error" />
+    <logger name="org.apache.http" level="info" />
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
