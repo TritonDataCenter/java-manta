@@ -107,7 +107,7 @@ public class MantaJobException extends MantaException {
             MantaJobError error = itr.next();
             String msg = String.format("[%s] (phase: %s) %s",
                     error.getCode(), error.getPhase(), error.getMessage());
-            builder.append(msg);
+            builder.append(" ").append(msg);
 
             if (itr.hasNext()) {
                 builder.append(msg);

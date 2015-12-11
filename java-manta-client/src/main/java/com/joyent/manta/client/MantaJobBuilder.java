@@ -7,6 +7,8 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaJobException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +35,11 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("checkstyle:finalclass")
 public class MantaJobBuilder {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(MantaJobBuilder.class);
+
     /**
      * Reference to the {@link MantaClient} used to execute jobs.
      */
@@ -187,6 +194,21 @@ public class MantaJobBuilder {
 
 
         /**
+         * Adds multiple inputs to the job.
+         *
+         * @param additionalInputs multiple inputs to add
+         * @return reference to the create fluent builder
+         */
+        public Create addInputs(final String... additionalInputs) {
+            for (String input : additionalInputs) {
+                inputs.add(input);
+            }
+
+            return this;
+        }
+
+
+        /**
          * Validates the inputs already added and throws a {@link MantaJobException}
          * if any of the inputs are inaccessible.
          *
@@ -246,7 +268,10 @@ public class MantaJobBuilder {
             final MantaJob job = new MantaJob(name, phases);
             final UUID id = parent.client.createJob(job);
             parent.client.addJobInputs(id, inputs.iterator());
-            parent.client.endJobInput(id);
+
+            if (!parent.client.endJobInput(id)) {
+                throw new MantaJobException(id, "Unable to end inputs to job");
+            }
 
             return new Run(parent, id);
         }
@@ -357,7 +382,9 @@ public class MantaJobBuilder {
                 }
 
                 try {
-                    wait(timeBetweenPolls.toMillis());
+                    LOG.debug("Waiting for {} ms before checking again. Check #{}",
+                            timeBetweenPolls.toMillis(), i);
+                    Thread.sleep(timeBetweenPolls.toMillis());
                 } catch (InterruptedException e) {
                     throw new MantaJobException(id, "Can't wait any longer for job to finish", e);
                 }

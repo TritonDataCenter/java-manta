@@ -6,13 +6,17 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,7 +26,17 @@ import java.util.stream.Collectors;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaJobBuilderIT {
-    private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
+    private static final String TEST_DATA =
+              "line 01 aa\n"
+            + "line 02 bb\n"
+            + "line 03 aa\n"
+            + "line 04 bb\n"
+            + "line 05 aa\n"
+            + "line 06 bb\n"
+            + "line 07 aa\n"
+            + "line 08 bb\n"
+            + "line 09 aa\n"
+            + "line 10 bb";
 
     private String testPathPrefix;
 
@@ -62,11 +76,24 @@ public class MantaJobBuilderIT {
     public void canBuildTypicalJob() throws IOException {
         final MantaJobBuilder builder = mantaClient.jobBuilder();
 
-        MantaJobBuilder.Done finishedJob = builder.newJob("foo")
+        String jobName = String.format("job_%s", UUID.randomUUID());
+
+        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path3 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+
+        mantaClient.put(path1, TEST_DATA);
+        mantaClient.put(path2, TEST_DATA);
+        mantaClient.put(path3, TEST_DATA);
+
+        MantaJobBuilder.Done finishedJob = builder.newJob(jobName)
                .addPhase(new MantaJobPhase()
-                            .setExec("")
+                            .setExec("grep bb")
                             .setType("map"))
-               .addInput("")
+                .addPhase(new MantaJobPhase()
+                        .setExec("sort | uniq")
+                        .setType("reduce"))
+               .addInputs(path1, path2, path3)
                .validateInputs()
                .run()
                .waitUntilDone();
@@ -75,6 +102,20 @@ public class MantaJobBuilderIT {
                 .validateJobsSucceeded()
                 .outputs()
                 .collect(Collectors.toList());
+
+        Assert.assertEquals(outputs.size(), 1, "The job should have reduced to 1 output");
+
+        try (Reader reader = new StringReader(outputs.get(0));
+             BufferedReader br = new BufferedReader(reader)) {
+            List<String> lines = br.lines().collect(Collectors.toList());
+
+            Assert.assertEquals(lines.size(), 5, "The output should have 5 lines");
+            Assert.assertTrue(lines.contains("line 02 bb"));
+            Assert.assertTrue(lines.contains("line 04 bb"));
+            Assert.assertTrue(lines.contains("line 06 bb"));
+            Assert.assertTrue(lines.contains("line 08 bb"));
+            Assert.assertTrue(lines.contains("line 10 bb"));
+        }
     }
 
     @Test
