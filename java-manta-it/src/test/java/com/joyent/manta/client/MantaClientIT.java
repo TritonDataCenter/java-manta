@@ -378,8 +378,7 @@ public class MantaClientIT {
     }
 
 
-// Disabled until we integrate with java-http-signature 1.0.3
-//    @Test
+    @Test
     public final void testCanCreateSignedPUTUriFromPath() throws IOException, InterruptedException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
