@@ -81,7 +81,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     /**
      * Implements the predicate used to validate header key values.
      */
-    protected class HttpHeaderNameKeyPredicate implements Predicate<String> {
+    protected static class HttpHeaderNameKeyPredicate implements Predicate<String> {
 
         /**
          * {@inheritDoc}

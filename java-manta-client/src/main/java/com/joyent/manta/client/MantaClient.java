@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
@@ -44,9 +43,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -676,37 +673,6 @@ public class MantaClient implements AutoCloseable {
         }
 
         return true;
-    }
-
-
-    /**
-     * Creates a list of {@link MantaObjectResponse}s based on the HTTP response from Manta.
-     *
-     * @param path    The fully qualified path of the directory.
-     * @param content The content of the response as a Reader.
-     * @param parser  Deserializer implementation that takes the raw content
-     *                and turns it into a {@link MantaObjectResponse}
-     * @return List of {@link MantaObjectResponse}s for a given directory
-     * @throws IOException If an IO exception has occurred.
-     */
-    protected static List<MantaObject> buildObjects(final String path,
-                                                    final BufferedReader content,
-                                                    final ObjectParser parser) throws IOException {
-        final ArrayList<MantaObject> objs = new ArrayList<>();
-        String line;
-        StringBuilder myPath = new StringBuilder(path);
-        while ((line = content.readLine()) != null) {
-            final MantaObjectResponse obj = parser.parseAndClose(new StringReader(line), MantaObjectResponse.class);
-            // need to prefix the obj name with the fully qualified path, since Manta only returns
-            // the explicit name of the object.
-            if (!MantaUtils.endsWith(myPath, '/')) {
-                myPath.append('/');
-            }
-
-            obj.setPath(myPath + obj.getPath());
-            objs.add(obj);
-        }
-        return objs;
     }
 
 
@@ -1684,6 +1650,7 @@ public class MantaClient implements AutoCloseable {
      */
     protected Stream<String> responseAsStream(final HttpResponse response)
             throws IOException {
+        // This resource is closed using the onClose() lambda below
         final Reader reader = new InputStreamReader(response.getContent());
         final BufferedReader br = new BufferedReader(reader);
 

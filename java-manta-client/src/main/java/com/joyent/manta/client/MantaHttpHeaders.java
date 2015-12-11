@@ -8,6 +8,7 @@ import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +29,9 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaHttpHeaders {
+public class MantaHttpHeaders implements Serializable {
+    private static final long serialVersionUID = -2591173969776316384L;
+
     /**
      * HTTP header for Manta durability level.
      */
@@ -42,7 +45,7 @@ public class MantaHttpHeaders {
     /**
      * HttpHeaders delegate which is wrapped by this class.
      */
-    private final HttpHeaders wrappedHeaders = new HttpHeaders();
+    private final transient HttpHeaders wrappedHeaders = new HttpHeaders();
 
     /**
      * Creates an empty instance.

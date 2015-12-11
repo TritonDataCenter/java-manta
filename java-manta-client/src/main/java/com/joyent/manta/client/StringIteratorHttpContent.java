@@ -124,7 +124,9 @@ public class StringIteratorHttpContent implements HttpContent {
                 continue;
             }
 
-            String formatted = String.format("%s\n", next);
+            // We use Unix new lines intentionally for the Manta service
+            final String unixNewLine = "\n";
+            final String formatted = String.format("%s%s", next, unixNewLine);
             byte[] bytes = formatted.getBytes("UTF-8");
             length += bytes.length;
             out.write(bytes);
