@@ -153,6 +153,23 @@ public class MantaJobBuilder {
 
 
         /**
+         * Add multiple phases to the job.
+         *
+         * @param additionalPhases phases to add
+         * @return reference to the create fluent builder
+         */
+        public Create addPhases(final MantaJobPhase... additionalPhases) {
+            Objects.requireNonNull(phases, "Phases must be present");
+
+            for (MantaJobPhase phase : additionalPhases) {
+                phases.add(phase);
+            }
+
+            return this;
+        }
+
+
+        /**
          * Add input to job.
          *
          * @param input path to Manta object representing the input.
