@@ -45,7 +45,6 @@ import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -574,15 +573,27 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
+     * Return a stream of the contents of a directory in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the directory.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the directory.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public MantaDirectoryListingIterator streamingIterator(final String path) throws IOException {
+        return new MantaDirectoryListingIterator(this.url, path, httpHelper, MAX_RESULTS);
+    }
+
+
+    /**
      * Return a stream of the contents of a directory in Manta.
      *
      * @param path The fully qualified path of the directory.
-     * @return A {@link Collection} of {@link MantaObjectResponse} listing the contents of the directory.
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the directory.
      * @throws IOException thrown when there is a problem getting the listing over the network
      */
     public Stream<MantaObject> listObjects(final String path) throws IOException {
-        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
-                path, httpHelper, MAX_RESULTS);
+        final MantaDirectoryListingIterator itr = streamingIterator(path);
+
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                         itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
