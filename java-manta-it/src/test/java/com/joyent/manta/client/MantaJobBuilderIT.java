@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(dependsOnGroups = "job")
+//@Test(dependsOnGroups = "job")
 public class MantaJobBuilderIT {
     private static final String TEST_DATA =
               "line 01 aa\n"
@@ -164,5 +164,52 @@ public class MantaJobBuilderIT {
         }
 
         Assert.assertTrue(failed, "Rerunning completed job worked for some reason");
+    }
+
+    @Test
+    public void canCloneJob() throws IOException {
+        final MantaJobBuilder builder = mantaClient.jobBuilder();
+
+        String jobName = String.format("job_%s", UUID.randomUUID());
+
+        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path3 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+
+        mantaClient.put(path1, TEST_DATA);
+        mantaClient.put(path2, TEST_DATA);
+        mantaClient.put(path3, TEST_DATA);
+
+        MantaJobBuilder.Done finishedJob = builder.newJob(jobName)
+                .addPhase(new MantaJobPhase()
+                        .setExec("grep bb")
+                        .setType("map"))
+                .addPhase(new MantaJobPhase()
+                        .setExec("sort | uniq")
+                        .setType("reduce"))
+                .addInputs(path1, path2, path3)
+                .validateInputs()
+                .run()
+                .waitUntilDone();
+
+        List<String> outputs = finishedJob
+                .validateJobsSucceeded()
+                .outputs()
+                .collect(Collectors.toList());
+
+        MantaJob oldJob = finishedJob.getJob();
+
+        MantaJobBuilder.Done clonedJob = builder.cloneJob(oldJob)
+                .validateInputs()
+                .run()
+                .waitUntilDone();
+
+        List<String> clonedOutputs = clonedJob
+                .validateJobsSucceeded()
+                .outputs()
+                .collect(Collectors.toList());
+
+        Assert.assertEquals(clonedOutputs, outputs,
+                "Expected the same output as the original job");
     }
 }

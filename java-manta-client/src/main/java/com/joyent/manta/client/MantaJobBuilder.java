@@ -70,6 +70,36 @@ public class MantaJobBuilder {
 
 
     /**
+     * Clones a completed job as a new job by referencing its id.
+     *
+     * @param jobId job id of completed job
+     * @return a fluent interface providing job creation options
+     * @throws IOException thrown when we can't find the job referenced
+     */
+    public Create cloneJob(final UUID jobId) throws IOException {
+        final MantaJob job = client.getJob(jobId);
+        return cloneJob(job);
+    }
+
+
+    /**
+     * Clones a completed job as a new job.
+     *
+     * @param job job object of completed job
+     * @return a fluent interface providing job creation options
+     * @throws IOException thrown when we can't find the job referenced
+     */
+    public Create cloneJob(final MantaJob job) throws IOException {
+        final Create newJob = new Create(this, job.getName());
+        newJob.addPhases(job.getPhases());
+        final Stream<String> inputs = client.getJobInputs(job.getId());
+        newJob.addInputs(inputs);
+
+        return newJob;
+    }
+
+
+    /**
      * Inner class that provides methods used in the construction of a new job.
      * This allows us to easily add inputs and phases to the job.
      */
