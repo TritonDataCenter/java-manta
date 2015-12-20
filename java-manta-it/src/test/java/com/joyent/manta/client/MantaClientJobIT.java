@@ -131,7 +131,7 @@ public class MantaClientJobIT {
     }
 
 
-    @Test(dependsOnMethods = { "createJob" })
+    @Test(dependsOnMethods = {"createJob"})
     public void canAddAndGetInputsFromIterator() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);

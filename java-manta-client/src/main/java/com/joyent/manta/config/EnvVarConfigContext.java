@@ -38,21 +38,26 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_TIMEOUT_ENV_KEY = "MANTA_TIMEOUT";
 
     /**
+     * Environment variable for number of times to retry failed requests.
+     */
+    public static final String MANTA_RETRIES_ENV_KEY = "MANTA_HTTP_RETRIES";
+
+    /**
      * Environment variable for looking up Manta private key content.
      */
-    public static final String MANTA_PRIVATE_ENV_KEY_CONTENT = "MANTA_PRIVATE_ENV_KEY_CONTENT";
+    public static final String MANTA_PRIVATE_ENV_KEY_CONTENT = "MANTA_KEY_CONTENT";
 
     /**
      * Environment variable for looking up Manta password.
      */
-    public static final String MANTA_PASSWORD_ENV_KEY = "MANTA_PASSWORD_ENV_KEY";
+    public static final String MANTA_PASSWORD_ENV_KEY = "MANTA_PASSWORD";
 
     /**
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
-            MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY,
+            MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
             MANTA_PRIVATE_ENV_KEY_CONTENT, MANTA_PASSWORD_ENV_KEY
     };
 
@@ -113,5 +118,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public Integer getTimeout() {
         String timeoutString = getEnv(MANTA_TIMEOUT_ENV_KEY);
         return MantaUtils.parseIntegerOrNull(timeoutString);
+    }
+
+    @Override
+    public Integer getRetries() {
+        String retriesString = getEnv(MANTA_RETRIES_ENV_KEY);
+        return MantaUtils.parseIntegerOrNull(retriesString);
     }
 }

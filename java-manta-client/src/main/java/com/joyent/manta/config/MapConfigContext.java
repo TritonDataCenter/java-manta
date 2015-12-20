@@ -4,13 +4,7 @@ import com.joyent.manta.client.MantaUtils;
 
 import java.util.Map;
 
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_ID_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_PATH_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_PASSWORD_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_PRIVATE_ENV_KEY_CONTENT;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_TIMEOUT_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_URL_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_ACCOUNT_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.*;
 
 /**
  * {@link ConfigContext} implementation that is used for configuring instances
@@ -45,9 +39,14 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_TIMEOUT_KEY = "manta.timeout";
 
     /**
+     * Property key for number of times to retry failed requests.
+     */
+    public static final String MANTA_RETRIES_KEY = "manta.retries";
+
+    /**
      * Property key for looking up Manta private key content.
      */
-    public static final String MANTA_PRIVATE_KEY_CONTENT_KEY = "manta.private_key_content";
+    public static final String MANTA_PRIVATE_KEY_CONTENT_KEY = "manta.key_content";
 
     /**
      * Property key for looking up Manta password.
@@ -62,7 +61,8 @@ public class MapConfigContext implements ConfigContext {
      */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
-            MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
+            MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
+            MANTA_PRIVATE_KEY_CONTENT_KEY,
             MANTA_PASSWORD_KEY
     };
 
@@ -131,6 +131,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Integer getRetries() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_RETRIES_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_RETRIES_ENV_KEY));
     }
 
     /**

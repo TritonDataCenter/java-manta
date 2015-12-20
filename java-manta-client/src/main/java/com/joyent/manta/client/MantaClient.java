@@ -17,7 +17,6 @@ import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
@@ -137,75 +136,30 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
+     * Library configuration context reference.
+     */
+    private final ConfigContext config;
+
+    /**
      * Creates a new instance of a Manta client.
      *
      * @param config The configuration context that provides all of the configuration values.
      * @throws IOException If unable to instantiate the client.
      */
     public MantaClient(final ConfigContext config) throws IOException {
-        this(config.getMantaURL(), config.getMantaUser(), config.getMantaKeyPath(),
-                config.getMantaKeyId());
-    }
+        final String mantaURL = config.getMantaURL();
+        final String account = config.getMantaUser();
+        final String keyPath = config.getMantaKeyPath();
+        final String fingerprint = config.getMantaKeyId();
+        final int httpTimeout = config.getTimeout();
+        final String privateKeyContent = config.getPrivateKeyContent();
+        final String password = config.getPassword();
 
-
-    /**
-     * Creates a new instance of a Manta client.
-     *
-     * @param url         The url of the Manta endpoint.
-     * @param account     The account used to login.
-     * @param keyPath     The path to the user rsa private key on disk.
-     * @param fingerPrint The fingerprint of the user rsa private key.
-     * @throws IOException If unable to instantiate the client.
-     */
-    public MantaClient(final String url, final String account, final String keyPath,
-                       final String fingerPrint) throws IOException {
-        this(url, account, keyPath, fingerPrint, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
-    }
-
-
-    /**
-     * Creates a new instance of a Manta client.
-     *
-     * @param url               The url of the Manta endpoint.
-     * @param account     The account used to login.
-     * @param privateKeyContent The user's rsa private key as a string.
-     * @param fingerPrint       The fingerprint of the user rsa private key.
-     * @param password          The private key password (optional).
-     * @throws IOException If unable to instantiate the client.
-     */
-    public MantaClient(final String url,
-                       final String account,
-                       final String privateKeyContent,
-                       final String fingerPrint,
-                       final char[] password) throws IOException {
-        this(url, account, privateKeyContent, fingerPrint, password,
-                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
-    }
-
-
-    /**
-     * Instantiates a new Manta client instance.
-     *
-     * @param url         The url of the Manta endpoint.
-     * @param account     The account used to login.
-     * @param keyPath     The path to the user rsa private key on disk.
-     * @param fingerprint The fingerprint of the user rsa private key.
-     * @param httpTimeout The HTTP timeout in milliseconds.
-     * @throws IOException If unable to instantiate the client.
-     */
-    public MantaClient(final String url,
-                       final String account,
-                       final String keyPath,
-                       final String fingerprint,
-                       final int httpTimeout) throws IOException {
         if (account == null) {
             throw new IllegalArgumentException("Manta account name must be specified");
         }
-        if (url == null) {
+        if (mantaURL == null) {
             throw new IllegalArgumentException("Manta URL must be specified");
-        }
-        if (keyPath == null) {
-            throw new IllegalArgumentException("Manta key path must be specified");
         }
         if (fingerprint == null) {
             throw new IllegalArgumentException("Manta key id must be specified");
@@ -213,57 +167,35 @@ public class MantaClient implements AutoCloseable {
         if (httpTimeout < 0) {
             throw new IllegalArgumentException("Manta timeout must be 0 or greater");
         }
+        if (privateKeyContent != null && keyPath != null) {
+            throw new IllegalArgumentException("Private key content and key path can't be both set");
+        } else if (privateKeyContent == null && keyPath == null) {
+            throw new IllegalArgumentException("Manta key path or private key content must be specified");
+        }
 
-        this.url = url;
-        KeyPair keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
+        this.url = mantaURL;
+        this.config = config;
+        final KeyPair keyPair;
+
+        if (keyPath != null) {
+            keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
+        } else {
+            final char[] charPassword;
+
+            if (password != null) {
+                charPassword = password.toCharArray();
+            } else {
+                charPassword = null;
+            }
+
+            keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, charPassword);
+        }
+
         this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
-                httpTimeout);
+                config);
         this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
-        this.httpHelper = new HttpHelper(url, httpRequestFactoryProvider.getRequestFactory());
-    }
-
-
-    /**
-     * Instantiates a new Manta client instance.
-     *
-     * @param url               The url of the Manta endpoint.
-     * @param account     The account used to login.
-     * @param privateKeyContent The private key as a string.
-     * @param fingerprint       The name of the key.
-     * @param password          The private key password (optional).
-     * @param httpTimeout       The HTTP timeout in milliseconds.
-     * @throws IOException If unable to instantiate the client.
-     */
-    public MantaClient(final String url,
-                       final String account,
-                       final String privateKeyContent,
-                       final String fingerprint,
-                       final char[] password,
-                       final int httpTimeout) throws IOException {
-        if (account == null) {
-            throw new IllegalArgumentException("Manta username must be specified");
-        }
-        if (url == null) {
-            throw new IllegalArgumentException("Manta URL must be specified");
-        }
-        if (fingerprint == null) {
-            throw new IllegalArgumentException("Manta fingerprint must be specified");
-        }
-        if (password == null) {
-            throw new IllegalArgumentException("Manta key password must be specified");
-        }
-        if (httpTimeout < 0) {
-            throw new IllegalArgumentException("Manta timeout must be 0 or greater");
-        }
-
-        this.url = url;
-        KeyPair keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, password);
-        this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
-        this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
-        this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
-                httpTimeout);
-        this.httpHelper = new HttpHelper(url, httpRequestFactoryProvider.getRequestFactory());
+        this.httpHelper = new HttpHelper(mantaURL, httpRequestFactoryProvider.getRequestFactory());
     }
 
 

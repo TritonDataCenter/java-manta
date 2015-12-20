@@ -23,6 +23,11 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
 
     /**
+     * The default number of times to retry failed requests.
+     */
+    public static final int DEFAULT_HTTP_RETRIES = 3;
+
+    /**
      * We assume the default rsa key in the user's home directory.
      */
     public static final String MANTA_KEY_PATH;
@@ -80,6 +85,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getTimeout() {
         return DEFAULT_HTTP_TIMEOUT;
+    }
+
+    @Override
+    public Integer getRetries() {
+        return DEFAULT_HTTP_RETRIES;
     }
 
     @Override

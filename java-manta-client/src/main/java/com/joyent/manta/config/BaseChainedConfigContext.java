@@ -39,6 +39,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private Integer timeout;
 
     /**
+     * Number of times to retry failed requests.
+     */
+    private Integer retries;
+
+    /**
      * Private key content. This shouldn't be set if the MantaKeyPath is set.
      */
     private String privateKeyContent;
@@ -53,7 +58,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
             new DefaultsConfigContext();
 
     /**
-     * Constructor that prepopulates configuration context with the default
+     * Constructor that pre-populates configuration context with the default
      * values.
      */
     public BaseChainedConfigContext() {
@@ -100,6 +105,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
+    public Integer getRetries() {
+        return this.retries;
+    }
+
+    @Override
     public String getPrivateKeyContent() {
         return this.privateKeyContent;
     }
@@ -138,6 +148,10 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (context.getTimeout() != null) {
             this.timeout = context.getTimeout();
+        }
+
+        if (context.getRetries() != null) {
+            this.retries = context.getRetries();
         }
 
         if (isPresent(context.getPrivateKeyContent())) {
@@ -219,6 +233,19 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     /**
+     * Sets the number of times to retry failed HTTP requests.
+     * @param retries number of times to retry
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setRetries(final Integer retries) {
+        if (retries < 0) {
+            throw new IllegalArgumentException("Retries must be zero or greater");
+        }
+        this.retries = retries;
+        return this;
+    }
+
+    /**
      * Sets the private key content used to authenticate. This can't be set if
      * you already have a private key path specified.
      * @param privateKeyContent contents of private key in plain text
@@ -263,13 +290,14 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(mantaKeyId, that.mantaKeyId)
                 && Objects.equals(mantaKeyPath, that.mantaKeyPath)
                 && Objects.equals(timeout, that.timeout)
+                && Objects.equals(retries, that.retries)
                 && Objects.equals(privateKeyContent, that.privateKeyContent)
                 && Objects.equals(password, that.password);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath, timeout,
+        return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath, timeout, retries,
                 privateKeyContent, password);
     }
 }

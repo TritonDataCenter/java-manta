@@ -69,14 +69,15 @@ public class TestConfigContext extends BaseChainedConfigContext {
                              String mantaKeyId,
                              Integer mantaTimeout) {
         this(buildTestContext(mantaUrl, mantaUser, mantaKeyPath,
-                mantaKeyId, mantaTimeout));
+                mantaKeyId, mantaTimeout, 6));
     }
 
     static ConfigContext buildTestContext(String mantaUrl,
                                           String mantaUser,
                                           String mantaKeyPath,
                                           String mantaKeyId,
-                                          Integer mantaTimeout) {
+                                          Integer mantaTimeout,
+                                          Integer retries) {
         URL privateKeyUrl = mantaKeyPath == null ?
                 null :
                 Thread.currentThread().getContextClassLoader().getResource(mantaKeyPath);
@@ -85,7 +86,8 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setMantaURL(mantaUrl)
                 .setMantaUser(mantaUser)
                 .setMantaKeyId(mantaKeyId)
-                .setTimeout(mantaTimeout);
+                .setTimeout(mantaTimeout)
+                .setRetries(retries);
 
         if (privateKeyUrl != null) {
             testConfig.setMantaKeyPath(privateKeyUrl.getFile());

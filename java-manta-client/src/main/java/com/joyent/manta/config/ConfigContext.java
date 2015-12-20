@@ -53,6 +53,11 @@ public interface ConfigContext {
     String getMantaHomeDirectory();
 
     /**
+     * @return Number of HTTP retries to perform on failure.
+     */
+    Integer getRetries();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account

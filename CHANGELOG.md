@@ -30,7 +30,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added support for signed URLs.
 - Added support for RBAC roles.
 - Added Manta compute job support.
+- Added HTTP retries as a configuration parameter.
 
+### Removed
+- Removed all non-context based constructors from MantaClient. 
 
 ## [1.6.0] - 2015-11-11
 ### Changed
