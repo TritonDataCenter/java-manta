@@ -475,13 +475,36 @@ public class MantaClient implements AutoCloseable {
     public URI getAsSignedURI(final String path, final String method,
                               final Instant expires)
             throws IOException {
-        Objects.requireNonNull(path, "Path must be present");
         Objects.requireNonNull(expires, "Expires must be present");
+
+        return getAsSignedURI(path, method, expires.getEpochSecond());
+    }
+
+
+    /**
+     * <p>Generates a URL that allows for the download of the resource specified
+     * in the path without any additional authentication.</p>
+     *
+     * <p>This could be useful for when you want to generate links that expire
+     * after N seconds to give to external users for temporary download
+     * access.</p>
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param method the String GET or the string HEAD. This is the HTTP verb
+     *               that will be used when requesting this resource
+     * @param expiresEpochSeconds time when resource expires and become unavailable in epoch seconds
+     * @return a signed URL that allows for downloading a resource
+     * @throws IOException thrown if there is a problem generating the URL
+     */
+    public URI getAsSignedURI(final String path, final String method,
+                              final long expiresEpochSeconds)
+            throws IOException {
+        Objects.requireNonNull(path, "Path must be present");
 
         final String fullPath = String.format("%s%s", this.url, formatPath(path));
         final URI request = URI.create(fullPath);
 
-        return httpSigner.signURI(request, method, expires.getEpochSecond());
+        return httpSigner.signURI(request, method, expiresEpochSeconds);
     }
 
 

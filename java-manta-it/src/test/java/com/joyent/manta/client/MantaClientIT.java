@@ -40,6 +40,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * Tests the basic functionality of the {@link MantaClient} class.
  *
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
