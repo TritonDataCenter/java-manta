@@ -5,9 +5,6 @@
 [java-manta](http://joyent.github.com/java-manta) is a community-maintained Java
 SDK for interacting with Joyent's Manta system.
 
-At present, this SDK only supports the Manta data plane, and not the Manta
-compute component.
-
 ## Installation 
 
 ### Requirements
