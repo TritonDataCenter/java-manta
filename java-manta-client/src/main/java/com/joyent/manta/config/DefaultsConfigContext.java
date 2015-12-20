@@ -13,7 +13,7 @@ import java.io.File;
  */
 public class DefaultsConfigContext implements ConfigContext {
     /**
-     * The default Manta service endpoint.
+     * The default Manta service endpoint - a public cloud endpoint.
      */
     public static final String DEFAULT_MANTA_URL = "https://us-east.manta.joyent.com:443";
 
@@ -65,6 +65,16 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public String getMantaKeyPath() {
         return MANTA_KEY_PATH;
+    }
+
+    @Override
+    public String getPrivateKeyContent() {
+        return null;
+    }
+
+    @Override
+    public String getPassword() {
+        return null;
     }
 
     @Override

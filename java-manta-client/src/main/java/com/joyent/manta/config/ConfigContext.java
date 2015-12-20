@@ -33,6 +33,16 @@ public interface ConfigContext {
     String getMantaKeyPath();
 
     /**
+     * @return private key content. This can't be set if the MantaKeyPath is set.
+     */
+    String getPrivateKeyContent();
+
+    /**
+     * @return password for private key. This is optional and typically not set.
+     */
+    String getPassword();
+
+    /**
      * @return General connection timeout for the Manta service.
      */
     Integer getTimeout();

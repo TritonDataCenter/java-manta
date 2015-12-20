@@ -3,6 +3,8 @@
  */
 package com.joyent.manta.config;
 
+import java.util.Objects;
+
 /**
  * Abstract implementation of {@link ConfigContext} that allows for chaining
  * in default implementations of configuration that are delegate to when
@@ -35,6 +37,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * General connection timeout for the Manta service.
      */
     private Integer timeout;
+
+    /**
+     * Private key content. This shouldn't be set if the MantaKeyPath is set.
+     */
+    private String privateKeyContent;
+
+    /**
+     * Optional password for private key.
+     */
+    private String password;
 
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
@@ -87,6 +99,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this.timeout;
     }
 
+    @Override
+    public String getPrivateKeyContent() {
+        return this.privateKeyContent;
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -107,11 +129,28 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         }
 
         if (isPresent(context.getMantaKeyPath())) {
+            if (isPresent(context.getPrivateKeyContent())) {
+                String msg = "You can't set both a private key path and private key content";
+                throw new IllegalArgumentException(msg);
+            }
             this.mantaKeyPath = context.getMantaKeyPath();
         }
 
         if (context.getTimeout() != null) {
             this.timeout = context.getTimeout();
+        }
+
+        if (isPresent(context.getPrivateKeyContent())) {
+            if (isPresent(mantaKeyPath)) {
+                String msg = "You can't set both a private key path and private key content";
+                throw new IllegalArgumentException(msg);
+            }
+
+            this.privateKeyContent = context.getPrivateKeyContent();
+        }
+
+        if (isPresent(context.getPassword())) {
+            this.password = context.getPassword();
         }
     }
 
@@ -160,6 +199,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * @return the current instance of {@link BaseChainedConfigContext}
      */
     public BaseChainedConfigContext setMantaKeyPath(final String mantaKeyPath) {
+        if (isPresent(privateKeyContent)) {
+            String msg = "You can't set both a private key path and private key content";
+            throw new IllegalArgumentException(msg);
+        }
+
         this.mantaKeyPath = mantaKeyPath;
         return this;
     }
@@ -172,5 +216,60 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     public BaseChainedConfigContext setTimeout(final Integer timeout) {
         this.timeout = timeout;
         return this;
+    }
+
+    /**
+     * Sets the private key content used to authenticate. This can't be set if
+     * you already have a private key path specified.
+     * @param privateKeyContent contents of private key in plain text
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setPrivateKeyContent(final String privateKeyContent) {
+        if (isPresent(mantaKeyPath)) {
+            String msg = "You can't set both a private key path and private key content";
+            throw new IllegalArgumentException(msg);
+        }
+
+        this.privateKeyContent = privateKeyContent;
+
+        return this;
+    }
+
+    /**
+     * Sets the password used for the private key. This is optional and not
+     * typically used.
+     * @param password password to set
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setPassword(final String password) {
+        this.password = password;
+
+        return this;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+
+        BaseChainedConfigContext that = (BaseChainedConfigContext) other;
+        return Objects.equals(mantaURL, that.mantaURL)
+                && Objects.equals(account, that.account)
+                && Objects.equals(mantaKeyId, that.mantaKeyId)
+                && Objects.equals(mantaKeyPath, that.mantaKeyPath)
+                && Objects.equals(timeout, that.timeout)
+                && Objects.equals(privateKeyContent, that.privateKeyContent)
+                && Objects.equals(password, that.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath, timeout,
+                privateKeyContent, password);
     }
 }
