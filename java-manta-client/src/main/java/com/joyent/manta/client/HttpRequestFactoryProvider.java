@@ -15,6 +15,8 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
@@ -69,11 +71,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     private static final int MAX_CONNECTIONS_PER_ROUTE = 200;
 
     /**
-     * Number of times to retry failed requests.
-     */
-    private static final int HTTP_RETRIES = 3;
-
-    /**
      * The JSON factory instance used by the http library for handling JSON.
      */
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
@@ -94,24 +91,24 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     private final HttpRequestFactory requestFactory;
 
     /**
-     * The HTTP timeout in milliseconds.
+     * Library configuration context reference.
      */
-    private final int httpTimeout;
+    private final ConfigContext config;
 
     /**
      * Creates a new instance of class configured using the passed
      * {@link HttpSigner}.
      *
      * @param httpSigner HTTP Signer used to sign Google HTTP requests
-     * @param httpTimeout The HTTP timeout in milliseconds.
+     * @param config library configuration context reference
      * @throws IOException thrown when the instance can't be setup properly
      */
     public HttpRequestFactoryProvider(final HttpSigner httpSigner,
-                                      final int httpTimeout)
+                                      final ConfigContext config)
             throws IOException {
+        this.config = config;
         this.httpClient = buildHttpClient();
         this.requestFactory = buildRequestFactory(httpSigner, httpClient);
-        this.httpTimeout = httpTimeout;
     }
 
     /**
@@ -135,7 +132,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      *
      * @return a configured instance of {@link HttpClient}
      */
-    private static HttpClient buildHttpClient() {
+    private HttpClient buildHttpClient() {
         final HttpParams params = HTTP_PARAMS;
         final SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
         final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
@@ -151,7 +148,16 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
 
         final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
-        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(HTTP_RETRIES, false));
+
+        final int httpRetries;
+
+        if (config.getRetries() == null) {
+            httpRetries = DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
+        } else {
+            httpRetries = config.getRetries();
+        }
+
+        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(httpRetries, false));
 
         if (proxySelector != null) {
             defaultHttpClient.setRoutePlanner(new ProxySelectorRoutePlanner(registry, proxySelector));
@@ -176,6 +182,15 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             @Override
             public void intercept(final HttpRequest request) throws IOException {
                 // Set timeouts
+
+                final int httpTimeout;
+
+                if (config.getTimeout() == null) {
+                    httpTimeout = DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT;
+                } else {
+                    httpTimeout = config.getTimeout();
+                }
+
                 request.setReadTimeout(httpTimeout);
                 request.setConnectTimeout(httpTimeout);
                 // Sign request

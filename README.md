@@ -5,9 +5,6 @@
 [java-manta](http://joyent.github.com/java-manta) is a community-maintained Java
 SDK for interacting with Joyent's Manta system.
 
-At present, this SDK only supports the Manta data plane, and not the Manta
-compute component.
-
 ## Installation 
 
 ### Requirements
@@ -45,13 +42,16 @@ authenticate against Manta.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                          | TestNG Param   | System Property | Environment Variable |
-|----------------------------------|----------------|-----------------|----------------------|
-| https://us-east.manta.joyent.com | manta.url      | manta.url       | MANTA_URL            |
-|                                  | manta.user     | manta.user      | MANTA_USER           |
-|                                  | manta.key_id   | manta.key_id    | MANTA_KEY_ID         |
-|                                  | manta.key_path | manta.key_path  | MANTA_KEY_PATH       |
-| 20000                            | manta.timeout  | manta.timeout   | MANTA_TIMEOUT        | 
+| Default                          | TestNG Param   | System Property   | Environment Variable      |
+|----------------------------------|----------------|-------------------|---------------------------|
+| https://us-east.manta.joyent.com | manta.url      | manta.url         | MANTA_URL                 |
+|                                  | manta.user     | manta.user        | MANTA_USER                |
+|                                  | manta.key_id   | manta.key_id      | MANTA_KEY_ID              |
+|                                  | manta.key_path | manta.key_path    | MANTA_KEY_PATH            |
+|                                  |                | manta.key_content | MANTA_KEY_CONTENT         |
+|                                  |                | manta.password    | MANTA_PASSWORD            |
+| 20000                            | manta.timeout  | manta.timeout     | MANTA_TIMEOUT             |
+| 3 (6 for integration tests)      |                | manta.retries     | MANTA_HTTP_RETRIES        |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -60,10 +60,17 @@ The account name used to access the manta service. If accessing via a [subuser](
 you will specify the account name as "user/subuser".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
 The fingerprint for the public key used to access the manta service.
-* `manta.key_path` ( **MANTA_KEY_PATH** )
+* `manta.key_path` ( **MANTA_KEY_PATH**)
 The name of the file that will be loaded for the account used to access the manta service.
+* `manta.key_content` ( **MANTA_KEY_CONTENT**)
+The content of the private key as a string. This is an alternative to `manta.key_path`. Both
+`manta.key_path` and can't be specified at the same time `manta.key_content`.
+* `manta.password` ( **MANTA_PASSWORD**)
+The password associated with the key specified. This is optional and not normally needed.
 * `manta.timeout` ( **MANTA_TIMEOUT**)
 The number of milliseconds to wait after a request was made to Manta before failing.
+* `manta.retries` ( **MANTA_HTTP_RETRIES**)
+The number of times to retry failed HTTP requests.
  
 If you want to skip running of the test suite, use the `-DskipTests` property.
 

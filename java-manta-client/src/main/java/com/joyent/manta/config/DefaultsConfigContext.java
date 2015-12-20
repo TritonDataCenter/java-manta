@@ -13,7 +13,7 @@ import java.io.File;
  */
 public class DefaultsConfigContext implements ConfigContext {
     /**
-     * The default Manta service endpoint.
+     * The default Manta service endpoint - a public cloud endpoint.
      */
     public static final String DEFAULT_MANTA_URL = "https://us-east.manta.joyent.com:443";
 
@@ -21,6 +21,11 @@ public class DefaultsConfigContext implements ConfigContext {
      * The default timeout for accessing the Manta service.
      */
     public static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+
+    /**
+     * The default number of times to retry failed requests.
+     */
+    public static final int DEFAULT_HTTP_RETRIES = 3;
 
     /**
      * We assume the default rsa key in the user's home directory.
@@ -68,8 +73,23 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public String getPrivateKeyContent() {
+        return null;
+    }
+
+    @Override
+    public String getPassword() {
+        return null;
+    }
+
+    @Override
     public Integer getTimeout() {
         return DEFAULT_HTTP_TIMEOUT;
+    }
+
+    @Override
+    public Integer getRetries() {
+        return DEFAULT_HTTP_RETRIES;
     }
 
     @Override

@@ -33,6 +33,16 @@ public interface ConfigContext {
     String getMantaKeyPath();
 
     /**
+     * @return private key content. This can't be set if the MantaKeyPath is set.
+     */
+    String getPrivateKeyContent();
+
+    /**
+     * @return password for private key. This is optional and typically not set.
+     */
+    String getPassword();
+
+    /**
      * @return General connection timeout for the Manta service.
      */
     Integer getTimeout();
@@ -41,6 +51,11 @@ public interface ConfigContext {
      * @return String of home directory based on Manta username.
      */
     String getMantaHomeDirectory();
+
+    /**
+     * @return Number of HTTP retries to perform on failure.
+     */
+    Integer getRetries();
 
     /**
      * Extracts the home directory based on the Manta account name.

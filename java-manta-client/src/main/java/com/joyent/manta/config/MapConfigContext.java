@@ -4,11 +4,7 @@ import com.joyent.manta.client.MantaUtils;
 
 import java.util.Map;
 
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_ID_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_KEY_PATH_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_TIMEOUT_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_URL_ENV_KEY;
-import static com.joyent.manta.config.EnvVarConfigContext.MANTA_ACCOUNT_ENV_KEY;
+import static com.joyent.manta.config.EnvVarConfigContext.*;
 
 /**
  * {@link ConfigContext} implementation that is used for configuring instances
@@ -42,6 +38,21 @@ public class MapConfigContext implements ConfigContext {
      */
     public static final String MANTA_TIMEOUT_KEY = "manta.timeout";
 
+    /**
+     * Property key for number of times to retry failed requests.
+     */
+    public static final String MANTA_RETRIES_KEY = "manta.retries";
+
+    /**
+     * Property key for looking up Manta private key content.
+     */
+    public static final String MANTA_PRIVATE_KEY_CONTENT_KEY = "manta.key_content";
+
+    /**
+     * Property key for looking up Manta password.
+     */
+    public static final String MANTA_PASSWORD_KEY = "manta.password";
+
     // I know manually adding them all sucks, but it is the simplest operation
     // for a shared library. We could do all sorts of complicated reflection
     // or annotation processing, but they are error-prone.
@@ -50,7 +61,9 @@ public class MapConfigContext implements ConfigContext {
      */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
-            MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY
+            MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
+            MANTA_PRIVATE_KEY_CONTENT_KEY,
+            MANTA_PASSWORD_KEY
     };
 
     /**
@@ -70,22 +83,38 @@ public class MapConfigContext implements ConfigContext {
 
     @Override
     public String getMantaURL() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(MANTA_URL_KEY, MANTA_URL_ENV_KEY);
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_URL_KEY, MANTA_URL_ENV_KEY);
     }
 
     @Override
     public String getMantaUser() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(MANTA_USER_KEY, MANTA_ACCOUNT_ENV_KEY);
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_USER_KEY, MANTA_ACCOUNT_ENV_KEY);
     }
 
     @Override
     public String getMantaKeyId() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(MANTA_KEY_ID_KEY, MANTA_KEY_ID_ENV_KEY);
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_KEY_ID_KEY, MANTA_KEY_ID_ENV_KEY);
     }
 
     @Override
     public String getMantaKeyPath() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(MANTA_KEY_PATH_KEY, MANTA_KEY_PATH_ENV_KEY);
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_KEY_PATH_KEY, MANTA_KEY_PATH_ENV_KEY);
+    }
+
+    @Override
+    public String getPrivateKeyContent() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_PRIVATE_KEY_CONTENT_KEY, MANTA_PRIVATE_ENV_KEY_CONTENT);
+    }
+
+    @Override
+    public String getPassword() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_PASSWORD_KEY, MANTA_PASSWORD_ENV_KEY);
     }
 
     @Override
@@ -102,6 +131,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Integer getRetries() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_RETRIES_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_RETRIES_ENV_KEY));
     }
 
     /**
