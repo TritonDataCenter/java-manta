@@ -178,45 +178,34 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
                                                    final HttpClient apacheHttpClient)
             throws IOException {
         final HttpTransport transport = new ApacheHttpTransport(apacheHttpClient);
-        final HttpExecuteInterceptor signingInterceptor = new HttpExecuteInterceptor() {
-            @Override
-            public void intercept(final HttpRequest request) throws IOException {
-                // Set timeouts
+        final HttpExecuteInterceptor signingInterceptor = request -> {
+            // Set timeouts
 
-                final int httpTimeout;
+            final int httpTimeout;
 
-                if (config.getTimeout() == null) {
-                    httpTimeout = DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT;
-                } else {
-                    httpTimeout = config.getTimeout();
-                }
+            if (config.getTimeout() == null) {
+                httpTimeout = DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT;
+            } else {
+                httpTimeout = config.getTimeout();
+            }
 
-                request.setReadTimeout(httpTimeout);
-                request.setConnectTimeout(httpTimeout);
-                // Sign request
-                httpSigner.signRequest(request);
-                // Load request ID into MDC so that it can be logged
-                final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
-                if (requestId != null) {
-                    MDC.put("mantaRequestId", requestId.toString());
-                }
+            request.setReadTimeout(httpTimeout);
+            request.setConnectTimeout(httpTimeout);
+            // Sign request
+            httpSigner.signRequest(request);
+            // Load request ID into MDC so that it can be logged
+            final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
+            if (requestId != null) {
+                MDC.put("mantaRequestId", requestId.toString());
             }
         };
 
-        final HttpResponseInterceptor responseInterceptor = new HttpResponseInterceptor() {
-            @Override
-            public void interceptResponse(final HttpResponse response) throws IOException {
-                MDC.remove("mantaRequestId");
-            }
-        };
+        final HttpResponseInterceptor responseInterceptor = response -> MDC.remove("mantaRequestId");
 
-        final HttpRequestInitializer initializer = new HttpRequestInitializer() {
-            @Override
-            public void initialize(final HttpRequest request) throws IOException {
-                request.setInterceptor(signingInterceptor);
-                request.setResponseInterceptor(responseInterceptor);
-                request.setParser(new JsonObjectParser(JSON_FACTORY));
-            }
+        final HttpRequestInitializer initializer = request -> {
+            request.setInterceptor(signingInterceptor);
+            request.setResponseInterceptor(responseInterceptor);
+            request.setParser(new JsonObjectParser(JSON_FACTORY));
         };
 
         return transport.createRequestFactory(initializer);
