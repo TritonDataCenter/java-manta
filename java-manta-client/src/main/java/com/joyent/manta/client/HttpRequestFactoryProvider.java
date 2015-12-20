@@ -108,7 +108,8 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             throws IOException {
         this.config = config;
         this.httpClient = buildHttpClient();
-        this.requestFactory = buildRequestFactory(httpSigner, httpClient);}
+        this.requestFactory = buildRequestFactory(httpSigner, httpClient);
+    }
 
     /**
      * Creates the parameters used to configure the Apache HTTP Client.
