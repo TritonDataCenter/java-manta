@@ -16,6 +16,10 @@
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
+            <class name="com.joyent.manta.client.MantaClientJobIT" />
+            <class name="com.joyent.manta.client.MantaHttpHeadersIT" />
+            <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
+            <class name="com.joyent.manta.client.MantaJobBuilderIT" />
         </classes>
     </test>
 </suite>

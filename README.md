@@ -129,6 +129,147 @@ public class App {
 }
 ```
 
+### Example Job Execution
+
+Jobs can be created directly with the `MantaClient` class or they can be created
+using the `MantaJobBuilder` class. `MantaJobBuilder` provides a fluent interface
+that allows for an easier API for job creation and it provides a number of
+useful functions for common use cases.
+
+#### Using MantaClient
+
+Creating a job using the `MantaClient` API is done by making a number of calls
+against the API and passing the job id to each API call. Here is an example that
+processes 4 input files, greps them for 'foo' and returns the unique values.
+
+``` java
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaJob;
+import com.joyent.manta.client.MantaJobPhase;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+public class App {
+    private static final String URL = "https://us-east.manta.joyent.com";
+    // If there is no subuser, then just use the account name
+    private static final String LOGIN = "user/subuser";
+    private static final String KEY_PATH = "src/test/java/data/id_rsa";
+    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+
+    public static void main(String... args) throws IOException, InterruptedException {
+        MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+
+        List<String> inputs = new ArrayList<>();
+        // You will need to change these to reflect the files that you want
+        // to process
+        inputs.add("/user/stor/logs/input_1");
+        inputs.add("/user/stor/logs/input_2");
+        inputs.add("/user/stor/logs/input_3");
+        inputs.add("/user/stor/logs/input_4");
+
+        List<MantaJobPhase> phases = new ArrayList<>();
+        // This creates a map step that greps for 'foo' in all of the inputs
+        MantaJobPhase map = new MantaJobPhase()
+                .setType("map")
+                .setExec("grep foo");
+        // This returns unique values from all of the map outputs 
+        MantaJobPhase reduce = new MantaJobPhase()
+                .setType("reduce")
+                .setExec("sort | uniq");
+        phases.add(map);
+        phases.add(reduce);
+
+        // This builds a job
+        MantaJob job = new MantaJob("example", phases);
+        UUID jobId = client.createJob(job);
+
+        // This attaches the input data to the job
+        client.addJobInputs(jobId, inputs.iterator());
+
+        // This runs the job
+        client.endJobInput(jobId);
+
+        // This will get the status of the job
+        MantaJob runningJob = client.getJob(jobId);
+
+        // Wait until job finishes
+        while (!client.getJob(jobId).getState().equals("done")) {
+            Thread.sleep(3000L);
+        }
+
+        // Grab the results of the job as a string - in this case, there will
+        // be only a single output
+        // You will always need to close streams because we do everything online
+        try (Stream<String> outputs = client.getJobOutputsAsStrings(jobId)) {
+            // Print each output
+            outputs.forEach(o -> System.out.println(o));
+        }
+    }
+}
+```
+
+#### Using MantaJobBuilder
+
+Creating a job using the `MantaJobBuilder` allows for a more fluent style of
+job creation. Using this approach allows for a more fluent configuration of
+job initialization.
+
+```java
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaJobBuilder;
+import com.joyent.manta.client.MantaJobPhase;
+
+import java.io.IOException;
+import java.util.stream.Stream;
+
+public class App {
+    private static final String URL = "https://us-east.manta.joyent.com";
+    // If there is no subuser, then just use the account name
+    private static final String LOGIN = "user/subuser";
+    private static final String KEY_PATH = "src/test/java/data/id_rsa";
+    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+
+    public static void main(String... args) throws IOException, InterruptedException {
+        MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+
+        // You can only get a builder from a MantaClient
+        final MantaJobBuilder builder = client.jobBuilder();
+
+        MantaJobBuilder.Run runningJob = builder.newJob("example")
+               .addInputs("/user/stor/logs/input_1",
+                          "/user/stor/logs/input_2",
+                          "/user/stor/logs/input_3",
+                          "/user/stor/logs/input_4")
+               .addPhase(new MantaJobPhase()
+                       .setType("map")
+                       .setExec("grep foo"))
+               .addPhase(new MantaJobPhase()
+                       .setType("reduce")
+                       .setExec("sort | uniq"))
+               // This is an optional command that will validate that the inputs
+               // specified are available
+               .validateInputs()
+               .run();
+
+        // This will wait until the job is finished
+        MantaJobBuilder.Done finishedJob = runningJob.waitUntilDone()
+                  // This will validate if the job finished without errors.
+                  // If there was an error an exception will be thrown
+                  .validateJobsSucceeded();
+
+        // You will always need to close streams because we do everything online
+        try (Stream<String> outputs = finishedJob.outputs()) {
+            // Print each output
+            outputs.forEach(o -> System.out.println(o));
+        }
+    }
+}
+```
+
 For more examples, check the included integration tests.
 
 ### Logging

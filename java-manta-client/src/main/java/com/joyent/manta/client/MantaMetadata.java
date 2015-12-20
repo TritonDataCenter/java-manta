@@ -27,7 +27,6 @@ import java.util.function.Function;
  * metadata. It accepts them without throwing an error, but it will only
  * ingest a single value out of multiple values.</p>
  *
- * @author Elijah Zupancic
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @NotThreadSafe
@@ -82,7 +81,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     /**
      * Implements the predicate used to validate header key values.
      */
-    protected class HttpHeaderNameKeyPredicate implements Predicate<String> {
+    protected static class HttpHeaderNameKeyPredicate implements Predicate<String> {
 
         /**
          * {@inheritDoc}

@@ -15,7 +15,7 @@ public class DefaultsConfigContext implements ConfigContext {
     /**
      * The default Manta service endpoint.
      */
-    public static final String DEFAULT_MANTA_URL = "https://us-east.manta.joyent.com";
+    public static final String DEFAULT_MANTA_URL = "https://us-east.manta.joyent.com:443";
 
     /**
      * The default timeout for accessing the Manta service.

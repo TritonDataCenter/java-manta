@@ -6,7 +6,9 @@ import com.google.api.client.util.Types;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.message.BasicHeader;
+import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +29,9 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaHttpHeaders {
+public class MantaHttpHeaders implements Serializable {
+    private static final long serialVersionUID = -2591173969776316384L;
+
     /**
      * HTTP header for Manta durability level.
      */
@@ -41,7 +45,7 @@ public class MantaHttpHeaders {
     /**
      * HttpHeaders delegate which is wrapped by this class.
      */
-    private final HttpHeaders wrappedHeaders = new HttpHeaders();
+    private final transient HttpHeaders wrappedHeaders = new HttpHeaders();
 
     /**
      * Creates an empty instance.
@@ -248,8 +252,10 @@ public class MantaHttpHeaders {
      * @param copies number of copies
      */
     public void setDurabilityLevel(final int copies) {
-        if (copies < 1) {
-            throw new IllegalArgumentException("Copies must be 1 or greater");
+        if (copies < 0) {
+            String msg = String.format("Copies must be 1 or greater for user objects. "
+                    + "For jobs and system objects it can be 0. Actual value: %d", copies);
+            throw new IllegalArgumentException(msg);
         }
 
         set(HTTP_DURABILITY_LEVEL, String.valueOf(copies));
@@ -330,6 +336,28 @@ public class MantaHttpHeaders {
         return Collections.unmodifiableSet(roles);
     }
 
+
+    /**
+     * Parses the value of the Result-Set-Size HTTP header returned from Manta.
+     *
+     * @return long value of header value, or null if it can't be found or parsed
+     */
+    public Long getResultSetSize() {
+        final String size = wrappedHeaders.getFirstHeaderStringValue("result-set-size");
+
+        if (size == null) {
+            return null;
+        } else {
+            try {
+                return Long.parseLong(size);
+            } catch (NumberFormatException e) {
+                String msg = String.format("Error parsing result-set-size header "
+                        + "as long. Actual value: %s", size);
+                LoggerFactory.getLogger(getClass()).warn(msg, e);
+                return null;
+            }
+        }
+    }
 
     /**
      * Returns the first {@code "Accept"} header or {@code null} for none.

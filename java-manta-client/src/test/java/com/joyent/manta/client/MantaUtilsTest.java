@@ -6,6 +6,8 @@ package com.joyent.manta.client;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.UUID;
+
 /**
  * Test class for all-purpose utility methods.
  *
@@ -94,5 +96,25 @@ public class MantaUtilsTest {
     public final void wontParseAccountWithMiddleAndTrailingSlash() {
         final String account = "username/subuser/";
         MantaUtils.parseAccount(account);
+    }
+
+    @Test
+    public void lastItemInPathIsCorrectFile() {
+        final String expected = new UUID(24, 48).toString();
+        final String path = String.format("/foo/bar/%s", expected);
+
+        final String actual = MantaUtils.lastItemInPath(path);
+
+        Assert.assertEquals(actual, expected);
+    }
+
+    @Test
+    public void lastItemInPathIsCorrectFileWithTrailingSeparator() {
+        final String expected = new UUID(24, 48).toString();
+        final String path = String.format("/foo/bar/%s/", expected);
+
+        final String actual = MantaUtils.lastItemInPath(path);
+
+        Assert.assertEquals(actual, expected);
     }
 }

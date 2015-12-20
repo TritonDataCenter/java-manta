@@ -12,6 +12,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Broke out integration tests into a separate Maven module so that we can
   test classes in their shaded state.
 - Bumped minimum Java version to 1.8.
+- Changed to a JDK 8 Stream model for streamable resources.
+- Many utility methods used for making HTTP requests have been moved to the
+  HttpHelper class.
 
 
 ### Added
@@ -25,6 +28,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added parsing of JSON error responses from Manta API.
 - Added error response enum MantaErrorCode.
 - Added support for signed URLs.
+- Added support for RBAC roles.
+- Added Manta compute job support.
 
 
 ## [1.6.0] - 2015-11-11

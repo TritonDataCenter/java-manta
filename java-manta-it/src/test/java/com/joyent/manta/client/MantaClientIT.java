@@ -5,6 +5,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.TestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.test.util.MantaAssert;
@@ -20,19 +21,25 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URLConnection;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 
 /**
- * @author Yunong Xiao
+ * Tests the basic functionality of the {@link MantaClient} class.
+ *
+ * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  */
 @Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
@@ -255,11 +262,15 @@ public class MantaClientIT {
         final String subDir = pathPrefix + "/" + UUID.randomUUID().toString();
         mantaClient.putDirectory(subDir, null);
         mantaClient.put(String.format("%s/%s", subDir, UUID.randomUUID()), "");
-        final Collection<MantaObject> objs = mantaClient.listObjects(pathPrefix);
-        for (final MantaObject mantaObject : objs) {
-            Assert.assertTrue(mantaObject.getPath().startsWith(testPathPrefix));
-        }
-        Assert.assertEquals(3, objs.size());
+        final Stream<MantaObject> objs = mantaClient.listObjects(pathPrefix);
+
+        final AtomicInteger count = new AtomicInteger(0);
+        objs.forEach(obj -> {
+            count.incrementAndGet();
+            Assert.assertTrue(obj.getPath().startsWith(testPathPrefix));
+        });
+
+        Assert.assertEquals(3, count.get());
     }
 
 
@@ -269,12 +280,50 @@ public class MantaClientIT {
         final String path = testPathPrefix + name;
 
         mantaClient.put(path, TEST_DATA);
-        mantaClient.listObjects(path);
+
+        try (Stream<MantaObject> objects = mantaClient.listObjects(path)) {
+            objects.count();
+        }
     }
 
 
     @Test
-    public final void testCanCreateSignedUriFromPath() throws IOException {
+    public final void testIsDirectoryEmptyWithEmptyDir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+        mantaClient.putDirectory(dir);
+
+        Assert.assertTrue(mantaClient.isDirectoryEmpty(dir),
+                "Empty directory is not reported as empty");
+    }
+
+
+    @Test
+    public final void testIsDirectoryEmptyWithDirWithFiles() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+        mantaClient.putDirectory(dir);
+
+        mantaClient.put(String.format("%s/%s", dir, UUID.randomUUID()), TEST_DATA);
+
+        Assert.assertFalse(mantaClient.isDirectoryEmpty(dir),
+                "Empty directory is not reported as empty");
+    }
+
+
+    @Test(expectedExceptions = { MantaClientException.class })
+    public final void testIsDirectoryEmptyWithAFileNotDir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String file = testPathPrefix + name;
+
+        mantaClient.put(file, TEST_DATA);
+
+        mantaClient.isDirectoryEmpty(file);
+    }
+
+
+    @Test
+    public final void testCanCreateSignedGETUriFromPath() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -286,13 +335,83 @@ public class MantaClientIT {
         Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
         URI uri = mantaClient.getAsSignedURI(path, "GET", expires);
 
-        URLConnection connection = uri.toURL().openConnection();
-        connection.setReadTimeout(3000);
-        connection.connect();
+        HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
+
         try (InputStream is = connection.getInputStream()) {
+            connection.setReadTimeout(3000);
+            connection.connect();
             String actual = MantaUtils.inputStreamToString(is);
             Assert.assertEquals(actual, TEST_DATA);
+        } finally {
+            connection.disconnect();
         }
+    }
+
+
+    @Test
+    public final void testCanCreateSignedHEADUriFromPath() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA);
+
+        // This will throw an error if the newly inserted object isn't present
+        mantaClient.head(path);
+
+        Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
+        URI uri = mantaClient.getAsSignedURI(path, "HEAD", expires);
+
+        HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
+
+        try {
+            connection.setReadTimeout(3000);
+            connection.setRequestMethod("HEAD");
+            connection.connect();
+
+            Map<String, List<String>> headers = connection.getHeaderFields();
+
+            Assert.assertNotNull(headers);
+            Assert.assertEquals(TEST_DATA.length(), connection.getContentLength());
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+
+    @Test
+    public final void testCanCreateSignedPUTUriFromPath() throws IOException, InterruptedException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
+        URI uri = mantaClient.getAsSignedURI(path, "PUT", expires);
+
+        HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
+
+        connection.setReadTimeout(3000);
+        connection.setRequestMethod("PUT");
+        connection.setDoOutput(true);
+        connection.setChunkedStreamingMode(10);
+        connection.connect();
+
+        try (OutputStreamWriter out = new OutputStreamWriter(
+                connection.getOutputStream())) {
+            out.write(TEST_DATA);
+        } finally {
+            connection.disconnect();
+        }
+
+        // Wait for file to become available
+        for (int i = 0; i < 10; i++ ) {
+            Thread.sleep(500);
+
+            if (mantaClient.existsAndIsAccessible(path)) {
+                break;
+            }
+        }
+
+        String actual = mantaClient.getAsString(path);
+        Assert.assertEquals(actual, TEST_DATA);
     }
 
 

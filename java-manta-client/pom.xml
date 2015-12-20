@@ -22,7 +22,8 @@
         <dependency.apache-http-client.version>4.5.1</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.53</dependency.bouncycastle.version>
         <dependency.google-http-client.version>1.20.0</dependency.google-http-client.version>
-        <dependency.google-http-client-signature.version>1.0.1</dependency.google-http-client-signature.version>
+        <dependency.google-http-client-signature.version>1.0.3</dependency.google-http-client-signature.version>
+        <dependency.jackson.version>2.6.3</dependency.jackson.version>
     </properties>
 
     <dependencies>
@@ -66,6 +67,21 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>${dependency.commons-collections.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${dependency.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${dependency.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${dependency.jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>

@@ -29,7 +29,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     /**
      * The HTTP response sent from the Manta API.
      */
-    private final HttpResponse httpResponse;
+    private final transient HttpResponse httpResponse;
 
     /**
      * Create a new instance from the results of a GET HTTP call to the

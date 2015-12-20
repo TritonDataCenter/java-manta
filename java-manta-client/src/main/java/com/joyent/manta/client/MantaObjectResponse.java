@@ -15,7 +15,7 @@ import java.util.Objects;
  * A Manta storage object.
  * <p>I/O is performed via the methods on the {@link MantaClient} class.</p>
  *
- * @author Yunong Xiao
+ * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  */
 public class MantaObjectResponse implements MantaObject {
 
