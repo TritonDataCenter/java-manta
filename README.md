@@ -42,16 +42,16 @@ authenticate against Manta.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                          | TestNG Param   | System Property   | Environment Variable      |
-|----------------------------------|----------------|-------------------|---------------------------|
-| https://us-east.manta.joyent.com | manta.url      | manta.url         | MANTA_URL                 |
-|                                  | manta.user     | manta.user        | MANTA_USER                |
-|                                  | manta.key_id   | manta.key_id      | MANTA_KEY_ID              |
-|                                  | manta.key_path | manta.key_path    | MANTA_KEY_PATH            |
-|                                  |                | manta.key_content | MANTA_KEY_CONTENT         |
-|                                  |                | manta.password    | MANTA_PASSWORD            |
-| 20000                            | manta.timeout  | manta.timeout     | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)      |                | manta.retries     | MANTA_HTTP_RETRIES        |
+| Default                              | TestNG Param   | System Property   | Environment Variable      |
+|--------------------------------------|----------------|-------------------|---------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url      | manta.url         | MANTA_URL                 |
+|                                      | manta.user     | manta.user        | MANTA_USER                |
+|                                      | manta.key_id   | manta.key_id      | MANTA_KEY_ID              |
+|                                      | manta.key_path | manta.key_path    | MANTA_KEY_PATH            |
+|                                      |                | manta.key_content | MANTA_KEY_CONTENT         |
+|                                      |                | manta.password    | MANTA_PASSWORD            |
+| 20000                                | manta.timeout  | manta.timeout     | MANTA_TIMEOUT             |
+| 3 (6 for integration tests)          |                | manta.retries     | MANTA_HTTP_RETRIES        |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -103,20 +103,23 @@ For detailed usage instructions, consult the provided javadoc.
 ### Example Get Request
 ``` java
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 
 public class App {
-    private static final String URL = "https://us-east.manta.joyent.com";
-    // If there is no subuser, then just use the account name
-    private static final String LOGIN = "user/subuser";
-    private static final String KEY_PATH = "src/test/java/data/id_rsa";
-    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
-
+    
     public static void main(String... args) throws IOException {
-        MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+        ConfigContext config = new StandardConfigContext()
+                .setMantaURL("https://us-east.manta.joyent.com")
+                // If there is no subuser, then just use the account name
+                .setMantaUser("user/subuser")
+                .setMantaKeyPath("src/test/java/data/id_rsa")
+                .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
+        MantaClient client = new MantaClient(config);
 
         String mantaFile = "/user/stor/foo";
 
@@ -153,6 +156,8 @@ processes 4 input files, greps them for 'foo' and returns the unique values.
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaJob;
 import com.joyent.manta.client.MantaJobPhase;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -161,14 +166,14 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public class App {
-    private static final String URL = "https://us-east.manta.joyent.com";
-    // If there is no subuser, then just use the account name
-    private static final String LOGIN = "user/subuser";
-    private static final String KEY_PATH = "src/test/java/data/id_rsa";
-    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
-
     public static void main(String... args) throws IOException, InterruptedException {
-        MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+        ConfigContext config = new StandardConfigContext()
+                .setMantaURL("https://us-east.manta.joyent.com")
+                // If there is no subuser, then just use the account name
+                .setMantaUser("user/subuser")
+                .setMantaKeyPath("src/test/java/data/id_rsa")
+                .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
+        MantaClient client = new MantaClient(config);
 
         List<String> inputs = new ArrayList<>();
         // You will need to change these to reflect the files that you want
@@ -229,44 +234,46 @@ job initialization.
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaJobBuilder;
 import com.joyent.manta.client.MantaJobPhase;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
 
 import java.io.IOException;
 import java.util.stream.Stream;
 
 public class App {
-    private static final String URL = "https://us-east.manta.joyent.com";
-    // If there is no subuser, then just use the account name
-    private static final String LOGIN = "user/subuser";
-    private static final String KEY_PATH = "src/test/java/data/id_rsa";
-    private static final String KEY_FINGERPRINT = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
-
     public static void main(String... args) throws IOException, InterruptedException {
-        MantaClient client = new MantaClient(URL, LOGIN, KEY_PATH, KEY_FINGERPRINT);
+        ConfigContext config = new StandardConfigContext()
+                .setMantaURL("https://us-east.manta.joyent.com")
+                // If there is no subuser, then just use the account name
+                .setMantaUser("user/subuser")
+                .setMantaKeyPath("src/test/java/data/id_rsa")
+                .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
+        MantaClient client = new MantaClient(config);
 
         // You can only get a builder from a MantaClient
         final MantaJobBuilder builder = client.jobBuilder();
 
         MantaJobBuilder.Run runningJob = builder.newJob("example")
-               .addInputs("/user/stor/logs/input_1",
-                          "/user/stor/logs/input_2",
-                          "/user/stor/logs/input_3",
-                          "/user/stor/logs/input_4")
-               .addPhase(new MantaJobPhase()
-                       .setType("map")
-                       .setExec("grep foo"))
-               .addPhase(new MantaJobPhase()
-                       .setType("reduce")
-                       .setExec("sort | uniq"))
-               // This is an optional command that will validate that the inputs
-               // specified are available
-               .validateInputs()
-               .run();
+                .addInputs("/user/stor/logs/input_1",
+                        "/user/stor/logs/input_2",
+                        "/user/stor/logs/input_3",
+                        "/user/stor/logs/input_4")
+                .addPhase(new MantaJobPhase()
+                        .setType("map")
+                        .setExec("grep foo"))
+                .addPhase(new MantaJobPhase()
+                        .setType("reduce")
+                        .setExec("sort | uniq"))
+                // This is an optional command that will validate that the inputs
+                // specified are available
+                .validateInputs()
+                .run();
 
         // This will wait until the job is finished
         MantaJobBuilder.Done finishedJob = runningJob.waitUntilDone()
-                  // This will validate if the job finished without errors.
-                  // If there was an error an exception will be thrown
-                  .validateJobsSucceeded();
+                // This will validate if the job finished without errors.
+                // If there was an error an exception will be thrown
+                .validateJobsSucceeded();
 
         // You will always need to close streams because we do everything online
         try (Stream<String> outputs = finishedJob.outputs()) {
