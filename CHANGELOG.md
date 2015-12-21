@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [2.0.0] - ?
+## [2.0.0] - 2015-12-21
 ### Changed
 - MantaException now inherits from RuntimeException.
 - MantaClientHttpResponseException now inherits from IOException.
@@ -34,7 +34,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added additional Maven enforcer checks.
 
 ### Removed
-- Removed all non-context based constructors from MantaClient. 
+- Removed all non-context based constructors from MantaClient.
 
 ## [1.6.0] - 2015-11-11
 ### Changed
