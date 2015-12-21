@@ -93,6 +93,7 @@
         <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
+        <maven-extra-enforcer-rules.version>1.0-beta-4</maven-extra-enforcer-rules.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
         <maven-jar-plugin.version>2.6</maven-jar-plugin.version>
@@ -109,7 +110,7 @@
         <dependency.checkstyle.version>6.12.1</dependency.checkstyle.version>
         <dependency.logback.version>1.1.3</dependency.logback.version>
         <dependency.mockito.version>2.0.2-beta</dependency.mockito.version>
-        <dependency.slfj.version>1.7.13</dependency.slfj.version>
+        <dependency.slfj.version>1.7.7</dependency.slfj.version>
         <dependency.testng.version>6.9.9</dependency.testng.version>
         <dependency.commons-collections.version>4.0</dependency.commons-collections.version>
     </properties>
@@ -122,21 +123,9 @@
         </dependency>
 
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${dependency.logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>${dependency.mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>${dependency.testng.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -213,7 +202,65 @@
                             </rules>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules>
+                                <dependencyConvergence/>
+                            </rules>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>enforce-bytecode-version</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <enforceBytecodeVersion>
+                                    <maxJdkVersion>${java.min.version}</maxJdkVersion>
+                                </enforceBytecodeVersion>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>enforce-ban-circular-dependencies</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <banCircularDependencies/>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>enforce-ban-duplicate-classes</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <banDuplicateClasses>
+                                    <findAllDuplicates>true</findAllDuplicates>
+                                </banDuplicateClasses>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>${maven-extra-enforcer-rules.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -222,7 +269,6 @@
                 <configuration>
                     <forkCount>${failsafe.forkCount}</forkCount>
                     <systemPropertyVariables>
-                        <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
                     </systemPropertyVariables>
                     <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
@@ -285,7 +331,6 @@
                     <forkCount>${surefire.forkCount}</forkCount>
                     <skip>${maven.test.skip}</skip>
                     <systemPropertyVariables>
-                        <exampleSystemPropertyName>exampleSystemPropertyValue</exampleSystemPropertyName>
                     </systemPropertyVariables>
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>

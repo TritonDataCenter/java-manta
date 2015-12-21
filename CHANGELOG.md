@@ -31,6 +31,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Added support for RBAC roles.
 - Added Manta compute job support.
 - Added HTTP retries as a configuration parameter.
+- Added additional Maven enforcer checks.
 
 ### Removed
 - Removed all non-context based constructors from MantaClient. 
