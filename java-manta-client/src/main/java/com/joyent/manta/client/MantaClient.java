@@ -17,9 +17,11 @@ import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
@@ -48,6 +50,7 @@ import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -1027,12 +1030,37 @@ public class MantaClient implements AutoCloseable {
         final HttpRequest request = httpRequestFactory.buildPostRequest(genericUrl, content);
         request.setContent(content);
 
-        HttpResponse response = httpHelper.executeAndCloseRequest(request,
-                "POST   {} response [{}] {} ", path);
+        Function<HttpResponse, UUID> jobIdFunction = response -> {
+            final String location = response.getHeaders().getLocation();
+            String id = MantaUtils.lastItemInPath(location);
+            return UUID.fromString(id);
+        };
 
-        final String location = response.getHeaders().getLocation();
-        String id = MantaUtils.lastItemInPath(location);
-        return UUID.fromString(id);
+        /* This endpoint has a propensity for failing to respond, so we retry on
+         * failure. */
+
+        final int retries;
+
+        if (config.getRetries() == null) {
+            retries = DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
+        } else {
+            retries = config.getRetries();
+        }
+
+        IOException lastException = new IOException("Never thrown. Report me as a bug.");
+
+        // if retries are set to zero, we always execute at least once
+        for (int count = 0; count < retries || count == 0; count++) {
+            try {
+                return httpHelper.executeAndCloseRequest(request,
+                        jobIdFunction, "POST   {} response [{}] {} ", path);
+            } catch (NoHttpResponseException e) {
+                lastException = e;
+                LOG.warn("Error posting createJob. Retrying.", e);
+            }
+        }
+
+        throw lastException;
     }
 
 

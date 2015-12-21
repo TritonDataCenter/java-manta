@@ -6,8 +6,8 @@ import com.joyent.manta.exception.MantaException;
 import java.io.IOException;
 
 /**
- * @author Elijah Zupancic
- * @since 1.0.0
+ * Function allowing us to make useful testing lamdas.
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @FunctionalInterface
 public interface MantaFunction<R> {

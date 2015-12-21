@@ -13,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
@@ -287,6 +289,43 @@ public class HttpHelper {
                     response.getStatusMessage());
 
             return response;
+        } catch (final HttpResponseException e) {
+            throw new MantaClientHttpResponseException(e);
+        } finally {
+            if (response != null) {
+                response.disconnect();
+            }
+        }
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request and returns back the
+     * response.
+     *
+     * @param request request object
+     * @param responseAction action to perform against the response before it is closed
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected <R> R executeAndCloseRequest(final HttpRequest request,
+                                           final Function<HttpResponse, R> responseAction,
+                                           final String logMessage,
+                                           final Object... logParameters)
+            throws IOException {
+        HttpResponse response = null;
+
+        try {
+            response = request.execute();
+            LOG.debug(logMessage, logParameters, response.getStatusCode(),
+                    response.getStatusMessage());
+
+            return responseAction.apply(response);
+        } catch (final UncheckedIOException e) {
+            throw e.getCause();
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {

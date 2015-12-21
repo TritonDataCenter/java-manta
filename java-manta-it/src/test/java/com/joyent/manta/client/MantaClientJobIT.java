@@ -15,6 +15,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
+import org.testng.util.RetryAnalyzerCount;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = { "job" })
+@Test(groups = { "job" }, retryAnalyzer = RetryAnalyzerCount.class)
 public class MantaClientJobIT {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClientJobIT.class);
 
