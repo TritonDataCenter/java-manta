@@ -302,6 +302,7 @@ public class HttpHelper {
      * Executes a {@link HttpRequest}, logs the request and returns back the
      * response.
      *
+     * @param <R> return value from responseAction function
      * @param request request object
      * @param responseAction action to perform against the response before it is closed
      * @param logMessage log message associated with request that must contain
