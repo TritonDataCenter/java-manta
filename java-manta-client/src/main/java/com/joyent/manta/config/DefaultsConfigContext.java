@@ -28,6 +28,11 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_HTTP_RETRIES = 3;
 
     /**
+     * The default number of maximum connections to allow to the Manta API.
+     */
+    public static final int DEFAULT_MAX_CONNS = 24;
+
+    /**
      * We assume the default rsa key in the user's home directory.
      */
     public static final String MANTA_KEY_PATH;
@@ -90,6 +95,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getRetries() {
         return DEFAULT_HTTP_RETRIES;
+    }
+
+    @Override
+    public Integer getMaximumConnections() {
+        return DEFAULT_MAX_CONNS;
     }
 
     @Override

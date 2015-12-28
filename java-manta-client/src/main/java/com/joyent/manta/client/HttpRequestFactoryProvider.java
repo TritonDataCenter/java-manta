@@ -142,8 +142,16 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         registry.register(new Scheme("https", HTTPS_PORT, socketFactory));
 
         final ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager();
-        connectionManager.setMaxTotal(MAX_CONNECTIONS);
-        connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
+
+        final int maxConns;
+        if (config.getMaximumConnections() == null) {
+            maxConns = DefaultsConfigContext.DEFAULT_MAX_CONNS;
+        } else {
+            maxConns = config.getMaximumConnections();
+        }
+
+        connectionManager.setMaxTotal(maxConns);
+        connectionManager.setDefaultMaxPerRoute(maxConns);
 
         final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
 

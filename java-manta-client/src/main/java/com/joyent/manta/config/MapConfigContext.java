@@ -44,6 +44,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_RETRIES_KEY = "manta.retries";
 
     /**
+     * Property key for the maximum number of open connections to the Manta API.
+     */
+    public static final String MANTA_MAX_CONNS_KEY = "manta.max_connections";
+
+    /**
      * Property key for looking up Manta private key content.
      */
     public static final String MANTA_PRIVATE_KEY_CONTENT_KEY = "manta.key_content";
@@ -62,7 +67,7 @@ public class MapConfigContext implements ConfigContext {
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
             MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
-            MANTA_PRIVATE_KEY_CONTENT_KEY,
+            MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
             MANTA_PASSWORD_KEY
     };
 
@@ -142,6 +147,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_RETRIES_ENV_KEY));
+    }
+
+    @Override
+    public Integer getMaximumConnections() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_MAX_CONNS_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_MAX_CONNS_ENV_KEY));
     }
 
     /**

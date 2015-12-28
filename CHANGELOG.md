@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.1.0] - 2015-12-28
+### Added
+ - Added maximum connections configuration parameter.
+
 ## [2.0.0] - 2015-12-21
 ### Changed
 - MantaException now inherits from RuntimeException.
@@ -15,7 +19,6 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Changed to a JDK 8 Stream model for streamable resources.
 - Many utility methods used for making HTTP requests have been moved to the
   HttpHelper class.
-
 
 ### Added
 - Added read-only support for NIO SeekableByteChannel streams.

@@ -43,6 +43,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_RETRIES_ENV_KEY = "MANTA_HTTP_RETRIES";
 
     /**
+     * Environment variable for the maximum number of open connections to the Manta API.
+     */
+    public static final String MANTA_MAX_CONNS_ENV_KEY = "MANTA_MAX_CONNS";
+
+    /**
      * Environment variable for looking up Manta private key content.
      */
     public static final String MANTA_PRIVATE_ENV_KEY_CONTENT = "MANTA_KEY_CONTENT";
@@ -58,7 +63,8 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
             MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
-            MANTA_PRIVATE_ENV_KEY_CONTENT, MANTA_PASSWORD_ENV_KEY
+            MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_ENV_KEY_CONTENT,
+            MANTA_PASSWORD_ENV_KEY
     };
 
     /**
@@ -124,5 +130,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public Integer getRetries() {
         String retriesString = getEnv(MANTA_RETRIES_ENV_KEY);
         return MantaUtils.parseIntegerOrNull(retriesString);
+    }
+
+    @Override
+    public Integer getMaximumConnections() {
+        String maxConnsString = getEnv(MANTA_MAX_CONNS_ENV_KEY);
+        return MantaUtils.parseIntegerOrNull(maxConnsString);
     }
 }

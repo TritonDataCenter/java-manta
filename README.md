@@ -5,7 +5,7 @@
 [java-manta](http://joyent.github.com/java-manta) is a community-maintained Java
 SDK for interacting with Joyent's Manta system.
 
-## Installation 
+## Installation
 
 ### Requirements
 * [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
@@ -42,16 +42,17 @@ authenticate against Manta.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                              | TestNG Param   | System Property   | Environment Variable      |
-|--------------------------------------|----------------|-------------------|---------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url      | manta.url         | MANTA_URL                 |
-|                                      | manta.user     | manta.user        | MANTA_USER                |
-|                                      | manta.key_id   | manta.key_id      | MANTA_KEY_ID              |
-|                                      | manta.key_path | manta.key_path    | MANTA_KEY_PATH            |
-|                                      |                | manta.key_content | MANTA_KEY_CONTENT         |
-|                                      |                | manta.password    | MANTA_PASSWORD            |
-| 20000                                | manta.timeout  | manta.timeout     | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)          |                | manta.retries     | MANTA_HTTP_RETRIES        |
+| Default                              | TestNG Param   | System Property       | Environment Variable      |
+|--------------------------------------|----------------|-----------------------|---------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url      | manta.url             | MANTA_URL                 |
+|                                      | manta.user     | manta.user            | MANTA_USER                |
+|                                      | manta.key_id   | manta.key_id          | MANTA_KEY_ID              |
+|                                      | manta.key_path | manta.key_path        | MANTA_KEY_PATH            |
+|                                      |                | manta.key_content     | MANTA_KEY_CONTENT         |
+|                                      |                | manta.password        | MANTA_PASSWORD            |
+| 20000                                | manta.timeout  | manta.timeout         | MANTA_TIMEOUT             |
+| 3 (6 for integration tests)          |                | manta.retries         | MANTA_HTTP_RETRIES        |
+| 24                                   |                | manta.max_connections | MANTA_MAX_CONNS           |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -71,16 +72,18 @@ The password associated with the key specified. This is optional and not normall
 The number of milliseconds to wait after a request was made to Manta before failing.
 * `manta.retries` ( **MANTA_HTTP_RETRIES**)
 The number of times to retry failed HTTP requests.
- 
+* `manta.max_connections` ( **MANTA_MAX_CONNS**)
+The maximum number of open HTTP connections to the Manta API.
+
 If you want to skip running of the test suite, use the `-DskipTests` property.
 
 ## Accounts, Usernames and Subusers
 Joyent's SmartDataCenter account implementation is such that you can have a
 subuser as a dependency upon a user. This is part of SmartDataCenter's [RBAC
 implementation](https://docs.joyent.com/public-cloud/rbac/users). A subuser
-is a user with a unique username that is joined with the account holder's 
+is a user with a unique username that is joined with the account holder's
 username. Typically, this is in the format of "user/subuser".
- 
+
 Within the Java Manta library, we refer to the account name as the entire
 string used to login - "user/subuser". When we use the term user it is in
 reference to the "user" portion of the account name and when we use the term
@@ -88,7 +91,7 @@ subuser, it is in reference to the subuser portion of the account name.
 
 The notable exception is that in the configuration passed into the library,
 we have continued to use the terminology *Manta user* to refer to the
-account name because of historic compatibility concerns. 
+account name because of historic compatibility concerns.
 
 ## Usage
 
@@ -111,7 +114,7 @@ import java.io.InputStream;
 import java.util.Scanner;
 
 public class App {
-    
+
     public static void main(String... args) throws IOException {
         ConfigContext config = new StandardConfigContext()
                 .setMantaURL("https://us-east.manta.joyent.com")
@@ -188,7 +191,7 @@ public class App {
         MantaJobPhase map = new MantaJobPhase()
                 .setType("map")
                 .setExec("grep foo");
-        // This returns unique values from all of the map outputs 
+        // This returns unique values from all of the map outputs
         MantaJobPhase reduce = new MantaJobPhase()
                 .setType("reduce")
                 .setExec("sort | uniq");
@@ -317,7 +320,7 @@ clean with no warnings or errors.
 
 ### Testing
 
-When running the unit tests, you will need an active account on the Joyent public 
+When running the unit tests, you will need an active account on the Joyent public
 cloud or a private Manta instance. To test:
 ```
 # Assuming you have already set your environment variables and/or system properties
@@ -368,12 +371,12 @@ The following is an example settings.xml file:
 To perform a release:
 
 1. Make sure the source builds, test suites pass, and the source and java artifacts can
- be generated and signed:  
+ be generated and signed:
 `mvn clean verify -Prelease`
 2. Start from a clean working directory and make sure you have no modified
-files in your workspace:  
+files in your workspace:
 `mvn clean && git status`
-3. Prepare the release:  
+3. Prepare the release:
 4. `mvn release:clean release:prepare`
 4. Enter the version to be associated with this release.
 You should be prompted for this version number, and the default assumed version
@@ -392,7 +395,7 @@ suffix.
  * The pom.xml file will be updated to reflect the version change to the release
 version.
  * The new pom.xml will be committed.
- * The new commit will be tagged.     
+ * The new commit will be tagged.
  * The pom.xml file will be updated again with the new development version.
  * Then this new pom.xml will be committed.
 
@@ -408,14 +411,14 @@ with this).
 In order for the `release:perform` goal to complete successfully, you will need to
 push the tags created by the maven release plugin to the remote git server.
 
-8. Perform the actual release:  
+8. Perform the actual release:
 `mvn release:perform`
 A build will be performed and packaged and artifacts deployed to the sonatype
 staging repository.
 
 9. Log into the [Sonatype OSSHR Next](https://oss.sonatype.org) web interface
 to [verify and promote](http://central.sonatype.org/pages/releasing-the-deployment.html)
-the build. 
+the build.
 
 **NOTE**: By default, these instructions assumes the release is being done from a
 branch that can be merged into a primary branch upon successful completion,

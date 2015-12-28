@@ -58,6 +58,11 @@ public interface ConfigContext {
     Integer getRetries();
 
     /**
+     * @return the maximum number of open connections to the Manta API
+     */
+    Integer getMaximumConnections();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account
