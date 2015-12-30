@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>java-manta</artifactId>
+        <groupId>com.joyent.manta</groupId>
+        <version>2.1.1-SNAPSHOT</version>
+    </parent>
+
+    <packaging>jar</packaging>
+
+    <artifactId>java-manta-benchmark</artifactId>
+
+    <properties>
+        <!-- Dependency versions -->
+        <dependency.apache-commons-lang>3.4</dependency.apache-commons-lang>
+        <dependency.apache-commons-io>2.4</dependency.apache-commons-io>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.joyent.manta</groupId>
+            <artifactId>java-manta-client</artifactId>
+            <version>2.1.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${dependency.logback.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.slf4j</artifactId>
+                    <groupId>slf4j-api</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${dependency.apache-commons-lang}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${dependency.apache-commons-io}</version>
+        </dependency>
+    </dependencies>
+</project>

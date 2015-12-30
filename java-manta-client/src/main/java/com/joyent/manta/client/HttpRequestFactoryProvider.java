@@ -27,6 +27,8 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -43,6 +45,11 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  */
 public class HttpRequestFactoryProvider implements AutoCloseable {
     /**
+     * The static logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
+
+    /**
      * The size of the internal socket buffer used to buffer data
      * while receiving / transmitting HTTP messages.
      */
@@ -57,16 +64,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      * Default port to connect to for HTTPS connections outbound.
      */
     private static final int HTTPS_PORT = 443;
-
-    /**
-     * Maximum number of total concurrent connections.
-     */
-    private static final int MAX_CONNECTIONS = 20;
-
-    /**
-     * Maximum number of total concurrent connections per route.
-     */
-    private static final int MAX_CONNECTIONS_PER_ROUTE = 200;
 
     /**
      * The JSON factory instance used by the http library for handling JSON.
@@ -186,7 +183,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         final HttpTransport transport = new ApacheHttpTransport(apacheHttpClient);
         final HttpExecuteInterceptor signingInterceptor = request -> {
             // Set timeouts
-
             final int httpTimeout;
 
             if (config.getTimeout() == null) {
@@ -197,6 +193,8 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
             request.setReadTimeout(httpTimeout);
             request.setConnectTimeout(httpTimeout);
+            request.setLoggingEnabled(LOG.isDebugEnabled());
+
             // Sign request
             httpSigner.signRequest(request);
             // Load request ID into MDC so that it can be logged
