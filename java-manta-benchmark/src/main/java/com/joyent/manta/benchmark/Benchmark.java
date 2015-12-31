@@ -1,4 +1,4 @@
-package com.joyent.manta;
+package com.joyent.manta.benchmark;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectInputStream;
@@ -23,13 +23,58 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class Benchmark {
-    private static Logger LOG = LoggerFactory.getLogger(Benchmark.class);
+public final class Benchmark {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(Benchmark.class);
+
+    /**
+     * Default object size.
+     */
+    private static final int DEFAULT_OBJ_SIZE_KB = 128;
+
+    /**
+     * Default number of iterations.
+     */
+    private static final int DEFAULT_ITERATIONS = 10;
+
+    /**
+     * Number of bytes to skip at one time when looping over streams.
+     */
+    private static final int SKIP_VALUE = 1024;
+
+    /**
+     * Configuration context that informs the Manta client about its settings.
+     */
     private static ConfigContext config;
+
+    /**
+     * Manta client library.
+     */
     private static MantaClient client;
+
+    /**
+     * Unique test run id.
+     */
     private static UUID testRunId = UUID.randomUUID();
+
+    /**
+     * Test directory.
+     */
     private static String testDirectory;
 
+    /**
+     * Use the main method and not the constructor.
+     */
+    private Benchmark() {
+    }
+
+    /**
+     * Entrance to benchmark utility.
+     * @param argv first param is the size of object in kb, second param is the number of iterations
+     * @throws Exception when something goes wrong
+     */
     public static void main(final String[] argv) throws Exception {
         config = new ChainedConfigContext(
                 new DefaultsConfigContext(),
@@ -44,14 +89,14 @@ public class Benchmark {
             if (argv.length > 0) {
                 sizeInKb = Long.parseLong(argv[0]);
             } else {
-                sizeInKb = 128;
+                sizeInKb = DEFAULT_OBJ_SIZE_KB;
             }
 
             final int iterations;
             if (argv.length > 1) {
                 iterations = Integer.parseInt(argv[1]);
             } else {
-                iterations = 10;
+                iterations = DEFAULT_ITERATIONS;
             }
 
             System.out.printf("Testing latencies on a %d kb object for %d iterations\n",
@@ -87,18 +132,33 @@ public class Benchmark {
         }
     }
 
+    /**
+     * Creates test directory.
+     *
+     * @throws IOException thrown when we can't access Manta over the network
+     */
     private static void setupTestDirectory() throws IOException {
         client.putDirectory(testDirectory);
     }
 
+    /**
+     * Cleans up the test directory.
+     */
     private static void cleanUp() {
         try {
-//            client.deleteRecursive(testDirectory);
+            client.deleteRecursive(testDirectory);
         } catch (Exception e) {
             LOG.error("Error cleaning up benchmark", e);
         }
     }
 
+    /**
+     * Adds a file (object) for testing.
+     *
+     * @param size size of object to add
+     * @return path to the object added
+     * @throws IOException thrown when we can't access Manta over the network
+     */
     private static String addTestFile(final long size) throws IOException {
         try (InputStream is = new RandomInputStream(size)) {
             String path = String.format("%s/%s.random", testDirectory,
@@ -108,17 +168,25 @@ public class Benchmark {
         }
     }
 
+    /**
+     * Measures the total time to get an object from Manta.
+     *
+     * @param path path of the object to measure
+     * @return two durations - full time in the JVM, server time processing
+     * @throws IOException thrown when we can't access Manta over the network
+     */
+    @SuppressWarnings("emptyblock")
     private static Duration[] measureGet(final String path) throws IOException {
         final Instant start = Instant.now();
         final String serverLatencyString;
-                try (MantaObjectInputStream is = client.getAsInputStream(path)) {
-            while (is.skip(1024) != 0);
+        try (MantaObjectInputStream is = client.getAsInputStream(path)) {
+            while (is.skip(SKIP_VALUE) != 0) { }
             serverLatencyString = ((ArrayList<?>)is.getHeader("x-response-time")).get(0).toString();
         }
         final Instant stop = Instant.now();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));
         Duration fullLatency = Duration.between(start, stop);
-        return new Duration[] { fullLatency, serverLatency };
+        return new Duration[] {fullLatency, serverLatency};
     }
 }

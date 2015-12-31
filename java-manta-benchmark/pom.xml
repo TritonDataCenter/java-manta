@@ -63,7 +63,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.joyent.manta.Benchmark</mainClass>
+                            <mainClass>com.joyent.manta.benchmark.Benchmark</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
@@ -86,7 +86,7 @@
                 <version>${maven-exec-plugin.version}</version>
                 <configuration>
                     <executable>java</executable>
-                    <mainClass>com.joyent.manta.Benchmark</mainClass>
+                    <mainClass>com.joyent.manta.benchmark.Benchmark</mainClass>
                 </configuration>
             </plugin>
         </plugins>

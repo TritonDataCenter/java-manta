@@ -129,8 +129,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
         final ProxySelector proxySelector = ProxySelector.getDefault();
 
-
-
         // See http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html
         final SchemeRegistry registry = new SchemeRegistry();
         registry.register(new Scheme("http", HTTP_PORT, plainSocketFactory));
@@ -170,7 +168,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     /**
      * Builds a configured instance of {@link HttpRequestFactory}.
      *
-     * @param httpSigner HTTP Signer used to sign Google HTTP requests
+     * @param httpSigner HTTP Signer used to sign Google HTTP requests or null to disable
      * @return configured instance of {@link HttpRequestFactory}
      * @throws IOException thrown when the instance can't be setup properly
      */
@@ -213,7 +211,10 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             request.setLoggingEnabled(LOG.isDebugEnabled());
 
             // Sign request
-            httpSigner.signRequest(request);
+            if (httpSigner != null) {
+                httpSigner.signRequest(request);
+            }
+
             // Load request ID into MDC so that it can be logged
             final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
             if (requestId != null) {
