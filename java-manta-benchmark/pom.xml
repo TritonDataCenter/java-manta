@@ -10,14 +10,16 @@
         <version>2.1.1-SNAPSHOT</version>
     </parent>
 
-    <packaging>jar</packaging>
-
     <artifactId>java-manta-benchmark</artifactId>
+    <version>2.1.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
     <properties>
         <!-- Dependency versions -->
-        <dependency.apache-commons-lang>3.4</dependency.apache-commons-lang>
-        <dependency.apache-commons-io>2.4</dependency.apache-commons-io>
+        <dependency.apache-commons-lang.version>3.4</dependency.apache-commons-lang.version>
+        <dependency.apache-commons-io.version>2.4</dependency.apache-commons-io.version>
+        <!-- Plugin versions -->
+        <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
     </properties>
 
     <dependencies>
@@ -38,14 +40,55 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>${dependency.slfj.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>${dependency.apache-commons-lang}</version>
+            <version>${dependency.apache-commons-lang.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>${dependency.apache-commons-io}</version>
+            <version>${dependency.apache-commons-io.version}</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.joyent.manta.Benchmark</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${maven-exec-plugin.version}</version>
+                <configuration>
+                    <executable>java</executable>
+                    <mainClass>com.joyent.manta.Benchmark</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
