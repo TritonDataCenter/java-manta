@@ -63,6 +63,11 @@ public interface ConfigContext {
     Integer getMaximumConnections();
 
     /**
+     * @return the class name of the {@link com.google.api.client.http.HttpTransport} implementation to use
+     */
+    String getHttpTransport();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account

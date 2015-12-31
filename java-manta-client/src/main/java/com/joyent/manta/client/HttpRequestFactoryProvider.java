@@ -9,9 +9,11 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponseInterceptor;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.apache.ApacheHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.testing.http.MockHttpTransport;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -47,7 +49,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     /**
      * The static logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpRequestFactoryProvider.class);
 
     /**
      * The size of the internal socket buffer used to buffer data
@@ -76,11 +78,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     private static final HttpParams HTTP_PARAMS = buildHttpParams();
 
     /**
-     * Apache HTTP Client instance.
-     */
-    private final HttpClient httpClient;
-
-    /**
      * Google HTTP Client request factory.
      */
     private final HttpRequestFactory requestFactory;
@@ -102,8 +99,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
                                       final ConfigContext config)
             throws IOException {
         this.config = config;
-        this.httpClient = buildHttpClient();
-        this.requestFactory = buildRequestFactory(httpSigner, httpClient);
+        this.requestFactory = buildRequestFactory(httpSigner);
     }
 
     /**
@@ -129,9 +125,11 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      */
     private HttpClient buildHttpClient() {
         final HttpParams params = HTTP_PARAMS;
-        final SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
+        final SSLSocketFactory socketFactory = SSLSocketFactory.getSystemSocketFactory();
         final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
         final ProxySelector proxySelector = ProxySelector.getDefault();
+
+
 
         // See http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html
         final SchemeRegistry registry = new SchemeRegistry();
@@ -173,14 +171,33 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      * Builds a configured instance of {@link HttpRequestFactory}.
      *
      * @param httpSigner HTTP Signer used to sign Google HTTP requests
-     * @param apacheHttpClient Apache HTTP Client instance used to back Google HTTP Client
      * @return configured instance of {@link HttpRequestFactory}
      * @throws IOException thrown when the instance can't be setup properly
      */
-    private HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner,
-                                                   final HttpClient apacheHttpClient)
+    private HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner)
             throws IOException {
-        final HttpTransport transport = new ApacheHttpTransport(apacheHttpClient);
+        final HttpTransport transport;
+
+        /* We only allow three choices for HttpTransport because we shade the
+         * Google HTTP Client libraries, so even if you stick in another
+         * library, you will have to make it comply with a munged classpath.
+         */
+        switch (config.getHttpTransport()) {
+            case "MockHttpTransport":
+                transport = new MockHttpTransport();
+                break;
+            case "NetHttpTransport":
+                transport = new NetHttpTransport();
+                break;
+            case "ApacheHttpTransport":
+                transport = new ApacheHttpTransport(buildHttpClient());
+                break;
+            default:
+                transport = new ApacheHttpTransport(buildHttpClient());
+        }
+
+        LOG.debug("Using HttpTransport implementation: {}", transport.getClass());
+
         final HttpExecuteInterceptor signingInterceptor = request -> {
             // Set timeouts
             final int httpTimeout;
@@ -217,13 +234,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
 
     /**
-     * @return the Apache HTTP Client instance backing the {@link HttpRequestFactory}
-     */
-    public HttpClient getHttpClient() {
-        return httpClient;
-    }
-
-    /**
      * @return configured instance of {@link HttpRequestFactory}
      */
     public HttpRequestFactory getRequestFactory() {
@@ -232,8 +242,17 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        if (httpClient.getConnectionManager() != null) {
-            httpClient.getConnectionManager().shutdown();
+        final HttpTransport transport = requestFactory.getTransport();
+
+        if (config.getHttpTransport().equals("ApacheHttpTransport")) {
+            // We know this will cast fine because it is configured as such
+            @SuppressWarnings("unchecked")
+            ApacheHttpTransport apacheTransport = (ApacheHttpTransport)transport;
+            HttpClient httpClient = apacheTransport.getHttpClient();
+
+            if (httpClient.getConnectionManager() != null) {
+                httpClient.getConnectionManager().shutdown();
+            }
         }
     }
 }

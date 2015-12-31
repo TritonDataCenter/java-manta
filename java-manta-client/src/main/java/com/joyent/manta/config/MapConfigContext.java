@@ -58,6 +58,11 @@ public class MapConfigContext implements ConfigContext {
      */
     public static final String MANTA_PASSWORD_KEY = "manta.password";
 
+    /**
+     * Property key for setting HttpTransport implementation.
+     */
+    public static final String MANTA_HTTP_TRANSPORT_KEY = "manta.http_transport";
+
     // I know manually adding them all sucks, but it is the simplest operation
     // for a shared library. We could do all sorts of complicated reflection
     // or annotation processing, but they are error-prone.
@@ -68,7 +73,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
             MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
             MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
-            MANTA_PASSWORD_KEY
+            MANTA_PASSWORD_KEY, MANTA_HTTP_TRANSPORT_KEY
     };
 
     /**
@@ -158,6 +163,12 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_MAX_CONNS_ENV_KEY));
+    }
+
+    @Override
+    public String getHttpTransport() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_HTTP_TRANSPORT_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY);
     }
 
     /**
