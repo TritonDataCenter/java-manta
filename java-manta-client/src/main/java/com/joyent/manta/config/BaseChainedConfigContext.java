@@ -58,6 +58,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      */
     private String password;
 
+    /**
+     * The class name of the {@link com.google.api.client.http.HttpTransport} implementation to use.
+     */
+    private String httpTransport;
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -129,6 +134,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this.password;
     }
 
+    @Override
+    public String getHttpTransport() {
+        return this.httpTransport;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -179,6 +189,10 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (isPresent(context.getPassword())) {
             this.password = context.getPassword();
+        }
+
+        if (isPresent(context.getHttpTransport())) {
+            this.httpTransport = context.getHttpTransport();
         }
     }
 
@@ -303,6 +317,22 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Sets the class name of the {@link com.google.api.client.http.HttpTransport}
+     * implementation to use. Use the strings ApacheHttpTransport, NetHttpTransport
+     * or MockHttpTransport to use the included implementations. If the value
+     * is not one of those three - then we default to the ApacheHttpTransport
+     * method.
+     *
+     * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setHttpTransport(final String httpTransport) {
+        this.httpTransport = httpTransport;
+
+        return this;
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -322,12 +352,14 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(retries, that.retries)
                 && Objects.equals(maxConnections, that.maxConnections)
                 && Objects.equals(privateKeyContent, that.privateKeyContent)
-                && Objects.equals(password, that.password);
+                && Objects.equals(password, that.password)
+                && Objects.equals(httpTransport, that.httpTransport);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
-                timeout, retries, maxConnections, privateKeyContent, password);
+                timeout, retries, maxConnections, privateKeyContent, password,
+                httpTransport);
     }
 }

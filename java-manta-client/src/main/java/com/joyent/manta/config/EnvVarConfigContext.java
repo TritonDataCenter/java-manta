@@ -58,13 +58,18 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_PASSWORD_ENV_KEY = "MANTA_PASSWORD";
 
     /**
+     * Environment variable for setting HttpTransport implementation.
+     */
+    public static final String MANTA_HTTP_TRANSPORT_ENV_KEY = "MANTA_HTTP_TRANSPORT";
+
+    /**
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
             MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_ENV_KEY_CONTENT,
-            MANTA_PASSWORD_ENV_KEY
+            MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY
     };
 
     /**
@@ -136,5 +141,10 @@ public class EnvVarConfigContext implements ConfigContext {
     public Integer getMaximumConnections() {
         String maxConnsString = getEnv(MANTA_MAX_CONNS_ENV_KEY);
         return MantaUtils.parseIntegerOrNull(maxConnsString);
+    }
+
+    @Override
+    public String getHttpTransport() {
+        return getEnv(MANTA_HTTP_TRANSPORT_ENV_KEY);
     }
 }

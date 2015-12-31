@@ -103,6 +103,11 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public String getHttpTransport() {
+        return "ApacheHttpTransport";
+    }
+
+    @Override
     public String getMantaHomeDirectory() {
         return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
     }

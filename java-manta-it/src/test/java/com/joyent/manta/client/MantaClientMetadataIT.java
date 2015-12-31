@@ -33,17 +33,19 @@ public class MantaClientMetadataIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout)
+                            @Optional Integer mantaTimeout,
+                            @Optional String mantaHttpTransport)
             throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new TestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
+                mantaHttpTransport);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("/%s/stor/%s/",

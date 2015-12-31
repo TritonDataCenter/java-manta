@@ -9,7 +9,25 @@
     <parameter name="manta.timeout" value="30000"/>
     -->
 
-    <test name="Manta Client Tests">
+    <test name="Manta Client Tests ApacheHttpTransport">
+        <parameter name="manta.http_transport" value="ApacheHttpTransport"/>
+
+        <classes>
+            <class name="com.joyent.manta.client.TestSuiteSetup" />
+            <class name="com.joyent.manta.client.MantaClientDirectoriesIT" />
+            <class name="com.joyent.manta.client.MantaClientIT" />
+            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
+            <class name="com.joyent.manta.client.MantaClientMetadataIT" />
+            <class name="com.joyent.manta.client.MantaClientJobIT" />
+            <class name="com.joyent.manta.client.MantaHttpHeadersIT" />
+            <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
+            <class name="com.joyent.manta.client.MantaJobBuilderIT" />
+        </classes>
+    </test>
+
+    <test name="Manta Client Tests NetHttpTransport">
+        <parameter name="manta.http_transport" value="NetHttpTransport"/>
+
         <classes>
             <class name="com.joyent.manta.client.TestSuiteSetup" />
             <class name="com.joyent.manta.client.MantaClientDirectoriesIT" />
