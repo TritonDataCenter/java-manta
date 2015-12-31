@@ -125,9 +125,11 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      */
     private HttpClient buildHttpClient() {
         final HttpParams params = HTTP_PARAMS;
-        final SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
+        final SSLSocketFactory socketFactory = SSLSocketFactory.getSystemSocketFactory();
         final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
         final ProxySelector proxySelector = ProxySelector.getDefault();
+
+
 
         // See http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html
         final SchemeRegistry registry = new SchemeRegistry();

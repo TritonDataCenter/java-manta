@@ -42,17 +42,18 @@ authenticate against Manta.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                              | TestNG Param   | System Property       | Environment Variable      |
-|--------------------------------------|----------------|-----------------------|---------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url      | manta.url             | MANTA_URL                 |
-|                                      | manta.user     | manta.user            | MANTA_USER                |
-|                                      | manta.key_id   | manta.key_id          | MANTA_KEY_ID              |
-|                                      | manta.key_path | manta.key_path        | MANTA_KEY_PATH            |
-|                                      |                | manta.key_content     | MANTA_KEY_CONTENT         |
-|                                      |                | manta.password        | MANTA_PASSWORD            |
-| 20000                                | manta.timeout  | manta.timeout         | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)          |                | manta.retries         | MANTA_HTTP_RETRIES        |
-| 24                                   |                | manta.max_connections | MANTA_MAX_CONNS           |
+| Default                              | TestNG Param         | System Property       | Environment Variable      |
+|--------------------------------------|----------------------|-----------------------|---------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url            | manta.url             | MANTA_URL                 |
+|                                      | manta.user           | manta.user            | MANTA_USER                |
+|                                      | manta.key_id         | manta.key_id          | MANTA_KEY_ID              |
+|                                      | manta.key_path       | manta.key_path        | MANTA_KEY_PATH            |
+|                                      |                      | manta.key_content     | MANTA_KEY_CONTENT         |
+|                                      |                      | manta.password        | MANTA_PASSWORD            |
+| 20000                                | manta.timeout        | manta.timeout         | MANTA_TIMEOUT             |
+| 3 (6 for integration tests)          |                      | manta.retries         | MANTA_HTTP_RETRIES        |
+| 24                                   |                      | manta.max_connections | MANTA_MAX_CONNS           |
+| ApacheHttpTransport                  | manta.http_transport | manta.http_transport  | MANTA_HTTP_TRANSPORT      |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -74,6 +75,8 @@ The number of milliseconds to wait after a request was made to Manta before fail
 The number of times to retry failed HTTP requests.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
 The maximum number of open HTTP connections to the Manta API.
+* `manta.http_transport` (**MANTA_HTTP_TRANSPORT**)
+The HTTP transport library to use. Either the Apache HTTP Client (ApacheHttpTransport) or the native JDK HTTP library (NetHttpTransport).
 
 If you want to skip running of the test suite, use the `-DskipTests` property.
 

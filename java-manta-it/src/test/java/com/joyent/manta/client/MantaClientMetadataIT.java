@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.TestConfigContext;
+import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
@@ -43,7 +43,7 @@ public class MantaClientMetadataIT {
             throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new TestConfigContext(
+        ConfigContext config = new IntegrationTestConfigContext(
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
                 mantaHttpTransport);
 

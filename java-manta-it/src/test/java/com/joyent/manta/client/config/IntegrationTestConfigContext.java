@@ -17,7 +17,7 @@ import java.util.Properties;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class TestConfigContext extends BaseChainedConfigContext {
+public class IntegrationTestConfigContext extends BaseChainedConfigContext {
     /**
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
@@ -26,8 +26,8 @@ public class TestConfigContext extends BaseChainedConfigContext {
      * @param properties properties to load into context
      * @param includeEnvironmentVars flag indicated if we include the environment into the context
      */
-    public TestConfigContext(ConfigContext context, Properties properties,
-                             boolean includeEnvironmentVars) {
+    public IntegrationTestConfigContext(ConfigContext context, Properties properties,
+                                        boolean includeEnvironmentVars) {
         super();
 
         // load defaults
@@ -49,7 +49,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
      * @param context additional context to layer on top
      * @param properties properties to load into context
      */
-    public TestConfigContext(ConfigContext context, Properties properties) {
+    public IntegrationTestConfigContext(ConfigContext context, Properties properties) {
         this(context, properties, true);
     }
 
@@ -59,16 +59,16 @@ public class TestConfigContext extends BaseChainedConfigContext {
      *
      * @param context additional context to layer on top
      */
-    public TestConfigContext(ConfigContext context) {
+    public IntegrationTestConfigContext(ConfigContext context) {
         this(context, System.getProperties());
     }
 
-    public TestConfigContext(String mantaUrl,
-                             String mantaUser,
-                             String mantaKeyPath,
-                             String mantaKeyId,
-                             Integer mantaTimeout,
-                             String mantaHttpTransport) {
+    public IntegrationTestConfigContext(String mantaUrl,
+                                        String mantaUser,
+                                        String mantaKeyPath,
+                                        String mantaKeyId,
+                                        Integer mantaTimeout,
+                                        String mantaHttpTransport) {
         this(buildTestContext(mantaUrl, mantaUser, mantaKeyPath,
                 mantaKeyId, mantaTimeout, 6, mantaHttpTransport));
     }

@@ -1,6 +1,6 @@
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.TestConfigContext;
+import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.MapConfigContext;
@@ -47,7 +47,7 @@ public class MantaClientErrorIT {
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new TestConfigContext(
+        config = new IntegrationTestConfigContext(
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
                 mantaHttpTransport);
 
