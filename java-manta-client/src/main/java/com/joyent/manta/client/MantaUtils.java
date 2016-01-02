@@ -184,6 +184,41 @@ public final class MantaUtils {
 
 
     /**
+     * Parses an arbitrary object for a boolean. If it can't be found, return null.
+     *
+     * @param value Object to parse for an boolean
+     * @return if parsing fails, return null
+     */
+    public static Boolean parseBooleanOrNull(final Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Boolean) {
+            return (Boolean)value;
+        }
+
+        String string = toStringEmptyToNull(value);
+        if (string == null) {
+            return null;
+        }
+
+        Boolean parsed;
+
+        try {
+            parsed = Boolean.parseBoolean(string);
+        } catch (Exception e) {
+            Logger logger = LoggerFactory.getLogger(MantaUtils.class);
+            String msg = "Error parsing value as boolean. Value: %s";
+            logger.warn(String.format(msg, value), e);
+            parsed = null;
+        }
+
+        return parsed;
+    }
+
+
+    /**
      * Format the path according to RFC3986.
      *
      * @param path the raw path string.

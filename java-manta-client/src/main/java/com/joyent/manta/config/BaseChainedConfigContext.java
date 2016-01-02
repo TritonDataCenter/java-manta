@@ -73,6 +73,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      */
     private String httpsCiphers;
 
+    /**
+     * Flag indicating if HTTP signatures are turned off.
+     */
+    private Boolean noAuth;
+
+    /**
+     * Flag indicating if HTTP signature native code generation is turned off.
+     */
+    private Boolean disableNativeSignatures;
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -159,6 +169,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return httpsCiphers;
     }
 
+    @Override
+    public Boolean noAuth() {
+        return noAuth;
+    }
+
+    @Override
+    public Boolean disableNativeSignatures() {
+        return disableNativeSignatures;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -221,6 +241,14 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (isPresent(context.getHttpsCipherSuites())) {
             this.httpsCiphers = context.getHttpsCipherSuites();
+        }
+
+        if (context.noAuth() != null) {
+            this.noAuth = context.noAuth();
+        }
+
+        if (context.disableNativeSignatures() != null) {
+            this.disableNativeSignatures = context.disableNativeSignatures();
         }
     }
 
@@ -385,6 +413,31 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Change the state of whether or not HTTP signatures are sent to the Manta API.
+     *
+     * @param noAuth true to disable HTTP signatures
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setNoAuth(final Boolean noAuth) {
+        this.noAuth = noAuth;
+
+        return this;
+    }
+
+    /**
+     * Change the state of whether or not HTTP signatures are using native code
+     * to generate the cryptographic signatures.
+     *
+     * @param disableNativeSignatures true to disable
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setDisableNativeSignatures(final Boolean disableNativeSignatures) {
+        this.disableNativeSignatures = disableNativeSignatures;
+
+        return this;
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -407,13 +460,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(password, that.password)
                 && Objects.equals(httpTransport, that.httpTransport)
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
-                && Objects.equals(httpsCiphers, that.httpsCiphers);
+                && Objects.equals(httpsCiphers, that.httpsCiphers)
+                && Objects.equals(noAuth, that.noAuth)
+                && Objects.equals(disableNativeSignatures, that.disableNativeSignatures);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
-                httpTransport, httpsProtocols, httpsCiphers);
+                httpTransport, httpsProtocols, httpsCiphers, noAuth,
+                disableNativeSignatures);
     }
 }

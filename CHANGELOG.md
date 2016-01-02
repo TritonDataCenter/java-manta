@@ -2,13 +2,19 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [2.2.0] - ?
+## [2.3.0] - 2016-01-02
 ### Added
  - Added http transport library configuration parameter.
- - We now honor cipher suite parameters (https.cipherSuites) when using
+ - We now honor TLS cipher suite parameters (https.cipherSuites) when using
    ApacheHttpTransport.
- - We now honor cipher protocols parameters (https.protocols) when using
+ - We now honor TLS protocols parameters (https.protocols) when using
    ApacheHttpTransport.
+ - We now allow configuration of TLS protocols and ciphers.
+ - Upgraded http-signatures library to 1.1.0.
+ - We now allow you to disable HTTP signature based authentication
+   altogether.
+ - We now allow you to disable native code cryptographic performance
+   enhancements.
 
 ## [2.1.0] - 2015-12-28
 ### Added

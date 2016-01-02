@@ -78,6 +78,16 @@ public interface ConfigContext {
     String getHttpsCipherSuites();
 
     /**
+     * @return true when we disable sending HTTP signatures
+     */
+    Boolean noAuth();
+
+    /**
+     * @return true when we disable using native code to generate HTTP signatures
+     */
+    Boolean disableNativeSignatures();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account

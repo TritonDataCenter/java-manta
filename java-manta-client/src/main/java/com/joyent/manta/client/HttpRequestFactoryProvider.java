@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.net.ProxySelector;
 
 import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
+import static com.joyent.manta.config.MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY;
 
 /**
  * Provider class that provides a configured implementation of
@@ -99,6 +100,15 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
                                       final ConfigContext config)
             throws IOException {
         this.config = config;
+
+        /* Disable native signature generation if configured
+         * There may be a race condition here because this flag is triggered
+         * in the static scope. If you absolutely need to turn this off
+         * load the system property at jvm start. */
+        if (config.disableNativeSignatures() &&
+            System.getProperty(MANTA_NO_NATIVE_SIGS_KEY) == null) {
+        }
+
         this.requestFactory = buildRequestFactory(httpSigner);
     }
 
@@ -197,6 +207,8 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
         LOG.debug("Using HttpTransport implementation: {}", transport.getClass());
 
+        final boolean authEnabled = config.noAuth() == null || !config.noAuth();
+
         final HttpExecuteInterceptor signingInterceptor = request -> {
             // Set timeouts
             final int httpTimeout;
@@ -211,7 +223,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
             request.setConnectTimeout(httpTimeout);
 
             // Sign request
-            if (httpSigner != null) {
+            if (httpSigner != null && authEnabled) {
                 httpSigner.signRequest(request);
             }
 

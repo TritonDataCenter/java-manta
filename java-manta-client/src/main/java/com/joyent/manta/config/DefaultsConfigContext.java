@@ -121,6 +121,16 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Boolean noAuth() {
+        return false;
+    }
+
+    @Override
+    public Boolean disableNativeSignatures() {
+        return false;
+    }
+
+    @Override
     public String getMantaHomeDirectory() {
         return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
     }
