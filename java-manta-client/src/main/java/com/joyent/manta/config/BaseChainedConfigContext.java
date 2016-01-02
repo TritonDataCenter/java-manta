@@ -84,7 +84,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private Boolean disableNativeSignatures;
 
     /**
-     * Time in milliseconds to cache HTTP signature headers
+     * Time in milliseconds to cache HTTP signature headers.
      */
     private Integer signatureCacheTTL;
 

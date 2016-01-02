@@ -51,6 +51,9 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
      */
     private final boolean authEnabled;
 
+    /**
+     * Cache TTL.
+     */
     private final int cacheTTL;
 
     /**
@@ -72,7 +75,7 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
     }
 
     @Override
-    public void intercept(HttpRequest request) throws IOException {
+    public void intercept(final HttpRequest request) throws IOException {
         // Set timeouts
         final int httpTimeout;
 

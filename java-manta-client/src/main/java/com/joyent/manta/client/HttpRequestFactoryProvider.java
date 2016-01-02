@@ -17,6 +17,7 @@ import com.google.api.client.testing.http.MockHttpTransport;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.MapConfigContext;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
@@ -104,8 +105,8 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
          * There may be a race condition here because this flag is triggered
          * in the static scope. If you absolutely need to turn this off
          * load the system property at jvm start. */
-        if (config.disableNativeSignatures() &&
-            System.getProperty(MANTA_NO_NATIVE_SIGS_KEY) == null) {
+        if (config.disableNativeSignatures() && System.getProperty(MANTA_NO_NATIVE_SIGS_KEY) == null) {
+            System.setProperty(MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY, "false");
         }
 
         this.requestFactory = buildRequestFactory(httpSigner);
