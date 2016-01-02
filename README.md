@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
 </dependency>
 ```
 
@@ -81,7 +81,15 @@ The number of times to retry failed HTTP requests.
 The maximum number of open HTTP connections to the Manta API.
 * `manta.http_transport` (**MANTA_HTTP_TRANSPORT**)
 The HTTP transport library to use. Either the Apache HTTP Client (ApacheHttpTransport) or the native JDK HTTP library (NetHttpTransport).
-
+* `https.protocols` (*MANTA_HTTPS_PROTOCOLS*)
+A comma delimited list of TLS protocols.
+* `https.cipherSuites` (*MANTA_HTTPS_CIPHERS*)
+A comma delimited list of TLS cipher suites.
+* `manta.no_auth` (*MANTA_NO_AUTH*)
+When set to true, this disables HTTP Signature authentication entirely. This is
+only really useful when you are running the library as part of a Manta job.
+* `http.signature.native.rsa` (*MANTA_NO_NATIVE_SIGS*)
+When set to true, this disables the use of native code libraries for cryptography.
 If you want to skip running of the test suite, use the `-DskipTests` property.
 
 ## Accounts, Usernames and Subusers

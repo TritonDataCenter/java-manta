@@ -64,12 +64,12 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private String httpTransport;
 
     /**
-     * Comma delineated list of supported TLS protocols.
+     * Comma delimited list of supported TLS protocols.
      */
     private String httpsProtocols;
 
     /**
-     * Comma delineated list of supported TLS ciphers.
+     * Comma delimited list of supported TLS ciphers.
      */
     private String httpsCiphers;
 
@@ -392,7 +392,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     /**
      * Set the supported TLS protocols.
      *
-     * @param httpsProtocols comma delineated list of TLS protocols
+     * @param httpsProtocols comma delimited list of TLS protocols
      * @return the current instance of {@link BaseChainedConfigContext}
      */
     public BaseChainedConfigContext setHttpsProtocols(final String httpsProtocols) {
@@ -404,7 +404,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     /**
      * Set the supported TLS ciphers.
      *
-     * @param httpsCiphers comma delineated list of TLS ciphers
+     * @param httpsCiphers comma delimited list of TLS ciphers
      * @return the current instance of {@link BaseChainedConfigContext}
      */
     public BaseChainedConfigContext setHttpsCiphers(final String httpsCiphers) {

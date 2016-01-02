@@ -68,12 +68,12 @@ public interface ConfigContext {
     String getHttpTransport();
 
     /**
-     * @return a comma delineated list of HTTPS protocols
+     * @return a comma delimited list of HTTPS protocols
      */
     String getHttpsProtocols();
 
     /**
-     * @return a comma delineated list of HTTPS cipher suites in order of preference
+     * @return a comma delimited list of HTTPS cipher suites in order of preference
      */
     String getHttpsCipherSuites();
 
