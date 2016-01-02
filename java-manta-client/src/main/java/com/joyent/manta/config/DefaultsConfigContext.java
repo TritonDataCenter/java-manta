@@ -37,6 +37,30 @@ public class DefaultsConfigContext implements ConfigContext {
      */
     public static final String MANTA_KEY_PATH;
 
+    /**
+     * The default {@link com.google.api.client.http.HttpTransport} implementation to use.
+     */
+    public static final String DEFAULT_HTTP_TRANSPORT = "ApacheHttpTransport";
+
+    /**
+     * Default TLS protocols.
+     */
+    public static final String DEFAULT_HTTPS_PROTOCOLS = "TLSv1.2";
+
+    /**
+     * Default TLS cipher suites.
+     */
+    public static final String DEFAULT_HTTPS_CIPHERS =
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,"
+          + "TLS_RSA_WITH_AES_128_GCM_SHA256,"
+          + "TLS_RSA_WITH_AES_256_CBC_SHA256,"
+          + "TLS_RSA_WITH_AES_128_CBC_SHA256";
+
+    /**
+     * Default HTTP signature cache TTL.
+     */
+    public static final int DEFAULT_SIGNATURE_CACHE_TTL = 1000;
+
     static {
         // Don't even bother setting a default key path if it doesn't exist
         String defaultKeyPath = String.format("%s/.ssh/id_rsa",
@@ -104,20 +128,17 @@ public class DefaultsConfigContext implements ConfigContext {
 
     @Override
     public String getHttpTransport() {
-        return "ApacheHttpTransport";
+        return DEFAULT_HTTP_TRANSPORT;
     }
 
     @Override
     public String getHttpsProtocols() {
-        return "TLSv1.2";
+        return DEFAULT_HTTPS_PROTOCOLS;
     }
 
     @Override
     public String getHttpsCipherSuites() {
-        return "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,"
-             + "TLS_RSA_WITH_AES_128_GCM_SHA256,"
-             + "TLS_RSA_WITH_AES_256_CBC_SHA256,"
-             + "TLS_RSA_WITH_AES_128_CBC_SHA256";
+        return DEFAULT_HTTPS_CIPHERS;
     }
 
     @Override
@@ -128,6 +149,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Boolean disableNativeSignatures() {
         return false;
+    }
+
+    @Override
+    public Integer getSignatureCacheTTL() {
+        return DEFAULT_SIGNATURE_CACHE_TTL;
     }
 
     @Override

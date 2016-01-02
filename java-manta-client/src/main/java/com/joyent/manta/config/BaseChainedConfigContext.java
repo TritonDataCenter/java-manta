@@ -83,6 +83,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      */
     private Boolean disableNativeSignatures;
 
+    /**
+     * Time in milliseconds to cache HTTP signature headers
+     */
+    private Integer signatureCacheTTL;
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -179,6 +184,11 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return disableNativeSignatures;
     }
 
+    @Override
+    public Integer getSignatureCacheTTL() {
+        return signatureCacheTTL;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -249,6 +259,10 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (context.disableNativeSignatures() != null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
+        }
+
+        if (context.getSignatureCacheTTL() != null) {
+            this.signatureCacheTTL = context.getSignatureCacheTTL();
         }
     }
 
@@ -438,6 +452,18 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Sets the time in milliseconds to cache HTTP signature headers.
+     *
+     * @param signatureCacheTTL time in milliseconds to cache HTTP signature headers
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setSignatureCacheTTL(final Integer signatureCacheTTL) {
+        this.signatureCacheTTL = signatureCacheTTL;
+
+        return this;
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -462,7 +488,8 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
                 && Objects.equals(httpsCiphers, that.httpsCiphers)
                 && Objects.equals(noAuth, that.noAuth)
-                && Objects.equals(disableNativeSignatures, that.disableNativeSignatures);
+                && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
+                && Objects.equals(signatureCacheTTL, that.signatureCacheTTL);
     }
 
     @Override
@@ -470,6 +497,6 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpTransport, httpsProtocols, httpsCiphers, noAuth,
-                disableNativeSignatures);
+                disableNativeSignatures, signatureCacheTTL);
     }
 }

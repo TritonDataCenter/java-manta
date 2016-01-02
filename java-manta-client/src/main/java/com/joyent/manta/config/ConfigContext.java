@@ -88,6 +88,11 @@ public interface ConfigContext {
     Boolean disableNativeSignatures();
 
     /**
+     * @return time in milliseconds to cache HTTP signature headers
+     */
+    Integer getSignatureCacheTTL();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account

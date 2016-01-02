@@ -108,6 +108,8 @@ public final class Benchmark {
             long fullAggregation = 0;
             long serverAggregation = 0;
 
+            long testStart = System.currentTimeMillis();
+
             for (int i = 0; i < iterations; i++) {
                 Duration[] durations = measureGet(path);
                 long fullLatency = durations[0].toMillis();
@@ -119,11 +121,15 @@ public final class Benchmark {
                         i, fullLatency, serverLatency);
             }
 
+            long testEnd = System.currentTimeMillis();
+
             final long fullAverage = Math.round(fullAggregation / iterations);
             final long serverAverage = Math.round(serverAggregation / iterations);
+            final long totalTime = testEnd - testStart;
+
             System.out.printf("Average full latency: %d ms\n", fullAverage);
             System.out.printf("Average server latency: %d ms\n", serverAverage);
-
+            System.out.printf("Total test time: %d ms\n", totalTime);
         } catch (IOException e) {
             LOG.error("Error running benchmark", e);
         } finally {

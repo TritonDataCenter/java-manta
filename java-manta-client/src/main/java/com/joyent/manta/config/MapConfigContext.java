@@ -83,6 +83,11 @@ public class MapConfigContext implements ConfigContext {
      */
     public static final String MANTA_NO_NATIVE_SIGS_KEY = "http.signature.native.rsa";
 
+    /**
+     * Property key for looking up the time in milliseconds to cache HTTP signature headers.
+     */
+    public static final String MANTA_SIGS_CACHE_TTL_KEY = "http.signature.cache.ttl";
+
     // I know manually adding them all sucks, but it is the simplest operation
     // for a shared library. We could do all sorts of complicated reflection
     // or annotation processing, but they are error-prone.
@@ -95,7 +100,8 @@ public class MapConfigContext implements ConfigContext {
             MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
             MANTA_PASSWORD_KEY, MANTA_HTTP_TRANSPORT_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_KEY,
-            MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY
+            MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
+            MANTA_SIGS_CACHE_TTL_KEY
     };
 
     /**
@@ -225,6 +231,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_NO_NATIVE_SIGS_ENV_KEY));
+    }
+
+    @Override
+    public Integer getSignatureCacheTTL() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SIGS_CACHE_TTL_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SIGS_CACHE_TTL_ENV_KEY));
     }
 
     /**

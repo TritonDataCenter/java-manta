@@ -83,6 +83,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_NO_NATIVE_SIGS_ENV_KEY = "MANTA_NO_NATIVE_SIGS";
 
     /**
+     * Environment variable for looking up the time in milliseconds to cache HTTP signature headers.
+     */
+    public static final String MANTA_SIGS_CACHE_TTL_ENV_KEY = "MANTA_SIGS_CACHE_TTL";
+
+    /**
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
@@ -91,7 +96,8 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_KEY_CONTENT_ENV_KEY,
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
-            MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY
+            MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
+            MANTA_SIGS_CACHE_TTL_ENV_KEY
     };
 
     /**
@@ -190,5 +196,12 @@ public class EnvVarConfigContext implements ConfigContext {
     public Boolean disableNativeSignatures() {
         String disableNativeString = getEnv(MANTA_NO_NATIVE_SIGS_ENV_KEY);
         return MantaUtils.parseBooleanOrNull(disableNativeString);
+    }
+
+    @Override
+    public Integer getSignatureCacheTTL() {
+        String ttl = getEnv(MANTA_SIGS_CACHE_TTL_ENV_KEY);
+
+        return MantaUtils.parseIntegerOrNull(ttl);
     }
 }

@@ -15,6 +15,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
    altogether.
  - We now allow you to disable native code cryptographic performance
    enhancements.
+ - We now enable HTTP signature caching by default with a TTL of 1000ms, but
+   it can be disabled by setting it to 0ms.
 
 ## [2.1.0] - 2015-12-28
 ### Added

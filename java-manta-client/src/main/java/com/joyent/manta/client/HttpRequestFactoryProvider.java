@@ -36,7 +36,6 @@ import org.slf4j.MDC;
 import java.io.IOException;
 import java.net.ProxySelector;
 
-import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
 import static com.joyent.manta.config.MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY;
 
 /**
@@ -207,32 +206,8 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
         LOG.debug("Using HttpTransport implementation: {}", transport.getClass());
 
-        final boolean authEnabled = config.noAuth() == null || !config.noAuth();
-
-        final HttpExecuteInterceptor signingInterceptor = request -> {
-            // Set timeouts
-            final int httpTimeout;
-
-            if (config.getTimeout() == null) {
-                httpTimeout = DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT;
-            } else {
-                httpTimeout = config.getTimeout();
-            }
-
-            request.setReadTimeout(httpTimeout);
-            request.setConnectTimeout(httpTimeout);
-
-            // Sign request
-            if (httpSigner != null && authEnabled) {
-                httpSigner.signRequest(request);
-            }
-
-            // Load request ID into MDC so that it can be logged
-            final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
-            if (requestId != null) {
-                MDC.put("mantaRequestId", requestId.toString());
-            }
-        };
+        final HttpExecuteInterceptor signingInterceptor =
+                new SigningInterceptor(config, httpSigner);
 
         final HttpResponseInterceptor responseInterceptor = response -> MDC.remove("mantaRequestId");
 
