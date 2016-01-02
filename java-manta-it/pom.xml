@@ -18,7 +18,7 @@
     <properties>
         <!-- Dependency versions -->
         <dependency.apache-http-client.version>4.5.1</dependency.apache-http-client.version>
-        <dependency.google-http-client.version>1.20.0</dependency.google-http-client.version>
+        <dependency.google-http-client.version>1.21.0</dependency.google-http-client.version>
     </properties>
 
     <dependencies>
