@@ -58,7 +58,7 @@ left are overridden by values on the right.
 | <value too big - see code>           |                      | https.cipherSuites        | MANTA_HTTPS_CIPHERS       |
 | false                                |                      | manta.no_auth             | MANTA_NO_AUTH             |
 | false                                |                      | http.signature.native.rsa | MANTA_NO_NATIVE_SIGS      |
-| 1000                                 |                      | http.signature.cache.ttl  | MANTA_SIGS_CACHE_TTL      |
+| 0                                    |                      | http.signature.cache.ttl  | MANTA_SIGS_CACHE_TTL      |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against

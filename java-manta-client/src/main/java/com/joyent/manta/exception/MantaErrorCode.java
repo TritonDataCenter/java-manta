@@ -41,6 +41,7 @@ public enum MantaErrorCode {
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
     INVALID_CREDENTIALS_ERROR("InvalidCredentials"),
     INVALID_DURABILITY_LEVEL_ERROR("InvalidDurabilityLevel"),
+    INVALID_HEADER_ERROR("InvalidHeader"),
     INVALID_HTTP_AUTHENTICATION_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     INVALID_JOB_ERROR("InvalidJob"),
     INVALID_JOB_STATE_ERROR("InvalidJobState"),

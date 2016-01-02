@@ -59,7 +59,7 @@ public class DefaultsConfigContext implements ConfigContext {
     /**
      * Default HTTP signature cache TTL.
      */
-    public static final int DEFAULT_SIGNATURE_CACHE_TTL = 1000;
+    public static final int DEFAULT_SIGNATURE_CACHE_TTL = 0;
 
     static {
         // Don't even bother setting a default key path if it doesn't exist

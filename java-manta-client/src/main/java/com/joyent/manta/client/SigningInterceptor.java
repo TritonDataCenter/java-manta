@@ -24,17 +24,17 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
     /**
      * The time in which the last request was signed.
      */
-    private volatile long lastSigned = Long.MIN_VALUE;
+    private long lastSigned = Long.MIN_VALUE;
 
     /**
      * The date of the HTTP header that was last signed.
      */
-    private volatile String lastDate;
+    private String lastDate;
 
     /**
      * The last HTTP signature value.
      */
-    private volatile String lastSignature;
+    private String lastSignature;
 
     /**
      * Reference to configuration object.
