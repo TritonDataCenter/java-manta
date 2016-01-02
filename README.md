@@ -84,14 +84,14 @@ The maximum number of open HTTP connections to the Manta API.
 The HTTP transport library to use. Either the Apache HTTP Client (ApacheHttpTransport) or the native JDK HTTP library (NetHttpTransport).
 * `https.protocols` (**MANTA_HTTPS_PROTOCOLS**)
 A comma delimited list of TLS protocols.
-** `https.cipherSuites` (**MANTA_HTTPS_CIPHERS**)
+* `https.cipherSuites` (**MANTA_HTTPS_CIPHERS**)
 A comma delimited list of TLS cipher suites.
-** `manta.no_auth` (**MANTA_NO_AUTH**)
+* `manta.no_auth` (**MANTA_NO_AUTH**)
 When set to true, this disables HTTP Signature authentication entirely. This is
 only really useful when you are running the library as part of a Manta job.
-** `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
+* `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
 When set to true, this disables the use of native code libraries for cryptography.
-** `http.signature.cache.ttl` (**MANTA_SIGS_CACHE_TTL**)
+* `http.signature.cache.ttl` (**MANTA_SIGS_CACHE_TTL**)
 Time in milliseconds to cache the HTTP signature authorization header. A setting of
 0ms disables the cache entirely.
 
