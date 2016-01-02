@@ -108,6 +108,19 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public String getHttpsProtocols() {
+        return "TLSv1.2";
+    }
+
+    @Override
+    public String getHttpsCipherSuites() {
+        return "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,"
+             + "TLS_RSA_WITH_AES_128_GCM_SHA256,"
+             + "TLS_RSA_WITH_AES_256_CBC_SHA256,"
+             + "TLS_RSA_WITH_AES_128_CBC_SHA256";
+    }
+
+    @Override
     public String getMantaHomeDirectory() {
         return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
     }

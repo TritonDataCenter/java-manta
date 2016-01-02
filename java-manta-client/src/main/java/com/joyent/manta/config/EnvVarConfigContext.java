@@ -63,13 +63,24 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_HTTP_TRANSPORT_ENV_KEY = "MANTA_HTTP_TRANSPORT";
 
     /**
+     * Environment variable for setting TLS protocols.
+     */
+    public static final String MANTA_HTTPS_PROTOCOLS_ENV_KEY = "MANTA_HTTPS_PROTOCOLS";
+
+    /**
+     * Environment variable for setting TLS ciphers.
+     */
+    public static final String MANTA_HTTPS_CIPHERS_ENV_KEY = "MANTA_HTTPS_CIPHERS";
+
+    /**
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
             MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_ENV_KEY_CONTENT,
-            MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY
+            MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY,
+            MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY
     };
 
     /**
@@ -146,5 +157,15 @@ public class EnvVarConfigContext implements ConfigContext {
     @Override
     public String getHttpTransport() {
         return getEnv(MANTA_HTTP_TRANSPORT_ENV_KEY);
+    }
+
+    @Override
+    public String getHttpsProtocols() {
+        return getEnv(MANTA_HTTPS_PROTOCOLS_ENV_KEY);
+    }
+
+    @Override
+    public String getHttpsCipherSuites() {
+        return getEnv(MANTA_HTTPS_CIPHERS_ENV_KEY);
     }
 }

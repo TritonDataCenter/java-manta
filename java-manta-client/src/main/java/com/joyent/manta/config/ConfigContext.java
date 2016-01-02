@@ -68,6 +68,16 @@ public interface ConfigContext {
     String getHttpTransport();
 
     /**
+     * @return a comma delineated list of HTTPS protocols
+     */
+    String getHttpsProtocols();
+
+    /**
+     * @return a comma delineated list of HTTPS cipher suites in order of preference
+     */
+    String getHttpsCipherSuites();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account

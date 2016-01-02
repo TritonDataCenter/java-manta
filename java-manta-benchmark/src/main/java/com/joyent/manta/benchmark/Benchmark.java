@@ -175,7 +175,6 @@ public final class Benchmark {
      * @return two durations - full time in the JVM, server time processing
      * @throws IOException thrown when we can't access Manta over the network
      */
-    @SuppressWarnings("emptyblock")
     private static Duration[] measureGet(final String path) throws IOException {
         final Instant start = Instant.now();
         final String serverLatencyString;

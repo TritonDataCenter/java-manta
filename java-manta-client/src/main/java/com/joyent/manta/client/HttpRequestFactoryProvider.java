@@ -24,8 +24,8 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
@@ -125,7 +125,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      */
     private HttpClient buildHttpClient() {
         final HttpParams params = HTTP_PARAMS;
-        final SSLSocketFactory socketFactory = SSLSocketFactory.getSystemSocketFactory();
+        final SSLSocketFactory socketFactory = new MantaSSLSocketFactory(config);
         final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
         final ProxySelector proxySelector = ProxySelector.getDefault();
 
@@ -134,7 +134,8 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         registry.register(new Scheme("http", HTTP_PORT, plainSocketFactory));
         registry.register(new Scheme("https", HTTPS_PORT, socketFactory));
 
-        final ThreadSafeClientConnManager connectionManager = new ThreadSafeClientConnManager();
+        final PoolingClientConnectionManager connectionManager =
+                new PoolingClientConnectionManager(registry);
 
         final int maxConns;
         if (config.getMaximumConnections() == null) {
@@ -208,7 +209,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
             request.setReadTimeout(httpTimeout);
             request.setConnectTimeout(httpTimeout);
-            request.setLoggingEnabled(LOG.isDebugEnabled());
 
             // Sign request
             if (httpSigner != null) {

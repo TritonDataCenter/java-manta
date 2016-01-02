@@ -63,6 +63,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      */
     private String httpTransport;
 
+    /**
+     * Comma delineated list of supported TLS protocols.
+     */
+    private String httpsProtocols;
+
+    /**
+     * Comma delineated list of supported TLS ciphers.
+     */
+    private String httpsCiphers;
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -139,6 +149,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this.httpTransport;
     }
 
+    @Override
+    public String getHttpsProtocols() {
+        return httpsProtocols;
+    }
+
+    @Override
+    public String getHttpsCipherSuites() {
+        return httpsCiphers;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -193,6 +213,14 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (isPresent(context.getHttpTransport())) {
             this.httpTransport = context.getHttpTransport();
+        }
+
+        if (isPresent(context.getHttpsProtocols())) {
+            this.httpsProtocols = context.getHttpsProtocols();
+        }
+
+        if (isPresent(context.getHttpsCipherSuites())) {
+            this.httpsCiphers = context.getHttpsCipherSuites();
         }
     }
 
@@ -333,6 +361,30 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Set the supported TLS protocols.
+     *
+     * @param httpsProtocols comma delineated list of TLS protocols
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setHttpsProtocols(final String httpsProtocols) {
+        this.httpsProtocols = httpsProtocols;
+
+        return this;
+    }
+
+    /**
+     * Set the supported TLS ciphers.
+     *
+     * @param httpsCiphers comma delineated list of TLS ciphers
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setHttpsCiphers(final String httpsCiphers) {
+        this.httpsCiphers = httpsCiphers;
+
+        return this;
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -353,13 +405,15 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(maxConnections, that.maxConnections)
                 && Objects.equals(privateKeyContent, that.privateKeyContent)
                 && Objects.equals(password, that.password)
-                && Objects.equals(httpTransport, that.httpTransport);
+                && Objects.equals(httpTransport, that.httpTransport)
+                && Objects.equals(httpsProtocols, that.httpsProtocols)
+                && Objects.equals(httpsCiphers, that.httpsCiphers);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
-                httpTransport);
+                httpTransport, httpsProtocols, httpsCiphers);
     }
 }
