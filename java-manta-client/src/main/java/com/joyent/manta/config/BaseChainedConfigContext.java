@@ -58,6 +58,36 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      */
     private String password;
 
+    /**
+     * The class name of the {@link com.google.api.client.http.HttpTransport} implementation to use.
+     */
+    private String httpTransport;
+
+    /**
+     * Comma delimited list of supported TLS protocols.
+     */
+    private String httpsProtocols;
+
+    /**
+     * Comma delimited list of supported TLS ciphers.
+     */
+    private String httpsCiphers;
+
+    /**
+     * Flag indicating if HTTP signatures are turned off.
+     */
+    private Boolean noAuth;
+
+    /**
+     * Flag indicating if HTTP signature native code generation is turned off.
+     */
+    private Boolean disableNativeSignatures;
+
+    /**
+     * Time in milliseconds to cache HTTP signature headers.
+     */
+    private Integer signatureCacheTTL;
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -129,6 +159,36 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this.password;
     }
 
+    @Override
+    public String getHttpTransport() {
+        return this.httpTransport;
+    }
+
+    @Override
+    public String getHttpsProtocols() {
+        return httpsProtocols;
+    }
+
+    @Override
+    public String getHttpsCipherSuites() {
+        return httpsCiphers;
+    }
+
+    @Override
+    public Boolean noAuth() {
+        return noAuth;
+    }
+
+    @Override
+    public Boolean disableNativeSignatures() {
+        return disableNativeSignatures;
+    }
+
+    @Override
+    public Integer getSignatureCacheTTL() {
+        return signatureCacheTTL;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -179,6 +239,30 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (isPresent(context.getPassword())) {
             this.password = context.getPassword();
+        }
+
+        if (isPresent(context.getHttpTransport())) {
+            this.httpTransport = context.getHttpTransport();
+        }
+
+        if (isPresent(context.getHttpsProtocols())) {
+            this.httpsProtocols = context.getHttpsProtocols();
+        }
+
+        if (isPresent(context.getHttpsCipherSuites())) {
+            this.httpsCiphers = context.getHttpsCipherSuites();
+        }
+
+        if (context.noAuth() != null) {
+            this.noAuth = context.noAuth();
+        }
+
+        if (context.disableNativeSignatures() != null) {
+            this.disableNativeSignatures = context.disableNativeSignatures();
+        }
+
+        if (context.getSignatureCacheTTL() != null) {
+            this.signatureCacheTTL = context.getSignatureCacheTTL();
         }
     }
 
@@ -303,6 +387,83 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Sets the class name of the {@link com.google.api.client.http.HttpTransport}
+     * implementation to use. Use the strings ApacheHttpTransport, NetHttpTransport
+     * or MockHttpTransport to use the included implementations. If the value
+     * is not one of those three - then we default to the ApacheHttpTransport
+     * method.
+     *
+     * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setHttpTransport(final String httpTransport) {
+        this.httpTransport = httpTransport;
+
+        return this;
+    }
+
+    /**
+     * Set the supported TLS protocols.
+     *
+     * @param httpsProtocols comma delimited list of TLS protocols
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setHttpsProtocols(final String httpsProtocols) {
+        this.httpsProtocols = httpsProtocols;
+
+        return this;
+    }
+
+    /**
+     * Set the supported TLS ciphers.
+     *
+     * @param httpsCiphers comma delimited list of TLS ciphers
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setHttpsCiphers(final String httpsCiphers) {
+        this.httpsCiphers = httpsCiphers;
+
+        return this;
+    }
+
+    /**
+     * Change the state of whether or not HTTP signatures are sent to the Manta API.
+     *
+     * @param noAuth true to disable HTTP signatures
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setNoAuth(final Boolean noAuth) {
+        this.noAuth = noAuth;
+
+        return this;
+    }
+
+    /**
+     * Change the state of whether or not HTTP signatures are using native code
+     * to generate the cryptographic signatures.
+     *
+     * @param disableNativeSignatures true to disable
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setDisableNativeSignatures(final Boolean disableNativeSignatures) {
+        this.disableNativeSignatures = disableNativeSignatures;
+
+        return this;
+    }
+
+    /**
+     * Sets the time in milliseconds to cache HTTP signature headers.
+     *
+     * @param signatureCacheTTL time in milliseconds to cache HTTP signature headers
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setSignatureCacheTTL(final Integer signatureCacheTTL) {
+        this.signatureCacheTTL = signatureCacheTTL;
+
+        return this;
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -322,12 +483,20 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(retries, that.retries)
                 && Objects.equals(maxConnections, that.maxConnections)
                 && Objects.equals(privateKeyContent, that.privateKeyContent)
-                && Objects.equals(password, that.password);
+                && Objects.equals(password, that.password)
+                && Objects.equals(httpTransport, that.httpTransport)
+                && Objects.equals(httpsProtocols, that.httpsProtocols)
+                && Objects.equals(httpsCiphers, that.httpsCiphers)
+                && Objects.equals(noAuth, that.noAuth)
+                && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
+                && Objects.equals(signatureCacheTTL, that.signatureCacheTTL);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
-                timeout, retries, maxConnections, privateKeyContent, password);
+                timeout, retries, maxConnections, privateKeyContent, password,
+                httpTransport, httpsProtocols, httpsCiphers, noAuth,
+                disableNativeSignatures, signatureCacheTTL);
     }
 }

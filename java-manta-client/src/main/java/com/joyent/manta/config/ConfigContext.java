@@ -63,6 +63,36 @@ public interface ConfigContext {
     Integer getMaximumConnections();
 
     /**
+     * @return the class name of the {@link com.google.api.client.http.HttpTransport} implementation to use
+     */
+    String getHttpTransport();
+
+    /**
+     * @return a comma delimited list of HTTPS protocols
+     */
+    String getHttpsProtocols();
+
+    /**
+     * @return a comma delimited list of HTTPS cipher suites in order of preference
+     */
+    String getHttpsCipherSuites();
+
+    /**
+     * @return true when we disable sending HTTP signatures
+     */
+    Boolean noAuth();
+
+    /**
+     * @return true when we disable using native code to generate HTTP signatures
+     */
+    Boolean disableNativeSignatures();
+
+    /**
+     * @return time in milliseconds to cache HTTP signature headers
+     */
+    Integer getSignatureCacheTTL();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account

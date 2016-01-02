@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
 </dependency>
 ```
 
@@ -42,17 +42,23 @@ authenticate against Manta.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                              | TestNG Param   | System Property       | Environment Variable      |
-|--------------------------------------|----------------|-----------------------|---------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url      | manta.url             | MANTA_URL                 |
-|                                      | manta.user     | manta.user            | MANTA_USER                |
-|                                      | manta.key_id   | manta.key_id          | MANTA_KEY_ID              |
-|                                      | manta.key_path | manta.key_path        | MANTA_KEY_PATH            |
-|                                      |                | manta.key_content     | MANTA_KEY_CONTENT         |
-|                                      |                | manta.password        | MANTA_PASSWORD            |
-| 20000                                | manta.timeout  | manta.timeout         | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)          |                | manta.retries         | MANTA_HTTP_RETRIES        |
-| 24                                   |                | manta.max_connections | MANTA_MAX_CONNS           |
+| Default                              | TestNG Param         | System Property           | Environment Variable      |
+|--------------------------------------|----------------------|---------------------------|---------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url            | manta.url                 | MANTA_URL                 |
+|                                      | manta.user           | manta.user                | MANTA_USER                |
+|                                      | manta.key_id         | manta.key_id              | MANTA_KEY_ID              |
+|                                      | manta.key_path       | manta.key_path            | MANTA_KEY_PATH            |
+|                                      |                      | manta.key_content         | MANTA_KEY_CONTENT         |
+|                                      |                      | manta.password            | MANTA_PASSWORD            |
+| 20000                                | manta.timeout        | manta.timeout             | MANTA_TIMEOUT             |
+| 3 (6 for integration tests)          |                      | manta.retries             | MANTA_HTTP_RETRIES        |
+| 24                                   |                      | manta.max_connections     | MANTA_MAX_CONNS           |
+| ApacheHttpTransport                  | manta.http_transport | manta.http_transport      | MANTA_HTTP_TRANSPORT      |
+| TLSv1.2                              |                      | https.protocols           | MANTA_HTTPS_PROTOCOLS     |
+| <value too big - see code>           |                      | https.cipherSuites        | MANTA_HTTPS_CIPHERS       |
+| false                                |                      | manta.no_auth             | MANTA_NO_AUTH             |
+| false                                |                      | http.signature.native.rsa | MANTA_NO_NATIVE_SIGS      |
+| 0                                    |                      | http.signature.cache.ttl  | MANTA_SIGS_CACHE_TTL      |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -74,6 +80,20 @@ The number of milliseconds to wait after a request was made to Manta before fail
 The number of times to retry failed HTTP requests.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
 The maximum number of open HTTP connections to the Manta API.
+* `manta.http_transport` (**MANTA_HTTP_TRANSPORT**)
+The HTTP transport library to use. Either the Apache HTTP Client (ApacheHttpTransport) or the native JDK HTTP library (NetHttpTransport).
+* `https.protocols` (*MANTA_HTTPS_PROTOCOLS*)
+A comma delimited list of TLS protocols.
+* `https.cipherSuites` (*MANTA_HTTPS_CIPHERS*)
+A comma delimited list of TLS cipher suites.
+* `manta.no_auth` (*MANTA_NO_AUTH*)
+When set to true, this disables HTTP Signature authentication entirely. This is
+only really useful when you are running the library as part of a Manta job.
+* `http.signature.native.rsa` (*MANTA_NO_NATIVE_SIGS*)
+When set to true, this disables the use of native code libraries for cryptography.
+* `http.signature.cache.ttl` (*MANTA_SIGS_CACHE_TTL*)
+Time in milliseconds to cache the HTTP signature authorization header. A setting of
+0ms disables the cache entirely.
 
 If you want to skip running of the test suite, use the `-DskipTests` property.
 

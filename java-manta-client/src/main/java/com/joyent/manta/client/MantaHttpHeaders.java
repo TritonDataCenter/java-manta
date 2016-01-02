@@ -286,7 +286,7 @@ public class MantaHttpHeaders implements Serializable {
     public void setRoles(final Set<String> roles) {
         Objects.requireNonNull(roles, "Roles must be present");
 
-        /* Set roles as a single HTTP header with each role delineated by
+        /* Set roles as a single HTTP header with each role delimited by
          * a comma.
          */
         set(HTTP_ROLE_TAG, MantaUtils.asString(roles));

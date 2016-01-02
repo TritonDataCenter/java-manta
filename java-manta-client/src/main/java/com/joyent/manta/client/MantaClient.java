@@ -76,12 +76,6 @@ public class MantaClient implements AutoCloseable {
     private final HttpRequestFactoryProvider httpRequestFactoryProvider;
 
     /**
-     * The standard http status code representing that the resource could not be found.
-     */
-    private static final int HTTP_STATUSCODE_404_NOT_FOUND = 404;
-
-
-    /**
      * The standard http status code representing that the request was accepted.
      */
     private static final int HTTP_STATUSCODE_202_ACCEPTED = 202;
@@ -164,9 +158,6 @@ public class MantaClient implements AutoCloseable {
         if (mantaURL == null) {
             throw new IllegalArgumentException("Manta URL must be specified");
         }
-        if (fingerprint == null) {
-            throw new IllegalArgumentException("Manta key id must be specified");
-        }
         if (httpTimeout < 0) {
             throw new IllegalArgumentException("Manta timeout must be 0 or greater");
         }
@@ -174,6 +165,12 @@ public class MantaClient implements AutoCloseable {
             throw new IllegalArgumentException("Private key content and key path can't be both set");
         } else if (privateKeyContent == null && keyPath == null) {
             throw new IllegalArgumentException("Manta key path or private key content must be specified");
+        }
+
+        if (config.noAuth() != null && config.noAuth()) {
+            if (fingerprint == null) {
+                throw new IllegalArgumentException("Manta key id must be specified");
+            }
         }
 
         this.url = mantaURL;

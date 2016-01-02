@@ -50,7 +50,7 @@ public class EnvVarConfigContext implements ConfigContext {
     /**
      * Environment variable for looking up Manta private key content.
      */
-    public static final String MANTA_PRIVATE_ENV_KEY_CONTENT = "MANTA_KEY_CONTENT";
+    public static final String MANTA_PRIVATE_KEY_CONTENT_ENV_KEY = "MANTA_KEY_CONTENT";
 
     /**
      * Environment variable for looking up Manta password.
@@ -58,13 +58,46 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_PASSWORD_ENV_KEY = "MANTA_PASSWORD";
 
     /**
+     * Environment variable for setting HttpTransport implementation.
+     */
+    public static final String MANTA_HTTP_TRANSPORT_ENV_KEY = "MANTA_HTTP_TRANSPORT";
+
+    /**
+     * Environment variable for setting TLS protocols.
+     */
+    public static final String MANTA_HTTPS_PROTOCOLS_ENV_KEY = "MANTA_HTTPS_PROTOCOLS";
+
+    /**
+     * Environment variable for setting TLS ciphers.
+     */
+    public static final String MANTA_HTTPS_CIPHERS_ENV_KEY = "MANTA_HTTPS_CIPHERS";
+
+    /**
+     * Environment variable for disabling HTTP signatures.
+     */
+    public static final String MANTA_NO_AUTH_ENV_KEY = "MANTA_NO_AUTH";
+
+    /**
+     * Environment variable for disabling native code support for generating signatures.
+     */
+    public static final String MANTA_NO_NATIVE_SIGS_ENV_KEY = "MANTA_NO_NATIVE_SIGS";
+
+    /**
+     * Environment variable for looking up the time in milliseconds to cache HTTP signature headers.
+     */
+    public static final String MANTA_SIGS_CACHE_TTL_ENV_KEY = "MANTA_SIGS_CACHE_TTL";
+
+    /**
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
             MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
             MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
-            MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_ENV_KEY_CONTENT,
-            MANTA_PASSWORD_ENV_KEY
+            MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_KEY_CONTENT_ENV_KEY,
+            MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY,
+            MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
+            MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
+            MANTA_SIGS_CACHE_TTL_ENV_KEY
     };
 
     /**
@@ -107,7 +140,7 @@ public class EnvVarConfigContext implements ConfigContext {
 
     @Override
     public String getPrivateKeyContent() {
-        return getEnv(MANTA_PRIVATE_ENV_KEY_CONTENT);
+        return getEnv(MANTA_PRIVATE_KEY_CONTENT_ENV_KEY);
     }
 
     @Override
@@ -136,5 +169,39 @@ public class EnvVarConfigContext implements ConfigContext {
     public Integer getMaximumConnections() {
         String maxConnsString = getEnv(MANTA_MAX_CONNS_ENV_KEY);
         return MantaUtils.parseIntegerOrNull(maxConnsString);
+    }
+
+    @Override
+    public String getHttpTransport() {
+        return getEnv(MANTA_HTTP_TRANSPORT_ENV_KEY);
+    }
+
+    @Override
+    public String getHttpsProtocols() {
+        return getEnv(MANTA_HTTPS_PROTOCOLS_ENV_KEY);
+    }
+
+    @Override
+    public String getHttpsCipherSuites() {
+        return getEnv(MANTA_HTTPS_CIPHERS_ENV_KEY);
+    }
+
+    @Override
+    public Boolean noAuth() {
+        String noAuthString = getEnv(MANTA_NO_AUTH_ENV_KEY);
+        return MantaUtils.parseBooleanOrNull(noAuthString);
+    }
+
+    @Override
+    public Boolean disableNativeSignatures() {
+        String disableNativeString = getEnv(MANTA_NO_NATIVE_SIGS_ENV_KEY);
+        return MantaUtils.parseBooleanOrNull(disableNativeString);
+    }
+
+    @Override
+    public Integer getSignatureCacheTTL() {
+        String ttl = getEnv(MANTA_SIGS_CACHE_TTL_ENV_KEY);
+
+        return MantaUtils.parseIntegerOrNull(ttl);
     }
 }
