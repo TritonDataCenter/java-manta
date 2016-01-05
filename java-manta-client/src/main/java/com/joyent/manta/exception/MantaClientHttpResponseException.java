@@ -145,6 +145,14 @@ public class MantaClientHttpResponseException extends IOException {
                     innerException.getStatusMessage(),
                     this.getRequestId(),
                     innerException.getContent());
+        // On signing failures, we display the signed date to help debug
+        } else if (serverCode.equals(MantaErrorCode.INVALID_SIGNATURE_ERROR)) {
+            return String.format("%d %s (request: %s, signed date: %s) - Unknown error content: %s",
+                    innerException.getStatusCode(),
+                    innerException.getStatusMessage(),
+                    this.getRequestId(),
+                    innerException.getHeaders().getDate(),
+                    innerException.getContent());
         } else {
             return String.format("%d %s (request: %s) - [%s] %s",
                     innerException.getStatusCode(),
