@@ -5,9 +5,12 @@ package com.joyent.manta.client;
 
 import com.google.api.client.http.HttpExecuteInterceptor;
 import com.google.api.client.http.HttpRequest;
+import com.joyent.http.signature.HttpSignerUtils;
 import com.joyent.http.signature.google.httpclient.HttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -21,6 +24,11 @@ import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class SigningInterceptor implements HttpExecuteInterceptor {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(SigningInterceptor.class);
+
     /**
      * The time in which the last request was signed.
      */
@@ -72,6 +80,8 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
         } else {
             this.cacheTTL = config.getSignatureCacheTTL();
         }
+
+        LOG.info("Using {} to sign requests", HttpSignerUtils.SIGNATURE.getAlgorithm());
     }
 
     @Override
