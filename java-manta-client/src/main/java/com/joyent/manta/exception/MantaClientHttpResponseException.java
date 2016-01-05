@@ -18,7 +18,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't have to depend on the
@@ -177,7 +176,8 @@ public class MantaClientHttpResponseException extends IOException {
 
 
     /**
-     * The request id for the request as automatically assigned
+     * The request id for the request as automatically assigned.
+     *
      * @return uuid as string
      */
     public String getRequestId() {
