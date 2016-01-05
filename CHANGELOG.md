@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.3.0] - ?
+### Added
+ - Added logging message for signing algorithm.
+ - Added x-request-id output on HTTP errors.
+ - Add toString methods for ConfigContext.
+
 ## [2.2.0] - 2016-01-02
 ### Added
  - Added http transport library configuration parameter.

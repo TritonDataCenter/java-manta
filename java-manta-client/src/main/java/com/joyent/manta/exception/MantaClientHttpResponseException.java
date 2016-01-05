@@ -18,6 +18,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't have to depend on the
@@ -62,6 +63,12 @@ public class MantaClientHttpResponseException extends IOException {
 
 
     /**
+     * Manta request id.
+     */
+    private final String requestId;
+
+
+    /**
      *
      * @param innerException The {@link HttpResponseException} to be wrapped.
      */
@@ -71,6 +78,7 @@ public class MantaClientHttpResponseException extends IOException {
         final Map<String, Object> serverErrorInfo = parseJsonResponse(jsonContent);
 
         this.innerException = innerException;
+        this.requestId = innerException.getHeaders().getFirstHeaderStringValue("x-request-id");
         this.serverCode = MantaErrorCode.valueOfCode(serverErrorInfo.get("code"));
 
         if (serverErrorInfo.containsKey("message")) {
@@ -133,14 +141,16 @@ public class MantaClientHttpResponseException extends IOException {
         if (serverCode.equals(MantaErrorCode.NO_CODE_ERROR)) {
             return innerException.getMessage();
         } else if (serverCode.equals(MantaErrorCode.UNKNOWN_ERROR)) {
-            return String.format("%d %s - Unknown error content: %s",
+            return String.format("%d %s (request: %s) - Unknown error content: %s",
                     innerException.getStatusCode(),
                     innerException.getStatusMessage(),
+                    this.getRequestId(),
                     innerException.getContent());
         } else {
-            return String.format("%d %s - [%s] %s",
+            return String.format("%d %s (request: %s) - [%s] %s",
                     innerException.getStatusCode(),
                     innerException.getStatusMessage(),
+                    this.getRequestId(),
                     this.serverCode.getCode(), this.message);
         }
     }
@@ -165,6 +175,14 @@ public class MantaClientHttpResponseException extends IOException {
         return this.message;
     }
 
+
+    /**
+     * The request id for the request as automatically assigned
+     * @return uuid as string
+     */
+    public String getRequestId() {
+        return requestId;
+    }
 
     /**
      * Parses JSON error message returned from the Manta API.

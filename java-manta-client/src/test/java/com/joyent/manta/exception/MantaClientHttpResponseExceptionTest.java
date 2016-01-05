@@ -16,6 +16,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
@@ -34,6 +35,7 @@ public class MantaClientHttpResponseExceptionTest {
                 + "was not found\"}";
 
         MockLowLevelHttpRequest lowLevelHttpRequest = new MockLowLevelHttpRequest();
+
         MockLowLevelHttpResponse lowLevelHttpResponse = new MockLowLevelHttpResponse();
 
         final String reasonPhrase = "Not Found";
@@ -43,6 +45,7 @@ public class MantaClientHttpResponseExceptionTest {
         lowLevelHttpResponse.setContent(json);
         lowLevelHttpResponse.setStatusCode(httpErrorCode);
         lowLevelHttpResponse.setReasonPhrase(reasonPhrase);
+        lowLevelHttpResponse.addHeader("x-request-id", new UUID(0L, 0L).toString());
 
         HttpResponse response = fakeResponse(lowLevelHttpRequest, lowLevelHttpResponse,
                 method);
@@ -59,7 +62,7 @@ public class MantaClientHttpResponseExceptionTest {
         Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
         Assert.assertEquals(exception.getStatusCode(), httpErrorCode);
         Assert.assertEquals(exception.getMessage(),
-                "404 Not Found - [ResourceNotFound] "
+                "404 Not Found (request: 00000000-0000-0000-0000-000000000000) - [ResourceNotFound] "
                 + "/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e was not found");
     }
 
