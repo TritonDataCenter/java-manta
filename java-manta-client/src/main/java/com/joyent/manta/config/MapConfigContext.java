@@ -289,4 +289,9 @@ public class MapConfigContext implements ConfigContext {
         // We couldn't find any values
         return null;
     }
+
+    @Override
+    public String toString() {
+        return ConfigContext.toString(this);
+    }
 }

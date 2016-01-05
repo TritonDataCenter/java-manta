@@ -499,4 +499,9 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 httpTransport, httpsProtocols, httpsCiphers, noAuth,
                 disableNativeSignatures, signatureCacheTTL);
     }
+
+    @Override
+    public String toString() {
+        return ConfigContext.toString(this);
+    }
 }

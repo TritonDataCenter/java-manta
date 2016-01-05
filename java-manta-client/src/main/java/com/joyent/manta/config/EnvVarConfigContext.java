@@ -204,4 +204,9 @@ public class EnvVarConfigContext implements ConfigContext {
 
         return MantaUtils.parseIntegerOrNull(ttl);
     }
+
+    @Override
+    public String toString() {
+        return ConfigContext.toString(this);
+    }
 }

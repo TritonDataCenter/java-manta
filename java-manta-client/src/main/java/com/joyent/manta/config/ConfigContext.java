@@ -107,4 +107,30 @@ public interface ConfigContext {
         final String[] accountParts = MantaUtils.parseAccount(mantaUser);
         return String.format("/%s", accountParts[0]);
     }
+
+    /**
+     * Utility method for generating to string values for all {@link ConfigContext}
+     * implementations.
+     *
+     * @param context Context to generate String value from
+     * @return string value of context
+     */
+    static String toString(final ConfigContext context) {
+        final StringBuilder sb = new StringBuilder("BaseChainedConfigContext{");
+        sb.append("mantaURL='").append(context.getMantaURL()).append('\'');
+        sb.append(", user='").append(context.getMantaUser()).append('\'');
+        sb.append(", mantaKeyId='").append(context.getMantaKeyId()).append('\'');
+        sb.append(", mantaKeyPath='").append(context.getMantaKeyPath()).append('\'');
+        sb.append(", timeout=").append(context.getTimeout());
+        sb.append(", retries=").append(context.getRetries());
+        sb.append(", maxConnections=").append(context.getMaximumConnections());
+        sb.append(", httpTransport='").append(context.getHttpTransport()).append('\'');
+        sb.append(", httpsProtocols='").append(context.getHttpsProtocols()).append('\'');
+        sb.append(", httpsCiphers='").append(context.getHttpsCipherSuites()).append('\'');
+        sb.append(", noAuth=").append(context.noAuth());
+        sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
+        sb.append(", signatureCacheTTL=").append(context.getSignatureCacheTTL());
+        sb.append('}');
+        return sb.toString();
+    }
 }
