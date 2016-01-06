@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
+import static com.joyent.http.signature.Signer.X_REQUEST_ID_HEADER;
 
 /**
  * Object encapsulating the HTTP headers to be sent to the Manta API.
