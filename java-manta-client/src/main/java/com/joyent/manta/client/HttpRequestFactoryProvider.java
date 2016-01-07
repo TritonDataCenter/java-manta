@@ -14,7 +14,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
-import com.joyent.http.signature.google.httpclient.HttpSigner;
+import com.joyent.http.signature.google.httpclient.RequestHttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.MapConfigContext;
@@ -90,13 +90,13 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
     /**
      * Creates a new instance of class configured using the passed
-     * {@link HttpSigner}.
+     * {@link RequestHttpSigner}.
      *
      * @param httpSigner HTTP Signer used to sign Google HTTP requests
      * @param config library configuration context reference
      * @throws IOException thrown when the instance can't be setup properly
      */
-    public HttpRequestFactoryProvider(final HttpSigner httpSigner,
+    public HttpRequestFactoryProvider(final RequestHttpSigner httpSigner,
                                       final ConfigContext config)
             throws IOException {
         this.config = config;
@@ -183,7 +183,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      * @return configured instance of {@link HttpRequestFactory}
      * @throws IOException thrown when the instance can't be setup properly
      */
-    private HttpRequestFactory buildRequestFactory(final HttpSigner httpSigner)
+    private HttpRequestFactory buildRequestFactory(final RequestHttpSigner httpSigner)
             throws IOException {
         final HttpTransport transport;
 

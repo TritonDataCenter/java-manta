@@ -5,8 +5,7 @@ package com.joyent.manta.client;
 
 import com.google.api.client.http.HttpExecuteInterceptor;
 import com.google.api.client.http.HttpRequest;
-import com.joyent.http.signature.HttpSignerUtils;
-import com.joyent.http.signature.google.httpclient.HttpSigner;
+import com.joyent.http.signature.google.httpclient.RequestHttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.slf4j.Logger;
@@ -15,7 +14,7 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 
-import static com.joyent.http.signature.HttpSignerUtils.X_REQUEST_ID_HEADER;
+import static com.joyent.http.signature.Signer.X_REQUEST_ID_HEADER;
 
 /**
  * Implementation of {@link HttpExecuteInterceptor} that performs HTTP signatures
@@ -52,7 +51,7 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
     /**
      * Reference to HTTP signing utility.
      */
-    private final HttpSigner httpSigner;
+    private final RequestHttpSigner httpSigner;
 
     /**
      * Flag indicating that HTTP signature authentication is enabled.
@@ -70,7 +69,7 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
      * @param config configuration object
      * @param httpSigner HTTP signature generation object
      */
-    public SigningInterceptor(final ConfigContext config, final HttpSigner httpSigner) {
+    public SigningInterceptor(final ConfigContext config, final RequestHttpSigner httpSigner) {
         this.config = config;
         this.httpSigner = httpSigner;
         this.authEnabled = config.noAuth() == null || !config.noAuth();
@@ -81,7 +80,7 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
             this.cacheTTL = config.getSignatureCacheTTL();
         }
 
-        LOG.info("Using {} to sign requests", HttpSignerUtils.SIGNATURE.getAlgorithm());
+        LOG.info("Using {} to sign requests", httpSigner.getSignerThreadLocal().get().getSignature());
     }
 
     @Override

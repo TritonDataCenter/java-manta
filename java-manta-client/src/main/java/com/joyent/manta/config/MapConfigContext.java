@@ -81,7 +81,7 @@ public class MapConfigContext implements ConfigContext {
     /**
      * Property key for disabling native code support for generating signatures.
      */
-    public static final String MANTA_NO_NATIVE_SIGS_KEY = "http.signature.native.rsa";
+    public static final String MANTA_NO_NATIVE_SIGS_KEY = "manta.disable_native_sigs";
 
     /**
      * Property key for looking up the time in milliseconds to cache HTTP signature headers.

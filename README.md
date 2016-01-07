@@ -57,7 +57,7 @@ left are overridden by values on the right.
 | TLSv1.2                              |                      | https.protocols           | MANTA_HTTPS_PROTOCOLS     |
 | <value too big - see code>           |                      | https.cipherSuites        | MANTA_HTTPS_CIPHERS       |
 | false                                |                      | manta.no_auth             | MANTA_NO_AUTH             |
-| false                                |                      | http.signature.native.rsa | MANTA_NO_NATIVE_SIGS      |
+| false                                |                      | manta.disable_native_sigs | MANTA_NO_NATIVE_SIGS      |
 | 0                                    |                      | http.signature.cache.ttl  | MANTA_SIGS_CACHE_TTL      |
 
 * `manta.url` ( **MANTA_URL** )

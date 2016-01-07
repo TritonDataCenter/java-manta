@@ -14,8 +14,8 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.ObjectParser;
-import com.joyent.http.signature.HttpSignerUtils;
-import com.joyent.http.signature.google.httpclient.HttpSigner;
+import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.http.signature.google.httpclient.RequestHttpSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -118,7 +118,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * The instance of the http signer used to sign the http requests.
      */
-    private final HttpSigner httpSigner;
+    private final RequestHttpSigner httpSigner;
 
 
     /**
@@ -176,9 +176,10 @@ public class MantaClient implements AutoCloseable {
         this.url = mantaURL;
         this.config = config;
         final KeyPair keyPair;
+        final ThreadLocalSigner signer = new ThreadLocalSigner(!config.disableNativeSignatures());
 
         if (keyPath != null) {
-            keyPair = HttpSignerUtils.getKeyPair(new File(keyPath).toPath());
+            keyPair = signer.get().getKeyPair(new File(keyPath).toPath());
         } else {
             final char[] charPassword;
 
@@ -188,10 +189,10 @@ public class MantaClient implements AutoCloseable {
                 charPassword = null;
             }
 
-            keyPair = HttpSignerUtils.getKeyPair(privateKeyContent, charPassword);
+            keyPair = signer.get().getKeyPair(privateKeyContent, charPassword);
         }
 
-        this.httpSigner = new HttpSigner(keyPair, account, fingerprint);
+        this.httpSigner = new RequestHttpSigner(keyPair, account, fingerprint, signer);
         this.httpRequestFactoryProvider = new HttpRequestFactoryProvider(httpSigner,
                 config);
         this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
@@ -1662,6 +1663,7 @@ public class MantaClient implements AutoCloseable {
     @Override
     public void close() throws Exception {
         this.httpRequestFactoryProvider.close();
+        this.httpSigner.getSignerThreadLocal().clearAll();
     }
 
 
