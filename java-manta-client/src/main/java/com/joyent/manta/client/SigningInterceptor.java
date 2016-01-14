@@ -80,7 +80,7 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
             this.cacheTTL = config.getSignatureCacheTTL();
         }
 
-        LOG.info("Using {} to sign requests", httpSigner.getSignerThreadLocal().get().getSignature());
+        LOG.debug("Using {} to sign requests", httpSigner.getSignerThreadLocal().get().getSignature());
     }
 
     @Override
