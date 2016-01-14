@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [2.2.2] - 2016-01-13
+### Changed
  - Changed signature algorithm log statement to debug from info.
  - Change DNS resolver implementation to randomly rotate among the IPs
    returned from DNS for the Manta host when using the ApacheHttpTransport.
