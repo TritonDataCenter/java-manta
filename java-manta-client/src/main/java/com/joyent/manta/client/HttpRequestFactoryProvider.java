@@ -19,6 +19,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.MapConfigContext;
 import org.apache.http.client.HttpClient;
+import org.apache.http.conn.DnsResolver;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -144,8 +145,10 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         registry.register(new Scheme("http", HTTP_PORT, plainSocketFactory));
         registry.register(new Scheme("https", HTTPS_PORT, socketFactory));
 
+
+        final DnsResolver resolver = new ShufflingDnsResolver();
         final PoolingClientConnectionManager connectionManager =
-                new PoolingClientConnectionManager(registry);
+                new PoolingClientConnectionManager(registry, resolver);
 
         final int maxConns;
         if (config.getMaximumConnections() == null) {
