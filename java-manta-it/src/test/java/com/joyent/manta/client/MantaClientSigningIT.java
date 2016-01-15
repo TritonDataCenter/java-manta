@@ -7,6 +7,7 @@ import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
@@ -37,6 +38,7 @@ public class MantaClientSigningIT {
 
     private String testPathPrefix;
 
+    private ConfigContext config;
 
     @BeforeClass()
     @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
@@ -49,7 +51,7 @@ public class MantaClientSigningIT {
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
+        config = new IntegrationTestConfigContext(
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
                 mantaHttpTransport);
 
@@ -86,6 +88,11 @@ public class MantaClientSigningIT {
         try (InputStream is = connection.getInputStream()) {
             connection.setReadTimeout(3000);
             connection.connect();
+
+            if (connection.getResponseCode() != 200) {
+                Assert.fail(MantaUtils.inputStreamToString(connection.getErrorStream()));
+            }
+
             String actual = MantaUtils.inputStreamToString(is);
             Assert.assertEquals(actual, TEST_DATA);
         } finally {
@@ -114,6 +121,10 @@ public class MantaClientSigningIT {
             connection.connect();
 
             Map<String, List<String>> headers = connection.getHeaderFields();
+
+            if (connection.getResponseCode() != 200) {
+                Assert.fail(MantaUtils.inputStreamToString(connection.getErrorStream()));
+            }
 
             Assert.assertNotNull(headers);
             Assert.assertEquals(TEST_DATA.length(), connection.getContentLength());
@@ -170,6 +181,8 @@ public class MantaClientSigningIT {
         // This will throw an error if the newly inserted object isn't present
         mantaClient.head(path);
 
+        Assert.assertEquals(mantaClient.getAsString(path), TEST_DATA);
+
         Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
         URI uri = mantaClient.getAsSignedURI(path, "OPTIONS", expires);
 
@@ -181,6 +194,18 @@ public class MantaClientSigningIT {
             connection.connect();
 
             Map<String, List<String>> headers = connection.getHeaderFields();
+
+            if (connection.getResponseCode() != 200) {
+                String errorText = MantaUtils.inputStreamToString(connection.getErrorStream());
+
+                if (config.getMantaUser().contains("/")) {
+                    String msg = String.format("This fails due to an outstanding bug: MANTA-2839.\n%s",
+                            errorText);
+                    throw new SkipException(msg);
+                }
+
+                Assert.fail(errorText);
+            }
 
             Assert.assertNotNull(headers);
             Assert.assertEquals(headers.get("Server").get(0), "Manta");
