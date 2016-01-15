@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
@@ -22,6 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
+ * Tests the functionality of signing private Manta URLs for public access.
+ *
  * @author Elijah Zupancic
  */
 public class MantaClientSigningIT {
