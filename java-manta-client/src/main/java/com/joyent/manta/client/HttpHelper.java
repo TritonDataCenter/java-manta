@@ -8,7 +8,6 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.util.ObjectParser;
-import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,6 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.SocketException;
 import java.util.Objects;
 import java.util.function.Function;
 
