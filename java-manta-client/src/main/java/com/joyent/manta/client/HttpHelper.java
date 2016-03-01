@@ -8,12 +8,15 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.util.ObjectParser;
+import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -78,6 +81,13 @@ public class HttpHelper {
             return response;
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = MDC.get("mantaRequestId");
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    request);
+
+            throw new IOException(msg, e);
         }
     }
 
@@ -141,6 +151,13 @@ public class HttpHelper {
                     response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = MDC.get("mantaRequestId");
+            final String msg = String.format("An IO problem happened when making "
+                    + "a request (request: %s). Request details: %s", requestId,
+                    request);
+
+            throw new IOException(msg, e);
         }
 
         return response;
@@ -257,6 +274,13 @@ public class HttpHelper {
             return new MantaObjectResponse(path, responseHeaders, metadata);
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = MDC.get("mantaRequestId");
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    request);
+
+            throw new IOException(msg, e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -291,6 +315,13 @@ public class HttpHelper {
             return response;
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = MDC.get("mantaRequestId");
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    request);
+
+            throw new IOException(msg, e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -326,7 +357,12 @@ public class HttpHelper {
 
             return responseAction.apply(response);
         } catch (final UncheckedIOException e) {
-            throw e.getCause();
+            final String requestId = MDC.get("mantaRequestId");
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    request);
+
+            throw new IOException(msg, e.getCause());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
         } finally {
