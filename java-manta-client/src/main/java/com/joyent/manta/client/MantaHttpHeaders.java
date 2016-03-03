@@ -43,6 +43,11 @@ public class MantaHttpHeaders implements Serializable {
     public static final String HTTP_ROLE_TAG = "Role-Tag";
 
     /**
+     * HTTP header passed to Manta that creates a unique request id for debugging.
+     */
+    public static final String REQUEST_ID = X_REQUEST_ID_HEADER;
+
+    /**
      * HttpHeaders delegate which is wrapped by this class.
      */
     private final transient HttpHeaders wrappedHeaders = new HttpHeaders();
@@ -229,7 +234,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return the request id header value
      */
     public String getRequestId() {
-        Object requestId = wrappedHeaders.get(X_REQUEST_ID_HEADER);
+        Object requestId = wrappedHeaders.get(REQUEST_ID);
         if (requestId == null) {
             return null;
         }

@@ -19,6 +19,8 @@ import java.io.StringReader;
 import java.util.Collections;
 import java.util.Map;
 
+import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
+
 /**
  * Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't have to depend on the
  * underlying HTTP client implementation.
@@ -77,7 +79,7 @@ public class MantaClientHttpResponseException extends IOException {
         final Map<String, Object> serverErrorInfo = parseJsonResponse(jsonContent);
 
         this.innerException = innerException;
-        this.requestId = innerException.getHeaders().getFirstHeaderStringValue("x-request-id");
+        this.requestId = innerException.getHeaders().getFirstHeaderStringValue(REQUEST_ID);
         this.serverCode = MantaErrorCode.valueOfCode(serverErrorInfo.get("code"));
 
         if (serverErrorInfo.containsKey("message")) {

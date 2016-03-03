@@ -14,9 +14,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
+import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
 import static com.joyent.manta.client.MantaUtils.formatPath;
 
 /**
@@ -78,6 +82,14 @@ public class HttpHelper {
             return response;
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = extractRequestId(request);
+            final String requestDetails = extractRequestDetails(request);
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    requestDetails);
+
+            throw new IOException(msg, e);
         }
     }
 
@@ -141,6 +153,15 @@ public class HttpHelper {
                     response.getStatusMessage());
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = extractRequestId(request);
+            final String requestDetails = extractRequestDetails(request);
+
+            final String msg = String.format("An IO problem happened when making "
+                    + "a request (request: %s). Request details: %s", requestId,
+                    requestDetails);
+
+            throw new IOException(msg, e);
         }
 
         return response;
@@ -257,6 +278,14 @@ public class HttpHelper {
             return new MantaObjectResponse(path, responseHeaders, metadata);
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = extractRequestId(request);
+            final String requestDetails = extractRequestDetails(request);
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    requestDetails);
+
+            throw new IOException(msg, e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -264,6 +293,66 @@ public class HttpHelper {
         }
     }
 
+    /**
+     * Extracts the request id from a {@link HttpRequest} object.
+     *
+     * @param request HTTP request object
+     * @return UUID as a string representing unique request or null if not available
+     */
+    protected String extractRequestId(final HttpRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        final HttpHeaders headers = request.getHeaders();
+        final String requestId;
+
+        if (headers == null) {
+            requestId = null;
+        } else {
+            requestId = headers.getFirstHeaderStringValue(REQUEST_ID);
+        }
+
+        return requestId;
+    }
+
+    /**
+     * Extracts the details of the request made in order to help with debugging.
+     * @param request HTTP request object
+     * @return plain-text string representing request
+     */
+    protected String extractRequestDetails(final HttpRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        HttpHeaders headers = request.getHeaders();
+
+        Set<Map.Entry<String, Object>> headerSet = headers.entrySet();
+        Iterator<Map.Entry<String, Object>> itr = headerSet.iterator();
+
+        StringBuilder headerDump = new StringBuilder();
+
+        while (itr.hasNext()) {
+            final Map.Entry<String, Object> next = itr.next();
+            final String key = next.getKey();
+            final String value = Objects.toString(next.getValue());
+
+            headerDump.append(key)
+                      .append(": ")
+                      .append("'")
+                      .append(value)
+                      .append("'")
+                      .append(" ");
+        }
+
+        return String.format(
+                "[%s] %s { %s }",
+                request.getRequestMethod(),
+                request.getUrl(),
+                headerDump
+        );
+    }
 
     /**
      * Executes a {@link HttpRequest}, logs the request and returns back the
@@ -291,6 +380,14 @@ public class HttpHelper {
             return response;
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (IOException | UncheckedIOException e) {
+            final String requestId = extractRequestId(request);
+            final String requestDetails = extractRequestDetails(request);
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    requestDetails);
+
+            throw new IOException(msg, e);
         } finally {
             if (response != null) {
                 response.disconnect();
@@ -325,10 +422,16 @@ public class HttpHelper {
                     response.getStatusMessage());
 
             return responseAction.apply(response);
-        } catch (final UncheckedIOException e) {
-            throw e.getCause();
         } catch (final HttpResponseException e) {
             throw new MantaClientHttpResponseException(e);
+        } catch (final IOException | UncheckedIOException e) {
+            final String requestId = extractRequestId(request);
+            final String requestDetails = extractRequestDetails(request);
+            final String msg = String.format("An IO problem happened when making "
+                            + "a request (request: %s). Request details: %s", requestId,
+                    requestDetails);
+
+            throw new IOException(msg, e);
         } finally {
             if (response != null) {
                 response.disconnect();
