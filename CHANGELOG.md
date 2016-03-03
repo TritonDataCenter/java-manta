@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.2.3] - ?
+### Added
+ - We catch IOExceptions and rethrow them with additional debug output appended.
+
 ## [2.2.2] - 2016-01-13
 ### Changed
  - Changed signature algorithm log statement to debug from info.
