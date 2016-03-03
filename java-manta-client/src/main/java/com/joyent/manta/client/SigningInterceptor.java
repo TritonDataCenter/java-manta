@@ -14,7 +14,7 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 
-import static com.joyent.http.signature.Signer.X_REQUEST_ID_HEADER;
+import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
 
 /**
  * Implementation of {@link HttpExecuteInterceptor} that performs HTTP signatures
@@ -98,7 +98,7 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
         request.setConnectTimeout(httpTimeout);
 
         // Load request ID into MDC so that it can be logged
-        final Object requestId = request.getHeaders().get(X_REQUEST_ID_HEADER);
+        final Object requestId = request.getHeaders().get(REQUEST_ID);
         if (requestId != null) {
             MDC.put("mantaRequestId", requestId.toString());
         }
