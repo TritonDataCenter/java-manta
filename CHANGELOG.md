@@ -5,6 +5,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [2.2.3] - ?
 ### Added
  - We catch IOExceptions and rethrow them with additional debug output appended.
+ 
+### Changed
+ - Upgraded http-signatures to 2.0.1 so that we support native gmp on SmartOS. 
 
 ## [2.2.2] - 2016-01-13
 ### Changed
