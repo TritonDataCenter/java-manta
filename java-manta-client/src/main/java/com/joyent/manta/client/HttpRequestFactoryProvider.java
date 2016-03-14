@@ -208,7 +208,12 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
                 transport = new ApacheHttpTransport(buildHttpClient());
         }
 
-        LOG.debug("Using HttpTransport implementation: {}", transport.getClass());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Using HttpTransport implementation: {}", transport.getClass());
+
+            final String nativeGMP = System.getProperty("native.jnagmp", "false");
+            LOG.debug("Native libgmp enabled: {}", nativeGMP);
+        }
 
         final HttpExecuteInterceptor signingInterceptor =
                 new SigningInterceptor(config, httpSigner);
