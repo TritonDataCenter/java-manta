@@ -43,7 +43,7 @@ left are overridden by values on the right.
 | https://us-east.manta.joyent.com:443 | manta.url            | manta.url                 | MANTA_URL                 |
 |                                      | manta.user           | manta.user                | MANTA_USER                |
 |                                      | manta.key_id         | manta.key_id              | MANTA_KEY_ID              |
-|                                      | manta.key_path       | manta.key_path            | MANTA_KEY_PATH            |
+| $HOME/.ssh/id_rsa                    | manta.key_path       | manta.key_path            | MANTA_KEY_PATH            |
 |                                      |                      | manta.key_content         | MANTA_KEY_CONTENT         |
 |                                      |                      | manta.password            | MANTA_PASSWORD            |
 | 20000                                | manta.timeout        | manta.timeout             | MANTA_TIMEOUT             |
