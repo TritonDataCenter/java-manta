@@ -337,8 +337,8 @@ mchmod +subusername /user/stor/my_directory
 
 ## Contributions
 
-Contributions welcome! Please ensure that `# mvn checkstyle:checkstyle -Dcheckstyle.skip=false` runs
-clean with no warnings or errors.
+Contributions welcome! Please read the [CONTRIBUTIONS.MD](CONTRIBUTIONS.MD) document for details
+on getting started.
 
 ### Testing
 
