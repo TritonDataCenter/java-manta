@@ -33,11 +33,7 @@ If you prefer to build from source, you'll also need
 Which will compile the jar to ./targets/java-manta-version.jar. You can then
 add it as a dependency to your Java project.
 
-## Test Suite
-By default, the test suite invokes the java manta client against the live manta
-service.  In order to run the test suite, you will need to specify environment
-variables, system properties or TestNG parameters to tell the library how to
-authenticate against Manta.
+## Configuration
 
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
@@ -122,6 +118,12 @@ consulting the [node-http-signing
 spec](https://github.com/joyent/node-http-signature/blob/master/http_signing.md).
 
 For detailed usage instructions, consult the provided javadoc.
+
+## Test Suite
+By default, the test suite invokes the java manta client against the live manta
+service.  In order to run the test suite, you will need to specify environment
+variables, system properties or TestNG parameters to tell the library how to
+authenticate against Manta.
 
 ### Example Get Request
 ``` java
