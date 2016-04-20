@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static com.joyent.http.signature.Signer.X_REQUEST_ID_HEADER;
-
 /**
  * Object encapsulating the HTTP headers to be sent to the Manta API.
  * When non-standard HTTP headers are used as part of a PUT request to
@@ -45,7 +43,7 @@ public class MantaHttpHeaders implements Serializable {
     /**
      * HTTP header passed to Manta that creates a unique request id for debugging.
      */
-    public static final String REQUEST_ID = X_REQUEST_ID_HEADER;
+    public static final String REQUEST_ID = "x-request-id";
 
     /**
      * HttpHeaders delegate which is wrapped by this class.

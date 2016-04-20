@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
 
@@ -97,11 +98,11 @@ public class SigningInterceptor implements HttpExecuteInterceptor {
         request.setReadTimeout(httpTimeout);
         request.setConnectTimeout(httpTimeout);
 
+        final String requestId = UUID.randomUUID().toString();
+        // Add the header as part of the request so it is known round-trip
+        request.getHeaders().set(REQUEST_ID, requestId);
         // Load request ID into MDC so that it can be logged
-        final Object requestId = request.getHeaders().get(REQUEST_ID);
-        if (requestId != null) {
-            MDC.put("mantaRequestId", requestId.toString());
-        }
+        MDC.put("mantaRequestId", requestId);
 
         if (httpSigner == null || !authEnabled) {
             return;
