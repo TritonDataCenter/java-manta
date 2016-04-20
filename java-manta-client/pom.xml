@@ -177,9 +177,17 @@
                             <exclude>junit:junit</exclude>
                             <exclude>org.slf4j:slf4j-api</exclude>
                             <exclude>org.bouncycastle:*</exclude>
+                            <exclude>com.squareup.jnagmp:*</exclude>
+                            <exclude>net.java.dev.jna:*</exclude>
+                            <exclude>org.hamcrest:*</exclude>
+                            <exclude>org.mockito:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>
+                        <relocation>
+                            <pattern>com.joyent.http</pattern>
+                            <shadedPattern>com.joyent.manta.http</shadedPattern>
+                        </relocation>
                         <relocation>
                             <pattern>com.google</pattern>
                             <shadedPattern>com.joyent.manta.com.google</shadedPattern>
