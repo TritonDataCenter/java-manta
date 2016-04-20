@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.2.4] - ?
+### Changed
+ - 
+
 ## [2.2.3] - 2016-03-12
 ### Added
  - We catch IOExceptions and rethrow them with additional debug output appended.
