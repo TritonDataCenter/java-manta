@@ -432,6 +432,8 @@ public class HttpHelper {
 
             final String requestDump = reflectionToString(request, SHORT_PREFIX_STYLE);
             exception.setContextValue("request", requestDump);
+            exception.setContextValue("requestMethod", request.getRequestMethod());
+            exception.setContextValue("requestURL", request.getUrl());
             final String requestHeaders = asString(request.getHeaders());
             exception.setContextValue("requestHeaders", requestHeaders);
         }
