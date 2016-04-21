@@ -27,11 +27,9 @@ import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
  *
  * @author Yunong Xiao
  */
-public class MantaClientHttpResponseException extends IOException {
+public class MantaClientHttpResponseException extends MantaIOException {
 
-
-    private static final long serialVersionUID = -2233924525500839645L;
-
+    private static final long serialVersionUID = -5448972867288845768L;
 
     /**
      * Logger instance.
@@ -43,7 +41,6 @@ public class MantaClientHttpResponseException extends IOException {
      * JSON parser.
      */
     private static final ObjectParser PARSER = new JsonObjectParser(new JacksonFactory());
-
 
     /**
      * The underlying {@link HttpResponseException}.
