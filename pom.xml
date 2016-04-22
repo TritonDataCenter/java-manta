@@ -15,12 +15,11 @@
         <name>Joyent</name>
         <url>joyent.com</url>
     </organization>
+
     <licenses>
         <license>
-            <name>The MIT License (MIT)</name>
-            <url>http://opensource.org/licenses/MIT</url>
-            <distribution>repo</distribution>
-            <comments>Copyright (c) 2015 Joyent</comments>
+            <name>MPL 2.0</name>
+            <url>https://www.mozilla.org/MPL/2.0/</url>
         </license>
     </licenses>
 

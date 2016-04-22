@@ -1,0 +1,385 @@
+Until version 2.3.0, Java Manta has been licensed under the MIT license.
+As of 2.3.0, it is licensed under the MPL v2 license.
+
+For public record, non-Joyent contributers have agreed to change the license to the
+MPL v2.
+
+================================================================================
+ Phillip Ross
+================================================================================
+
+Delivered-To: elijah.zupancic@joyent.com
+Received: by 10.176.64.7 with SMTP id h7csp2185498uad;
+        Tue, 19 Apr 2016 16:45:13 -0700 (PDT)
+X-Received: by 10.129.77.65 with SMTP id a62mr3875834ywb.87.1461109513180;
+        Tue, 19 Apr 2016 16:45:13 -0700 (PDT)
+Return-Path: <phillip.w.g.ross at gmail.com>
+Received: from mail-yw0-x230.google.com (mail-yw0-x230.google.com. [2607:f8b0:4002:c05::230])
+        by mx.google.com with ESMTPS id r85si15968712ywg.169.2016.04.19.16.45.13
+        for <elijah.zupancic@joyent.com>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Tue, 19 Apr 2016 16:45:13 -0700 (PDT)
+Received-SPF: pass (google.com: domain of phillip.w.g.ross at gmail.com designates 2607:f8b0:4002:c05::230 as permitted sender) client-ip=2607:f8b0:4002:c05::230;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com;
+       spf=pass (google.com: domain of phillip.w.g.ross at gmail.com designates 2607:f8b0:4002:c05::230 as permitted sender) smtp.mailfrom=phillip.w.g.ross at gmail.com;
+       dmarc=pass (p=NONE dis=NONE) header.from=gmail.com
+Received: by mail-yw0-x230.google.com with SMTP id t10so36163738ywa.0
+        for <elijah.zupancic@joyent.com>; Tue, 19 Apr 2016 16:45:13 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20120113;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to;
+        bh=mCItCpF6iryE+gFaPVfK9kwGvBYeW+ltbOswLqvWGZQ=;
+        b=bldaKXPMseZjfqqeIf5EPfIWLAESTaTrTfD1H7OgDKBdlfcj/12UvsgTP1hZrTMtRt
+         m/aH8CXDW0gblYkMYzJFkFKcU08fBu/rTBhS9ZTQ5F06uPm9Rom9pAIrj/dMoBnh6LeG
+         Zd/mfmZ0wpRREhAnrEeqcp1WMHMM8dQRsA5l3qfSVUtdJ3j1TWZy/r3KoMulYy8tZnl+
+         5sNyjO1WNK1VywdpO6q+FkLFhmVqEWAs+yJRfsXDtDKimSLI3ZWJJjBwAdaxLWVwXDSn
+         EoK7P20jkxumVqlqLtoOGbWDsf/z3idEaR+SFaCO4vWK/iqjIGyipVc6ezOA9g+/YiEo
+         aY6w==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:mime-version:in-reply-to:references:date
+         :message-id:subject:from:to;
+        bh=mCItCpF6iryE+gFaPVfK9kwGvBYeW+ltbOswLqvWGZQ=;
+        b=fapasJ3riC0ZhpOnuSVl/A4ldmOEmedK6PddygHy4/6+ZRigC7k5sqNei71fvzdFew
+         03s//FjOQHJJwaEFWKl2KYnafO5KJPU+njgIpaDU//XFgfWaMbwieh8ujw4n4/kBEQA0
+         p/4tXtXk/JByERJJDEOzLx17eONWAp8dz4ht97+gyPILi2KT77BUWHOZemD02xlaJm1k
+         nRL5soP6cwHxbRENWpON1QinVAiXDw7wxhEAdVypWOOuTYIRs/Y2EJ8rfllBIkOdHAHu
+         3WekcWbb7HLo88K3M0XNu+gksyI+Eug9h54tbTF/AHqobn/iG67Q0hh0WJ+D7vf9LCPb
+         rZzQ==
+X-Gm-Message-State: AOPr4FVoDE+rGneBUW6mJWLqIn1hmPt6b48AHl8hZcslT1cdBGoc+Wvv2VKoKgVm/TeoEbtxrKiFmKjxyqhogw==
+MIME-Version: 1.0
+X-Received: by 10.129.154.82 with SMTP id r79mr2619721ywg.85.1461109512941;
+ Tue, 19 Apr 2016 16:45:12 -0700 (PDT)
+Received: by 10.37.34.194 with HTTP; Tue, 19 Apr 2016 16:45:12 -0700 (PDT)
+In-Reply-To: <CAF+KQ6K_qpueyBgCDuxN1-+SMb5QQr7MBekju7Mrz8hF2xso0w@mail.gmail.com>
+References: <CAF+KQ6K_qpueyBgCDuxN1-+SMb5QQr7MBekju7Mrz8hF2xso0w@mail.gmail.com>
+Date: Tue, 19 Apr 2016 19:45:12 -0400
+Message-ID: <CAKcj57DhFTpuNnWkzGUA2yaMgfSTRO2pb6CycYFwHktyJBh8gg@mail.gmail.com>
+Subject: Re: Move to the MPLv2
+From: Phillip Ross <phillip.w.g.ross at gmail.com>
+To: Elijah Zupancic <elijah.zupancic@joyent.com>
+Content-Type: multipart/alternative; boundary=94eb2c0b8d147f38e70530df1167
+
+--94eb2c0b8d147f38e70530df1167
+Content-Type: text/plain; charset=UTF-8
+
+Yep, not a problem in either case.  I hope everything is going well!
+
+Please see the confirmations inline:
+
+On Tue, Apr 19, 2016 at 7:38 PM, Elijah Zupancic <elijah.zupancic@joyent.com
+> wrote:
+
+> Do you agree to change the licensing from the MIT license for the Java
+> Manta Project (https://github.com/joyent/java-manta) to the MPL v2?
+>
+
+Yes.
+
+
+Do you agree to change the licensing from the MIT license for the Java HTTP
+> Signature Project (https://github.com/joyent/java-http-signature) to the
+> MPL v2?
+>
+
+Yes
+
+--94eb2c0b8d147f38e70530df1167
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div>Yep, not a problem in either case.=C2=A0 I hope every=
+thing is going well!</div><div><br></div><div>Please see the confirmations =
+inline:</div><div><br></div><div>On Tue, Apr 19, 2016 at 7:38 PM, Elijah Zu=
+pancic <span dir=3D"ltr">&lt;<a href=3D"mailto:elijah.zupancic@joyent.com" =
+target=3D"_blank">elijah.zupancic@joyent.com</a>&gt;</span> wrote:<br></div=
+><div class=3D"gmail_extra"><div class=3D"gmail_quote"><blockquote class=3D=
+"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1px #ccc solid;padding=
+-left:1ex"><div dir=3D"ltr"><div>Do you agree to change the licensing from =
+the MIT license for the Java Manta Project (<a href=3D"https://github.com/j=
+oyent/java-manta" target=3D"_blank">https://github.com/joyent/java-manta</a=
+>) to the MPL v2?</div></div></blockquote><div><br></div><div>Yes.</div><di=
+v>=C2=A0</div><div><br></div><blockquote class=3D"gmail_quote" style=3D"mar=
+gin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir=3D"ltr=
+"><div><div><div>Do you agree to change the licensing from the MIT license =
+for the Java HTTP Signature Project (<a href=3D"https://github.com/joyent/j=
+ava-http-signature" target=3D"_blank">https://github.com/joyent/java-http-s=
+ignature</a>) to the MPL v2?</div></div></div></div></blockquote><div><br><=
+/div><div>Yes</div><div>=C2=A0</div><div><br></div><div><br></div></div></d=
+iv></div>
+
+--94eb2c0b8d147f38e70530df1167--
+
+================================================================================
+ Stas Maksimov
+================================================================================
+
+
+Delivered-To: elijah.zupancic@joyent.com
+Received: by 10.176.64.7 with SMTP id h7csp2614363uad;
+        Wed, 20 Apr 2016 09:48:33 -0700 (PDT)
+X-Received: by 10.112.133.38 with SMTP id oz6mr4120929lbb.64.1461170913100;
+        Wed, 20 Apr 2016 09:48:33 -0700 (PDT)
+Return-Path: <maksimov at gmail.com>
+Received: from mail-lb0-x230.google.com (mail-lb0-x230.google.com. [2a00:1450:4010:c04::230])
+        by mx.google.com with ESMTPS id i4si3987989lbs.28.2016.04.20.09.48.32
+        for <elijah.zupancic@joyent.com>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Wed, 20 Apr 2016 09:48:33 -0700 (PDT)
+Received-SPF: pass (google.com: domain of maksimov at gmail.com designates 2a00:1450:4010:c04::230 as permitted sender) client-ip=2a00:1450:4010:c04::230;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com;
+       spf=pass (google.com: domain of maksimov at gmail.com designates 2a00:1450:4010:c04::230 as permitted sender) smtp.mailfrom=maksimov at gmail.com;
+       dmarc=pass (p=NONE dis=NONE) header.from=gmail.com
+Received: by mail-lb0-x230.google.com with SMTP id ys16so12687626lbb.3
+        for <elijah.zupancic@joyent.com>; Wed, 20 Apr 2016 09:48:32 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20120113;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to;
+        bh=RP0tASPw311/DrRbmpDuvISnf3YIxlfYIc7trixdeVk=;
+        b=y/ANKAgbSVnvihmM3IpBCpPg6oYWCEO+7W4Leq36VYtwxHQOFeqIhcNNflSyUGPKLL
+         fcp0dcKykh612XGFoWt+GTnMM2DQhy9EaEa2PGWe7EasglxP2p2eiHlVCV+3v5SVDJdW
+         COK/UR24wXQ7JMUSRJNF3jEv0syLfFgb/9V3tvF8qYDIBjR14mOnX13A+azaI/F/fDw8
+         BDktMDJ2ycELAuE2wUNplOYSsXkvC60GaXHUmddHUdZLXZGfJkniDntdHPZIuX6fTIyB
+         0okqoCfgH8mNXQTYnqLB0Epn76tKYFJJyf5ZPH6vjCMWQ+9gOnL3UlMQbIWqkEtebMsS
+         f7zw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:mime-version:in-reply-to:references:date
+         :message-id:subject:from:to;
+        bh=RP0tASPw311/DrRbmpDuvISnf3YIxlfYIc7trixdeVk=;
+        b=AYev5LvDkELAqjsKW9HvfJ8dlmNiSMR+cTeJqAtVlmpq46MQvNwGR/pQgQ6X2OkrYO
+         I5Evz36LilpCksybpB060lmbZgOulCcSY67HbnOkjzMgghpyEjS2Lq+/s43CKzIJEQaE
+         WnwQvlU6trUcVcTBkKY8flBVx39DVR3MAJ6XwjhGf8vaGR1uT+BS4Ri4CLTCLT1QT/lU
+         8d1skAJT4lVVJ6Gby8gZ/P8aF2vltB3BtDsqLo0+6TpHL7cR163oS3Culz0eg8cxBS3b
+         LZxqoVcA6LxDiklTCKHYSQ2icun4W65M7GhSkvUApMo/1hodNL4SkYCrH+7aH8nVuWvp
+         7/4g==
+X-Gm-Message-State: AOPr4FXO8AK57+xyMtRDUUYB5DYQZZzpA2ynXB2HOOGwZWJGNX8sYSwmWsHiUflrOwSPnOQQme+J2BcFsThhkA==
+MIME-Version: 1.0
+X-Received: by 10.112.151.40 with SMTP id un8mr4261364lbb.106.1461170912768;
+ Wed, 20 Apr 2016 09:48:32 -0700 (PDT)
+Received: by 10.112.89.227 with HTTP; Wed, 20 Apr 2016 09:48:32 -0700 (PDT)
+In-Reply-To: <CAF+KQ6+FSS+9COBX0ZXmffQ5FLpX+SdcrPy7yr9b2OdJt79r4w@mail.gmail.com>
+References: <CAF+KQ6Kf0vD-_LtkxD2mqWQN_t8S2cg410jtn+xCVNCfMU+PxA@mail.gmail.com>
+	<CAAZYd_kpZo4vEt3SxNBqDupZwzAZwqvN0iGvaewXnBgTB_jC+A@mail.gmail.com>
+	<CAF+KQ6KjHbVXynRB2Kv4U2FU=ULRVt1GEsrF5gyuupxnUaruZA@mail.gmail.com>
+	<CAAZYd_mozAcwNHuiO9WKC2Q3r1Jjf_NX0v657bS3ntm7S=WtMQ@mail.gmail.com>
+	<CAF+KQ6+FSS+9COBX0ZXmffQ5FLpX+SdcrPy7yr9b2OdJt79r4w@mail.gmail.com>
+Date: Wed, 20 Apr 2016 17:48:32 +0100
+Message-ID: <CAAZYd_mS-AYjXm3coNvX9DGA9v6ugCwGSJJNk9KfDASUzxH0Sg@mail.gmail.com>
+Subject: Re: Moving Java Manta to the MPLv2
+From: Stas Maksimov <maksimov at gmail.com>
+To: Elijah Zupancic <elijah.zupancic@joyent.com>
+Content-Type: multipart/alternative; boundary=047d7b3a8106363dac0530ed5d52
+
+--047d7b3a8106363dac0530ed5d52
+Content-Type: text/plain; charset=UTF-8
+
+Hi Elijah,
+
+Thanks very much for the clarification. I don't mind your switching the
+license to MPL v2 for my changes.
+
+Thanks.
+
+On 20 April 2016 at 17:40, Elijah Zupancic <elijah.zupancic@joyent.com>
+wrote:
+
+> Hi Stas,
+>
+> Here's a page with a nice comparison of licenses:
+> http://choosealicense.com/licenses/
+>
+> If you are consuming Java Manta as a library, nothing will change. Now, if
+> you are modifying Java Manta and redistributing it, you will have to
+> release the source code of the modifications. Compared to the LGPL or the
+> GPL it is a very liberal license that mandates code sharing. This means you
+> only have to release the source if you have modified the library.
+>
+> I don't see any impacts to the Dasein Joyent Driver. Also, all historical
+> versions of Java Manta will still be under the old MIT license, only the
+> newest version will move.
+>
+> Thanks,
+>
+> Elijah Zupancic
+> On Apr 20, 2016 6:54 AM, "Stas Maksimov" <maksimov at gmail.com> wrote:
+>
+>> Hey Elijah,
+>>
+>> Will there be any consequences of such change to the projects that are
+>> using the Java Manta driver, e.g. our Dasein Joyent driver? Will anything
+>> at all change for us? I'm not very fluent in Legalese.
+>>
+>> Thanks,
+>> Stas
+>>
+>> On 20 April 2016 at 00:57, Elijah Zupancic <elijah.zupancic@joyent.com>
+>> wrote:
+>>
+>>> Please get some sleep. The internet has no respect for timezones.
+>>>
+>>> On Tue, Apr 19, 2016 at 4:55 PM, Stas Maksimov <maksimov at gmail.com>
+>>> wrote:
+>>>
+>>>> Hi Elijah,
+>>>>
+>>>> Can I get back to you tomorrow? I'm literally in my bed already.
+>>>>
+>>>> Thanks,
+>>>> Stas
+>>>>
+>>>> On Wed 20 Apr 2016 at 00:52, Elijah Zupancic <
+>>>> elijah.zupancic@joyent.com> wrote:
+>>>>
+>>>>> Hi Stas,
+>>>>>
+>>>>> My apologies for the awkward introduction. I'm doing a lot of work
+>>>>> cleaning up Joyent's Java libraries and I noticed that you had committed
+>>>>> changes in the past. In order to make sure that I'm doing things properly,
+>>>>> I wanted to ask you for your consent to change licenses.
+>>>>>
+>>>>> I want to move Java Manta project to the MPL v2 license so that it is
+>>>>> using the same license as the rest of the new Joyent projects. Here is the
+>>>>> license:
+>>>>> https://github.com/dekobon/java-triton/blob/master/LICENSE.txt
+>>>>>
+>>>>> Do you agree to change the licensing from the MIT license for the Java
+>>>>> Manta Project (https://github.com/joyent/java-manta) to the MPL v2
+>>>>> for your contributions?
+>>>>>
+>>>>> Thanks,
+>>>>> --
+>>>>> Elijah Zupancic
+>>>>> Director of Solutions Engineering
+>>>>> Joyent, Inc.
+>>>>> 655 Montgomery St., Suite 1600 | San Francisco | California | 94111
+>>>>> *elijah.zupancic@joyent.com <elijah.zupancic@joyent.com> *|
+>>>>> www.joyent.com
+>>>>>
+>>>>
+>>>
+>>>
+>>> --
+>>> Elijah Zupancic
+>>> Director of Solutions Engineering
+>>> Joyent, Inc.
+>>> 655 Montgomery St., Suite 1600 | San Francisco | California | 94111
+>>> *elijah.zupancic@joyent.com <elijah.zupancic@joyent.com> *|
+>>> www.joyent.com
+>>>
+>>
+>>
+
+--047d7b3a8106363dac0530ed5d52
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">Hi Elijah,<div><br></div><div>Thanks very much for the cla=
+rification. I don&#39;t mind your switching the license to MPL v2 for my ch=
+anges.</div><div><br></div><div>Thanks.</div></div><div class=3D"gmail_extr=
+a"><br><div class=3D"gmail_quote">On 20 April 2016 at 17:40, Elijah Zupanci=
+c <span dir=3D"ltr">&lt;<a href=3D"mailto:elijah.zupancic@joyent.com" targe=
+t=3D"_blank">elijah.zupancic@joyent.com</a>&gt;</span> wrote:<br><blockquot=
+e class=3D"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1px #ccc sol=
+id;padding-left:1ex"><div dir=3D"ltr"><p dir=3D"ltr">Hi Stas,</p>
+<p>Here&#39;s a page with a nice comparison of licenses:=C2=A0<a href=3D"ht=
+tp://choosealicense.com/licenses/" target=3D"_blank">http://choosealicense.=
+com/licenses/</a></p><p>If you are consuming Java Manta as a library, nothi=
+ng will change. Now, if you are modifying Java Manta and redistributing it,=
+ you will have to release the source code of the modifications. Compared to=
+ the LGPL or the GPL it is a very liberal license that mandates code sharin=
+g. This means you only have to release the source if you have modified the =
+library.</p><p>I don&#39;t see any impacts to the Dasein Joyent Driver. Als=
+o, all historical versions of Java Manta will still be under the old MIT li=
+cense, only the newest version will move.</p><p>Thanks,</p><p>Elijah Zupanc=
+ic</p><div><div class=3D"h5">
+<div class=3D"gmail_quote">On Apr 20, 2016 6:54 AM, &quot;Stas Maksimov&quo=
+t; &lt;<a href=3D"mailto:maksimov at gmail.com" target=3D"_blank">maksimov@gma=
+il.com</a>&gt; wrote:<br type=3D"attribution"><blockquote class=3D"gmail_qu=
+ote" style=3D"margin:0px 0px 0px 0.8ex;border-left-width:1px;border-left-st=
+yle:solid;border-left-color:rgb(204,204,204);padding-left:1ex"><div dir=3D"=
+ltr">Hey Elijah,<div><br></div><div>Will there be any consequences of such =
+change to the projects that are using the Java Manta driver, e.g. our Dasei=
+n Joyent driver? Will anything at all change for us? I&#39;m not very fluen=
+t in Legalese.=C2=A0</div><div><br></div><div>Thanks,</div><div>Stas</div><=
+/div><div class=3D"gmail_extra"><br><div class=3D"gmail_quote">On 20 April =
+2016 at 00:57, Elijah Zupancic <span dir=3D"ltr">&lt;<a href=3D"mailto:elij=
+ah.zupancic@joyent.com" target=3D"_blank">elijah.zupancic@joyent.com</a>&gt=
+;</span> wrote:<br><blockquote class=3D"gmail_quote" style=3D"margin:0px 0p=
+x 0px 0.8ex;border-left-width:1px;border-left-style:solid;border-left-color=
+:rgb(204,204,204);padding-left:1ex"><div dir=3D"ltr">Please get some sleep.=
+ The internet has no respect for timezones.</div><div><div><div class=3D"gm=
+ail_extra"><br><div class=3D"gmail_quote">On Tue, Apr 19, 2016 at 4:55 PM, =
+Stas Maksimov <span dir=3D"ltr">&lt;<a href=3D"mailto:maksimov at gmail.com" t=
+arget=3D"_blank">maksimov at gmail.com</a>&gt;</span> wrote:<br><blockquote cl=
+ass=3D"gmail_quote" style=3D"margin:0px 0px 0px 0.8ex;border-left-width:1px=
+;border-left-style:solid;border-left-color:rgb(204,204,204);padding-left:1e=
+x">Hi Elijah,<br><br>Can I get back to you tomorrow? I&#39;m literally in m=
+y bed already.<br><br>Thanks,<br>Stas<div><div><br><div class=3D"gmail_quot=
+e"><div dir=3D"ltr">On Wed 20 Apr 2016 at 00:52, Elijah Zupancic &lt;<a hre=
+f=3D"mailto:elijah.zupancic@joyent.com" target=3D"_blank">elijah.zupancic@j=
+oyent.com</a>&gt; wrote:<br></div><blockquote class=3D"gmail_quote" style=
+=3D"margin:0px 0px 0px 0.8ex;border-left-width:1px;border-left-style:solid;=
+border-left-color:rgb(204,204,204);padding-left:1ex"><div dir=3D"ltr">Hi St=
+as,<div><br></div><div>My apologies for the awkward introduction. I&#39;m d=
+oing a lot of work cleaning up Joyent&#39;s Java libraries and I noticed th=
+at you had committed changes in the past. In order to make sure that I&#39;=
+m doing things properly, I wanted to ask you for your consent to change lic=
+enses.</div><div><br></div><div><span style=3D"font-size:12.8px">I want to =
+move Java Manta project to the MPL v2 license so that it is using the same =
+license as the rest of the new Joyent projects. Here is the license:=C2=A0<=
+/span><a href=3D"https://github.com/dekobon/java-triton/blob/master/LICENSE=
+.txt" style=3D"font-size:12.8px" target=3D"_blank">https://github.com/dekob=
+on/java-triton/blob/master/LICENSE.txt</a><br clear=3D"all"><div><br></div>=
+<div><div style=3D"font-size:12.8px">Do you agree to change the licensing f=
+rom the MIT license for the Java Manta Project (<a href=3D"https://github.c=
+om/joyent/java-manta" target=3D"_blank">https://github.com/joyent/java-mant=
+a</a>) to the MPL v2 for your contributions?</div></div><div><br></div><div=
+>Thanks,</div></div></div><div dir=3D"ltr"><div>-- <br><div><div dir=3D"ltr=
+"><div style=3D"color:rgb(136,136,136);font-size:12.8px"><span style=3D"fon=
+t-family:Calibri,sans-serif;font-size:14px">Elijah Zupancic</span><br></div=
+><div style=3D"color:rgb(136,136,136);font-size:12.8px"><span style=3D"bord=
+er-collapse:collapse;font-family:Calibri,sans-serif;font-size:14px"><div st=
+yle=3D"font-size:medium;font-family:Calibri"><font color=3D"#666666">Direct=
+or of Solutions Engineering</font></div><div style=3D"font-size:medium;font=
+-family:Calibri"><font color=3D"#ff6600">Joyent, Inc.</font></div><div styl=
+e=3D"font-size:medium;font-family:Calibri"><font color=3D"#666666">655 Mont=
+gomery St., Suite 1600 |=C2=A0</font><font color=3D"#666666">San Francisco =
+| California | 94111</font></div><div><div style=3D"font-family:Calibri;fon=
+t-size:medium"><font color=3D"#3366ff"><u><a href=3D"mailto:elijah.zupancic=
+@joyent.com" style=3D"color:rgb(17,85,204)" target=3D"_blank">elijah.zupanc=
+ic@joyent.com</a>=C2=A0</u>|=C2=A0<a href=3D"http://www.joyent.com/" style=
+=3D"color:rgb(17,85,204)" target=3D"_blank"><font color=3D"#3366ff">www.joy=
+ent.com</font></a></font></div><div style=3D"font-size:medium;font-family:C=
+alibri"></div></div></span></div></div></div></div></div></blockquote></div>
+</div></div></blockquote></div><br><br clear=3D"all"><div><br></div>-- <br>=
+<div><div dir=3D"ltr"><div style=3D"color:rgb(136,136,136);font-size:12.8px=
+"><span style=3D"font-family:Calibri,sans-serif;font-size:14px">Elijah Zupa=
+ncic</span><br></div><div style=3D"color:rgb(136,136,136);font-size:12.8px"=
+><span style=3D"border-collapse:collapse;font-family:Calibri,sans-serif;fon=
+t-size:14px"><div style=3D"font-size:medium;font-family:Calibri"><font colo=
+r=3D"#666666">Director of Solutions Engineering</font></div><div style=3D"f=
+ont-size:medium;font-family:Calibri"><font color=3D"#ff6600">Joyent, Inc.</=
+font></div><div style=3D"font-size:medium;font-family:Calibri"><font color=
+=3D"#666666">655 Montgomery St., Suite 1600 |=C2=A0</font><font color=3D"#6=
+66666">San Francisco | California | 94111</font></div><div><div style=3D"fo=
+nt-family:Calibri;font-size:medium"><font color=3D"#3366ff"><u><a href=3D"m=
+ailto:elijah.zupancic@joyent.com" style=3D"color:rgb(17,85,204)" target=3D"=
+_blank">elijah.zupancic@joyent.com</a>=C2=A0</u>|=C2=A0<a href=3D"http://ww=
+w.joyent.com/" style=3D"color:rgb(17,85,204)" target=3D"_blank"><font color=
+=3D"#3366ff">www.joyent.com</font></a></font></div><div style=3D"font-size:=
+medium;font-family:Calibri"></div></div></span></div></div></div></div>
+</div></div></blockquote></div><br></div>
+</blockquote></div>
+</div></div></div>
+</blockquote></div><br></div>
+
+--047d7b3a8106363dac0530ed5d52--
+
+================================================================================
+ Daniel Micol Ponce
+================================================================================
+
+None of Daniel's contributions exist in Java Manta 2.2.4.
