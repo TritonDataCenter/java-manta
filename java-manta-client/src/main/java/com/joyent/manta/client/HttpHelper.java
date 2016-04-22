@@ -9,19 +9,21 @@ import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaIOException;
+import org.apache.commons.lang3.exception.ExceptionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
 import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
+import static com.joyent.manta.client.MantaUtils.asString;
 import static com.joyent.manta.client.MantaUtils.formatPath;
+import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 /**
  * Helper class used for common HTTP operations against the Manta server.
@@ -73,23 +75,23 @@ public class HttpHelper {
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
         final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
 
-        final HttpResponse response;
+        HttpResponse response = null;
 
         try {
             response = request.execute();
             LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
                     response.getStatusMessage());
             return response;
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
         } catch (IOException | UncheckedIOException e) {
-            final String requestId = extractRequestId(request);
-            final String requestDetails = extractRequestDetails(request);
-            final String msg = String.format("An IO problem happened when making "
-                            + "a request (request: %s). Request details: %s", requestId,
-                    requestDetails);
-
-            throw new IOException(msg, e);
+            throw buildException(e, request, response);
+        } finally {
+            if (response != null) {
+                try {
+                    response.disconnect();
+                } catch (IOException e) {
+                    LOG.warn("Problem disconnecting response resource", e);
+                }
+            }
         }
     }
 
@@ -143,7 +145,7 @@ public class HttpHelper {
             request.setParser(parser);
         }
 
-        final HttpResponse response;
+        HttpResponse response = null;
 
         try {
             response = request.execute();
@@ -151,17 +153,8 @@ public class HttpHelper {
                     genericUrl.getRawPath(),
                     response.getStatusCode(),
                     response.getStatusMessage());
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
         } catch (IOException | UncheckedIOException e) {
-            final String requestId = extractRequestId(request);
-            final String requestDetails = extractRequestDetails(request);
-
-            final String msg = String.format("An IO problem happened when making "
-                    + "a request (request: %s). Request details: %s", requestId,
-                    requestDetails);
-
-            throw new IOException(msg, e);
+            throw buildException(e, request, response);
         }
 
         return response;
@@ -276,19 +269,15 @@ public class HttpHelper {
             responseHeaders.putAll(httpHeaders.metadata());
 
             return new MantaObjectResponse(path, responseHeaders, metadata);
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
         } catch (IOException | UncheckedIOException e) {
-            final String requestId = extractRequestId(request);
-            final String requestDetails = extractRequestDetails(request);
-            final String msg = String.format("An IO problem happened when making "
-                            + "a request (request: %s). Request details: %s", requestId,
-                    requestDetails);
-
-            throw new IOException(msg, e);
+            throw buildException(e, request, response);
         } finally {
             if (response != null) {
-                response.disconnect();
+                try {
+                    response.disconnect();
+                } catch (IOException e) {
+                    LOG.warn("Problem disconnecting response resource", e);
+                }
             }
         }
     }
@@ -316,43 +305,6 @@ public class HttpHelper {
         return requestId;
     }
 
-    /**
-     * Extracts the details of the request made in order to help with debugging.
-     * @param request HTTP request object
-     * @return plain-text string representing request
-     */
-    protected String extractRequestDetails(final HttpRequest request) {
-        if (request == null) {
-            return null;
-        }
-
-        HttpHeaders headers = request.getHeaders();
-
-        Set<Map.Entry<String, Object>> headerSet = headers.entrySet();
-        Iterator<Map.Entry<String, Object>> itr = headerSet.iterator();
-
-        StringBuilder headerDump = new StringBuilder();
-
-        while (itr.hasNext()) {
-            final Map.Entry<String, Object> next = itr.next();
-            final String key = next.getKey();
-            final String value = Objects.toString(next.getValue());
-
-            headerDump.append(key)
-                      .append(": ")
-                      .append("'")
-                      .append(value)
-                      .append("'")
-                      .append(" ");
-        }
-
-        return String.format(
-                "[%s] %s { %s }",
-                request.getRequestMethod(),
-                request.getUrl(),
-                headerDump
-        );
-    }
 
     /**
      * Executes a {@link HttpRequest}, logs the request and returns back the
@@ -378,19 +330,15 @@ public class HttpHelper {
                     response.getStatusMessage());
 
             return response;
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
         } catch (IOException | UncheckedIOException e) {
-            final String requestId = extractRequestId(request);
-            final String requestDetails = extractRequestDetails(request);
-            final String msg = String.format("An IO problem happened when making "
-                            + "a request (request: %s). Request details: %s", requestId,
-                    requestDetails);
-
-            throw new IOException(msg, e);
+            throw buildException(e, request, response);
         } finally {
             if (response != null) {
-                response.disconnect();
+                try {
+                    response.disconnect();
+                } catch (IOException e) {
+                    LOG.warn("Problem disconnecting response resource", e);
+                }
             }
         }
     }
@@ -422,20 +370,79 @@ public class HttpHelper {
                     response.getStatusMessage());
 
             return responseAction.apply(response);
-        } catch (final HttpResponseException e) {
-            throw new MantaClientHttpResponseException(e);
-        } catch (final IOException | UncheckedIOException e) {
-            final String requestId = extractRequestId(request);
-            final String requestDetails = extractRequestDetails(request);
-            final String msg = String.format("An IO problem happened when making "
-                            + "a request (request: %s). Request details: %s", requestId,
-                    requestDetails);
-
-            throw new IOException(msg, e);
+        } catch (IOException | UncheckedIOException e) {
+            throw buildException(e, request, response);
         } finally {
             if (response != null) {
-                response.disconnect();
+                try {
+                    response.disconnect();
+                } catch (IOException e) {
+                    LOG.warn("Problem disconnecting response resource", e);
+                }
             }
+        }
+    }
+
+    /**
+     * Builds a chained exception contained the context attributes of the
+     * HTTP request and HTTP response.
+     *
+     * @param exception exception to embed
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @return new contextualized exception
+     */
+    protected MantaIOException buildException(final Exception exception,
+                                              final HttpRequest request,
+                                              final HttpResponse response) {
+        final MantaIOException contextualized;
+
+        if (exception instanceof MantaIOException) {
+            contextualized = (MantaIOException)exception;
+        } else if (exception instanceof HttpResponseException) {
+            contextualized = new MantaClientHttpResponseException((HttpResponseException)exception);
+        } else if (exception instanceof IOException || exception instanceof UncheckedIOException) {
+            final String msg = "An IO problem happened when making a request.";
+            contextualized = new MantaIOException(msg, exception);
+        } else {
+            contextualized = new MantaIOException(exception);
+        }
+
+        annotateContextedException(contextualized, request, response);
+
+        return contextualized;
+    }
+
+    /**
+     * Appends context attributes for the HTTP request and HTTP response objects
+     * to a {@link ExceptionContext} instance.
+     *
+     * @param exception exception to append to
+     * @param request HTTP request object
+     * @param response HTTP response object
+     */
+    protected void annotateContextedException(final ExceptionContext exception,
+                                              final HttpRequest request,
+                                              final HttpResponse response) {
+        Objects.requireNonNull(exception, "Exception context object must be present");
+
+        if (request != null) {
+            final String requestId = extractRequestId(request);
+            exception.setContextValue("requestId", requestId);
+
+            final String requestDump = reflectionToString(request, SHORT_PREFIX_STYLE);
+            exception.setContextValue("request", requestDump);
+            exception.setContextValue("requestMethod", request.getRequestMethod());
+            exception.setContextValue("requestURL", request.getUrl());
+            final String requestHeaders = asString(request.getHeaders());
+            exception.setContextValue("requestHeaders", requestHeaders);
+        }
+
+        if (response != null) {
+            final String responseDump = reflectionToString(response, SHORT_PREFIX_STYLE);
+            exception.setContextValue("response", responseDump);
+            final String responseHeaders = asString(response.getHeaders());
+            exception.setContextValue("responseHeaders", responseHeaders);
         }
     }
 }

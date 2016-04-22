@@ -21,6 +21,7 @@
         <dependency.bouncycastle.version>1.54</dependency.bouncycastle.version>
         <dependency.google-http-client.version>1.21.0</dependency.google-http-client.version>
         <dependency.google-http-client-signature.version>2.2.0</dependency.google-http-client-signature.version>
+        <dependency.commons-lang>3.4</dependency.commons-lang>
         <dependency.jackson.version>2.6.3</dependency.jackson.version>
         <dependency.jnagmp.version>1.1.0</dependency.jnagmp.version>
     </properties>
@@ -73,6 +74,12 @@
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <!-- Apache Commons Lang for helpful utility functions -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${dependency.commons-lang}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

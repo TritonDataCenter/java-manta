@@ -2,13 +2,15 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [2.2.4] - 2016-04-20
+## [2.2.4] - 2016-04-21
 ### Changed
  - Upgraded http-signatures to 2.2.0 so that we are keeping pace with upstream
    changes.
  - Rejiggered Maven shade settings to better exclude certain dependencies and
    shade others so that they won't cause conflicts.
  - Upgraded Apache Commons Collections to 4.1 because it has security patches.
+ - Added Apache Commons Lang as a dependency.
+ - Added additional details about HTTP requests to all exceptions.
 
 ## [2.2.3] - 2016-03-12
 ### Added

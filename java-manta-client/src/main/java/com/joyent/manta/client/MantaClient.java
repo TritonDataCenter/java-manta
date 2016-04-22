@@ -293,7 +293,11 @@ public class MantaClient implements AutoCloseable {
             final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
             return new MantaObjectResponse(path, headers);
         } finally {
-            response.disconnect();
+            try {
+                response.disconnect();
+            } catch (final IOException e) {
+                LOG.warn("Problem disconnecting response resource", e);
+            }
         }
     }
 
@@ -312,10 +316,12 @@ public class MantaClient implements AutoCloseable {
         final MantaObjectResponse metadata = new MantaObjectResponse(path, headers);
 
         if (metadata.isDirectory()) {
-            String msg = String.format("Directories do not have data, so "
-                            + "data streams from them doesn't work. Path requested: %s",
-                    path);
-            throw new MantaClientException(msg);
+            final String msg = "Directories do not have data, so data streams "
+                    + "from directories are not possible.";
+            final MantaClientException exception = new MantaClientException(msg);
+            exception.setContextValue("path", path);
+
+            throw exception;
         }
 
         return new MantaObjectInputStream(metadata, response);

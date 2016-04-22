@@ -116,6 +116,11 @@
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
                             </suiteXmlFiles>
+                            <!-- uncomment to enable proxies with integration tests -->
+                            <!--<systemPropertyVariables>-->
+                                <!--<https.proxyHost>localhost</https.proxyHost>-->
+                                <!--<https.proxyPort>8888</https.proxyPort>-->
+                            <!--</systemPropertyVariables>-->
                         </configuration>
                     </execution>
                 </executions>

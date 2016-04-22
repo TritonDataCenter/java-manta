@@ -3,11 +3,13 @@
  */
 package com.joyent.manta.exception;
 
+import org.apache.commons.lang3.exception.ContextedRuntimeException;
+
 /**
  * The base MantaException class.
  * @author Yunong Xiao
  */
-public class MantaException extends RuntimeException {
+public class MantaException extends ContextedRuntimeException {
 
     private static final long serialVersionUID = 146894136987570504L;
 
@@ -38,5 +40,4 @@ public class MantaException extends RuntimeException {
     public MantaException(final String message, final Throwable cause) {
         super(message, cause);
     }
-
 }
