@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.test.util.ThreeTriesRetryAnalyzer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-//@Test(groups = { "job" }, retryAnalyzer = RetryAnalyzerCount.class)
+@Test(groups = { "job" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClientJobIT.class);
 
@@ -133,7 +134,7 @@ public class MantaClientJobIT {
     }
 
 
-    @Test(dependsOnMethods = {"createJob"})
+    @Test(dependsOnMethods = {"createJob"}, successPercentage = 66)
     public void canAddAndGetInputsFromIterator() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
@@ -155,7 +156,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(dependsOnMethods = { "createJob" })
+    @Test(dependsOnMethods = { "createJob" }, successPercentage = 66)
     public void canAddAndGetInputsFromStream() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
