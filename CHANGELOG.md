@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [2.2.4] - 2016-04-21
+## [2.3.0] - 2016-04-22
 ### Changed
  - Upgraded http-signatures to 2.2.0 so that we are keeping pace with upstream
    changes.
@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
  - Upgraded Apache Commons Collections to 4.1 because it has security patches.
  - Added Apache Commons Lang as a dependency.
  - Added additional details about HTTP requests to all exceptions.
+ - Changed license to MPLv2.
 
 ## [2.2.3] - 2016-03-12
 ### Added
