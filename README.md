@@ -18,7 +18,7 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>2.2.3</version>
+    <version>LATEST</version>
 </dependency>
 ```
 
