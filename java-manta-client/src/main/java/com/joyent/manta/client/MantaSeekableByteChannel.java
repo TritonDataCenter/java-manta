@@ -154,6 +154,73 @@ public class MantaSeekableByteChannel extends InputStream
     }
 
     @Override
+    public int read(final byte[] buffer) throws IOException {
+        if (!open) {
+            throw new ClosedChannelException();
+        }
+
+        final HttpResponse response = connectOrGetResponse();
+        final InputStream is = response.getContent();
+
+        final int totalRead = is.read(buffer);
+
+        if (totalRead > -1) {
+            position += totalRead;
+        }
+
+        return totalRead;
+    }
+
+    @Override
+    public int read(final byte[] buffer, final int offset, final int length)
+            throws IOException {
+        if (!open) {
+            throw new ClosedChannelException();
+        }
+
+        final HttpResponse response = connectOrGetResponse();
+        final InputStream is = response.getContent();
+
+        final int totalRead = is.read(buffer, offset, length);
+
+        if (totalRead > -1) {
+            position += totalRead;
+        }
+
+        return totalRead;
+    }
+
+    @Override
+    public long skip(final long noOfBytesToSkip) throws IOException {
+        if (!open) {
+            return 0;
+        }
+
+        final HttpResponse response = connectOrGetResponse();
+        final InputStream is = response.getContent();
+
+        final long totalSkipped = is.skip(noOfBytesToSkip);
+
+        position += totalSkipped;
+
+        return totalSkipped;
+    }
+
+
+
+    @Override
+    public int available() throws IOException {
+        if (!open) {
+            throw new ClosedChannelException();
+        }
+
+        final HttpResponse response = connectOrGetResponse();
+        final InputStream is = response.getContent();
+
+        return is.available();
+    }
+
+    @Override
     public int write(final ByteBuffer src) throws IOException {
         // This is a read-only channel
         throw new NonWritableChannelException();
@@ -184,6 +251,20 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         return headers.getContentLength();
+    }
+
+    @Override
+    public synchronized void mark(final int readlimit) {
+    }
+
+    @Override
+    public synchronized void reset() throws IOException {
+        throw new IOException("mark/reset not supported");
+    }
+
+    @Override
+    public boolean markSupported() {
+        return false;
     }
 
     @Override

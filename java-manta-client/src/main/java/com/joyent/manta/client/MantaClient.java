@@ -429,7 +429,7 @@ public class MantaClient implements AutoCloseable {
      * @return seekable stream of object data
      * @throws IOException when there is a problem getting the object over the network
      */
-    public SeekableByteChannel getSeekableByteChannel(final String path) throws IOException {
+    public MantaSeekableByteChannel getSeekableByteChannel(final String path) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
         final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));

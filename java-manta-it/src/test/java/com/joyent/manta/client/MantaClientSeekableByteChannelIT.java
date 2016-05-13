@@ -159,6 +159,25 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
+    @Test
+    public final void skipUsingInputStream() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+
+        try (MantaSeekableByteChannel channel = mantaClient.getSeekableByteChannel(path)) {
+            final String expected = TEST_DATA.substring(5);
+            Assert.assertEquals(channel.skip(5), 5L, "Didn't skip the expected number of bytes");
+            Assert.assertEquals(channel.position(), 5L, "Position didn't update properly");
+
+            Assert.assertEquals(MantaUtils.inputStreamToString(channel),
+                    expected, "Couldn't read the same bytes as written");
+
+            Assert.assertEquals(channel.position(), TEST_DATA.length(),
+                    "Position didn't update properly");
+        }
+    }
+
     @Test(expectedExceptions = ClosedChannelException.class)
     public final void closeAndAttemptToRead() throws IOException {
         final String name = UUID.randomUUID().toString();
