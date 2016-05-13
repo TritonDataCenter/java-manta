@@ -111,6 +111,53 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
+    @Test
+    public final void readFromDifferentPositions() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+
+        try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path)) {
+            ByteBuffer first5Bytes = ByteBuffer.allocate(5);
+            channel.read(first5Bytes);
+            String firstPos = new String(first5Bytes.array());
+            Assert.assertEquals(firstPos, TEST_DATA.substring(0, 5),
+                    "Couldn't read the same bytes as written");
+
+            try (SeekableByteChannel channel2 = channel.position(7L)) {
+                ByteBuffer seventhTo12thBytes = ByteBuffer.allocate(5);
+                channel2.read(seventhTo12thBytes);
+                String secondPos = new String(seventhTo12thBytes.array());
+                Assert.assertEquals(secondPos, TEST_DATA.substring(7, 12),
+                        "Couldn't read the same bytes as written");
+            }
+        }
+    }
+
+
+    @Test
+    public final void readAllSeekableBytesFromPositionAsInputStream() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+
+        final int position = 5;
+
+        try (MantaSeekableByteChannel channel = mantaClient.getSeekableByteChannel(path, position)) {
+            final String expected = TEST_DATA.substring(position);
+
+            Assert.assertEquals(MantaUtils.inputStreamToString(channel),
+                    expected, "Couldn't read the same bytes as written");
+
+            final int secondPosition = 7;
+            final String secondExpected = TEST_DATA.substring(secondPosition);
+            try (MantaSeekableByteChannel channel2 = (MantaSeekableByteChannel)channel.position(secondPosition)) {
+
+                Assert.assertEquals(MantaUtils.inputStreamToString(channel2),
+                        secondExpected, "Couldn't read the same bytes as written");
+            }
+        }
+    }
 
     @Test(expectedExceptions = ClosedChannelException.class)
     public final void closeAndAttemptToRead() throws IOException {

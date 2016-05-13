@@ -25,7 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Elijah Zupancic
  */
 @ThreadSafe
-public class MantaSeekableByteChannel implements SeekableByteChannel {
+public class MantaSeekableByteChannel extends InputStream
+        implements SeekableByteChannel {
     /**
      * Constant representing the value returned when we have reached the
      * end of a stream.
@@ -128,6 +129,30 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
         return bytesRead;
     }
 
+    /**
+     * Reads the next byte of data from the backing input stream at the current
+     * position. The value byte is returned as an <code>int</code> in the range
+     * <code>0</code> to <code>255</code>. If no byte is available because the
+     * end of the stream has been reached, the value <code>-1</code> is returned.
+     * This method blocks until input data is available, the end of the stream
+     * is detected, or an exception is thrown.
+     *
+     * @return     the next byte of data, or <code>-1</code> if the end of the
+     *             stream is reached.
+     * @exception  IOException  if an I/O error occurs.
+     */
+    @Override
+    public int read() throws IOException {
+        if (!open) {
+            throw new ClosedChannelException();
+        }
+
+        final HttpResponse response = connectOrGetResponse();
+        final InputStream is = response.getContent();
+        position++;
+        return is.read();
+    }
+
     @Override
     public int write(final ByteBuffer src) throws IOException {
         // This is a read-only channel
@@ -141,7 +166,7 @@ public class MantaSeekableByteChannel implements SeekableByteChannel {
 
     @Override
     public SeekableByteChannel position(final long newPosition) throws IOException {
-        return new MantaSeekableByteChannel(new AtomicReference<HttpResponse>(),
+        return new MantaSeekableByteChannel(new AtomicReference<>(),
                 objectUri, newPosition, httpRequestFactory);
     }
 

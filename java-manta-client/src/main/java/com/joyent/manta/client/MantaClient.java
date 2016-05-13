@@ -407,7 +407,7 @@ public class MantaClient implements AutoCloseable {
      * @return seekable stream of object data
      * @throws IOException when there is a problem getting the object over the network
      */
-    public SeekableByteChannel getSeekableByteChannel(final String path,
+    public MantaSeekableByteChannel getSeekableByteChannel(final String path,
                                                       final long position) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 

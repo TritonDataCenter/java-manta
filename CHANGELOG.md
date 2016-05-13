@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.4.0] - ?
+### Added
+ - MantaSeekableByteChannel now extends from InputStream.
+
 ## [2.3.0] - 2016-04-22
 ### Changed
  - Upgraded http-signatures to 2.2.0 so that we are keeping pace with upstream
