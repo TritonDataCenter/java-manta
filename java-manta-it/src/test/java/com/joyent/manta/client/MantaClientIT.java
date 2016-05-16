@@ -35,7 +35,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(dependsOnGroups = { "directory" })
+//@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -245,6 +245,21 @@ public class MantaClientIT {
         final String linkContent = mantaClient.getAsString(testPathPrefix + link);
         Assert.assertEquals(linkContent, TEST_DATA);
 
+    }
+
+
+    @Test
+    public final void canMoveFile() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+        final String newDir = testPathPrefix + "subdir/";
+        mantaClient.putDirectory(newDir);
+        final String newPath = newDir + "this-is-a-new-name.txt";
+
+        mantaClient.move(path, newPath);
+        final String movedContent = mantaClient.getAsString(newPath);
+        Assert.assertEquals(movedContent, TEST_DATA);
     }
 
 

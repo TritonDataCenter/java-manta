@@ -1004,6 +1004,21 @@ public class MantaClient implements AutoCloseable {
                 objectPath, linkPath);
     }
 
+    /**
+     * Moves a file from one path to another path.
+     *
+     * @param originalPath Original path to move from
+     * @param newPath Destination path to move to
+     * @throws IOException thrown when something goes wrong
+     */
+    public void move(final String originalPath, final String newPath)
+            throws IOException {
+        LOG.debug("Moving [{}] to [{}]", originalPath, newPath);
+
+        putSnapLink(newPath, originalPath, null);
+        delete(originalPath);
+    }
+
     /*************************************************************************
      * Job Methods
      *************************************************************************/
@@ -1439,6 +1454,7 @@ public class MantaClient implements AutoCloseable {
         try {
             return responseStream.map(s -> {
                 try {
+                    @SuppressWarnings("rawtypes")
                     final Map jobDetails = mapper.readValue(s, Map.class);
                     final Object value = jobDetails.get("name");
 
