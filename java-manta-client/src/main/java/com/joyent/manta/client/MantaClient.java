@@ -922,19 +922,11 @@ public class MantaClient implements AutoCloseable {
 
         request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
 
-        try {
-            HttpResponse res = httpHelper.executeAndCloseRequest(request,
-                    "PUT    {} response [{}] {} ", path);
+        HttpResponse res = httpHelper.executeAndCloseRequest(request,
+                "PUT    {} response [{}] {} ", path);
 
-            // When LastModified is set, the directory already exists
-            return res.getHeaders().getLastModified() == null;
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
-                return false;
-            }
-
-            throw e;
-        }
+        // When LastModified is set, the directory already exists
+        return res.getHeaders().getLastModified() == null;
     }
 
 

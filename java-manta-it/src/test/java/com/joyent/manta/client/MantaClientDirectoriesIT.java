@@ -79,19 +79,6 @@ public class MantaClientDirectoriesIT {
 
 
     @Test
-    public void willReturnFalseWhenWeCantCreateDirectory() throws IOException {
-        mantaClient.putDirectory(testPathPrefix);
-
-        // This assume that you can't create a directory at /$home/xxx
-        String dir = String.format("%s/%s", config.getMantaHomeDirectory(),
-                UUID.randomUUID());
-        boolean result = mantaClient.putDirectory(dir);
-
-        Assert.assertFalse(result, "Expected a false value because we "
-                + "can't create a directory at that path");
-    }
-
-    @Test
     public void willReturnFalseWhenWeOverwriteDirectory() throws IOException {
         mantaClient.putDirectory(testPathPrefix);
 
