@@ -64,6 +64,10 @@ import static com.joyent.manta.client.MantaUtils.formatPath;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaClient implements AutoCloseable {
+    /**
+     * Directory separator used in Manta.
+     */
+    public static final String SEPARATOR = "/";
 
     /**
      * The static logger instance.
@@ -885,12 +889,12 @@ public class MantaClient implements AutoCloseable {
      * Creates a directory in Manta.
      *
      * @param path The fully qualified path of the Manta directory.
+     * @return true when directory was created
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
-    public void putDirectory(final String path) throws IOException {
-        putDirectory(path, null);
+    public boolean putDirectory(final String path) throws IOException {
+        return putDirectory(path, null);
     }
 
 
@@ -899,11 +903,11 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path    The fully qualified path of the Manta directory.
      * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
+     * @return true when directory was created
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
-    public void putDirectory(final String path, final MantaHttpHeaders headers)
+    public boolean putDirectory(final String path, final MantaHttpHeaders headers)
             throws IOException {
         Objects.requireNonNull("PUT directory path must be present");
 
@@ -917,7 +921,20 @@ public class MantaClient implements AutoCloseable {
         }
 
         request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
-        httpHelper.executeAndCloseRequest(request, "PUT    {} response [{}] {} ", path);
+
+        try {
+            HttpResponse res = httpHelper.executeAndCloseRequest(request,
+                    "PUT    {} response [{}] {} ", path);
+
+            // When LastModified is set, the directory already exists
+            return res.getHeaders().getLastModified() == null;
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                return false;
+            }
+
+            throw e;
+        }
     }
 
 
@@ -954,10 +971,9 @@ public class MantaClient implements AutoCloseable {
             return;
         }
 
-        final String separator = "/";
-        final String[] parts = path.split(separator);
+        final String[] parts = path.split(SEPARATOR);
         final Iterator<Path> itr = Paths.get("", parts).iterator();
-        final StringBuilder sb = new StringBuilder(separator);
+        final StringBuilder sb = new StringBuilder(SEPARATOR);
 
         for (int i = 0; itr.hasNext(); i++) {
             final String part = itr.next().toString();
@@ -970,7 +986,7 @@ public class MantaClient implements AutoCloseable {
             }
 
             if (itr.hasNext()) {
-                sb.append(separator);
+                sb.append(SEPARATOR);
             }
         }
     }

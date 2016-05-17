@@ -5,7 +5,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [2.4.0] - ?
 ### Added
  - MantaSeekableByteChannel now extends from InputStream.
- - Added move method to MantaClient. 
+ - Added move method to MantaClient.
+ - MantaClient.putDirectory now returns a boolean value indicating the 
+   successful creation of a new directory.
  
 ## [2.3.0] - 2016-04-22
 ### Changed

@@ -35,7 +35,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-//@Test(dependsOnGroups = { "directory" })
+@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -64,7 +64,7 @@ public class MantaClientIT {
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        mantaClient.putDirectory(testPathPrefix, null);
+        mantaClient.putDirectory(testPathPrefix);
     }
 
 

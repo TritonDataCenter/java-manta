@@ -31,6 +31,8 @@ public class MantaClientDirectoriesIT {
 
     private String testPathPrefix;
 
+    private ConfigContext config;
+
 
     @BeforeClass
     @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
@@ -43,12 +45,12 @@ public class MantaClientDirectoriesIT {
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
+        config = new IntegrationTestConfigContext(
                 mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
                 mantaHttpTransport);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s",
+        testPathPrefix = String.format("%s/stor/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
     }
 
@@ -62,15 +64,45 @@ public class MantaClientDirectoriesIT {
     }
 
 
-    @Test()
+    @Test
     public void canCreateDirectory() throws IOException {
         mantaClient.putDirectory(testPathPrefix);
 
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        mantaClient.putDirectory(dir);
+        boolean created = mantaClient.putDirectory(dir);
+
+        Assert.assertTrue(created, "Directory was marked as created");
 
         MantaObject response = mantaClient.head(dir);
         Assert.assertEquals(dir, response.getPath());
+    }
+
+
+    @Test
+    public void willReturnFalseWhenWeCantCreateDirectory() throws IOException {
+        mantaClient.putDirectory(testPathPrefix);
+
+        // This assume that you can't create a directory at /$home/xxx
+        String dir = String.format("%s/%s", config.getMantaHomeDirectory(),
+                UUID.randomUUID());
+        boolean result = mantaClient.putDirectory(dir);
+
+        Assert.assertFalse(result, "Expected a false value because we "
+                + "can't create a directory at that path");
+    }
+
+    @Test
+    public void willReturnFalseWhenWeOverwriteDirectory() throws IOException {
+        mantaClient.putDirectory(testPathPrefix);
+
+        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        Assert.assertTrue(mantaClient.putDirectory(dir),
+                "We were unable to create the initial directory");
+
+        boolean result = mantaClient.putDirectory(dir);
+
+        Assert.assertFalse(result, "Expected a false value because we "
+                + "didn't create a new directory");
     }
 
 
