@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
  - Added move method to MantaClient.
  - MantaClient.putDirectory now returns a boolean value indicating the 
    successful creation of a new directory.
+### Fixed
+ - [Unable to parse ISO 8601 mtime value from ObjectResponse object](https://github.com/joyent/java-manta/issues/114)
  
 ## [2.3.0] - 2016-04-22
 ### Changed

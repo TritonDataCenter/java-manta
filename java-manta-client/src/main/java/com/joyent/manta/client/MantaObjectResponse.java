@@ -22,9 +22,30 @@ public class MantaObjectResponse implements MantaObject {
     private static final long serialVersionUID = 2752480890369898121L;
 
     /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(MantaObjectResponse.class);
+
+    /**
      * The content-type used to represent Manta directory resources in http responses.
      */
     public static final String DIRECTORY_RESPONSE_CONTENT_TYPE = "application/x-json-stream; type=directory";
+
+    /**
+     * ISO 8601 timestamp format used for parsing mtime values from the JSON
+     * response body.
+     */
+    public static final String PATTERN_ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
+
+    /**
+     * Collection of different timestamp formats that we attempt to parse.
+     */
+    private static final String[] DATETIME_FORMATS = new String[] {
+            PATTERN_ISO_8601,
+            DateUtils.PATTERN_RFC1123,
+            DateUtils.PATTERN_RFC1036,
+            DateUtils.PATTERN_ASCTIME
+    };
 
     /**
      * The name value for this object.
@@ -206,16 +227,21 @@ public class MantaObjectResponse implements MantaObject {
 
     @Override
     public Date getLastModifiedTime() {
-        final String lastModified = getMtime();
-        if (lastModified == null) {
+        final String lastModified;
+
+        if (getMtime() != null) {
+            lastModified = getMtime();
+        } else if (getHttpHeaders() != null && getHttpHeaders().getLastModified() != null) {
+            lastModified = getHttpHeaders().getLastModified();
+        } else {
             return null;
         }
 
-        final Date parsed = DateUtils.parseDate(lastModified);
+        final Date parsed = DateUtils.parseDate(lastModified, DATETIME_FORMATS);
 
         if (parsed == null) {
-            Logger logger = LoggerFactory.getLogger(getClass());
-            logger.warn("Error parsing mtime value: {}", lastModified);
+            LOG.warn("Error parsing mtime value [{}] with formats: {}",
+                    lastModified, DATETIME_FORMATS);
         }
 
         return parsed;
