@@ -725,10 +725,15 @@ public class MantaClient implements AutoCloseable {
 
         final HttpContent content;
 
+        ByteArrayInputStream bs = null;
+
         if (source == null) {
             content = new EmptyContent();
         } else {
-            content = new InputStreamContent(contentType, source);
+            final InputStreamContent inputStreamContent =
+                    new InputStreamContent(contentType, source);
+            inputStreamContent.setRetrySupported(source.markSupported());
+            content = inputStreamContent;
         }
 
         return httpHelper.httpPut(path, headers, content, metadata);
@@ -762,9 +767,7 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectResponse put(final String path,
                                    final String string,
                                    final MantaHttpHeaders headers) throws IOException {
-        try (InputStream is = new ByteArrayInputStream(string.getBytes())) {
-            return put(path, is, headers);
-        }
+        return put(path, string, headers, null);
     }
 
 
@@ -781,9 +784,7 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectResponse put(final String path,
                                    final String string,
                                    final MantaMetadata metadata) throws IOException {
-        try (InputStream is = new ByteArrayInputStream(string.getBytes())) {
-            return put(path, is, null, metadata);
-        }
+        return put(path, string, null, metadata);
     }
 
 
@@ -802,9 +803,20 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        try (InputStream is = new ByteArrayInputStream(string.getBytes())) {
-            return put(path, is, headers, metadata);
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final String contentType = findOrDefaultContentType(headers,
+                ContentType.APPLICATION_OCTET_STREAM.toString());
+
+        final HttpContent content;
+
+        if (string == null) {
+            content = new EmptyContent();
+        } else {
+            content = new ByteArrayContent(contentType, string.getBytes());
         }
+
+        return httpHelper.httpPut(path, headers, content, metadata);
     }
 
     /**
@@ -921,6 +933,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         request.getHeaders().setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
+        request.setContent(new EmptyContent());
 
         HttpResponse res = httpHelper.executeAndCloseRequest(request,
                 "PUT    {} response [{}] {} ", path);

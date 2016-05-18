@@ -4,6 +4,7 @@
 package com.joyent.manta.client;
 
 import com.google.api.client.http.HttpExecuteInterceptor;
+import com.google.api.client.http.HttpIOExceptionHandler;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponseInterceptor;
@@ -25,7 +26,6 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
 import org.apache.http.params.BasicHttpParams;
@@ -162,16 +162,6 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
         final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
 
-        final int httpRetries;
-
-        if (config.getRetries() == null) {
-            httpRetries = DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
-        } else {
-            httpRetries = config.getRetries();
-        }
-
-        defaultHttpClient.setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(httpRetries, false));
-
         if (proxySelector != null) {
             defaultHttpClient.setRoutePlanner(new ProxySelectorRoutePlanner(registry, proxySelector));
         }
@@ -220,10 +210,15 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
 
         final HttpResponseInterceptor responseInterceptor = response -> MDC.remove("mantaRequestId");
 
+        final HttpIOExceptionHandler exceptionHandler = new MantaIOExceptionHandler();
+
         final HttpRequestInitializer initializer = request -> {
             request.setInterceptor(signingInterceptor);
             request.setResponseInterceptor(responseInterceptor);
             request.setParser(new JsonObjectParser(JSON_FACTORY));
+            request.setLoggingEnabled(false);
+            request.setNumberOfRetries(config.getRetries());
+            request.setIOExceptionHandler(exceptionHandler);
         };
 
         return transport.createRequestFactory(initializer);
