@@ -35,7 +35,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(dependsOnGroups = { "directory" })
+//@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -253,13 +253,86 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
-        final String newDir = testPathPrefix + "subdir/";
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
         mantaClient.putDirectory(newDir);
         final String newPath = newDir + "this-is-a-new-name.txt";
 
         mantaClient.move(path, newPath);
         final String movedContent = mantaClient.getAsString(newPath);
         Assert.assertEquals(movedContent, TEST_DATA);
+    }
+
+
+    @Test
+    public final void canMoveEmptyDirectory() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.putDirectory(path);
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+
+        mantaClient.move(path, newDir);
+        boolean newLocationExists = mantaClient.existsAndIsAccessible(newDir);
+        Assert.assertTrue(newLocationExists, "Destination directory doesn't exist: "
+                + newDir);
+
+        MantaObjectResponse head = mantaClient.head(newDir);
+
+        boolean isDirectory = head.isDirectory();
+        Assert.assertTrue(isDirectory, "Destination wasn't created as a directory");
+
+        Long resultSetSize = head.getHttpHeaders().getResultSetSize();
+        Assert.assertEquals(resultSetSize.longValue(), 0L,
+                "Destination directory is not empty");
+
+        boolean sourceIsDeleted = !mantaClient.existsAndIsAccessible(path);
+        Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
+            + path);
+    }
+
+
+    @Test
+    public final void canMoveDirectoryWithContents() throws IOException {
+        final String name = "source-" + UUID.randomUUID().toString();
+        final String source = testPathPrefix + name + MantaClient.SEPARATOR;
+        mantaClient.putDirectory(source);
+        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "/";
+
+        mantaClient.putDirectory(source + "dir1");
+        mantaClient.putDirectory(source + "dir2");
+        mantaClient.putDirectory(source + "dir3");
+
+        mantaClient.put(source + "file1.txt", TEST_DATA);
+        mantaClient.put(source + "file2.txt", TEST_DATA);
+        mantaClient.put(source + "dir1/file3.txt", TEST_DATA);
+        mantaClient.put(source + "dir1/file4.txt", TEST_DATA);
+        mantaClient.put(source + "dir3/file5.txt", TEST_DATA);
+
+        mantaClient.move(source, destination);
+        boolean newLocationExists = mantaClient.existsAndIsAccessible(destination);
+        Assert.assertTrue(newLocationExists, "Destination directory doesn't exist: "
+                + destination);
+
+        MantaObjectResponse headDestination = mantaClient.head(destination);
+
+        boolean isDirectory = headDestination.isDirectory();
+        Assert.assertTrue(isDirectory, "Destination wasn't created as a directory");
+
+        Long resultSetSize = headDestination.getHttpHeaders().getResultSetSize();
+        Assert.assertEquals(resultSetSize.longValue(), 5L,
+                "Destination directory doesn't have the same number of entries as source");
+
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "file1.txt"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "file2.txt"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "dir1"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "dir2"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "dir3"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "dir1/file3.txt"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "dir1/file4.txt"));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(destination + "dir3/file5.txt"));
+
+        boolean sourceIsDeleted = !mantaClient.existsAndIsAccessible(source);
+        Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
+                + source);
     }
 
 

@@ -21,6 +21,7 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
@@ -566,7 +567,10 @@ public class MantaClient implements AutoCloseable {
             String mtime = Objects.toString(item.get("mtime"));
             String type = Objects.toString(item.get("type"));
             Objects.requireNonNull(name, "File name must be present");
-            String objPath = String.format("%s/%s", path, name);
+            String objPath = String.format("%s%s%s",
+                    StringUtils.removeEnd(path, SEPARATOR),
+                    SEPARATOR,
+                    StringUtils.removeStart(name, SEPARATOR));
             MantaHttpHeaders headers = new MantaHttpHeaders();
             headers.setLastModified(mtime);
 
@@ -1026,18 +1030,61 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Moves a file from one path to another path.
+     * Moves a file from one path to another path. This operation is not
+     * transactional and will fail or produce inconsistent result if the source
+     * or the destination is modified while the operation is in progress.
      *
-     * @param originalPath Original path to move from
-     * @param newPath Destination path to move to
+     * @param source Original path to move from
+     * @param destination Destination path to move to
      * @throws IOException thrown when something goes wrong
      */
-    public void move(final String originalPath, final String newPath)
+    public void move(final String source, final String destination)
             throws IOException {
-        LOG.debug("Moving [{}] to [{}]", originalPath, newPath);
+        LOG.debug("Moving [{}] to [{}]", source, destination);
 
-        putSnapLink(newPath, originalPath, null);
-        delete(originalPath);
+        MantaObjectResponse entry = head(source);
+
+        if (entry.isDirectory()) {
+            putDirectory(destination, true);
+            MantaHttpHeaders sourceHeaders = entry.getHttpHeaders();
+            Long contentsCount = sourceHeaders.getResultSetSize();
+
+            // If we were just copying an empty directory, we just create the
+            // new directory and delete the original
+            if (contentsCount != null && contentsCount == 0L) {
+                delete(source);
+                return;
+            }
+
+            MantaObjectResponse destDir = head(destination);
+            String destDirPath = destDir.getPath();
+            String sourceDirPath = entry.getPath();
+
+            try {
+                listObjects(source).forEach(mantaObject -> {
+                    try {
+                        String sourcePath = mantaObject.getPath();
+                        String relPath = sourcePath.substring(sourceDirPath.length());
+                        String destFullPath = destDirPath + SEPARATOR + relPath;
+
+                        if (mantaObject.isDirectory()) {
+                            move(mantaObject.getPath(), destFullPath);
+                        } else {
+                            putSnapLink(destFullPath, sourcePath, null);
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            } catch (UncheckedIOException e) {
+                throw e.getCause();
+            }
+
+            deleteRecursive(source);
+        } else {
+            putSnapLink(destination, source, null);
+            delete(source);
+        }
     }
 
     /*************************************************************************
