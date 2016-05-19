@@ -25,28 +25,20 @@ public class MantaObjectOutputStream extends OutputStream {
     private static final Logger LOG = LoggerFactory.getLogger(MantaObjectOutputStream.class);
 
     protected static final ThreadGroup THREAD_GROUP = new ThreadGroup("manta-outputstream");
-
-    protected static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(new ThreadFactory() {
+    protected static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
         protected final AtomicInteger count = new AtomicInteger(1);
-
-        protected final Thread.UncaughtExceptionHandler handler = (t, e) -> {
-            if (LOG.isErrorEnabled()) {
-                String msg = String.format("Unhandled OutputStream error on thread [%s]",
-                        t.getName());
-                LOG.error(msg, e);
-            }
-        };
 
         @Override
         public Thread newThread(final Runnable runnable) {
             final String name = String.format("stream-%d", count.getAndIncrement());
-            Thread thread = new Thread(THREAD_GROUP, name);
-            thread.setUncaughtExceptionHandler(handler);
+            Thread thread = new Thread(THREAD_GROUP, runnable, name);
             thread.setDaemon(true);
 
             return thread;
         }
-    });
+    };
+
+    protected static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
 
     protected class EmbeddedHttpContent implements HttpContent {
         protected volatile OutputStream writer;
@@ -71,7 +63,7 @@ public class MantaObjectOutputStream extends OutputStream {
             writer = out;
             while (!isClosed) {
                 try {
-                    this.wait(1000);
+                    this.wait(200);
                 } catch (InterruptedException e) {
                     // continue execution
                 }
@@ -107,6 +99,14 @@ public class MantaObjectOutputStream extends OutputStream {
         this.contentType = contentType;
         this.httpContent = new EmbeddedHttpContent();
         this.completed = EXECUTOR.submit(upload);
+
+        while (httpContent.writer == null) {
+            try {
+                Thread.sleep(200L);
+            } catch (InterruptedException e) {
+                // continue executing if interrupted
+            }
+        }
     }
 
     @Override

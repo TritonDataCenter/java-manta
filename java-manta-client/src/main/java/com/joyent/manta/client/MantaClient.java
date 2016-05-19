@@ -811,6 +811,36 @@ public class MantaClient implements AutoCloseable {
         return put(path, string, null, metadata);
     }
 
+    public MantaObjectOutputStream putAsOutputStream(final String path) throws IOException {
+        return putAsOutputStream(path, null, null);
+    }
+
+    public MantaObjectOutputStream putAsOutputStream(final String path,
+                                                     final MantaHttpHeaders headers) throws IOException {
+        return putAsOutputStream(path, headers, null);
+    }
+
+    public MantaObjectOutputStream putAsOutputStream(final String path,
+                                                     final MantaMetadata metadata) throws IOException {
+        return putAsOutputStream(path, null, metadata);
+    }
+
+    public MantaObjectOutputStream putAsOutputStream(final String path,
+                                                     final MantaHttpHeaders headers,
+                                                     final MantaMetadata metadata) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final String contentType = findOrDefaultContentType(headers,
+                ContentType.APPLICATION_OCTET_STREAM.toString());
+
+        MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
+                this.httpHelper, headers, metadata, contentType);
+
+        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+
+        return stream;
+    }
+
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
