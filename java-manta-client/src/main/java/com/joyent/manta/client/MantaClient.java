@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.EmptyContent;
+import com.google.api.client.http.FileContent;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpHeaders;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -684,7 +686,7 @@ public class MantaClient implements AutoCloseable {
                                    final MantaHttpHeaders headers) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = findOrDefaultContentType(headers,
+        final String contentType = MantaUtils.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM.toString());
 
         final HttpContent content;
@@ -746,7 +748,7 @@ public class MantaClient implements AutoCloseable {
                                    final MantaMetadata metadata) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = findOrDefaultContentType(headers,
+        final String contentType = MantaUtils.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM.toString());
 
         final HttpContent content;
@@ -870,7 +872,7 @@ public class MantaClient implements AutoCloseable {
                                                      final MantaMetadata metadata) {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = findOrDefaultContentType(headers,
+        final String contentType = MantaUtils.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM.toString());
 
         MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
@@ -899,7 +901,7 @@ public class MantaClient implements AutoCloseable {
                                    final MantaMetadata metadata) throws IOException {
         Objects.requireNonNull(path, "Path must not be null");
 
-        final String contentType = findOrDefaultContentType(headers,
+        final String contentType = MantaUtils.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM.toString());
 
         final HttpContent content;
@@ -925,6 +927,97 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectResponse put(final String path,
                                    final String string) throws IOException {
         return put(path, string, null, null);
+    }
+
+    /**
+     * Copies the supplied {@link File} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param file     file to upload
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final File file) throws IOException {
+        return put(path, file, null, null);
+    }
+
+    /**
+     * Copies the supplied {@link File} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param file     file to upload
+     * @param headers  optional HTTP headers to include when copying the object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final File file,
+                                   final MantaHttpHeaders headers) throws IOException {
+        return put(path, file, headers, null);
+    }
+
+    /**
+     * Copies the supplied {@link File} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param file     file to upload
+     * @param metadata optional user-supplied metadata for object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final File file,
+                                   final MantaMetadata metadata) throws IOException {
+        return put(path, file, null, metadata);
+    }
+
+    /**
+     * Copies the supplied {@link File} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param file     file to upload
+     * @param headers  optional HTTP headers to include when copying the object
+     * @param metadata optional user-supplied metadata for object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final File file,
+                                   final MantaHttpHeaders headers,
+                                   final MantaMetadata metadata) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+        Objects.requireNonNull(file, "File must not be null");
+
+        if (!file.exists()) {
+            String msg = String.format("File doesn't exist: %s",
+                    file.getPath());
+            throw new FileNotFoundException(msg);
+        }
+
+        if (!file.canRead()) {
+            String msg = String.format("Can't access file for read: %s",
+                    file.getPath());
+            throw new IOException(msg);
+        }
+
+        final String contentType = MantaUtils.findOrDefaultContentType(headers,
+                file,
+                ContentType.APPLICATION_OCTET_STREAM.toString());
+
+        final HttpContent content;
+
+        if (file.length() == 0L) {
+            content = new EmptyContent();
+        } else {
+            content = new FileContent(contentType, file);
+        }
+
+        return httpHelper.httpPut(path, headers, content, metadata);
     }
 
     /**
@@ -1781,27 +1874,6 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaJobBuilder jobBuilder() {
         return new MantaJobBuilder(this);
-    }
-
-    /**
-     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
-     * is not null. Otherwise, it will return the specified default content type.
-     *
-     * @param headers headers to parse for content type
-     * @param defaultContentType content type to default to
-     * @return content type as string
-     */
-    protected static String findOrDefaultContentType(final MantaHttpHeaders headers,
-                                                     final String defaultContentType) {
-        final String contentType;
-
-        if (headers == null || headers.getContentType() == null) {
-            contentType = defaultContentType;
-        } else {
-            contentType = headers.getContentType();
-        }
-
-        return contentType;
     }
 
 

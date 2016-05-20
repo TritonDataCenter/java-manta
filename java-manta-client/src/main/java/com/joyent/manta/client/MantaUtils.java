@@ -4,6 +4,7 @@
 package com.joyent.manta.client;
 
 import com.google.api.client.util.FieldInfo;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -364,5 +366,60 @@ public final class MantaUtils {
 
         final Path lastPart = asNioPath.getName(count - 1);
         return lastPart.toString();
+    }
+
+    /**
+     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
+     * is not null. Otherwise, it will return the specified default content type.
+     *
+     * @param headers headers to parse for content type
+     * @param defaultContentType content type to default to
+     * @return content type as string
+     */
+    public static String findOrDefaultContentType(final MantaHttpHeaders headers,
+                                                  final String defaultContentType) {
+        final String contentType;
+
+        if (headers == null || headers.getContentType() == null) {
+            contentType = defaultContentType;
+        } else {
+            contentType = headers.getContentType();
+        }
+
+        return contentType;
+    }
+
+    /**
+     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
+     * is not null. Otherwise, it will return the specified default content type.
+     *
+     * @param headers headers to parse for content type
+     * @param file file that is being probed for content type
+     * @param defaultContentType content type to default to
+     * @return content type as string
+     * @throws IOException thrown when we can't access the file being analyzed
+     */
+    public static String findOrDefaultContentType(final MantaHttpHeaders headers,
+                                                  final File file,
+                                                  final String defaultContentType)
+            throws IOException {
+        final String headerContentType;
+
+        if (headers != null) {
+            headerContentType = headers.getContentType();
+        } else {
+            headerContentType = null;
+        }
+
+        return ObjectUtils.firstNonNull(
+                // Use explicitly set headers if available
+                headerContentType,
+                // Probe using the JVM default detection method
+                Files.probeContentType(file.toPath()),
+                // Detect based on filename
+                URLConnection.guessContentTypeFromName(file.getName()),
+                // Otherwise use the default value
+                defaultContentType
+        );
     }
 }

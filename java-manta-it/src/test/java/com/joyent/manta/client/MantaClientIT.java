@@ -10,7 +10,9 @@ import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
+import org.apache.commons.codec.Charsets;
 import org.apache.http.client.utils.DateUtils;
+import org.apache.tools.ant.util.FileUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -21,6 +23,8 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,7 +39,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-//@Test(dependsOnGroups = { "directory" })
+@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -191,6 +195,25 @@ public class MantaClientIT {
         try (InputStream testDataInputStream = classLoader.getResourceAsStream(TEST_FILENAME)) {
             mantaClient.put(path, testDataInputStream);
         }
+    }
+
+    @Test
+    public final void testPutWithFile() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        File temp = File.createTempFile("upload", ".txt");
+
+        try {
+            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+            MantaObject response = mantaClient.put(path, temp);
+            System.out.println(response.getContentType());
+        } finally {
+            Files.delete(temp.toPath());
+        }
+
+        String actual = mantaClient.getAsString(path);
+        Assert.assertEquals(actual, TEST_DATA,
+                "Uploaded file didn't match expectation");
     }
 
 

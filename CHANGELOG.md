@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
    successful creation of a new directory.
  - Added OutputStream implementation that allows for uploads via an
    OutputStream.
+ - Added support for uploading using File objects, thereby getting retryable
+   requests.
 ### Changed
  - Putting strings now acts as a retryable request.
  - Fixed retrying so that it works consistently with Google HTTP Client.

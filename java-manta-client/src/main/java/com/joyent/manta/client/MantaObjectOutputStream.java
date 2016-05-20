@@ -258,7 +258,6 @@ public class MantaObjectOutputStream extends OutputStream {
         try {
             this.objectResponse = this.completed.get();
             this.objectResponse.setContentLength(bytesWritten);
-            this.objectResponse.setContentType(contentType);
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {

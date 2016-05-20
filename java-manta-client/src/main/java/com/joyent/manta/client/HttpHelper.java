@@ -268,7 +268,13 @@ public class HttpHelper {
             // We add back in the metadata made in the request so that it is easily available
             responseHeaders.putAll(httpHeaders.metadata());
 
-            return new MantaObjectResponse(path, responseHeaders, metadata);
+            MantaObjectResponse obj = new MantaObjectResponse(path, responseHeaders, metadata);
+
+            if (obj.getContentType() == null) {
+                obj.setContentType(content.getType());
+            }
+
+            return obj;
         } catch (IOException | UncheckedIOException e) {
             throw buildException(e, request, response);
         } finally {
