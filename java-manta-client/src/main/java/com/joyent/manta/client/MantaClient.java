@@ -811,23 +811,63 @@ public class MantaClient implements AutoCloseable {
         return put(path, string, null, metadata);
     }
 
-    public MantaObjectOutputStream putAsOutputStream(final String path) throws IOException {
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
+    public MantaObjectOutputStream putAsOutputStream(final String path) {
         return putAsOutputStream(path, null, null);
     }
 
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers  optional HTTP headers to include when copying the object
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
     public MantaObjectOutputStream putAsOutputStream(final String path,
-                                                     final MantaHttpHeaders headers) throws IOException {
+                                                     final MantaHttpHeaders headers) {
         return putAsOutputStream(path, headers, null);
     }
 
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param metadata optional user-supplied metadata for object
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
     public MantaObjectOutputStream putAsOutputStream(final String path,
-                                                     final MantaMetadata metadata) throws IOException {
+                                                     final MantaMetadata metadata) {
         return putAsOutputStream(path, null, metadata);
     }
 
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param metadata optional user-supplied metadata for object
+     * @param headers  optional HTTP headers to include when copying the object
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
     public MantaObjectOutputStream putAsOutputStream(final String path,
                                                      final MantaHttpHeaders headers,
-                                                     final MantaMetadata metadata) throws IOException {
+                                                     final MantaMetadata metadata) {
         Objects.requireNonNull(path, "Path must not be null");
 
         final String contentType = findOrDefaultContentType(headers,

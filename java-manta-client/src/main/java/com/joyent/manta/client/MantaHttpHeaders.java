@@ -46,6 +46,11 @@ public class MantaHttpHeaders implements Serializable {
     public static final String REQUEST_ID = "x-request-id";
 
     /**
+     * HTTP header containing the md5 value for the object in Manta.
+     */
+    public static final String COMPUTED_MD5 = "computed-md5";
+
+    /**
      * HttpHeaders delegate which is wrapped by this class.
      */
     private final transient HttpHeaders wrappedHeaders = new HttpHeaders();

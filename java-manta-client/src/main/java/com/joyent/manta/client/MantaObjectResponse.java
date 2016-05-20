@@ -4,12 +4,15 @@
 package com.joyent.manta.client;
 
 import com.google.api.client.util.Key;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Objects;
+
+import static com.joyent.manta.client.MantaHttpHeaders.*;
 
 /**
  * A Manta storage object.
@@ -189,6 +192,20 @@ public class MantaObjectResponse implements MantaObject {
         return contentLength;
     }
 
+    /**
+     * Setter used internally within the MantaClient package for setting the content
+     * length when it wasn't available as part of the HTTP response.
+     * @param length new content length
+     * @return a reference to the current instance
+     */
+    MantaObjectResponse setContentLength(final Long length) {
+        this.contentLength = length;
+        if (getHttpHeaders() != null) {
+            getHttpHeaders().setContentLength(length);
+        }
+        return this;
+    }
+
 
     @Override
     public final String getContentType() {
@@ -199,12 +216,34 @@ public class MantaObjectResponse implements MantaObject {
         return contentType;
     }
 
+    /**
+     * Setter used internally within the MantaClient package for setting the content
+     * type when it wasn't available as part of the HTTP response.
+     * @param contentType the content type of the object
+     * @return a reference to the current instance
+     */
+    MantaObjectResponse setContentType(final String contentType) {
+        if (getHttpHeaders() != null) {
+            getHttpHeaders().setContentType(contentType);
+        }
+        return this;
+    }
+
 
     @Override
     public final String getEtag() {
         return etag;
     }
 
+    @Override
+    public byte[] getComputedMd5AsBytes() {
+        if (getHttpHeaders() != null) {
+            String encoded = getHttpHeaders().getFirstHeaderStringValue(COMPUTED_MD5);
+            return Base64.decodeBase64(encoded);
+        }
+
+        return null;
+    }
 
     /**
      * Returns the mtime value.
