@@ -71,6 +71,13 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${dependency.commons-lang}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
