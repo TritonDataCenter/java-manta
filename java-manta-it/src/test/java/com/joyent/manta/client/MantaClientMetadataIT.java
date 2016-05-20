@@ -58,7 +58,7 @@ public class MantaClientMetadataIT {
     public void cleanup() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeQuietly();
+            mantaClient.closeWithWarning();
         }
     }
 

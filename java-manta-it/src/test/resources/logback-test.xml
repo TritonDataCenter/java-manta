@@ -12,7 +12,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.joyent" level="error" />
+    <logger name="com.joyent" level="warn" />
     <!-- lower these to debug in order to enable most logs -->
     <logger name="com.joyent.manta.client.MantaClient" level="error" />
     <logger name="com.joyent.manta.com.google.api.client.http" level="error" />

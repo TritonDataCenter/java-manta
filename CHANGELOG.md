@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
  - Added move method to MantaClient.
  - MantaClient.putDirectory now returns a boolean value indicating the 
    successful creation of a new directory.
+ - Added OutputStream implementation that allows for uploads via an
+   OutputStream.
 ### Changed
  - Putting strings now acts as a retryable request.
  - Fixed retrying so that it works consistently with Google HTTP Client.

@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-//@Test(dependsOnGroups = "job")
+@Test(dependsOnGroups = "job")
 public class MantaJobBuilderIT {
     private static final String TEST_DATA =
               "line 01 aa\n"
@@ -44,8 +43,6 @@ public class MantaJobBuilderIT {
             + "line 10 bb";
 
     private String testPathPrefix;
-
-    private AtomicInteger count = new AtomicInteger(0);
 
     private MantaClient mantaClient;
 
@@ -75,7 +72,7 @@ public class MantaJobBuilderIT {
     public void cleanup() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeQuietly();
+            mantaClient.closeWithWarning();
         }
     }
 

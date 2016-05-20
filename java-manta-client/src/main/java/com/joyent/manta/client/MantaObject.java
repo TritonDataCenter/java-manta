@@ -54,6 +54,12 @@ public interface MantaObject extends Serializable {
     String getEtag();
 
     /**
+     * Returns HTTP Computed-Md5 HTTP response as an array of bytes.
+     * @return the computed md5 value as a byte array
+     */
+    byte[] getComputedMd5AsBytes();
+
+    /**
      * Get the mtime value (last modified time) as a {@link java.util.Date} object.
      *
      * @return null if not available or unable to parse, otherwise last modified date in UTC

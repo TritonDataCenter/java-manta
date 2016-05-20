@@ -102,6 +102,11 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
+    public byte[] getComputedMd5AsBytes() {
+        return response.getComputedMd5AsBytes();
+    }
+
+    @Override
     public boolean isDirectory() {
         return response.isDirectory();
     }

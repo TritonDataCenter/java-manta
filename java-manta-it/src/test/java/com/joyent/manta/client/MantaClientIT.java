@@ -72,7 +72,7 @@ public class MantaClientIT {
     public void afterClass() throws IOException, MantaCryptoException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeQuietly();
+            mantaClient.closeWithWarning();
         }
     }
 

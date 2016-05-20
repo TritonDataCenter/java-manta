@@ -21,6 +21,7 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
+import com.joyent.manta.exception.OnCloseAggregateException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.entity.ContentType;
@@ -29,13 +30,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -45,12 +46,16 @@ import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -141,6 +146,13 @@ public class MantaClient implements AutoCloseable {
      * Library configuration context reference.
      */
     private final ConfigContext config;
+
+    /**
+     * Collection of all of the {@link AutoCloseable} objects that will need to be
+     * closed when MantaClient is closed.
+     */
+    private final Set<WeakReference<? extends AutoCloseable>> danglingStreams
+            = ConcurrentHashMap.newKeySet();
 
     /**
      * Creates a new instance of a Manta client.
@@ -329,7 +341,10 @@ public class MantaClient implements AutoCloseable {
             throw exception;
         }
 
-        return new MantaObjectInputStream(metadata, response);
+        MantaObjectInputStream in = new MantaObjectInputStream(metadata, response);
+        danglingStreams.add(new WeakReference<AutoCloseable>(in));
+
+        return in;
     }
 
 
@@ -544,7 +559,10 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when there is a problem getting the listing over the network
      */
     public MantaDirectoryListingIterator streamingIterator(final String path) throws IOException {
-        return new MantaDirectoryListingIterator(this.url, path, httpHelper, MAX_RESULTS);
+        MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
+                this.url, path, httpHelper, MAX_RESULTS);
+        danglingStreams.add(new WeakReference<AutoCloseable>(itr));
+        return itr;
     }
 
 
@@ -562,7 +580,7 @@ public class MantaClient implements AutoCloseable {
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                         itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
 
-        return backingStream.map(item -> {
+        Stream<MantaObject> stream = backingStream.map(item -> {
             String name = Objects.toString(item.get("name"));
             String mtime = Objects.toString(item.get("mtime"));
             String type = Objects.toString(item.get("type"));
@@ -599,6 +617,10 @@ public class MantaClient implements AutoCloseable {
 
             return new MantaObjectResponse(objPath, headers);
         });
+
+        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+
+        return stream;
     }
 
 
@@ -729,8 +751,6 @@ public class MantaClient implements AutoCloseable {
 
         final HttpContent content;
 
-        ByteArrayInputStream bs = null;
-
         if (source == null) {
             content = new EmptyContent();
         } else {
@@ -789,6 +809,76 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final MantaMetadata metadata) throws IOException {
         return put(path, string, null, metadata);
+    }
+
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
+    public MantaObjectOutputStream putAsOutputStream(final String path) {
+        return putAsOutputStream(path, null, null);
+    }
+
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers  optional HTTP headers to include when copying the object
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
+    public MantaObjectOutputStream putAsOutputStream(final String path,
+                                                     final MantaHttpHeaders headers) {
+        return putAsOutputStream(path, headers, null);
+    }
+
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param metadata optional user-supplied metadata for object
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
+    public MantaObjectOutputStream putAsOutputStream(final String path,
+                                                     final MantaMetadata metadata) {
+        return putAsOutputStream(path, null, metadata);
+    }
+
+    /**
+     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * to add data to Manta because it requires an additional thread to be started in order
+     * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
+     * the stream, the data will not be uploaded.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param metadata optional user-supplied metadata for object
+     * @param headers  optional HTTP headers to include when copying the object
+     * @return A OutputStream that allows for directly uploading to Manta
+     */
+    public MantaObjectOutputStream putAsOutputStream(final String path,
+                                                     final MantaHttpHeaders headers,
+                                                     final MantaMetadata metadata) {
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final String contentType = findOrDefaultContentType(headers,
+                ContentType.APPLICATION_OCTET_STREAM.toString());
+
+        MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
+                this.httpHelper, headers, metadata, contentType);
+
+        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+
+        return stream;
     }
 
 
@@ -1435,6 +1525,9 @@ public class MantaClient implements AutoCloseable {
 
         final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
                 path, httpHelper, MAX_RESULTS);
+
+        danglingStreams.add(new WeakReference<AutoCloseable>(itr));
+
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                         itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
@@ -1726,7 +1819,7 @@ public class MantaClient implements AutoCloseable {
         final BufferedReader br = new BufferedReader(reader);
 
         try {
-            return br.lines().onClose(() -> {
+            Stream<String> stream = br.lines().onClose(() -> {
                 try {
                     br.close();
                     response.disconnect();
@@ -1734,6 +1827,9 @@ public class MantaClient implements AutoCloseable {
                     throw new UncheckedIOException(e);
                 }
             });
+
+            danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+            return stream;
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }
@@ -1752,13 +1848,54 @@ public class MantaClient implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        this.httpRequestFactoryProvider.close();
-        this.httpSigner.getSignerThreadLocal().clearAll();
+        final List<Exception> exceptions = new ArrayList<>();
+
+        /* We explicitly close all streams that may have been opened when
+         * this class (MantaClient) is closed. This helps to alleviate problems
+         * where resources haven't been closed properly. In particular, this
+         * is useful for the streamingIterator() method that returns an
+         * iterator that must be closed after consumption. */
+        for (WeakReference<? extends AutoCloseable> wr : danglingStreams) {
+            try {
+                AutoCloseable closeable = wr.get();
+
+                if (closeable == null) {
+                    continue;
+                }
+
+                closeable.close();
+            } catch (Exception e) {
+                exceptions.add(e);
+            }
+        }
+
+        try {
+            this.httpRequestFactoryProvider.close();
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+
+        try {
+            this.httpSigner.getSignerThreadLocal().clearAll();
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+
+        if (!exceptions.isEmpty()) {
+            String msg = "At least one exception was thrown when performing close()";
+            OnCloseAggregateException exception = new OnCloseAggregateException(msg);
+
+            for (Exception e : exceptions) {
+                exception.aggregateException(e);
+            }
+
+            throw exception;
+        }
     }
 
 
     /**
-     * Closes the Manta client resource and logs any problems to the debug
+     * Closes the Manta client resource and logs any problems to the debug level
      * logger. No exceptions are thrown on failure.
      */
     public void closeQuietly() {
@@ -1766,6 +1903,20 @@ public class MantaClient implements AutoCloseable {
             close();
         } catch (Exception e) {
             LOG.debug("Error closing connection", e);
+        }
+    }
+
+    /**
+     * Closes the Manta client resource and logs any problems to the warn level
+     * logger. No exceptions are thrown on failure.
+     */
+    public void closeWithWarning() {
+        try {
+            close();
+        } catch (Exception e) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Error closing client", e);
+            }
         }
     }
 }
