@@ -5,6 +5,7 @@ package com.joyent.manta.client;
 
 import com.google.api.client.util.Key;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.Objects;
 
-import static com.joyent.manta.client.MantaHttpHeaders.*;
+import static com.joyent.manta.client.MantaHttpHeaders.COMPUTED_MD5;
 
 /**
  * A Manta storage object.
@@ -236,9 +237,13 @@ public class MantaObjectResponse implements MantaObject {
     }
 
     @Override
-    public byte[] getComputedMd5AsBytes() {
+    public byte[] getMd5Bytes() {
         if (getHttpHeaders() != null) {
-            String encoded = getHttpHeaders().getFirstHeaderStringValue(COMPUTED_MD5);
+            String encoded = ObjectUtils.firstNonNull(
+                    getHttpHeaders().getFirstHeaderStringValue(COMPUTED_MD5),
+                    getHttpHeaders().getContentMD5()
+            );
+
             return Base64.decodeBase64(encoded);
         }
 

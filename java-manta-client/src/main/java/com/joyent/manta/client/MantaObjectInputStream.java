@@ -102,8 +102,8 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public byte[] getComputedMd5AsBytes() {
-        return response.getComputedMd5AsBytes();
+    public byte[] getMd5Bytes() {
+        return response.getMd5Bytes();
     }
 
     @Override

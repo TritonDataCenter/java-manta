@@ -105,7 +105,7 @@ public class MantaObjectOutputStreamIT {
         Assert.assertEquals(uploaded.getContentLength().longValue(), totalBytes,
                 "Uploaded content length response doesn't match");
 
-        Assert.assertEquals(uploaded.getComputedMd5AsBytes(),
+        Assert.assertEquals(uploaded.getMd5Bytes(),
                 md5Digest.digest());
 
         Assert.assertTrue(mantaClient.existsAndIsAccessible(path),
@@ -141,7 +141,7 @@ public class MantaObjectOutputStreamIT {
         Assert.assertEquals(uploaded.getContentLength().longValue(), totalBytes,
                 "Uploaded content length response doesn't match");
 
-        Assert.assertEquals(uploaded.getComputedMd5AsBytes(),
+        Assert.assertEquals(uploaded.getMd5Bytes(),
                 md5Digest.digest());
 
         Assert.assertTrue(mantaClient.existsAndIsAccessible(path),

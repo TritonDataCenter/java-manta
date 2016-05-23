@@ -57,7 +57,7 @@ public interface MantaObject extends Serializable {
      * Returns HTTP Computed-Md5 HTTP response as an array of bytes.
      * @return the computed md5 value as a byte array
      */
-    byte[] getComputedMd5AsBytes();
+    byte[] getMd5Bytes();
 
     /**
      * Get the mtime value (last modified time) as a {@link java.util.Date} object.
