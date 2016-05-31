@@ -56,8 +56,11 @@ public class MantaObjectParser implements ObjectParser {
     public Object parseAndClose(final InputStream in, final Charset charset,
                                 final Type dataType) throws IOException {
         try {
-            final Class clazz = Class.forName(dataType.getTypeName());
-            return MAPPER.readValue(in, clazz);
+            @SuppressWarnings("rawtypes")
+            final Class<?> clazz = Class.forName(dataType.getTypeName());
+            Object parsed = MAPPER.readValue(in, clazz);
+
+            return parsed;
         } catch (ClassNotFoundException e) {
             String msg = String.format("Unable to find class with name: %s",
                     dataType.getTypeName());
@@ -81,7 +84,8 @@ public class MantaObjectParser implements ObjectParser {
     public Object parseAndClose(final Reader reader, final Type dataType)
             throws IOException {
         try {
-            final Class clazz = Class.forName(dataType.getTypeName());
+            @SuppressWarnings("rawtypes")
+            final Class<?> clazz = Class.forName(dataType.getTypeName());
             return MAPPER.readValue(reader, clazz);
         } catch (ClassNotFoundException e) {
             String msg = String.format("Unable to find class with name: %s",
