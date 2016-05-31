@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientException;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.test.util.MantaAssert;
@@ -37,7 +38,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(dependsOnGroups = { "directory" })
+//@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -139,6 +140,22 @@ public class MantaClientIT {
 
 
     @Test
+    public final void testCRUDWithByteArray() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA.getBytes(Charsets.UTF_8));
+        final String actual = mantaClient.getAsString(path);
+
+        Assert.assertEquals(actual, TEST_DATA);
+        mantaClient.delete(path);
+
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
+    }
+
+
+    @Test
     public final void testCRUDObjectWithHeaders() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -155,6 +172,19 @@ public class MantaClientIT {
 
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
+    }
+
+
+    @Test
+    public final void testContentTypeSetByFilename() throws IOException {
+        final String name = UUID.randomUUID().toString() + ".html";
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA.getBytes(Charsets.UTF_8));
+        MantaObject object = mantaClient.head(path);
+
+        Assert.assertEquals(object.getContentType(),
+                "text/html", "Content type wasn't auto-assigned");
     }
 
 
@@ -214,6 +244,31 @@ public class MantaClientIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded file didn't match expectation");
+    }
+
+
+    @Test
+    public final void verifyYouCanJustSpecifyDirNameWhenPuttingFile() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.putDirectory(path);
+
+        File temp = File.createTempFile("upload", ".txt");
+
+        boolean thrown = false;
+
+        try {
+            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+            mantaClient.put(path, temp);
+        } catch (MantaClientHttpResponseException e) {
+            thrown = e.getStatusCode() == 400;
+        }
+        finally {
+            Files.delete(temp.toPath());
+        }
+
+        Assert.assertTrue(thrown, "Bad request response not received");
     }
 
 

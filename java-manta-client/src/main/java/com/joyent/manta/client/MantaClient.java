@@ -873,6 +873,7 @@ public class MantaClient implements AutoCloseable {
         Objects.requireNonNull(path, "Path must not be null");
 
         final String contentType = MantaUtils.findOrDefaultContentType(headers,
+                path,
                 ContentType.APPLICATION_OCTET_STREAM.toString());
 
         MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
@@ -1006,6 +1007,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         final String contentType = MantaUtils.findOrDefaultContentType(headers,
+                path,
                 file,
                 ContentType.APPLICATION_OCTET_STREAM.toString());
 
@@ -1015,6 +1017,88 @@ public class MantaClient implements AutoCloseable {
             content = new EmptyContent();
         } else {
             content = new FileContent(contentType, file);
+        }
+
+        return httpHelper.httpPut(path, headers, content, metadata);
+    }
+
+
+    /**
+     * Copies the supplied byte array to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes    byte array to upload
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final byte[] bytes) throws IOException {
+        return put(path, bytes, null, null);
+    }
+
+
+    /**
+     * Copies the supplied byte array to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes    byte array to upload
+     * @param metadata optional user-supplied metadata for object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final byte[] bytes,
+                                   final MantaMetadata metadata) throws IOException {
+        return put(path, bytes, null, metadata);
+    }
+
+
+    /**
+     * Copies the supplied byte array to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes    byte array to upload
+     * @param headers  optional HTTP headers to include when copying the object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final byte[] bytes,
+                                   final MantaHttpHeaders headers) throws IOException {
+        return put(path, bytes, headers, null);
+    }
+
+
+    /**
+     * Copies the supplied byte array to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes    byte array to upload
+     * @param headers  optional HTTP headers to include when copying the object
+     * @param metadata optional user-supplied metadata for object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final byte[] bytes,
+                                   final MantaHttpHeaders headers,
+                                   final MantaMetadata metadata) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+        Objects.requireNonNull(bytes, "Byte array must not be null");
+
+        final String contentType = MantaUtils.findOrDefaultContentType(headers,
+                path, ContentType.APPLICATION_OCTET_STREAM.toString());
+
+        final HttpContent content;
+
+        if (bytes.length == 0L) {
+            content = new EmptyContent();
+        } else {
+            content = new ByteArrayContent(contentType, bytes);
         }
 
         return httpHelper.httpPut(path, headers, content, metadata);

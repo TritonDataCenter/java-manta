@@ -12,9 +12,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
    OutputStream.
  - Added support for uploading using File objects, thereby getting retryable
    requests.
+ - Added support for uploading byte arrays directly, thereby getting retryable
+   requests.
 ### Changed
  - Putting strings now acts as a retryable request.
  - Fixed retrying so that it works consistently with Google HTTP Client.
+ - We try to discover the mime-type from the filename when it isn't set as
+   part of the header.
 ### Fixed
  - [Unable to parse ISO 8601 mtime value from ObjectResponse object](https://github.com/joyent/java-manta/issues/114)
  

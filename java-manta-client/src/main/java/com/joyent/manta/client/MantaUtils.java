@@ -394,12 +394,14 @@ public final class MantaUtils {
      * is not null. Otherwise, it will return the specified default content type.
      *
      * @param headers headers to parse for content type
+     * @param filename path to the destination file
      * @param file file that is being probed for content type
      * @param defaultContentType content type to default to
      * @return content type as string
      * @throws IOException thrown when we can't access the file being analyzed
      */
     public static String findOrDefaultContentType(final MantaHttpHeaders headers,
+                                                  final String filename,
                                                   final File file,
                                                   final String defaultContentType)
             throws IOException {
@@ -416,8 +418,41 @@ public final class MantaUtils {
                 headerContentType,
                 // Probe using the JVM default detection method
                 Files.probeContentType(file.toPath()),
-                // Detect based on filename
+                // Detect based on destination filename
+                URLConnection.guessContentTypeFromName(filename),
+                // Detect based on source filename
                 URLConnection.guessContentTypeFromName(file.getName()),
+                // Otherwise use the default value
+                defaultContentType
+        );
+    }
+
+    /**
+     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
+     * is not null. Otherwise, it will return the specified default content type.
+     *
+     * @param headers headers to parse for content type
+     * @param filename filename that is being probed for content type
+     * @param defaultContentType content type to default to
+     * @return content type as string
+     * @throws IOException thrown when we can't access the file being analyzed
+     */
+    public static String findOrDefaultContentType(final MantaHttpHeaders headers,
+                                                  final String filename,
+                                                  final String defaultContentType) {
+        final String headerContentType;
+
+        if (headers != null) {
+            headerContentType = headers.getContentType();
+        } else {
+            headerContentType = null;
+        }
+
+        return ObjectUtils.firstNonNull(
+                // Use explicitly set headers if available
+                headerContentType,
+                // Detect based on filename
+                URLConnection.guessContentTypeFromName(filename),
                 // Otherwise use the default value
                 defaultContentType
         );
