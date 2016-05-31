@@ -13,6 +13,7 @@ import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -442,6 +443,7 @@ public class HttpHelper {
             exception.setContextValue("requestURL", request.getUrl());
             final String requestHeaders = asString(request.getHeaders());
             exception.setContextValue("requestHeaders", requestHeaders);
+            exception.setContextValue("loadBalancerAddress", MDC.get("loadBalancerAddress"));
         }
 
         if (response != null) {

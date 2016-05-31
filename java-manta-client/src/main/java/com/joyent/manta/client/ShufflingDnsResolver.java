@@ -1,6 +1,7 @@
 package com.joyent.manta.client;
 
 import org.apache.http.conn.DnsResolver;
+import org.slf4j.MDC;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -19,6 +20,8 @@ public class ShufflingDnsResolver implements DnsResolver {
     public InetAddress[] resolve(final String host) throws UnknownHostException {
         final InetAddress[] addresses = InetAddress.getAllByName(host);
         shuffle(addresses);
+
+        MDC.put("loadBalancerAddress", addresses[0].getHostAddress());
 
         return addresses;
     }
