@@ -12,7 +12,6 @@ import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.client.utils.DateUtils;
-import org.apache.tools.ant.util.FileUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -24,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -206,7 +204,9 @@ public class MantaClientIT {
         try {
             Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
             MantaObject response = mantaClient.put(path, temp);
-            System.out.println(response.getContentType());
+            String contentType = response.getContentType();
+            Assert.assertEquals(contentType, "text/plain",
+                    "Content type wasn't detected correctly");
         } finally {
             Files.delete(temp.toPath());
         }
