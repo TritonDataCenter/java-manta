@@ -435,7 +435,6 @@ public final class MantaUtils {
      * @param filename filename that is being probed for content type
      * @param defaultContentType content type to default to
      * @return content type as string
-     * @throws IOException thrown when we can't access the file being analyzed
      */
     public static String findOrDefaultContentType(final MantaHttpHeaders headers,
                                                   final String filename,
