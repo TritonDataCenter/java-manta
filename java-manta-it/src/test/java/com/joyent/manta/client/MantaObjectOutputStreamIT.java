@@ -112,7 +112,7 @@ public class MantaObjectOutputStreamIT {
                 "File wasn't uploaded: " + path);
     }
 
-    public void canUploadMuchLargerFileWithPerodicWaits() throws IOException, InterruptedException {
+    public void canUploadMuchLargerFileWithPeriodicWaits() throws IOException, InterruptedException {
         String path = testPathPrefix + "uploaded-" + UUID.randomUUID() + ".txt";
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
 
