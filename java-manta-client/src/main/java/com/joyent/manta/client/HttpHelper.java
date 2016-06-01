@@ -443,7 +443,7 @@ public class HttpHelper {
             exception.setContextValue("requestURL", request.getUrl());
             final String requestHeaders = asString(request.getHeaders());
             exception.setContextValue("requestHeaders", requestHeaders);
-            exception.setContextValue("loadBalancerAddress", MDC.get("loadBalancerAddress"));
+            exception.setContextValue("loadBalancerAddress", MDC.get("mantaLoadBalancerAddress"));
         }
 
         if (response != null) {

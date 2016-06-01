@@ -21,7 +21,7 @@ public class ShufflingDnsResolver implements DnsResolver {
         final InetAddress[] addresses = InetAddress.getAllByName(host);
         shuffle(addresses);
 
-        MDC.put("loadBalancerAddress", addresses[0].getHostAddress());
+        MDC.put("mantaLoadBalancerAddress", addresses[0].getHostAddress());
 
         return addresses;
     }
