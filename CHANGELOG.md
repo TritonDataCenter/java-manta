@@ -14,6 +14,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
    requests.
  - Added support for uploading byte arrays directly, thereby getting retryable
    requests.
+ - Added logging of load balancer IP upon exception. This is implemented using
+   the SLF4J MDC class.
 ### Changed
  - Putting strings now acts as a retryable request.
  - Fixed retrying so that it works consistently with Google HTTP Client.
