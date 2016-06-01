@@ -4,7 +4,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>2.4.1-SNAPSHOT</version>
+    <version>2.4.0</version>
     <packaging>pom</packaging>
 
     <name>java-manta</name>
@@ -55,7 +55,7 @@
         <connection>scm:git:git://github.com/joyent/java-manta.git</connection>
         <developerConnection>scm:git:git://github.com/joyent/java-manta.git</developerConnection>
         <url>git@github.com:joyent/java-manta.git</url>
-        <tag>HEAD</tag>
+        <tag>java-manta-2.4.0</tag>
     </scm>
     <issueManagement>
         <system>github.com</system>
