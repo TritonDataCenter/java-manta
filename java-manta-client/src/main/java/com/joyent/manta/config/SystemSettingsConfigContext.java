@@ -31,11 +31,31 @@ public class SystemSettingsConfigContext extends BaseChainedConfigContext {
         super();
         // load defaults
         overwriteWithContext(DEFAULT_CONFIG);
+
         // overwrite with system properties
-        overwriteWithContext(new MapConfigContext(properties));
+        MapConfigContext mapConfig = new MapConfigContext(properties);
+
+        /* This is a workaround that allows us to provide a default key path and
+         * to allow the override of a key path based configuration with
+         * an embedded key. */
+        if (isPresent(mapConfig.getPrivateKeyContent())) {
+            setMantaKeyPath(null);
+        }
+
+        overwriteWithContext(mapConfig);
 
         if (includeEnvironmentVars) {
-            overwriteWithContext(new EnvVarConfigContext());
+            EnvVarConfigContext envConfig = new EnvVarConfigContext();
+
+            /* This is the same workaround as above, but for environment variables.
+             * This checks to see if we have set private key contents and haven't
+             * explicitly set the key path outside of the defaults. */
+            if (!isPresent(mapConfig.getMantaKeyPath()) &&
+                    isPresent(envConfig.getPrivateKeyContent())) {
+                setMantaKeyPath(null);
+            }
+
+            overwriteWithContext(envConfig);
         }
     }
 

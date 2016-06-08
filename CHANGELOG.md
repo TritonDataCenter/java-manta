@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.4.1] - ?
+### Fixed
+ - [Specifying key content will conflict with the default key path](https://github.com/joyent/java-manta/issues/116)
+
 ## [2.4.0] - 2016-06-01
 ### Added
  - MantaSeekableByteChannel now extends from InputStream.
