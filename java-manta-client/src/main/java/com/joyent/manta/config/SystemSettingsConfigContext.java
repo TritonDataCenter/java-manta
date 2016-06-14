@@ -50,8 +50,8 @@ public class SystemSettingsConfigContext extends BaseChainedConfigContext {
             /* This is the same workaround as above, but for environment variables.
              * This checks to see if we have set private key contents and haven't
              * explicitly set the key path outside of the defaults. */
-            if (!isPresent(mapConfig.getMantaKeyPath()) &&
-                    isPresent(envConfig.getPrivateKeyContent())) {
+            if (!isPresent(mapConfig.getMantaKeyPath())
+                    && isPresent(envConfig.getPrivateKeyContent())) {
                 setMantaKeyPath(null);
             }
 
