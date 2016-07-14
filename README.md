@@ -337,7 +337,7 @@ mchmod +subusername /user/stor/my_directory
 
 ## Contributions
 
-Contributions welcome! Please read the [CONTRIBUTIONS.MD](CONTRIBUTIONS.MD) document for details
+Contributions welcome! Please read the [CONTRIBUTING.MD](CONTRIBUTING.MD) document for details
 on getting started.
 
 ### Testing
