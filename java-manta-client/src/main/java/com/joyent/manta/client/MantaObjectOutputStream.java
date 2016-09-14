@@ -64,7 +64,8 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * Global executor service used for scheduling Manta OutputStream threads.
      * You shouldn't need to call shutdown on this because all of the threads scheduled
-     * are daemon threads.
+     * are daemon threads, but it is exposed so that you can manage its lifecycle
+     * if needed.
      */
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
 
@@ -193,6 +194,10 @@ public class MantaObjectOutputStream extends OutputStream {
         this.httpContent = new EmbeddedHttpContent();
         this.completed = EXECUTOR.submit(upload);
 
+        /**
+         * We have to wait here until the upload to Manta starts and a Writer
+         * becomes available.
+         */
         while (httpContent.writer == null) {
             try {
                 Thread.sleep(CLOSED_CHECK_INTERVAL);
@@ -254,6 +259,10 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         this.isClosed = true;
+
+        synchronized (this.httpContent) {
+            this.httpContent.notify();
+        }
 
         try {
             this.objectResponse = this.completed.get();
