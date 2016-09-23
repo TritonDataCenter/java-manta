@@ -1,10 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
-This project adheres to [Semantic Versioning](http://semver.org/).
+This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [2.4.2] - ?
+## [2.4.3] - 2016-09-22
+### Changed
  - Wait / notify behavior in MantaObjectOutputStream was improved for close()
    events.
+### Fixed
+ - [Fix the contributing link to work online on github. Case-Sensitive links](https://github.com/joyent/java-manta/issues/117)
+ - [Minor pom fixes and plugin/dependency version updates](https://github.com/joyent/java-manta/issues/118) 
+
+## [2.4.2]
+Version skipped due to a release error.
 
 ## [2.4.1] - 2016-06-14
 ### Fixed
