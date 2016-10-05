@@ -5,6 +5,12 @@
 [java-manta](http://joyent.github.com/java-manta) is a community-maintained Java
 SDK for interacting with Joyent's Manta system.
 
+## Projects Using the Java Manta Client SDK
+
+* [Apache Commons VFS Manta Provider (Virtual File System)](https://github.com/joyent/commons-vfs-manta)
+* [Hadoop Filesystem Driver for Manta](https://github.com/joyent/hadoop-manta)
+* [Manta Logback Rollover](https://github.com/dekobon/manta-logback-rollover)
+
 ## Installation
 
 ### Requirements
