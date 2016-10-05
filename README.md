@@ -10,6 +10,7 @@ SDK for interacting with Joyent's Manta system.
 * [Apache Commons VFS Manta Provider (Virtual File System)](https://github.com/joyent/commons-vfs-manta)
 * [Hadoop Filesystem Driver for Manta](https://github.com/joyent/hadoop-manta)
 * [Manta Logback Rollover](https://github.com/dekobon/manta-logback-rollover)
+* [COSBench Adaptor for Manta - Object Store Benchmarks](https://github.com/joyent/cosbench-manta)
 
 ## Installation
 
