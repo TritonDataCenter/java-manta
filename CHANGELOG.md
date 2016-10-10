@@ -6,6 +6,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Added
  - Setting HTTP Headers is now supported when making GET requests.
 ### Changed
+ - Upgraded HTTP Signatures dependency.
+ - Upgraded Apache HTTP Client.
  - Upgraded Google HTTP Client.
 
 ## [2.4.3] - 2016-09-22
