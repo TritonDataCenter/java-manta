@@ -326,13 +326,16 @@ public class MantaClient implements AutoCloseable {
      * application.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param requestHeaders optional HTTP headers to include when getting an object
      * @return {@link InputStream} that extends {@link MantaObjectResponse}.
      * @throws IOException when there is a problem getting the object over the network
      */
-    public MantaObjectInputStream getAsInputStream(final String path) throws IOException {
-        final HttpResponse response = httpHelper.httpGet(path);
-        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getHeaders());
-        final MantaObjectResponse metadata = new MantaObjectResponse(path, headers);
+    public MantaObjectInputStream getAsInputStream(final String path,
+                                                   final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        final HttpResponse response = httpHelper.httpGet(path, null, requestHeaders);
+        final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getHeaders());
+        final MantaObjectResponse metadata = new MantaObjectResponse(path, responseHeaders);
 
         if (metadata.isDirectory()) {
             final String msg = "Directories do not have data, so data streams "
@@ -347,6 +350,19 @@ public class MantaClient implements AutoCloseable {
         danglingStreams.add(new WeakReference<AutoCloseable>(in));
 
         return in;
+    }
+
+    /**
+     * Get a Manta object's data as an {@link InputStream}. This method allows you to
+     * stream data from the Manta storage service in a memory efficient manner to your
+     * application.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return {@link InputStream} that extends {@link MantaObjectResponse}.
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    public MantaObjectInputStream getAsInputStream(final String path) throws IOException {
+        return getAsInputStream(path, null);
     }
 
 

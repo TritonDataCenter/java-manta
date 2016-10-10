@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [2.5.0] - 2016-10-10
+### Added
+ - Setting HTTP Headers is now supported when making GET requests.
+### Changed
+ - Upgraded Google HTTP Client.
+
 ## [2.4.3] - 2016-09-22
 ### Changed
  - Wait / notify behavior in MantaObjectOutputStream was improved for close()

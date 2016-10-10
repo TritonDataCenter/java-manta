@@ -129,6 +129,25 @@ public class HttpHelper {
     /**
      * Executes a HTTP GET against the remote Manta API.
      *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param parser Parser used for parsing response into a POJO
+     * @param headers optional HTTP headers to include when getting an object
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    protected HttpResponse httpGet(final String path,
+                                   final ObjectParser parser,
+                                   final MantaHttpHeaders headers) throws IOException {
+        Objects.requireNonNull(path, "Path must not be null");
+
+        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
+        return httpGet(genericUrl, parser, headers);
+    }
+
+
+    /**
+     * Executes a HTTP GET against the remote Manta API.
+     *
      * @param genericUrl The URL to the object on Manta
      * @param parser Parser used for parsing response into a POJO
      * @return Google HTTP Client response object
@@ -136,11 +155,31 @@ public class HttpHelper {
      */
     protected HttpResponse httpGet(final GenericUrl genericUrl,
                                    final ObjectParser parser) throws IOException {
+        return httpGet(genericUrl, parser, null);
+    }
+
+
+    /**
+     * Executes a HTTP GET against the remote Manta API.
+     *
+     * @param genericUrl The URL to the object on Manta
+     * @param parser Parser used for parsing response into a POJO
+     * @param headers optional HTTP headers to include when getting an object
+     * @return Google HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    protected HttpResponse httpGet(final GenericUrl genericUrl,
+                                   final ObjectParser parser,
+                                   final MantaHttpHeaders headers) throws IOException {
         Objects.requireNonNull(genericUrl, "URL must be present");
 
         LOG.debug("GET    {}", genericUrl.getRawPath());
 
         final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
+
+        if (headers != null) {
+            request.setHeaders(headers.asGoogleClientHttpHeaders());
+        }
 
         if (parser != null) {
             request.setParser(parser);

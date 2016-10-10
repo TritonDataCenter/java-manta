@@ -533,6 +533,28 @@ public class MantaClientIT {
         Assert.assertFalse(actual, "File object shouldn't exist");
     }
 
+    @Test
+    public final void testCanGetWithRangeHeader() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final String expected = TEST_DATA.substring(7, 18); // substring is inclusive, exclusive
+
+        // Test data: "EPISODEII_IS_BEST_EPISODE"
+        // Our Range:         [---------]
+
+        mantaClient.put(path, TEST_DATA);
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        // Range is inclusive, inclusive
+        headers.setRange("bytes=7-17");
+
+        try (final InputStream min = mantaClient.getAsInputStream(path, headers)) {
+            String actual = MantaUtils.inputStreamToString(min);
+            Assert.assertEquals(actual, expected, "Didn't receive correct range value");
+        }
+    }
+
+
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDate() {
         final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
