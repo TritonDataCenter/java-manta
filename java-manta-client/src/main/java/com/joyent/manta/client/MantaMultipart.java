@@ -6,6 +6,8 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +56,7 @@ public class MantaMultipart {
      * @return true if the upload has started
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    boolean isStarted(final String object) throws IOException {
+    public boolean isStarted(final String object) throws IOException {
         final String dir = multipartUploadDir(object);
 
         try {
@@ -69,7 +71,7 @@ public class MantaMultipart {
             exception.setContextValue("multipartUploadPath", dir);
             throw exception;
         } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return false;
             }
 
