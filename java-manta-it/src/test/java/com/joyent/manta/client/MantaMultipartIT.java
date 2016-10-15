@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Test
 public class MantaMultipartIT {
@@ -99,8 +101,10 @@ public class MantaMultipartIT {
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
+        Instant start = Instant.now();
         multipart.complete(uploadId);
         multipart.waitForCompletion(uploadId);
+        Instant end = Instant.now();
 
         assertTrue(multipart.isComplete(uploadId));
         assertFalse(multipart.isStarted(uploadId));
@@ -108,6 +112,75 @@ public class MantaMultipartIT {
         assertEquals(mantaClient.getAsString(path),
                 combined.toString(),
                 "Manta combined string doesn't match expectation");
+
+        Duration totalCompletionTime = Duration.between(start, end);
+
+        LOG.info("Concatenating {} parts took {} seconds",
+                parts.length, totalCompletionTime.toMillis() / 1000);
+    }
+
+    public void canStoreContentType() throws IOException {
+        String[] parts = new String[] {
+                "Hello ",
+                "world ",
+                "Joyent",
+                "!"
+        };
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders()
+                .setContentType("text/plain");
+        final UUID uploadId = multipart.initiateUpload(path, null, headers);
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            int partNumber = i + 1;
+            multipart.putPart(uploadId, partNumber, part);
+        }
+
+        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.complete(uploadId);
+        multipart.waitForCompletion(uploadId);
+
+        MantaObjectResponse head = mantaClient.head(path);
+        assertEquals(head.getContentType(), "text/plain",
+                "Content type header wasn't set correctly");
+    }
+
+    public void canStoreMetadata() throws IOException {
+        String[] parts = new String[] {
+                "Hello ",
+                "world ",
+                "Joyent",
+                "!"
+        };
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final MantaMetadata metadata = new MantaMetadata();
+        metadata.put("m-hello", "world");
+        metadata.put("m-foo", "bar");
+
+        final UUID uploadId = multipart.initiateUpload(path, metadata);
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            int partNumber = i + 1;
+            multipart.putPart(uploadId, partNumber, part);
+        }
+
+        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.complete(uploadId);
+        multipart.waitForCompletion(uploadId);
+
+        MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
+
+        assertEquals(remoteMetadata.size(), 2, "Unexpected metadata size");
+        assertEquals(remoteMetadata.get("m-hello"), "world");
+        assertEquals(remoteMetadata.get("m-foo"), "bar");
     }
 
     public void canUpload5MBMultipartBinary() throws IOException {
@@ -184,7 +257,17 @@ public class MantaMultipartIT {
 
         assertTrue(multipart.isComplete(uploadId));
         assertFalse(multipart.isStarted(uploadId));
-        assertFalse(mantaClient.existsAndIsAccessible(path));
+
+        MantaJob job = multipart.findJob(uploadId);
+
+        if (job.getCancelled()) {
+            if (!mantaClient.existsAndIsAccessible(path)) {
+                throw new SkipException("File was actually created. Actual job state is: "
+                        + job.toString());
+            }
+        } else {
+            fail("Job wasn't cancelled:" + job.toString());
+        }
 
         Duration totalCompletionTime = Duration.between(start, end);
 
