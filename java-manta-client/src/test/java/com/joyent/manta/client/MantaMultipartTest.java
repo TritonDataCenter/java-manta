@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertTrue;
@@ -38,17 +38,16 @@ public class MantaMultipartTest {
     }
 
     public void canBuildMultiPartUploadPath() {
-        String object = "/user.name/stor/dir1/object_filename.txt";
-
+        final UUID id = new UUID(0L, 12L);
         MantaMultipart multipart = multipartInstance("user.name");
-        String expected = String.format("/user.name/%s/user.name/stor/dir1/object_filename.txt/",
-                MantaMultipart.MULTIPART_DIRECTORY);
-        String actual = multipart.multipartUploadDir(object);
+        String expected = String.format("/user.name/%s/%s/",
+                MantaMultipart.MULTIPART_DIRECTORY, id);
+        String actual = multipart.multipartUploadDir(id);
         assertEquals(expected, actual);
     }
 
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
-        String object = "/user.name/stor/dir1/object_filename.txt";
+        final UUID id = new UUID(0L, 24L);
 
         List<String> partsList = new LinkedList<>();
 
@@ -57,13 +56,13 @@ public class MantaMultipartTest {
             partsList.add(String.valueOf(i));
         }
         MantaMultipart multiPart = spy(multipartInstance());
-        when(multiPart.listParts(object)).thenReturn(partsList.stream());
+        when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
-        multiPart.validateThereAreNoMissingParts(object);
+        multiPart.validateThereAreNoMissingParts(id);
     }
 
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
-        String object = "/user.name/stor/dir1/object_filename.txt";
+        final UUID id = new UUID(0L, 36L);
 
         List<String> partsList = new LinkedList<>();
         Collections.shuffle(partsList);
@@ -73,13 +72,13 @@ public class MantaMultipartTest {
             partsList.add(String.valueOf(i));
         }
         MantaMultipart multiPart = spy(multipartInstance());
-        when(multiPart.listParts(object)).thenReturn(partsList.stream());
+        when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
-        multiPart.validateThereAreNoMissingParts(object);
+        multiPart.validateThereAreNoMissingParts(id);
     }
 
     public void errorWhenMissingPart() throws IOException {
-        String object = "/user.name/stor/dir1/object_filename.txt";
+        final UUID id = new UUID(0L, 48L);
 
         ArrayList<String> partsList = new ArrayList<>();
         Collections.shuffle(partsList);
@@ -92,12 +91,12 @@ public class MantaMultipartTest {
         partsList.remove(2);
 
         MantaMultipart multiPart = spy(multipartInstance());
-        when(multiPart.listParts(object)).thenReturn(partsList.stream());
+        when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
         boolean thrown = false;
 
         try {
-            multiPart.validateThereAreNoMissingParts(object);
+            multiPart.validateThereAreNoMissingParts(id);
         } catch (MantaClientException e) {
             if ((int)e.getFirstContextValue("missing_part") == 3) {
                 thrown = true;

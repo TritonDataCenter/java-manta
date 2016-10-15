@@ -1,14 +1,30 @@
 package com.joyent.manta.client;
 
+import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
-import org.testng.annotations.*;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -20,6 +36,8 @@ public class MantaMultipartIT {
     private MantaMultipart multipart;
 
     private String testPathPrefix;
+
+    private Logger LOG = LoggerFactory.getLogger(getClass());
 
     @BeforeClass()
     @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
@@ -53,10 +71,7 @@ public class MantaMultipartIT {
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-
-        assertFalse(multipart.isStarted(path));
+        assertFalse(multipart.isStarted(new UUID(0L, -1L)));
     }
 
     public void canUploadSmallMultipartString() throws IOException {
@@ -75,12 +90,142 @@ public class MantaMultipartIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
+        final UUID uploadId = multipart.initiateUpload(path);
+
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(path, partNumber, part);
+            multipart.putPart(uploadId, partNumber, part);
         }
 
-        multipart.validateThereAreNoMissingParts(path);
+        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.complete(uploadId);
+        multipart.waitForCompletion(uploadId);
+
+        assertTrue(multipart.isComplete(uploadId));
+        assertFalse(multipart.isStarted(uploadId));
+
+        assertEquals(mantaClient.getAsString(path),
+                combined.toString(),
+                "Manta combined string doesn't match expectation");
+    }
+
+    public void canUpload5MBMultipartBinary() throws IOException {
+        final long fiveMB = 5L * 1024L * 1024L;
+
+        File[] parts = new File[] {
+                createTemporaryDataFile(fiveMB, 1),
+                createTemporaryDataFile(fiveMB, 1),
+                createTemporaryDataFile(fiveMB, 1)
+        };
+
+        final File expectedFile = concatenateFiles(parts);
+        final byte[] expectedMd5 = md5(expectedFile);
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final UUID uploadId = multipart.initiateUpload(path);
+
+        for (int i = 0; i < parts.length; i++) {
+            File part = parts[i];
+            int partNumber = i + 1;
+            multipart.putPart(uploadId, partNumber, part);
+        }
+
+        multipart.validateThereAreNoMissingParts(uploadId);
+        Instant start = Instant.now();
+        multipart.complete(uploadId);
+        multipart.waitForCompletion(uploadId);
+        Instant end = Instant.now();
+
+        assertTrue(multipart.isComplete(uploadId));
+        assertFalse(multipart.isStarted(uploadId));
+
+        MantaObjectResponse head = mantaClient.head(path);
+        byte[] remoteMd5 = head.getMd5Bytes();
+
+        assertTrue(Arrays.equals(remoteMd5, expectedMd5),
+                "MD5 values do not match");
+
+        Duration totalCompletionTime = Duration.between(start, end);
+
+        LOG.info("Concatenating {} parts took {} seconds",
+                parts.length, totalCompletionTime.toMillis() / 1000);
+    }
+
+    public void canAbortMultipartBinary() throws IOException {
+        final long oneMB = 1024L * 1024L;
+
+        File[] parts = new File[] {
+                createTemporaryDataFile(oneMB, 1),
+                createTemporaryDataFile(oneMB, 1),
+                createTemporaryDataFile(oneMB, 1)
+        };
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final UUID uploadId = multipart.initiateUpload(path);
+
+        for (int i = 0; i < parts.length; i++) {
+            File part = parts[i];
+            int partNumber = i + 1;
+            multipart.putPart(uploadId, partNumber, part);
+        }
+
+        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.complete(uploadId);
+
+        Instant start = Instant.now();
+        multipart.abort(uploadId);
+        multipart.waitForCompletion(uploadId);
+        Instant end = Instant.now();
+
+        assertTrue(multipart.isComplete(uploadId));
+        assertFalse(multipart.isStarted(uploadId));
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+
+        Duration totalCompletionTime = Duration.between(start, end);
+
+        LOG.info("Aborting took {} seconds",
+                totalCompletionTime.toMillis() / 1000);
+    }
+
+    private File createTemporaryDataFile(final long sizeInBytes, final int partNumber)
+            throws IOException {
+        File temp = File.createTempFile(String.format("multipart-%d", partNumber), ".data");
+        temp.deleteOnExit();
+
+        try (OutputStream out = new FileOutputStream(temp);
+             InputStream in = new RandomInputStream(sizeInBytes)) {
+            IOUtils.copy(in, out);
+        }
+
+        return temp;
+    }
+
+    private File concatenateFiles(final File... files) throws IOException{
+        File temp = File.createTempFile("multipart-concatenated", ".data");
+        temp.deleteOnExit();
+
+        for (File file : files) {
+            if (temp.exists()) {
+                try (OutputStream out = new FileOutputStream(temp, true);
+                     InputStream in = new FileInputStream(file)) {
+                    IOUtils.copy(in, out);
+                }
+            } else {
+                FileUtils.copyFile(file, temp);
+            }
+        }
+
+        return temp;
+    }
+
+    private byte[] md5(final File file) throws IOException {
+        try (InputStream in = new FileInputStream(file)) {
+            return DigestUtils.md5(in);
+        }
     }
 }
