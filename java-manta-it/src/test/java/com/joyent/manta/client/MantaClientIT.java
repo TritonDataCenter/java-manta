@@ -449,6 +449,17 @@ public class MantaClientIT {
     }
 
 
+    @Test(expectedExceptions = MantaClientHttpResponseException.class)
+    public final void testListNonexistentDir() throws IOException {
+        final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",
+                mantaClient.getContext().getMantaHomeDirectory(), UUID.randomUUID());
+
+        try (Stream<MantaObject> objects = mantaClient.listObjects(doesntExist)) {
+            objects.count();
+        }
+    }
+
+
     @Test
     public final void testIsDirectoryEmptyWithEmptyDir() throws IOException {
         final String name = UUID.randomUUID().toString();

@@ -13,6 +13,7 @@ import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.util.ObjectParser;
 import com.joyent.http.signature.ThreadLocalSigner;
@@ -593,6 +594,28 @@ public class MantaClient implements AutoCloseable {
      */
     public Stream<MantaObject> listObjects(final String path) throws IOException {
         final MantaDirectoryListingIterator itr = streamingIterator(path);
+
+        /* We preemptively check the iterator for a next value because that will
+         * trigger an error if the path doesn't exist or is otherwise inaccessible.
+         * This error typically takes the form of an UncheckedIOException, so we
+         * unwind that exception if the cause is a MantaClientHttpResponseException
+         * and rethrow another MantaClientHttpResponseException, so that the
+         * stacktrace will point to this running method.
+         */
+        try {
+            if (!itr.hasNext()) {
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                MantaClientHttpResponseException cause = (MantaClientHttpResponseException)e.getCause();
+                @SuppressWarnings("unchecked")
+                HttpResponseException innerCause = (HttpResponseException)cause.getCause();
+                throw new MantaClientHttpResponseException(innerCause);
+            } else {
+                throw e;
+            }
+        }
 
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
