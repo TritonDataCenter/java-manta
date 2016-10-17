@@ -5,6 +5,7 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -245,14 +247,13 @@ public class MantaMultipart {
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public Stream<Integer> listParts(final UUID id) throws IOException {
+    public Stream<Part> listParts(final UUID id) throws IOException {
         final String dir = multipartUploadDir(id);
 
         return mantaClient.listObjects(dir)
-                .map(mantaObject -> Paths.get(mantaObject.getPath())
-                        .getFileName().toString())
-                .filter(value -> !value.equals(METADATA_FILE))
-                .map(Integer::parseInt);
+                .filter(value -> !Paths.get(value.getPath())
+                        .getFileName().toString().equals(METADATA_FILE))
+                .map(Part::new);
     }
 
     /**
@@ -264,6 +265,7 @@ public class MantaMultipart {
     public void validateThereAreNoMissingParts(final UUID id) throws IOException {
         listParts(id)
             .sorted()
+            .map(Part::getPartNumber)
             .reduce(1, (memo, value) -> {
                 if (!memo.equals(value)) {
                     MantaClientException e = new MantaClientException(
@@ -309,14 +311,11 @@ public class MantaMultipart {
 
         final String path = metadata.getPath();
 
-        final Stream<Integer> parts = listParts(id)
-                .sorted();
-
+        final Stream<Part> parts = listParts(id).sorted();
         final StringBuilder jobExecText = new StringBuilder("mget -q ");
 
         parts.forEach(part ->
-                jobExecText.append(uploadDir)
-                           .append(part)
+                jobExecText.append(part.getObjectPath())
                            .append(" ")
         );
 
@@ -474,13 +473,108 @@ public class MantaMultipart {
 
     /**
      * Returns the Manta job used to concatenate multiple file parts.
+     *
      * @param id multipart upload id
      * @return Manta job object
+     * @throws IOException thrown if there is a problem connecting to Manta
      */
     MantaJob findJob(final UUID id) throws IOException {
         return mantaClient.getJobsByName("append-" + id)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * A single part of a multipart upload.
+     */
+    public static class Part implements Comparable<Part> {
+        /**
+         * Non-zero positive integer representing the relative position of the
+         * part in relation to the other parts for the multipart upload.
+         */
+        private final int partNumber;
+
+        /**
+         * Remote path on Manta for the part's file.
+         */
+        private final String objectPath;
+
+        /**
+         * Etag value of the part.
+         */
+        private final String etag;
+
+        /**
+         * Creates a new instance based on explicitly defined parameters.
+         *
+         * @param partNumber Non-zero positive integer representing the relative position of the part
+         * @param objectPath Remote path on Manta for the part's file
+         * @param etag Etag value of the part
+         */
+        public Part(final int partNumber, final String objectPath, final String etag) {
+            this.partNumber = partNumber;
+            this.objectPath = objectPath;
+            this.etag = etag;
+        }
+
+        /**
+         * Creates a new instance based on a response from {@link MantaClient}.
+         *
+         * @param object response object from returned from {@link MantaClient}
+         */
+        protected Part(final MantaObject object) {
+            final String filename = Paths.get(object.getPath()).getFileName().toString();
+            this.objectPath = object.getPath();
+            this.partNumber = Integer.parseInt(filename);
+            this.etag = object.getEtag();
+        }
+
+        public int getPartNumber() {
+            return partNumber;
+        }
+
+        public String getEtag() {
+            return etag;
+        }
+
+        protected String getObjectPath() {
+            return objectPath;
+        }
+
+        @Override
+        public int compareTo(final Part that) {
+            return Integer.compare(this.getPartNumber(), that.getPartNumber());
+        }
+
+        @Override
+        public boolean equals(final Object that) {
+            if (this == that) {
+                return true;
+            }
+
+            if (that == null || getClass() != that.getClass()) {
+                return false;
+            }
+
+            final Part part = (Part) that;
+            return partNumber == part.partNumber
+                    && Objects.equals(objectPath, part.objectPath)
+                    && Objects.equals(etag, part.etag);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(partNumber, objectPath, etag);
+        }
+
+        @Override
+        public String toString() {
+            return new ToStringBuilder(this)
+                    .append("partNumber", partNumber)
+                    .append("objectPath", objectPath)
+                    .append("etag", etag)
+                    .toString();
+        }
     }
 
     /**
@@ -526,6 +620,11 @@ public class MantaMultipart {
             return this;
         }
 
+        /**
+         * Gets the metadata associated with the final Manta object.
+         *
+         * @return new instance of {@link MantaMetadata} with data populated
+         */
         public MantaMetadata getObjectMetadata() {
             if (this.objectMetadata == null) {
                 return null;

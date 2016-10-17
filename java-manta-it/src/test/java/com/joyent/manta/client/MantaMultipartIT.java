@@ -111,7 +111,8 @@ public class MantaMultipartIT {
 
         assertEquals(mantaClient.getAsString(path),
                 combined.toString(),
-                "Manta combined string doesn't match expectation");
+                "Manta combined string doesn't match expectation: "
+                        + multipart.findJob(uploadId));
 
         Duration totalCompletionTime = Duration.between(start, end);
 
@@ -219,7 +220,7 @@ public class MantaMultipartIT {
         byte[] remoteMd5 = head.getMd5Bytes();
 
         assertTrue(Arrays.equals(remoteMd5, expectedMd5),
-                "MD5 values do not match");
+                "MD5 values do not match - job id: " + multipart.findJob(uploadId));
 
         Duration totalCompletionTime = Duration.between(start, end);
 

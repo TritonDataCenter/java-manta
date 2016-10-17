@@ -49,12 +49,14 @@ public class MantaMultipartTest {
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
         final UUID id = new UUID(0L, 24L);
 
-        List<Integer> partsList = new LinkedList<>();
+        List<MantaMultipart.Part> partsList = new LinkedList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            partsList.add(i);
+            MantaMultipart.Part part = new MantaMultipart.Part(i, null, null);
+            partsList.add(part);
         }
+
         MantaMultipart multiPart = spy(multipartInstance());
         when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
@@ -64,11 +66,12 @@ public class MantaMultipartTest {
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
         final UUID id = new UUID(0L, 36L);
 
-        List<Integer> partsList = new LinkedList<>();
+        List<MantaMultipart.Part> partsList = new LinkedList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            partsList.add(i);
+            MantaMultipart.Part part = new MantaMultipart.Part(i, null, null);
+            partsList.add(part);
         }
 
         Collections.shuffle(partsList);
@@ -82,11 +85,12 @@ public class MantaMultipartTest {
     public void errorWhenMissingPart() throws IOException {
         final UUID id = new UUID(0L, 48L);
 
-        ArrayList<Integer> partsList = new ArrayList<>();
+        ArrayList<MantaMultipart.Part> partsList = new ArrayList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            partsList.add(i);
+            MantaMultipart.Part part = new MantaMultipart.Part(i, null, null);
+            partsList.add(part);
         }
 
         partsList.remove(2);
