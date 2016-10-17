@@ -21,27 +21,27 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
 @Test
-public class MantaMultipartTest {
+public class MantaMultipartManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativePartNumbersAreRejected() {
-        MantaMultipart.validatePartNumber(-1);
+        MantaMultipartManager.validatePartNumber(-1);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void zeroPartNumbersAreRejected() {
-        MantaMultipart.validatePartNumber(0);
+        MantaMultipartManager.validatePartNumber(0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void partNumbersAboveMaxAreRejected() {
-        MantaMultipart.validatePartNumber(MantaMultipart.MAX_PARTS + 1);
+        MantaMultipartManager.validatePartNumber(MantaMultipartManager.MAX_PARTS + 1);
     }
 
     public void canBuildMultiPartUploadPath() {
         final UUID id = new UUID(0L, 12L);
-        MantaMultipart multipart = multipartInstance("user.name");
+        MantaMultipartManager multipart = multipartInstance("user.name");
         String expected = String.format("/user.name/%s/%s/",
-                MantaMultipart.MULTIPART_DIRECTORY, id);
+                MantaMultipartManager.MULTIPART_DIRECTORY, id);
         String actual = multipart.multipartUploadDir(id);
         assertEquals(expected, actual);
     }
@@ -57,7 +57,7 @@ public class MantaMultipartTest {
             partsList.add(part);
         }
 
-        MantaMultipart multiPart = spy(multipartInstance());
+        MantaMultipartManager multiPart = spy(multipartInstance());
         when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
         multiPart.validateThereAreNoMissingParts(id);
@@ -76,7 +76,7 @@ public class MantaMultipartTest {
 
         Collections.shuffle(partsList);
 
-        MantaMultipart multiPart = spy(multipartInstance());
+        MantaMultipartManager multiPart = spy(multipartInstance());
         when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
         multiPart.validateThereAreNoMissingParts(id);
@@ -97,7 +97,7 @@ public class MantaMultipartTest {
 
         Collections.shuffle(partsList);
 
-        MantaMultipart multiPart = spy(multipartInstance());
+        MantaMultipartManager multiPart = spy(multipartInstance());
         when(multiPart.listParts(id)).thenReturn(partsList.stream());
 
         boolean thrown = false;
@@ -113,11 +113,11 @@ public class MantaMultipartTest {
         assertTrue(thrown, "Exception wasn't thrown");
     }
 
-    private MantaMultipart multipartInstance() {
+    private MantaMultipartManager multipartInstance() {
         return multipartInstance("user.name");
     }
 
-    private MantaMultipart multipartInstance(final String user) {
+    private MantaMultipartManager multipartInstance(final String user) {
         final ConfigContext overwrite = new StandardConfigContext()
                 .setMantaUser(user);
         final ConfigContext config = new ChainedConfigContext(
@@ -127,7 +127,7 @@ public class MantaMultipartTest {
         try {
             final MantaClient client = new MantaClient(config);
 
-            return new MantaMultipart(client);
+            return new MantaMultipartManager(client);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

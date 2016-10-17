@@ -25,7 +25,9 @@ import java.io.OutputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -35,7 +37,7 @@ import static org.testng.Assert.fail;
 @Test
 public class MantaMultipartIT {
     private MantaClient mantaClient;
-    private MantaMultipart multipart;
+    private MantaMultipartManager multipart;
 
     private String testPathPrefix;
 
@@ -57,7 +59,7 @@ public class MantaMultipartIT {
                 mantaHttpTransport);
 
         this.mantaClient = new MantaClient(config);
-        this.multipart = new MantaMultipart(this.mantaClient);
+        this.multipart = new MantaMultipartManager(this.mantaClient);
         testPathPrefix = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix);
@@ -274,6 +276,12 @@ public class MantaMultipartIT {
 
         LOG.info("Aborting took {} seconds",
                 totalCompletionTime.toMillis() / 1000);
+    }
+
+    public void canReturnEmptyMultipartList() throws IOException {
+        List<MantaMultipart> list = multipart.listInProgress().collect(Collectors.toList());
+        assertTrue(list.isEmpty(),
+                "List should be empty. Actually had " + list.size() + " elements");
     }
 
     private File createTemporaryDataFile(final long sizeInBytes, final int partNumber)
