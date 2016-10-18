@@ -1,6 +1,5 @@
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaIOException;
@@ -13,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -95,34 +93,31 @@ public class MantaMultipartManager {
      * @return stream of objects representing files being uploaded via multipart
      * @throws IOException thrown when there are network issues
      */
-    public Stream<MantaMultipart> listInProgress() throws IOException {
+    public Stream<MantaMultipartUpload> listInProgress() throws IOException {
         final Stream<MantaObject> multipartDirList;
 
         try {
             multipartDirList = mantaClient
                     .listObjects(this.resolvedMultipartUploadDirectory)
-                    .filter(MantaObject::isDirectory)
-                    .peek(mantaObject -> { assert mantaObject != null; });
+                    .filter(MantaObject::isDirectory);
         } catch (MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return Stream.empty();
             } else {
                 throw e;
             }
-        } catch (UncheckedIOException e) {
-            throw e;
         }
 
         final List<Throwable> exceptions = new ArrayList<>();
 
-        final Stream<MantaMultipart> stream = multipartDirList
+        final Stream<MantaMultipartUpload> stream = multipartDirList
                 .map(object -> {
                     String idString = MantaUtils.lastItemInPath(object.getPath());
                     UUID id = UUID.fromString(idString);
 
                     try {
                         MultipartMetadata mantaMetadata = downloadMultipartMetadata(id);
-                        return new MantaMultipart(id, mantaMetadata.getPath());
+                        return new MantaMultipartUpload(id, mantaMetadata.getPath());
                     } catch (MantaClientHttpResponseException e) {
                         if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                             return null;
@@ -163,7 +158,7 @@ public class MantaMultipartManager {
      * @return unique id for the multipart upload
      * @throws IOException thrown when there are network issues
      */
-    public UUID initiateUpload(final String path) throws IOException {
+    public MantaMultipartUpload initiateUpload(final String path) throws IOException {
         return initiateUpload(path, null, null);
     }
 
@@ -175,8 +170,8 @@ public class MantaMultipartManager {
      * @return unique id for the multipart upload
      * @throws IOException thrown when there are network issues
      */
-    public UUID initiateUpload(final String path,
-                               final MantaMetadata mantaMetadata) throws IOException {
+    public MantaMultipartUpload initiateUpload(final String path,
+                                               final MantaMetadata mantaMetadata) throws IOException {
         return initiateUpload(path, mantaMetadata, null);
     }
 
@@ -189,9 +184,9 @@ public class MantaMultipartManager {
      * @return unique id for the multipart upload
      * @throws IOException thrown when there are network issues
      */
-    public UUID initiateUpload(final String path,
-                               final MantaMetadata mantaMetadata,
-                               final MantaHttpHeaders httpHeaders) throws IOException {
+    public MantaMultipartUpload initiateUpload(final String path,
+                                               final MantaMetadata mantaMetadata,
+                                               final MantaHttpHeaders httpHeaders) throws IOException {
         final UUID id = UUID.randomUUID();
 
         if (LOG.isDebugEnabled()) {
@@ -216,7 +211,21 @@ public class MantaMultipartManager {
 
         mantaClient.put(metadataPath, metadataBytes);
 
-        return id;
+        return new MantaMultipartUpload(id, path);
+    }
+
+    /**
+     * When true indicates that multipart upload has already started.
+     * @param upload multipart upload object
+     * @return true if the upload has started
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public boolean isStarted(final MantaMultipartUpload upload) throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return isStarted(upload.getId());
     }
 
     /**
@@ -251,6 +260,26 @@ public class MantaMultipartManager {
     /**
      * Uploads a single part of a multipart upload.
      *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @param contents String contents to be written in UTF-8
+     * @return server HTTP response
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
+                                       final int partNumber,
+                                       final String contents)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return putPart(upload.getId(), partNumber, contents);
+    }
+
+    /**
+     * Uploads a single part of a multipart upload.
+     *
      * @param id multipart upload id
      * @param partNumber part number to identify relative location in final file
      * @param contents String contents to be written in UTF-8
@@ -264,6 +293,26 @@ public class MantaMultipartManager {
         final String path = multipartPath(id, partNumber);
 
         return mantaClient.put(path, contents);
+    }
+
+    /**
+     * Uploads a single part of a multipart upload.
+     *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @param bytes byte array containing data of the part to be uploaded
+     * @return server HTTP response
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
+                                       final int partNumber,
+                                       final byte[] bytes)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return putPart(upload.getId(), partNumber, bytes);
     }
 
     /**
@@ -286,6 +335,26 @@ public class MantaMultipartManager {
     /**
      * Uploads a single part of a multipart upload.
      *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @param file file containing data of the part to be uploaded
+     * @return server HTTP response
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
+                                       final int partNumber,
+                                       final File file)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return putPart(upload.getId(), partNumber, file);
+    }
+
+    /**
+     * Uploads a single part of a multipart upload.
+     *
      * @param id multipart upload id
      * @param partNumber part number to identify relative location in final file
      * @param file file containing data of the part to be uploaded
@@ -298,6 +367,26 @@ public class MantaMultipartManager {
         final String path = multipartPath(id, partNumber);
 
         return mantaClient.put(path, file);
+    }
+
+    /**
+     * Uploads a single part of a multipart upload.
+     *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @param inputStream stream providing data for part to be uploaded
+     * @return server HTTP response
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
+                                       final int partNumber,
+                                       final InputStream inputStream)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return putPart(upload.getId(), partNumber, inputStream);
     }
 
     /**
@@ -320,17 +409,48 @@ public class MantaMultipartManager {
     /**
      * Lists the parts that have already been uploaded.
      *
+     * @param upload multipart upload object
+     * @return stream of parts identified by integer part number
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public Stream<MantaMultipartUpload.Part> listParts(final MantaMultipartUpload upload)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return listParts(upload.getId());
+    }
+
+    /**
+     * Lists the parts that have already been uploaded.
+     *
      * @param id multipart upload id
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public Stream<MantaMultipart.Part> listParts(final UUID id) throws IOException {
+    public Stream<MantaMultipartUpload.Part> listParts(final UUID id) throws IOException {
         final String dir = multipartUploadDir(id);
 
         return mantaClient.listObjects(dir)
                 .filter(value -> !Paths.get(value.getPath())
                         .getFileName().toString().equals(METADATA_FILE))
-                .map(MantaMultipart.Part::new);
+                .map(MantaMultipartUpload.Part::new);
+    }
+
+    /**
+     * Validates that there is no part missing from the sequence.
+     *
+     * @param upload multipart upload object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void validateThereAreNoMissingParts(final MantaMultipartUpload upload)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        validateThereAreNoMissingParts(upload.getId());
     }
 
     /**
@@ -342,7 +462,7 @@ public class MantaMultipartManager {
     public void validateThereAreNoMissingParts(final UUID id) throws IOException {
         listParts(id)
             .sorted()
-            .map(MantaMultipart.Part::getPartNumber)
+            .map(MantaMultipartUpload.Part::getPartNumber)
             .reduce(1, (memo, value) -> {
                 if (!memo.equals(value)) {
                     MantaClientException e = new MantaClientException(
@@ -353,6 +473,20 @@ public class MantaMultipartManager {
 
                 return memo + 1;
             });
+    }
+
+    /**
+     * Aborts a multipart transfer.
+     *
+     * @param upload multipart upload object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void abort(final MantaMultipartUpload upload) throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        abort(upload.getId());
     }
 
     /**
@@ -376,6 +510,20 @@ public class MantaMultipartManager {
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
      *
+     * @param upload multipart upload object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void complete(final MantaMultipartUpload upload) throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        complete(upload.getId());
+    }
+
+    /**
+     * Completes a multipart transfer by assembling the parts on Manta.
+     *
      * @param id multipart upload id
      * @throws IOException thrown if there is a problem connecting to Manta
      */
@@ -386,7 +534,7 @@ public class MantaMultipartManager {
         final String path = metadata.getPath();
 
         final StringBuilder jobExecText = new StringBuilder("mget -q ");
-        try (final Stream<MantaMultipart.Part> parts = listParts(id).sorted()) {
+        try (final Stream<MantaMultipartUpload.Part> parts = listParts(id).sorted()) {
             parts.forEach(part ->
                     jobExecText.append(part.getObjectPath())
                             .append(" ")
@@ -456,12 +604,44 @@ public class MantaMultipartManager {
     /**
      * Waits for a multipart upload to complete. Polling every 5 seconds.
      *
+     * @param upload multipart upload object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void waitForCompletion(final MantaMultipartUpload upload) throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        waitForCompletion(upload.getId());
+    }
+
+    /**
+     * Waits for a multipart upload to complete. Polling every 5 seconds.
+     *
      * @param id multipart upload id
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public void waitForCompletion(final UUID id) throws IOException {
         waitForCompletion(id, Duration.ofSeconds(DEFAULT_SECONDS_TO_POLL),
                 NUMBER_OF_TIMES_TO_POLL);
+    }
+
+    /**
+     * Waits for a multipart upload to complete. Polling for set interval.
+     *
+     * @param upload multipart upload object
+     * @param pingInterval interval to poll
+     * @param timesToPoll number of times to poll Manta to check for completion
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void waitForCompletion(final MantaMultipartUpload upload,
+                                  final Duration pingInterval,
+                                  final int timesToPoll) throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        waitForCompletion(upload.getId(), pingInterval, timesToPoll);
     }
 
     /**
@@ -488,6 +668,35 @@ public class MantaMultipartManager {
             LOG.debug("No longer waiting for multipart to complete."
                     + " Actual job state: {}", run.getJob().getState());
         }
+
+        final String path = multipartUploadDir(id);
+        final long waitMillis = pingInterval.toMillis();
+
+        /* We ping the upload directory and wait for it to be deleted because
+         * there is the chance for a race condition when the job attempts to
+         * delete the upload directory, but isn't finished. */
+        for (int i = 0; i < timesToPoll && mantaClient.existsAndIsAccessible(path); i++) {
+            try {
+                Thread.sleep(waitMillis);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Indicates if a multipart transfer has completed, cancelled or erred.
+     *
+     * @param upload multipart upload object
+     * @return true if a multipart transfer has completed, cancelled or erred
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public boolean isComplete(final MantaMultipartUpload upload) throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return isComplete(upload.getId());
     }
 
     /**
@@ -536,8 +745,6 @@ public class MantaMultipartManager {
         if (id == null) {
             throw new IllegalArgumentException("Transaction id must be present");
         }
-
-        final ConfigContext config = mantaClient.getContext();
 
         return this.resolvedMultipartUploadDirectory
                 + SEPARATOR + id.toString() + SEPARATOR;
@@ -602,7 +809,7 @@ public class MantaMultipartManager {
         MultipartMetadata() {
         }
 
-        public String getPath() {
+        String getPath() {
             return path;
         }
 
@@ -612,7 +819,7 @@ public class MantaMultipartManager {
          * @param path remote Manta path
          * @return this instance
          */
-        public MultipartMetadata setPath(final String path) {
+        MultipartMetadata setPath(final String path) {
             this.path = path;
             return this;
         }
@@ -622,7 +829,7 @@ public class MantaMultipartManager {
          *
          * @return new instance of {@link MantaMetadata} with data populated
          */
-        public MantaMetadata getObjectMetadata() {
+        MantaMetadata getObjectMetadata() {
             if (this.objectMetadata == null) {
                 return null;
             }
@@ -636,7 +843,7 @@ public class MantaMultipartManager {
          * @param objectMetadata metadata to write
          * @return this instance
          */
-        public MultipartMetadata setObjectMetadata(final MantaMetadata objectMetadata) {
+        MultipartMetadata setObjectMetadata(final MantaMetadata objectMetadata) {
             if (objectMetadata != null) {
                 this.objectMetadata = new HashMap<>(objectMetadata);
             } else {
@@ -646,7 +853,7 @@ public class MantaMultipartManager {
             return this;
         }
 
-        public String getContentType() {
+        String getContentType() {
             return contentType;
         }
 
@@ -657,7 +864,7 @@ public class MantaMultipartManager {
          * @param contentType HTTP content type to set for the object
          * @return this instance
          */
-        public MultipartMetadata setContentType(final String contentType) {
+        MultipartMetadata setContentType(final String contentType) {
             this.contentType = contentType;
             return this;
         }

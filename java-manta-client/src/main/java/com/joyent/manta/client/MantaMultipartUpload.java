@@ -13,7 +13,7 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public class MantaMultipart implements Comparator<MantaMultipart>, Serializable {
+public class MantaMultipartUpload implements Comparator<MantaMultipartUpload>, Serializable {
     private static final long serialVersionUID = 1993692738555250766L;
 
     /**
@@ -32,7 +32,7 @@ public class MantaMultipart implements Comparator<MantaMultipart>, Serializable 
      * @param uploadId Transaction ID for multipart upload
      * @param path Path to final object being uploaded to Manta
      */
-    public MantaMultipart(final UUID uploadId, final String path) {
+    public MantaMultipartUpload(final UUID uploadId, final String path) {
         this.id = uploadId;
         this.path = path;
     }
@@ -47,7 +47,7 @@ public class MantaMultipart implements Comparator<MantaMultipart>, Serializable 
             return false;
         }
 
-        final MantaMultipart that = (MantaMultipart) o;
+        final MantaMultipartUpload that = (MantaMultipartUpload) o;
 
         return Objects.equals(id, that.id)
                && Objects.equals(path, that.path);
@@ -67,7 +67,7 @@ public class MantaMultipart implements Comparator<MantaMultipart>, Serializable 
     }
 
     @Override
-    public int compare(final MantaMultipart o1, final MantaMultipart o2) {
+    public int compare(final MantaMultipartUpload o1, final MantaMultipartUpload o2) {
         return o1.path.compareTo(o2.path);
     }
 

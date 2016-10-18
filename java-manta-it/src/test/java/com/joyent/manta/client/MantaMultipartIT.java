@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -94,7 +95,7 @@ public class MantaMultipartIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        final UUID uploadId = multipart.initiateUpload(path);
+        final UUID uploadId = multipart.initiateUpload(path).getId();
 
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
@@ -135,7 +136,7 @@ public class MantaMultipartIT {
 
         final MantaHttpHeaders headers = new MantaHttpHeaders()
                 .setContentType("text/plain");
-        final UUID uploadId = multipart.initiateUpload(path, null, headers);
+        final UUID uploadId = multipart.initiateUpload(path, null, headers).getId();
 
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
@@ -167,7 +168,7 @@ public class MantaMultipartIT {
         metadata.put("m-hello", "world");
         metadata.put("m-foo", "bar");
 
-        final UUID uploadId = multipart.initiateUpload(path, metadata);
+        final UUID uploadId = multipart.initiateUpload(path, metadata).getId();
 
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
@@ -201,28 +202,28 @@ public class MantaMultipartIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        final UUID uploadId = multipart.initiateUpload(path);
+        final MantaMultipartUpload upload = multipart.initiateUpload(path);
 
         for (int i = 0; i < parts.length; i++) {
             File part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(uploadId, partNumber, part);
+            multipart.putPart(upload, partNumber, part);
         }
 
-        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.validateThereAreNoMissingParts(upload);
         Instant start = Instant.now();
-        multipart.complete(uploadId);
-        multipart.waitForCompletion(uploadId);
+        multipart.complete(upload);
+        multipart.waitForCompletion(upload);
         Instant end = Instant.now();
 
-        assertTrue(multipart.isComplete(uploadId));
-        assertFalse(multipart.isStarted(uploadId));
+        assertTrue(multipart.isComplete(upload));
+        assertFalse(multipart.isStarted(upload));
 
         MantaObjectResponse head = mantaClient.head(path);
         byte[] remoteMd5 = head.getMd5Bytes();
 
         assertTrue(Arrays.equals(remoteMd5, expectedMd5),
-                "MD5 values do not match - job id: " + multipart.findJob(uploadId));
+                "MD5 values do not match - job id: " + multipart.findJob(upload.getId()));
 
         Duration totalCompletionTime = Duration.between(start, end);
 
@@ -242,7 +243,7 @@ public class MantaMultipartIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        final UUID uploadId = multipart.initiateUpload(path);
+        final UUID uploadId = multipart.initiateUpload(path).getId();
 
         for (int i = 0; i < parts.length; i++) {
             File part = parts[i];
@@ -279,9 +280,42 @@ public class MantaMultipartIT {
     }
 
     public void canReturnEmptyMultipartList() throws IOException {
-        List<MantaMultipart> list = multipart.listInProgress().collect(Collectors.toList());
-        assertTrue(list.isEmpty(),
-                "List should be empty. Actually had " + list.size() + " elements");
+        List<MantaMultipartUpload> list = multipart.listInProgress().collect(Collectors.toList());
+        if (!list.isEmpty()) {
+            throw new SkipException("List should be empty. Actually had " + list.size() + " elements");
+        } else {
+            assertTrue(true);
+        }
+    }
+
+    public void canListMultipartUploadsInProgress() throws IOException {
+        final String[] objects = new String[] {
+                testPathPrefix + UUID.randomUUID().toString(),
+                testPathPrefix + UUID.randomUUID().toString(),
+                testPathPrefix + UUID.randomUUID().toString()
+        };
+
+        final List<MantaMultipartUpload> uploads = new ArrayList<>(objects.length);
+
+        for (String object: objects) {
+            multipart.initiateUpload(object);
+        }
+
+        try {
+            List<MantaMultipartUpload> list = multipart.listInProgress()
+                    .collect(Collectors.toCollection(ArrayList::new));
+
+            assertFalse(list.isEmpty(), "List shouldn't be empty");
+
+            for (MantaMultipartUpload upload : uploads) {
+                assertTrue(list.contains(upload),
+                        "Upload wasn't present in results: " + upload);
+            }
+        } finally {
+            for (MantaMultipartUpload upload : uploads) {
+                multipart.abort(upload);
+            }
+        }
     }
 
     private File createTemporaryDataFile(final long sizeInBytes, final int partNumber)

@@ -21,7 +21,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
 @Test
-public class MantaMultipartManagerTest {
+public class MantaMultipartUploadManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativePartNumbersAreRejected() {
         MantaMultipartManager.validatePartNumber(-1);
@@ -49,11 +49,11 @@ public class MantaMultipartManagerTest {
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
         final UUID id = new UUID(0L, 24L);
 
-        List<MantaMultipart.Part> partsList = new LinkedList<>();
+        List<MantaMultipartUpload.Part> partsList = new LinkedList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipart.Part part = new MantaMultipart.Part(i, null, null);
+            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null);
             partsList.add(part);
         }
 
@@ -66,11 +66,11 @@ public class MantaMultipartManagerTest {
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
         final UUID id = new UUID(0L, 36L);
 
-        List<MantaMultipart.Part> partsList = new LinkedList<>();
+        List<MantaMultipartUpload.Part> partsList = new LinkedList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipart.Part part = new MantaMultipart.Part(i, null, null);
+            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null);
             partsList.add(part);
         }
 
@@ -85,11 +85,11 @@ public class MantaMultipartManagerTest {
     public void errorWhenMissingPart() throws IOException {
         final UUID id = new UUID(0L, 48L);
 
-        ArrayList<MantaMultipart.Part> partsList = new ArrayList<>();
+        ArrayList<MantaMultipartUpload.Part> partsList = new ArrayList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipart.Part part = new MantaMultipart.Part(i, null, null);
+            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null);
             partsList.add(part);
         }
 
