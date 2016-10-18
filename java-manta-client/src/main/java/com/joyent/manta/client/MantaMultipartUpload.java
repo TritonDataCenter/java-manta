@@ -112,6 +112,7 @@ public class MantaMultipartUpload implements Comparator<MantaMultipartUpload>, S
          * @param partNumber Non-zero positive integer representing the relative position of the part
          * @param objectPath Remote path on Manta for the part's file
          * @param etag Etag value of the part
+         * @param length size in bytes of the part
          */
         public Part(final int partNumber, final String objectPath,
                     final String etag, final Long length) {

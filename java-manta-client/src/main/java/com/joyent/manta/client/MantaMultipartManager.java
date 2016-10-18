@@ -572,7 +572,7 @@ public class MantaMultipartManager {
         final String path = metadata.getPath();
 
         final StringBuilder jobExecText = new StringBuilder("mget -q ");
-        try (final Stream<MantaMultipartUpload.Part> parts = listParts(id).sorted()) {
+        try (Stream<MantaMultipartUpload.Part> parts = listParts(id).sorted()) {
             parts.forEach(part ->
                     jobExecText.append(part.getObjectPath())
                             .append(" ")
@@ -634,7 +634,7 @@ public class MantaMultipartManager {
         final String uploadDir = multipartUploadDir(id);
         final String metadataPath = uploadDir + SEPARATOR + METADATA_FILE;
 
-        try (final InputStream in = mantaClient.getAsInputStream(metadataPath)){
+        try (InputStream in = mantaClient.getAsInputStream(metadataPath)) {
             return SerializationUtils.deserialize(in);
         }
     }
