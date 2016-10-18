@@ -263,12 +263,12 @@ public class MantaMultipartManager {
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param contents String contents to be written in UTF-8
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
-                                       final int partNumber,
-                                       final String contents)
+    public MantaMultipartUpload.Part putPart(final MantaMultipartUpload upload,
+                                             final int partNumber,
+                                             final String contents)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -283,16 +283,17 @@ public class MantaMultipartManager {
      * @param id multipart upload id
      * @param partNumber part number to identify relative location in final file
      * @param contents String contents to be written in UTF-8
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final UUID id, final int partNumber,
+    public MantaMultipartUpload.Part putPart(final UUID id, final int partNumber,
                                        final String contents)
             throws IOException {
 
         final String path = multipartPath(id, partNumber);
 
-        return mantaClient.put(path, contents);
+        final MantaObjectResponse response = mantaClient.put(path, contents);
+        return new MantaMultipartUpload.Part(response);
     }
 
     /**
@@ -301,12 +302,12 @@ public class MantaMultipartManager {
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param bytes byte array containing data of the part to be uploaded
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
-                                       final int partNumber,
-                                       final byte[] bytes)
+    public MantaMultipartUpload.Part putPart(final MantaMultipartUpload upload,
+                                             final int partNumber,
+                                             final byte[] bytes)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -321,15 +322,16 @@ public class MantaMultipartManager {
      * @param id multipart upload id
      * @param partNumber part number to identify relative location in final file
      * @param bytes byte array containing data of the part to be uploaded
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final UUID id, final int partNumber,
-                                       final byte[] bytes)
+    public MantaMultipartUpload.Part putPart(final UUID id, final int partNumber,
+                                             final byte[] bytes)
             throws IOException {
         final String path = multipartPath(id, partNumber);
 
-        return mantaClient.put(path, bytes);
+        final MantaObjectResponse response = mantaClient.put(path, bytes);
+        return new MantaMultipartUpload.Part(response);
     }
 
     /**
@@ -338,12 +340,12 @@ public class MantaMultipartManager {
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param file file containing data of the part to be uploaded
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
-                                       final int partNumber,
-                                       final File file)
+    public MantaMultipartUpload.Part putPart(final MantaMultipartUpload upload,
+                                             final int partNumber,
+                                             final File file)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -358,15 +360,16 @@ public class MantaMultipartManager {
      * @param id multipart upload id
      * @param partNumber part number to identify relative location in final file
      * @param file file containing data of the part to be uploaded
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final UUID id, final int partNumber,
-                                       final File file)
+    public MantaMultipartUpload.Part putPart(final UUID id, final int partNumber,
+                                             final File file)
             throws IOException {
         final String path = multipartPath(id, partNumber);
 
-        return mantaClient.put(path, file);
+        final MantaObjectResponse response = mantaClient.put(path, file);
+        return new MantaMultipartUpload.Part(response);
     }
 
     /**
@@ -375,12 +378,12 @@ public class MantaMultipartManager {
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param inputStream stream providing data for part to be uploaded
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final MantaMultipartUpload upload,
-                                       final int partNumber,
-                                       final InputStream inputStream)
+    public MantaMultipartUpload.Part putPart(final MantaMultipartUpload upload,
+                                             final int partNumber,
+                                             final InputStream inputStream)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -395,15 +398,50 @@ public class MantaMultipartManager {
      * @param id multipart upload id
      * @param partNumber part number to identify relative location in final file
      * @param inputStream stream providing data for part to be uploaded
-     * @return server HTTP response
+     * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaObjectResponse putPart(final UUID id, final int partNumber,
-                                       final InputStream inputStream)
+    public MantaMultipartUpload.Part putPart(final UUID id, final int partNumber,
+                                             final InputStream inputStream)
             throws IOException {
         final String path = multipartPath(id, partNumber);
+        final MantaObjectResponse response = mantaClient.put(path, inputStream);
 
-        return mantaClient.put(path, inputStream);
+        return new MantaMultipartUpload.Part(response);
+    }
+
+    /**
+     * Retrieves information about a single part of a multipart upload.
+     *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @return multipart single part object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaMultipartUpload.Part getPart(final MantaMultipartUpload upload,
+                                             final int partNumber)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return getPart(upload.getId(), partNumber);
+    }
+
+    /**
+     * Retrieves information about a single part of a multipart upload.
+     *
+     * @param id multipart upload id
+     * @param partNumber part number to identify relative location in final file
+     * @return multipart single part object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaMultipartUpload.Part getPart(final UUID id, final int partNumber)
+            throws IOException {
+        final String path = multipartPath(id, partNumber);
+        final MantaObjectResponse response = mantaClient.head(path);
+
+        return new MantaMultipartUpload.Part(response);
     }
 
     /**

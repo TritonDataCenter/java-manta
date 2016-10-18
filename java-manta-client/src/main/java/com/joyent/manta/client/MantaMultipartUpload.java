@@ -102,16 +102,23 @@ public class MantaMultipartUpload implements Comparator<MantaMultipartUpload>, S
         private final String etag;
 
         /**
+         * Content length of the part.
+         */
+        private final Long length;
+
+        /**
          * Creates a new instance based on explicitly defined parameters.
          *
          * @param partNumber Non-zero positive integer representing the relative position of the part
          * @param objectPath Remote path on Manta for the part's file
          * @param etag Etag value of the part
          */
-        public Part(final int partNumber, final String objectPath, final String etag) {
+        public Part(final int partNumber, final String objectPath,
+                    final String etag, final Long length) {
             this.partNumber = partNumber;
             this.objectPath = objectPath;
             this.etag = etag;
+            this.length = length;
         }
 
         /**
@@ -124,6 +131,7 @@ public class MantaMultipartUpload implements Comparator<MantaMultipartUpload>, S
             this.objectPath = object.getPath();
             this.partNumber = Integer.parseInt(filename);
             this.etag = object.getEtag();
+            length = object.getContentLength();
         }
 
         public int getPartNumber() {

@@ -15,8 +15,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
@@ -53,12 +53,12 @@ public class MantaMultipartUploadManagerTest {
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null);
+            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null, null);
             partsList.add(part);
         }
 
         MantaMultipartManager multiPart = spy(multipartInstance());
-        when(multiPart.listParts(id)).thenReturn(partsList.stream());
+        doReturn(partsList.stream()).when(multiPart).listParts(id);
 
         multiPart.validateThereAreNoMissingParts(id);
     }
@@ -70,14 +70,14 @@ public class MantaMultipartUploadManagerTest {
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null);
+            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null, null);
             partsList.add(part);
         }
 
         Collections.shuffle(partsList);
 
         MantaMultipartManager multiPart = spy(multipartInstance());
-        when(multiPart.listParts(id)).thenReturn(partsList.stream());
+        doReturn(partsList.stream()).when(multiPart).listParts(id);
 
         multiPart.validateThereAreNoMissingParts(id);
     }
@@ -89,7 +89,7 @@ public class MantaMultipartUploadManagerTest {
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null);
+            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null, null);
             partsList.add(part);
         }
 
@@ -98,7 +98,7 @@ public class MantaMultipartUploadManagerTest {
         Collections.shuffle(partsList);
 
         MantaMultipartManager multiPart = spy(multipartInstance());
-        when(multiPart.listParts(id)).thenReturn(partsList.stream());
+        doReturn(partsList.stream()).when(multiPart).listParts(id);
 
         boolean thrown = false;
 
