@@ -133,7 +133,7 @@ variables, system properties or TestNG parameters to tell the library how to
 authenticate against Manta.
 
 ### Example Get Request
-``` java
+```java
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
@@ -171,6 +171,83 @@ public class App {
 }
 ```
 
+### Example Multipart Upload
+```java
+    // instantiated with a reference to the class the actually connects to Manta
+    MantaMultipartManager multipart = new MantaMultipartManager(mantaClient);
+
+    String uploadObject = "/username/stor/test/file";
+
+    /* I'm using File objects below, but I could be using byte[] arrays,
+     * Strings, or InputStreams as well. */
+    File part1file = new File("part-1.data");
+    File part2file = new File("part-2.data");
+    File part3file = new File("part-3.data");
+
+    // We can set any metadata for the final object
+    MantaMetadata metadata = new MantaMetadata();
+    metadata.put("m-test-metadata", "any value");
+
+    // We can set any header for the final object
+    MantaHttpHeaders headers = new MantaHttpHeaders();
+    headers.setContentType("text/plain");
+
+    // We catch network errors and handle them here
+    try {
+        // We get a response object
+        MantaMultipartUpload upload = multipart.initiateUpload(uploadObject);
+
+        // It contains a UUID transaction id
+        UUID id = upload.getId();
+        // It also contains the path of the final object
+        String uploadPath = upload.getPath();
+
+        // Everywhere below that we specified "upload" we could also just
+        // use the upload transaction id
+
+        // We can add the parts in any order
+        multipart.putPart(upload, 2, part1file);
+        // Each put of a part is a synchronous operation
+        multipart.putPart(upload, 1, part1file);
+        // Although in a later version we could make an async option
+        multipart.putPart(upload, 3, part1file);
+
+        // If we want to give up now, we could always abort
+        // multipart.abort(upload);
+
+        // We've uploaded all of the parts, now lets join them
+        multipart.complete(upload);
+
+        // If we want to pause execution until it is committed
+        int timesToPoll = 10;
+        multipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll);
+    } catch (MantaClientHttpResponseException e) {
+        // This catch block is for when we actually have a response code from Manta
+
+        // We can handle specific HTTP responses here
+        if (e.getStatusCode() == 503) {
+            LOG.warn("Manta is unavailable. Please try again");
+            return;
+        }
+
+        // We could rethrow as a more detailed exception as below
+        throw new RuntimeException(e);
+    } catch (IOException e) {
+        // This catch block is for general network failures
+        // Note: MantaClientHttpResponseException inherits from IOException
+        // so if it is not explicitly caught, it would go to this block
+
+        ContextedRuntimeException exception = new ContextedRuntimeException(
+                "A network error occurred when doing a multipart upload to" +
+                "Manta. See context for details.");
+        // We should all of the diagnostic context that we need
+        exception.setContextValue("parts", "[part-1.data, part-2.data, part-3.data]");
+
+        // We rethrow the exception with additional detail
+        throw exception;
+    }
+```
+
 ### Example Job Execution
 
 Jobs can be created directly with the `MantaClient` class or they can be created
@@ -184,7 +261,7 @@ Creating a job using the `MantaClient` API is done by making a number of calls
 against the API and passing the job id to each API call. Here is an example that
 processes 4 input files, greps them for 'foo' and returns the unique values.
 
-``` java
+```java
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaJob;
 import com.joyent.manta.client.MantaJobPhase;
