@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [2.5.1] - ?
+### Changed
+ - Upgraded HTTP Signatures dependency.
+
 ## [2.5.0] - 2016-10-10
 ### Added
  - Setting HTTP Headers is now supported when making GET requests.
