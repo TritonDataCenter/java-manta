@@ -100,12 +100,12 @@ public class MantaMultipartIT {
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(uploadId, partNumber, part);
+            multipart.uploadPart(uploadId, partNumber, part);
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
         Instant start = Instant.now();
-        multipart.complete(uploadId);
+        multipart.commit(uploadId);
         multipart.waitForCompletion(uploadId);
         Instant end = Instant.now();
 
@@ -141,11 +141,11 @@ public class MantaMultipartIT {
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(uploadId, partNumber, part);
+            multipart.uploadPart(uploadId, partNumber, part);
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
-        multipart.complete(uploadId);
+        multipart.commit(uploadId);
         multipart.waitForCompletion(uploadId);
 
         MantaObjectResponse head = mantaClient.head(path);
@@ -173,11 +173,11 @@ public class MantaMultipartIT {
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(uploadId, partNumber, part);
+            multipart.uploadPart(uploadId, partNumber, part);
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
-        multipart.complete(uploadId);
+        multipart.commit(uploadId);
         multipart.waitForCompletion(uploadId);
 
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
@@ -207,12 +207,12 @@ public class MantaMultipartIT {
         for (int i = 0; i < parts.length; i++) {
             File part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(upload, partNumber, part);
+            multipart.uploadPart(upload, partNumber, part);
         }
 
         multipart.validateThereAreNoMissingParts(upload);
         Instant start = Instant.now();
-        multipart.complete(upload);
+        multipart.commit(upload);
         multipart.waitForCompletion(upload);
         Instant end = Instant.now();
 
@@ -248,11 +248,11 @@ public class MantaMultipartIT {
         for (int i = 0; i < parts.length; i++) {
             File part = parts[i];
             int partNumber = i + 1;
-            multipart.putPart(uploadId, partNumber, part);
+            multipart.uploadPart(uploadId, partNumber, part);
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
-        multipart.complete(uploadId);
+        multipart.commit(uploadId);
 
         Instant start = Instant.now();
         multipart.abort(uploadId);
