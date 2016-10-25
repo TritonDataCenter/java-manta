@@ -98,6 +98,16 @@ When set to true, this disables the use of native code libraries for cryptograph
 Time in milliseconds to cache the HTTP signature authorization header. A setting of
 0ms disables the cache entirely.
 
+Below is an example of using all of the defaults and only setting the `manta.user` and `manta.key_id`.
+
+```java
+ConfigContext defaultConfig = new DefaultsConfigContext();
+ConfigContext customConfig = new StandardConfigContext()
+    .setMantaKeyId("d4:18:cc:34:43:a8:5a:aa:76:1c:35:36:ba:08:1e:aa")
+    .setMantaUser("test-user");
+ConfigContext config = new ChainedConfigContext(defaultConfig, customConfig);
+```
+
 If you want to skip running of the test suite, use the `-DskipTests` property.
 
 ## Accounts, Usernames and Subusers
