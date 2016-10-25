@@ -2,9 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [2.5.1] - ?
+## [2.6.0] - ?
 ### Changed
  - Upgraded HTTP Signatures dependency.
+### Fixed
+ - [Listing a directory that doesn't exist will result in an UncheckedIOException that is difficult to trace](https://github.com/joyent/java-manta/issues/119) 
 
 ## [2.5.0] - 2016-10-10
 ### Added
