@@ -50,6 +50,12 @@ public class MantaMultipartUploadPart
      */
     public MantaMultipartUploadPart(final int partNumber, final String objectPath,
                 final String etag, final Long length) {
+        if (partNumber < 1) {
+            String msg = String.format("Part number must be greater than or "
+                    + "equal to 1. Actual value: %d", partNumber);
+            throw new IllegalArgumentException(msg);
+        }
+
         this.partNumber = partNumber;
         this.objectPath = objectPath;
         this.etag = etag;
@@ -65,6 +71,13 @@ public class MantaMultipartUploadPart
         final String filename = MantaUtils.lastItemInPath(object.getPath());
         this.objectPath = object.getPath();
         this.partNumber = Integer.parseInt(filename);
+
+        if (this.partNumber < 1) {
+            String msg = String.format("Part number must be greater than or "
+                    + "equal to 1. Actual value: %d", partNumber);
+            throw new IllegalArgumentException(msg);
+        }
+
         this.etag = object.getEtag();
         length = object.getContentLength();
     }
