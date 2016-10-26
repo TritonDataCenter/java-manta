@@ -1,5 +1,15 @@
-package com.joyent.manta.client;
+package com.joyent.manta.client.multipart;
 
+import com.joyent.manta.client.HttpHelper;
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.client.MantaJob;
+import com.joyent.manta.client.MantaJobBuilder;
+import com.joyent.manta.client.MantaJobPhase;
+import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.MantaUtils;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
@@ -744,8 +754,7 @@ public class MantaMultipartManager {
             return;
         }
 
-        MantaJobBuilder.Run run = new MantaJobBuilder.Run(mantaClient.jobBuilder(),
-                job.getId());
+        MantaJobBuilder.Run run = mantaClient.jobBuilder().lookupJob(job);
         run.waitUntilDone(pingInterval, timesToPoll);
 
         if (LOG.isDebugEnabled()) {

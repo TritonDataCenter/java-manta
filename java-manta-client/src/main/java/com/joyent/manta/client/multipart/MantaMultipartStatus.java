@@ -1,4 +1,4 @@
-package com.joyent.manta.client;
+package com.joyent.manta.client.multipart;
 
 import java.io.Serializable;
 

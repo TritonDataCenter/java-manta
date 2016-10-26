@@ -1,6 +1,11 @@
-package com.joyent.manta.client;
+package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.benchmark.RandomInputStream;
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.client.MantaJob;
+import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;

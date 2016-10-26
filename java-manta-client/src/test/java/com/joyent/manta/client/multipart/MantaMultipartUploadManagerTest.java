@@ -1,5 +1,8 @@
-package com.joyent.manta.client;
+package com.joyent.manta.client.multipart;
 
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.multipart.MantaMultipartManager;
+import com.joyent.manta.client.multipart.MantaMultipartUpload;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
