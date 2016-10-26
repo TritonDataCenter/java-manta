@@ -1,8 +1,6 @@
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.multipart.MantaMultipartManager;
-import com.joyent.manta.client.multipart.MantaMultipartUpload;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
@@ -52,11 +50,11 @@ public class MantaMultipartUploadManagerTest {
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
         final UUID id = new UUID(0L, 24L);
 
-        List<MantaMultipartUpload.Part> partsList = new LinkedList<>();
+        List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null, null);
+            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null, null);
             partsList.add(part);
         }
 
@@ -69,11 +67,11 @@ public class MantaMultipartUploadManagerTest {
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
         final UUID id = new UUID(0L, 36L);
 
-        List<MantaMultipartUpload.Part> partsList = new LinkedList<>();
+        List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null, null);
+            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null, null);
             partsList.add(part);
         }
 
@@ -88,11 +86,11 @@ public class MantaMultipartUploadManagerTest {
     public void errorWhenMissingPart() throws IOException {
         final UUID id = new UUID(0L, 48L);
 
-        ArrayList<MantaMultipartUpload.Part> partsList = new ArrayList<>();
+        ArrayList<MantaMultipartUploadPart> partsList = new ArrayList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUpload.Part part = new MantaMultipartUpload.Part(i, null, null, null);
+            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null, null);
             partsList.add(part);
         }
 

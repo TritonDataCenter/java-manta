@@ -39,6 +39,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * Class providing an API to multipart uploads to Manta.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 2.5.0
  */
 public class MantaMultipartManager {
     /**
@@ -239,7 +240,7 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
                                                 final int partNumber,
                                                 final String contents)
             throws IOException {
@@ -259,14 +260,14 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final UUID id, final int partNumber,
+    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
                                                 final String contents)
             throws IOException {
 
         final String path = multipartPath(id, partNumber);
 
         final MantaObjectResponse response = mantaClient.put(path, contents);
-        return new MantaMultipartUpload.Part(response);
+        return new MantaMultipartUploadPart(response);
     }
 
     /**
@@ -278,7 +279,7 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
                                                 final int partNumber,
                                                 final byte[] bytes)
             throws IOException {
@@ -298,13 +299,13 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final UUID id, final int partNumber,
+    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
                                                 final byte[] bytes)
             throws IOException {
         final String path = multipartPath(id, partNumber);
 
         final MantaObjectResponse response = mantaClient.put(path, bytes);
-        return new MantaMultipartUpload.Part(response);
+        return new MantaMultipartUploadPart(response);
     }
 
     /**
@@ -316,7 +317,7 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
                                                 final int partNumber,
                                                 final File file)
             throws IOException {
@@ -336,13 +337,13 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final UUID id, final int partNumber,
+    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
                                                 final File file)
             throws IOException {
         final String path = multipartPath(id, partNumber);
 
         final MantaObjectResponse response = mantaClient.put(path, file);
-        return new MantaMultipartUpload.Part(response);
+        return new MantaMultipartUploadPart(response);
     }
 
     /**
@@ -354,7 +355,7 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
                                                 final int partNumber,
                                                 final InputStream inputStream)
             throws IOException {
@@ -374,13 +375,13 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part uploadPart(final UUID id, final int partNumber,
+    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
                                                 final InputStream inputStream)
             throws IOException {
         final String path = multipartPath(id, partNumber);
         final MantaObjectResponse response = mantaClient.put(path, inputStream);
 
-        return new MantaMultipartUpload.Part(response);
+        return new MantaMultipartUploadPart(response);
     }
 
     /**
@@ -391,7 +392,7 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part getPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
                                              final int partNumber)
             throws IOException {
         if (upload == null) {
@@ -409,12 +410,12 @@ public class MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUpload.Part getPart(final UUID id, final int partNumber)
+    public MantaMultipartUploadPart getPart(final UUID id, final int partNumber)
             throws IOException {
         final String path = multipartPath(id, partNumber);
         final MantaObjectResponse response = mantaClient.head(path);
 
-        return new MantaMultipartUpload.Part(response);
+        return new MantaMultipartUploadPart(response);
     }
 
     /**
@@ -507,7 +508,7 @@ public class MantaMultipartManager {
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public Stream<MantaMultipartUpload.Part> listParts(final MantaMultipartUpload upload)
+    public Stream<MantaMultipartUploadPart> listParts(final MantaMultipartUpload upload)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -523,13 +524,13 @@ public class MantaMultipartManager {
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public Stream<MantaMultipartUpload.Part> listParts(final UUID id) throws IOException {
+    public Stream<MantaMultipartUploadPart> listParts(final UUID id) throws IOException {
         final String dir = multipartUploadDir(id);
 
         return mantaClient.listObjects(dir)
                 .filter(value -> !Paths.get(value.getPath())
                         .getFileName().toString().equals(METADATA_FILE))
-                .map(MantaMultipartUpload.Part::new);
+                .map(MantaMultipartUploadPart::new);
     }
 
     /**
@@ -556,7 +557,7 @@ public class MantaMultipartManager {
     public void validateThereAreNoMissingParts(final UUID id) throws IOException {
         listParts(id)
             .sorted()
-            .map(MantaMultipartUpload.Part::getPartNumber)
+            .map(MantaMultipartUploadPart::getPartNumber)
             .reduce(1, (memo, value) -> {
                 if (!memo.equals(value)) {
                     MantaClientException e = new MantaClientException(
@@ -628,7 +629,7 @@ public class MantaMultipartManager {
         final String path = metadata.getPath();
 
         final StringBuilder jobExecText = new StringBuilder("mget -q ");
-        try (Stream<MantaMultipartUpload.Part> parts = listParts(id).sorted()) {
+        try (Stream<MantaMultipartUploadPart> parts = listParts(id).sorted()) {
             parts.forEach(part ->
                     jobExecText.append(part.getObjectPath())
                             .append(" ")
