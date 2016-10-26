@@ -76,7 +76,7 @@ public class MantaMultipartManager {
     /**
      * Format for naming Manta jobs.
      */
-    private final String JOB_NAME_FORMAT = "append-%s";
+    private static final String JOB_NAME_FORMAT = "append-%s";
 
     /**
      * Creates a new instance backed by the specified {@link MantaClient}.
