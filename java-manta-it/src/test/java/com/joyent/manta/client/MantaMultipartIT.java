@@ -76,7 +76,8 @@ public class MantaMultipartIT {
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {
-        assertFalse(multipart.isStarted(new UUID(0L, -1L)));
+        assertEquals(multipart.getStatus(new UUID(0L, -1L)),
+                     MantaMultipartStatus.UNKNOWN);
     }
 
     public void canUploadSmallMultipartString() throws IOException {
@@ -105,12 +106,13 @@ public class MantaMultipartIT {
 
         multipart.validateThereAreNoMissingParts(uploadId);
         Instant start = Instant.now();
-        multipart.commit(uploadId);
+        multipart.complete(uploadId);
         multipart.waitForCompletion(uploadId);
         Instant end = Instant.now();
 
-        assertTrue(multipart.isComplete(uploadId));
-        assertFalse(multipart.isStarted(uploadId));
+        MantaMultipartStatus status = multipart.getStatus(uploadId);
+
+        assertEquals(status, MantaMultipartStatus.COMPLETED);
 
         assertEquals(mantaClient.getAsString(path),
                 combined.toString(),
@@ -145,7 +147,7 @@ public class MantaMultipartIT {
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
-        multipart.commit(uploadId);
+        multipart.complete(uploadId);
         multipart.waitForCompletion(uploadId);
 
         MantaObjectResponse head = mantaClient.head(path);
@@ -177,7 +179,7 @@ public class MantaMultipartIT {
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
-        multipart.commit(uploadId);
+        multipart.complete(uploadId);
         multipart.waitForCompletion(uploadId);
 
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
@@ -212,12 +214,12 @@ public class MantaMultipartIT {
 
         multipart.validateThereAreNoMissingParts(upload);
         Instant start = Instant.now();
-        multipart.commit(upload);
+        multipart.complete(upload);
         multipart.waitForCompletion(upload);
         Instant end = Instant.now();
 
-        assertTrue(multipart.isComplete(upload));
-        assertFalse(multipart.isStarted(upload));
+        MantaMultipartStatus status = multipart.getStatus(upload);
+        assertEquals(status, MantaMultipartStatus.COMPLETED);
 
         MantaObjectResponse head = mantaClient.head(path);
         byte[] remoteMd5 = head.getMd5Bytes();
@@ -252,24 +254,19 @@ public class MantaMultipartIT {
         }
 
         multipart.validateThereAreNoMissingParts(uploadId);
-        multipart.commit(uploadId);
+        multipart.complete(uploadId);
 
         Instant start = Instant.now();
         multipart.abort(uploadId);
         multipart.waitForCompletion(uploadId);
         Instant end = Instant.now();
 
-        assertTrue(multipart.isComplete(uploadId));
-        assertFalse(multipart.isStarted(uploadId));
+        MantaMultipartStatus status = multipart.getStatus(uploadId);
+        assertEquals(status, MantaMultipartStatus.ABORTED);
 
         MantaJob job = multipart.findJob(uploadId);
 
-        if (job.getCancelled()) {
-            if (!mantaClient.existsAndIsAccessible(path)) {
-                throw new SkipException("File was actually created. Actual job state is: "
-                        + job.toString());
-            }
-        } else {
+        if (!job.getCancelled()) {
             fail("Job wasn't cancelled:" + job.toString());
         }
 

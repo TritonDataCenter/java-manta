@@ -134,7 +134,7 @@ public class MantaJob {
 
 
     /**
-     * @return Manta job state (running, done, etc)
+     * @return Manta job state (queued, running, done)
      */
     public String getState() {
         return state;

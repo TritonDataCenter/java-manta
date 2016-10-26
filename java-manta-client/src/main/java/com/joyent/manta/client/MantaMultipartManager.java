@@ -2,6 +2,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.http.HttpStatus;
@@ -71,6 +72,11 @@ public class MantaMultipartManager {
      * Full path on Manta to the upload directory.
      */
     private final String resolvedMultipartUploadDirectory;
+
+    /**
+     * Format for naming Manta jobs.
+     */
+    private final String JOB_NAME_FORMAT = "append-%s";
 
     /**
      * Creates a new instance backed by the specified {@link MantaClient}.
@@ -212,49 +218,6 @@ public class MantaMultipartManager {
         mantaClient.put(metadataPath, metadataBytes);
 
         return new MantaMultipartUpload(id, path);
-    }
-
-    /**
-     * When true indicates that multipart upload has already started.
-     * @param upload multipart upload object
-     * @return true if the upload has started
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public boolean isStarted(final MantaMultipartUpload upload) throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
-
-        return isStarted(upload.getId());
-    }
-
-    /**
-     * When true indicates that multipart upload has already started.
-     * @param id multipart transaction id
-     * @return true if the upload has started
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public boolean isStarted(final UUID id) throws IOException {
-        final String dir = multipartUploadDir(id);
-
-        try {
-            final MantaObjectResponse response = mantaClient.head(dir);
-
-            if (response.isDirectory()) {
-                return true;
-            }
-
-            MantaIOException exception = new MantaIOException(
-                    "Remote path was a file and not a directory as expected");
-            exception.setContextValue("multipartUploadPath", dir);
-            throw exception;
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                return false;
-            }
-
-            throw e;
-        }
     }
 
     /**
@@ -445,6 +408,89 @@ public class MantaMultipartManager {
     }
 
     /**
+     * Retrieves the state of a given Manta multipart upload.
+     *
+     * @param upload multipart upload object
+     * @return enum representing the state / status of the multipart upload
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaMultipartStatus getStatus(final MantaMultipartUpload upload)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        return getStatus(upload.getId());
+    }
+
+    /**
+     * Retrieves the state of a given Manta multipart upload.
+     *
+     * @param id multipart upload id
+     * @return enum representing the state / status of the multipart upload
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public MantaMultipartStatus getStatus(final UUID id) throws IOException {
+        final String dir = multipartUploadDir(id);
+
+        try {
+            final MantaObjectResponse response = mantaClient.head(dir);
+
+            if (!response.isDirectory()) {
+                MantaIOException exception = new MantaIOException(
+                        "Remote path was a file and not a directory as expected");
+                exception.setContextValue("multipart_upload_dir", dir);
+                throw exception;
+            }
+
+            final MantaJob job = findJob(id);
+
+            if (job == null) {
+                return MantaMultipartStatus.CREATED;
+            }
+
+            /* If we still have the directory associated with the multipart
+             * upload AND we are in the state of Cancelled. */
+            if (job.getCancelled()) {
+                return MantaMultipartStatus.ABORTING;
+            }
+
+            final String state = job.getState();
+
+            /* If we still have the directory associated with the multipart
+             * upload AND we have the job id, we are in a state where the
+             * job hasn't finished clearing out the data files. */
+            if (state.equals("done") || state.equals("running") || state.equals("queued")) {
+                return MantaMultipartStatus.COMMITTING;
+            } else {
+                return MantaMultipartStatus.UNKNOWN;
+            }
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                final MantaJob job = findJob(id);
+
+                if (job == null) {
+                    return MantaMultipartStatus.UNKNOWN;
+                } else if (job.getCancelled() != null && job.getCancelled()) {
+                    return MantaMultipartStatus.ABORTED;
+                } else if (job.getState().equals("done")) {
+                    return MantaMultipartStatus.COMPLETED;
+                } else {
+                    MantaException mioe = new MantaException("Unexpected job state");
+                    mioe.setContextValue("job_state", job.getState());
+                    mioe.setContextValue("job_id", job.getId().toString());
+                    mioe.setContextValue("multipart_id", id);
+                    mioe.setContextValue("multipart_upload_dir", dir);
+
+                    throw mioe;
+                }
+            }
+
+            throw e;
+        }
+    }
+
+    /**
      * Lists the parts that have already been uploaded.
      *
      * @param upload multipart upload object
@@ -538,7 +584,7 @@ public class MantaMultipartManager {
 
         final MantaJob job = findJob(id);
 
-        if (job.getState().equals("running")) {
+        if (job.getState().equals("running") || job.getState().equals("queued")) {
             mantaClient.cancelJob(job.getId());
         }
 
@@ -551,12 +597,12 @@ public class MantaMultipartManager {
      * @param upload multipart upload object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void commit(final MantaMultipartUpload upload) throws IOException {
+    public void complete(final MantaMultipartUpload upload) throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
         }
 
-        commit(upload.getId());
+        complete(upload.getId());
     }
 
     /**
@@ -565,7 +611,7 @@ public class MantaMultipartManager {
      * @param id multipart upload id
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void commit(final UUID id) throws IOException {
+    public void complete(final UUID id) throws IOException {
         final String uploadDir = multipartUploadDir(id);
         final MultipartMetadata metadata = downloadMultipartMetadata(id);
 
@@ -611,7 +657,7 @@ public class MantaMultipartManager {
                 .setExec("mrm -r " + uploadDir);
 
         MantaJobBuilder.Run run = mantaClient.jobBuilder()
-                .newJob("append-" + id)
+                .newJob(String.format(JOB_NAME_FORMAT, id))
                 .addPhase(concatPhase)
                 .addPhase(cleanupPhase)
                 .run();
@@ -723,44 +769,6 @@ public class MantaMultipartManager {
     }
 
     /**
-     * Indicates if a multipart transfer has completed, cancelled or erred.
-     *
-     * @param upload multipart upload object
-     * @return true if a multipart transfer has completed, cancelled or erred
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public boolean isComplete(final MantaMultipartUpload upload) throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
-
-        return isComplete(upload.getId());
-    }
-
-    /**
-     * Indicates if a multipart transfer has completed, cancelled or erred.
-     *
-     * @param id multipart upload id
-     * @return true if a multipart transfer has completed, cancelled or erred
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public boolean isComplete(final UUID id) throws IOException {
-        final MantaJob job = findJob(id);
-
-        if (job == null) {
-            return true;
-        }
-
-        if (job.getCancelled()) {
-            return true;
-        }
-
-        final String state = job.getState();
-
-        return state.equals("done");
-    }
-
-    /**
      * Builds the full remote path for a part of a multipart upload.
      *
      * @param id multipart upload id
@@ -814,7 +822,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     MantaJob findJob(final UUID id) throws IOException {
-        return mantaClient.getJobsByName("append-" + id)
+        return mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))
                 .findFirst()
                 .orElse(null);
     }
