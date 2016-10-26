@@ -19,12 +19,12 @@ public class MantaMultipartUpload implements Comparator<MantaMultipartUpload>, S
     /**
      * Transaction ID for multipart upload.
      */
-    private UUID id;
+    private final UUID id;
 
     /**
      * Path to final object being uploaded to Manta.
      */
-    private String path;
+    private final String path;
 
     /**
      * Creates a new instance.
