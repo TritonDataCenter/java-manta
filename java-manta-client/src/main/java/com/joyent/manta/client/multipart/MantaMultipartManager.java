@@ -53,7 +53,9 @@ public class MantaMultipartManager {
     public static final int MAX_PARTS = 10_000;
 
     /**
-     * Temporary storage directory on Manta for multipart data.
+     * Temporary storage directory on Manta for multipart data. This is a
+     * randomly chosen UUID used so that we don't have directory naming
+     * conflicts.
      */
     static final String MULTIPART_DIRECTORY =
             "stor/.multipart-6439b444-9041-11e6-9be2-9f622f483d01";
