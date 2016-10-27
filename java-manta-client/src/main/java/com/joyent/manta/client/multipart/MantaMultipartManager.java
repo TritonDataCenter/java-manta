@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
@@ -452,10 +453,10 @@ public class MantaMultipartManager {
             final MantaObjectResponse response = mantaClient.head(dir);
 
             if (!response.isDirectory()) {
-                MantaIOException exception = new MantaIOException(
+                MantaMultipartException e = new MantaMultipartException(
                         "Remote path was a file and not a directory as expected");
-                exception.setContextValue("multipart_upload_dir", dir);
-                throw exception;
+                e.setContextValue("multipart_upload_dir", dir);
+                throw e;
             }
 
             final MantaJob job = findJob(id);
@@ -742,25 +743,31 @@ public class MantaMultipartManager {
      * Waits for a multipart upload to complete. Polling every 5 seconds.
      *
      * @param upload multipart upload object
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void waitForCompletion(final MantaMultipartUpload upload) throws IOException {
+    public <R> R waitForCompletion(final MantaMultipartUpload upload,
+                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
+            throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
         }
 
-        waitForCompletion(upload.getId());
+        return waitForCompletion(upload.getId(), executeWhenTimesToPollExceeded);
     }
 
     /**
      * Waits for a multipart upload to complete. Polling every 5 seconds.
      *
      * @param id multipart upload id
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void waitForCompletion(final UUID id) throws IOException {
-        waitForCompletion(id, Duration.ofSeconds(DEFAULT_SECONDS_TO_POLL),
-                NUMBER_OF_TIMES_TO_POLL);
+    public <R> R waitForCompletion(final UUID id,
+                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
+            throws IOException {
+        return waitForCompletion(id, Duration.ofSeconds(DEFAULT_SECONDS_TO_POLL),
+                NUMBER_OF_TIMES_TO_POLL, executeWhenTimesToPollExceeded);
     }
 
     /**
@@ -769,16 +776,19 @@ public class MantaMultipartManager {
      * @param upload multipart upload object
      * @param pingInterval interval to poll
      * @param timesToPoll number of times to poll Manta to check for completion
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void waitForCompletion(final MantaMultipartUpload upload,
-                                  final Duration pingInterval,
-                                  final int timesToPoll) throws IOException {
+    public <R> R waitForCompletion(final MantaMultipartUpload upload,
+                                   final Duration pingInterval,
+                                   final int timesToPoll,
+                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
+            throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
         }
 
-        waitForCompletion(upload.getId(), pingInterval, timesToPoll);
+        return waitForCompletion(upload.getId(), pingInterval, timesToPoll, executeWhenTimesToPollExceeded);
     }
 
     /**
@@ -787,14 +797,26 @@ public class MantaMultipartManager {
      * @param id multipart upload id
      * @param pingInterval interval to poll
      * @param timesToPoll number of times to poll Manta to check for completion
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void waitForCompletion(final UUID id, final Duration pingInterval,
-                                  final int timesToPoll) throws IOException {
+    public <R> R waitForCompletion(final UUID id, final Duration pingInterval,
+                                   final int timesToPoll,
+                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
+            throws IOException {
+        final String dir = multipartUploadDir(id);
         final MantaJob job = findJob(id);
 
         if (job == null) {
-            return;
+            String msg = "Unable for find job associated with multipart upload. "
+                    + "Was complete() run for upload or was it run so long ago "
+                    + "that we no longer have a record for it?";
+            MantaMultipartException e = new MantaMultipartException(msg);
+            e.setContextValue("upload_id", id.toString());
+            e.setContextValue("job_id", id.toString());
+
+            throw e;
         }
 
         MantaJobBuilder.Run run = mantaClient.jobBuilder().lookupJob(job);
@@ -805,19 +827,28 @@ public class MantaMultipartManager {
                     + " Actual job state: {}", run.getJob().getState());
         }
 
-        final String path = multipartUploadDir(id);
         final long waitMillis = pingInterval.toMillis();
 
         /* We ping the upload directory and wait for it to be deleted because
          * there is the chance for a race condition when the job attempts to
          * delete the upload directory, but isn't finished. */
-        for (int i = 0; i < timesToPoll && mantaClient.existsAndIsAccessible(path); i++) {
+        for (int i = 0; i < timesToPoll && mantaClient.existsAndIsAccessible(dir); i++) {
             try {
                 Thread.sleep(waitMillis);
+
+                if (i >= timesToPoll) {
+                    return executeWhenTimesToPollExceeded.apply(id);
+                }
             } catch (InterruptedException e) {
-                break;
+                /* We assume the client has written logic for when the polling operation
+                 * doesn't complete within the time period as expected and we also make
+                 * the assumption that that behavior would be acceptable when the thread
+                 * has been interrupted. */
+                return executeWhenTimesToPollExceeded.apply(id);
             }
         }
+
+        return null;
     }
 
     /**

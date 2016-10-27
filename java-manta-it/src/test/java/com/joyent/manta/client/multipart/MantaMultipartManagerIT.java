@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
@@ -116,7 +117,10 @@ public class MantaMultipartManagerIT {
         Instant start = Instant.now();
         multipart.complete(uploadId, uploadedParts.stream());
 
-        multipart.waitForCompletion(uploadId);
+        multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
+            fail("Completion operation didn't succeed within timeout");
+            return null;
+        });
         Instant end = Instant.now();
 
         MantaMultipartStatus status = multipart.getStatus(uploadId);
@@ -161,7 +165,10 @@ public class MantaMultipartManagerIT {
 
         multipart.validateThereAreNoMissingParts(uploadId);
         multipart.complete(uploadId, uploadedParts.stream());
-        multipart.waitForCompletion(uploadId);
+        multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
+            fail("Completion operation didn't succeed within timeout");
+            return null;
+        });
 
         MantaObjectResponse head = mantaClient.head(path);
         assertEquals(head.getContentType(), "text/plain",
@@ -197,7 +204,10 @@ public class MantaMultipartManagerIT {
 
         multipart.validateThereAreNoMissingParts(uploadId);
         multipart.complete(uploadId, uploadedParts.stream());
-        multipart.waitForCompletion(uploadId);
+        multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
+            fail("Completion operation didn't succeed within timeout");
+            return null;
+        });
 
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
 
@@ -236,7 +246,10 @@ public class MantaMultipartManagerIT {
         multipart.validateThereAreNoMissingParts(upload);
         Instant start = Instant.now();
         multipart.complete(upload, uploadedParts.stream());
-        multipart.waitForCompletion(upload);
+        multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
+            fail("Completion operation didn't succeed within timeout");
+            return null;
+        });
         Instant end = Instant.now();
 
         MantaMultipartStatus status = multipart.getStatus(upload);
@@ -283,7 +296,10 @@ public class MantaMultipartManagerIT {
 
         Instant start = Instant.now();
         multipart.abort(uploadId);
-        multipart.waitForCompletion(uploadId);
+        multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
+            fail("Completion operation didn't succeed within timeout");
+            return null;
+        });
         Instant end = Instant.now();
 
         MantaMultipartStatus status = multipart.getStatus(uploadId);
