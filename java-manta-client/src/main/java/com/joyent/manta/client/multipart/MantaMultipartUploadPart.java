@@ -15,25 +15,14 @@ import java.util.Objects;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public class MantaMultipartUploadPart
-        implements Comparable<MantaMultipartUploadPart>, Serializable {
+public class MantaMultipartUploadPart extends MantaMultipartUploadTuple
+        implements Serializable {
     private static final long serialVersionUID = -738331736064518314L;
-
-    /**
-     * Non-zero positive integer representing the relative position of the
-     * part in relation to the other parts for the multipart upload.
-     */
-    private final int partNumber;
 
     /**
      * Remote path on Manta for the part's file.
      */
     private final String objectPath;
-
-    /**
-     * Etag value of the part.
-     */
-    private final String etag;
 
     /**
      * Content length of the part.
@@ -49,16 +38,10 @@ public class MantaMultipartUploadPart
      * @param length size in bytes of the part
      */
     public MantaMultipartUploadPart(final int partNumber, final String objectPath,
-                final String etag, final Long length) {
-        if (partNumber < 1) {
-            String msg = String.format("Part number must be greater than or "
-                    + "equal to 1. Actual value: %d", partNumber);
-            throw new IllegalArgumentException(msg);
-        }
+                                    final String etag, final Long length) {
 
-        this.partNumber = partNumber;
+        super(partNumber, etag);
         this.objectPath = objectPath;
-        this.etag = etag;
         this.length = length;
     }
 
@@ -68,35 +51,15 @@ public class MantaMultipartUploadPart
      * @param object response object from returned from {@link MantaClient}
      */
     public MantaMultipartUploadPart(final MantaObject object) {
-        final String filename = MantaUtils.lastItemInPath(object.getPath());
+        super(Integer.parseInt(MantaUtils.lastItemInPath(object.getPath())),
+                object.getEtag());
+
         this.objectPath = object.getPath();
-        this.partNumber = Integer.parseInt(filename);
-
-        if (this.partNumber < 1) {
-            String msg = String.format("Part number must be greater than or "
-                    + "equal to 1. Actual value: %d", partNumber);
-            throw new IllegalArgumentException(msg);
-        }
-
-        this.etag = object.getEtag();
         length = object.getContentLength();
-    }
-
-    public int getPartNumber() {
-        return partNumber;
-    }
-
-    public String getEtag() {
-        return etag;
     }
 
     protected String getObjectPath() {
         return objectPath;
-    }
-
-    @Override
-    public int compareTo(final MantaMultipartUploadPart that) {
-        return Integer.compare(this.getPartNumber(), that.getPartNumber());
     }
 
     @Override
@@ -109,23 +72,27 @@ public class MantaMultipartUploadPart
             return false;
         }
 
+        if (!super.equals(that)) {
+            return false;
+        }
+
         final MantaMultipartUploadPart part = (MantaMultipartUploadPart) that;
-        return partNumber == part.partNumber
-                && Objects.equals(objectPath, part.objectPath)
-                && Objects.equals(etag, part.etag);
+
+        return Objects.equals(objectPath, part.objectPath)
+               && Objects.equals(length, part.length);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(partNumber, objectPath, etag);
+        return Objects.hash(super.hashCode(), objectPath, length);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("partNumber", partNumber)
-                .append("objectPath", objectPath)
-                .append("etag", etag)
+                .append("partNumber", getPartNumber())
+                .append("objectPath", getObjectPath())
+                .append("etag", getEtag())
                 .toString();
     }
 }

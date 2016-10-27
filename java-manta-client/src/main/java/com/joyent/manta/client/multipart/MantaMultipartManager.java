@@ -263,7 +263,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
-                                                final String contents)
+                                               final String contents)
             throws IOException {
 
         final String path = multipartPath(id, partNumber);
@@ -282,8 +282,8 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                                final int partNumber,
-                                                final byte[] bytes)
+                                               final int partNumber,
+                                               final byte[] bytes)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -302,7 +302,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
-                                                final byte[] bytes)
+                                               final byte[] bytes)
             throws IOException {
         final String path = multipartPath(id, partNumber);
 
@@ -320,8 +320,8 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                                final int partNumber,
-                                                final File file)
+                                               final int partNumber,
+                                               final File file)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -340,7 +340,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
-                                                final File file)
+                                               final File file)
             throws IOException {
         final String path = multipartPath(id, partNumber);
 
@@ -358,8 +358,8 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                                final int partNumber,
-                                                final InputStream inputStream)
+                                               final int partNumber,
+                                               final InputStream inputStream)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -378,7 +378,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
-                                                final InputStream inputStream)
+                                               final InputStream inputStream)
             throws IOException {
         final String path = multipartPath(id, partNumber);
         final MantaObjectResponse response = mantaClient.put(path, inputStream);
@@ -395,7 +395,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
-                                             final int partNumber)
+                                            final int partNumber)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
@@ -608,29 +608,38 @@ public class MantaMultipartManager {
      * Completes a multipart transfer by assembling the parts on Manta.
      *
      * @param upload multipart upload object
-     * @throws IOException thrown if there is a problem connecting to Manta
+     * @param parts stream of multipart part objects
+     * @throws java.io.IOException thrown if there is a problem connecting to Manta
      */
-    public void complete(final MantaMultipartUpload upload) throws IOException {
+    public void complete(final MantaMultipartUpload upload,
+                         final Stream<? extends MantaMultipartUploadTuple> parts)
+            throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
         }
 
-        complete(upload.getId());
+        complete(upload.getId(), parts);
     }
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
      *
      * @param id multipart upload id
+     * @param parts stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void complete(final UUID id) throws IOException {
+    public void complete(final UUID id,
+                         final Stream<? extends MantaMultipartUploadTuple> parts)
+            throws IOException {
         final String uploadDir = multipartUploadDir(id);
         final MultipartMetadata metadata = downloadMultipartMetadata(id);
 
         final String path = metadata.getPath();
 
         final StringBuilder jobExecText = new StringBuilder("mget -q ");
+
+        // TODO: Validate parts and match up etags with path
+
         try (Stream<MantaMultipartUploadPart> parts = listParts(id).sorted()) {
             parts.forEach(part ->
                     jobExecText.append(part.getObjectPath())
