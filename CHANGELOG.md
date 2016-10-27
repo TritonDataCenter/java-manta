@@ -15,6 +15,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Upgraded HTTP Signatures dependency.
  - Upgraded Apache HTTP Client.
  - Upgraded Google HTTP Client.
+ - Resolved compiler warnings for MantaSSLSocketFactory and HttpRequestFactoryProvider.
 
 ## [2.4.3] - 2016-09-22
 ### Changed

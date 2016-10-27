@@ -5,7 +5,6 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaException;
-import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,12 +20,13 @@ import java.util.Set;
 import static com.joyent.manta.client.MantaUtils.fromCsv;
 
 /**
- * Custom {@link SSLSocketFactory} implementation that consumes Manta
+ * Custom {@link org.apache.http.conn.ssl.SSLSocketFactory} implementation that consumes Manta
  * configuration and enforces the selection of protocols and ciphers.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaSSLSocketFactory extends SSLSocketFactory {
+@SuppressWarnings("deprecation")
+public class MantaSSLSocketFactory extends org.apache.http.conn.ssl.SSLSocketFactory {
     /**
      * Logger instance.
      */
