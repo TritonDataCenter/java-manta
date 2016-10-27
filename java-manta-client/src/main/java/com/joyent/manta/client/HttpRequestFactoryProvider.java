@@ -21,16 +21,6 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.MapConfigContext;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.DnsResolver;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -77,7 +67,9 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
     /**
      * Apache HTTP Client 4.1 method of configuration HTTP Clients.
      */
-    private static final HttpParams HTTP_PARAMS = buildHttpParams();
+    @SuppressWarnings("deprecation")
+    private static final org.apache.http.params.HttpParams HTTP_PARAMS =
+            buildHttpParams();
 
     /**
      * Google HTTP Client request factory.
@@ -118,13 +110,15 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      *
      * @return Configuration parameters object
      */
-    private static HttpParams buildHttpParams() {
-        final HttpParams params = new BasicHttpParams();
+    @SuppressWarnings("deprecation")
+    private static org.apache.http.params.HttpParams buildHttpParams() {
+        final org.apache.http.params.HttpParams params =
+                new org.apache.http.params.BasicHttpParams();
         // Turn off stale checking. Our connections break all the time anyway,
         // and it's not worth it to pay the penalty of checking every time.
-        HttpConnectionParams.setStaleCheckingEnabled(params, false);
-        HttpConnectionParams.setSocketBufferSize(params, SOCKET_BUFFER_SIZE);
-        HttpConnectionParams.setTcpNoDelay(params, true);
+        org.apache.http.params.HttpConnectionParams.setStaleCheckingEnabled(params, false);
+        org.apache.http.params.HttpConnectionParams.setSocketBufferSize(params, SOCKET_BUFFER_SIZE);
+        org.apache.http.params.HttpConnectionParams.setTcpNoDelay(params, true);
 
         return params;
     }
@@ -134,21 +128,27 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
      *
      * @return a configured instance of {@link HttpClient}
      */
+    @SuppressWarnings("deprecation")
     private HttpClient buildHttpClient() {
-        final HttpParams params = HTTP_PARAMS;
-        final SSLSocketFactory socketFactory = new MantaSSLSocketFactory(config);
-        final PlainSocketFactory plainSocketFactory = PlainSocketFactory.getSocketFactory();
+        final org.apache.http.params.HttpParams params = HTTP_PARAMS;
+        final org.apache.http.conn.ssl.SSLSocketFactory socketFactory =
+                new MantaSSLSocketFactory(config);
+        final org.apache.http.conn.scheme.PlainSocketFactory plainSocketFactory =
+                org.apache.http.conn.scheme.PlainSocketFactory.getSocketFactory();
         final ProxySelector proxySelector = ProxySelector.getDefault();
 
         // See http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html
-        final SchemeRegistry registry = new SchemeRegistry();
-        registry.register(new Scheme("http", HTTP_PORT, plainSocketFactory));
-        registry.register(new Scheme("https", HTTPS_PORT, socketFactory));
+        final org.apache.http.conn.scheme.SchemeRegistry registry =
+                new org.apache.http.conn.scheme.SchemeRegistry();
+        registry.register(new org.apache.http.conn.scheme.Scheme(
+                "http", HTTP_PORT, plainSocketFactory));
+        registry.register(new org.apache.http.conn.scheme.Scheme(
+                "https", HTTPS_PORT, socketFactory));
 
 
         final DnsResolver resolver = new ShufflingDnsResolver();
-        final PoolingClientConnectionManager connectionManager =
-                new PoolingClientConnectionManager(registry, resolver);
+        final org.apache.http.impl.conn.PoolingClientConnectionManager connectionManager =
+                new org.apache.http.impl.conn.PoolingClientConnectionManager(registry, resolver);
 
         final int maxConns;
         if (config.getMaximumConnections() == null) {
@@ -160,10 +160,13 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         connectionManager.setMaxTotal(maxConns);
         connectionManager.setDefaultMaxPerRoute(maxConns);
 
-        final DefaultHttpClient defaultHttpClient = new DefaultHttpClient(connectionManager, params);
+        final org.apache.http.impl.client.DefaultHttpClient defaultHttpClient =
+                new org.apache.http.impl.client.DefaultHttpClient(connectionManager, params);
 
         if (proxySelector != null) {
-            defaultHttpClient.setRoutePlanner(new ProxySelectorRoutePlanner(registry, proxySelector));
+            defaultHttpClient.setRoutePlanner(
+                    new org.apache.http.impl.conn.ProxySelectorRoutePlanner(
+                            registry, proxySelector));
         }
 
         return defaultHttpClient;
@@ -232,6 +235,7 @@ public class HttpRequestFactoryProvider implements AutoCloseable {
         return requestFactory;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void close() throws Exception {
         final HttpTransport transport = requestFactory.getTransport();
