@@ -15,7 +15,7 @@
     <logger name="com.joyent" level="warn" />
     <!-- lower these to debug in order to enable most logs -->
     <logger name="com.joyent.manta.client.MantaClient" level="error" />
-    <logger name="com.joyent.manta.client.multipart.MantaMultipartIT" level="info" />
+    <logger name="com.joyent.manta.client.multipart.MantaMultipartManagerIT" level="info" />
     <logger name="com.joyent.manta.client.multipart.MantaMultipartManager" level="debug" />
     <logger name="com.joyent.manta.com.google.api.client.http" level="error" />
     <logger name="com.joyent.manta.org.apache" level="error" />

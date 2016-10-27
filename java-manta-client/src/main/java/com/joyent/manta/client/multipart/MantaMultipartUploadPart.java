@@ -6,7 +6,6 @@ import com.joyent.manta.client.MantaUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 
 /**
@@ -60,31 +59,6 @@ public class MantaMultipartUploadPart extends MantaMultipartUploadTuple
 
     protected String getObjectPath() {
         return objectPath;
-    }
-
-    @Override
-    public boolean equals(final Object that) {
-        if (this == that) {
-            return true;
-        }
-
-        if (that == null || getClass() != that.getClass()) {
-            return false;
-        }
-
-        if (!super.equals(that)) {
-            return false;
-        }
-
-        final MantaMultipartUploadPart part = (MantaMultipartUploadPart) that;
-
-        return Objects.equals(objectPath, part.objectPath)
-               && Objects.equals(length, part.length);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), objectPath, length);
     }
 
     @Override

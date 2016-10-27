@@ -14,6 +14,7 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.exception.MantaMultipartException;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
@@ -608,43 +610,72 @@ public class MantaMultipartManager {
      * Completes a multipart transfer by assembling the parts on Manta.
      *
      * @param upload multipart upload object
-     * @param parts stream of multipart part objects
+     * @param partsStream stream of multipart part objects
      * @throws java.io.IOException thrown if there is a problem connecting to Manta
      */
     public void complete(final MantaMultipartUpload upload,
-                         final Stream<? extends MantaMultipartUploadTuple> parts)
+                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
         }
 
-        complete(upload.getId(), parts);
+        complete(upload.getId(), partsStream);
     }
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
      *
      * @param id multipart upload id
-     * @param parts stream of multipart part objects
+     * @param partsStream stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public void complete(final UUID id,
-                         final Stream<? extends MantaMultipartUploadTuple> parts)
+                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         final String uploadDir = multipartUploadDir(id);
         final MultipartMetadata metadata = downloadMultipartMetadata(id);
+
+        final Map<String, MantaMultipartUploadPart> listing = new HashMap<>();
+        try (Stream<MantaMultipartUploadPart> listStream = listParts(id)
+                .limit(MAX_PARTS)) {
+            listStream.forEach(p -> listing.put(p.getEtag(), p));
+        }
 
         final String path = metadata.getPath();
 
         final StringBuilder jobExecText = new StringBuilder("mget -q ");
 
-        // TODO: Validate parts and match up etags with path
+        List<MantaMultipartUploadTuple> missingTuples = new ArrayList<>();
 
-        try (Stream<MantaMultipartUploadPart> parts = listParts(id).sorted()) {
-            parts.forEach(part ->
-                    jobExecText.append(part.getObjectPath())
-                            .append(" ")
-            );
+        final AtomicInteger count = new AtomicInteger(0);
+        partsStream.sorted().forEach(part -> {
+            if (count.incrementAndGet() > MAX_PARTS) {
+                String msg = String.format("Too many multipart parts specified [%d]. "
+                        + "The maximum number of parts is %d", MAX_PARTS, count.get());
+                throw new IllegalArgumentException(msg);
+            }
+
+            final MantaMultipartUploadPart o = listing.get(part.getEtag());
+
+            if (o != null) {
+                jobExecText.append(o.getObjectPath()).append(" ");
+            } else {
+                missingTuples.add(part);
+            }
+        });
+
+        if (!missingTuples.isEmpty()) {
+            final MantaMultipartException e = new MantaMultipartException(
+                    "Multipart part(s) specified couldn't be found");
+
+            int missingCount = 0;
+            for (MantaMultipartUploadTuple missingPart : missingTuples) {
+                String key = String.format("missing_part_%d", ++missingCount);
+                e.setContextValue(key, missingPart.toString());
+            }
+
+            throw e;
         }
 
         jobExecText.append("| mput -q ")
