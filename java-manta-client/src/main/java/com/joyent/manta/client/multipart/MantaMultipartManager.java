@@ -717,19 +717,26 @@ public class MantaMultipartManager {
         List<MantaMultipartUploadTuple> missingTuples = new ArrayList<>();
 
         final AtomicInteger count = new AtomicInteger(0);
-        partsStream.sorted().forEach(part -> {
-            if (count.incrementAndGet() > MAX_PARTS) {
+        partsStream.sorted().distinct().forEach(part -> {
+            final int i = count.incrementAndGet();
+
+            if (i > MAX_PARTS) {
                 String msg = String.format("Too many multipart parts specified [%d]. "
                         + "The maximum number of parts is %d", MAX_PARTS, count.get());
                 throw new IllegalArgumentException(msg);
             }
 
-            final MantaMultipartUploadPart o = listing.get(part.getEtag());
-
-            if (o != null) {
-                jobExecText.append(o.getObjectPath()).append(" ");
+            // Catch and log any gaps in part numbers
+            if (i != part.getPartNumber()) {
+                missingTuples.add(new MantaMultipartUploadTuple(i, "N/A"));
             } else {
-                missingTuples.add(part);
+                final MantaMultipartUploadPart o = listing.get(part.getEtag());
+
+                if (o != null) {
+                    jobExecText.append(o.getObjectPath()).append(" ");
+                } else {
+                    missingTuples.add(part);
+                }
             }
         });
 
