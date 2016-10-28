@@ -1,5 +1,7 @@
 package com.joyent.manta.client.multipart;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.uuid.Generators;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
@@ -8,13 +10,13 @@ import com.joyent.manta.client.MantaJobBuilder;
 import com.joyent.manta.client.MantaJobPhase;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectParser;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.MantaUtils;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +70,7 @@ public class MantaMultipartManager {
     /**
      * Metadata file containing information about final multipart file.
      */
-    static final String METADATA_FILE = "metadata";
+    static final String METADATA_FILE = "metadata.json";
 
     /**
      * Default number of seconds to poll Manta to see if a job is complete.
@@ -221,7 +223,7 @@ public class MantaMultipartManager {
         final String uploadDir = multipartUploadDir(id);
         mantaClient.putDirectory(uploadDir, true);
 
-        final String metadataPath = uploadDir + SEPARATOR + METADATA_FILE;
+        final String metadataPath = uploadDir + METADATA_FILE;
 
         final MultipartMetadata metadata = new MultipartMetadata()
                 .setPath(path)
@@ -231,8 +233,9 @@ public class MantaMultipartManager {
             metadata.setContentType(httpHeaders.getContentType());
         }
 
-        final byte[] metadataBytes = SerializationUtils.serialize(metadata);
+        final byte[] metadataBytes = MantaObjectParser.MAPPER.writeValueAsBytes(metadata);
 
+        LOG.debug("Writing metadata to: {}", metadataPath);
         mantaClient.put(metadataPath, metadataBytes);
 
         return new MantaMultipartUpload(id, path);
@@ -795,10 +798,12 @@ public class MantaMultipartManager {
     protected MantaMultipartManager.MultipartMetadata downloadMultipartMetadata(final UUID id)
             throws IOException {
         final String uploadDir = multipartUploadDir(id);
-        final String metadataPath = uploadDir + SEPARATOR + METADATA_FILE;
+        final String metadataPath = uploadDir + METADATA_FILE;
 
+        LOG.debug("Reading metadata from: {}", metadataPath);
         try (InputStream in = mantaClient.getAsInputStream(metadataPath)) {
-            return SerializationUtils.deserialize(in);
+            return MantaObjectParser.MAPPER.readValue(in,
+                    MantaMultipartManager.MultipartMetadata.class);
         }
     }
 
@@ -1010,22 +1015,26 @@ public class MantaMultipartManager {
      * Inner class used only with the jobs-based multipart implementation for
      * storing header and metadata information.
      */
+    @JsonInclude
     static class MultipartMetadata implements Serializable {
         private static final long serialVersionUID = -4410867990710890357L;
 
         /**
          * Path to final object on Manta.
          */
+        @JsonProperty
         private String path;
 
         /**
          * Metadata of final object.
          */
+        @JsonProperty("object_metadata")
         private HashMap<String, String> objectMetadata;
 
         /**
          * HTTP content type to write to the final object.
          */
+        @JsonProperty("content_type")
         private String contentType;
 
         /**
