@@ -116,7 +116,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown when there are network issues
      */
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
-        final List<Throwable> exceptions = new ArrayList<>();
+        final List<Exception> exceptions = new ArrayList<>();
 
         /* This nesting structure is unfortunate, but an artifact of us needing
          * to close the stream when we have finished processing. */
@@ -165,7 +165,7 @@ public class MantaMultipartManager {
                 "Problem(s) listing multipart uploads in progress");
 
         int count = 1;
-        for (Throwable e : exceptions) {
+        for (Exception e : exceptions) {
             final String label = String.format("exception_%d", count++);
             aggregateException.setContextValue(label, e);
         }
