@@ -16,6 +16,8 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaJobException extends MantaException {
+    private static final long serialVersionUID = 8649276325268003152L;
+
     /**
      * Errors associated with failed inputs.
      */
