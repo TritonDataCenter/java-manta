@@ -52,8 +52,10 @@ public class MantaMultipartManager {
 
     /**
      * Maximum number of parts for a single Manta object.
+     * This value will be increased to 10,000 when multipart is implemented on
+     * the server.
      */
-    public static final int MAX_PARTS = 10_000;
+    public static final int MAX_PARTS = 1_000;
 
     /**
      * Temporary storage directory on Manta for multipart data. This is a
