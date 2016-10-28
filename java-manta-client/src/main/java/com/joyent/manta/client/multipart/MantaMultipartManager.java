@@ -10,7 +10,6 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.MantaUtils;
-import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
@@ -546,14 +545,15 @@ public class MantaMultipartManager {
      *
      * @param upload multipart upload object
      * @throws IOException thrown if there is a problem connecting to Manta
+     * @throws MantaMultipartException thrown went part numbers aren't sequential
      */
-    public void validateThereAreNoMissingParts(final MantaMultipartUpload upload)
-            throws IOException {
+    public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
+            throws IOException, MantaMultipartException {
         if (upload == null) {
             throw new IllegalArgumentException("Upload must be present");
         }
 
-        validateThereAreNoMissingParts(upload.getId());
+        validateThatThereAreSequentialPartNumbers(upload.getId());
     }
 
     /**
@@ -561,14 +561,20 @@ public class MantaMultipartManager {
      *
      * @param id multipart upload id
      * @throws IOException thrown if there is a problem connecting to Manta
+     * @throws MantaMultipartException thrown went part numbers aren't sequential
      */
-    public void validateThereAreNoMissingParts(final UUID id) throws IOException {
+    public void validateThatThereAreSequentialPartNumbers(final UUID id)
+            throws IOException, MantaMultipartException {
+        if (id == null) {
+            throw new IllegalArgumentException("Upload id must be present");
+        }
+
         listParts(id)
             .sorted()
             .map(MantaMultipartUploadPart::getPartNumber)
             .reduce(1, (memo, value) -> {
                 if (!memo.equals(value)) {
-                    MantaClientException e = new MantaClientException(
+                    MantaMultipartException e = new MantaMultipartException(
                             "Missing part of multipart upload");
                     e.setContextValue("missing_part", memo);
                     throw e;

@@ -61,7 +61,7 @@ public class MantaMultipartUploadManagerTest {
         MantaMultipartManager multiPart = spy(multipartInstance());
         doReturn(partsList.stream()).when(multiPart).listParts(id);
 
-        multiPart.validateThereAreNoMissingParts(id);
+        multiPart.validateThatThereAreSequentialPartNumbers(id);
     }
 
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
@@ -80,7 +80,7 @@ public class MantaMultipartUploadManagerTest {
         MantaMultipartManager multiPart = spy(multipartInstance());
         doReturn(partsList.stream()).when(multiPart).listParts(id);
 
-        multiPart.validateThereAreNoMissingParts(id);
+        multiPart.validateThatThereAreSequentialPartNumbers(id);
     }
 
     public void errorWhenMissingPart() throws IOException {
@@ -104,7 +104,7 @@ public class MantaMultipartUploadManagerTest {
         boolean thrown = false;
 
         try {
-            multiPart.validateThereAreNoMissingParts(id);
+            multiPart.validateThatThereAreSequentialPartNumbers(id);
         } catch (MantaClientException e) {
             if ((int)e.getFirstContextValue("missing_part") == 3) {
                 thrown = true;

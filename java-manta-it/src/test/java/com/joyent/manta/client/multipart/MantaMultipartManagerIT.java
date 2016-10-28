@@ -115,7 +115,7 @@ public class MantaMultipartManagerIT {
             uploadedParts.add(uploaded);
         }
 
-        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.validateThatThereAreSequentialPartNumbers(uploadId);
         Instant start = Instant.now();
         multipart.complete(uploadId, uploadedParts.stream());
 
@@ -167,7 +167,7 @@ public class MantaMultipartManagerIT {
             uploadedParts.add(uploaded);
         }
 
-        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.validateThatThereAreSequentialPartNumbers(uploadId);
         multipart.complete(uploadId, uploadedParts.stream());
 
         Boolean flagChanged = multipart.waitForCompletion(uploadId,
@@ -201,7 +201,7 @@ public class MantaMultipartManagerIT {
             uploadedParts.add(uploaded);
         }
 
-        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.validateThatThereAreSequentialPartNumbers(uploadId);
         multipart.complete(uploadId, uploadedParts.stream());
         multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
@@ -240,7 +240,7 @@ public class MantaMultipartManagerIT {
             uploadedParts.add(uploaded);
         }
 
-        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.validateThatThereAreSequentialPartNumbers(uploadId);
         multipart.complete(uploadId, uploadedParts.stream());
         multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
@@ -281,7 +281,7 @@ public class MantaMultipartManagerIT {
             uploadedParts.add(uploaded);
         }
 
-        multipart.validateThereAreNoMissingParts(upload);
+        multipart.validateThatThereAreSequentialPartNumbers(upload);
         Instant start = Instant.now();
         multipart.complete(upload, uploadedParts.stream());
         multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
@@ -329,7 +329,7 @@ public class MantaMultipartManagerIT {
             uploadedParts.add(uploaded);
         }
 
-        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.validateThatThereAreSequentialPartNumbers(uploadId);
         multipart.complete(uploadId, uploadedParts.stream());
 
         Instant start = Instant.now();
