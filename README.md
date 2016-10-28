@@ -215,22 +215,30 @@ public class App {
         // Everywhere below that we specified "upload" we could also just
         // use the upload transaction id
 
+        List<MantaMultipartUploadPart> parts = new ArrayList<>();
+        
         // We can add the parts in any order
-        multipart.putPart(upload, 2, part1file);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, part1file);
         // Each put of a part is a synchronous operation
-        multipart.putPart(upload, 1, part1file);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, part1file);
         // Although in a later version we could make an async option
-        multipart.putPart(upload, 3, part1file);
-
+        MantaMultipartUploadPart part3 = multipart.uploadPart(upload, 3, part1file);
+        
+        parts.add(part1);
+        parts.add(part3);
+        parts.add(part2);
+        
         // If we want to give up now, we could always abort
         // multipart.abort(upload);
 
         // We've uploaded all of the parts, now lets join them
-        multipart.complete(upload);
+        multipart.complete(upload, parts.stream());
 
         // If we want to pause execution until it is committed
         int timesToPoll = 10;
-        multipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll);
+        multipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll,
+                uuid -> { throw new RuntimeException("Multipart completion timed out"); });
+        
     } catch (MantaClientHttpResponseException e) {
         // This catch block is for when we actually have a response code from Manta
 
@@ -249,7 +257,7 @@ public class App {
 
         ContextedRuntimeException exception = new ContextedRuntimeException(
                 "A network error occurred when doing a multipart upload to" +
-                "Manta. See context for details.");
+                        "Manta. See context for details.");
         // We should all of the diagnostic context that we need
         exception.setContextValue("parts", "[part-1.data, part-2.data, part-3.data]");
 
