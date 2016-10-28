@@ -173,6 +173,8 @@ public class StringIteratorHttpContent implements HttpContent {
      * when processing Java 8 streams.
      */
     protected static class StreamIOException extends RuntimeException {
+        private static final long serialVersionUID = 1317022643615834337L;
+
         /**
          * Create an instance that wraps the passed cause.
          *
