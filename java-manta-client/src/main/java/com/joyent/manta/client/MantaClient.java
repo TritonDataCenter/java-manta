@@ -286,17 +286,27 @@ public class MantaClient implements AutoCloseable {
          */
         boolean pathExists = existsAndIsAccessible(path);
 
-        if (pathExists && isDirectoryEmpty(path)) {
+        if (!pathExists) {
+            LOG.debug("Path {} doesn't exist. Finished.", path);
+            return;
+        }
+
+        try {
             this.delete(path);
-        } else if (pathExists) {
-            try {
-                final int waitTime = 400;
-                Thread.sleep(waitTime);
-                LOG.warn("First attempt to delete directory failed, retrying");
-                // Re-attempt to delete the directory
-                this.deleteRecursive(path);
-            } catch (InterruptedException ie) {
-                // We don't need to do anything, just exit
+        } catch (MantaClientHttpResponseException e) {
+            // Directory wasn't empty
+            if (e.getServerCode().equals(DIRECTORY_NOT_EMPTY_ERROR)) {
+                try {
+                    final int waitTime = 400;
+                    Thread.sleep(waitTime);
+                    LOG.warn("First attempt to delete directory failed, retrying");
+                    // Re-attempt to delete the directory
+                    this.deleteRecursive(path);
+                } catch (InterruptedException ie) {
+                    // We don't need to do anything, just exit
+                }
+            } else {
+                throw e;
             }
         }
 
