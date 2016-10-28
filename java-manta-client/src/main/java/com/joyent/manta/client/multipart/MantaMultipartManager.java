@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
 /**
- * Class providing an API to multipart uploads to Manta.
+ * Class providing an API for multipart uploads to Manta.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
