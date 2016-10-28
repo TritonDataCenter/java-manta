@@ -1,5 +1,6 @@
 package com.joyent.manta.client.multipart;
 
+import com.fasterxml.uuid.Generators;
 import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
@@ -27,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -101,7 +103,7 @@ public class MantaMultipartManagerIT {
             combined.append(p);
         }
 
-        final String name = UUID.randomUUID().toString();
+        final String name = uploadName("can-upload-small-multipart-string");
         final String path = testPathPrefix + name;
 
         final UUID uploadId = multipart.initiateUpload(path).getId();
@@ -153,7 +155,7 @@ public class MantaMultipartManagerIT {
             combined.append(p);
         }
 
-        final String name = UUID.randomUUID().toString();
+        final String name = uploadName("will-run-function-when-waiting-too-long");
         final String path = testPathPrefix + name;
 
         final UUID uploadId = multipart.initiateUpload(path).getId();
@@ -184,7 +186,7 @@ public class MantaMultipartManagerIT {
                 "!"
         };
 
-        final String name = UUID.randomUUID().toString();
+        final String name = uploadName("can-store-conten-type");
         final String path = testPathPrefix + name;
 
         final MantaHttpHeaders headers = new MantaHttpHeaders()
@@ -221,7 +223,7 @@ public class MantaMultipartManagerIT {
                 "!"
         };
 
-        final String name = UUID.randomUUID().toString();
+        final String name = uploadName("can-store-metadata");
         final String path = testPathPrefix + name;
 
         final MantaMetadata metadata = new MantaMetadata();
@@ -266,7 +268,7 @@ public class MantaMultipartManagerIT {
         final File expectedFile = concatenateFiles(parts);
         final byte[] expectedMd5 = md5(expectedFile);
 
-        final String name = UUID.randomUUID().toString();
+        final String name = uploadName("can-upload-5mb-multipart-binary");
         final String path = testPathPrefix + name;
 
         final MantaMultipartUpload upload = multipart.initiateUpload(path);
@@ -314,7 +316,7 @@ public class MantaMultipartManagerIT {
                 createTemporaryDataFile(oneMB, 1)
         };
 
-        final String name = UUID.randomUUID().toString();
+        final String name = uploadName("can-abort-multipart-binary");
         final String path = testPathPrefix + name;
 
         final UUID uploadId = multipart.initiateUpload(path).getId();
@@ -345,20 +347,33 @@ public class MantaMultipartManagerIT {
 
         MantaJob job = multipart.findJob(uploadId);
 
-        if (!job.getCancelled()) {
-            fail("Job wasn't cancelled:" + job.toString());
-        }
-
         Duration totalCompletionTime = Duration.between(start, end);
 
         LOG.info("Aborting took {} seconds",
                 totalCompletionTime.toMillis() / 1000);
+
+        if (!job.getCancelled()) {
+            fail("Job wasn't cancelled:" + job.toString());
+        }
+
+        assertFalse(mantaClient.existsAndIsAccessible(multipart.multipartUploadDir(uploadId)),
+                "Upload directory shouldn't be present after abort");
     }
 
     public void canReturnEmptyMultipartList() throws IOException {
         List<MantaMultipartUpload> list = multipart.listInProgress().collect(Collectors.toList());
         if (!list.isEmpty()) {
             System.err.println("List should be empty. Actually had " + list.size() + " elements");
+            list.forEach(element -> {
+                System.err.println(element.getPath());
+                try {
+                    multipart.listParts(element.getId()).forEach(part -> {
+                        System.err.println("   " + part.getObjectPath());
+                    });
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
             throw new SkipException("List should be empty. Actually had " + list.size() + " elements");
         } else {
             assertTrue(true);
@@ -367,15 +382,15 @@ public class MantaMultipartManagerIT {
 
     public void canListMultipartUploadsInProgress() throws IOException {
         final String[] objects = new String[] {
-                testPathPrefix + UUID.randomUUID().toString(),
-                testPathPrefix + UUID.randomUUID().toString(),
-                testPathPrefix + UUID.randomUUID().toString()
+                testPathPrefix + uploadName("can-list-multipart-uploads-in-progress-1"),
+                testPathPrefix + uploadName("can-list-multipart-uploads-in-progress-2"),
+                testPathPrefix + uploadName("can-list-multipart-uploads-in-progress-3")
         };
 
         final List<MantaMultipartUpload> uploads = new ArrayList<>(objects.length);
 
         for (String object: objects) {
-            multipart.initiateUpload(object);
+            uploads.add(multipart.initiateUpload(object));
         }
 
         try {
@@ -430,5 +445,11 @@ public class MantaMultipartManagerIT {
         try (InputStream in = new FileInputStream(file)) {
             return DigestUtils.md5(in);
         }
+    }
+
+    private String uploadName(final String testName) {
+        return String.format("%s-multipart-%s.data",
+                testName,
+                Generators.timeBasedGenerator().generate());
     }
 }

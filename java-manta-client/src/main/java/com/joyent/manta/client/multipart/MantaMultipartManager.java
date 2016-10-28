@@ -1,7 +1,6 @@
 package com.joyent.manta.client.multipart;
 
 import com.fasterxml.uuid.Generators;
-import com.joyent.manta.client.HttpHelper;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaJob;
@@ -49,7 +48,7 @@ public class MantaMultipartManager {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(HttpHelper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MantaMultipartManager.class);
 
     /**
      * Maximum number of parts for a single Manta object.
@@ -613,27 +612,15 @@ public class MantaMultipartManager {
 
         final MantaJob job = findJob(id);
 
-        if (job == null) {
-            MantaMultipartException e = new MantaMultipartException("The multipart upload specified hasn't been "
-                    + "committed/completed yet");
-            e.setContextValue("upload_id", id.toString());
+        LOG.debug("Aborting multipart upload [{}]", id);
 
-            String status = "N/A";
-
-            // Safely try to get the status of the upload
-            try {
-                status = getStatus(id).toString();
-            } finally {
-                e.setContextValue("upload_status", status);
-            }
-
-            throw e;
-        }
-
-        if (job.getState().equals("running") || job.getState().equals("queued")) {
+        if (job != null && (job.getState().equals("running") ||
+                job.getState().equals("queued"))) {
+            LOG.debug("Aborting multipart upload [{}] backing job [{}]", id, job);
             mantaClient.cancelJob(job.getId());
         }
 
+        LOG.debug("Deleting multipart upload data from: {}", dir);
         mantaClient.deleteRecursive(dir);
     }
 
@@ -700,6 +687,8 @@ public class MantaMultipartManager {
         if (id == null) {
             throw new IllegalArgumentException("Upload id must be present");
         }
+
+        LOG.debug("Completing multipart upload [{}]", id);
 
         final String uploadDir = multipartUploadDir(id);
         final MultipartMetadata metadata = downloadMultipartMetadata(id);
@@ -934,6 +923,12 @@ public class MantaMultipartManager {
 
                 // Don't bother to sleep if we won't be doing a check
                 if (timesPolled < timesToPoll + 1) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Waiting for [{}] ms for upload [{}] to complete "
+                                + "(try {} of {})", waitMillis, id, timesPolled + 1,
+                                timesToPoll);
+                    }
+
                     Thread.sleep(waitMillis);
                 }
             } catch (InterruptedException e) {
