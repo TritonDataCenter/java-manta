@@ -748,6 +748,7 @@ public class MantaMultipartManager {
      * @param <R> Return type for executeWhenTimesToPollExceeded
      * @param upload multipart upload object
      * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public <R> R waitForCompletion(final MantaMultipartUpload upload,
@@ -766,6 +767,7 @@ public class MantaMultipartManager {
      * @param <R> Return type for executeWhenTimesToPollExceeded
      * @param id multipart upload id
      * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public <R> R waitForCompletion(final UUID id,
@@ -783,6 +785,7 @@ public class MantaMultipartManager {
      * @param pingInterval interval to poll
      * @param timesToPoll number of times to poll Manta to check for completion
      * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public <R> R waitForCompletion(final MantaMultipartUpload upload,

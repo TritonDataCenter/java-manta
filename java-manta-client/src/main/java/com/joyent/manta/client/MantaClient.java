@@ -25,7 +25,6 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
