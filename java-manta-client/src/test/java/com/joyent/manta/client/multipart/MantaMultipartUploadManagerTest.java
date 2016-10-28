@@ -54,7 +54,7 @@ public class MantaMultipartUploadManagerTest {
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null, null);
+            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null);
             partsList.add(part);
         }
 
@@ -71,7 +71,7 @@ public class MantaMultipartUploadManagerTest {
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null, null);
+            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null);
             partsList.add(part);
         }
 
@@ -90,7 +90,7 @@ public class MantaMultipartUploadManagerTest {
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
-            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null, null);
+            MantaMultipartUploadPart part = new MantaMultipartUploadPart(i, null, null);
             partsList.add(part);
         }
 

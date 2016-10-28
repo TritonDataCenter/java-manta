@@ -24,24 +24,17 @@ public class MantaMultipartUploadPart extends MantaMultipartUploadTuple
     private final String objectPath;
 
     /**
-     * Content length of the part.
-     */
-    private final Long length;
-
-    /**
      * Creates a new instance based on explicitly defined parameters.
      *
      * @param partNumber Non-zero positive integer representing the relative position of the part
      * @param objectPath Remote path on Manta for the part's file
      * @param etag Etag value of the part
-     * @param length size in bytes of the part
      */
     public MantaMultipartUploadPart(final int partNumber, final String objectPath,
-                                    final String etag, final Long length) {
+                                    final String etag) {
 
         super(partNumber, etag);
         this.objectPath = objectPath;
-        this.length = length;
     }
 
     /**
@@ -54,7 +47,6 @@ public class MantaMultipartUploadPart extends MantaMultipartUploadTuple
                 object.getEtag());
 
         this.objectPath = object.getPath();
-        length = object.getContentLength();
     }
 
     protected String getObjectPath() {
