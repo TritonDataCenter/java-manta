@@ -117,7 +117,7 @@ public class MantaMultipartManagerIT {
 
         multipart.validateThatThereAreSequentialPartNumbers(uploadId);
         Instant start = Instant.now();
-        multipart.complete(uploadId, uploadedParts.stream());
+        multipart.complete(uploadId, uploadedParts);
 
         multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
@@ -168,7 +168,7 @@ public class MantaMultipartManagerIT {
         }
 
         multipart.validateThatThereAreSequentialPartNumbers(uploadId);
-        multipart.complete(uploadId, uploadedParts.stream());
+        multipart.complete(uploadId, uploadedParts);
 
         Boolean flagChanged = multipart.waitForCompletion(uploadId,
                 Duration.ofNanos(0L), 1, uuid -> true);
@@ -202,7 +202,7 @@ public class MantaMultipartManagerIT {
         }
 
         multipart.validateThatThereAreSequentialPartNumbers(uploadId);
-        multipart.complete(uploadId, uploadedParts.stream());
+        multipart.complete(uploadId, uploadedParts);
         multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
             return null;
@@ -241,7 +241,7 @@ public class MantaMultipartManagerIT {
         }
 
         multipart.validateThatThereAreSequentialPartNumbers(uploadId);
-        multipart.complete(uploadId, uploadedParts.stream());
+        multipart.complete(uploadId, uploadedParts);
         multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
             return null;
@@ -330,7 +330,7 @@ public class MantaMultipartManagerIT {
         }
 
         multipart.validateThatThereAreSequentialPartNumbers(uploadId);
-        multipart.complete(uploadId, uploadedParts.stream());
+        multipart.complete(uploadId, uploadedParts);
 
         Instant start = Instant.now();
         multipart.abort(uploadId);

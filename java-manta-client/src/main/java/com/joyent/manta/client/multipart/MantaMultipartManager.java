@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
@@ -640,6 +641,23 @@ public class MantaMultipartManager {
      * Completes a multipart transfer by assembling the parts on Manta.
      *
      * @param upload multipart upload object
+     * @param parts iterable of multipart part objects
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void complete(final MantaMultipartUpload upload,
+                         final Iterable<? extends MantaMultipartUploadTuple> parts)
+            throws IOException {
+        if (upload == null) {
+            throw new IllegalArgumentException("Upload must be present");
+        }
+
+        complete(upload.getId(), parts);
+    }
+
+    /**
+     * Completes a multipart transfer by assembling the parts on Manta.
+     *
+     * @param upload multipart upload object
      * @param partsStream stream of multipart part objects
      * @throws java.io.IOException thrown if there is a problem connecting to Manta
      */
@@ -657,12 +675,32 @@ public class MantaMultipartManager {
      * Completes a multipart transfer by assembling the parts on Manta.
      *
      * @param id multipart upload id
+     * @param parts iterable of multipart part objects
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void complete(final UUID id,
+                         final Iterable<? extends MantaMultipartUploadTuple> parts)
+            throws IOException {
+        try (Stream<? extends MantaMultipartUploadTuple> stream =
+                     StreamSupport.stream(parts.spliterator(), false)) {
+            complete(id, stream);
+        }
+    }
+
+    /**
+     * Completes a multipart transfer by assembling the parts on Manta.
+     *
+     * @param id multipart upload id
      * @param partsStream stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public void complete(final UUID id,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
+        if (id == null) {
+            throw new IllegalArgumentException("Upload id must be present");
+        }
+
         final String uploadDir = multipartUploadDir(id);
         final MultipartMetadata metadata = downloadMultipartMetadata(id);
 
