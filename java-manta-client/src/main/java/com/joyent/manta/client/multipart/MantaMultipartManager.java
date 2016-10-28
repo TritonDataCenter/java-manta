@@ -1,5 +1,6 @@
 package com.joyent.manta.client.multipart;
 
+import com.fasterxml.uuid.Generators;
 import com.joyent.manta.client.HttpHelper;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
@@ -208,7 +209,7 @@ public class MantaMultipartManager {
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
-        final UUID id = UUID.randomUUID();
+        final UUID id = Generators.timeBasedGenerator().generate();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Creating a new multipart upload [{}] for {}",
