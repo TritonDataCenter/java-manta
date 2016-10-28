@@ -75,9 +75,11 @@ public class MantaMultipartManagerIT {
 
     @AfterClass
     public void afterClass() throws IOException, MantaCryptoException {
-        if (mantaClient != null) {
-            mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeWithWarning();
+        if (this.mantaClient != null) {
+            this.mantaClient.deleteRecursive(testPathPrefix);
+            this.mantaClient.closeWithWarning();
+            this.multipart = null;
+            this.mantaClient = null;
         }
     }
 
@@ -136,6 +138,42 @@ public class MantaMultipartManagerIT {
 
         LOG.info("Concatenating {} parts took {} seconds",
                 parts.length, totalCompletionTime.toMillis() / 1000);
+    }
+
+    public void willRunFunctionWhenWaitingTooLong() throws IOException {
+        String[] parts = new String[] {
+                "Hello ",
+                "world ",
+                "Joyent",
+                "!"
+        };
+
+        StringBuilder combined = new StringBuilder();
+        for (String p : parts) {
+            combined.append(p);
+        }
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final UUID uploadId = multipart.initiateUpload(path).getId();
+        final ArrayList<MantaMultipartUploadTuple> uploadedParts =
+                new ArrayList<>();
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            int partNumber = i + 1;
+            MantaMultipartUploadTuple uploaded = multipart.uploadPart(uploadId, partNumber, part);
+            uploadedParts.add(uploaded);
+        }
+
+        multipart.validateThereAreNoMissingParts(uploadId);
+        multipart.complete(uploadId, uploadedParts.stream());
+
+        Boolean flagChanged = multipart.waitForCompletion(uploadId,
+                Duration.ofNanos(0L), 1, uuid -> true);
+
+        assertTrue(flagChanged, "wait timeout exceeded function was never run");
     }
 
     public void canStoreContentType() throws IOException {
@@ -320,6 +358,7 @@ public class MantaMultipartManagerIT {
     public void canReturnEmptyMultipartList() throws IOException {
         List<MantaMultipartUpload> list = multipart.listInProgress().collect(Collectors.toList());
         if (!list.isEmpty()) {
+            System.err.println("List should be empty. Actually had " + list.size() + " elements");
             throw new SkipException("List should be empty. Actually had " + list.size() + " elements");
         } else {
             assertTrue(true);

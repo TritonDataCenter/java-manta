@@ -120,10 +120,11 @@ public class MantaJobBuilder {
     public Create cloneJob(final MantaJob job) throws IOException {
         final Create newJob = new Create(this, job.getName());
         newJob.addPhases(job.getPhases());
-        final Stream<String> inputs = client.getJobInputs(job.getId());
-        newJob.addInputs(inputs);
 
-        return newJob;
+        try (Stream<String> inputs = client.getJobInputs(job.getId())) {
+            newJob.addInputs(inputs);
+            return newJob;
+        }
     }
 
 

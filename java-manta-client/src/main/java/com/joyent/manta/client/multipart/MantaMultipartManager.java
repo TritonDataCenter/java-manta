@@ -116,49 +116,49 @@ public class MantaMultipartManager {
      * @throws IOException thrown when there are network issues
      */
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
-        final Stream<MantaObject> multipartDirList;
+        final List<Throwable> exceptions = new ArrayList<>();
 
-        try {
-            multipartDirList = mantaClient
+        /* This nesting structure is unfortunate, but an artifact of us needing
+         * to close the stream when we have finished processing. */
+        try (Stream<MantaObject> multipartDirList = mantaClient
                     .listObjects(this.resolvedMultipartUploadDirectory)
-                    .filter(MantaObject::isDirectory);
+                    .filter(MantaObject::isDirectory)) {
+
+            final Stream<MantaMultipartUpload> stream = multipartDirList
+                    .map(object -> {
+                        String idString = MantaUtils.lastItemInPath(object.getPath());
+                        UUID id = UUID.fromString(idString);
+
+                        try {
+                            MultipartMetadata mantaMetadata = downloadMultipartMetadata(id);
+                            return new MantaMultipartUpload(id, mantaMetadata.getPath());
+                        } catch (MantaClientHttpResponseException e) {
+                            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                                return null;
+                            } else {
+                                exceptions.add(e);
+                                return null;
+                            }
+                        } catch (IOException | RuntimeException e) {
+                            exceptions.add(e);
+                            return null;
+                        }
+                    })
+                    /* We explicitly filter out items that stopped existing when we
+                     * went to get the multipart metadata because we encountered a
+                     * race condition. */
+                    .filter(value -> value != null);
+
+            if (exceptions.isEmpty()) {
+                return stream;
+            }
+        // This catches an exception on the initial listObjects call
         } catch (MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return Stream.empty();
             } else {
                 throw e;
             }
-        }
-
-        final List<Throwable> exceptions = new ArrayList<>();
-
-        final Stream<MantaMultipartUpload> stream = multipartDirList
-                .map(object -> {
-                    String idString = MantaUtils.lastItemInPath(object.getPath());
-                    UUID id = UUID.fromString(idString);
-
-                    try {
-                        MultipartMetadata mantaMetadata = downloadMultipartMetadata(id);
-                        return new MantaMultipartUpload(id, mantaMetadata.getPath());
-                    } catch (MantaClientHttpResponseException e) {
-                        if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                            return null;
-                        } else {
-                            exceptions.add(e);
-                            return null;
-                        }
-                    } catch (IOException | RuntimeException e) {
-                        exceptions.add(e);
-                        return null;
-                    }
-                })
-            /* We explicitly filter out items that stopped existing when we
-             * went to get the multipart metadata because we encountered a
-             * race condition. */
-            .filter(value -> value != null);
-
-        if (exceptions.isEmpty()) {
-            return stream;
         }
 
         final MantaIOException aggregateException = new MantaIOException(
@@ -448,39 +448,10 @@ public class MantaMultipartManager {
      */
     public MantaMultipartStatus getStatus(final UUID id) throws IOException {
         final String dir = multipartUploadDir(id);
+        final MantaObjectResponse response;
 
         try {
-            final MantaObjectResponse response = mantaClient.head(dir);
-
-            if (!response.isDirectory()) {
-                MantaMultipartException e = new MantaMultipartException(
-                        "Remote path was a file and not a directory as expected");
-                e.setContextValue("multipart_upload_dir", dir);
-                throw e;
-            }
-
-            final MantaJob job = findJob(id);
-
-            if (job == null) {
-                return MantaMultipartStatus.CREATED;
-            }
-
-            /* If we still have the directory associated with the multipart
-             * upload AND we are in the state of Cancelled. */
-            if (job.getCancelled()) {
-                return MantaMultipartStatus.ABORTING;
-            }
-
-            final String state = job.getState();
-
-            /* If we still have the directory associated with the multipart
-             * upload AND we have the job id, we are in a state where the
-             * job hasn't finished clearing out the data files. */
-            if (state.equals("done") || state.equals("running") || state.equals("queued")) {
-                return MantaMultipartStatus.COMMITTING;
-            } else {
-                return MantaMultipartStatus.UNKNOWN;
-            }
+            response = mantaClient.head(dir);
         } catch (MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 final MantaJob job = findJob(id);
@@ -491,6 +462,8 @@ public class MantaMultipartManager {
                     return MantaMultipartStatus.ABORTED;
                 } else if (job.getState().equals("done")) {
                     return MantaMultipartStatus.COMPLETED;
+                } else if (job.getState().equals("running")) {
+                    return MantaMultipartStatus.COMMITTING;
                 } else {
                     MantaException mioe = new MantaException("Unexpected job state");
                     mioe.setContextValue("job_state", job.getState());
@@ -503,6 +476,36 @@ public class MantaMultipartManager {
             }
 
             throw e;
+        }
+
+        if (!response.isDirectory()) {
+            MantaMultipartException e = new MantaMultipartException(
+                    "Remote path was a file and not a directory as expected");
+            e.setContextValue("multipart_upload_dir", dir);
+            throw e;
+        }
+
+        final MantaJob job = findJob(id);
+
+        if (job == null) {
+            return MantaMultipartStatus.CREATED;
+        }
+
+            /* If we still have the directory associated with the multipart
+             * upload AND we are in the state of Cancelled. */
+        if (job.getCancelled()) {
+            return MantaMultipartStatus.ABORTING;
+        }
+
+        final String state = job.getState();
+
+            /* If we still have the directory associated with the multipart
+             * upload AND we have the job id, we are in a state where the
+             * job hasn't finished clearing out the data files. */
+        if (state.equals("done") || state.equals("running") || state.equals("queued")) {
+            return MantaMultipartStatus.COMMITTING;
+        } else {
+            return MantaMultipartStatus.UNKNOWN;
         }
     }
 
@@ -742,6 +745,7 @@ public class MantaMultipartManager {
     /**
      * Waits for a multipart upload to complete. Polling every 5 seconds.
      *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
      * @param upload multipart upload object
      * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
      * @throws IOException thrown if there is a problem connecting to Manta
@@ -759,6 +763,7 @@ public class MantaMultipartManager {
     /**
      * Waits for a multipart upload to complete. Polling every 5 seconds.
      *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
      * @param id multipart upload id
      * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
      * @throws IOException thrown if there is a problem connecting to Manta
@@ -773,6 +778,7 @@ public class MantaMultipartManager {
     /**
      * Waits for a multipart upload to complete. Polling for set interval.
      *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
      * @param upload multipart upload object
      * @param pingInterval interval to poll
      * @param timesToPoll number of times to poll Manta to check for completion
@@ -794,6 +800,7 @@ public class MantaMultipartManager {
     /**
      * Waits for a multipart upload to complete. Polling for set interval.
      *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
      * @param id multipart upload id
      * @param pingInterval interval to poll
      * @param timesToPoll number of times to poll Manta to check for completion
@@ -805,6 +812,12 @@ public class MantaMultipartManager {
                                    final int timesToPoll,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
+        if (timesToPoll <= 0) {
+            String msg = String.format("times to poll should be set to a value greater than 1. "
+                    + "Actual value: %d", timesToPoll);
+            throw new IllegalArgumentException(msg);
+        }
+
         final String dir = multipartUploadDir(id);
         final MantaJob job = findJob(id);
 
@@ -820,7 +833,6 @@ public class MantaMultipartManager {
         }
 
         MantaJobBuilder.Run run = mantaClient.jobBuilder().lookupJob(job);
-        run.waitUntilDone(pingInterval, timesToPoll);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("No longer waiting for multipart to complete."
@@ -829,15 +841,26 @@ public class MantaMultipartManager {
 
         final long waitMillis = pingInterval.toMillis();
 
+        int timesPolled;
+
         /* We ping the upload directory and wait for it to be deleted because
          * there is the chance for a race condition when the job attempts to
          * delete the upload directory, but isn't finished. */
-        for (int i = 0; i < timesToPoll && mantaClient.existsAndIsAccessible(dir); i++) {
+        for (timesPolled = 0; timesPolled < timesToPoll; timesPolled++) {
             try {
-                Thread.sleep(waitMillis);
+                final MantaMultipartStatus status = getStatus(id);
+                final boolean finished = status.equals(MantaMultipartStatus.COMPLETED)
+                        || status.equals(MantaMultipartStatus.ABORTED)
+                        || status.equals(MantaMultipartStatus.UNKNOWN);
 
-                if (i >= timesToPoll) {
-                    return executeWhenTimesToPollExceeded.apply(id);
+                // We do a check preemptively because we shouldn't sleep unless we need to
+                if (finished) {
+                    return null;
+                }
+
+                // Don't bother to sleep if we won't be doing a check
+                if (timesPolled < timesToPoll + 1) {
+                    Thread.sleep(waitMillis);
                 }
             } catch (InterruptedException e) {
                 /* We assume the client has written logic for when the polling operation
@@ -846,6 +869,10 @@ public class MantaMultipartManager {
                  * has been interrupted. */
                 return executeWhenTimesToPollExceeded.apply(id);
             }
+        }
+
+        if (timesPolled >= timesToPoll) {
+            return executeWhenTimesToPollExceeded.apply(id);
         }
 
         return null;
@@ -905,9 +932,9 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     MantaJob findJob(final UUID id) throws IOException {
-        return mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))
-                .findFirst()
-                .orElse(null);
+        try (Stream<MantaJob> jobs = mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))) {
+            return jobs.findFirst().orElse(null);
+        }
     }
 
     /**

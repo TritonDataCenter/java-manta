@@ -25,6 +25,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
@@ -64,6 +65,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
+import static com.joyent.manta.exception.MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR;
 
 /**
  * Manta client object that allows for doing CRUD operations against the Manta HTTP
@@ -250,10 +252,17 @@ public class MantaClient implements AutoCloseable {
     public void deleteRecursive(final String path) throws IOException {
         LOG.debug("DELETE {} [recursive]", path);
 
-        if (isDirectoryEmpty(path)) {
+        try {
             this.delete(path);
             LOG.debug("Finished deleting path {}", path);
             return;
+        } catch (MantaClientHttpResponseException e) {
+            /* In the case of the directory not being empty, we let
+             * that error case go uncaught and pass through
+             * because it is in fact a directory with files. */
+            if (!e.getServerCode().equals(DIRECTORY_NOT_EMPTY_ERROR)) {
+                throw e;
+            }
         }
 
         try (Stream<MantaObject> objects = this.listObjects(path)) {
