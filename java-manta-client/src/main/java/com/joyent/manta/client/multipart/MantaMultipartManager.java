@@ -617,8 +617,8 @@ public class MantaMultipartManager {
 
         LOG.debug("Aborting multipart upload [{}]", id);
 
-        if (job != null && (job.getState().equals("running") ||
-                job.getState().equals("queued"))) {
+        if (job != null && (job.getState().equals("running")
+                || job.getState().equals("queued"))) {
             LOG.debug("Aborting multipart upload [{}] backing job [{}]", id, job);
             mantaClient.cancelJob(job.getId());
         }
