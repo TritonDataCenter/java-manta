@@ -609,6 +609,23 @@ public class MantaMultipartManager {
 
         final MantaJob job = findJob(id);
 
+        if (job == null) {
+            MantaMultipartException e = new MantaMultipartException("The multipart upload specified hasn't been "
+                    + "committed/completed yet");
+            e.setContextValue("upload_id", id.toString());
+
+            String status = "N/A";
+
+            // Safely try to get the status of the upload
+            try {
+                status = getStatus(id).toString();
+            } finally {
+                e.setContextValue("upload_status", status);
+            }
+
+            throw e;
+        }
+
         if (job.getState().equals("running") || job.getState().equals("queued")) {
             mantaClient.cancelJob(job.getId());
         }
