@@ -73,7 +73,7 @@ public class MantaMultipartManager {
     static final String METADATA_FILE = "metadata.json";
 
     /**
-     * Default number of seconds to poll Manta to see if a job is complete.
+     * Number of seconds to poll Manta to see if a job is complete.
      */
     private static final long DEFAULT_SECONDS_TO_POLL = 5L;
 
