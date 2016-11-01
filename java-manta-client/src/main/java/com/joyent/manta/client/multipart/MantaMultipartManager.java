@@ -193,7 +193,7 @@ public class MantaMultipartManager {
      *
      * @param path remote path of Manta object to be uploaded
      * @param mantaMetadata metadata to write to final Manta object
-     * @return unique id for the multipart upload
+     * @return object representing the multipart upload state as initiated
      * @throws IOException thrown when there are network issues
      */
     public MantaMultipartUpload initiateUpload(final String path,
@@ -207,7 +207,7 @@ public class MantaMultipartManager {
      * @param path remote path of Manta object to be uploaded
      * @param mantaMetadata metadata to write to final Manta object
      * @param httpHeaders HTTP headers to read from to write to final Manta object
-     * @return unique id for the multipart upload
+     * @return object representing the multipart upload state as initiated
      * @throws IOException thrown when there are network issues
      */
     public MantaMultipartUpload initiateUpload(final String path,
