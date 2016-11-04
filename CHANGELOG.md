@@ -2,11 +2,16 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [2.6.0] - ?
+## [2.6.0] - 2016-11-03
+### Added
+ - Added support for multipart uploads implemented as Manta jobs.
 ### Changed
  - Upgraded HTTP Signatures dependency.
+ - Resolved numerous compiler warnings.
+ - Improvements in recursive delete operations.
 ### Fixed
- - [Listing a directory that doesn't exist will result in an UncheckedIOException that is difficult to trace](https://github.com/joyent/java-manta/issues/119) 
+ - [Listing a directory that doesn't exist will result in an UncheckedIOException that is difficult to trace](https://github.com/joyent/java-manta/issues/119)
+ - [Listing jobs will cause HTTP pool resource leaks](https://github.com/joyent/java-manta/issues/127)
 
 ## [2.5.0] - 2016-10-10
 ### Added

@@ -166,8 +166,8 @@ public class MantaClientJobIT {
         mantaClient.put(objPath, TEST_DATA);
         inputs.add(objPath);
 
-        try {
-            mantaClient.addJobInputs(jobId, inputs.stream());
+        try (Stream<String> inputsStream = inputs.stream()){
+            mantaClient.addJobInputs(jobId, inputsStream);
             boolean ended = mantaClient.endJobInput(jobId);
             Assert.assertTrue(ended, "Ending input wasn't accepted");
             List<String> inputsResponse = mantaClient.getJobInputs(jobId)

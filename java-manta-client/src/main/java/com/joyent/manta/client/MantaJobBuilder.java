@@ -70,6 +70,34 @@ public class MantaJobBuilder {
 
 
     /**
+     * Returns a reference to a running/completed job as a builder object.
+     *
+     * @param job job object of completed job
+     * @return a fluent interface providing job management options
+     */
+    public Run lookupJob(final MantaJob job) {
+        if (job == null) {
+            throw new IllegalArgumentException("job must be present");
+        }
+
+        return lookupJob(job.getId());
+    }
+
+    /**
+     * Returns a reference to a running/completed job as a builder object.
+     *
+     * @param jobId job id of completed job
+     * @return a fluent interface providing job management options
+     */
+    public Run lookupJob(final UUID jobId) {
+        if (jobId == null) {
+            throw new IllegalArgumentException("jobId must be present");
+        }
+
+        return new MantaJobBuilder.Run(this, jobId);
+    }
+
+    /**
      * Clones a completed job as a new job by referencing its id.
      *
      * @param jobId job id of completed job
@@ -92,10 +120,11 @@ public class MantaJobBuilder {
     public Create cloneJob(final MantaJob job) throws IOException {
         final Create newJob = new Create(this, job.getName());
         newJob.addPhases(job.getPhases());
-        final Stream<String> inputs = client.getJobInputs(job.getId());
-        newJob.addInputs(inputs);
 
-        return newJob;
+        try (Stream<String> inputs = client.getJobInputs(job.getId())) {
+            newJob.addInputs(inputs);
+            return newJob;
+        }
     }
 
 

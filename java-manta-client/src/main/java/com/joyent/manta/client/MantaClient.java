@@ -64,6 +64,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.joyent.manta.client.MantaUtils.formatPath;
+import static com.joyent.manta.exception.MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR;
 
 /**
  * Manta client object that allows for doing CRUD operations against the Manta HTTP
@@ -250,10 +251,17 @@ public class MantaClient implements AutoCloseable {
     public void deleteRecursive(final String path) throws IOException {
         LOG.debug("DELETE {} [recursive]", path);
 
-        if (isDirectoryEmpty(path)) {
+        try {
             this.delete(path);
             LOG.debug("Finished deleting path {}", path);
             return;
+        } catch (MantaClientHttpResponseException e) {
+            /* In the case of the directory not being empty, we let
+             * that error case go uncaught and pass through
+             * because it is in fact a directory with files. */
+            if (!e.getServerCode().equals(DIRECTORY_NOT_EMPTY_ERROR)) {
+                throw e;
+            }
         }
 
         try (Stream<MantaObject> objects = this.listObjects(path)) {
@@ -278,17 +286,27 @@ public class MantaClient implements AutoCloseable {
          */
         boolean pathExists = existsAndIsAccessible(path);
 
-        if (pathExists && isDirectoryEmpty(path)) {
+        if (!pathExists) {
+            LOG.debug("Path {} doesn't exist. Finished.", path);
+            return;
+        }
+
+        try {
             this.delete(path);
-        } else if (pathExists) {
-            try {
-                final int waitTime = 400;
-                Thread.sleep(waitTime);
-                LOG.warn("First attempt to delete directory failed, retrying");
-                // Re-attempt to delete the directory
-                this.deleteRecursive(path);
-            } catch (InterruptedException ie) {
-                // We don't need to do anything, just exit
+        } catch (MantaClientHttpResponseException e) {
+            // Directory wasn't empty
+            if (e.getServerCode().equals(DIRECTORY_NOT_EMPTY_ERROR)) {
+                try {
+                    final int waitTime = 400;
+                    Thread.sleep(waitTime);
+                    LOG.warn("First attempt to delete directory failed, retrying");
+                    // Re-attempt to delete the directory
+                    this.deleteRecursive(path);
+                } catch (InterruptedException ie) {
+                    // We don't need to do anything, just exit
+                }
+            } else {
+                throw e;
             }
         }
 
@@ -1395,12 +1413,12 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-      * Package private method that returns the configuration context used to
+      * Method that returns the configuration context used to
       * instantiate the MantaClient instance.
       *
       * @return instance of the configuration context used to construct this client
       */
-    ConfigContext getContext() {
+    public ConfigContext getContext() {
         return this.config;
     }
 

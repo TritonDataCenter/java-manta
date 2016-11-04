@@ -134,7 +134,7 @@ public class MantaJob {
 
 
     /**
-     * @return Manta job state (running, done, etc)
+     * @return Manta job state (queued, running, done)
      */
     public String getState() {
         return state;
@@ -228,10 +228,10 @@ public class MantaJob {
      */
     @JsonIgnore
     public List<MantaJobPhase> getMapPhases() {
-        Stream<MantaJobPhase> stream = phases.stream()
-                .filter(p -> p.getType().equals("map"));
-
-        return stream.collect(Collectors.toCollection(ArrayList::new));
+        try (Stream<MantaJobPhase> stream = phases.stream()
+                .filter(p -> p.getType().equals("map"))) {
+            return stream.collect(Collectors.toCollection(ArrayList::new));
+        }
     }
 
 
@@ -242,10 +242,10 @@ public class MantaJob {
      */
     @JsonIgnore
     public List<MantaJobPhase> getReducePhases() {
-        Stream<MantaJobPhase> stream = phases.stream()
-                .filter(p -> p.getType().equals("reduce"));
-
-        return stream.collect(Collectors.toCollection(ArrayList::new));
+        try (Stream<MantaJobPhase> stream = phases.stream()
+                .filter(p -> p.getType().equals("reduce"))) {
+            return stream.collect(Collectors.toCollection(ArrayList::new));
+        }
     }
 
 
