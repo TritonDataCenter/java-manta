@@ -5,11 +5,11 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>2.5.1-SNAPSHOT</version>
+        <version>2.6.0</version>
     </parent>
 
     <artifactId>java-manta-it</artifactId>
-    <version>2.5.1-SNAPSHOT</version>
+    <version>2.6.0</version>
     <packaging>jar</packaging>
 
     <name>java-manta-client-it</name>
@@ -26,14 +26,14 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
-            <version>2.5.1-SNAPSHOT</version>
+            <version>2.6.0</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-benchmark</artifactId>
-            <version>2.5.1-SNAPSHOT</version>
+            <version>2.6.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
