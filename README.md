@@ -218,11 +218,11 @@ public class App {
         List<MantaMultipartUploadPart> parts = new ArrayList<>();
         
         // We can add the parts in any order
-        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, part1file);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, part2file);
         // Each put of a part is a synchronous operation
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, part1file);
         // Although in a later version we could make an async option
-        MantaMultipartUploadPart part3 = multipart.uploadPart(upload, 3, part1file);
+        MantaMultipartUploadPart part3 = multipart.uploadPart(upload, 3, part3file);
         
         parts.add(part1);
         parts.add(part3);
