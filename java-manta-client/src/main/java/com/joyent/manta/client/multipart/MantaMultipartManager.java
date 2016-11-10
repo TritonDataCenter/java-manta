@@ -704,7 +704,8 @@ public class MantaMultipartManager {
 
         final String path = metadata.getPath();
 
-        final StringBuilder jobExecText = new StringBuilder("mget -q ");
+        final StringBuilder jobExecText = new StringBuilder(
+                "set -o pipefail; mget -q ");
 
         List<MantaMultipartUploadTuple> missingTuples = new ArrayList<>();
 
@@ -895,6 +896,7 @@ public class MantaMultipartManager {
                     + "that we no longer have a record for it?";
             MantaMultipartException e = new MantaMultipartException(msg);
             e.setContextValue("upload_id", id.toString());
+            e.setContextValue("upload_directory", dir);
             e.setContextValue("job_id", id.toString());
 
             throw e;
@@ -917,13 +919,34 @@ public class MantaMultipartManager {
         for (timesPolled = 0; timesPolled < timesToPoll; timesPolled++) {
             try {
                 final MantaMultipartStatus status = getStatus(id);
-                final boolean finished = status.equals(MantaMultipartStatus.COMPLETED)
-                        || status.equals(MantaMultipartStatus.ABORTED)
-                        || status.equals(MantaMultipartStatus.UNKNOWN);
 
                 // We do a check preemptively because we shouldn't sleep unless we need to
-                if (finished) {
+                if (status.equals(MantaMultipartStatus.COMPLETED)) {
                     return null;
+                }
+
+                if (status.equals(MantaMultipartStatus.ABORTED)) {
+                    String msg = "Manta job backing multipart upload was aborted. "
+                            + "This upload was unable to be completed.";
+                    MantaMultipartException e = new MantaMultipartException(msg);
+                    e.setContextValue("upload_id", id.toString());
+                    e.setContextValue("upload_directory", dir);
+                    e.setContextValue("job_id", id.toString());
+
+                    throw e;
+                }
+
+                if (status.equals(MantaMultipartStatus.UNKNOWN)) {
+                    String msg = "Manta job backing multipart upload was is in "
+                            + "a unknown state. Typically this means that we "
+                            + "are unable to get the status of the job backing "
+                            + "the multipart upload.";
+                    MantaMultipartException e = new MantaMultipartException(msg);
+                    e.setContextValue("upload_id", id.toString());
+                    e.setContextValue("upload_directory", dir);
+                    e.setContextValue("job_id", id.toString());
+
+                    throw e;
                 }
 
                 // Don't bother to sleep if we won't be doing a check
@@ -1002,7 +1025,7 @@ public class MantaMultipartManager {
      * Returns the Manta job used to concatenate multiple file parts.
      *
      * @param id multipart upload id
-     * @return Manta job object
+     * @return Manta job object or null if not found
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     MantaJob findJob(final UUID id) throws IOException {
