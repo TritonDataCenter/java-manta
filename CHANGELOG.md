@@ -10,6 +10,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    when executing MantaMultipartManager.waitForCompletion().
  - We now explicitly handle InterruptedExceptions on MantaClient.close() by
    not exiting early and continuing to close all of the dangling resources.
+ - Added check for SHA256 fingerprints. We error and display a message to inform
+   the user to use a MD5 fingerprint for the time being.
 
 ## [2.6.0] - 2016-11-03
 ### Added

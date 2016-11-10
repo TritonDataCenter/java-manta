@@ -192,6 +192,11 @@ public class MantaClient implements AutoCloseable {
             if (fingerprint == null) {
                 throw new IllegalArgumentException("Manta key id must be specified");
             }
+
+            if (StringUtils.startsWith(fingerprint, "SHA256:")) {
+                throw new IllegalArgumentException("We don't support SHA256 "
+                        + "fingerprints yet. Change fingerprint to MD5 format.");
+            }
         }
 
         this.url = mantaURL;
