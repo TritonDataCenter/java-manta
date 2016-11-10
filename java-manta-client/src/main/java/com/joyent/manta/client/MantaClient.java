@@ -2089,6 +2089,10 @@ public class MantaClient implements AutoCloseable {
                 }
 
                 closeable.close();
+            } catch (InterruptedException ie) {
+                /* Do nothing, but we won't capture the interrupted exception
+                 * because even if we are interrupted, we want to close all open
+                 * resources. */
             } catch (Exception e) {
                 exceptions.add(e);
             }
@@ -2096,6 +2100,10 @@ public class MantaClient implements AutoCloseable {
 
         try {
             this.httpRequestFactoryProvider.close();
+        } catch (InterruptedException ie) {
+            /* Do nothing, but we won't capture the interrupted exception
+             * because even if we are interrupted, we want to close all open
+             * resources. */
         } catch (Exception e) {
             exceptions.add(e);
         }
@@ -2110,9 +2118,7 @@ public class MantaClient implements AutoCloseable {
             String msg = "At least one exception was thrown when performing close()";
             OnCloseAggregateException exception = new OnCloseAggregateException(msg);
 
-            for (Exception e : exceptions) {
-                exception.aggregateException(e);
-            }
+            exceptions.forEach(exception::aggregateException);
 
             throw exception;
         }

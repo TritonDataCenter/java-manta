@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [2.7.0] - ?
+### Changed
+ - Added `set -o pipefail` to multipart upload jobs so that we catch job failure
+   states explicitly.
+ - We now throw exceptions when ABORTED and UNKNOWN upload states are encountered
+   when executing MantaMultipartManager.waitForCompletion().
+ - We now explicitly handle InterruptedExceptions on MantaClient.close() by
+   not exiting early and continuing to close all of the dangling resources.
+
 ## [2.6.0] - 2016-11-03
 ### Added
  - Added support for multipart uploads implemented as Manta jobs.
