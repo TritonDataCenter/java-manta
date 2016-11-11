@@ -188,10 +188,15 @@ public class MantaClient implements AutoCloseable {
             throw new IllegalArgumentException("Manta key path or private key content must be specified");
         }
 
-        if (config.noAuth() != null && config.noAuth()) {
+        if (config.noAuth() != null && !config.noAuth()) {
             if (fingerprint == null) {
                 throw new IllegalArgumentException("Manta key id must be specified");
             }
+        }
+
+        if (StringUtils.startsWith(fingerprint, "SHA256:")) {
+            throw new IllegalArgumentException("We don't support SHA256 "
+                    + "fingerprints yet. Change fingerprint to MD5 format.");
         }
 
         this.url = mantaURL;
@@ -2089,6 +2094,10 @@ public class MantaClient implements AutoCloseable {
                 }
 
                 closeable.close();
+            } catch (InterruptedException ie) {
+                /* Do nothing, but we won't capture the interrupted exception
+                 * because even if we are interrupted, we want to close all open
+                 * resources. */
             } catch (Exception e) {
                 exceptions.add(e);
             }
@@ -2096,6 +2105,10 @@ public class MantaClient implements AutoCloseable {
 
         try {
             this.httpRequestFactoryProvider.close();
+        } catch (InterruptedException ie) {
+            /* Do nothing, but we won't capture the interrupted exception
+             * because even if we are interrupted, we want to close all open
+             * resources. */
         } catch (Exception e) {
             exceptions.add(e);
         }
@@ -2110,9 +2123,7 @@ public class MantaClient implements AutoCloseable {
             String msg = "At least one exception was thrown when performing close()";
             OnCloseAggregateException exception = new OnCloseAggregateException(msg);
 
-            for (Exception e : exceptions) {
-                exception.aggregateException(e);
-            }
+            exceptions.forEach(exception::aggregateException);
 
             throw exception;
         }

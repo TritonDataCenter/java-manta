@@ -327,6 +327,23 @@ public class MantaClientIT {
 
 
     @Test
+    public final void testPutJsonLink() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name + ".json";
+        final String testData = "{}";
+
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentType("application/json");
+        mantaClient.put(path, testData, headers);
+
+        final String linkPath = testPathPrefix + UUID.randomUUID() + ".json";
+        mantaClient.putSnapLink(linkPath, path, null);
+        final String linkContent = mantaClient.getAsString(linkPath);
+        Assert.assertEquals(linkContent, testData);
+    }
+
+
+    @Test
     public final void canMoveFile() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

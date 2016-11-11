@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,7 +97,17 @@ public class MantaMultipartManager {
     /**
      * Format for naming Manta jobs.
      */
-    private static final String JOB_NAME_FORMAT = "append-%s";
+    private static final String JOB_NAME_FORMAT = "multipart-%s";
+
+    /**
+     * Key name for retrieving job id from metadata.
+     */
+    private static final String JOB_ID_METADATA_KEY = "m-multipart-job-id";
+
+    /**
+     * Key name for retrieving upload id from final object's metadata.
+     */
+    private static final String UPLOAD_ID_METADATA_KEY = "m-multipart-upload-id";
 
     /**
      * Creates a new instance backed by the specified {@link MantaClient}.
@@ -213,14 +224,14 @@ public class MantaMultipartManager {
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
-        final UUID id = Generators.timeBasedGenerator().generate();
+        final UUID uploadId = Generators.timeBasedGenerator().generate();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Creating a new multipart upload [{}] for {}",
-                    id, path);
+                    uploadId, path);
         }
 
-        final String uploadDir = multipartUploadDir(id);
+        final String uploadDir = multipartUploadDir(uploadId);
         mantaClient.putDirectory(uploadDir, true);
 
         final String metadataPath = uploadDir + METADATA_FILE;
@@ -238,7 +249,7 @@ public class MantaMultipartManager {
         LOG.debug("Writing metadata to: {}", metadataPath);
         mantaClient.put(metadataPath, metadataBytes);
 
-        return new MantaMultipartUpload(id, path);
+        return new MantaMultipartUpload(uploadId, path);
     }
 
     /**
@@ -447,19 +458,39 @@ public class MantaMultipartManager {
     /**
      * Retrieves the state of a given Manta multipart upload.
      *
-     * @param id multipart upload id
+     * @param uploadId multipart upload id
      * @return enum representing the state / status of the multipart upload
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartStatus getStatus(final UUID id) throws IOException {
-        final String dir = multipartUploadDir(id);
+    public MantaMultipartStatus getStatus(final UUID uploadId) throws IOException {
+        return getStatus(uploadId, null);
+    }
+
+    /**
+     * Retrieves the state of a given Manta multipart upload.
+     *
+     * @param uploadId multipart upload id
+     * @param jobId Manta job id used to concatenate multipart parts
+     * @return enum representing the state / status of the multipart upload
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    private MantaMultipartStatus getStatus(final UUID uploadId,
+                                           final UUID jobId) throws IOException {
+        Objects.requireNonNull(uploadId);
+
+        final String dir = multipartUploadDir(uploadId);
         final MantaObjectResponse response;
+        final MantaJob job;
 
         try {
             response = mantaClient.head(dir);
         } catch (MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                final MantaJob job = findJob(id);
+                if (jobId == null) {
+                    job = findJob(uploadId);
+                } else {
+                    job = mantaClient.getJob(jobId);
+                }
 
                 if (job == null) {
                     return MantaMultipartStatus.UNKNOWN;
@@ -473,7 +504,7 @@ public class MantaMultipartManager {
                     MantaException mioe = new MantaException("Unexpected job state");
                     mioe.setContextValue("job_state", job.getState());
                     mioe.setContextValue("job_id", job.getId().toString());
-                    mioe.setContextValue("multipart_id", id);
+                    mioe.setContextValue("multipart_id", uploadId);
                     mioe.setContextValue("multipart_upload_dir", dir);
 
                     throw mioe;
@@ -490,7 +521,11 @@ public class MantaMultipartManager {
             throw e;
         }
 
-        final MantaJob job = findJob(id);
+        if (jobId == null) {
+            job = findJob(uploadId);
+        } else {
+            job = mantaClient.getJob(jobId);
+        }
 
         if (job == null) {
             return MantaMultipartStatus.CREATED;
@@ -704,7 +739,8 @@ public class MantaMultipartManager {
 
         final String path = metadata.getPath();
 
-        final StringBuilder jobExecText = new StringBuilder("mget -q ");
+        final StringBuilder jobExecText = new StringBuilder(
+                "set -o pipefail; mget -q ");
 
         List<MantaMultipartUploadTuple> missingTuples = new ArrayList<>();
 
@@ -745,7 +781,14 @@ public class MantaMultipartManager {
             throw e;
         }
 
-        jobExecText.append("| mput -q ")
+        final String headerFormat = "\"%s: %s\" ";
+
+        jobExecText.append("| mput ")
+                   .append("-H ")
+                   .append(String.format(headerFormat, UPLOAD_ID_METADATA_KEY, id))
+                   .append("-H ")
+                   .append(String.format(headerFormat, JOB_ID_METADATA_KEY, "$MANTA_JOB_ID"))
+                   .append("-q ")
                    .append(path)
                    .append(" ");
 
@@ -782,6 +825,9 @@ public class MantaMultipartManager {
                 .addPhase(cleanupPhase)
                 .run();
 
+        // We write the job id to Metadata object so that we can query it easily
+        writeJobIdToMetadata(id, run.getJob().getId());
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("Created job for concatenating parts: {}",
                     run.getJob().getId());
@@ -804,6 +850,60 @@ public class MantaMultipartManager {
         try (InputStream in = mantaClient.getAsInputStream(metadataPath)) {
             return MantaObjectParser.MAPPER.readValue(in,
                     MantaMultipartManager.MultipartMetadata.class);
+        }
+    }
+
+    /**
+     * Writes the multipart job id to the metadata object's Manta metadata.
+     *
+     * @param uploadId multipart upload id
+     * @param jobId Manta job id used to concatenate multipart parts
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    protected void writeJobIdToMetadata(final UUID uploadId, final UUID jobId)
+            throws IOException {
+        Objects.requireNonNull(uploadId);
+        Objects.requireNonNull(jobId);
+
+        final String uploadDir = multipartUploadDir(uploadId);
+        final String metadataPath = uploadDir + METADATA_FILE;
+
+        LOG.debug("Writing job id [{}] to: {}", jobId, metadataPath);
+
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put(JOB_ID_METADATA_KEY, jobId.toString());
+        mantaClient.putMetadata(metadataPath, metadata);
+    }
+
+    /**
+     * Writes the multipart job id to the metadata object's Manta metadata.
+     *
+     * @param uploadId multipart upload id
+     * @throws IOException thrown if there is a problem connecting to Manta
+     * @return Manta job id used to concatenate multipart parts
+     */
+    protected UUID getJobIdFromMetadata(final UUID uploadId)
+            throws IOException {
+        Objects.requireNonNull(uploadId);
+
+        final String uploadDir = multipartUploadDir(uploadId);
+        final String metadataPath = uploadDir + METADATA_FILE;
+
+        try {
+            MantaObjectResponse response = mantaClient.head(metadataPath);
+            String uuidAsString = response.getMetadata().get(JOB_ID_METADATA_KEY);
+
+            if (uuidAsString == null) {
+                return null;
+            }
+
+            return UUID.fromString(uuidAsString);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                return null;
+            }
+
+            throw e;
         }
     }
 
@@ -895,6 +995,7 @@ public class MantaMultipartManager {
                     + "that we no longer have a record for it?";
             MantaMultipartException e = new MantaMultipartException(msg);
             e.setContextValue("upload_id", id.toString());
+            e.setContextValue("upload_directory", dir);
             e.setContextValue("job_id", id.toString());
 
             throw e;
@@ -916,14 +1017,35 @@ public class MantaMultipartManager {
          * delete the upload directory, but isn't finished. */
         for (timesPolled = 0; timesPolled < timesToPoll; timesPolled++) {
             try {
-                final MantaMultipartStatus status = getStatus(id);
-                final boolean finished = status.equals(MantaMultipartStatus.COMPLETED)
-                        || status.equals(MantaMultipartStatus.ABORTED)
-                        || status.equals(MantaMultipartStatus.UNKNOWN);
+                final MantaMultipartStatus status = getStatus(id, job.getId());
 
                 // We do a check preemptively because we shouldn't sleep unless we need to
-                if (finished) {
+                if (status.equals(MantaMultipartStatus.COMPLETED)) {
                     return null;
+                }
+
+                if (status.equals(MantaMultipartStatus.ABORTED)) {
+                    String msg = "Manta job backing multipart upload was aborted. "
+                            + "This upload was unable to be completed.";
+                    MantaMultipartException e = new MantaMultipartException(msg);
+                    e.setContextValue("upload_id", id.toString());
+                    e.setContextValue("upload_directory", dir);
+                    e.setContextValue("job_id", id.toString());
+
+                    throw e;
+                }
+
+                if (status.equals(MantaMultipartStatus.UNKNOWN)) {
+                    String msg = "Manta job backing multipart upload was is in "
+                            + "a unknown state. Typically this means that we "
+                            + "are unable to get the status of the job backing "
+                            + "the multipart upload.";
+                    MantaMultipartException e = new MantaMultipartException(msg);
+                    e.setContextValue("upload_id", id.toString());
+                    e.setContextValue("upload_directory", dir);
+                    e.setContextValue("job_id", id.toString());
+
+                    throw e;
                 }
 
                 // Don't bother to sleep if we won't be doing a check
@@ -1002,13 +1124,20 @@ public class MantaMultipartManager {
      * Returns the Manta job used to concatenate multiple file parts.
      *
      * @param id multipart upload id
-     * @return Manta job object
+     * @return Manta job object or null if not found
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     MantaJob findJob(final UUID id) throws IOException {
-        try (Stream<MantaJob> jobs = mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))) {
-            return jobs.findFirst().orElse(null);
+        final UUID jobId = getJobIdFromMetadata(id);
+
+        if (jobId == null) {
+            LOG.debug("Unable to get job id from metadata directory. Now trying job listing.");
+            try (Stream<MantaJob> jobs = mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))) {
+                return jobs.findFirst().orElse(null);
+            }
         }
+
+        return mantaClient.getJob(jobId);
     }
 
     /**

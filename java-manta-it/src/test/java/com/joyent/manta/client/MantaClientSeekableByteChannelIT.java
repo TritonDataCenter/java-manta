@@ -178,6 +178,7 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
+    @SuppressWarnings("try")
     @Test(expectedExceptions = ClosedChannelException.class)
     public final void closeAndAttemptToRead() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -194,7 +195,7 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-
+    @SuppressWarnings("try")
     @Test(expectedExceptions = ClosedChannelException.class)
     public final void closeAndAttemptToSize() throws IOException {
         final String name = UUID.randomUUID().toString();
