@@ -256,10 +256,12 @@ public class MantaMultipartManagerIT {
         assertEquals(remoteMetadata.get("m-foo"), "bar");
     }
 
-    public void canUpload5MBMultipartBinary() throws IOException {
+    public void canUpload5MBMultipartBinary() throws Exception {
         final long fiveMB = 5L * 1024L * 1024L;
 
         File[] parts = new File[] {
+                createTemporaryDataFile(fiveMB, 1),
+                createTemporaryDataFile(fiveMB, 1),
                 createTemporaryDataFile(fiveMB, 1),
                 createTemporaryDataFile(fiveMB, 1),
                 createTemporaryDataFile(fiveMB, 1)
@@ -298,8 +300,12 @@ public class MantaMultipartManagerIT {
         MantaObjectResponse head = mantaClient.head(path);
         byte[] remoteMd5 = head.getMd5Bytes();
 
-        assertTrue(Arrays.equals(remoteMd5, expectedMd5),
-                "MD5 values do not match - job id: " + multipart.findJob(upload.getId()));
+        if (!Arrays.equals(remoteMd5, expectedMd5)) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("MD5 values do not match - job id: ")
+                   .append(multipart.findJob(upload.getId()));
+            fail(builder.toString());
+        }
 
         Duration totalCompletionTime = Duration.between(start, end);
 
