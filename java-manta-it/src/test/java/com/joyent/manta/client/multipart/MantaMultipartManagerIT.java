@@ -256,16 +256,27 @@ public class MantaMultipartManagerIT {
         assertEquals(remoteMetadata.get("m-foo"), "bar");
     }
 
-    public void canUpload5MBMultipartBinary() throws Exception {
-        final long fiveMB = 5L * 1024L * 1024L;
+    public void canUpload5MbX10MultipartBinary() throws IOException {
+        canUploadMultipartBinary(5, 10);
+    }
 
-        File[] parts = new File[] {
-                createTemporaryDataFile(fiveMB, 1),
-                createTemporaryDataFile(fiveMB, 1),
-                createTemporaryDataFile(fiveMB, 1),
-                createTemporaryDataFile(fiveMB, 1),
-                createTemporaryDataFile(fiveMB, 1)
-        };
+    public void canUpload5MbX200MultipartBinary() throws IOException {
+        canUploadMultipartBinary(5, 200);
+    }
+
+    public void canUpload25MbX20MultipartBinary() throws IOException {
+        canUploadMultipartBinary(5, 10);
+    }
+
+    private void canUploadMultipartBinary(final long sizeInMb,
+                                          final int noOfParts) throws IOException {
+        final long size = sizeInMb * 1024L * 1024L;
+
+        File[] parts = new File[noOfParts];
+
+        for (int i = 0; i < noOfParts; i++) {
+            parts[i] = createTemporaryDataFile(size, 1);
+        }
 
         final File expectedFile = concatenateFiles(parts);
         final byte[] expectedMd5 = md5(expectedFile);
