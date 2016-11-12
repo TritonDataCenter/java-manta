@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [2.7.1] - 2016-11-11
+### Added
+ - Added id getter to MantaJobBuilder.Run. 
+### Fixed
+ - [Setting content type or metadata headers for multipart upload doesn't work](https://github.com/joyent/java-manta/issues/129)
+
 ## [2.7.0] - 2016-11-10
 ### Changed
  - Added `set -o pipefail` to multipart upload jobs so that we catch job failure

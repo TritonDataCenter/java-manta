@@ -826,11 +826,11 @@ public class MantaMultipartManager {
                 .run();
 
         // We write the job id to Metadata object so that we can query it easily
-        writeJobIdToMetadata(id, run.getJob().getId());
+        writeJobIdToMetadata(id, run.getId());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Created job for concatenating parts: {}",
-                    run.getJob().getId());
+                    run.getId());
         }
     }
 
