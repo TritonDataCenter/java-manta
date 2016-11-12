@@ -426,6 +426,16 @@ public class MantaJobBuilder {
 
 
         /**
+         * Get the current job's id.
+         *
+         * @return job id of the current run
+         */
+        public UUID getId() {
+            return this.id;
+        }
+
+
+        /**
          * Wait for the job to finish. We wait for a pre-set amount of time then
          * poll the remote API. If the job is finished we return.
          *
