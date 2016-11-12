@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [2.7.0] - ?
+## [2.7.0] - 2016-11-10
 ### Changed
  - Added `set -o pipefail` to multipart upload jobs so that we catch job failure
    states explicitly.
