@@ -10,6 +10,7 @@ import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.exception.MantaMultipartException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -251,7 +252,9 @@ public class MantaMultipartManagerIT {
 
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
 
-        assertEquals(remoteMetadata.size(), 2, "Unexpected metadata size");
+        assertEquals(remoteMetadata.size(), 4, "Unexpected metadata size");
+        assertTrue(remoteMetadata.containsKey(MantaMultipartManager.JOB_ID_METADATA_KEY));
+        assertTrue(remoteMetadata.containsKey(MantaMultipartManager.UPLOAD_ID_METADATA_KEY));
         assertEquals(remoteMetadata.get("m-hello"), "world");
         assertEquals(remoteMetadata.get("m-foo"), "bar");
     }
@@ -353,10 +356,22 @@ public class MantaMultipartManagerIT {
 
         Instant start = Instant.now();
         multipart.abort(uploadId);
-        multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
-            fail("Completion operation didn't succeed within timeout");
-            return null;
-        });
+
+        boolean caught = false;
+
+        try {
+            multipart.waitForCompletion(uploadId, (Function<UUID, Void>) uuid -> {
+                fail("Completion operation didn't succeed within timeout");
+                return null;
+            });
+        } catch (MantaMultipartException e) {
+            if (e.getMessage().startsWith("Manta job backing multipart upload was "
+                    + "aborted. This upload was unable to be completed.")) {
+                caught = true;
+            }
+        }
+
+        assertTrue(caught, "Backing job aborted exception wasn't thrown");
         Instant end = Instant.now();
 
         MantaMultipartStatus status = multipart.getStatus(uploadId);

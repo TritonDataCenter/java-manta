@@ -102,12 +102,12 @@ public class MantaMultipartManager {
     /**
      * Key name for retrieving job id from metadata.
      */
-    private static final String JOB_ID_METADATA_KEY = "m-multipart-job-id";
+    static final String JOB_ID_METADATA_KEY = "m-multipart-job-id";
 
     /**
      * Key name for retrieving upload id from final object's metadata.
      */
-    private static final String UPLOAD_ID_METADATA_KEY = "m-multipart-upload-id";
+    static final String UPLOAD_ID_METADATA_KEY = "m-multipart-upload-id";
 
     /**
      * Creates a new instance backed by the specified {@link MantaClient}.
@@ -788,9 +788,7 @@ public class MantaMultipartManager {
                    .append(String.format(headerFormat, UPLOAD_ID_METADATA_KEY, id))
                    .append("-H ")
                    .append(String.format(headerFormat, JOB_ID_METADATA_KEY, "$MANTA_JOB_ID"))
-                   .append("-q ")
-                   .append(path)
-                   .append(" ");
+                   .append("-q ");
 
         if (metadata.getContentType() != null) {
             jobExecText.append("-H 'Content-Type: ")
@@ -810,6 +808,8 @@ public class MantaMultipartManager {
                            .append("' ");
             }
         }
+
+        jobExecText.append(path);
 
         final MantaJobPhase concatPhase = new MantaJobPhase()
                 .setType("reduce")
@@ -999,13 +999,6 @@ public class MantaMultipartManager {
             e.setContextValue("job_id", id.toString());
 
             throw e;
-        }
-
-        MantaJobBuilder.Run run = mantaClient.jobBuilder().lookupJob(job);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("No longer waiting for multipart to complete."
-                    + " Actual job state: {}", run.getJob().getState());
         }
 
         final long waitMillis = pingInterval.toMillis();
