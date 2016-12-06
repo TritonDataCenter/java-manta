@@ -522,6 +522,17 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Sets the maximum number of open connections to the Manta API.
+     *
+     * @param maxConnections maximum number of open connections to open
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setMaxConnections(final Integer maxConnections) {
+        this.maxConnections = maxConnections;
+
+        return this;
+    }
 
     /**
      * Sets flag indicating when client-side encryption is enabled.
