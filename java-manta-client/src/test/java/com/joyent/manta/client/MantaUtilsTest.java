@@ -117,4 +117,28 @@ public class MantaUtilsTest {
 
         Assert.assertEquals(actual, expected);
     }
+
+    @Test
+    public void canParseBooleanAsTrue() {
+        String[] trues = new String[] {
+                "true", "True", "TRUE", "T", "t", "TrUe", "1", "yes", "y"
+        };
+
+        for (String s : trues) {
+            String errMsg = String.format("[%s] wasn't parsed as true", s);
+            Assert.assertTrue(MantaUtils.parseBooleanOrNull(s), errMsg);
+        }
+    }
+
+    @Test
+    public void canParseBooleanAsFalse() {
+        String[] falses = new String[] {
+                "false", "False", "FALSE", "F", "f", "FaLsE", "0", "no", "n"
+        };
+
+        for (String s : falses) {
+            String errMsg = String.format("[%s] wasn't parsed as false", s);
+            Assert.assertFalse(MantaUtils.parseBooleanOrNull(s), errMsg);
+        }
+    }
 }

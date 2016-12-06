@@ -4,6 +4,7 @@
 package com.joyent.manta.client;
 
 import com.google.api.client.util.FieldInfo;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,10 +206,16 @@ public final class MantaUtils {
             return null;
         }
 
+        if (string.equals("1")) {
+            return true;
+        } else if (string.equals("0")) {
+            return false;
+        }
+
         Boolean parsed;
 
         try {
-            parsed = Boolean.parseBoolean(string);
+            parsed = BooleanUtils.toBoolean(string);
         } catch (Exception e) {
             Logger logger = LoggerFactory.getLogger(MantaUtils.class);
             String msg = "Error parsing value as boolean. Value: %s";

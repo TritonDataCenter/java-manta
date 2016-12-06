@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [2.7.2] - ?
+### Changed
+ - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
+
 ## [2.7.1] - 2016-11-11
 ### Added
  - Added id getter to MantaJobBuilder.Run. 
