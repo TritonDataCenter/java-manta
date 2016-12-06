@@ -157,6 +157,31 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Boolean isClientEncryptionEnabled() {
+        return false;
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        return false;
+    }
+
+    @Override
+    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+        return EncryptionObjectAuthenticationMode.DEFAULT_MODE;
+    }
+
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return null;
+    }
+
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        return null;
+    }
+
+    @Override
     public String getMantaHomeDirectory() {
         return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
     }

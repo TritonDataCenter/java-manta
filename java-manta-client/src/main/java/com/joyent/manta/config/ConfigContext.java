@@ -93,6 +93,31 @@ public interface ConfigContext {
     Integer getSignatureCacheTTL();
 
     /**
+     * @return true when client-side encryption is enabled.
+     */
+    Boolean isClientEncryptionEnabled();
+
+    /**
+     * @return true when downloading unencrypted files is allowed in encryption mode
+     */
+    Boolean permitUnencryptedDownloads();
+
+    /**
+     * @return specifies if we are in strict ciphertext authentication mode or not
+     */
+    EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode();
+
+    /**
+     * @return path to the private encryption key on the filesystem (can't be used if private key bytes is not null)
+     */
+    String getEncryptionPrivateKeyPath();
+
+    /**
+     * @return private encryption key data (can't be used if private key path is not null)
+     */
+    byte[] getEncryptionPrivateKeyBytes();
+
+    /**
      * Extracts the home directory based on the Manta account name.
      *
      * @param mantaUser user associated with account
@@ -130,6 +155,17 @@ public interface ConfigContext {
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
         sb.append(", signatureCacheTTL=").append(context.getSignatureCacheTTL());
+        sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
+        sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
+        sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
+        sb.append(", encryptionPrivateKeyPath=").append(context.getEncryptionPrivateKeyPath());
+
+        if (context.getEncryptionPrivateKeyBytes() == null) {
+            sb.append(", encryptionPrivateKeyBytesLength=").append("null object");
+        } else {
+            sb.append(", encryptionPrivateKeyBytesLength=").append(context.getEncryptionPrivateKeyBytes().length);
+        }
+
         sb.append('}');
         return sb.toString();
     }

@@ -221,6 +221,47 @@ public final class MantaUtils {
 
 
     /**
+     * Parses an arbitrary object for an enum represented as a String. If the
+     * string is empty or null we return null. If the String doesn't match any
+     * valid enum values, then we return null
+     *
+     * @param value object to parse string value from
+     * @param enumClass enum class to parse
+     * @param <T> enum type to parse
+     * @return value of enum or null on invalid input
+     */
+    public static <T extends Enum<T>> T parseEnumOrNull(final Object value,
+                                                        final Class<T> enumClass) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value.getClass() == enumClass) {
+            @SuppressWarnings("unchecked")
+            T cast = (T)value;
+            return cast;
+        }
+
+        String string = toStringEmptyToNull(value);
+        if (string == null) {
+            return null;
+        }
+
+        T parsed;
+
+        try {
+            parsed = Enum.valueOf(enumClass, string);
+        } catch (RuntimeException e) {
+            Logger logger = LoggerFactory.getLogger(MantaUtils.class);
+            String msg = "Error parsing value as enum. Value: %s";
+            logger.warn(String.format(msg, value), e);
+            parsed = null;
+        }
+
+        return parsed;
+    }
+
+    /**
      * Format the path according to RFC3986.
      *
      * @param path the raw path string.
