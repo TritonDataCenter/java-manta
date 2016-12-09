@@ -234,7 +234,7 @@ public class MantaUtilsTest {
 
         Map<String, String> stringMap = MantaUtils.asStringMap(objectMap);
 
-        String expected = "{key1=12, key2=1970-01-01T00:00:00.072Z, key3=hello: goodbye, key4=one, two, three}";
+        String expected = "{key1=12, key2=1970-01-01T00:00:00.072Z, key3=hello, goodbye, key4=one, two, three}";
         @SuppressWarnings("unchecked")
         String actual = StringUtils.join(stringMap);
 
