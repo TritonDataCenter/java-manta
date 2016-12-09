@@ -30,6 +30,7 @@ import org.apache.http.NoHttpResponseException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -206,7 +207,9 @@ public class MantaClient implements AutoCloseable {
         String path = formatPath(rawPath);
         LOG.debug("DELETE {}", path);
 
-        httpHelper.httpDelete(path);
+        HttpDelete delete = connectionFactory.delete(path);
+        httpHelper.executeAndCloseRequest(delete, HttpStatus.SC_NO_CONTENT,
+                "DELETE {} response [{}] {} ");
     }
 
 
@@ -1256,6 +1259,7 @@ public class MantaClient implements AutoCloseable {
         put.setHeaders(headers.asApacheHttpHeaders());
 
         HttpResponse response = httpHelper.executeAndCloseRequest(put,
+                HttpStatus.SC_NO_CONTENT,
                 "PUT    {} response [{}] {} ");
 
         // When LastModified is set, the directory already exists

@@ -19,7 +19,7 @@
         <!-- Dependency versions -->
         <dependency.apache-http-client.version>4.5.2</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.55</dependency.bouncycastle.version>
-        <dependency.http-client-signature.version>2.2.2</dependency.http-client-signature.version>
+        <dependency.http-client-signature.version>3.0.0-SNAPSHOT</dependency.http-client-signature.version>
         <dependency.fasterxml-uuid>3.1.3</dependency.fasterxml-uuid>
         <dependency.jackson.version>2.6.3</dependency.jackson.version>
         <dependency.jnagmp.version>1.1.0</dependency.jnagmp.version>

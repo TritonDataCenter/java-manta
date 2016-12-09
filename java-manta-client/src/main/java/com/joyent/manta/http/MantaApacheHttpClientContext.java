@@ -1,11 +1,6 @@
 package com.joyent.manta.http;
 
-import com.joyent.http.signature.apache.httpclient.HttpSignatureConfigurator;
-import org.apache.http.auth.AuthProtocolState;
-import org.apache.http.auth.AuthState;
-import org.apache.http.client.AuthCache;
 import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.MDC;
@@ -42,33 +37,17 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
                 "Connection factory must be present");
 
         this.httpClient = connectionFactory.createConnection();
-        this.httpContext = buildHttpContext(connectionFactory.getSignatureConfigurator());
+        this.httpContext = buildHttpContext();
     }
 
     /**
      * Builds a configured HTTP context object that is pre-configured for
      * using HTTP Signature authentication.
      *
-     * @param configurator HTTP Signatures configuration helper to pull properties from
      * @return configured HTTP context object
      */
-    protected HttpContext buildHttpContext(final HttpSignatureConfigurator configurator) {
-        final HttpClientContext context = HttpClientContext.create();
-
-        if (configurator != null) {
-            AuthCache authCache = new BasicAuthCache();
-            context.setAuthCache(authCache);
-
-            AuthState authState = new AuthState();
-            authState.update(configurator.getAuthScheme(), configurator.getCredentials());
-
-            context.setAttribute(HttpClientContext.TARGET_AUTH_STATE,
-                    authState);
-            context.getTargetAuthState().setState(AuthProtocolState.UNCHALLENGED);
-
-        }
-
-        return context;
+    protected HttpContext buildHttpContext() {
+        return HttpClientContext.create();
     }
 
     @Override

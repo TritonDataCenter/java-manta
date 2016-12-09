@@ -8,7 +8,6 @@ import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
-import org.apache.http.HeaderElement;
 import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.HeaderGroup;
@@ -65,7 +64,8 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     /**
      * HttpHeaders delegate which is wrapped by this class.
      */
-    private final transient CaseInsensitiveMap<String, Object> wrappedHeaders = new CaseInsensitiveMap<>();
+    private final transient CaseInsensitiveMap<String, Object> wrappedHeaders =
+            new CaseInsensitiveMap<>();
 
     /**
      * Creates an empty instance.
@@ -107,25 +107,24 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
             }
 
             if (header.getValue() == null) {
-                wrappedHeaders.put(header.getName(), null);
+                put(header.getName(), null);
+                continue;
             }
 
-            final String name = header.getName().toLowerCase();
-            final String value = header.getValue();
+            final String name = header.getName();
 
-            switch (name) {
-                case "content-length":
-                    wrappedHeaders.put(name, Long.parseLong(value));
-                    break;
-                case "age":
-                    wrappedHeaders.put(name, Long.parseLong(value));
-                    break;
-                default:
-                    List<String> values = new ArrayList<>();
-                    for (HeaderElement e : header.getElements()) {
-                        values.add(e.getValue());
-                    }
-                    wrappedHeaders.put(name, values);
+            Object currentValue = get(name);
+
+            if (currentValue == null) {
+                put(name, header.getValue());
+            } else if (currentValue instanceof Collection) {
+                @SuppressWarnings("unchecked")
+                Collection<Object> values = ((Collection<Object>)currentValue);
+                values.add(header.getValue());
+            } else {
+                List<Object> values = new ArrayList<>(2);
+                values.add(currentValue);
+                values.add(header.getValue());
             }
         }
     }
@@ -1214,7 +1213,11 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         HeaderGroup group = parseHeaderKeyValue(name, value);
         Header[] headers = group.getAllHeaders();
         for (int i = 0; i < headers.length; i++) {
-            values.add(headers[i].getValue());
+            String headerValue = headers[i].getValue();
+
+            if (headerValue != null) {
+                values.add(headerValue);
+            }
         }
 
         return values;
@@ -1239,7 +1242,16 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         }
 
         HeaderGroup group = parseHeaderKeyValue(name, value);
-        return group.getCondensedHeader(name).getValue();
+        Header condensed = group.getCondensedHeader(name);
+        final String condensedValue;
+
+        if (condensed != null) {
+            condensedValue = condensed.getValue();
+        } else {
+            condensedValue = null;
+        }
+
+        return condensedValue;
     }
 
 

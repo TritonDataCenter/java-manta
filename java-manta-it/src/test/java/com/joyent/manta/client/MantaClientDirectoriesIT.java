@@ -136,7 +136,8 @@ public class MantaClientDirectoriesIT {
     public void directoryIsMarkedAsSuch() throws IOException {
         MantaObject dir = mantaClient.head(testPathPrefix);
         Assert.assertTrue(dir.isDirectory(),
-                String.format("Directory should be marked as such [%s]", testPathPrefix));
+                String.format("Directory should be marked as such [%s]. "
+                        + "\nResponse: %s", testPathPrefix, dir));
     }
 
 

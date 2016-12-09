@@ -2,9 +2,7 @@ package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
@@ -23,14 +21,12 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -270,7 +266,7 @@ public class HttpHelper implements AutoCloseable {
             MantaObjectResponse obj = new MantaObjectResponse(path, responseHeaders, metadata);
 
             if (statusLine.getStatusCode() != HttpStatus.SC_NO_CONTENT) {
-                throw buildAnnotatedClientException(put, response,
+                throw new MantaClientHttpResponseException(put, response,
                         put.getURI().getPath());
             }
 
@@ -299,6 +295,28 @@ public class HttpHelper implements AutoCloseable {
                                                    final String logMessage,
                                                    final Object... logParameters)
             throws IOException {
+        return executeRequest(request, HttpStatus.SC_OK, logMessage, logParameters);
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request and returns back the
+     * response.
+     *
+     * @param request request object
+     * @param expectedStatusCode status code returned that indicates success
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected CloseableHttpResponse executeRequest(final HttpUriRequest request,
+                                                   final int expectedStatusCode,
+                                                   final String logMessage,
+                                                   final Object... logParameters)
+            throws IOException {
+        Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
@@ -311,8 +329,8 @@ public class HttpHelper implements AutoCloseable {
                     statusLine.getReasonPhrase());
         }
 
-        if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-            throw buildAnnotatedClientException(request, response,
+        if (statusLine.getStatusCode() != expectedStatusCode) {
+            throw new MantaClientHttpResponseException(request, response,
                     request.getURI().getPath());
         }
 
@@ -335,6 +353,28 @@ public class HttpHelper implements AutoCloseable {
                                                            final String logMessage,
                                                            final Object... logParameters)
             throws IOException {
+        return executeAndCloseRequest(request, HttpStatus.SC_OK, logMessage, logParameters);
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request, closes the request and
+     * returns back the response.
+     *
+     * @param request request object
+     * @param expectedStatusCode status code returned that indicates success
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected CloseableHttpResponse executeAndCloseRequest(final HttpUriRequest request,
+                                                           final int expectedStatusCode,
+                                                           final String logMessage,
+                                                           final Object... logParameters)
+            throws IOException {
+        Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
@@ -347,9 +387,10 @@ public class HttpHelper implements AutoCloseable {
                         statusLine.getReasonPhrase());
             }
 
-            if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-                throw buildAnnotatedClientException(request, response,
-                        request.getURI().getPath());
+            if (statusLine.getStatusCode() != expectedStatusCode) {
+                String path = request.getURI().getPath();
+                throw new MantaClientHttpResponseException(request, response,
+                        path);
             }
 
             return response;
@@ -375,6 +416,32 @@ public class HttpHelper implements AutoCloseable {
                                            final String logMessage,
                                            final Object... logParameters)
             throws IOException {
+        return executeAndCloseRequest(request, HttpStatus.SC_OK,
+                responseAction, logMessage, logParameters);
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request, closes the request and
+     * returns back the response.
+     *
+     * @param <R> return value from responseAction function
+     * @param request request object
+     * @param expectedStatusCode status code returned that indicates success
+     * @param responseAction action to perform against the response before it is closed
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected <R> R executeAndCloseRequest(final HttpUriRequest request,
+                                           final int expectedStatusCode,
+                                           final Function<CloseableHttpResponse, R> responseAction,
+                                           final String logMessage,
+                                           final Object... logParameters)
+            throws IOException {
+        Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
@@ -387,8 +454,8 @@ public class HttpHelper implements AutoCloseable {
                         statusLine.getReasonPhrase());
             }
 
-            if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-                throw buildAnnotatedClientException(request, response,
+            if (statusLine.getStatusCode() != expectedStatusCode) {
+                throw new MantaClientHttpResponseException(request, response,
                         request.getURI().getPath());
             }
 
@@ -397,68 +464,23 @@ public class HttpHelper implements AutoCloseable {
     }
 
     /**
-     * Builds a client exception object that is annotated with all of the
-     * relevant request and response debug information.
-     * @param request HTTP request object
-     * @param response HTTP response object
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return fully annotated exception instance
-     */
-    protected MantaClientHttpResponseException buildAnnotatedClientException(
-            final HttpRequest request, final HttpResponse response,
-            final String path) {
-        final HttpEntity entity = response.getEntity();
-        final String jsonContentType = ContentType.APPLICATION_JSON.toString();
-        ErrorDetail errorDetail = null;
-
-        if (entity != null && entity.getContentType().getValue().equals(jsonContentType)) {
-            try {
-                try (InputStream json = entity.getContent()) {
-                    errorDetail = mapper.readValue(json, ErrorDetail.class);
-                } catch (RuntimeException e) {
-                    LOGGER.warn("Unable to deserialize json error data", e);
-                }
-            } catch (IOException e) {
-                LOGGER.warn("Problem getting response error content", e);
-            }
-        }
-
-        StatusLine statusLine = response.getStatusLine();
-
-        String msg = String.format("HTTP HEAD request failed to: %s", path);
-        MantaClientHttpResponseException e = new MantaClientHttpResponseException(msg)
-                .setRequestId(extractRequestId(request))
-                .setStatusLine(statusLine);
-
-        if (errorDetail == null) {
-            e.setServerCode(MantaErrorCode.UNKNOWN_ERROR);
-        } else {
-            e.setServerCode(MantaErrorCode.valueOfCode(errorDetail.getCode()));
-            e.setContextValue("server_message", errorDetail.getMessage());
-        }
-
-        annotateContextedException(e, request, response);
-        return e;
-    }
-
-    /**
      * Extracts the request id from a {@link HttpRequest} object.
      *
-     * @param request HTTP request object
+     * @param response HTTP request object
      * @return UUID as a string representing unique request or null if not available
      */
-    public static String extractRequestId(final HttpRequest request) {
-        if (request == null) {
+    public static String extractRequestId(final HttpResponse response) {
+        if (response == null) {
             return null;
         }
 
-        final Header requestIdHeader = request.getFirstHeader(REQUEST_ID);
+        final Header responseIdHeader = response.getFirstHeader(REQUEST_ID);
         final String requestId;
 
-        if (requestIdHeader == null) {
+        if (responseIdHeader == null) {
             requestId = null;
         } else {
-            requestId = requestIdHeader.getValue();
+            requestId = responseIdHeader.getValue();
         }
 
         return requestId;
@@ -478,7 +500,7 @@ public class HttpHelper implements AutoCloseable {
         Objects.requireNonNull(exception, "Exception context object must be present");
 
         if (request != null) {
-            final String requestId = extractRequestId(request);
+            final String requestId = extractRequestId(response);
             exception.setContextValue("requestId", requestId);
 
             final String requestDump = reflectionToString(request, SHORT_PREFIX_STYLE);

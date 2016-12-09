@@ -4,11 +4,22 @@
 package com.joyent.manta.exception;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joyent.manta.client.HttpHelper;
+import com.joyent.manta.client.MantaObjectMapper;
+import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Exception class representing a failure in the contract of Manta's behavior.
@@ -21,7 +32,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaClientHttpResponseException.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientHttpResponseException.class);
 
     /**
      * Server error code returned from Manta.
@@ -97,8 +108,59 @@ public class MantaClientHttpResponseException extends MantaIOException {
         super(cause);
     }
 
-
     /**
+     * Builds a client exception object that is annotated with all of the
+     * relevant request and response debug information.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     */
+    public MantaClientHttpResponseException(final HttpRequest request,
+                                            final HttpResponse response,
+                                            final String path) {
+        super(String.format("HTTP HEAD request failed to: %s", path));
+        final HttpEntity entity = response.getEntity();
+        final String jsonMimeType = ContentType.APPLICATION_JSON.getMimeType();
+
+        final String mimeType;
+
+        if (entity != null && entity.getContentType() != null) {
+            mimeType = entity.getContentType().getValue();
+        } else {
+            mimeType = null;
+        }
+
+        ErrorDetail errorDetail = null;
+        ObjectMapper mapper = MantaObjectMapper.INSTANCE;
+
+        if (entity != null && (mimeType == null || mimeType.equals(jsonMimeType))) {
+            try {
+                try (InputStream json = entity.getContent()) {
+                    errorDetail = mapper.readValue(json, ErrorDetail.class);
+                } catch (RuntimeException e) {
+                    LOGGER.warn("Unable to deserialize json error data", e);
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Problem getting response error content", e);
+            }
+        }
+
+        StatusLine statusLine = response.getStatusLine();
+        setRequestId(HttpHelper.extractRequestId(response));
+        setStatusLine(statusLine);
+
+        if (errorDetail == null) {
+            setServerCode(MantaErrorCode.UNKNOWN_ERROR);
+        } else {
+            setServerCode(MantaErrorCode.valueOfCode(errorDetail.getCode()));
+            setContextValue("server_message", errorDetail.getMessage());
+        }
+
+        HttpHelper.annotateContextedException(this, request, response);
+    }
+
+                                            /**
      * @return Whether received a successful HTTP status code {@code >= 200 && < 300} (see {@link #getStatusCode()}).
      */
     @Deprecated
@@ -148,42 +210,6 @@ public class MantaClientHttpResponseException extends MantaIOException {
         return this.content;
     }
 
-
-    @Override
-    public String getLocalizedMessage() {
-        return getMessage();
-    }
-
-
-    @Override
-    public String getMessage() {
-        if (serverCode.equals(MantaErrorCode.NO_CODE_ERROR)) {
-            return super.getMessage();
-        } else if (serverCode.equals(MantaErrorCode.UNKNOWN_ERROR)) {
-            return String.format("%d %s (request: %s) - Unknown error content: %s",
-                    getStatusCode(),
-                    getStatusMessage(),
-                    this.getRequestId(),
-                    getContent());
-        // On signing failures, we display the signed date to help debug
-        } else if (serverCode.equals(MantaErrorCode.INVALID_SIGNATURE_ERROR)) {
-            return String.format("%d %s (request: %s, signed date: %s, authorization: %s) - [%s] %s",
-                    getStatusCode(),
-                    getStatusMessage(),
-                    this.getRequestId(),
-                    getHeaders().getDate(),
-                    getHeaders().getAuthorization(),
-                    this.serverCode.getCode(), super.getMessage());
-        } else {
-            return String.format("%d %s (request: %s) - [%s] %s",
-                    getStatusCode(),
-                    getStatusMessage(),
-                    this.getRequestId(),
-                    this.serverCode.getCode(), super.getMessage());
-        }
-    }
-
-
     /**
      * Error code returned from server. This is a String constant defined by
      * Manta.
@@ -210,6 +236,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      */
     public MantaClientHttpResponseException setRequestId(final String requestId) {
         this.requestId = requestId;
+        setContextValue("requestId", requestId);
         return this;
     }
 
@@ -222,6 +249,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      */
     public MantaClientHttpResponseException setStatusLine(final StatusLine statusLine) {
         this.statusLine = statusLine;
+        setContextValue("statusLine", statusLine);
         return this;
     }
 
@@ -233,6 +261,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      */
     public MantaClientHttpResponseException setHeaders(final MantaHttpHeaders headers) {
         this.headers = headers;
+        setContextValue("headers", headers.toString());
         return this;
     }
 
@@ -244,6 +273,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      */
     public MantaClientHttpResponseException setContent(final String content) {
         this.content = content;
+        setContextValue("content", content);
         return this;
     }
 
@@ -255,6 +285,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      */
     public MantaClientHttpResponseException setServerCode(final MantaErrorCode serverCode) {
         this.serverCode = serverCode;
+        setContextValue("serverCode", serverCode.getCode());
         return this;
     }
 }

@@ -1,9 +1,17 @@
 package com.joyent.manta.http;
 
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
+import org.apache.http.entity.ContentType;
+import org.apache.http.message.BasicHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,7 +22,58 @@ import java.util.Set;
  */
 @Test(groups = { "headers" })
 public class MantaHttpHeadersTest {
-    @Test
+    private static final Header[] DIR_LIST_HEADERS = new Header[] {
+        new BasicHeader("Last-Modified","Fri, 09 Dec 2016 22:09:44 GMT"),
+        new BasicHeader("Content-Type", "application/x-json-stream; type=directory"),
+        new BasicHeader("Result-Set-Size", "0"),
+        new BasicHeader("Date", "Fri, 09 Dec 2016 22:09:44 GMT"),
+        new BasicHeader("Server", "Manta"),
+        new BasicHeader("x-request-id", "17d243b4-f9a7-4042-bc21-7322fb40fc1c"),
+        new BasicHeader("x-response-time", "16"),
+        new BasicHeader("x-server-name", "02d02889-cd80-4ac1-bc0c-4775b86661e4"),
+        new BasicHeader("Connection", "keep-alive")};
+
+    public void canIngestApacheHeaders() {
+        MantaHttpHeaders headers = new MantaHttpHeaders(DIR_LIST_HEADERS);
+
+        for (Header h : DIR_LIST_HEADERS) {
+            Object actual = headers.get(h.getName());
+            Object expected = h.getValue();
+            Assert.assertEquals(actual, expected);
+        }
+
+        int i = 0;
+        Assert.assertEquals(headers.getLastModified(), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.getContentType(), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.getResultSetSize().toString(), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.getDate(), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.get(HttpHeaders.SERVER), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.getRequestId(), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.get("X-Response-Time"), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.get("X-Server-Name"), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.get(HttpHeaders.CONNECTION), DIR_LIST_HEADERS[i++].getValue());
+    }
+
+    public void canExportApacheHeaders() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setDurabilityLevel(3);
+        headers.setContentType(ContentType.APPLICATION_JSON.withCharset(Charsets.UTF_8).toString());
+        headers.put("X-Multi-Header",
+                Arrays.asList("value 1", "value 2"));
+
+        Header[] apacheHeaders = headers.asApacheHttpHeaders();
+        Header durability = findHeader(MantaHttpHeaders.HTTP_DURABILITY_LEVEL, apacheHeaders);
+        Header contentType = findHeader(HttpHeaders.CONTENT_TYPE, apacheHeaders);
+        Header multiHeader = findHeader("x-multi-header", apacheHeaders);
+
+        Assert.assertEquals(headers.getDurabilityLevel().toString(), durability.getValue());
+        Assert.assertEquals(headers.getContentType(), contentType.getValue());
+
+        @SuppressWarnings("unchecked")
+        Collection<String> muliHeaderValues = (Collection<String>)headers.get("x-multi-header");
+        Assert.assertEquals(StringUtils.join(muliHeaderValues, ", "), multiHeader.getValue());
+    }
+
     public void canSetRoleTags() {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
@@ -29,5 +88,15 @@ public class MantaHttpHeadersTest {
         if (!CollectionUtils.isEqualCollection(actual, roles)) {
             Assert.fail("Input and output roles, should be equal");
         }
+    }
+
+    private static Header findHeader(final String name, final Header[] headers) {
+        for (Header h : headers) {
+            if (h.getName().toLowerCase().equals(name.toLowerCase())) {
+                return h;
+            }
+        }
+
+        return null;
     }
 }

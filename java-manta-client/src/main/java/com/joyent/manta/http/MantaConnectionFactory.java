@@ -3,7 +3,9 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureConfigurator;
+import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import org.apache.commons.lang3.ObjectUtils;
@@ -142,6 +144,14 @@ public class MantaConnectionFactory {
         }
 
         builder.addInterceptorFirst(new RequestIdInterceptor());
+
+        @SuppressWarnings("unchecked")
+        HttpSignatureAuthScheme authScheme = (HttpSignatureAuthScheme)this.signatureConfigurator.getAuthScheme();
+
+        builder.addInterceptorLast(new HttpSignatureRequestInterceptor(
+                authScheme,
+                this.createCredentials(),
+                !this.config.noAuth()));
 
         return builder;
     }

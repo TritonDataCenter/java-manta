@@ -154,9 +154,19 @@ public class MantaObjectResponse implements MantaObject {
         this.mtime = headers.getLastModified();
         this.requestId = headers.getRequestId();
 
-        final String contentType = headers.getContentType();
-        if (contentType != null && contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
-            this.type = "directory";
+        // Detect if we are pointing to a file or an object
+        if (headers.getContentType() != null) {
+            final String contentType = headers.getContentType();
+
+            if (contentType == null) {
+                this.type = null;
+            } else if (contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+                this.type = "directory";
+            } else {
+                this.type = "object";
+            }
+        } else {
+            this.type = null;
         }
 
         if (metadata != null) {
@@ -318,7 +328,7 @@ public class MantaObjectResponse implements MantaObject {
 
     @Override
     public final boolean isDirectory() {
-        return MANTA_OBJECT_TYPE_DIRECTORY.equals(type);
+        return MANTA_OBJECT_TYPE_DIRECTORY.equals(this.type);
     }
 
 
@@ -372,6 +382,7 @@ public class MantaObjectResponse implements MantaObject {
         sb.append(", contentType='").append(getContentType()).append('\'');
         sb.append(", etag='").append(getEtag()).append('\'');
         sb.append(", mtime='").append(getMtime()).append('\'');
+        sb.append(", type='").append(getType()).append('\'');
         sb.append(", requestId='").append(getRequestId()).append('\'');
         sb.append(", httpHeaders=").append(httpHeaders);
         sb.append(", directory=").append(isDirectory());
