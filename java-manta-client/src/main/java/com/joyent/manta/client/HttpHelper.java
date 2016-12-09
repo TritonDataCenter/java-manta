@@ -1,28 +1,41 @@
 package com.joyent.manta.client;
 
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.util.ObjectParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.exception.MantaErrorCode;
+import com.joyent.manta.http.MantaConnectionContext;
+import com.joyent.manta.http.MantaConnectionFactory;
+import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.InputStream;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
 import static com.joyent.manta.client.MantaUtils.asString;
-import static com.joyent.manta.client.MantaUtils.formatPath;
+import static com.joyent.manta.http.MantaHttpHeaders.REQUEST_ID;
 import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
@@ -31,69 +44,62 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class HttpHelper {
+public class HttpHelper implements AutoCloseable {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(HttpHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpHelper.class);
 
     /**
-     * Base Manta URL that all paths are appended to.
+     * Configuration context object that configuration values are pulled from.
      */
-    private final String url;
+    private final ConfigContext config;
 
     /**
-     * Reference to the Google HTTP Client HTTP request creation class.
+     * Reference to the Apache HTTP Client HTTP request creation class.
      */
-    private final HttpRequestFactory httpRequestFactory;
+    private final MantaConnectionFactory connectionFactory;
 
+    /**
+     * Current connection context used for maintaining state between requests.
+     */
+    private final MantaConnectionContext connectionContext;
+
+    /**
+     * Object mapper for deserializing JSON.
+     */
+    private final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
     /**
      * Creates a new instance of the helper class.
      *
-     * @param url base Manta URL
-     * @param httpRequestFactory request creation class
+     * @param config Configuration context
+     * @param connectionContext saved context used between requests to the Manta client
+     * @param connectionFactory instance used for building requests to Manta
      */
-    public HttpHelper(final String url,
-                      final HttpRequestFactory httpRequestFactory) {
-        this.url = url;
-        this.httpRequestFactory = httpRequestFactory;
-    }
+    public HttpHelper(final ConfigContext config,
+                      final MantaConnectionContext connectionContext,
+                      final MantaConnectionFactory connectionFactory) {
+        this.config = config;
+        this.connectionContext = connectionContext;
+        this.connectionFactory = connectionFactory;
 
+    }
 
     /**
      * Executes a HTTP HEAD against the remote Manta API.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return Google HTTP Client response object
+     * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the object over the network
      */
     protected HttpResponse httpHead(final String path) throws IOException {
-        Objects.requireNonNull(path, "Path must not be null");
+        Validate.notNull(path, "Path must not be null");
 
-        LOG.debug("HEAD   {}", path);
+        LOGGER.debug("HEAD   {}", path);
 
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = httpRequestFactory.buildHeadRequest(genericUrl);
-
-        HttpResponse response = null;
-
-        try {
-            response = request.execute();
-            LOG.debug("HEAD   {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
-            return response;
-        } catch (IOException | UncheckedIOException e) {
-            throw buildException(e, request, response);
-        } finally {
-            if (response != null) {
-                try {
-                    response.disconnect();
-                } catch (IOException e) {
-                    LOG.warn("Problem disconnecting response resource", e);
-                }
-            }
-        }
+        HttpHead head = connectionFactory.head(path);
+        return executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
     }
 
 
@@ -101,187 +107,136 @@ public class HttpHelper {
      * Executes a HTTP GET against the remote Manta API.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @return Google HTTP Client response object
+     * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the object over the network
      */
     protected HttpResponse httpGet(final String path) throws IOException {
         return httpGet(path, null);
     }
 
-
     /**
      * Executes a HTTP GET against the remote Manta API.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param parser Parser used for parsing response into a POJO
-     * @return Google HTTP Client response object
+     * @param headers optional HTTP headers to include when getting an object
+     * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the object over the network
      */
     protected HttpResponse httpGet(final String path,
-                                   final ObjectParser parser) throws IOException {
-        Objects.requireNonNull(path, "Path must not be null");
+                                   final MantaHttpHeaders headers) throws IOException {
+        Validate.notNull(path, "Path must not be null");
 
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        return httpGet(genericUrl, parser);
+        LOGGER.debug("GET    {}", path);
+
+        final HttpGet get = connectionFactory.get(path);
+        return executeAndCloseRequest(get, "GET    {} response [{}] {} ");
     }
 
 
     /**
-     * Executes a HTTP GET against the remote Manta API.
+     * Executes a HTTP DELETE against the remote Manta API.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param parser Parser used for parsing response into a POJO
-     * @param headers optional HTTP headers to include when getting an object
-     * @return Google HTTP Client response object
+     * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the object over the network
      */
-    protected HttpResponse httpGet(final String path,
-                                   final ObjectParser parser,
-                                   final MantaHttpHeaders headers) throws IOException {
-        Objects.requireNonNull(path, "Path must not be null");
+    protected HttpResponse httpDelete(final String path) throws IOException {
+        Validate.notNull(path, "Path must not be null");
 
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        return httpGet(genericUrl, parser, headers);
+        LOGGER.debug("DELETE {}", path);
+
+        final HttpDelete delete = connectionFactory.delete(path);
+        return executeAndCloseRequest(delete, "DELETE {} response [{}] {} ");
     }
 
 
     /**
-     * Executes a HTTP GET against the remote Manta API.
-     *
-     * @param genericUrl The URL to the object on Manta
-     * @param parser Parser used for parsing response into a POJO
-     * @return Google HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    protected HttpResponse httpGet(final GenericUrl genericUrl,
-                                   final ObjectParser parser) throws IOException {
-        return httpGet(genericUrl, parser, null);
-    }
-
-
-    /**
-     * Executes a HTTP GET against the remote Manta API.
-     *
-     * @param genericUrl The URL to the object on Manta
-     * @param parser Parser used for parsing response into a POJO
-     * @param headers optional HTTP headers to include when getting an object
-     * @return Google HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    protected HttpResponse httpGet(final GenericUrl genericUrl,
-                                   final ObjectParser parser,
-                                   final MantaHttpHeaders headers) throws IOException {
-        Objects.requireNonNull(genericUrl, "URL must be present");
-
-        LOG.debug("GET    {}", genericUrl.getRawPath());
-
-        final HttpRequest request = httpRequestFactory.buildGetRequest(genericUrl);
-
-        if (headers != null) {
-            request.setHeaders(headers.asGoogleClientHttpHeaders());
-        }
-
-        if (parser != null) {
-            request.setParser(parser);
-        }
-
-        HttpResponse response = null;
-
-        try {
-            response = request.execute();
-            LOG.debug("GET    {} response [{}] {} ",
-                    genericUrl.getRawPath(),
-                    response.getStatusCode(),
-                    response.getStatusMessage());
-        } catch (IOException | UncheckedIOException e) {
-            throw buildException(e, request, response);
-        }
-
-        return response;
-    }
-
-
-    /**
-     * Utility method for handling HTTP POST to the Google HTTP Client.
+     * Utility method for handling HTTP POST to the Apache HTTP Client.
      *
      * @param path path to post to (without hostname)
-     * @param content content object to post
+     * @return HTTP response object
+     * @throws IOException thrown when there is a problem POSTing over the network
+     */
+    protected HttpResponse httpPost(final String path) throws IOException {
+        return httpPost(path, null, null);
+    }
+
+
+    /**
+     * Utility method for handling HTTP POST to the Apache HTTP Client.
+     *
+     * @param path path to post to (without hostname)
+     * @param entity content object to post
      * @return HTTP response object
      * @throws IOException thrown when there is a problem POSTing over the network
      */
     protected HttpResponse httpPost(final String path,
-                                    final HttpContent content) throws IOException {
-        return httpPost(path, content, null);
+                                    final HttpEntity entity) throws IOException {
+        return httpPost(path, null, entity);
     }
 
 
     /**
-     * Utility method for handling HTTP POST to the Google HTTP Client.
+     * Utility method for handling HTTP POST to the Apache HTTP Client.
      *
      * @param path path to post to (without hostname)
-     * @param content content object to post
      * @param headers HTTP headers to attach to request
+     * @param entity content object to post
      * @return HTTP response object
      * @throws IOException thrown when there is a problem POSTing over the network
      */
     protected HttpResponse httpPost(final String path,
-                                    final HttpContent content,
-                                    final HttpHeaders headers) throws IOException {
-        LOG.debug("POST   {}", path);
+                                    final MantaHttpHeaders headers,
+                                    final HttpEntity entity) throws IOException {
+        Validate.notNull(path, "Path must not be null");
 
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        final HttpRequest request = httpRequestFactory.buildPostRequest(genericUrl, content);
+        LOGGER.debug("POST   {}", path);
 
-        if (content != null) {
-            request.setContent(content);
+        final MantaHttpHeaders httpHeaders;
+
+        if (headers == null) {
+            httpHeaders = new MantaHttpHeaders();
+        } else {
+            httpHeaders = headers;
         }
 
-        if (headers != null) {
-            request.setHeaders(headers);
+        final HttpPost post = connectionFactory.post(path);
+        post.setHeaders(httpHeaders.asApacheHttpHeaders());
+
+        if (entity != null) {
+            post.setEntity(entity);
         }
 
-        return executeAndCloseRequest(request,
-                "POST   {} response [{}] {} ", path);
+        CloseableHttpClient client = connectionContext.getHttpClient();
+
+        try (CloseableHttpResponse response = client.execute(post)) {
+            StatusLine statusLine = response.getStatusLine();
+            LOGGER.debug("POST   {} response [{}] {} ", path, statusLine.getStatusCode(),
+                    statusLine.getReasonPhrase());
+
+            return response;
+        }
     }
 
 
     /**
      * Executes an HTTP PUT against the remote Manta API.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers  optional HTTP headers to include when copying the object
-     * @param content  Google HTTP Client content object
+     * @param path Full URL to the object on the Manta API
+     * @param headers optional HTTP headers to include when copying the object
+     * @param entity Apache HTTP Client content entity object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
      */
     protected MantaObjectResponse httpPut(final String path,
                                           final MantaHttpHeaders headers,
-                                          final HttpContent content,
+                                          final HttpEntity entity,
                                           final MantaMetadata metadata)
             throws IOException {
-        final GenericUrl genericUrl = new GenericUrl(this.url + formatPath(path));
-        return httpPut(genericUrl, headers, content, metadata);
-    }
+        Validate.notNull(path, "Path must not be null");
 
-
-    /**
-     * Executes an HTTP PUT against the remote Manta API.
-     *
-     * @param genericUrl Full URL to the object on the Manta API
-     * @param headers    optional HTTP headers to include when copying the object
-     * @param content    Google HTTP Client content object
-     * @param metadata   optional user-supplied metadata for object
-     * @return Manta response object
-     * @throws IOException when there is a problem sending the object over the network
-     */
-    protected MantaObjectResponse httpPut(final GenericUrl genericUrl,
-                                          final MantaHttpHeaders headers,
-                                          final HttpContent content,
-                                          final MantaMetadata metadata)
-            throws IOException {
-        final String path = genericUrl.getRawPath();
-        LOG.debug("PUT    {}", path);
+        LOGGER.debug("PUT    {}", path);
 
         final MantaHttpHeaders httpHeaders;
 
@@ -295,60 +250,36 @@ public class HttpHelper {
             httpHeaders.putAll(metadata);
         }
 
-        final HttpRequest request = httpRequestFactory.buildPutRequest(genericUrl, content);
+        final HttpPut put = connectionFactory.put(path);
+        put.setHeaders(httpHeaders.asApacheHttpHeaders());
 
-        request.setHeaders(httpHeaders.asGoogleClientHttpHeaders());
+        if (entity != null) {
+            put.setEntity(entity);
+        }
 
-        HttpResponse response = null;
-        try {
-            response = request.execute();
-            LOG.debug("PUT    {} response [{}] {} ", path, response.getStatusCode(),
-                    response.getStatusMessage());
-            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getHeaders());
+        CloseableHttpClient client = connectionContext.getHttpClient();
+
+        try (CloseableHttpResponse response = client.execute(put)) {
+            StatusLine statusLine = response.getStatusLine();
+            LOGGER.debug("PUT    {} response [{}] {} ", path, statusLine.getStatusCode(),
+                    statusLine.getReasonPhrase());
+            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getAllHeaders());
             // We add back in the metadata made in the request so that it is easily available
             responseHeaders.putAll(httpHeaders.metadata());
 
             MantaObjectResponse obj = new MantaObjectResponse(path, responseHeaders, metadata);
 
-            if (obj.getContentType() == null) {
-                obj.setContentType(content.getType());
+            if (statusLine.getStatusCode() != HttpStatus.SC_NO_CONTENT) {
+                throw buildAnnotatedClientException(put, response,
+                        put.getURI().getPath());
+            }
+
+            if (obj.getContentType() == null && entity != null && entity.getContentType() != null) {
+                obj.setContentType(entity.getContentType().getValue());
             }
 
             return obj;
-        } catch (IOException | UncheckedIOException e) {
-            throw buildException(e, request, response);
-        } finally {
-            if (response != null) {
-                try {
-                    response.disconnect();
-                } catch (IOException e) {
-                    LOG.warn("Problem disconnecting response resource", e);
-                }
-            }
         }
-    }
-
-    /**
-     * Extracts the request id from a {@link HttpRequest} object.
-     *
-     * @param request HTTP request object
-     * @return UUID as a string representing unique request or null if not available
-     */
-    protected String extractRequestId(final HttpRequest request) {
-        if (request == null) {
-            return null;
-        }
-
-        final HttpHeaders headers = request.getHeaders();
-        final String requestId;
-
-        if (headers == null) {
-            requestId = null;
-        } else {
-            requestId = headers.getFirstHeaderStringValue(REQUEST_ID);
-        }
-
-        return requestId;
     }
 
 
@@ -364,34 +295,70 @@ public class HttpHelper {
      * @return response object
      * @throws IOException thrown when we are unable to process the request on the network
      */
-    protected HttpResponse executeAndCloseRequest(final HttpRequest request,
-                                                  final String logMessage,
-                                                  final Object... logParameters)
+    protected CloseableHttpResponse executeRequest(final HttpUriRequest request,
+                                                   final String logMessage,
+                                                   final Object... logParameters)
             throws IOException {
-        HttpResponse response = null;
 
-        try {
-            response = request.execute();
-            LOG.debug(logMessage, logParameters, response.getStatusCode(),
-                    response.getStatusMessage());
+        CloseableHttpClient client = connectionContext.getHttpClient();
+
+        CloseableHttpResponse response = client.execute(request,
+                connectionContext.getHttpContext());
+        StatusLine statusLine = response.getStatusLine();
+
+        if (LOGGER.isDebugEnabled() && logMessage != null) {
+            LOGGER.debug(logMessage, logParameters, statusLine.getStatusCode(),
+                    statusLine.getReasonPhrase());
+        }
+
+        if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+            throw buildAnnotatedClientException(request, response,
+                    request.getURI().getPath());
+        }
+
+        return response;
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request, closes the request and
+     * returns back the response.
+     *
+     * @param request request object
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected CloseableHttpResponse executeAndCloseRequest(final HttpUriRequest request,
+                                                           final String logMessage,
+                                                           final Object... logParameters)
+            throws IOException {
+
+        CloseableHttpClient client = connectionContext.getHttpClient();
+
+        try (CloseableHttpResponse response = client.execute(request,
+                connectionContext.getHttpContext())) {
+            StatusLine statusLine = response.getStatusLine();
+
+            if (LOGGER.isDebugEnabled() && logMessage != null) {
+                LOGGER.debug(logMessage, logParameters, statusLine.getStatusCode(),
+                        statusLine.getReasonPhrase());
+            }
+
+            if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+                throw buildAnnotatedClientException(request, response,
+                        request.getURI().getPath());
+            }
 
             return response;
-        } catch (IOException | UncheckedIOException e) {
-            throw buildException(e, request, response);
-        } finally {
-            if (response != null) {
-                try {
-                    response.disconnect();
-                } catch (IOException e) {
-                    LOG.warn("Problem disconnecting response resource", e);
-                }
-            }
         }
     }
 
     /**
-     * Executes a {@link HttpRequest}, logs the request and returns back the
-     * response.
+     * Executes a {@link HttpRequest}, logs the request, closes the request and
+     * returns back the response.
      *
      * @param <R> return value from responseAction function
      * @param request request object
@@ -403,60 +370,98 @@ public class HttpHelper {
      * @return response object
      * @throws IOException thrown when we are unable to process the request on the network
      */
-    protected <R> R executeAndCloseRequest(final HttpRequest request,
-                                           final Function<HttpResponse, R> responseAction,
+    protected <R> R executeAndCloseRequest(final HttpUriRequest request,
+                                           final Function<CloseableHttpResponse, R> responseAction,
                                            final String logMessage,
                                            final Object... logParameters)
             throws IOException {
-        HttpResponse response = null;
 
-        try {
-            response = request.execute();
-            LOG.debug(logMessage, logParameters, response.getStatusCode(),
-                    response.getStatusMessage());
+        CloseableHttpClient client = connectionContext.getHttpClient();
+
+        try (CloseableHttpResponse response = client.execute(request,
+                connectionContext.getHttpContext())) {
+            StatusLine statusLine = response.getStatusLine();
+
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(logMessage, logParameters, statusLine.getStatusCode(),
+                        statusLine.getReasonPhrase());
+            }
+
+            if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+                throw buildAnnotatedClientException(request, response,
+                        request.getURI().getPath());
+            }
 
             return responseAction.apply(response);
-        } catch (IOException | UncheckedIOException e) {
-            throw buildException(e, request, response);
-        } finally {
-            if (response != null) {
-                try {
-                    response.disconnect();
-                } catch (IOException e) {
-                    LOG.warn("Problem disconnecting response resource", e);
-                }
-            }
         }
     }
 
     /**
-     * Builds a chained exception contained the context attributes of the
-     * HTTP request and HTTP response.
-     *
-     * @param exception exception to embed
+     * Builds a client exception object that is annotated with all of the
+     * relevant request and response debug information.
      * @param request HTTP request object
      * @param response HTTP response object
-     * @return new contextualized exception
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return fully annotated exception instance
      */
-    protected MantaIOException buildException(final Exception exception,
-                                              final HttpRequest request,
-                                              final HttpResponse response) {
-        final MantaIOException contextualized;
+    protected MantaClientHttpResponseException buildAnnotatedClientException(
+            final HttpRequest request, final HttpResponse response,
+            final String path) {
+        final HttpEntity entity = response.getEntity();
+        final String jsonContentType = ContentType.APPLICATION_JSON.toString();
+        ErrorDetail errorDetail = null;
 
-        if (exception instanceof MantaIOException) {
-            contextualized = (MantaIOException)exception;
-        } else if (exception instanceof HttpResponseException) {
-            contextualized = new MantaClientHttpResponseException((HttpResponseException)exception);
-        } else if (exception instanceof IOException || exception instanceof UncheckedIOException) {
-            final String msg = "An IO problem happened when making a request.";
-            contextualized = new MantaIOException(msg, exception);
-        } else {
-            contextualized = new MantaIOException(exception);
+        if (entity != null && entity.getContentType().getValue().equals(jsonContentType)) {
+            try {
+                try (InputStream json = entity.getContent()) {
+                    errorDetail = mapper.readValue(json, ErrorDetail.class);
+                } catch (RuntimeException e) {
+                    LOGGER.warn("Unable to deserialize json error data", e);
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Problem getting response error content", e);
+            }
         }
 
-        annotateContextedException(contextualized, request, response);
+        StatusLine statusLine = response.getStatusLine();
 
-        return contextualized;
+        String msg = String.format("HTTP HEAD request failed to: %s", path);
+        MantaClientHttpResponseException e = new MantaClientHttpResponseException(msg)
+                .setRequestId(extractRequestId(request))
+                .setStatusLine(statusLine);
+
+        if (errorDetail == null) {
+            e.setServerCode(MantaErrorCode.UNKNOWN_ERROR);
+        } else {
+            e.setServerCode(MantaErrorCode.valueOfCode(errorDetail.getCode()));
+            e.setContextValue("server_message", errorDetail.getMessage());
+        }
+
+        annotateContextedException(e, request, response);
+        return e;
+    }
+
+    /**
+     * Extracts the request id from a {@link HttpRequest} object.
+     *
+     * @param request HTTP request object
+     * @return UUID as a string representing unique request or null if not available
+     */
+    public static String extractRequestId(final HttpRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        final Header requestIdHeader = request.getFirstHeader(REQUEST_ID);
+        final String requestId;
+
+        if (requestIdHeader == null) {
+            requestId = null;
+        } else {
+            requestId = requestIdHeader.getValue();
+        }
+
+        return requestId;
     }
 
     /**
@@ -467,9 +472,9 @@ public class HttpHelper {
      * @param request HTTP request object
      * @param response HTTP response object
      */
-    protected void annotateContextedException(final ExceptionContext exception,
-                                              final HttpRequest request,
-                                              final HttpResponse response) {
+    public static void annotateContextedException(final ExceptionContext exception,
+                                                  final HttpRequest request,
+                                                  final HttpResponse response) {
         Objects.requireNonNull(exception, "Exception context object must be present");
 
         if (request != null) {
@@ -478,9 +483,9 @@ public class HttpHelper {
 
             final String requestDump = reflectionToString(request, SHORT_PREFIX_STYLE);
             exception.setContextValue("request", requestDump);
-            exception.setContextValue("requestMethod", request.getRequestMethod());
-            exception.setContextValue("requestURL", request.getUrl());
-            final String requestHeaders = asString(request.getHeaders());
+            exception.setContextValue("requestMethod", request.getRequestLine().getMethod());
+            exception.setContextValue("requestURL", request.getRequestLine().getUri());
+            final String requestHeaders = asString(request.getAllHeaders());
             exception.setContextValue("requestHeaders", requestHeaders);
             exception.setContextValue("loadBalancerAddress", MDC.get("mantaLoadBalancerAddress"));
         }
@@ -488,8 +493,13 @@ public class HttpHelper {
         if (response != null) {
             final String responseDump = reflectionToString(response, SHORT_PREFIX_STYLE);
             exception.setContextValue("response", responseDump);
-            final String responseHeaders = asString(response.getHeaders());
+            final String responseHeaders = asString(response.getAllHeaders());
             exception.setContextValue("responseHeaders", responseHeaders);
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        connectionContext.close();
     }
 }

@@ -37,19 +37,17 @@ public class MantaClientErrorIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
+                            @Optional Integer mantaTimeout)
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("/%s/stor/%s",

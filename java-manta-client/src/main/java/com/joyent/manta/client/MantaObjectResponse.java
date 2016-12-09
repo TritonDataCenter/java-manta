@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.util.Key;
+import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.client.utils.DateUtils;
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.Objects;
 
-import static com.joyent.manta.client.MantaHttpHeaders.COMPUTED_MD5;
+import static com.joyent.manta.http.MantaHttpHeaders.COMPUTED_MD5;
 
 /**
  * A Manta storage object.
@@ -28,7 +28,7 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaObjectResponse.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectResponse.class);
 
     /**
      * The content-type used to represent Manta directory resources in http responses.
@@ -54,35 +54,30 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * The name value for this object.
      */
-    @Key("name")
     private String path;
 
 
     /**
      * The content length (size) value for this object.
      */
-    @Key("size")
     private Long contentLength;
 
 
     /**
      * The etag value for this object.
      */
-    @Key("etag")
     private String etag;
 
 
     /**
      * The mtime value for this object.
      */
-    @Key("mtime")
     private String mtime;
 
 
     /**
      * The type value for this object.
      */
-    @Key("type")
     private String type;
 
 
@@ -284,7 +279,7 @@ public class MantaObjectResponse implements MantaObject {
         final Date parsed = DateUtils.parseDate(lastModified, DATETIME_FORMATS);
 
         if (parsed == null) {
-            LOG.warn("Error parsing mtime value [{}] with formats: {}",
+            LOGGER.warn("Error parsing mtime value [{}] with formats: {}",
                     lastModified, DATETIME_FORMATS);
         }
 

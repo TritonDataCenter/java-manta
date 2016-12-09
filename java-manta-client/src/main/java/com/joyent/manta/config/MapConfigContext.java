@@ -236,6 +236,7 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return normalizeEmptyAndNullAndDefaultToStringValue(
                 MANTA_HTTP_TRANSPORT_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY);

@@ -1,4 +1,4 @@
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.testng.Assert;

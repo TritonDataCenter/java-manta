@@ -209,6 +209,7 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return getEnv(MANTA_HTTP_TRANSPORT_ENV_KEY);
     }

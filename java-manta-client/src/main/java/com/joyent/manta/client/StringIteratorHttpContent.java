@@ -3,22 +3,27 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpContent;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.entity.ContentType;
+import org.apache.http.message.BasicHeader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * Implementation of {@link HttpContent} that allows for the real-time streaming
+ * Implementation of {@link HttpEntity} that allows for the real-time streaming
  * of data from an iterator or a Java 8 stream to an {@link OutputStream} that
  * is connected to HTTP content.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class StringIteratorHttpContent implements HttpContent {
+public class StringIteratorHttpContent implements HttpEntity {
     /**
      * Iterator containing lines to stream into content.
      */
@@ -32,7 +37,7 @@ public class StringIteratorHttpContent implements HttpContent {
     /**
      * Content (mime) type associated with content.
      */
-    private final String contentType;
+    private final ContentType contentType;
 
     /**
      * Total bytes of content. Defaults to -1 before content is written.
@@ -47,7 +52,7 @@ public class StringIteratorHttpContent implements HttpContent {
      * @param contentType content (mime) type associated with content
      */
     public StringIteratorHttpContent(final Iterator<String> iterator,
-                                     final String contentType) {
+                                     final ContentType contentType) {
         this.iterator = iterator;
         this.stream = null;
         this.contentType = contentType;
@@ -62,30 +67,30 @@ public class StringIteratorHttpContent implements HttpContent {
      * @param contentType content (mime) type associated with content
      */
     public StringIteratorHttpContent(final Stream<String> stream,
-                                     final String contentType) {
+                                     final ContentType contentType) {
         this.stream = stream;
         this.iterator = null;
         this.contentType = contentType;
     }
 
-
-    @Override
-    public long getLength() throws IOException {
-        return length;
-    }
-
-
-    @Override
-    public String getType() {
-        return contentType;
-    }
-
-
-    @Override
-    public boolean retrySupported() {
+    public boolean isRepeatable() {
         return false;
     }
 
+    @Override
+    public boolean isChunked() {
+        return false;
+    }
+
+    @Override
+    public long getContentLength() {
+        return length;
+    }
+
+    @Override
+    public Header getContentType() {
+        return new BasicHeader(HttpHeaders.CONTENT_TYPE, contentType.toString());
+    }
 
     @Override
     public void writeTo(final OutputStream out) throws IOException {
@@ -104,6 +109,27 @@ public class StringIteratorHttpContent implements HttpContent {
         }
     }
 
+    @Override
+    public InputStream getContent() throws IOException, UnsupportedOperationException {
+        throw new UnsupportedOperationException("getContent isn't supported");
+    }
+
+    @Override
+    @Deprecated
+    public void consumeContent() throws IOException {
+        throw new UnsupportedOperationException("getContent isn't supported");
+    }
+
+    @Override
+    public Header getContentEncoding() {
+        // the content encoding is unknown, so we return null
+        return null;
+    }
+
+    @Override
+    public boolean isStreaming() {
+        return true;
+    }
 
     /**
      * Write all of the strings in the stored iterator to the passed

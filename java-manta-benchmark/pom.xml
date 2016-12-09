@@ -5,17 +5,14 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>2.7.2-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>java-manta-benchmark</artifactId>
-    <version>2.7.2-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
-        <!-- Dependency versions -->
-        <dependency.apache-commons-lang.version>3.4</dependency.apache-commons-lang.version>
-        <dependency.apache-commons-io.version>2.4</dependency.apache-commons-io.version>
         <!-- Plugin versions -->
         <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
     </properties>
@@ -24,7 +21,7 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
-            <version>2.7.2-SNAPSHOT</version>
+            <version>3.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -45,12 +42,12 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>${dependency.apache-commons-lang.version}</version>
+            <version>${dependency.commons-lang.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>${dependency.apache-commons-io.version}</version>
+            <version>${dependency.commons-io.version}</version>
         </dependency>
     </dependencies>
 

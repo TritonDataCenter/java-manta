@@ -5,7 +5,11 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.http.MantaApacheHttpClientContext;
+import com.joyent.manta.http.MantaConnectionContext;
+import com.joyent.manta.http.MantaConnectionFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -14,6 +18,7 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.security.KeyPair;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -33,24 +38,24 @@ public class MantaDirectoryListingIteratorIT {
 
     private ConfigContext config;
 
-    private HttpRequestFactoryProvider httpRequestFactoryProvider;
+    private MantaConnectionContext connectionContext;
+
+    private MantaConnectionFactory connectionFactory;
 
     private HttpHelper httpHelper;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
+                            @Optional Integer mantaTimeout)
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/%s",
@@ -58,9 +63,11 @@ public class MantaDirectoryListingIteratorIT {
 
         mantaClient.putDirectory(testPathPrefix);
 
-        httpRequestFactoryProvider = mantaClient.getHttpRequestFactoryProvider();
-        httpHelper = new HttpHelper(config.getMantaURL(),
-                httpRequestFactoryProvider.getRequestFactory());
+        final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
+        final KeyPair keyPair = keyPairFactory.createKeyPair();
+        this.connectionFactory = new MantaConnectionFactory(config, keyPair);
+        this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
+        this.httpHelper = new HttpHelper(this.config, connectionContext, connectionFactory);
     }
 
 

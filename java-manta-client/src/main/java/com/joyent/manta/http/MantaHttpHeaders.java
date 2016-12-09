@@ -1,20 +1,27 @@
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.util.FieldInfo;
-import com.google.api.client.util.Types;
+import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaUtils;
+import org.apache.commons.codec.Charsets;
+import org.apache.commons.collections4.MapIterator;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
+import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.HeaderGroup;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,8 +34,8 @@ import java.util.Set;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaHttpHeaders implements Serializable {
-    private static final long serialVersionUID = -2591173969776316384L;
+public class MantaHttpHeaders implements Map<String, Object>, Serializable {
+    private static final long serialVersionUID = -2547826815126982339L;
 
     /**
      * HTTP header for Manta durability level.
@@ -51,9 +58,14 @@ public class MantaHttpHeaders implements Serializable {
     public static final String COMPUTED_MD5 = "computed-md5";
 
     /**
+     * HTTP header containing the size of a set of results returned from Manta.
+     */
+    public static final String RESULT_SET_SIZE = "result-set-size";
+
+    /**
      * HttpHeaders delegate which is wrapped by this class.
      */
-    private final transient HttpHeaders wrappedHeaders = new HttpHeaders();
+    private final transient CaseInsensitiveMap<String, Object> wrappedHeaders = new CaseInsensitiveMap<>();
 
     /**
      * Creates an empty instance.
@@ -84,24 +96,11 @@ public class MantaHttpHeaders implements Serializable {
 
 
     /**
-     * Creates an instance with headers prepopulated from the Google HTTP Client
-     * headers class.
-     *
-     * @param headers headers to prepopulate
-     */
-    MantaHttpHeaders(final HttpHeaders headers) {
-        if (headers != null) {
-            wrappedHeaders.fromHttpHeaders(headers);
-        }
-    }
-
-
-    /**
      * Creates an instance with headers prepopulated from Apache HTTP client.
      *
      * @param headers headers to prepopulate
      */
-    MantaHttpHeaders(final Header[] headers) {
+    public MantaHttpHeaders(final Header[] headers) {
         for (Header header : headers) {
             if (header == null) {
                 continue;
@@ -111,21 +110,61 @@ public class MantaHttpHeaders implements Serializable {
                 wrappedHeaders.put(header.getName(), null);
             }
 
-            switch (header.getName().toLowerCase()) {
+            final String name = header.getName().toLowerCase();
+            final String value = header.getValue();
+
+            switch (name) {
                 case "content-length":
-                    wrappedHeaders.setContentLength(Long.parseLong(header.getValue()));
+                    wrappedHeaders.put(name, Long.parseLong(value));
                     break;
                 case "age":
-                    wrappedHeaders.setAge(Long.parseLong(header.getValue()));
+                    wrappedHeaders.put(name, Long.parseLong(value));
                     break;
                 default:
                     List<String> values = new ArrayList<>();
                     for (HeaderElement e : header.getElements()) {
                         values.add(e.getValue());
                     }
-                    wrappedHeaders.set(header.getName(), values);
+                    wrappedHeaders.put(name, values);
             }
         }
+    }
+
+    /**
+     * Converts a key value to a collection of {@link Header} objects.
+     * @param name header name
+     * @param value header value
+     * @return as list of headers
+     */
+    private HeaderGroup parseHeaderKeyValue(final String name, final Object value) {
+        HeaderGroup group = new HeaderGroup();
+
+        if (value == null) {
+            group.addHeader(new BasicHeader(name, null));
+            return group;
+        }
+
+        final Class<?> valueClass = value.getClass();
+
+        if (value instanceof Iterable<?>) {
+            Iterable<?> iterable = (Iterable<?>)value;
+
+            for (Object multiple : iterable) {
+                final Header header = new BasicHeader(name, MantaUtils.asString(multiple));
+                group.addHeader(header);
+            }
+        } else if (valueClass.isArray()) {
+            Object[] array = (Object[])value;
+
+            for (Object multiple : array) {
+                final Header header = new BasicHeader(name, MantaUtils.asString(multiple));
+                group.addHeader(header);
+            }
+        } else {
+            group.addHeader(new BasicHeader(name, MantaUtils.asString(value)));
+        }
+
+        return group;
     }
 
 
@@ -134,52 +173,25 @@ public class MantaHttpHeaders implements Serializable {
      *
      * @return an array of {@link org.apache.http.Header} instances
      */
-    Header[] asApacheHttpHeaders() {
-        final ArrayList<Header> headers = new ArrayList<>();
+    public Header[] asApacheHttpHeaders() {
+        final int length = wrappedHeaders.size();
+        final Header[] headers = new Header[length];
+        final MapIterator<String, Object> itr = wrappedHeaders.mapIterator();
 
-        for (Map.Entry<String, ?> entry : wrappedHeaders.entrySet()) {
-            final String name = entry.getKey();
-            final Object value = entry.getValue();
+        int i = 0;
+        while (itr.hasNext()) {
+            String key = itr.next();
+            Object val = itr.getValue();
 
-            final String displayName;
-            FieldInfo fieldInfo = wrappedHeaders.getClassInfo().getFieldInfo(name);
-            if (fieldInfo != null) {
-                displayName = fieldInfo.getName();
-            } else {
-                displayName = name;
-            }
-
-            if (value == null) {
-                headers.add(new BasicHeader(displayName, null));
-                continue;
-            }
-
-            final Class<?> valueClass = value.getClass();
-
-            if (value instanceof Iterable<?> || valueClass.isArray()) {
-                for (Object multiple : Types.iterableOf(value)) {
-                    final Header header = new BasicHeader(displayName, MantaUtils.asString(multiple));
-                    headers.add(header);
-                }
-            } else {
-                final Header header = new BasicHeader(displayName, MantaUtils.asString(value));
-                headers.add(header);
-            }
+            final HeaderGroup extracted = parseHeaderKeyValue(key, val);
+            headers[i++] = extracted.getCondensedHeader(key);
         }
 
-        Header[] array = new Header[headers.size()];
-        headers.toArray(array);
+        if (length == i) {
+            return headers;
+        }
 
-        return array;
-    }
-
-
-    /**
-     * Returns the headers as an instance of {@link com.google.api.client.http.HttpHeaders}.
-     * @return an instance of {@link com.google.api.client.http.HttpHeaders}
-     */
-    HttpHeaders asGoogleClientHttpHeaders() {
-        return wrappedHeaders;
+        return Arrays.copyOfRange(headers, 0, i);
     }
 
 
@@ -237,20 +249,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return the request id header value
      */
     public String getRequestId() {
-        Object requestId = wrappedHeaders.get(REQUEST_ID);
-        if (requestId == null) {
-            return null;
-        }
-
-        @SuppressWarnings("unchecked")
-        Iterable<String> elements = (Iterable)requestId;
-        Iterator<String> itr = elements.iterator();
-
-        if (!itr.hasNext()) {
-            return null;
-        }
-
-        return itr.next();
+        return getMultipleValuesAsString(REQUEST_ID);
     }
 
 
@@ -266,7 +265,7 @@ public class MantaHttpHeaders implements Serializable {
             throw new IllegalArgumentException(msg);
         }
 
-        set(HTTP_DURABILITY_LEVEL, String.valueOf(copies));
+        put(HTTP_DURABILITY_LEVEL, String.valueOf(copies));
     }
 
 
@@ -276,13 +275,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return copies number of copies
      */
     public Integer getDurabilityLevel() {
-        final String value = getFirstHeaderStringValue(HTTP_DURABILITY_LEVEL);
-
-        if (value == null) {
-            return null;
-        }
-
-        return Integer.parseInt(value);
+        return getIntegerFromHeader(HTTP_DURABILITY_LEVEL);
     }
 
 
@@ -292,12 +285,12 @@ public class MantaHttpHeaders implements Serializable {
      * @param roles roles associated with object
      */
     public void setRoles(final Set<String> roles) {
-        Objects.requireNonNull(roles, "Roles must be present");
+        Validate.notNull(roles, "Roles must not be null");
 
         /* Set roles as a single HTTP header with each role delimited by
          * a comma.
          */
-        set(HTTP_ROLE_TAG, MantaUtils.asString(roles));
+        put(HTTP_ROLE_TAG, MantaUtils.asString(roles));
     }
 
 
@@ -351,20 +344,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return long value of header value, or null if it can't be found or parsed
      */
     public Long getResultSetSize() {
-        final String size = wrappedHeaders.getFirstHeaderStringValue("result-set-size");
-
-        if (size == null) {
-            return null;
-        } else {
-            try {
-                return Long.parseLong(size);
-            } catch (NumberFormatException e) {
-                String msg = String.format("Error parsing result-set-size header "
-                        + "as long. Actual value: %s", size);
-                LoggerFactory.getLogger(getClass()).warn(msg, e);
-                return null;
-            }
-        }
+        return getLongFromHeader(RESULT_SET_SIZE);
     }
 
     /**
@@ -373,7 +353,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Accept"} header value as a {@code java.lang.String} value
      */
     public String getAccept() {
-        return wrappedHeaders.getAccept();
+        return getMultipleValuesAsString(HttpHeaders.ACCEPT);
     }
 
 
@@ -389,7 +369,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setAccept(final String accept) {
-        wrappedHeaders.setAccept(accept);
+        put(HttpHeaders.ACCEPT, accept);
         return this;
     }
 
@@ -400,7 +380,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Accept-Encoding"} header value as a {@code java.lang.String} value
      */
     public String getAcceptEncoding() {
-        return wrappedHeaders.getAcceptEncoding();
+        return Objects.toString(get(HttpHeaders.ACCEPT_ENCODING));
     }
 
 
@@ -415,7 +395,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setAcceptEncoding(final String acceptEncoding) {
-        wrappedHeaders.setAcceptEncoding(acceptEncoding);
+        put(HttpHeaders.ACCEPT_ENCODING, acceptEncoding);
         return this;
     }
 
@@ -426,7 +406,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Authorization"} header value as a {@code java.lang.String} value
      */
     public String getAuthorization() {
-        return wrappedHeaders.getAuthorization();
+        return getMultipleValuesAsString(HttpHeaders.AUTHORIZATION);
     }
 
 
@@ -436,7 +416,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Authorization"} headers as a {@code java.util.List} of {@code java.lang.String} values.
      */
     public List<String> getAuthorizationAsList() {
-        return wrappedHeaders.getAuthorizationAsList();
+        return getHeaderStringValues(HttpHeaders.AUTHORIZATION);
     }
 
 
@@ -452,7 +432,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setAuthorization(final String authorization) {
-        wrappedHeaders.setAuthorization(authorization);
+        put(HttpHeaders.AUTHORIZATION, authorization);
         return this;
     }
 
@@ -470,7 +450,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setAuthorization(final List<String> authorization) {
-        wrappedHeaders.setAuthorization(authorization);
+        put(HttpHeaders.AUTHORIZATION, authorization);
         return this;
     }
 
@@ -481,7 +461,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Cache-Control"} header value as a {@code java.lang.String} value
      */
     public String getCacheControl() {
-        return wrappedHeaders.getCacheControl();
+        return getMultipleValuesAsString(HttpHeaders.CACHE_CONTROL);
     }
 
 
@@ -497,7 +477,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setCacheControl(final String cacheControl) {
-        wrappedHeaders.setCacheControl(cacheControl);
+        put(HttpHeaders.CACHE_CONTROL, cacheControl);
         return this;
     }
 
@@ -508,7 +488,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Content-Encoding"} header value as a {@code java.lang.String} value
      */
     public String getContentEncoding() {
-        return wrappedHeaders.getContentEncoding();
+        return getMultipleValuesAsString(HttpHeaders.CONTENT_ENCODING);
     }
 
 
@@ -524,7 +504,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setContentEncoding(final String contentEncoding) {
-        wrappedHeaders.setContentEncoding(contentEncoding);
+        put(HttpHeaders.CONTENT_ENCODING, contentEncoding);
         return this;
     }
 
@@ -535,7 +515,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Content-Length"} header value as a {@code java.lang.Long} value
      */
     public Long getContentLength() {
-        return wrappedHeaders.getContentLength();
+        return getLongFromHeader(HttpHeaders.CONTENT_LENGTH);
     }
 
 
@@ -551,7 +531,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setContentLength(final Long contentLength) {
-        wrappedHeaders.setContentLength(contentLength);
+        wrappedHeaders.put(HttpHeaders.CONTENT_LENGTH, contentLength);
         return this;
     }
 
@@ -562,7 +542,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Content-MD5"} header value as a {@code java.lang.String} value
      */
     public String getContentMD5() {
-        return wrappedHeaders.getContentMD5();
+        return getMultipleValuesAsString((HttpHeaders.CONTENT_MD5));
     }
 
 
@@ -578,7 +558,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setContentMD5(final String contentMD5) {
-        wrappedHeaders.setContentMD5(contentMD5);
+        put(HttpHeaders.CONTENT_MD5, contentMD5);
         return this;
     }
 
@@ -589,7 +569,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Content-Range"} header value as a {@code java.lang.String} value
      */
     public String getContentRange() {
-        return wrappedHeaders.getContentRange();
+        return getMultipleValuesAsString(HttpHeaders.CONTENT_RANGE);
     }
 
 
@@ -605,7 +585,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setContentRange(final String contentRange) {
-        wrappedHeaders.setContentRange(contentRange);
+        put(HttpHeaders.CONTENT_RANGE, contentRange);
         return this;
     }
 
@@ -616,7 +596,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Content-Type"} header value as a {@code java.lang.String} value
      */
     public String getContentType() {
-        return wrappedHeaders.getContentType();
+        return getMultipleValuesAsString(HttpHeaders.CONTENT_TYPE);
     }
 
 
@@ -632,7 +612,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setContentType(final String contentType) {
-        wrappedHeaders.setContentType(contentType);
+        put(HttpHeaders.CONTENT_TYPE, contentType);
         return this;
     }
 
@@ -646,8 +626,9 @@ public class MantaHttpHeaders implements Serializable {
      *
      * @return {@code "Cookie"} header value as a {@code java.lang.String} value
      */
+    @Deprecated
     public String getCookie() {
-        return wrappedHeaders.getCookie();
+        return getMultipleValuesAsString("Cookie");
     }
 
 
@@ -662,8 +643,9 @@ public class MantaHttpHeaders implements Serializable {
      * @param cookie {@code java.lang.String} value for {@code "Cookie"} header.
      * @return this instance
      */
+    @Deprecated
     public MantaHttpHeaders setCookie(final String cookie) {
-        wrappedHeaders.setCookie(cookie);
+        put("Cookie", cookie);
         return this;
     }
 
@@ -674,7 +656,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Date"} header value as a {@code java.lang.String} value
      */
     public String getDate() {
-        return wrappedHeaders.getDate();
+        return getMultipleValuesAsString(HttpHeaders.DATE);
     }
 
 
@@ -690,7 +672,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setDate(final String date) {
-        wrappedHeaders.setDate(date);
+        put(HttpHeaders.DATE, date);
         return this;
     }
 
@@ -701,7 +683,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "ETag"} header value as a {@code java.lang.String} value
      */
     public String getETag() {
-        return wrappedHeaders.getETag();
+        return getMultipleValuesAsString(HttpHeaders.ETAG);
     }
 
 
@@ -717,7 +699,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setETag(final String etag) {
-        wrappedHeaders.setETag(etag);
+        put(HttpHeaders.ETAG, etag);
         return this;
     }
 
@@ -728,7 +710,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Expires"} header value as a {@code java.lang.String} value
      */
     public String getExpires() {
-        return wrappedHeaders.getExpires();
+        return getMultipleValuesAsString(HttpHeaders.EXPIRES);
     }
 
 
@@ -744,7 +726,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setExpires(final String expires) {
-        wrappedHeaders.setExpires(expires);
+        put(HttpHeaders.EXPIRES, expires);
         return this;
     }
 
@@ -755,7 +737,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "If-Modified-Since"} header value as a {@code java.lang.String} value
      */
     public String getIfModifiedSince() {
-        return wrappedHeaders.getIfModifiedSince();
+        return getMultipleValuesAsString(HttpHeaders.IF_MODIFIED_SINCE);
     }
 
 
@@ -771,7 +753,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setIfModifiedSince(final String ifModifiedSince) {
-        wrappedHeaders.setIfModifiedSince(ifModifiedSince);
+        put(HttpHeaders.IF_MODIFIED_SINCE, ifModifiedSince);
         return this;
     }
 
@@ -782,7 +764,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "If-Match"} header value as a {@code java.lang.String} value
      */
     public String getIfMatch() {
-        return wrappedHeaders.getIfMatch();
+        return getMultipleValuesAsString(HttpHeaders.IF_MATCH);
     }
 
 
@@ -798,7 +780,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setIfMatch(final String ifMatch) {
-        wrappedHeaders.setIfMatch(ifMatch);
+        put(HttpHeaders.IF_MATCH, ifMatch);
         return this;
     }
 
@@ -809,7 +791,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "If-None-Match"} header value as a {@code java.lang.String} value
      */
     public String getIfNoneMatch() {
-        return wrappedHeaders.getIfNoneMatch();
+        return getMultipleValuesAsString(HttpHeaders.IF_NONE_MATCH);
     }
 
 
@@ -825,7 +807,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setIfNoneMatch(final String ifNoneMatch) {
-        wrappedHeaders.setIfNoneMatch(ifNoneMatch);
+        put(HttpHeaders.IF_NONE_MATCH, ifNoneMatch);
         return this;
     }
 
@@ -836,7 +818,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "If-Unmodified-Since"} header value as a {@code java.lang.String} value
      */
     public String getIfUnmodifiedSince() {
-        return wrappedHeaders.getIfUnmodifiedSince();
+        return getMultipleValuesAsString(HttpHeaders.IF_MODIFIED_SINCE);
     }
 
 
@@ -852,7 +834,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setIfUnmodifiedSince(final String ifUnmodifiedSince) {
-        wrappedHeaders.setIfUnmodifiedSince(ifUnmodifiedSince);
+        put(HttpHeaders.IF_UNMODIFIED_SINCE, ifUnmodifiedSince);
         return this;
     }
 
@@ -863,7 +845,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "If-Range"} header value as a {@code java.lang.String} value
      */
     public String getIfRange() {
-        return wrappedHeaders.getIfRange();
+        return getMultipleValuesAsString(HttpHeaders.IF_RANGE);
     }
 
 
@@ -880,7 +862,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setIfRange(final String ifRange) {
-        wrappedHeaders.setIfRange(ifRange);
+        put(HttpHeaders.IF_RANGE, ifRange);
         return this;
     }
 
@@ -891,7 +873,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Last-Modified"} header value as a {@code java.lang.String} value
      */
     public String getLastModified() {
-        return wrappedHeaders.getLastModified();
+        return getMultipleValuesAsString(HttpHeaders.LAST_MODIFIED);
     }
 
 
@@ -907,7 +889,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setLastModified(final String lastModified) {
-        wrappedHeaders.setLastModified(lastModified);
+        put(HttpHeaders.LAST_MODIFIED, lastModified);
         return this;
     }
 
@@ -918,7 +900,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Location"} header value as a {@code java.lang.String} value
      */
     public String getLocation() {
-        return wrappedHeaders.getLocation();
+        return getMultipleValuesAsString(HttpHeaders.LOCATION);
     }
 
 
@@ -934,7 +916,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setLocation(final String location) {
-        wrappedHeaders.setLocation(location);
+        put(HttpHeaders.LOCATION, location);
         return this;
     }
 
@@ -944,8 +926,9 @@ public class MantaHttpHeaders implements Serializable {
      *
      * @return {@code "MIME-Version"} header value as a {@code java.lang.String} value
      */
+    @Deprecated
     public String getMimeVersion() {
-        return wrappedHeaders.getMimeVersion();
+        return getMultipleValuesAsString("MIME-Version");
     }
 
 
@@ -960,8 +943,9 @@ public class MantaHttpHeaders implements Serializable {
      * @param mimeVersion {@code java.lang.String} value for {@code "MIME-Version"} header.
      * @return this instance
      */
+    @Deprecated
     public MantaHttpHeaders setMimeVersion(final String mimeVersion) {
-        wrappedHeaders.setMimeVersion(mimeVersion);
+        put("MIME-Version", mimeVersion);
         return this;
     }
 
@@ -972,7 +956,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Range"} header value as a {@code java.lang.String} value
      */
     public String getRange() {
-        return wrappedHeaders.getRange();
+        return getMultipleValuesAsString(HttpHeaders.RANGE);
     }
 
 
@@ -988,7 +972,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setRange(final String range) {
-        wrappedHeaders.setRange(range);
+        put(HttpHeaders.RANGE, range);
         return this;
     }
 
@@ -999,7 +983,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Retry-After"} header value as a {@code java.lang.String} value
      */
     public String getRetryAfter() {
-        return wrappedHeaders.getRetryAfter();
+        return getMultipleValuesAsString(HttpHeaders.RETRY_AFTER);
     }
 
 
@@ -1015,7 +999,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setRetryAfter(final String retryAfter) {
-        wrappedHeaders.setRetryAfter(retryAfter);
+        put(HttpHeaders.RETRY_AFTER, retryAfter);
         return this;
     }
 
@@ -1026,7 +1010,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "User-Agent"} header value as a {@code java.lang.String} value
      */
     public String getUserAgent() {
-        return wrappedHeaders.getUserAgent();
+        return getMultipleValuesAsString(HttpHeaders.USER_AGENT);
     }
 
 
@@ -1042,7 +1026,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setUserAgent(final String userAgent) {
-        wrappedHeaders.setUserAgent(userAgent);
+        put(HttpHeaders.USER_AGENT, userAgent);
         return this;
     }
 
@@ -1053,7 +1037,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "WWW-Authenticate"} header value as a {@code java.lang.String} value
      */
     public String getAuthenticate() {
-        return wrappedHeaders.getAuthenticate();
+        return getMultipleValuesAsString(HttpHeaders.WWW_AUTHENTICATE);
     }
 
 
@@ -1063,7 +1047,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "WWW-Authenticate"} headers as a {@code java.util.List} of {@code java.lang.String} values
      */
     public List<String> getAuthenticateAsList() {
-        return wrappedHeaders.getAuthenticateAsList();
+        return getHeaderStringValues(HttpHeaders.WWW_AUTHENTICATE);
     }
 
 
@@ -1079,7 +1063,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setAuthenticate(final String authenticate) {
-        wrappedHeaders.setAuthenticate(authenticate);
+        put(HttpHeaders.WWW_AUTHENTICATE, authenticate);
         return this;
     }
 
@@ -1090,7 +1074,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return {@code "Age"} header value as a {@code java.lang.Long} value
      */
     public Long getAge() {
-        return wrappedHeaders.getAge();
+        return getLongFromHeader(HttpHeaders.AGE);
     }
 
 
@@ -1106,7 +1090,7 @@ public class MantaHttpHeaders implements Serializable {
      * @return this instance
      */
     public MantaHttpHeaders setAge(final Long age) {
-        wrappedHeaders.setAge(age);
+        put(HttpHeaders.AGE, age);
         return this;
     }
 
@@ -1124,11 +1108,76 @@ public class MantaHttpHeaders implements Serializable {
      * @param password {@code java.lang.String} value for the password component of the authorization header
      * @return this instance
      */
+    @Deprecated
     public MantaHttpHeaders setBasicAuthentication(final String username, final String password) {
-        wrappedHeaders.setBasicAuthentication(username, password);
-        return this;
+        Validate.notNull(username, "Username must not be null");
+        Validate.notNull(password, "Password must not be null");
+
+        String userPass = String.format("%s:%s", username, password);
+        String encoded = Base64.getEncoder().encodeToString(userPass.getBytes(Charsets.UTF_8));
+
+        return setAuthorization("Basic " + encoded);
     }
 
+    /**
+     * Parses the value of the supplied header name as a Long or returns the
+     * long value if it is a {@link Number}. Note: this method isn't compatible
+     * with headers that return multiple values.
+     *
+     * @param name header name (may be any case)
+     * @return long value of header
+     */
+    private Long getLongFromHeader(final String name) {
+        Object value = getFirstHeaderStringValue(name);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number) {
+            Number numberValue = (Number)value;
+            return numberValue.longValue();
+        }
+
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            String msg = String.format("Error parsing [%s] header "
+                    + "as long. Actual value: %s", value);
+            LoggerFactory.getLogger(getClass()).warn(msg, e);
+            return null;
+        }
+    }
+
+    /**
+     * Parses the value of the supplied header name as an Integer or returns the
+     * int value if it is a {@link Number}. Note: this method isn't compatible
+     * with headers that return multiple values.
+     *
+     * @param name header name (may be any case)
+     * @return long value of header
+     */
+    private Integer getIntegerFromHeader(final String name) {
+        Object value = getFirstHeaderStringValue(name);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number) {
+            Number numberValue = (Number)value;
+            return numberValue.intValue();
+        }
+
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            String msg = String.format("Error parsing [%s] header "
+                    + "as int. Actual value: %s", value);
+            LoggerFactory.getLogger(getClass()).warn(msg, e);
+            return null;
+        }
+    }
 
     /**
      * Returns the first header string value for the given header name.
@@ -1137,18 +1186,60 @@ public class MantaHttpHeaders implements Serializable {
      * @return first header string value or {@code null} if not found
      */
     public String getFirstHeaderStringValue(final String name) {
-        return wrappedHeaders.getFirstHeaderStringValue(name);
+        Object value = get(name);
+
+        if (value == null) {
+            return null;
+        }
+
+        HeaderGroup group = parseHeaderKeyValue(name, value);
+        return group.getFirstHeader(name).getValue();
     }
 
 
     /**
-     * Returns an unmodifiable list of the header string values for the given header name.
+     * Returns a list of the header string values for the given header name.
      *
      * @param name header name (may be any case)
      * @return header string values or empty if not found
      */
     public List<String> getHeaderStringValues(final String name) {
-        return wrappedHeaders.getHeaderStringValues(name);
+        Object value = get(name);
+
+        if (value == null) {
+            return null;
+        }
+
+        List<String> values = new ArrayList<>();
+        HeaderGroup group = parseHeaderKeyValue(name, value);
+        Header[] headers = group.getAllHeaders();
+        for (int i = 0; i < headers.length; i++) {
+            values.add(headers[i].getValue());
+        }
+
+        return values;
+    }
+
+    /**
+     * Returns the condensed value for an HTTP header that may contain multiple
+     * elements.
+     *
+     * @param name header name (may be any case)
+     * @return Condensed HTTP header value as per RFC 2616
+     */
+    private String getMultipleValuesAsString(final String name) {
+        Object value = get(name);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof String) {
+            return (String)value;
+        }
+
+        HeaderGroup group = parseHeaderKeyValue(name, value);
+        return group.getCondensedHeader(name).getValue();
     }
 
 
@@ -1209,12 +1300,14 @@ public class MantaHttpHeaders implements Serializable {
 
 
     /**
-     * Returns the map of unknown data key name to value.
+     * This returns a copy of the backing map. In versions, 2.x this returned
+     * the headers that didn't explicitly have setters and getters.
      *
      * @return {@code java.util.Map} of unknown key-value mappings.
      */
+    @Deprecated
     public Map<String, Object> getUnknownKeys() {
-        return wrappedHeaders.getUnknownKeys();
+        return wrappedHeaders.clone();
     }
 
 
@@ -1223,8 +1316,9 @@ public class MantaHttpHeaders implements Serializable {
      *
      * @param unknownFields {@code java.util.Map} of unknown key-value mappings
      */
+    @Deprecated
     public void setUnknownKeys(final Map<String, Object> unknownFields) {
-        wrappedHeaders.setUnknownKeys(unknownFields);
+        wrappedHeaders.putAll(unknownFields);
     }
 
 
@@ -1292,21 +1386,15 @@ public class MantaHttpHeaders implements Serializable {
 
 
     /**
-     * Sets the given field value (may be {@code null}) for the given field name. Any existing value
-     * for the field will be overwritten. It may be more slightly more efficient than
-     * {@link #put(String, Object)} because it avoids accessing the field's original value.
-     *
-     * <p>
-     * Overriding is only supported for the purpose of calling the super implementation and changing
-     * the return type, but nothing else.
-     * </p>
+     * Equivalent to the put operation.
      *
      * @param fieldName field name of the header
      * @param value value for the header
      * @return this instance
      */
+    @Deprecated
     public MantaHttpHeaders set(final String fieldName, final Object value) {
-        wrappedHeaders.set(fieldName, value);
+        put(fieldName, value);
         return this;
     }
 

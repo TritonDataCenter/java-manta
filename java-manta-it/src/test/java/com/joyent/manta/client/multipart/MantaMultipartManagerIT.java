@@ -3,7 +3,7 @@ package com.joyent.manta.client.multipart;
 import com.fasterxml.uuid.Generators;
 import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.client.MantaJob;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
@@ -54,19 +54,17 @@ public class MantaMultipartManagerIT {
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
     @BeforeClass()
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
+                            @Optional Integer mantaTimeout)
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         this.mantaClient = new MantaClient(config);
         this.multipart = new MantaMultipartManager(this.mantaClient);

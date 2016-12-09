@@ -5,10 +5,12 @@ package com.joyent.manta.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpResponse;
 import com.joyent.manta.exception.MantaObjectException;
+import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -79,7 +81,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     /**
      * Jackson JSON parsing instance.
      */
-    private final ObjectMapper mapper = MantaObjectParser.MAPPER;
+    private final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
     /**
      * The last marker we used to request against the Manta API.
@@ -96,7 +98,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
      * The most recent response object from the page of data that we are currently
      * parsing.
      */
-    private volatile HttpResponse currentResponse;
+    private volatile CloseableHttpResponse currentResponse;
 
     /**
      * Create a new instance of a directory list iterator.
@@ -136,36 +138,36 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     private synchronized void selectReader() throws IOException {
         if (lastMarker == null) {
             String query = String.format("?limit=%d", pagingSize);
-            GenericUrl genericUrl = new GenericUrl(url + formatPath(path)
-                    + query);
-            currentResponse = httpHelper.httpGet(genericUrl, null);
-            HttpHeaders headers = currentResponse.getHeaders();
+            String uri = url + formatPath(path) + query;
+            HttpGet get = new HttpGet(uri);
 
-            if (!headers.getContentType().contentEquals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            currentResponse = httpHelper.executeRequest(get, null);
+            HttpEntity entity = currentResponse.getEntity();
+            String contentType = entity.getContentType().getValue();
+
+            if (!contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
                 String msg = String.format("Expected directory path, but was file path: %s",
                         path);
                 throw new MantaObjectException(msg);
             }
 
-            Reader streamReader = new InputStreamReader(currentResponse.getContent(),
-                    "UTF-8");
+
+            Reader streamReader = new InputStreamReader(entity.getContent(),
+                    Charsets.UTF_8.name());
             br = new BufferedReader(streamReader);
         } else {
             String query = String.format("?limit=%d&marker=%s",
                     pagingSize, URLEncoder.encode(lastMarker, "UTF-8"));
-            GenericUrl genericUrl = new GenericUrl(url + formatPath(path)
-                + query);
+            String uri = url + formatPath(path) + query;
+            HttpGet get = new HttpGet(uri);
 
-            try {
-                br.close();
-                currentResponse.disconnect();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            IOUtils.closeQuietly(br);
+            IOUtils.closeQuietly(currentResponse);
 
-            currentResponse = httpHelper.httpGet(genericUrl, null);
-            Reader streamReader = new InputStreamReader(currentResponse.getContent(),
-                    "UTF-8");
+            currentResponse = httpHelper.executeRequest(get, null);
+            HttpEntity entity = currentResponse.getEntity();
+            Reader streamReader = new InputStreamReader(entity.getContent(),
+                    Charsets.UTF_8.name());
             br = new BufferedReader(streamReader);
 
             // We read one line to clear it because it is our marker
@@ -230,17 +232,8 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
     @Override
     public void close() {
-        try {
-            if (br != null) {
-                br.close();
-            }
-
-            if (currentResponse != null) {
-                currentResponse.disconnect();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        IOUtils.closeQuietly(br);
+        IOUtils.closeQuietly(currentResponse);
     }
 
     /**

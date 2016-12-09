@@ -3,30 +3,27 @@
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.util.FieldInfo;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLConnection;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Scanner;
-
-import static java.nio.file.Files.readAllBytes;
+import java.util.Set;
 
 /**
  * Manta utilities.
@@ -34,82 +31,16 @@ import static java.nio.file.Files.readAllBytes;
  * @author Yunong Xiao
  */
 public final class MantaUtils {
-
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaUtils.class);
 
     /**
      * Default no-args constructor.
      */
     private MantaUtils() {
     }
-
-
-    /**
-     * Read from an {@link java.io.InputStream} to a {@link java.lang.String}.
-     * Closes the {@link java.io.InputStream} when done.
-     *
-     * @param inputStream The {@link java.io.InputStream}
-     * @param charsetName The encoding type used to convert bytes from the
-     *        stream into characters to be scanned
-     * @return The contents of the {@link java.io.InputStream}
-     * @throws IOException If an IO exception has occurred
-     */
-    public static String inputStreamToString(final InputStream inputStream,
-                                             final String charsetName) throws IOException {
-        final Scanner scanner = new Scanner(inputStream, charsetName)
-                .useDelimiter("\\A");
-        String nextToken = "";
-        if (scanner.hasNext()) {
-            nextToken = scanner.next();
-        }
-        return nextToken;
-    }
-
-
-    /**
-     * Read from an {@link java.io.InputStream} to a {@link java.lang.String}
-     * using the default encoding. Closes the {@link java.io.InputStream} when done.
-     *
-     * @param inputStream The {@link java.io.InputStream}
-     * @return The contents of the {@link java.io.InputStream}
-     * @throws IOException If an IO exception has occurred
-     */
-    public static String inputStreamToString(final InputStream inputStream) throws IOException {
-        Objects.requireNonNull(inputStream, "InputStream should be present");
-        return inputStreamToString(inputStream, Charset.defaultCharset().name());
-    }
-
-
-    /**
-     * Reads from an {@link java.io.InputStream} and writes to a {@link java.io.File}.
-     * Closes the {@link java.io.InputStream} when done.
-     *
-     * @param inputStream The {@link java.io.InputStream}
-     * @param outputFile The {@link java.io.File} to write to
-     * @throws IOException If an IO exception has occurred
-     */
-    public static void inputStreamToFile(final InputStream inputStream, final File outputFile) throws IOException {
-        Files.copy(
-                inputStream,
-                outputFile.toPath()
-        );
-    }
-
-
-    /**
-     * Reads the contents of the specified {@link java.io.File} into a {@link java.lang.String}.
-     *
-     * @param file the {@link java.io.File} to read from
-     * @return a {@link java.lang.String} containing the contents of the specified {@link java.io.File}
-     * @throws IOException if an IO exception has occurred
-     */
-    public static String readFileToString(final File file) throws IOException {
-        return new String(
-                readAllBytes(
-                        file.toPath()
-                )
-        );
-    }
-
 
     /**
      * Checks to see if a {@link StringBuilder} ends with a given character.
@@ -176,9 +107,8 @@ public final class MantaUtils {
         try {
             parsed = Integer.parseInt(string);
         } catch (Exception e) {
-            Logger logger = LoggerFactory.getLogger(MantaUtils.class);
             String msg = "Error parsing value as integer. Value: %s";
-            logger.warn(String.format(msg, value), e);
+            LOGGER.warn(String.format(msg, value), e);
             parsed = null;
         }
 
@@ -217,9 +147,8 @@ public final class MantaUtils {
         try {
             parsed = BooleanUtils.toBoolean(string);
         } catch (Exception e) {
-            Logger logger = LoggerFactory.getLogger(MantaUtils.class);
             String msg = "Error parsing value as boolean. Value: %s";
-            logger.warn(String.format(msg, value), e);
+            LOGGER.warn(String.format(msg, value), e);
             parsed = null;
         }
 
@@ -259,9 +188,8 @@ public final class MantaUtils {
         try {
             parsed = Enum.valueOf(enumClass, string);
         } catch (RuntimeException e) {
-            Logger logger = LoggerFactory.getLogger(MantaUtils.class);
             String msg = "Error parsing value as enum. Value: %s";
-            logger.warn(String.format(msg, value), e);
+            LOGGER.warn(String.format(msg, value), e);
             parsed = null;
         }
 
@@ -324,7 +252,20 @@ public final class MantaUtils {
         if (value == null) {
             return null;
         } else if (value instanceof Enum<?>) {
-            return FieldInfo.of((Enum<?>) value).getName();
+            Enum<?> enumValue = (Enum<?>)value;
+
+            try {
+                Field field = enumValue.getClass().getField(enumValue.name());
+                Validate.notNull(field,
+                        "A non-null field should always be returned. "
+                            + "Enum constant missing @Value or @NullValue annotation: %s",
+                        enumValue);
+            } catch (NoSuchFieldException e) {
+                String msg = String.format("Could not find name field for enum: %s",
+                        value);
+                LOGGER.warn(msg, e);
+                return null;
+            }
         } else if (value instanceof Iterable<?>) {
             StringBuilder sb = new StringBuilder();
 
@@ -417,91 +358,165 @@ public final class MantaUtils {
     }
 
     /**
-     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
-     * is not null. Otherwise, it will return the specified default content type.
+     * Converts a map of string to object values to a pure string map.
      *
-     * @param headers headers to parse for content type
-     * @param defaultContentType content type to default to
-     * @return content type as string
+     * @param map map to convert
+     * @return a string map
      */
-    public static String findOrDefaultContentType(final MantaHttpHeaders headers,
-                                                  final String defaultContentType) {
-        final String contentType;
+    public static Map<String, String> asStringMap(final Map<String, ?> map) {
+        Objects.requireNonNull(map, "Map must be present");
 
-        if (headers == null || headers.getContentType() == null) {
-            contentType = defaultContentType;
-        } else {
-            contentType = headers.getContentType();
+        if (map.isEmpty()) {
+            return Collections.emptyMap();
         }
 
-        return contentType;
+        final Map<String, String> stringMap = new LinkedHashMap<>(map.size());
+
+        // Silly Java generics won't covert wildcard to simple generic
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> objectMap = (Map<String, Object>)map;
+        final Set<Map.Entry<String, Object>> entrySet = objectMap.entrySet();
+
+        for (Map.Entry<String, Object> next : entrySet) {
+            final Object obj = next.getValue();
+            final String value;
+
+            if (obj == null || obj instanceof String) {
+                value = (String) obj;
+            } else if (obj instanceof InetAddress) {
+                value = ((InetAddress) obj).getHostAddress();
+            } else if (obj instanceof Map) {
+                value = csv((Map) obj);
+            } else if (obj instanceof Iterable) {
+                value = csv((Iterable) obj);
+            } else if (obj instanceof CharSequence) {
+                value = String.valueOf(obj);
+            } else {
+                value = obj.toString();
+            }
+
+            stringMap.put(next.getKey(), value);
+        }
+
+        return Collections.unmodifiableMap(stringMap);
     }
 
     /**
-     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
-     * is not null. Otherwise, it will return the specified default content type.
+     * Naively converts a map to a single CSV string. Warning: this doesn't
+     * escape.
      *
-     * @param headers headers to parse for content type
-     * @param filename path to the destination file
-     * @param file file that is being probed for content type
-     * @param defaultContentType content type to default to
-     * @return content type as string
-     * @throws IOException thrown when we can't access the file being analyzed
+     * @param map map with objects with implemented toString methods
+     * @return CSV string or empty string
      */
-    public static String findOrDefaultContentType(final MantaHttpHeaders headers,
-                                                  final String filename,
-                                                  final File file,
-                                                  final String defaultContentType)
-            throws IOException {
-        final String headerContentType;
+    public static String csv(final Map<?, ?> map) {
+        Objects.requireNonNull(map, "Map must be present");
 
-        if (headers != null) {
-            headerContentType = headers.getContentType();
-        } else {
-            headerContentType = null;
+        final StringBuilder builder = new StringBuilder();
+
+        /* We do this contorted type conversion because of Java's generics. */
+        @SuppressWarnings("rawtypes")
+        final Map noGenericsMap = (Map)map;
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        final Set<Map.Entry<?, ?>> set = noGenericsMap.entrySet();
+
+        final Iterator<Map.Entry<?, ?>> itr = set.iterator();
+
+        while (itr.hasNext()) {
+            Map.Entry<?, ?> entry = itr.next();
+
+            if (entry == null || entry.getKey() == null) {
+                continue;
+            }
+
+            builder.append(entry.getKey().toString())
+                    .append(": ")
+                    .append(String.valueOf(entry.getValue()));
+
+            if (itr.hasNext()) {
+                builder.append(", ");
+            }
         }
 
-        return ObjectUtils.firstNonNull(
-                // Use explicitly set headers if available
-                headerContentType,
-                // Probe using the JVM default detection method
-                Files.probeContentType(file.toPath()),
-                // Detect based on destination filename
-                URLConnection.guessContentTypeFromName(filename),
-                // Detect based on source filename
-                URLConnection.guessContentTypeFromName(file.getName()),
-                // Otherwise use the default value
-                defaultContentType
-        );
+        return builder.toString();
     }
 
     /**
-     * Finds the content type set in {@link MantaHttpHeaders} and returns that if it
-     * is not null. Otherwise, it will return the specified default content type.
-     *
-     * @param headers headers to parse for content type
-     * @param filename filename that is being probed for content type
-     * @param defaultContentType content type to default to
-     * @return content type as string
+     * Naively converts a collection of objects to a single CSV string.
+     * Warning: this doesn't escape.
+     * @param stringable collection of objects with implemented toString methods
+     * @return CSV string or empty string
      */
-    public static String findOrDefaultContentType(final MantaHttpHeaders headers,
-                                                  final String filename,
-                                                  final String defaultContentType) {
-        final String headerContentType;
-
-        if (headers != null) {
-            headerContentType = headers.getContentType();
-        } else {
-            headerContentType = null;
+    public static String csv(final Iterable<?> stringable) {
+        if (stringable == null) {
+            return "";
         }
 
-        return ObjectUtils.firstNonNull(
-                // Use explicitly set headers if available
-                headerContentType,
-                // Detect based on filename
-                URLConnection.guessContentTypeFromName(filename),
-                // Otherwise use the default value
-                defaultContentType
-        );
+        final StringBuilder builder = new StringBuilder();
+
+        Iterator<?> itr = stringable.iterator();
+
+        while (itr.hasNext()) {
+            final Object o = itr.next();
+
+            if (o == null) {
+                continue;
+            }
+
+            final String value;
+
+            if (o instanceof InetAddress) {
+                value = ((InetAddress)o).getHostAddress();
+            } else if (o instanceof Map) {
+                StringBuilder sb = new StringBuilder();
+
+                @SuppressWarnings({ "unchecked", "rawtypes" })
+                final Map map = (Map)o;
+                @SuppressWarnings("unchecked")
+                final Iterator<Map.Entry<?, ?>> mapItr =
+                        (Iterator<Map.Entry<?, ?>>)map.entrySet().iterator();
+
+                while (mapItr.hasNext()) {
+                    Map.Entry<?, ?> entry = mapItr.next();
+                    sb.append("[")
+                            .append(String.valueOf(entry.getKey()))
+                            .append("=")
+                            .append(entry.getValue())
+                            .append("]");
+
+                    if (mapItr.hasNext()) {
+                        sb.append(" ");
+                    }
+                }
+
+                value = sb.toString();
+            } else {
+                value = o.toString();
+            }
+
+            // Strip any commas out of the string
+            builder.append(StringUtils.replaceChars(value, ',', ' '));
+
+            if (itr.hasNext()) {
+                builder.append(", ");
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Naively converts a CSV string into an array.
+     *
+     * @param line non-null String containing comma delimiters
+     * @return an array of Strings for each token between a comma
+     */
+    public static String[] csv2array(final String line) {
+        Objects.requireNonNull(line, "Line must be present");
+
+        if (line.contains(",")) {
+            return line.split(",\\s*");
+        } else {
+            return new String[] {line};
+        }
     }
 }

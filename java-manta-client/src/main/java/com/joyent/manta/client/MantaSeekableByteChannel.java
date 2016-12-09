@@ -1,13 +1,14 @@
 package com.joyent.manta.client;
 
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
 import com.joyent.manta.exception.MantaClientException;
+import com.joyent.manta.http.MantaConnectionFactory;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
 
-import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -24,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Elijah Zupancic
  */
-@ThreadSafe
 public class MantaSeekableByteChannel extends InputStream
         implements SeekableByteChannel {
     /**
@@ -34,15 +34,20 @@ public class MantaSeekableByteChannel extends InputStream
     private static final int EOF = -1;
 
     /**
+     * Constant representing an unknown HTTP content length value.
+     */
+    private static final long UNKNOWN_CONTENT_LENGTH = -1L;
+
+    /**
      * Flag indicating if the channel is open. Marked as volatile so
      * that different threads can flip its state.
      */
     private volatile boolean open = true;
 
     /**
-     * URL of the object on the Manta API.
+     * Path of the object on the Manta API.
      */
-    private final GenericUrl objectUri;
+    private final String path;
 
     /**
      * Current position in bytes from the start of the file.
@@ -50,61 +55,82 @@ public class MantaSeekableByteChannel extends InputStream
     private volatile long position = 0L;
 
     /**
-     * The provider for http requests setup, metadata and request initialization.
+     * Helper class providing useful HTTP functions.
      */
-    private final HttpRequestFactory httpRequestFactory;
+    private final HttpHelper httpHelper;
+
+    /**
+     * Threadsafe reference to the Manta API HTTP request object.
+     */
+    private final AtomicReference<HttpUriRequest> requestRef;
 
     /**
      * Threadsafe reference to the Manta API HTTP response object.
      */
-    private final AtomicReference<HttpResponse> responseRef;
+    private final AtomicReference<CloseableHttpResponse> responseRef;
+
+    /**
+     * Connection factory instance used for building requests to Manta.
+     */
+    private final MantaConnectionFactory connectionFactory;
 
     /**
      * Creates a new instance of a read-only seekable byte channel.
      *
-     * @param objectUri URL of the object on the Manta API
+     * @param path path of the object on the Manta API
      * @param position starting position in bytes from the start of the file
-     * @param httpRequestFactory provider for http requests setup, metadata and request initialization
+     * @param connectionFactory connection factory instance used for building requests to Manta
+     * @param httpHelper helper class providing useful HTTP functions
      */
-    public MantaSeekableByteChannel(final GenericUrl objectUri,
+    public MantaSeekableByteChannel(final String path,
                                     final long position,
-                                    final HttpRequestFactory httpRequestFactory) {
-        this.objectUri = objectUri;
+                                    final MantaConnectionFactory connectionFactory,
+                                    final HttpHelper httpHelper) {
+        this.path = path;
         this.position = position;
-        this.httpRequestFactory = httpRequestFactory;
+        this.connectionFactory = connectionFactory;
+        this.httpHelper = httpHelper;
+        this.requestRef = new AtomicReference<>();
         this.responseRef = new AtomicReference<>();
-
     }
 
 
     /**
      * Creates a new instance of a read-only seekable byte channel.
      *
-     * @param objectUri URL of the object on the Manta API
-     * @param httpRequestFactory provider for http requests setup, metadata and request initialization
+     * @param path path of the object on the Manta API
+     * @param connectionFactory connection factory instance used for building requests to Manta
+     * @param httpHelper helper class providing useful HTTP functions
      */
-    public MantaSeekableByteChannel(final GenericUrl objectUri,
-                                    final HttpRequestFactory httpRequestFactory) {
-        this(objectUri, 0L, httpRequestFactory);
+    public MantaSeekableByteChannel(final String path,
+                                    final MantaConnectionFactory connectionFactory,
+                                    final HttpHelper httpHelper) {
+        this(path, 0L, connectionFactory, httpHelper);
     }
 
     /**
      * Constructor used for creating a new instance of a read-only seekable byte
      * channel from within this class. This is used when position() is called.
      *
+     * @param requestRef reference to existing HTTP request
      * @param responseRef reference to existing HTTP response
-     * @param objectUri URL of the object on the Manta API
+     * @param path path of the object on the Manta API
      * @param position starting position in bytes from the start of the file
-     * @param httpRequestFactory provider for http requests setup, metadata and request initialization
+     * @param connectionFactory connection factory instance used for building requests to Manta
+     * @param httpHelper helper class providing useful HTTP functions
      */
-    protected MantaSeekableByteChannel(final AtomicReference<HttpResponse> responseRef,
-                                       final GenericUrl objectUri,
+    protected MantaSeekableByteChannel(final AtomicReference<HttpUriRequest> requestRef,
+                                       final AtomicReference<CloseableHttpResponse> responseRef,
+                                       final String path,
                                        final long position,
-                                       final HttpRequestFactory httpRequestFactory) {
+                                       final MantaConnectionFactory connectionFactory,
+                                       final HttpHelper httpHelper) {
+        this.requestRef = requestRef;
         this.responseRef = responseRef;
-        this.objectUri = objectUri;
+        this.path = path;
         this.position = position;
-        this.httpRequestFactory = httpRequestFactory;
+        this.connectionFactory = connectionFactory;
+        this.httpHelper = httpHelper;
     }
 
     @Override
@@ -113,14 +139,15 @@ public class MantaSeekableByteChannel extends InputStream
             throw new ClosedChannelException();
         }
 
-        final HttpResponse response = connectOrGetResponse();
+        final CloseableHttpResponse response = connectOrGetResponse();
         final long size = size();
 
         if (position >= size) {
             return EOF;
         }
 
-        final InputStream is = response.getContent();
+        final HttpEntity entity = response.getEntity();
+        final InputStream is = entity.getContent();
         final byte[] buff = dst.array();
         final int bytesRead = is.read(buff);
 
@@ -148,7 +175,8 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         final HttpResponse response = connectOrGetResponse();
-        final InputStream is = response.getContent();
+        final HttpEntity entity = response.getEntity();
+        final InputStream is = entity.getContent();
         position++;
         return is.read();
     }
@@ -160,7 +188,8 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         final HttpResponse response = connectOrGetResponse();
-        final InputStream is = response.getContent();
+        final HttpEntity entity = response.getEntity();
+        final InputStream is = entity.getContent();
 
         final int totalRead = is.read(buffer);
 
@@ -179,7 +208,8 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         final HttpResponse response = connectOrGetResponse();
-        final InputStream is = response.getContent();
+        final HttpEntity entity = response.getEntity();
+        final InputStream is = entity.getContent();
 
         final int totalRead = is.read(buffer, offset, length);
 
@@ -197,7 +227,8 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         final HttpResponse response = connectOrGetResponse();
-        final InputStream is = response.getContent();
+        final HttpEntity entity = response.getEntity();
+        final InputStream is = entity.getContent();
 
         final long totalSkipped = is.skip(noOfBytesToSkip);
 
@@ -215,7 +246,8 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         final HttpResponse response = connectOrGetResponse();
-        final InputStream is = response.getContent();
+        final HttpEntity entity = response.getEntity();
+        final InputStream is = entity.getContent();
 
         return is.available();
     }
@@ -233,8 +265,13 @@ public class MantaSeekableByteChannel extends InputStream
 
     @Override
     public SeekableByteChannel position(final long newPosition) throws IOException {
-        return new MantaSeekableByteChannel(new AtomicReference<>(),
-                objectUri, newPosition, httpRequestFactory);
+        return new MantaSeekableByteChannel(
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                path,
+                newPosition,
+                connectionFactory,
+                httpHelper);
     }
 
     @Override
@@ -244,13 +281,21 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         final HttpResponse response = connectOrGetResponse();
-        final HttpHeaders headers = response.getHeaders();
+        final HttpEntity entity = response.getEntity();
+        final long contentLength = entity.getContentLength();
 
-        if (headers.getContentLength() == null) {
-            throw new MantaClientException("Can't get SeekableByteChannel for objects of unknown size");
+        if (contentLength == UNKNOWN_CONTENT_LENGTH) {
+            MantaClientException e = new MantaClientException(
+                    "Can't get SeekableByteChannel for objects of unknown size");
+            HttpUriRequest request = requestRef.get();
+            if (request != null) {
+                HttpHelper.annotateContextedException(e, request, response);
+            }
+
+            throw e;
         }
 
-        return headers.getContentLength();
+        return contentLength;
     }
 
     @Override
@@ -283,9 +328,8 @@ public class MantaSeekableByteChannel extends InputStream
             return;
         }
 
-        if (responseRef.get() != null) {
-            responseRef.get().disconnect();
-        }
+        CloseableHttpResponse response = responseRef.getAndSet(null);
+        IOUtils.closeQuietly(response);
 
         open = false;
     }
@@ -299,22 +343,31 @@ public class MantaSeekableByteChannel extends InputStream
      * @return HTTP response object
      * @throws IOException thrown when there are network problems connecting to the remote API
      */
-    protected HttpResponse connectOrGetResponse() throws IOException {
+    protected synchronized CloseableHttpResponse connectOrGetResponse() throws IOException {
         if (responseRef.get() != null) {
             return responseRef.get();
         }
 
-        final HttpRequest request = httpRequestFactory.buildGetRequest(objectUri);
-        final HttpHeaders headers = request.getHeaders();
+        final HttpUriRequest request = connectionFactory.get(path);
 
-        headers.setRange(String.format("bytes=%d-", position));
+        // Set byte range requested via HTTP range header
+        request.setHeader(HttpHeaders.RANGE, String.format("bytes=%d-", position));
 
-        responseRef.compareAndSet(null, request.execute());
-        final HttpResponse response = responseRef.get();
-        final String contentType = response.getHeaders().getContentType();
+        // Store the request so that we can use it for adding information to exceptions
+        this.requestRef.set(request);
+
+        CloseableHttpResponse response = httpHelper.executeRequest(request,
+                "GET    {} response [{}] {} ");
+        responseRef.compareAndSet(null, response);
+
+        final HttpEntity entity = response.getEntity();
+        final String contentType = entity.getContentType().getValue();
 
         if (MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE.equals(contentType)) {
-            throw new MantaClientException("Can't get SeekableByteChannel for directory objects");
+            MantaClientException e = new MantaClientException(
+                    "Can't get SeekableByteChannel for directory objects");
+            HttpHelper.annotateContextedException(e, request, response);
+            throw e;
         }
 
         return response;

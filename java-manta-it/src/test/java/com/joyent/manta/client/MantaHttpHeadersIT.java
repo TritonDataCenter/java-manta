@@ -3,6 +3,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
@@ -41,19 +42,17 @@ public class MantaHttpHeadersIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
+                            @Optional Integer mantaTimeout)
             throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("/%s/stor/%s/",

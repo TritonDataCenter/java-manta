@@ -1,5 +1,7 @@
 package com.joyent.manta.client;
 
+import com.joyent.manta.http.MantaHttpHeaders;
+
 import java.io.Serializable;
 import java.util.Date;
 

@@ -127,6 +127,7 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return DEFAULT_HTTP_TRANSPORT;
     }

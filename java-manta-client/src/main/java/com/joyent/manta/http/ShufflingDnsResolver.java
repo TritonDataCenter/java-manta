@@ -1,4 +1,4 @@
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
 import org.apache.http.conn.DnsResolver;
 import org.slf4j.MDC;

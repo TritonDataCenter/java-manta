@@ -4,6 +4,13 @@
 package com.joyent.manta.config;
 
 import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.exception.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -63,8 +70,9 @@ public interface ConfigContext {
     Integer getMaximumConnections();
 
     /**
-     * @return the class name of the {@link com.google.api.client.http.HttpTransport} implementation to use
+     * @return always null - this config value is not used in 3.x
      */
+    @Deprecated
     String getHttpTransport();
 
     /**
@@ -168,5 +176,79 @@ public interface ConfigContext {
 
         sb.append('}');
         return sb.toString();
+    }
+
+    /**
+     * Utility method for validating that the configuration has been instantiated
+     * with valid settings.
+     *
+     * @param config configuration to test
+     * @throws ConfigurationException thrown when validation fails
+     */
+    static void validate(final ConfigContext config) {
+        List<String> failureMessages = new ArrayList<>();
+
+        if (StringUtils.isBlank(config.getMantaUser())) {
+            failureMessages.add("Manta account name must be specified");
+        }
+
+        if (StringUtils.isBlank(config.getMantaURL())) {
+            failureMessages.add("Manta URL must be specified");
+        } else {
+            try {
+                new URI(config.getMantaURL());
+            } catch (URISyntaxException e) {
+                final String msg = String.format("%s - invalid Manta URL: %s",
+                        e.getMessage(), config.getMantaURL());
+                failureMessages.add(msg);
+            }
+        }
+
+        if (config.getTimeout() < 0) {
+            failureMessages.add("Manta timeout must be 0 or greater");
+        }
+
+        if (config.getPrivateKeyContent() != null && config.getMantaKeyPath() != null) {
+            failureMessages.add("Private key content and key path can't be both set");
+        } else if (config.getPrivateKeyContent() == null && config.getMantaKeyPath() == null) {
+            failureMessages.add("Manta key path or private key content must be specified");
+        }
+
+        if (config.noAuth() != null && !config.noAuth()) {
+            if (config.getMantaKeyId() == null) {
+                failureMessages.add("Manta key id must be specified");
+            }
+        }
+
+        if (StringUtils.startsWith(config.getMantaKeyId(), "SHA256:")) {
+            failureMessages.add("We don't support SHA256 "
+                    + "fingerprints yet. Change fingerprint to MD5 format.");
+        }
+
+        if (!failureMessages.isEmpty()) {
+            String messages = StringUtils.join(failureMessages, System.lineSeparator());
+            ConfigurationException e = new ConfigurationException(
+                    "Errors when loading Manta SDK configuration:"
+                    + System.lineSeparator() + messages);
+
+            // We don't dump all of the configuration settings, just the important ones
+
+            e.setContextValue(MapConfigContext.MANTA_URL_KEY, config.getMantaURL());
+            e.setContextValue(MapConfigContext.MANTA_USER_KEY, config.getMantaUser());
+            e.setContextValue(MapConfigContext.MANTA_KEY_ID_KEY, config.getMantaKeyId());
+            e.setContextValue(MapConfigContext.MANTA_NO_AUTH_KEY, config.noAuth());
+            e.setContextValue(MapConfigContext.MANTA_KEY_PATH_KEY, config.getMantaKeyPath());
+
+            final String redactedPrivateKeyContent;
+            if (config.getPrivateKeyContent() == null) {
+                redactedPrivateKeyContent = "null";
+            } else {
+                redactedPrivateKeyContent = "non-null";
+            }
+
+            e.setContextValue(MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY, redactedPrivateKeyContent);
+            e.setContextValue(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
+                    config.isClientEncryptionEnabled());
+        }
     }
 }

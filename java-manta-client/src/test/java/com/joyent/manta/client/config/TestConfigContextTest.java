@@ -18,8 +18,7 @@ public class TestConfigContextTest {
                 "/home/bob/.ssh/bar_rsa",
                 "11:11",
                 12,
-                5,
-                "NetHttpTransport");
+                5);
 
         Properties properties = new Properties();
 
@@ -32,7 +31,6 @@ public class TestConfigContextTest {
         assertEquals(config.getMantaKeyPath(), "/home/bob/.ssh/bar_rsa");
         assertEquals((int)config.getTimeout(), 12);
         assertEquals((int)config.getRetries(), 5);
-        assertEquals(config.getHttpTransport(), "NetHttpTransport");
     }
 
     @Test(groups = { "config" })
@@ -43,8 +41,7 @@ public class TestConfigContextTest {
                 "/home/bob/.ssh/bar_rsa",
                 "11:11",
                 12,
-                5,
-                "NetHttpTransport");
+                5);
 
         Properties properties = new Properties();
         properties.setProperty(MANTA_URL_KEY, "https://manta.triton.zone");
@@ -53,7 +50,6 @@ public class TestConfigContextTest {
         properties.setProperty(MANTA_KEY_PATH_KEY, "/home/username/.ssh/foo_rsa");
         properties.setProperty(MANTA_TIMEOUT_KEY, "12");
         properties.setProperty(MANTA_RETRIES_KEY, "24");
-        properties.setProperty(MANTA_HTTP_TRANSPORT_KEY, "MockHttpTransport");
 
         ConfigContext config = new TestConfigContext(testNgContext, properties,
                 false);
@@ -70,7 +66,5 @@ public class TestConfigContextTest {
                 properties.getProperty(MANTA_TIMEOUT_KEY));
         assertEquals(String.valueOf(config.getRetries()),
                 properties.getProperty(MANTA_RETRIES_KEY));
-        assertEquals(String.valueOf(config.getHttpTransport()),
-                properties.getProperty(MANTA_HTTP_TRANSPORT_KEY));
     }
 }

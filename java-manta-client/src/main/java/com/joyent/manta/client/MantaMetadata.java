@@ -7,7 +7,6 @@ import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.collections4.map.PredicatedMap;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
@@ -27,9 +26,10 @@ import java.util.function.Function;
  * metadata. It accepts them without throwing an error, but it will only
  * ingest a single value out of multiple values.</p>
  *
+ * <p>This class is NOT thread-safe.</p>
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
     private static final long serialVersionUID = -5828336629480323042L;
 

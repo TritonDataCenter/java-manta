@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.0.0] - ?
+### Changed
+ - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
+ - Moved configuration validation into a static method on ConfigContext.
+
 ## [2.7.2] - ?
 ### Changed
  - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.

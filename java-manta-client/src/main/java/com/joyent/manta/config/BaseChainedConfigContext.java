@@ -187,6 +187,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return this.httpTransport;
     }
@@ -297,10 +298,6 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (isPresent(context.getPassword())) {
             this.password = context.getPassword();
-        }
-
-        if (isPresent(context.getHttpTransport())) {
-            this.httpTransport = context.getHttpTransport();
         }
 
         if (isPresent(context.getHttpsProtocols())) {

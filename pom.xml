@@ -4,7 +4,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>2.7.2-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>java-manta</name>
@@ -111,7 +111,8 @@
         <dependency.slfj.version>1.7.21</dependency.slfj.version>
         <dependency.testng.version>6.9.10</dependency.testng.version>
         <dependency.commons-collections.version>4.1</dependency.commons-collections.version>
-        <dependency.commons-lang>3.4</dependency.commons-lang>
+        <dependency.commons-lang.version>3.4</dependency.commons-lang.version>
+        <dependency.commons-io.version>2.5</dependency.commons-io.version>
     </properties>
 
     <dependencies>

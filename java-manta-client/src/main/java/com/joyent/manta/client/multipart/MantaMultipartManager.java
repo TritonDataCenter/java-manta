@@ -4,13 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.uuid.Generators;
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.client.MantaJob;
 import com.joyent.manta.client.MantaJobBuilder;
 import com.joyent.manta.client.MantaJobPhase;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaObjectParser;
+import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.MantaUtils;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -51,7 +51,7 @@ public class MantaMultipartManager {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaMultipartManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaMultipartManager.class);
 
     /**
      * Maximum number of parts for a single Manta object.
@@ -226,8 +226,8 @@ public class MantaMultipartManager {
                                                final MantaHttpHeaders httpHeaders) throws IOException {
         final UUID uploadId = Generators.timeBasedGenerator().generate();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Creating a new multipart upload [{}] for {}",
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Creating a new multipart upload [{}] for {}",
                     uploadId, path);
         }
 
@@ -244,9 +244,9 @@ public class MantaMultipartManager {
             metadata.setContentType(httpHeaders.getContentType());
         }
 
-        final byte[] metadataBytes = MantaObjectParser.MAPPER.writeValueAsBytes(metadata);
+        final byte[] metadataBytes = MantaObjectMapper.INSTANCE.writeValueAsBytes(metadata);
 
-        LOG.debug("Writing metadata to: {}", metadataPath);
+        LOGGER.debug("Writing metadata to: {}", metadataPath);
         mantaClient.put(metadataPath, metadataBytes);
 
         return new MantaMultipartUpload(uploadId, path);
@@ -650,15 +650,15 @@ public class MantaMultipartManager {
 
         final MantaJob job = findJob(id);
 
-        LOG.debug("Aborting multipart upload [{}]", id);
+        LOGGER.debug("Aborting multipart upload [{}]", id);
 
         if (job != null && (job.getState().equals("running")
                 || job.getState().equals("queued"))) {
-            LOG.debug("Aborting multipart upload [{}] backing job [{}]", id, job);
+            LOGGER.debug("Aborting multipart upload [{}] backing job [{}]", id, job);
             mantaClient.cancelJob(job.getId());
         }
 
-        LOG.debug("Deleting multipart upload data from: {}", dir);
+        LOGGER.debug("Deleting multipart upload data from: {}", dir);
         mantaClient.deleteRecursive(dir);
     }
 
@@ -726,7 +726,7 @@ public class MantaMultipartManager {
             throw new IllegalArgumentException("Upload id must be present");
         }
 
-        LOG.debug("Completing multipart upload [{}]", id);
+        LOGGER.debug("Completing multipart upload [{}]", id);
 
         final String uploadDir = multipartUploadDir(id);
         final MultipartMetadata metadata = downloadMultipartMetadata(id);
@@ -828,8 +828,8 @@ public class MantaMultipartManager {
         // We write the job id to Metadata object so that we can query it easily
         writeJobIdToMetadata(id, run.getId());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Created job for concatenating parts: {}",
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Created job for concatenating parts: {}",
                     run.getId());
         }
     }
@@ -846,9 +846,9 @@ public class MantaMultipartManager {
         final String uploadDir = multipartUploadDir(id);
         final String metadataPath = uploadDir + METADATA_FILE;
 
-        LOG.debug("Reading metadata from: {}", metadataPath);
+        LOGGER.debug("Reading metadata from: {}", metadataPath);
         try (InputStream in = mantaClient.getAsInputStream(metadataPath)) {
-            return MantaObjectParser.MAPPER.readValue(in,
+            return MantaObjectMapper.INSTANCE.readValue(in,
                     MantaMultipartManager.MultipartMetadata.class);
         }
     }
@@ -868,7 +868,7 @@ public class MantaMultipartManager {
         final String uploadDir = multipartUploadDir(uploadId);
         final String metadataPath = uploadDir + METADATA_FILE;
 
-        LOG.debug("Writing job id [{}] to: {}", jobId, metadataPath);
+        LOGGER.debug("Writing job id [{}] to: {}", jobId, metadataPath);
 
         MantaMetadata metadata = new MantaMetadata();
         metadata.put(JOB_ID_METADATA_KEY, jobId.toString());
@@ -1043,8 +1043,8 @@ public class MantaMultipartManager {
 
                 // Don't bother to sleep if we won't be doing a check
                 if (timesPolled < timesToPoll + 1) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Waiting for [{}] ms for upload [{}] to complete "
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Waiting for [{}] ms for upload [{}] to complete "
                                 + "(try {} of {})", waitMillis, id, timesPolled + 1,
                                 timesToPoll);
                     }
@@ -1124,7 +1124,7 @@ public class MantaMultipartManager {
         final UUID jobId = getJobIdFromMetadata(id);
 
         if (jobId == null) {
-            LOG.debug("Unable to get job id from metadata directory. Now trying job listing.");
+            LOGGER.debug("Unable to get job id from metadata directory. Now trying job listing.");
             try (Stream<MantaJob> jobs = mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))) {
                 return jobs.findFirst().orElse(null);
             }

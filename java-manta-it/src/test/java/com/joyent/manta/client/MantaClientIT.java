@@ -9,9 +9,12 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.client.utils.DateUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -23,6 +26,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.UUID;
@@ -50,19 +54,17 @@ public class MantaClientIT {
 
 
     @BeforeClass()
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
+                            @Optional Integer mantaTimeout)
             throws IOException, MantaCryptoException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/%s/",
@@ -94,7 +96,7 @@ public class MantaClientIT {
             Assert.assertNotNull(gotObject.getMtime());
             Assert.assertNotNull(gotObject.getPath());
 
-            final String data = MantaUtils.inputStreamToString(gotObject);
+            final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
             Assert.assertEquals(data, TEST_DATA);
         }
 
@@ -130,7 +132,7 @@ public class MantaClientIT {
         mantaClient.put(path, TEST_DATA);
         final File file = mantaClient.getToTempFile(path);
 
-        final String data = MantaUtils.readFileToString(file);
+        final String data = FileUtils.readFileToString(file, Charset.defaultCharset());
         Assert.assertEquals(data, TEST_DATA);
         mantaClient.delete(path);
 
@@ -160,11 +162,11 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final MantaHttpHeaders headers = new MantaHttpHeaders();
-        headers.set("durability-level", 4);
+        headers.setDurabilityLevel(4);
 
         mantaClient.put(path, TEST_DATA, headers);
         try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
-            final String data = MantaUtils.inputStreamToString(gotObject);
+            final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
             Assert.assertEquals(data, TEST_DATA);
             Assert.assertEquals("4", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));
             mantaClient.delete(gotObject.getPath());
@@ -577,7 +579,7 @@ public class MantaClientIT {
         headers.setRange("bytes=7-17");
 
         try (final InputStream min = mantaClient.getAsInputStream(path, headers)) {
-            String actual = MantaUtils.inputStreamToString(min);
+            String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
     }
