@@ -3,6 +3,8 @@ package com.joyent.manta.client;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +19,11 @@ import java.util.Date;
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject {
     private static final long serialVersionUID = 4129729453592380566L;
+
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectInputStream.class);
 
     /**
      * Response from request to the Manta API.
@@ -146,6 +153,9 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
 
     @Override
     public void close() throws IOException {
+        LOGGER.debug("Closing backingStream {} and response {}",
+                backingStream, httpResponse);
+
         IOUtils.closeQuietly(backingStream);
         IOUtils.closeQuietly(httpResponse);
     }

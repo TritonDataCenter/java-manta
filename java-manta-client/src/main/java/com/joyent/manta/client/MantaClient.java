@@ -319,6 +319,11 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         final String path = formatPath(rawPath);
         final HttpGet get = connectionFactory.get(path);
+
+        if (requestHeaders != null) {
+            get.setHeaders(requestHeaders.asApacheHttpHeaders());
+        }
+
         final AtomicReference<IOException> innerException = new AtomicReference<>();
 
         final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
@@ -364,8 +369,19 @@ public class MantaClient implements AutoCloseable {
             return in;
         };
 
-        MantaObjectInputStream stream = httpHelper.executeAndCloseRequest(get, responseAction,
-                "GET    {} response [{}] {} ");
+        final int expectedHttpStatus;
+
+        if (requestHeaders != null && requestHeaders.containsKey(HttpHeaders.RANGE)) {
+            expectedHttpStatus = HttpStatus.SC_PARTIAL_CONTENT;
+        } else {
+            expectedHttpStatus = HttpStatus.SC_OK;
+        }
+
+        MantaObjectInputStream stream = httpHelper.executeRequest(
+                get,
+                expectedHttpStatus,
+                responseAction,
+                false, "GET    {} response [{}] {} ");
 
         if (innerException.get() != null) {
             throw innerException.get();
@@ -950,18 +966,20 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string   string to copy
      * @param headers  optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
      */
-    public MantaObjectResponse put(final String path,
+    public MantaObjectResponse put(final String rawPath,
                                    final String string,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(path, "Path must not be null");
+        Validate.notNull(rawPath, "Path must not be null");
+
+        String path = formatPath(rawPath);
 
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM);
@@ -1255,8 +1273,8 @@ public class MantaClient implements AutoCloseable {
             headers = rawHeaders;
         }
 
-        headers.setContentType(DIRECTORY_REQUEST_CONTENT_TYPE);
         put.setHeaders(headers.asApacheHttpHeaders());
+        put.setHeader(HttpHeaders.CONTENT_TYPE, DIRECTORY_REQUEST_CONTENT_TYPE);
 
         HttpResponse response = httpHelper.executeAndCloseRequest(put,
                 HttpStatus.SC_NO_CONTENT,
@@ -1349,7 +1367,8 @@ public class MantaClient implements AutoCloseable {
         put.setHeader(HttpHeaders.CONTENT_TYPE, LINK_CONTENT_TYPE);
         put.setHeader(HttpHeaders.LOCATION, objectPath);
 
-        httpHelper.executeAndCloseRequest(put, "PUT    {} -> {} response [{}] {} ",
+        httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
+                "PUT    {} -> {} response [{}] {} ",
                 objectPath, linkPath);
     }
 
@@ -2211,6 +2230,12 @@ public class MantaClient implements AutoCloseable {
             /* Do nothing, but we won't capture the interrupted exception
              * because even if we are interrupted, we want to close all open
              * resources. */
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+
+        try {
+            connectionFactory.close();
         } catch (Exception e) {
             exceptions.add(e);
         }

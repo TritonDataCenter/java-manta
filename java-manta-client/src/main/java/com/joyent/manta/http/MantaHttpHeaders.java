@@ -39,7 +39,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     /**
      * HTTP header for Manta durability level.
      */
-    public static final String HTTP_DURABILITY_LEVEL = "Durability-Level";
+    public static final String HTTP_DURABILITY_LEVEL = "durability-level";
 
     /**
      * HTTP header for RBAC roles.
@@ -60,6 +60,11 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * HTTP header containing the size of a set of results returned from Manta.
      */
     public static final String RESULT_SET_SIZE = "result-set-size";
+
+    /**
+     * HTTP header indicating the version of the API to accept - used by Restify.
+     */
+    public static final String ACCEPT_VERSION = "accept-version";
 
     /**
      * HttpHeaders delegate which is wrapped by this class.
@@ -173,6 +178,10 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @return an array of {@link org.apache.http.Header} instances
      */
     public Header[] asApacheHttpHeaders() {
+        if (wrappedHeaders.isEmpty()) {
+            return new Header[0];
+        }
+
         final int length = wrappedHeaders.size();
         final Header[] headers = new Header[length];
         final MapIterator<String, Object> itr = wrappedHeaders.mapIterator();

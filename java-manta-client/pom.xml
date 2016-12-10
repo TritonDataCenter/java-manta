@@ -143,11 +143,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jul-to-slf4j</artifactId>
-            <version>${dependency.slfj.version}</version>
-        </dependency>
 
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->

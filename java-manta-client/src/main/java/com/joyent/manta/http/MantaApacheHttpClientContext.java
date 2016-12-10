@@ -1,12 +1,12 @@
 package com.joyent.manta.http;
 
+import org.apache.commons.lang3.Validate;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.MDC;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * {@link AutoCloseable} class that encapsulates the functionality of multiple
@@ -33,7 +33,7 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      * @param connectionFactory factory class that creates configured connections
      */
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory) {
-        Objects.requireNonNull(connectionFactory,
+        Validate.notNull(connectionFactory,
                 "Connection factory must be present");
 
         this.httpClient = connectionFactory.createConnection();

@@ -6,6 +6,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.http.Header;
@@ -374,12 +375,37 @@ public class HttpHelper implements AutoCloseable {
                                                            final String logMessage,
                                                            final Object... logParameters)
             throws IOException {
+        return executeRequest(request, expectedStatusCode, true,
+                logMessage, logParameters);
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request, closes the request and
+     * returns back the response.
+     *
+     * @param request request object
+     * @param expectedStatusCode status code returned that indicates success
+     * @param closeResponse when true we close the response before returning
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected CloseableHttpResponse executeRequest(final HttpUriRequest request,
+                                                   final int expectedStatusCode,
+                                                   final boolean closeResponse,
+                                                   final String logMessage,
+                                                   final Object... logParameters)
+            throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
+        CloseableHttpResponse response = client.execute(request,
+                connectionContext.getHttpContext());
 
-        try (CloseableHttpResponse response = client.execute(request,
-                connectionContext.getHttpContext())) {
+        try {
             StatusLine statusLine = response.getStatusLine();
 
             if (LOGGER.isDebugEnabled() && logMessage != null) {
@@ -394,6 +420,10 @@ public class HttpHelper implements AutoCloseable {
             }
 
             return response;
+        } finally {
+            if (closeResponse) {
+                IOUtils.closeQuietly(response);
+            }
         }
     }
 
@@ -441,12 +471,40 @@ public class HttpHelper implements AutoCloseable {
                                            final String logMessage,
                                            final Object... logParameters)
             throws IOException {
+        return executeRequest(request, expectedStatusCode, responseAction,
+                true, logMessage, logParameters);
+    }
+
+    /**
+     * Executes a {@link HttpRequest}, logs the request, closes the request and
+     * returns back the response.
+     *
+     * @param <R> return value from responseAction function
+     * @param request request object
+     * @param expectedStatusCode status code returned that indicates success
+     * @param responseAction action to perform against the response before it is closed
+     * @param closeResponse when true we close the response before returning
+     * @param logMessage log message associated with request that must contain
+     *                   a substitution placeholder for status code and
+     *                   status message
+     * @param logParameters additional log placeholders
+     * @return response object
+     * @throws IOException thrown when we are unable to process the request on the network
+     */
+    protected <R> R executeRequest(final HttpUriRequest request,
+                                   final int expectedStatusCode,
+                                   final Function<CloseableHttpResponse, R> responseAction,
+                                   final boolean closeResponse,
+                                   final String logMessage,
+                                   final Object... logParameters)
+            throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
-        try (CloseableHttpResponse response = client.execute(request,
-                connectionContext.getHttpContext())) {
+        CloseableHttpResponse response = client.execute(request,
+                connectionContext.getHttpContext());
+        try {
             StatusLine statusLine = response.getStatusLine();
 
             if (LOGGER.isDebugEnabled()) {
@@ -459,7 +517,15 @@ public class HttpHelper implements AutoCloseable {
                         request.getURI().getPath());
             }
 
-            return responseAction.apply(response);
+            if (responseAction != null) {
+                return responseAction.apply(response);
+            } else {
+                return null;
+            }
+        } finally {
+            if (closeResponse) {
+                IOUtils.closeQuietly(response);
+            }
         }
     }
 

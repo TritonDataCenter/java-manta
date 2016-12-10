@@ -7,8 +7,10 @@ import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureConfigurator;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
@@ -25,25 +27,28 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.DnsResolver;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.entity.ContentType;
+import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Factory class that creates instances of
@@ -53,17 +58,18 @@ import java.util.Objects;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class MantaConnectionFactory {
+public class MantaConnectionFactory implements Closeable {
     /**
-     * Default DNS resolver for all connections to the CloudAPI.
+     * Default DNS resolver for all connections to the Manta.
      */
     private static final DnsResolver DNS_RESOLVER = new ShufflingDnsResolver();
 
     /**
-     * Default HTTP headers to send to all requests to the CloudAPI.
+     * Default HTTP headers to send to all requests to Manta.
      */
-    private static final Collection<? extends Header> HEADERS = Collections.singletonList(
-            new BasicHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType())
+    private static final Collection<? extends Header> HEADERS = Arrays.asList(
+            new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
+            new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
     );
 
     /**
@@ -82,13 +88,18 @@ public class MantaConnectionFactory {
     private final HttpClientBuilder httpClientBuilder;
 
     /**
+     * Connection manager instance that is associated with a single Manta client.
+     */
+    private final HttpClientConnectionManager connectionManager;
+
+    /**
      * Create new instance using the passed configuration.
      * @param config configuration of the connection parameters
      * @param keyPair cryptographic signing key pair used for HTTP signatures
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair) {
-        Objects.requireNonNull(config, "Configuration context must be present");
+        Validate.notNull(config, "Configuration context must not be null");
 
         this.config = config;
 
@@ -111,31 +122,76 @@ public class MantaConnectionFactory {
                     useNativeCodeToSign);
         }
 
+        this.connectionManager = buildConnectionManager(config);
         this.httpClientBuilder = createBuilder();
     }
 
     /**
+     * Configures a connection manager with all of the setting needed to connect
+     * to Manta.
+     *
+     * @param config configuration context object
+     * @return fully configured connection manager
+     */
+    protected HttpClientConnectionManager buildConnectionManager(
+            final ConfigContext config) {
+        final int maxConns = ObjectUtils.firstNonNull(
+                config.getMaximumConnections(),
+                DefaultsConfigContext.DEFAULT_MAX_CONNS);
+
+        final ConnectionSocketFactory sslConnectionSocketFactory =
+                new MantaSSLConnectionSocketFactory(config);
+
+        final RegistryBuilder<ConnectionSocketFactory> registryBuilder =
+                RegistryBuilder.create();
+
+        final Registry<ConnectionSocketFactory> socketFactoryRegistry = registryBuilder
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", sslConnectionSocketFactory)
+                .build();
+
+        final PoolingHttpClientConnectionManager connectionManager =
+                new PoolingHttpClientConnectionManager(socketFactoryRegistry,
+                        DNS_RESOLVER);
+        connectionManager.setDefaultMaxPerRoute(maxConns);
+
+        return connectionManager;
+    }
+
+    /**
      * Configures the builder class with all of the settings needed to connect to
-     * the CloudAPI.
+     * Manta.
      *
      * @return configured instance
      */
     protected HttpClientBuilder createBuilder() {
         final boolean noAuth = ObjectUtils.firstNonNull(config.noAuth(), false);
 
+        final int maxConns = ObjectUtils.firstNonNull(
+                config.getMaximumConnections(),
+                DefaultsConfigContext.DEFAULT_MAX_CONNS);
+
+        final int timeout = ObjectUtils.firstNonNull(
+                config.getTimeout(),
+                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+
         final RequestConfig requestConfig = RequestConfig.custom()
-                .setAuthenticationEnabled(!noAuth)
+                .setAuthenticationEnabled(false)
+                .setSocketTimeout(timeout)
+                .setConnectionRequestTimeout(1000)
                 .setContentCompressionEnabled(true)
                 .build();
 
         final HttpClientBuilder builder = HttpClients.custom()
+                .disableAuthCaching()
+                .disableCookieManagement()
+                .setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
+                .setMaxConnTotal(maxConns)
+                .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
                 .setDefaultHeaders(HEADERS)
                 .setDefaultRequestConfig(requestConfig)
+                .setConnectionManagerShared(false)
                 .setRetryHandler(new MantaHttpRequestRetryHandler(config));
-
-        if (!noAuth) {
-            signatureConfigurator.configure(builder);
-        }
 
         final HttpHost proxyHost = findProxyServer();
 
@@ -144,14 +200,19 @@ public class MantaConnectionFactory {
         }
 
         builder.addInterceptorFirst(new RequestIdInterceptor());
+        builder.setConnectionManager(this.connectionManager);
 
-        @SuppressWarnings("unchecked")
-        HttpSignatureAuthScheme authScheme = (HttpSignatureAuthScheme)this.signatureConfigurator.getAuthScheme();
+        if (!noAuth) {
+            @SuppressWarnings("unchecked")
+            HttpSignatureAuthScheme authScheme =
+                    (HttpSignatureAuthScheme)this.signatureConfigurator.getAuthScheme();
 
-        builder.addInterceptorLast(new HttpSignatureRequestInterceptor(
-                authScheme,
-                this.createCredentials(),
-                !this.config.noAuth()));
+            builder.addInterceptorLast(new HttpSignatureRequestInterceptor(
+                    authScheme,
+                    this.createCredentials(),
+                    !this.config.noAuth()));
+
+        }
 
         return builder;
     }
@@ -160,26 +221,26 @@ public class MantaConnectionFactory {
      * Creates a {@link Credentials} instance based on the stored
      * {@link ConfigContext}.
      *
-     * @return credentials for the CloudAPI
+     * @return credentials for Manta
      */
     protected Credentials createCredentials() {
         final String user = config.getMantaUser();
-        Objects.requireNonNull(user, "User must be present");
+        Validate.notNull(user, "User must not be null");
 
         final String keyId = config.getMantaKeyId();
-        Objects.requireNonNull(keyId, "Key id must be present");
+        Validate.notNull(keyId, "Key id must not be null");
 
         return new UsernamePasswordCredentials(user, keyId);
     }
 
     /**
-     * Derives the CloudAPI URI for a given path.
+     * Derives Manta URI for a given path.
      *
      * @param path full path
      * @return full URI as string of resource
      */
     protected String uriForPath(final String path) {
-        Objects.requireNonNull(path, "Path must be present");
+        Validate.notNull(path, "Path must not be null");
 
         if (path.startsWith("/")) {
             return String.format("%s%s", config.getMantaURL(), path);
@@ -189,7 +250,7 @@ public class MantaConnectionFactory {
     }
 
     /**
-     * Derives the CloudAPI URI for a given path with the passed query
+     * Derives Manta URI for a given path with the passed query
      * parameters.
      *
      * @param path full path
@@ -197,8 +258,8 @@ public class MantaConnectionFactory {
      * @return full URI as string of resource
      */
     protected String uriForPath(final String path, final List<NameValuePair> params) {
-        Objects.requireNonNull(path, "Path must be present");
-        Objects.requireNonNull(params, "Params must be present");
+        Validate.notNull(path, "Path must not be null");
+        Validate.notNull(params, "Params must not be null");
 
         try {
             final URIBuilder uriBuilder = new URIBuilder(uriForPath(path));
@@ -255,23 +316,6 @@ public class MantaConnectionFactory {
      * @return new connection object instance
      */
     public CloseableHttpClient createConnection() {
-        final ConnectionSocketFactory socketFactory =
-                new MantaSSLConnectionSocketFactory(config);
-
-        final RegistryBuilder<ConnectionSocketFactory> registryBuilder =
-                RegistryBuilder.create();
-
-        final Registry<ConnectionSocketFactory> socketFactoryRegistry = registryBuilder
-                .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                .register("https", socketFactory)
-                .build();
-
-        final PoolingHttpClientConnectionManager connectionManager =
-                new PoolingHttpClientConnectionManager(socketFactoryRegistry,
-                        DNS_RESOLVER);
-
-        httpClientBuilder.setConnectionManager(connectionManager);
-
         return httpClientBuilder.build();
     }
 
@@ -370,7 +414,10 @@ public class MantaConnectionFactory {
         return new HttpPut(uriForPath(path, params));
     }
 
-    HttpSignatureConfigurator getSignatureConfigurator() {
-        return signatureConfigurator;
+    @Override
+    public void close() throws IOException {
+        if (this.connectionManager != null) {
+            connectionManager.shutdown();
+        }
     }
 }
