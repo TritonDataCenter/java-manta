@@ -6,6 +6,7 @@ import com.joyent.manta.client.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
@@ -111,7 +112,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
                 continue;
             }
 
-            if (header.getValue() == null) {
+            if (StringUtils.isEmpty(header.getValue())) {
                 put(header.getName(), null);
                 continue;
             }

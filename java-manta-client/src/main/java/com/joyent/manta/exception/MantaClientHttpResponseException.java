@@ -146,9 +146,8 @@ public class MantaClientHttpResponseException extends MantaIOException {
             }
         }
 
-        StatusLine statusLine = response.getStatusLine();
         setRequestId(HttpHelper.extractRequestId(response));
-        setStatusLine(statusLine);
+        setStatusLine(response.getStatusLine());
 
         if (errorDetail == null) {
             setServerCode(MantaErrorCode.UNKNOWN_ERROR);
@@ -160,7 +159,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
         HttpHelper.annotateContextedException(this, request, response);
     }
 
-                                            /**
+    /**
      * @return Whether received a successful HTTP status code {@code >= 200 && < 300} (see {@link #getStatusCode()}).
      */
     @Deprecated

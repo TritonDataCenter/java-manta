@@ -46,6 +46,7 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -122,7 +123,7 @@ public class MantaConnectionFactory implements Closeable {
                     useNativeCodeToSign);
         }
 
-        this.connectionManager = buildConnectionManager(config);
+        this.connectionManager = buildConnectionManager();
         this.httpClientBuilder = createBuilder();
     }
 
@@ -130,17 +131,15 @@ public class MantaConnectionFactory implements Closeable {
      * Configures a connection manager with all of the setting needed to connect
      * to Manta.
      *
-     * @param config configuration context object
      * @return fully configured connection manager
      */
-    protected HttpClientConnectionManager buildConnectionManager(
-            final ConfigContext config) {
+    protected HttpClientConnectionManager buildConnectionManager() {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
 
         final ConnectionSocketFactory sslConnectionSocketFactory =
-                new MantaSSLConnectionSocketFactory(config);
+                new MantaSSLConnectionSocketFactory(this.config);
 
         final RegistryBuilder<ConnectionSocketFactory> registryBuilder =
                 RegistryBuilder.create();
@@ -150,12 +149,12 @@ public class MantaConnectionFactory implements Closeable {
                 .register("https", sslConnectionSocketFactory)
                 .build();
 
-        final PoolingHttpClientConnectionManager connectionManager =
+        final PoolingHttpClientConnectionManager poolingConnectionManager =
                 new PoolingHttpClientConnectionManager(socketFactoryRegistry,
                         DNS_RESOLVER);
-        connectionManager.setDefaultMaxPerRoute(maxConns);
+        poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
 
-        return connectionManager;
+        return poolingConnectionManager;
     }
 
     /**
@@ -175,10 +174,12 @@ public class MantaConnectionFactory implements Closeable {
                 config.getTimeout(),
                 DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
 
+        final long requestTimeout = Duration.ofSeconds(1L).toMillis();
+
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
                 .setSocketTimeout(timeout)
-                .setConnectionRequestTimeout(1000)
+                .setConnectionRequestTimeout((int)requestTimeout)
                 .setContentCompressionEnabled(true)
                 .build();
 

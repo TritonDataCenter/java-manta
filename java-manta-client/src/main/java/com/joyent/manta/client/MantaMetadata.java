@@ -55,7 +55,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     public MantaMetadata(final Map<? extends String, ? extends String> m) {
         this();
-        innerMap.putAll(m);
+        putAll(m);
     }
 
 

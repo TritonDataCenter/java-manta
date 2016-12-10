@@ -18,6 +18,7 @@ import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.NoContentEntity;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +27,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
@@ -40,6 +42,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +67,7 @@ import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1226,11 +1230,34 @@ public class MantaClient implements AutoCloseable {
         }
 
         headers.putAllMetadata(metadata);
-
         headers.setContentEncoding("chunked");
-        String path = formatPath(rawPath);
 
-        return httpHelper.httpPut(path, headers, null, metadata);
+        String path = formatPath(rawPath);
+        List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
+
+        HttpPut put = connectionFactory.put(path, pairs);
+        put.setHeaders(headers.asApacheHttpHeaders());
+        put.setEntity(NoContentEntity.INSTANCE);
+
+        try (CloseableHttpResponse response = httpHelper.executeRequest(
+                put, HttpStatus.SC_NO_CONTENT,
+                "PUT    {} response [{}] {} ")) {
+
+            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(
+                    response.getAllHeaders());
+
+            MantaObjectResponse obj = new MantaObjectResponse(path,
+                    responseHeaders, metadata);
+
+            HttpEntity entity = response.getEntity();
+
+            if (obj.getContentType() == null && entity != null
+                    && entity.getContentType() != null) {
+                obj.setContentType(entity.getContentType().getValue());
+            }
+
+            return obj;
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,8 +145,8 @@ public class MantaObjectResponse implements MantaObject {
      * @param metadata User set metadata associated with object
      */
     public MantaObjectResponse(final String path, final MantaHttpHeaders headers, final MantaMetadata metadata) {
-        Objects.requireNonNull(path, "Path must be present");
-        Objects.requireNonNull(headers, "Headers must be present");
+        Validate.notNull(path, "Path must be not be null");
+        Validate.notNull(headers, "Headers must not be null");
 
         this.path = path;
         this.httpHeaders = headers;
