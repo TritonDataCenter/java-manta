@@ -296,7 +296,7 @@ public class HttpHelper implements AutoCloseable {
                                                    final String logMessage,
                                                    final Object... logParameters)
             throws IOException {
-        return executeRequest(request, HttpStatus.SC_OK, logMessage, logParameters);
+        return executeRequest(request, (Integer)null, logMessage, logParameters);
     }
 
     /**
@@ -313,7 +313,7 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     protected CloseableHttpResponse executeRequest(final HttpUriRequest request,
-                                                   final int expectedStatusCode,
+                                                   final Integer expectedStatusCode,
                                                    final String logMessage,
                                                    final Object... logParameters)
             throws IOException {
@@ -330,7 +330,7 @@ public class HttpHelper implements AutoCloseable {
                     statusLine.getReasonPhrase());
         }
 
-        if (statusLine.getStatusCode() != expectedStatusCode) {
+        if (isFailedStatusCode(expectedStatusCode, statusLine)) {
             throw new MantaClientHttpResponseException(request, response,
                     request.getURI().getPath());
         }
@@ -354,7 +354,7 @@ public class HttpHelper implements AutoCloseable {
                                                            final String logMessage,
                                                            final Object... logParameters)
             throws IOException {
-        return executeAndCloseRequest(request, HttpStatus.SC_OK, logMessage, logParameters);
+        return executeAndCloseRequest(request, (Integer)null, logMessage, logParameters);
     }
 
     /**
@@ -371,7 +371,7 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     protected CloseableHttpResponse executeAndCloseRequest(final HttpUriRequest request,
-                                                           final int expectedStatusCode,
+                                                           final Integer expectedStatusCode,
                                                            final String logMessage,
                                                            final Object... logParameters)
             throws IOException {
@@ -394,7 +394,7 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     protected CloseableHttpResponse executeRequest(final HttpUriRequest request,
-                                                   final int expectedStatusCode,
+                                                   final Integer expectedStatusCode,
                                                    final boolean closeResponse,
                                                    final String logMessage,
                                                    final Object... logParameters)
@@ -413,7 +413,7 @@ public class HttpHelper implements AutoCloseable {
                         statusLine.getReasonPhrase());
             }
 
-            if (statusLine.getStatusCode() != expectedStatusCode) {
+            if (isFailedStatusCode(expectedStatusCode, statusLine)) {
                 String path = request.getURI().getPath();
                 throw new MantaClientHttpResponseException(request, response,
                         path);
@@ -446,7 +446,7 @@ public class HttpHelper implements AutoCloseable {
                                            final String logMessage,
                                            final Object... logParameters)
             throws IOException {
-        return executeAndCloseRequest(request, HttpStatus.SC_OK,
+        return executeAndCloseRequest(request, null,
                 responseAction, logMessage, logParameters);
     }
 
@@ -466,7 +466,7 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     protected <R> R executeAndCloseRequest(final HttpUriRequest request,
-                                           final int expectedStatusCode,
+                                           final Integer expectedStatusCode,
                                            final Function<CloseableHttpResponse, R> responseAction,
                                            final String logMessage,
                                            final Object... logParameters)
@@ -492,7 +492,7 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     protected <R> R executeRequest(final HttpUriRequest request,
-                                   final int expectedStatusCode,
+                                   final Integer expectedStatusCode,
                                    final Function<CloseableHttpResponse, R> responseAction,
                                    final boolean closeResponse,
                                    final String logMessage,
@@ -512,7 +512,7 @@ public class HttpHelper implements AutoCloseable {
                         statusLine.getReasonPhrase());
             }
 
-            if (statusLine.getStatusCode() != expectedStatusCode) {
+            if (isFailedStatusCode(expectedStatusCode, statusLine)) {
                 throw new MantaClientHttpResponseException(request, response,
                         request.getURI().getPath());
             }
@@ -526,6 +526,26 @@ public class HttpHelper implements AutoCloseable {
             if (closeResponse) {
                 IOUtils.closeQuietly(response);
             }
+        }
+    }
+
+    /**
+     * Utility method that determines if a request failed by comparing the
+     * status code to an expectation if present (non-null) or by finding out
+     * if the HTTP status code is less than 400.
+     *
+     * @param expectedStatusCode null for default behavior or the specific status code
+     * @param statusLine status line object containing status code
+     * @return boolean true indicates the request failed
+     */
+    private static boolean isFailedStatusCode(final Integer expectedStatusCode,
+                                              final StatusLine statusLine) {
+        int code = statusLine.getStatusCode();
+
+        if (expectedStatusCode == null) {
+            return code >= HttpStatus.SC_BAD_REQUEST;
+        } else {
+            return code != expectedStatusCode;
         }
     }
 

@@ -150,7 +150,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
         setStatusLine(response.getStatusLine());
 
         if (errorDetail == null) {
-            setServerCode(MantaErrorCode.UNKNOWN_ERROR);
+            setServerCode(MantaErrorCode.NO_CODE_ERROR);
         } else {
             setServerCode(MantaErrorCode.valueOfCode(errorDetail.getCode()));
             setContextValue("server_message", errorDetail.getMessage());
