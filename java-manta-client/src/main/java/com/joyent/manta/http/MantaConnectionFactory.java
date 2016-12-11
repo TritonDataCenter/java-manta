@@ -28,15 +28,24 @@ import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.DnsResolver;
 import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.HttpConnectionFactory;
+import org.apache.http.conn.ManagedHttpClientConnection;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultBackoffStrategy;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
+import org.apache.http.impl.io.DefaultHttpResponseParserFactory;
 import org.apache.http.message.BasicHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -60,6 +69,11 @@ import java.util.List;
  * @since 3.0.0
  */
 public class MantaConnectionFactory implements Closeable {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaConnectionFactory.class);
+
     /**
      * Default DNS resolver for all connections to the Manta.
      */
@@ -128,6 +142,18 @@ public class MantaConnectionFactory implements Closeable {
     }
 
     /**
+     * Builds and configures a default connection factory instance.
+     *
+     * @return configured connection factory
+     */
+    protected HttpConnectionFactory <HttpRoute, ManagedHttpClientConnection>
+            buildHttpConnectionFactory() {
+        return new ManagedHttpClientConnectionFactory(
+                new DefaultHttpRequestWriterFactory(),
+                new DefaultHttpResponseParserFactory());
+    }
+
+    /**
      * Configures a connection manager with all of the setting needed to connect
      * to Manta.
      *
@@ -149,8 +175,12 @@ public class MantaConnectionFactory implements Closeable {
                 .register("https", sslConnectionSocketFactory)
                 .build();
 
+        HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
+                buildHttpConnectionFactory();
+
         final PoolingHttpClientConnectionManager poolingConnectionManager =
                 new PoolingHttpClientConnectionManager(socketFactoryRegistry,
+                        connFactory,
                         DNS_RESOLVER);
         poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
 
@@ -192,7 +222,14 @@ public class MantaConnectionFactory implements Closeable {
                 .setDefaultHeaders(HEADERS)
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManagerShared(false)
-                .setRetryHandler(new MantaHttpRequestRetryHandler(config));
+                .setConnectionBackoffStrategy(new DefaultBackoffStrategy());
+
+        if (config.getRetries() > 0) {
+            builder.setRetryHandler(new MantaHttpRequestRetryHandler(config))
+                   .setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
+        } else {
+            LOGGER.info("Retry of failed requests is disabled");
+        }
 
         final HttpHost proxyHost = findProxyServer();
 

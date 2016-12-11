@@ -98,6 +98,7 @@ public interface ConfigContext {
     /**
      * @return time in milliseconds to cache HTTP signature headers
      */
+    @Deprecated
     Integer getSignatureCacheTTL();
 
     /**

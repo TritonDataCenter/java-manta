@@ -179,11 +179,8 @@ public class MantaMultipartManager {
         final MantaIOException aggregateException = new MantaIOException(
                 "Problem(s) listing multipart uploads in progress");
 
-        int count = 1;
-        for (Exception e : exceptions) {
-            final String label = String.format("exception_%d", count++);
-            aggregateException.setContextValue(label, e);
-        }
+        MantaUtils.attachExceptionsToContext(aggregateException,
+                exceptions);
 
         throw aggregateException;
     }

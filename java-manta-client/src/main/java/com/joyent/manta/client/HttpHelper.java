@@ -6,6 +6,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.RequestIdInterceptor;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -563,10 +564,13 @@ public class HttpHelper implements AutoCloseable {
         final Header responseIdHeader = response.getFirstHeader(REQUEST_ID);
         final String requestId;
 
-        if (responseIdHeader == null) {
-            requestId = null;
-        } else {
+
+        if (responseIdHeader != null) {
             requestId = responseIdHeader.getValue();
+        } else if (MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING) != null) {
+            requestId = MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
+        } else {
+            requestId = null;
         }
 
         return requestId;

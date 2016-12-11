@@ -1,7 +1,6 @@
 package com.joyent.manta.http;
 
 
-import com.joyent.manta.exception.MantaResponseException;
 import com.joyent.manta.config.ConfigContext;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
@@ -18,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Implementation of {@link HttpRequestRetryHandler} customized for use with the
+ * Implementation of {@link HttpRequestRetryHandler} customized for use with
  * Manta.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
@@ -34,7 +33,6 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
      * List of all exception types that can't be retried.
      */
     protected static final List<Class<? extends IOException>> NON_RETRIABLE = Arrays.asList(
-            MantaResponseException.class,
             InterruptedIOException.class,
             UnknownHostException.class,
             ConnectException.class,
@@ -53,8 +51,9 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
     public boolean retryRequest(final IOException exception,
                                 final int executionCount,
                                 final HttpContext context) {
-        if (logger.isDebugEnabled()) {
-            String msg = String.format("Request failed, %d retry.", executionCount);
+        if (logger.isDebugEnabled() && executionCount <= getRetryCount()) {
+            String msg = String.format("Request failed, %d/%d retry.",
+                    executionCount, getRetryCount());
             logger.debug(msg, exception);
         }
 

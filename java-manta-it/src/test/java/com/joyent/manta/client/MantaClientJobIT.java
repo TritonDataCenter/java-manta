@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -226,9 +227,14 @@ public class MantaClientJobIT {
             Thread.sleep(1000);
         }
 
-        try (Stream<MantaJob> jobs = mantaClient.getAllJobs()) {
-            List<MantaJob> found = jobs.filter(job -> job.getId().equals(job1id) || job.getId().equals(job2id))
-                    .collect(Collectors.toList());
+        Predicate<? super MantaJob> findByJobIdFilter = job -> {
+            Assert.assertNotNull(job);
+            return job.getId().equals(job1id) || job.getId().equals(job2id);
+        };
+
+        try (Stream<MantaJob> jobs = mantaClient.getAllJobs();
+             Stream<MantaJob> filtered = jobs.filter(findByJobIdFilter)) {
+            List<MantaJob> found = filtered.collect(Collectors.toList());
 
             Assert.assertEquals(found.size(), 2, "We should have found both jobs");
         }  catch (AssertionError e) {

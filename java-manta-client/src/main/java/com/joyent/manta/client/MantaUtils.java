@@ -6,6 +6,8 @@ package com.joyent.manta.client;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.exception.ContextedException;
+import org.apache.commons.lang3.exception.ExceptionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -517,6 +519,22 @@ public final class MantaUtils {
             return line.split(",\\s*");
         } else {
             return new String[] {line};
+        }
+    }
+
+    /**
+     * Adds the passed exceptions as properties to a {@link ContextedException}
+     * instance.
+     *
+     * @param contexted exception to attach exceptions to
+     * @param exceptions exceptions to attach
+     */
+    public static void attachExceptionsToContext(final ExceptionContext contexted,
+                                                 final Iterable<? extends Exception> exceptions) {
+        int count = 1;
+        for (Exception e : exceptions) {
+            final String label = String.format("exception_%d", count++);
+            contexted.setContextValue(label, e);
         }
     }
 }

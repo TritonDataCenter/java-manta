@@ -12,6 +12,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaJobException;
+import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.http.ContentTypeLookup;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
@@ -42,6 +43,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
@@ -77,7 +79,6 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -190,8 +191,36 @@ public class MantaClient implements AutoCloseable {
 
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
-
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
+        this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
+        this.httpHelper = new HttpHelper(this.config, connectionContext, connectionFactory);
+
+        this.uriSigner = new UriSigner(this.config, keyPair);
+    }
+
+    /**
+     * Creates a new instance of the Manta client with the specified connection factory.
+     * This method is typically used by unit tests to inject connection factory
+     * customizations so we can simulate different network events.
+     *
+     * @param config The configuration context that provides all of the configuration values
+     * @param keyPair cryptographic signing key pair used for HTTP signatures
+     * @param connectionFactory connection factory instance used to tune connection settings
+     * @throws IOException If unable to instantiate the client.
+     */
+    MantaClient(final ConfigContext config,
+                final KeyPair keyPair,
+                final MantaConnectionFactory connectionFactory) {
+        final String mantaURL = config.getMantaURL();
+        final String account = config.getMantaUser();
+
+        ConfigContext.validate(config);
+
+        this.url = mantaURL;
+        this.config = config;
+        this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
+
+        this.connectionFactory = connectionFactory;
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
         this.httpHelper = new HttpHelper(this.config, connectionContext, connectionFactory);
 
@@ -328,8 +357,6 @@ public class MantaClient implements AutoCloseable {
             get.setHeaders(requestHeaders.asApacheHttpHeaders());
         }
 
-        final AtomicReference<IOException> innerException = new AtomicReference<>();
-
         final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
             HttpEntity entity = response.getEntity();
 
@@ -360,10 +387,9 @@ public class MantaClient implements AutoCloseable {
             } catch (IOException ioe) {
                 String msg = String.format("Error getting stream from entity content for path: %s",
                         path);
-                MantaIOException e = new MantaIOException(msg, ioe);
+                MantaObjectException e = new MantaObjectException(msg, ioe);
                 HttpHelper.annotateContextedException(e, get, response);
-                innerException.set(e);
-                return null;
+                throw e;
             }
 
             MantaObjectInputStream in = new MantaObjectInputStream(metadata, response,
@@ -381,17 +407,11 @@ public class MantaClient implements AutoCloseable {
             expectedHttpStatus = HttpStatus.SC_OK;
         }
 
-        MantaObjectInputStream stream = httpHelper.executeRequest(
+        return httpHelper.executeRequest(
                 get,
                 expectedHttpStatus,
                 responseAction,
                 false, "GET    {} response [{}] {} ");
-
-        if (innerException.get() != null) {
-            throw innerException.get();
-        }
-
-        return stream;
     }
 
     /**
@@ -1670,13 +1690,13 @@ public class MantaClient implements AutoCloseable {
 
         MantaJob job;
         HttpUriRequest request = null;
-        HttpResponse response = null;
+        CloseableHttpResponse response = null;
         HttpEntity entity;
+        CloseableHttpClient client = connectionContext.getHttpClient();
 
         try {
             request = connectionFactory.get(livePath);
-            response = httpHelper.executeAndCloseRequest(request,
-                    "GET    {} response [{}] {} ");
+            response = client.execute(request, connectionContext.getHttpContext());
             StatusLine statusLine = response.getStatusLine();
 
             // If we can't get the live status of the job, we try to get the archived
@@ -1686,13 +1706,19 @@ public class MantaClient implements AutoCloseable {
                         home, jobId);
 
                 request = connectionFactory.get(archivePath);
-                response = httpHelper.executeAndCloseRequest(request,
-                        "GET    {} response [{}] {} ");
+
+                // We close the request that was previously opened, because it
+                // didn't have what we need.
+                IOUtils.closeQuietly(response);
+                response = client.execute(request, connectionContext.getHttpContext());
                 statusLine = response.getStatusLine();
 
                 // Job wasn't available via live status nor archive
                 if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                    return null;
+                    String msg = "No record for job in Manta";
+                    MantaJobException e = new MantaJobException(jobId, msg);
+                    HttpHelper.annotateContextedException(e, request, response);
+                    throw e;
                 // There was an undefined problem with pulling the job from the archive
                 } else if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
                     String msg = "Unable to get job data from archive";
@@ -1746,8 +1772,13 @@ public class MantaClient implements AutoCloseable {
             MantaJobException je = new MantaJobException(jobId, msg, e);
             HttpHelper.annotateContextedException(je, request, response);
             throw je;
+        } finally {
+            if (response != null) {
+                IOUtils.closeQuietly(response);
+            }
         }
 
+        Validate.notNull("Job returned must not be null");
         return job;
     }
 
@@ -1759,29 +1790,21 @@ public class MantaClient implements AutoCloseable {
      *
      * @return a stream with all of the jobs
      * @throws IOException thrown when we can't get a list of jobs over the network
+     * @throws MantaJobException if there is a problem with the underlying data
      */
     public Stream<MantaJob> getAllJobs() throws IOException {
-        AtomicReference<IOException> lambdaException = new AtomicReference<>();
-
         Stream<MantaJob> jobStream = getAllJobIds().map(id -> {
-            if (id == null) {
-                return null;
-            }
+            Validate.notNull(id, "Job ids must not be null");
 
             try {
                 return getJob(id);
             } catch (IOException e) {
                 String msg = "Error processing job object stream";
-                MantaIOException ioe = new MantaIOException(msg, e);
-                ioe.setContextValue("failedJobId", Objects.toString(id));
-                lambdaException.set(ioe);
-                return null;
+                MantaJobException jobException = new MantaJobException(id, msg, e);
+                jobException.setContextValue("failedJobId", Objects.toString(id));
+                throw jobException;
             }
         });
-
-        if (lambdaException.get() != null) {
-            throw lambdaException.get();
-        }
 
         return jobStream;
     }
@@ -1848,9 +1871,7 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaJob> getAllJobs(final String filterName,
                                        final String filter) throws IOException {
 
-        AtomicReference<IOException> lambdaException = new AtomicReference<>();
-
-        Stream<MantaJob> jobStream = getAllJobIds(filterName, filter).map(id -> {
+        return getAllJobIds(filterName, filter).map(id -> {
                 if (id == null) {
                     return null;
                 }
@@ -1859,21 +1880,14 @@ public class MantaClient implements AutoCloseable {
                     return getJob(id);
                 } catch (IOException e) {
                     String msg = "Error filtering job object stream";
-                    MantaIOException ioe = new MantaIOException(msg, e);
+                    MantaJobException jobException = new MantaJobException(id, msg, e);
 
-                    ioe.setContextValue("filterName", filterName);
-                    ioe.setContextValue("filter", filter);
-                    ioe.setContextValue("failedJobId", Objects.toString(id));
-                    lambdaException.set(ioe);
-                    return null;
+                    jobException.setContextValue("filterName", filterName);
+                    jobException.setContextValue("filter", filter);
+
+                    throw jobException;
                 }
             });
-
-        if (lambdaException.get() != null) {
-            throw lambdaException.get();
-        }
-
-        return jobStream;
     }
 
 
@@ -1977,8 +1991,6 @@ public class MantaClient implements AutoCloseable {
         final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
         final Stream<String> responseStream = responseAsStream(response);
 
-        AtomicReference<IOException> lambdaException = new AtomicReference<>();
-
         Stream<UUID> jobIdStream = responseStream.map(s -> {
             try {
                 @SuppressWarnings("rawtypes")
@@ -1992,19 +2004,15 @@ public class MantaClient implements AutoCloseable {
                 return UUID.fromString(value.toString());
             } catch (IOException | IllegalArgumentException e) {
                 String msg = "Error deserializing for job id stream";
-                MantaIOException ioe = new MantaIOException(msg, e);
-                HttpHelper.annotateContextedException(ioe, get, response);
-                ioe.setContextValue("filterName", filterName);
-                ioe.setContextValue("filter", filter);
-                ioe.setContextValue("failedContent", s);
-                lambdaException.set(ioe);
-                return null;
+                MantaJobException jobException = new MantaJobException(msg, e);
+                HttpHelper.annotateContextedException(jobException, get, response);
+                jobException.setContextValue("filterName", filterName);
+                jobException.setContextValue("filter", filter);
+                jobException.setContextValue("failedContent", s);
+
+                throw jobException;
             }
         });
-
-        if (lambdaException.get() != null) {
-            throw lambdaException.get();
-        }
 
         return jobIdStream;
     }
@@ -2046,26 +2054,18 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaObjectInputStream> getJobOutputsAsStreams(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        AtomicReference<IOException> lambdaException = new AtomicReference<>();
-
         Stream<MantaObjectInputStream> objectStream = getJobOutputs(jobId)
                 .map(obj -> {
                     try {
                         return getAsInputStream(obj);
                     } catch (IOException e) {
                         String msg = "Error deserializing JSON output as inputstream";
-                        MantaIOException ioe = new MantaIOException(msg, e);
-                        ioe.setContextValue("jobId", Objects.toString(jobId));
-                        ioe.setContextValue("output", obj);
+                        MantaJobException jobException = new MantaJobException(jobId, msg, e);;
+                        jobException.setContextValue("output", obj);
 
-                        lambdaException.set(ioe);
-                        return null;
+                        throw jobException;
                     }
                 });
-
-        if (lambdaException.get() != null) {
-            throw lambdaException.get();
-        }
 
         return objectStream;
     }
@@ -2085,26 +2085,18 @@ public class MantaClient implements AutoCloseable {
     public Stream<String> getJobOutputsAsStrings(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        AtomicReference<IOException> lambdaException = new AtomicReference<>();
-
         Stream<String> outputStream = getJobOutputs(jobId)
                 .map(obj -> {
                     try {
                         return getAsString(obj);
                     } catch (IOException e) {
                         String msg = "Error deserializing JSON output as string";
-                        MantaIOException ioe = new MantaIOException(msg, e);
-                        ioe.setContextValue("jobId", Objects.toString(jobId));
-                        ioe.setContextValue("output", obj);
+                        MantaJobException jobException = new MantaJobException(jobId, msg, e);
+                        jobException.setContextValue("output", obj);
 
-                        lambdaException.set(ioe);
-                        return null;
+                        throw jobException;
                     }
                 });
-
-        if (lambdaException.get() != null) {
-            throw lambdaException.get();
-        }
 
         return outputStream;
     }
@@ -2161,27 +2153,19 @@ public class MantaClient implements AutoCloseable {
                 "GET    {} response [{}] {} ");
         final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
-        AtomicReference<IOException> lambdaException = new AtomicReference<>();
-
         Stream<MantaJobError> errorStream = responseAsStream(response)
                 .map(err -> {
                     try {
                         return mapper.readValue(err, MantaJobError.class);
                     } catch (IOException e) {
                         String msg = "Error deserializing JSON job error output";
-                        MantaIOException ioe = new MantaIOException(msg, e);
-                        HttpHelper.annotateContextedException(ioe, get, response);
-                        ioe.setContextValue("jobId", Objects.toString(jobId));
-                        ioe.setContextValue("errText", err);
+                        MantaJobException jobException = new MantaJobException(jobId, msg, e);
+                        HttpHelper.annotateContextedException(jobException, get, response);
+                        jobException.setContextValue("errText", err);
 
-                        lambdaException.set(ioe);
-                        return null;
+                        throw jobException;
                     }
                 });
-
-        if (lambdaException.get() != null) {
-            throw lambdaException.get();
-        }
 
         return errorStream;
     }

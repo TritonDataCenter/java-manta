@@ -59,7 +59,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private String password;
 
     /**
-     * The class name of the {@link com.google.api.client.http.HttpTransport} implementation to use.
+     * This field has been deprecated.
      */
     private String httpTransport;
 
@@ -213,6 +213,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public Integer getSignatureCacheTTL() {
         return signatureCacheTTL;
     }
@@ -314,10 +315,6 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (context.disableNativeSignatures() != null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
-        }
-
-        if (context.getSignatureCacheTTL() != null) {
-            this.signatureCacheTTL = context.getSignatureCacheTTL();
         }
     }
 

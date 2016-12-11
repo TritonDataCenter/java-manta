@@ -72,6 +72,16 @@ public class IntegrationTestConfigContext extends BaseChainedConfigContext {
                 mantaKeyId, mantaTimeout, 6));
     }
 
+    public IntegrationTestConfigContext(String mantaUrl,
+                                        String mantaUser,
+                                        String mantaKeyPath,
+                                        String mantaKeyId,
+                                        Integer mantaTimeout,
+                                        Integer retries) {
+        this(buildTestContext(mantaUrl, mantaUser, mantaKeyPath,
+                mantaKeyId, mantaTimeout, retries));
+    }
+
     static ConfigContext buildTestContext(String mantaUrl,
                                           String mantaUser,
                                           String mantaKeyPath,
@@ -85,9 +95,15 @@ public class IntegrationTestConfigContext extends BaseChainedConfigContext {
         BaseChainedConfigContext testConfig = new StandardConfigContext()
                 .setMantaURL(mantaUrl)
                 .setMantaUser(mantaUser)
-                .setMantaKeyId(mantaKeyId)
-                .setTimeout(mantaTimeout)
-                .setRetries(retries);
+                .setMantaKeyId(mantaKeyId);
+
+        if (mantaTimeout != null) {
+            testConfig.setTimeout(mantaTimeout);
+        }
+
+        if (retries != null) {
+            testConfig.setRetries(retries);
+        }
 
         if (privateKeyUrl != null) {
             testConfig.setMantaKeyPath(privateKeyUrl.getFile());

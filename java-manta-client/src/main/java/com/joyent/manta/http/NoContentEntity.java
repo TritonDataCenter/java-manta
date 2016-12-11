@@ -70,6 +70,7 @@ public final class NoContentEntity implements HttpEntity {
         return false;
     }
 
+    @Deprecated
     @Override
     public void consumeContent() throws IOException {
     }
