@@ -146,7 +146,7 @@ public class MantaConnectionFactory implements Closeable {
      *
      * @return configured connection factory
      */
-    protected HttpConnectionFactory <HttpRoute, ManagedHttpClientConnection>
+    protected HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection>
             buildHttpConnectionFactory() {
         return new ManagedHttpClientConnectionFactory(
                 new DefaultHttpRequestWriterFactory(),
