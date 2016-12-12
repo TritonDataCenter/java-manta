@@ -105,11 +105,6 @@ public class MantaClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClient.class);
 
     /**
-     * The standard http status code representing that the request was accepted.
-     */
-    private static final int HTTP_STATUSCODE_202_ACCEPTED = 202;
-
-    /**
      * HTTP metadata headers that violate the Manta API contract.
      */
     private static final String[] ILLEGAL_METADATA_HEADERS = new String[]{
@@ -1632,7 +1627,7 @@ public class MantaClient implements AutoCloseable {
         StatusLine statusLine = response.getStatusLine();
 
         // We expect a return value of 202 when the cancel request was accepted
-        return statusLine.getStatusCode() == HTTP_STATUSCODE_202_ACCEPTED;
+        return statusLine.getStatusCode() == HttpStatus.SC_ACCEPTED;
     }
 
 
@@ -1659,7 +1654,7 @@ public class MantaClient implements AutoCloseable {
         StatusLine statusLine = response.getStatusLine();
 
         // We expect a return value of 202 when the cancel request was accepted
-        return statusLine.getStatusCode() == HTTP_STATUSCODE_202_ACCEPTED;
+        return statusLine.getStatusCode() == HttpStatus.SC_ACCEPTED;
     }
 
     /**
