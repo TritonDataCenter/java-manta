@@ -24,8 +24,10 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.DnsResolver;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.HttpConnectionFactory;
@@ -86,6 +88,12 @@ public class MantaConnectionFactory implements Closeable {
             new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
             new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
     );
+
+    /**
+     * The size of the internal socket buffer used to buffer data
+     * while receiving / transmitting HTTP messages.
+     */
+    private static final int SOCKET_BUFFER_SIZE = 8192;
 
     /**
      * Configuration context that provides connection details.
@@ -151,6 +159,38 @@ public class MantaConnectionFactory implements Closeable {
     }
 
     /**
+     * Builds a socket configuration customized for Manta.
+     *
+     * @return fully configured instance
+     */
+    protected SocketConfig buildSocketConfig() {
+        final int timeout = ObjectUtils.firstNonNull(config.getTimeout(),
+                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+
+        return SocketConfig.custom()
+                /* Disable Nagle's algorithm for this connection.  Written data
+                 * to the network is not buffered pending acknowledgement of
+                 * previously written data.
+                 */
+                .setTcpNoDelay(true)
+                /* Set a timeout on blocking Socket operations. */
+                .setSoTimeout(timeout)
+
+                .setSoKeepAlive(true)
+                .build();
+    }
+
+    /**
+     * Builds and configures a {@link ConnectionConfig} instance.
+     * @return
+     */
+    protected ConnectionConfig buildConnectionConfig() {
+        return ConnectionConfig.custom()
+                .setBufferSize(SOCKET_BUFFER_SIZE)
+                .build();
+    }
+
+    /**
      * Configures a connection manager with all of the setting needed to connect
      * to Manta.
      *
@@ -180,6 +220,8 @@ public class MantaConnectionFactory implements Closeable {
                         connFactory,
                         DNS_RESOLVER);
         poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
+        poolingConnectionManager.setDefaultSocketConfig(buildSocketConfig());
+        poolingConnectionManager.setDefaultConnectionConfig(buildConnectionConfig());
 
         return poolingConnectionManager;
     }
