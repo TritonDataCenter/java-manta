@@ -1608,7 +1608,9 @@ public class MantaClient implements AutoCloseable {
         Validate.notNull(jobId, "Manta job id must not be null");
         String path = String.format("%s/jobs/%s/live/in", home, jobId);
 
-        HttpResponse response = httpHelper.httpGet(path);
+        HttpGet get = connectionFactory.get(path);
+        HttpResponse response = httpHelper.executeRequest(get,
+                "GET    {} response [{}] {} ");
         return responseAsStream(response);
     }
 

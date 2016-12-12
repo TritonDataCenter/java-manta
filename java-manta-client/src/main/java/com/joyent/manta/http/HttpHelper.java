@@ -164,15 +164,8 @@ public class HttpHelper implements AutoCloseable {
             post.setEntity(entity);
         }
 
-        CloseableHttpClient client = connectionContext.getHttpClient();
-
-        try (CloseableHttpResponse response = client.execute(post)) {
-            StatusLine statusLine = response.getStatusLine();
-            LOGGER.debug("POST   {} response [{}] {} ", path, statusLine.getStatusCode(),
-                    statusLine.getReasonPhrase());
-
-            return response;
-        }
+        return executeAndCloseRequest(post, (Integer)null,
+                "POST   {} response [{}] {} ");
     }
 
 
@@ -253,8 +246,8 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     public CloseableHttpResponse executeRequest(final HttpUriRequest request,
-                                                   final String logMessage,
-                                                   final Object... logParameters)
+                                                final String logMessage,
+                                                final Object... logParameters)
             throws IOException {
         return executeRequest(request, null, logMessage, logParameters);
     }
