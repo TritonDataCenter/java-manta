@@ -177,9 +177,8 @@ public class MantaClient implements AutoCloseable {
      * Creates a new instance of a Manta client.
      *
      * @param config The configuration context that provides all of the configuration values.
-     * @throws IOException If unable to instantiate the client.
      */
-    public MantaClient(final ConfigContext config) throws IOException {
+    public MantaClient(final ConfigContext config) {
         final String mantaURL = config.getMantaURL();
         final String account = config.getMantaUser();
 
@@ -631,9 +630,8 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the directory.
      * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the directory.
-     * @throws IOException thrown when there is a problem getting the listing over the network
      */
-    public MantaDirectoryListingIterator streamingIterator(final String path) throws IOException {
+    public MantaDirectoryListingIterator streamingIterator(final String path) {
         MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
                 this.url, path, httpHelper, MAX_RESULTS);
         danglingStreams.add(new WeakReference<AutoCloseable>(itr));
@@ -1478,9 +1476,9 @@ public class MantaClient implements AutoCloseable {
     }
 
 
-    /*************************************************************************
+    /* ========================================================================
      * Job Methods
-     *************************************************************************/
+     * ========================================================================
 
     /**
      * Submits a new job to be executed. This call is not idempotent, so calling
@@ -1548,13 +1546,12 @@ public class MantaClient implements AutoCloseable {
      */
     public void addJobInputs(final UUID jobId,
                              final Iterator<String> inputs) throws IOException {
-        Validate.notNull(jobId, "Manta job id must not be null");
         Validate.notNull(inputs, "Inputs must not be null");
 
         ContentType contentType = ContentType.TEXT_PLAIN.withCharset(Charsets.UTF_8);
         HttpEntity entity = new StringIteratorHttpContent(inputs, contentType);
 
-        processJobInputs(jobId, entity);
+        addJobInputs(jobId, entity);
     }
 
 
@@ -1569,12 +1566,26 @@ public class MantaClient implements AutoCloseable {
      */
     public void addJobInputs(final UUID jobId,
                              final Stream<String> inputs) throws IOException {
-        Validate.notNull(jobId, "Manta job id must not be null");
         Validate.notNull(inputs, "Inputs must not be null");
 
         ContentType contentType = ContentType.TEXT_PLAIN.withCharset(Charsets.UTF_8);
         HttpEntity entity = new StringIteratorHttpContent(inputs, contentType);
 
+        addJobInputs(jobId, entity);
+    }
+
+    /**
+     * Submits inputs to an already created job, as created by createJob().
+     * Inputs are object names, and are fed in as a \n separated stream.
+     * Inputs will be processed as they are received.
+     *
+     * @param jobId UUID of the Manta job
+     * @param entity Http entity to use for collecting streaming content
+     * @throws IOException thrown when we are unable to add inputs over the network
+     */
+    private void addJobInputs(final UUID jobId,
+                              final HttpEntity entity) throws IOException {
+        Validate.notNull(jobId, "Manta job id must not be null");
         processJobInputs(jobId, entity);
     }
 
@@ -1778,11 +1789,9 @@ public class MantaClient implements AutoCloseable {
      * otherwise the HTTP socket will remain open.</strong>
      *
      * @return a stream with all of the jobs
-     * @throws IOException thrown when we can't get a list of jobs over the network
-     * @throws MantaJobException if there is a problem with the underlying data
      */
-    public Stream<MantaJob> getAllJobs() throws IOException {
-        Stream<MantaJob> jobStream = getAllJobIds().map(id -> {
+    public Stream<MantaJob> getAllJobs() {
+        return getAllJobIds().map(id -> {
             Validate.notNull(id, "Job ids must not be null");
 
             try {
@@ -1794,8 +1803,6 @@ public class MantaClient implements AutoCloseable {
                 throw jobException;
             }
         });
-
-        return jobStream;
     }
 
 
@@ -1886,9 +1893,8 @@ public class MantaClient implements AutoCloseable {
      * otherwise the HTTP socket will remain open.</strong>
      *
      * @return a stream with all of the job IDs (actually all that Manta will give us)
-     * @throws IOException thrown when we can't get a list of jobs over the network
      */
-    public Stream<UUID> getAllJobIds() throws IOException {
+    public Stream<UUID> getAllJobIds() {
         final String path = String.format("%s/jobs", home);
 
         final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
@@ -1980,7 +1986,7 @@ public class MantaClient implements AutoCloseable {
         final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
         final Stream<String> responseStream = responseAsStream(response);
 
-        Stream<UUID> jobIdStream = responseStream.map(s -> {
+        return responseStream.map(s -> {
             try {
                 @SuppressWarnings("rawtypes")
                 final Map jobDetails = mapper.readValue(s, Map.class);
@@ -2002,8 +2008,6 @@ public class MantaClient implements AutoCloseable {
                 throw jobException;
             }
         });
-
-        return jobIdStream;
     }
 
 
@@ -2043,7 +2047,7 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaObjectInputStream> getJobOutputsAsStreams(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        Stream<MantaObjectInputStream> objectStream = getJobOutputs(jobId)
+        return getJobOutputs(jobId)
                 .map(obj -> {
                     try {
                         return getAsInputStream(obj);
@@ -2055,8 +2059,6 @@ public class MantaClient implements AutoCloseable {
                         throw jobException;
                     }
                 });
-
-        return objectStream;
     }
 
 
@@ -2074,7 +2076,7 @@ public class MantaClient implements AutoCloseable {
     public Stream<String> getJobOutputsAsStrings(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        Stream<String> outputStream = getJobOutputs(jobId)
+        return getJobOutputs(jobId)
                 .map(obj -> {
                     try {
                         return getAsString(obj);
@@ -2086,8 +2088,6 @@ public class MantaClient implements AutoCloseable {
                         throw jobException;
                     }
                 });
-
-        return outputStream;
     }
 
 
@@ -2142,7 +2142,7 @@ public class MantaClient implements AutoCloseable {
                 "GET    {} response [{}] {} ");
         final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
-        Stream<MantaJobError> errorStream = responseAsStream(response)
+        return responseAsStream(response)
                 .map(err -> {
                     try {
                         return mapper.readValue(err, MantaJobError.class);
@@ -2155,8 +2155,6 @@ public class MantaClient implements AutoCloseable {
                         throw jobException;
                     }
                 });
-
-        return errorStream;
     }
 
     /**

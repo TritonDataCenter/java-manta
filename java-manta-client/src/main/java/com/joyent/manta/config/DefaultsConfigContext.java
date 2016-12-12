@@ -38,7 +38,7 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final String MANTA_KEY_PATH;
 
     /**
-     * The default {@link com.google.api.client.http.HttpTransport} implementation to use.
+     * This default is no longer used.
      */
     public static final String DEFAULT_HTTP_TRANSPORT = "ApacheHttpTransport";
 

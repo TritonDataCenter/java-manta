@@ -314,13 +314,13 @@ public class MantaJobBuilder {
             if (!generalExceptions.isEmpty() || !mantaExceptions.isEmpty()) {
                 builder.append("Error with inputs:");
 
-                generalExceptions.entrySet().stream().forEach(entry -> {
+                generalExceptions.entrySet().forEach(entry -> {
                         builder.append("\n")
                                .append("[").append(entry.getKey()).append("] ")
                                .append(entry.getValue().getMessage());
                 });
 
-                mantaExceptions.entrySet().stream().forEach(entry -> {
+                mantaExceptions.entrySet().forEach(entry -> {
                     builder.append("\n")
                             .append("[").append(entry.getKey()).append("] ")
                             .append("(").append(entry.getValue().getServerCode()).append(") ")

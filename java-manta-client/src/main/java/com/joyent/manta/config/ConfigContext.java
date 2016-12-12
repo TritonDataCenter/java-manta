@@ -250,6 +250,8 @@ public interface ConfigContext {
             e.setContextValue(MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY, redactedPrivateKeyContent);
             e.setContextValue(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
                     config.isClientEncryptionEnabled());
+
+            throw e;
         }
     }
 }

@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.config;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -440,11 +441,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     /**
-     * Sets the class name of the {@link com.google.api.client.http.HttpTransport}
-     * implementation to use. Use the strings ApacheHttpTransport, NetHttpTransport
-     * or MockHttpTransport to use the included implementations. If the value
-     * is not one of those three - then we default to the ApacheHttpTransport
-     * method.
+     * This method is no longer used.
      *
      * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
      * @return the current instance of {@link BaseChainedConfigContext}
@@ -632,7 +629,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
                 && Objects.equals(encryptionAuthenticationMode, that.encryptionAuthenticationMode)
                 && Objects.equals(encryptionPrivateKeyPath, that.encryptionPrivateKeyPath)
-                && Objects.equals(encryptionPrivateKeyBytes, that.encryptionPrivateKeyBytes);
+                && Arrays.equals(encryptionPrivateKeyBytes, that.encryptionPrivateKeyBytes);
     }
 
     @Override

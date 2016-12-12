@@ -130,10 +130,12 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
                 @SuppressWarnings("unchecked")
                 Collection<Object> values = ((Collection<Object>)currentValue);
                 values.add(header.getValue());
+                put(name, values);
             } else {
                 List<Object> values = new ArrayList<>(2);
                 values.add(currentValue);
                 values.add(header.getValue());
+                put(name, values);
             }
         }
     }
@@ -1140,21 +1142,16 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @return long value of header
      */
     private Long getLongFromHeader(final String name) {
-        Object value = getFirstHeaderStringValue(name);
+        String value = getFirstHeaderStringValue(name);
 
         if (value == null) {
             return null;
         }
 
-        if (value instanceof Number) {
-            Number numberValue = (Number)value;
-            return numberValue.longValue();
-        }
-
         try {
-            return Long.parseLong(value.toString());
+            return Long.parseLong(value);
         } catch (NumberFormatException e) {
-            String msg = String.format("Error parsing [%s] header "
+            String msg = String.format("Error parsing header "
                     + "as long. Actual value: %s", value);
             LoggerFactory.getLogger(getClass()).warn(msg, e);
             return null;
@@ -1170,21 +1167,16 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @return long value of header
      */
     private Integer getIntegerFromHeader(final String name) {
-        Object value = getFirstHeaderStringValue(name);
+        String value = getFirstHeaderStringValue(name);
 
         if (value == null) {
             return null;
         }
 
-        if (value instanceof Number) {
-            Number numberValue = (Number)value;
-            return numberValue.intValue();
-        }
-
         try {
-            return Integer.parseInt(value.toString());
+            return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            String msg = String.format("Error parsing [%s] header "
+            String msg = String.format("Error parsing header "
                     + "as int. Actual value: %s", value);
             LoggerFactory.getLogger(getClass()).warn(msg, e);
             return null;
@@ -1284,7 +1276,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @return the value serialized to a {@code java.lang.String}
      */
     public String getAsString(final Object name) {
-        return MantaUtils.asString(wrappedHeaders.get(name));
+        return MantaUtils.asString(get(name));
     }
 
 

@@ -210,7 +210,7 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * Thread execution definition that runs the HTTP PUT operation.
      */
-    private Callable<MantaObjectResponse> upload = new Callable<MantaObjectResponse>() {
+    private final Callable<MantaObjectResponse> upload = new Callable<MantaObjectResponse>() {
         @Override
         public MantaObjectResponse call() throws Exception {
             return httpHelper.httpPut(path, headers, httpContent, metadata);
@@ -289,7 +289,7 @@ public class MantaObjectOutputStream extends OutputStream {
         this.httpContent = new EmbeddedHttpContent();
         this.completed = EXECUTOR.submit(upload);
 
-        /**
+        /*
          * We have to wait here until the upload to Manta starts and a Writer
          * becomes available.
          */
