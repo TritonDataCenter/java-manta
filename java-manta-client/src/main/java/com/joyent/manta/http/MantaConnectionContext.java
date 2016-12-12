@@ -15,8 +15,8 @@ import org.apache.http.protocol.HttpContext;
  */
 public interface MantaConnectionContext extends AutoCloseable {
     /**
-     * HTTP client object used for accessing the CloudAPI.
-     * @return connection object to the CloudAPI
+     * HTTP client object used for accessing Manta.
+     * @return connection object to Manta
      */
     CloseableHttpClient getHttpClient();
 

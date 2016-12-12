@@ -60,14 +60,14 @@ public class MantaClientHttpResponseException extends MantaIOException {
     private String content;
 
     /**
-     * Constructs an {@code CloudApiIOException} with {@code null}
+     * Constructs an instance with {@code null}
      * as its error detail message.
      */
     public MantaClientHttpResponseException() {
     }
 
     /**
-     * Constructs an {@code CloudApiIOException} with the specified detail message.
+     * Constructs an instance with the specified detail message.
      *
      * @param message The detail message (which is saved for later retrieval
      *                by the {@link #getMessage()} method)
@@ -77,7 +77,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
     }
 
     /**
-     * Constructs an {@code CloudApiIOException} with the specified detail message
+     * Constructs an instance with the specified detail message
      * and cause.
      * <p>
      * <p> Note that the detail message associated with {@code cause} is
@@ -94,7 +94,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
     }
 
     /**
-     * Constructs an {@code CloudApiIOException} with the specified cause and a
+     * Constructs an instance with the specified cause and a
      * detail message of {@code (cause==null ? null : cause.toString())}
      * (which typically contains the class and detail message of {@code cause}).
      * This constructor is useful for IO exceptions that are little more

@@ -4,7 +4,6 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
@@ -52,11 +51,6 @@ public class HttpHelper implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpHelper.class);
 
     /**
-     * Configuration context object that configuration values are pulled from.
-     */
-    private final ConfigContext config;
-
-    /**
      * Reference to the Apache HTTP Client HTTP request creation class.
      */
     private final MantaConnectionFactory connectionFactory;
@@ -74,14 +68,11 @@ public class HttpHelper implements AutoCloseable {
     /**
      * Creates a new instance of the helper class.
      *
-     * @param config Configuration context
      * @param connectionContext saved context used between requests to the Manta client
      * @param connectionFactory instance used for building requests to Manta
      */
-    public HttpHelper(final ConfigContext config,
-                      final MantaConnectionContext connectionContext,
+    public HttpHelper(final MantaConnectionContext connectionContext,
                       final MantaConnectionFactory connectionFactory) {
-        this.config = config;
         this.connectionContext = connectionContext;
         this.connectionFactory = connectionFactory;
 

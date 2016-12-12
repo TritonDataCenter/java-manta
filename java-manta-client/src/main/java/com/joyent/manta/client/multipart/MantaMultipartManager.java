@@ -162,7 +162,7 @@ public class MantaMultipartManager {
                     /* We explicitly filter out items that stopped existing when we
                      * went to get the multipart metadata because we encountered a
                      * race condition. */
-                    .filter(value -> value != null);
+                    .filter(Objects::nonNull);
 
             if (exceptions.isEmpty()) {
                 return stream;
@@ -607,6 +607,7 @@ public class MantaMultipartManager {
             throw new IllegalArgumentException("Upload id must be present");
         }
 
+        //noinspection ResultOfMethodCallIgnored
         listParts(id)
             .sorted()
             .map(MantaMultipartUploadPart::getPartNumber)

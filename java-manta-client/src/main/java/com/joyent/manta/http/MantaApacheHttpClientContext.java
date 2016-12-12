@@ -22,7 +22,7 @@ import java.io.IOException;
  */
 public class MantaApacheHttpClientContext implements MantaConnectionContext {
     /**
-     * HTTP client object used for accessing the CloudAPI.
+     * HTTP client object used for accessing Manta.
      */
     private final CloseableHttpClient httpClient;
 

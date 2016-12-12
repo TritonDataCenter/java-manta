@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -151,8 +152,7 @@ public class StringIteratorHttpContent implements HttpEntity {
             }
 
             // We use Unix new lines intentionally for the Manta service
-            final String unixNewLine = "\n";
-            final String formatted = String.format("%s%s", next, unixNewLine);
+            final String formatted = String.format("%s%s", next, StringUtils.LF);
             byte[] bytes = formatted.getBytes("UTF-8");
             length += bytes.length;
             out.write(bytes);

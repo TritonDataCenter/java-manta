@@ -322,10 +322,7 @@ public final class MantaUtils {
 
         if (line.contains(",")) {
             String[] parts = line.split(",\\s*");
-
-            for (String part : parts) {
-                list.add(part);
-            }
+            Collections.addAll(list, parts);
         } else {
             list.add(line);
         }

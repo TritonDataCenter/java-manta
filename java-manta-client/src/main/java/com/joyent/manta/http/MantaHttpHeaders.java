@@ -1217,8 +1217,9 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         List<String> values = new ArrayList<>();
         HeaderGroup group = parseHeaderKeyValue(name, value);
         Header[] headers = group.getAllHeaders();
-        for (int i = 0; i < headers.length; i++) {
-            String headerValue = headers[i].getValue();
+
+        for (Header header : headers) {
+            String headerValue = header.getValue();
 
             if (headerValue != null) {
                 values.add(headerValue);

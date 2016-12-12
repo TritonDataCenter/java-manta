@@ -122,11 +122,8 @@ public class MantaConnectionFactory implements Closeable {
 
         final boolean useNativeCodeToSign;
 
-        if (config.disableNativeSignatures() == null) {
-            useNativeCodeToSign = true;
-        } else {
-            useNativeCodeToSign = !config.disableNativeSignatures();
-        }
+        useNativeCodeToSign = config.disableNativeSignatures() == null
+                || !config.disableNativeSignatures();
 
         if (config.noAuth()) {
             this.signatureConfigurator = null;

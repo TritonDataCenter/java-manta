@@ -144,7 +144,8 @@ public class MantaObjectResponse implements MantaObject {
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      * @param metadata User set metadata associated with object
      */
-    public MantaObjectResponse(final String path, final MantaHttpHeaders headers, final MantaMetadata metadata) {
+    public MantaObjectResponse(final String path, final MantaHttpHeaders headers,
+                               final MantaMetadata metadata) {
         Validate.notNull(path, "Path must be not be null");
         Validate.notNull(headers, "Headers must not be null");
 
@@ -335,7 +336,7 @@ public class MantaObjectResponse implements MantaObject {
 
     @Override
     public String getRequestId() {
-        return null;
+        return this.requestId;
     }
 
 

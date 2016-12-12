@@ -72,6 +72,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return new MantaMetadata(this);

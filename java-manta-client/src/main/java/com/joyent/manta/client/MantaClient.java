@@ -192,7 +192,7 @@ public class MantaClient implements AutoCloseable {
         final KeyPair keyPair = keyPairFactory.createKeyPair();
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(this.config, connectionContext, connectionFactory);
+        this.httpHelper = new HttpHelper(connectionContext, connectionFactory);
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
@@ -220,7 +220,7 @@ public class MantaClient implements AutoCloseable {
 
         this.connectionFactory = connectionFactory;
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(this.config, connectionContext, connectionFactory);
+        this.httpHelper = new HttpHelper(connectionContext, connectionFactory);
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }

@@ -5,6 +5,7 @@ package com.joyent.manta.client;
 
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.util.encoders.Base64;
 
 import java.io.IOException;
@@ -74,9 +75,9 @@ public class UriSigner {
         final String keyIdEncoded = URLEncoder.encode(keyId, charset);
 
         StringBuilder sigText = new StringBuilder();
-        sigText.append(method).append("\n")
-                .append(uri.getHost()).append("\n")
-                .append(uri.getPath()).append("\n")
+        sigText.append(method).append(StringUtils.LF)
+                .append(uri.getHost()).append(StringUtils.LF)
+                .append(uri.getPath()).append(StringUtils.LF)
                 .append("algorithm=").append(algorithm).append("&")
                 .append("expires=").append(expires).append("&")
                 .append("keyId=").append(keyIdEncoded);
