@@ -19,6 +19,7 @@ import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
+import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.NoContentEntity;
 import org.apache.commons.codec.Charsets;
@@ -45,7 +46,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,20 +110,10 @@ public class MantaClient implements AutoCloseable {
     private static final int HTTP_STATUSCODE_202_ACCEPTED = 202;
 
     /**
-     * The content-type used to represent Manta link resources.
-     */
-    private static final String LINK_CONTENT_TYPE = "application/json; type=link";
-
-    /**
-     * The content-type used to represent Manta directory resources in http requests.
-     */
-    private static final String DIRECTORY_REQUEST_CONTENT_TYPE = "application/json; type=directory";
-
-    /**
      * HTTP metadata headers that violate the Manta API contract.
      */
     private static final String[] ILLEGAL_METADATA_HEADERS = new String[]{
-            HTTP.CONTENT_LEN, "Content-MD5", "Durability-Level"
+            HttpHeaders.CONTENT_LENGTH, "Content-MD5", "Durability-Level"
     };
 
     /**
@@ -1309,7 +1299,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         put.setHeaders(headers.asApacheHttpHeaders());
-        put.setHeader(HttpHeaders.CONTENT_TYPE, DIRECTORY_REQUEST_CONTENT_TYPE);
+        put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.DIRECTORY_LIST.getContentType());
 
         HttpResponse response = httpHelper.executeAndCloseRequest(put,
                 HttpStatus.SC_NO_CONTENT,
@@ -1396,7 +1386,7 @@ public class MantaClient implements AutoCloseable {
             put.setHeaders(headers.asApacheHttpHeaders());
         }
 
-        put.setHeader(HttpHeaders.CONTENT_TYPE, LINK_CONTENT_TYPE);
+        put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.SNAPLINK.getContentType());
         put.setHeader(HttpHeaders.LOCATION, objectPath);
 
         httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
@@ -1474,9 +1464,9 @@ public class MantaClient implements AutoCloseable {
     }
 
 
-    /* ========================================================================
+    /* ======================================================================
      * Job Methods
-     * ========================================================================
+     * ====================================================================== */
 
     /**
      * Submits a new job to be executed. This call is not idempotent, so calling

@@ -7,6 +7,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Moved configuration validation into a static method on ConfigContext.
  - Removed MantaCryptoException.
+ - Manta specific content-types are now contained in `MantaContentTypes`.
 
 ## [2.7.2] - ?
 ### Changed
