@@ -9,7 +9,6 @@ import com.joyent.manta.exception.MantaClientException;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -125,12 +124,7 @@ public class MantaMultipartUploadManagerTest {
                 new SystemSettingsConfigContext(),
                 overwrite);
 
-        try {
-            final MantaClient client = new MantaClient(config);
-
-            return new MantaMultipartManager(client);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final MantaClient client = new MantaClient(config);
+        return new MantaMultipartManager(client);
     }
 }
