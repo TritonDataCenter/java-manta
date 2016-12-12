@@ -4,6 +4,7 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.exception.MantaClientException;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;

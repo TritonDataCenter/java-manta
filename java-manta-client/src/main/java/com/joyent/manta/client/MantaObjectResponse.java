@@ -230,7 +230,7 @@ public class MantaObjectResponse implements MantaObject {
      * @param contentType the content type of the object
      * @return a reference to the current instance
      */
-    MantaObjectResponse setContentType(final String contentType) {
+    public MantaObjectResponse setContentType(final String contentType) {
         if (getHttpHeaders() != null) {
             getHttpHeaders().setContentType(contentType);
         }

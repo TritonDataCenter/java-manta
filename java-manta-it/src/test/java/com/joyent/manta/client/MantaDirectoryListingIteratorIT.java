@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;

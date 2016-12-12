@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.Header;

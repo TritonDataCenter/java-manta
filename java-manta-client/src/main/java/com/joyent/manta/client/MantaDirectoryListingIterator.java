@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.http.HttpHelper;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;

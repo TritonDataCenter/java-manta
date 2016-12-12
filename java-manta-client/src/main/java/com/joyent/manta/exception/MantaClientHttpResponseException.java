@@ -5,7 +5,7 @@ package com.joyent.manta.exception;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.joyent.manta.client.HttpHelper;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.http.MantaHttpHeaders;

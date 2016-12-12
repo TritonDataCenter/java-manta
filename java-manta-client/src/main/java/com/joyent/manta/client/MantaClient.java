@@ -15,6 +15,7 @@ import com.joyent.manta.exception.MantaJobException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.http.ContentTypeLookup;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
