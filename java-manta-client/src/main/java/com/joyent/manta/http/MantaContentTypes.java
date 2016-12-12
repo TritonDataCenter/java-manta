@@ -6,8 +6,8 @@ package com.joyent.manta.http;
 /**
  * Enum defining custom content-types used only by Manta.
  *
- * @author Elijah Zupancic
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 3.0.0
  */
 public enum MantaContentTypes {
     /**
