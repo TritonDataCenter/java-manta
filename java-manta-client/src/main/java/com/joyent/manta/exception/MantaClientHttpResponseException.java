@@ -233,6 +233,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @param requestId UUID as a string
      * @return the current instance of {@link MantaClientHttpResponseException}
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaClientHttpResponseException setRequestId(final String requestId) {
         this.requestId = requestId;
         setContextValue("requestId", requestId);
@@ -246,6 +247,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @param statusLine Apache HTTP Client status line object
      * @return the current instance of {@link MantaClientHttpResponseException}
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaClientHttpResponseException setStatusLine(final StatusLine statusLine) {
         this.statusLine = statusLine;
         setContextValue("statusLine", statusLine);
@@ -282,6 +284,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @param serverCode enum of the server error code
      * @return the current instance of {@link MantaClientHttpResponseException}
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaClientHttpResponseException setServerCode(final MantaErrorCode serverCode) {
         this.serverCode = serverCode;
         setContextValue("serverCode", serverCode.getCode());

@@ -13,6 +13,7 @@ import java.util.Objects;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@SuppressWarnings("unused")
 public abstract class BaseChainedConfigContext implements ConfigContext {
     /**
      * Manta service endpoint.

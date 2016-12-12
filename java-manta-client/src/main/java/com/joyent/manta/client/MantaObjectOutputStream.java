@@ -208,26 +208,6 @@ public class MantaObjectOutputStream extends OutputStream {
     }
 
     /**
-     * Path to the object in Manta.
-     */
-    private final String path;
-
-    /**
-     * The helper object that provides a PUT interface.
-     */
-    private final HttpHelper httpHelper;
-
-    /**
-     * The headers to send along with the PUT request.
-     */
-    private final MantaHttpHeaders headers;
-
-    /**
-     * The metadata to metadata to send along with the PUT request.
-     */
-    private final MantaMetadata metadata;
-
-    /**
      * Content type value for the file being uploaded.
      */
     private final ContentType contentType;
@@ -271,10 +251,6 @@ public class MantaObjectOutputStream extends OutputStream {
                             final MantaHttpHeaders headers,
                             final MantaMetadata metadata,
                             final ContentType contentType) {
-        this.path = path;
-        this.httpHelper = httpHelper;
-        this.headers = headers;
-        this.metadata = metadata;
         this.contentType = contentType;
         this.httpContent = new EmbeddedHttpContent();
         /*

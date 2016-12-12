@@ -517,6 +517,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @param contentEncoding {@code java.lang.String} value for {@code "Content-Encoding"} header
      * @return this instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaHttpHeaders setContentEncoding(final String contentEncoding) {
         put(HttpHeaders.CONTENT_ENCODING, contentEncoding);
         return this;
@@ -544,6 +545,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @param contentLength {@code java.lang.Long} value for the {@code "Content-Length"} header
      * @return this instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaHttpHeaders setContentLength(final Long contentLength) {
         wrappedHeaders.put(HttpHeaders.CONTENT_LENGTH, contentLength);
         return this;
@@ -712,6 +714,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @param etag {@code java.lang.String} value for {@code "ETag"} header.
      * @return this instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaHttpHeaders setETag(final String etag) {
         put(HttpHeaders.ETAG, etag);
         return this;
@@ -902,6 +905,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @param lastModified {@code java.lang.String} value for {@code "Last-Modified"} header.
      * @return this instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaHttpHeaders setLastModified(final String lastModified) {
         put(HttpHeaders.LAST_MODIFIED, lastModified);
         return this;

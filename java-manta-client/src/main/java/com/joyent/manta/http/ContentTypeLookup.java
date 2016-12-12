@@ -18,6 +18,7 @@ import java.nio.file.Files;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
+@SuppressWarnings("SameParameterValue")
 public final class ContentTypeLookup {
     /**
      * This is a utility class, so there is no need to instantiate it.

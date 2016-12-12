@@ -1218,6 +1218,7 @@ public class MantaMultipartManager {
          * @param contentType HTTP content type to set for the object
          * @return this instance
          */
+        @SuppressWarnings("UnusedReturnValue")
         MultipartMetadata setContentType(final String contentType) {
             this.contentType = contentType;
             return this;

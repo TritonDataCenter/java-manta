@@ -206,6 +206,7 @@ public class MantaObjectResponse implements MantaObject {
      * @param length new content length
      * @return a reference to the current instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     MantaObjectResponse setContentLength(final Long length) {
         this.contentLength = length;
         if (getHttpHeaders() != null) {
@@ -230,6 +231,7 @@ public class MantaObjectResponse implements MantaObject {
      * @param contentType the content type of the object
      * @return a reference to the current instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     public MantaObjectResponse setContentType(final String contentType) {
         if (getHttpHeaders() != null) {
             getHttpHeaders().setContentType(contentType);

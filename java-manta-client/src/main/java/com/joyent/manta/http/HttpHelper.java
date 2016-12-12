@@ -95,19 +95,6 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException when there is a problem getting the object over the network
      */
     public HttpResponse httpGet(final String path) throws IOException {
-        return httpGet(path, null);
-    }
-
-    /**
-     * Executes a HTTP GET against the remote Manta API.
-     *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers optional HTTP headers to include when getting an object
-     * @return Apache HTTP Client response object
-     * @throws IOException when there is a problem getting the object over the network
-     */
-    public HttpResponse httpGet(final String path,
-                                   final MantaHttpHeaders headers) throws IOException {
         Validate.notNull(path, "Path must not be null");
 
         LOGGER.debug("GET    {}", path);
@@ -150,28 +137,14 @@ public class HttpHelper implements AutoCloseable {
      * Utility method for handling HTTP POST to the Apache HTTP Client.
      *
      * @param path path to post to (without hostname)
-     * @param entity content object to post
-     * @return HTTP response object
-     * @throws IOException thrown when there is a problem POSTing over the network
-     */
-    public HttpResponse httpPost(final String path,
-                                    final HttpEntity entity) throws IOException {
-        return httpPost(path, null, entity);
-    }
-
-
-    /**
-     * Utility method for handling HTTP POST to the Apache HTTP Client.
-     *
-     * @param path path to post to (without hostname)
      * @param headers HTTP headers to attach to request
      * @param entity content object to post
      * @return HTTP response object
      * @throws IOException thrown when there is a problem POSTing over the network
      */
     public HttpResponse httpPost(final String path,
-                                    final MantaHttpHeaders headers,
-                                    final HttpEntity entity) throws IOException {
+                                 final MantaHttpHeaders headers,
+                                 final HttpEntity entity) throws IOException {
         Validate.notNull(path, "Path must not be null");
 
         LOGGER.debug("POST   {}", path);
@@ -338,8 +311,8 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     public CloseableHttpResponse executeAndCloseRequest(final HttpUriRequest request,
-                                                           final String logMessage,
-                                                           final Object... logParameters)
+                                                        final String logMessage,
+                                                        final Object... logParameters)
             throws IOException {
         return executeAndCloseRequest(request, (Integer)null, logMessage, logParameters);
     }
@@ -358,9 +331,9 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     public CloseableHttpResponse executeAndCloseRequest(final HttpUriRequest request,
-                                                           final Integer expectedStatusCode,
-                                                           final String logMessage,
-                                                           final Object... logParameters)
+                                                        final Integer expectedStatusCode,
+                                                        final String logMessage,
+                                                        final Object... logParameters)
             throws IOException {
         return executeRequest(request, expectedStatusCode, true,
                 logMessage, logParameters);
@@ -381,10 +354,10 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     public CloseableHttpResponse executeRequest(final HttpUriRequest request,
-                                                   final Integer expectedStatusCode,
-                                                   final boolean closeResponse,
-                                                   final String logMessage,
-                                                   final Object... logParameters)
+                                                final Integer expectedStatusCode,
+                                                final boolean closeResponse,
+                                                final String logMessage,
+                                                final Object... logParameters)
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
@@ -429,9 +402,9 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     public <R> R executeAndCloseRequest(final HttpUriRequest request,
-                                           final Function<CloseableHttpResponse, R> responseAction,
-                                           final String logMessage,
-                                           final Object... logParameters)
+                                        final Function<CloseableHttpResponse, R> responseAction,
+                                        final String logMessage,
+                                        final Object... logParameters)
             throws IOException {
         return executeAndCloseRequest(request, null,
                 responseAction, logMessage, logParameters);
@@ -453,10 +426,10 @@ public class HttpHelper implements AutoCloseable {
      * @throws IOException thrown when we are unable to process the request on the network
      */
     public <R> R executeAndCloseRequest(final HttpUriRequest request,
-                                           final Integer expectedStatusCode,
-                                           final Function<CloseableHttpResponse, R> responseAction,
-                                           final String logMessage,
-                                           final Object... logParameters)
+                                        final Integer expectedStatusCode,
+                                        final Function<CloseableHttpResponse, R> responseAction,
+                                        final String logMessage,
+                                        final Object... logParameters)
             throws IOException {
         return executeRequest(request, expectedStatusCode, responseAction,
                 true, logMessage, logParameters);

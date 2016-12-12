@@ -186,6 +186,7 @@ public class MantaJobBuilder {
          * @param additionalPhases phases to add
          * @return reference to the create fluent builder
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Create addPhases(final Iterable<MantaJobPhase> additionalPhases) {
             Objects.requireNonNull(phases, "Phases must be present");
 
@@ -261,6 +262,7 @@ public class MantaJobBuilder {
          * @param additionalInputs multiple inputs to add
          * @return reference to the create fluent builder
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Create addInputs(final Stream<String> additionalInputs) {
             additionalInputs.forEach(inputs::add);
 

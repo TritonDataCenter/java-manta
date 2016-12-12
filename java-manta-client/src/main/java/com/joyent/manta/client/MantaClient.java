@@ -34,7 +34,6 @@ import org.apache.http.NoHttpResponseException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -238,9 +237,7 @@ public class MantaClient implements AutoCloseable {
         String path = formatPath(rawPath);
         LOG.debug("DELETE {}", path);
 
-        HttpDelete delete = connectionFactory.delete(path);
-        httpHelper.executeAndCloseRequest(delete, HttpStatus.SC_NO_CONTENT,
-                "DELETE {} response [{}] {} ");
+        httpHelper.httpDelete(path);
     }
 
 
@@ -1972,15 +1969,19 @@ public class MantaClient implements AutoCloseable {
      */
     private Stream<UUID> getAllJobIds(final String filterName,
                                       final String filter) throws IOException {
+        final List<NameValuePair> params;
+
         StringBuilder query = new StringBuilder("?");
 
         if (filterName != null && filter != null) {
-            query.append(filterName).append("=").append(filter);
+            NameValuePair pair = new BasicNameValuePair(filterName, filter);
+            params = Collections.singletonList(pair);
+        } else {
+            params = Collections.emptyList();
         }
 
-        final String path = String.format("%s/jobs", home);
-        final String uri = this.url + formatPath(path) + query;
-        final HttpGet get = new HttpGet(uri);
+        final String path = formatPath(String.format("%s/jobs", home));
+        final HttpGet get = connectionFactory.get(path, params);
 
         final HttpResponse response = httpHelper.executeRequest(get,
                 "GET    {} response [{}] {} ");
