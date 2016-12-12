@@ -14,7 +14,7 @@ public class ChainedConfigContext extends BaseChainedConfigContext {
     /**
      * Creates a new {@link ConfigContext} implementation that allows you
      * to chain together multiple configuration contexts that progressively
-     * overwrite the values of the previous contexts (but never overwritting
+     * overwrite the values of the previous contexts (but never overwriting
      * with null).
      *
      * @param contexts N number of configuration contexts

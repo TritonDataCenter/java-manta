@@ -283,7 +283,7 @@ public class HttpHelper implements AutoCloseable {
                                                    final String logMessage,
                                                    final Object... logParameters)
             throws IOException {
-        return executeRequest(request, (Integer)null, logMessage, logParameters);
+        return executeRequest(request, null, logMessage, logParameters);
     }
 
     /**

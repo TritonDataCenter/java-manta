@@ -414,7 +414,7 @@ public final class MantaUtils {
 
         /* We do this contorted type conversion because of Java's generics. */
         @SuppressWarnings("rawtypes")
-        final Map noGenericsMap = (Map)map;
+        final Map noGenericsMap = map;
         @SuppressWarnings({"rawtypes", "unchecked"})
         final Set<Map.Entry<?, ?>> set = noGenericsMap.entrySet();
 

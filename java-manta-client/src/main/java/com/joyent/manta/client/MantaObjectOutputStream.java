@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -209,16 +208,6 @@ public class MantaObjectOutputStream extends OutputStream {
     }
 
     /**
-     * Thread execution definition that runs the HTTP PUT operation.
-     */
-    private final Callable<MantaObjectResponse> upload = new Callable<MantaObjectResponse>() {
-        @Override
-        public MantaObjectResponse call() throws Exception {
-            return httpHelper.httpPut(path, headers, httpContent, metadata);
-        }
-    };
-
-    /**
      * Path to the object in Manta.
      */
     private final String path;
@@ -288,7 +277,11 @@ public class MantaObjectOutputStream extends OutputStream {
         this.metadata = metadata;
         this.contentType = contentType;
         this.httpContent = new EmbeddedHttpContent();
-        this.completed = EXECUTOR.submit(upload);
+        /*
+         * Thread execution definition that runs the HTTP PUT operation.
+         */
+        this.completed = EXECUTOR.submit(() ->
+                httpHelper.httpPut(path, headers, httpContent, metadata));
 
         /*
          * We have to wait here until the upload to Manta starts and a Writer

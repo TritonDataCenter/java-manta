@@ -2053,7 +2053,7 @@ public class MantaClient implements AutoCloseable {
                     try {
                         return getAsInputStream(obj);
                     } catch (IOException e) {
-                        String msg = "Error deserializing JSON output as inputstream";
+                        String msg = "Error deserializing JSON output as InputStream";
                         MantaJobException jobException = new MantaJobException(jobId, msg, e);
                         jobException.setContextValue("output", obj);
 
