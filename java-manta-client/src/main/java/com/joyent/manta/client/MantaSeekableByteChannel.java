@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client;
 
 import com.joyent.manta.exception.MantaClientException;

@@ -2,7 +2,6 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
@@ -30,7 +29,7 @@ public class MantaObjectOutputStreamIT {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
@@ -44,7 +43,7 @@ public class MantaObjectOutputStreamIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();

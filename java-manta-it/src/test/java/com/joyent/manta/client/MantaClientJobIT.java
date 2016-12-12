@@ -1,11 +1,10 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.test.util.ThreeTriesRetryAnalyzer;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -54,7 +53,7 @@ public class MantaClientJobIT {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(

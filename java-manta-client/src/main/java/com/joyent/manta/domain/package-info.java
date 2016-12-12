@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
+
 /**
  * Package containing domain objects - objects that are used as representations
  * of application state.

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
@@ -7,7 +7,6 @@ import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
@@ -60,7 +59,7 @@ public class MantaClientIT {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
@@ -74,7 +73,7 @@ public class MantaClientIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();

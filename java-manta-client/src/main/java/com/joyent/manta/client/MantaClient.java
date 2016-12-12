@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
@@ -206,7 +206,6 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values
      * @param keyPair cryptographic signing key pair used for HTTP signatures
      * @param connectionFactory connection factory instance used to tune connection settings
-     * @throws IOException If unable to instantiate the client.
      */
     MantaClient(final ConfigContext config,
                 final KeyPair keyPair,
@@ -233,7 +232,6 @@ public class MantaClient implements AutoCloseable {
      *
      * @param rawPath The fully qualified path of the Manta object.
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String rawPath) throws IOException {
@@ -251,7 +249,6 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the Manta object.
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public void deleteRecursive(final String path) throws IOException {
@@ -327,7 +324,6 @@ public class MantaClient implements AutoCloseable {
      * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectResponse}.
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String rawPath) throws IOException {
@@ -620,7 +616,6 @@ public class MantaClient implements AutoCloseable {
      * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectResponse}.
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse head(final String rawPath) throws IOException {
@@ -783,7 +778,6 @@ public class MantaClient implements AutoCloseable {
      * @param headers optional HTTP headers to include when copying the object
      * @return Manta response object
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
@@ -813,7 +807,6 @@ public class MantaClient implements AutoCloseable {
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
@@ -844,7 +837,6 @@ public class MantaClient implements AutoCloseable {
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException                                     If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
@@ -1338,7 +1330,6 @@ public class MantaClient implements AutoCloseable {
      * @param path The fully qualified path of the Manta directory.
      * @param recursive recursive create all of the directories specified in the path
      * @throws IOException If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String path, final boolean recursive)
@@ -1354,7 +1345,6 @@ public class MantaClient implements AutoCloseable {
      * @param recursive recursive create all of the directories specified in the path
      * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String rawPath, final boolean recursive,
@@ -1395,7 +1385,6 @@ public class MantaClient implements AutoCloseable {
      * @param rawObjectPath The fully qualified path of the object to link against.
      * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
      * @throws IOException If an IO exception has occurred.
-     * @throws com.joyent.manta.exception.MantaCryptoException If there's an exception while signing the request.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putSnapLink(final String rawLinkPath, final String rawObjectPath,

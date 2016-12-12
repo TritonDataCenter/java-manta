@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
@@ -6,7 +6,6 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
@@ -51,7 +50,7 @@ public class MantaDirectoryListingIteratorIT {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(
@@ -72,7 +71,7 @@ public class MantaDirectoryListingIteratorIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
@@ -185,7 +184,7 @@ public class MantaDirectoryListingIteratorIT {
             }
 
             // Validate that all files were found
-            valuesFound.entrySet().stream().forEach(m -> Assert.assertTrue(m.getValue()));
+            valuesFound.entrySet().forEach(m -> Assert.assertTrue(m.getValue()));
         } catch (InterruptedException e) {
             afterClass();
         }

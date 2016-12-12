@@ -3,7 +3,6 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.http.MantaConnectionFactory;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -47,7 +46,7 @@ public class MantaClientConnectionFailuresIT {
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout,
                             @Optional InputStream retries)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         this.config = new IntegrationTestConfigContext(

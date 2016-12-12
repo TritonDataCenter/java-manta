@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
+
 /**
  * Package containing classes used for accessing Manta over HTTP(S).
  *

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
+
 /**
  * Package containing {@link com.joyent.manta.config.ConfigContext} implementations.
  * These allow us to bridge arbitrary configuration domains with the configuration

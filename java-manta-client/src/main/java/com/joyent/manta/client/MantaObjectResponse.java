@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;

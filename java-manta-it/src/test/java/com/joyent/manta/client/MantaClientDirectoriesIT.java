@@ -2,7 +2,6 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
@@ -41,7 +40,7 @@ public class MantaClientDirectoriesIT {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(
@@ -54,7 +53,7 @@ public class MantaClientDirectoriesIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();

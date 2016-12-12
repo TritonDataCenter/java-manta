@@ -6,6 +6,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Changed
  - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Moved configuration validation into a static method on ConfigContext.
+ - Removed MantaCryptoException.
 
 ## [2.7.2] - ?
 ### Changed

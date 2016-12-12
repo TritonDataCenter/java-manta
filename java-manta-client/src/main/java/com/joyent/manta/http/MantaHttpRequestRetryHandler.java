@@ -1,5 +1,7 @@
+/*
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.http;
-
 
 import com.joyent.manta.config.ConfigContext;
 import org.apache.http.client.HttpRequestRetryHandler;

@@ -9,7 +9,6 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaMultipartException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -60,7 +59,7 @@ public class MantaMultipartManagerIT {
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
                             @Optional Integer mantaTimeout)
-            throws IOException, MantaCryptoException {
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
@@ -75,7 +74,7 @@ public class MantaMultipartManagerIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (this.mantaClient != null) {
             this.mantaClient.deleteRecursive(testPathPrefix);
             this.mantaClient.closeWithWarning();
