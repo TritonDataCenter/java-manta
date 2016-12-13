@@ -1,10 +1,4 @@
-package com.joyent.manta.client.config;
-
-import com.joyent.manta.config.BaseChainedConfigContext;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.EnvVarConfigContext;
-import com.joyent.manta.config.MapConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
+package com.joyent.manta.config;
 
 import java.net.URL;
 import java.util.Properties;

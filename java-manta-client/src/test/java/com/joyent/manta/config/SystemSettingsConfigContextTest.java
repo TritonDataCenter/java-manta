@@ -1,8 +1,5 @@
-package com.joyent.manta.client.config;
+package com.joyent.manta.config;
 
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.EnvVarConfigContext;
-import com.joyent.manta.config.SystemSettingsConfigContext;
 import org.testng.annotations.Test;
 
 import java.util.Properties;

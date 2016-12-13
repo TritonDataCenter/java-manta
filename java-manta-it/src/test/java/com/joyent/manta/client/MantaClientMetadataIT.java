@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;

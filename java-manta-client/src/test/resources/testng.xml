@@ -1,6 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Java Manta Client Test Suite" verbose="1">
-
     <test name="Manta Utils Test">
         <classes>
             <class name="com.joyent.manta.client.MantaUtilsTest" />
@@ -10,24 +9,31 @@
         <groups>
             <define name="config" />
         </groups>
-        <packages>
-            <package name="com.joyent.manta.client.config.*" />
-        </packages>
+        <classes>
+            <class name="com.joyent.manta.config.SystemSettingsConfigContextTest" />
+            <class name="com.joyent.manta.config.TestConfigContextTest" />
+        </classes>
     </test>
     <test name="Collection Tests">
         <classes>
             <class name="com.joyent.manta.client.MantaMetadataTest" />
         </classes>
     </test>
-    <test name="Multipart Tests">
-        <packages>
-            <package name="com.joyent.manta.client.multipart.*" />
-        </packages>
-    </test>
     <test name="Exception Tests">
         <classes>
-            <class name="com.joyent.manta.exception.MantaClientHttpResponseExceptionTest" />
             <class name="com.joyent.manta.exception.MantaErrorCodeTest" />
+            <class name="com.joyent.manta.exception.OnCloseAggregateExceptionTest" />
+        </classes>
+    </test>
+    <test name="Job Tests">
+        <classes>
+            <class name="com.joyent.manta.client.MantaJobTest" />
+            <class name="com.joyent.manta.client.MantaJobPhaseTest" />
+        </classes>
+    </test>
+    <test name="Multipart Tests">
+        <classes>
+            <class name="com.joyent.manta.client.multipart.MantaMultipartUploadManagerTest" />
         </classes>
     </test>
 </suite>

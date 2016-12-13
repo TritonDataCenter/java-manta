@@ -1,4 +1,4 @@
-package com.joyent.manta.client.exception;
+package com.joyent.manta.exception;
 
 import com.joyent.manta.exception.OnCloseAggregateException;
 import org.testng.Assert;

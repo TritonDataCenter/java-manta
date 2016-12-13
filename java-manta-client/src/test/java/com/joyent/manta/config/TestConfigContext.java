@@ -1,6 +1,4 @@
-package com.joyent.manta.client.config;
-
-import com.joyent.manta.config.*;
+package com.joyent.manta.config;
 
 import java.net.URL;
 import java.util.Properties;

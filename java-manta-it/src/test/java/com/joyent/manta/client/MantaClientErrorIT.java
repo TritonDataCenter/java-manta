@@ -1,6 +1,6 @@
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.MapConfigContext;

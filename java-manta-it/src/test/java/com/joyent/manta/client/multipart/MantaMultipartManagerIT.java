@@ -7,7 +7,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.client.MantaJob;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaMultipartException;
 import org.apache.commons.codec.digest.DigestUtils;
