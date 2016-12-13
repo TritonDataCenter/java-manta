@@ -7,17 +7,14 @@
         </encoder>
     </appender>
 
-    <logger name="com.joyent" level="debug" />
+    <logger name="com.joyent" level="info" />
     <!-- lower these to debug in order to enable most logs -->
-    <logger name="com.joyent.manta.client.MantaClient" level="error" />
-    <logger name="com.joyent.manta.client.multipart.MantaMultipartManagerIT" level="info" />
-    <logger name="com.joyent.manta.client.multipart.MantaMultipartManager" level="debug" />
     <logger name="com.joyent.manta.org.apache" level="error" />
-    <logger name="org.apache.http.wire" level="error" />
+    <logger name="org.apache" level="error" />
 
     <logger name="sun.net.www.protocol.http" level="error" />
 
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
