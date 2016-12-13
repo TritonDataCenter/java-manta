@@ -8,6 +8,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Moved configuration validation into a static method on ConfigContext.
  - Removed MantaCryptoException.
  - Manta specific content-types are now contained in `MantaContentTypes`.
+### Added
+ - Added version information to user agent and debug output. 
 
 ## [2.7.2] - ?
 ### Changed
