@@ -36,4 +36,9 @@
             <class name="com.joyent.manta.client.multipart.MantaMultipartUploadManagerTest" />
         </classes>
     </test>
+    <test name="Integration Tests Depending on Shaded Resources">
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientConnectionFailuresIT" />
+        </classes>
+    </test>
 </suite>

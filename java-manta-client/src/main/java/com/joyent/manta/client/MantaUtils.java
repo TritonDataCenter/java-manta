@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
+import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -533,5 +535,15 @@ public final class MantaUtils {
             final String label = String.format("exception_%d", count++);
             contexted.setContextValue(label, e);
         }
+    }
+
+    /**
+     * Parses a HTTP Date header value.
+     *
+     * @param date header to parse
+     * @return instance of Date based on input
+     */
+    public static Date parseHttpDate(final String date) {
+        return DateUtils.parseDate(date);
     }
 }

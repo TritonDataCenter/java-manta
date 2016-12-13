@@ -26,7 +26,7 @@
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
             <version>3.0.0-SNAPSHOT</version>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -34,18 +34,6 @@
             <artifactId>java-manta-benchmark</artifactId>
             <version>3.0.0-SNAPSHOT</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${dependency.apache-http-client.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
