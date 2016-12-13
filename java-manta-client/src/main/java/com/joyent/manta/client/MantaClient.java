@@ -165,6 +165,8 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values.
      */
     public MantaClient(final ConfigContext config) {
+        dumpConfig(config);
+
         final String mantaURL = config.getMantaURL();
         final String account = config.getMantaUser();
 
@@ -195,6 +197,8 @@ public class MantaClient implements AutoCloseable {
     MantaClient(final ConfigContext config,
                 final KeyPair keyPair,
                 final MantaConnectionFactory connectionFactory) {
+        dumpConfig(config);
+
         final String mantaURL = config.getMantaURL();
         final String account = config.getMantaUser();
 
@@ -211,6 +215,26 @@ public class MantaClient implements AutoCloseable {
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
 
+    /**
+     * Dumps the configuration that is used to load a {@link MantaClient} if
+     * the Java system property manta.dumpConfig is set.
+     *
+     * @param context Configuration context object to dump
+     */
+    private static void dumpConfig(final ConfigContext context) {
+        if (context == null) {
+            System.out.println("=================================================================");
+            System.out.println("Configuration Context was null");
+            System.out.println("=================================================================");
+        }
+
+        String dumpConfigVal = System.getProperty("manta.dumpConfig");
+        if (dumpConfigVal != null && MantaUtils.parseBooleanOrNull(dumpConfigVal)) {
+            System.out.println("=================================================================");
+            System.out.println(ConfigContext.toString(context));
+            System.out.println("=================================================================");
+        }
+    }
 
     /**
      * Deletes an object from Manta.
