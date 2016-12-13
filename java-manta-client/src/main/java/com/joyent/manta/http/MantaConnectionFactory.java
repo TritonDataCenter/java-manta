@@ -182,7 +182,7 @@ public class MantaConnectionFactory implements Closeable {
 
     /**
      * Builds and configures a {@link ConnectionConfig} instance.
-     * @return
+     * @return fully configured instance
      */
     protected ConnectionConfig buildConnectionConfig() {
         return ConnectionConfig.custom()
