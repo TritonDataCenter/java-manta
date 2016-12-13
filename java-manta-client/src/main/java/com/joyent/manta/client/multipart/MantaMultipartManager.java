@@ -12,7 +12,7 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;

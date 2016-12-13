@@ -2,7 +2,7 @@ package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;

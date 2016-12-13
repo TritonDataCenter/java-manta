@@ -1,9 +1,10 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.util;
 
 import com.joyent.manta.config.EncryptionObjectAuthenticationMode;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;

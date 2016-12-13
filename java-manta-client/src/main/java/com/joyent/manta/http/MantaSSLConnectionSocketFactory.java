@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;

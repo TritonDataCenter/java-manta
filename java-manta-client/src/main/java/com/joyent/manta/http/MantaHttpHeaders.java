@@ -5,7 +5,7 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;

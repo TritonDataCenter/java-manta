@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static com.joyent.manta.client.MantaUtils.asString;
+import static com.joyent.manta.util.MantaUtils.asString;
 import static com.joyent.manta.http.MantaHttpHeaders.REQUEST_ID;
 import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;

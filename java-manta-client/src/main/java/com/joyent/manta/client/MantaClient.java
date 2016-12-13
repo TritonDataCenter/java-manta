@@ -22,6 +22,7 @@ import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.NoContentEntity;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -83,7 +84,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.joyent.manta.client.MantaUtils.formatPath;
+import static com.joyent.manta.util.MantaUtils.formatPath;
 import static com.joyent.manta.exception.MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR;
 
 /**

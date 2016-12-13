@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.domain;
 
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Collections;

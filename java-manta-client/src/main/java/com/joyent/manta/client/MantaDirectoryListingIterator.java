@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
-import static com.joyent.manta.client.MantaUtils.formatPath;
+import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
  * <p>Class that wraps the paging of directory listing in Manta to a single

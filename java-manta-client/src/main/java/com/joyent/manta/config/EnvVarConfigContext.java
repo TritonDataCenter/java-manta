@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 
 import java.util.Base64;
 

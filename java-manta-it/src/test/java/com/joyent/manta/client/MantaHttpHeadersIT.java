@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.joyent.manta.client.MantaUtils.asString;
+import static com.joyent.manta.util.MantaUtils.asString;
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
 
 /**

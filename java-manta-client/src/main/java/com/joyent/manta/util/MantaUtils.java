@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.util;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +33,7 @@ import java.util.Set;
  * Manta utilities.
  *
  * @author Yunong Xiao
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public final class MantaUtils {
     /**
