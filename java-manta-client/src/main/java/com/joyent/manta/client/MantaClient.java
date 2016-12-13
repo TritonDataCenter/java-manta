@@ -223,16 +223,16 @@ public class MantaClient implements AutoCloseable {
      */
     private static void dumpConfig(final ConfigContext context) {
         if (context == null) {
-            System.out.println("=================================================================");
+            System.out.println("========================================");
             System.out.println("Configuration Context was null");
-            System.out.println("=================================================================");
+            System.out.println("========================================");
         }
 
         String dumpConfigVal = System.getProperty("manta.dumpConfig");
         if (dumpConfigVal != null && MantaUtils.parseBooleanOrNull(dumpConfigVal)) {
-            System.out.println("=================================================================");
+            System.out.println("========================================");
             System.out.println(ConfigContext.toString(context));
-            System.out.println("=================================================================");
+            System.out.println("========================================");
         }
     }
 
@@ -2210,7 +2210,7 @@ public class MantaClient implements AutoCloseable {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         final List<Exception> exceptions = new ArrayList<>();
 
         /* We explicitly close all streams that may have been opened when
