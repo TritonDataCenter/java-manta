@@ -9,6 +9,7 @@ import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestIntercept
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -245,6 +246,12 @@ public class MantaConnectionFactory implements Closeable {
 
         final long requestTimeout = Duration.ofSeconds(1L).toMillis();
 
+        final String userAgent = String.format(
+                "Java-Manta-SDK/%s (Java/%s/%s)",
+                MantaVersion.VERSION,
+                System.getProperty("java.version"),
+                System.getProperty("java.vendor"));
+
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
                 .setSocketTimeout(timeout)
@@ -261,7 +268,8 @@ public class MantaConnectionFactory implements Closeable {
                 .setDefaultHeaders(HEADERS)
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManagerShared(false)
-                .setConnectionBackoffStrategy(new DefaultBackoffStrategy());
+                .setConnectionBackoffStrategy(new DefaultBackoffStrategy())
+                .setUserAgent(userAgent);
 
         if (config.getRetries() > 0) {
             builder.setRetryHandler(new MantaHttpRequestRetryHandler(config))
