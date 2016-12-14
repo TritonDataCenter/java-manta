@@ -226,6 +226,7 @@ public class MantaClient implements AutoCloseable {
             System.out.println("========================================");
             System.out.println("Configuration Context was null");
             System.out.println("========================================");
+            return;
         }
 
         String dumpConfigVal = System.getProperty("manta.dumpConfig");
