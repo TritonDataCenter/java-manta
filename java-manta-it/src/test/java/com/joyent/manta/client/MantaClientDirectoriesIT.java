@@ -1,8 +1,7 @@
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
@@ -35,19 +34,17 @@ public class MantaClientDirectoriesIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+                            @Optional Integer mantaTimeout)
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/%s",
@@ -56,7 +53,7 @@ public class MantaClientDirectoriesIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
@@ -138,7 +135,8 @@ public class MantaClientDirectoriesIT {
     public void directoryIsMarkedAsSuch() throws IOException {
         MantaObject dir = mantaClient.head(testPathPrefix);
         Assert.assertTrue(dir.isDirectory(),
-                String.format("Directory should be marked as such [%s]", testPathPrefix));
+                String.format("Directory should be marked as such [%s]. "
+                        + "\nResponse: %s", testPathPrefix, dir));
     }
 
 

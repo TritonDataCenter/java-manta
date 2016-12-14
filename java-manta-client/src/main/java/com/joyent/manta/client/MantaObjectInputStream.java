@@ -1,6 +1,13 @@
+/*
+ * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpResponse;
+import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +24,11 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     private static final long serialVersionUID = 4129729453592380566L;
 
     /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectInputStream.class);
+
+    /**
      * Response from request to the Manta API.
      */
     private final MantaObjectResponse response;
@@ -29,7 +41,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     /**
      * The HTTP response sent from the Manta API.
      */
-    private final transient HttpResponse httpResponse;
+    private final transient CloseableHttpResponse httpResponse;
 
     /**
      * Create a new instance from the results of a GET HTTP call to the
@@ -37,13 +49,14 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
      *
      * @param response Metadata object built from request
      * @param httpResponse Response object created
-     * @throws IOException thrown when there is a network problem
+     * @param backingStream Underlying stream being wrapped
      */
     MantaObjectInputStream(final MantaObjectResponse response,
-                           final HttpResponse httpResponse) throws IOException {
+                           final CloseableHttpResponse httpResponse,
+                           final InputStream backingStream) {
         this.response = response;
         this.httpResponse = httpResponse;
-        this.backingStream = httpResponse.getContent();
+        this.backingStream = backingStream;
     }
 
     @Override
@@ -143,8 +156,11 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
 
     @Override
     public void close() throws IOException {
-        backingStream.close();
-        httpResponse.disconnect();
+        LOGGER.debug("Closing backingStream {} and response {}",
+                backingStream, httpResponse);
+
+        IOUtils.closeQuietly(backingStream);
+        IOUtils.closeQuietly(httpResponse);
     }
 
     @Override

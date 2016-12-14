@@ -1,9 +1,16 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
+import com.joyent.manta.exception.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -63,8 +70,9 @@ public interface ConfigContext {
     Integer getMaximumConnections();
 
     /**
-     * @return the class name of the {@link com.google.api.client.http.HttpTransport} implementation to use
+     * @return always null - this config value is not used in 3.x
      */
+    @Deprecated
     String getHttpTransport();
 
     /**
@@ -90,7 +98,33 @@ public interface ConfigContext {
     /**
      * @return time in milliseconds to cache HTTP signature headers
      */
+    @Deprecated
     Integer getSignatureCacheTTL();
+
+    /**
+     * @return true when client-side encryption is enabled.
+     */
+    Boolean isClientEncryptionEnabled();
+
+    /**
+     * @return true when downloading unencrypted files is allowed in encryption mode
+     */
+    Boolean permitUnencryptedDownloads();
+
+    /**
+     * @return specifies if we are in strict ciphertext authentication mode or not
+     */
+    EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode();
+
+    /**
+     * @return path to the private encryption key on the filesystem (can't be used if private key bytes is not null)
+     */
+    String getEncryptionPrivateKeyPath();
+
+    /**
+     * @return private encryption key data (can't be used if private key path is not null)
+     */
+    byte[] getEncryptionPrivateKeyBytes();
 
     /**
      * Extracts the home directory based on the Manta account name.
@@ -130,7 +164,94 @@ public interface ConfigContext {
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
         sb.append(", signatureCacheTTL=").append(context.getSignatureCacheTTL());
+        sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
+        sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
+        sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
+        sb.append(", encryptionPrivateKeyPath=").append(context.getEncryptionPrivateKeyPath());
+
+        if (context.getEncryptionPrivateKeyBytes() == null) {
+            sb.append(", encryptionPrivateKeyBytesLength=").append("null object");
+        } else {
+            sb.append(", encryptionPrivateKeyBytesLength=").append(context.getEncryptionPrivateKeyBytes().length);
+        }
+
         sb.append('}');
         return sb.toString();
+    }
+
+    /**
+     * Utility method for validating that the configuration has been instantiated
+     * with valid settings.
+     *
+     * @param config configuration to test
+     * @throws ConfigurationException thrown when validation fails
+     */
+    static void validate(final ConfigContext config) {
+        List<String> failureMessages = new ArrayList<>();
+
+        if (StringUtils.isBlank(config.getMantaUser())) {
+            failureMessages.add("Manta account name must be specified");
+        }
+
+        if (StringUtils.isBlank(config.getMantaURL())) {
+            failureMessages.add("Manta URL must be specified");
+        } else {
+            try {
+                new URI(config.getMantaURL());
+            } catch (URISyntaxException e) {
+                final String msg = String.format("%s - invalid Manta URL: %s",
+                        e.getMessage(), config.getMantaURL());
+                failureMessages.add(msg);
+            }
+        }
+
+        if (config.getTimeout() < 0) {
+            failureMessages.add("Manta timeout must be 0 or greater");
+        }
+
+        if (config.getPrivateKeyContent() != null && config.getMantaKeyPath() != null) {
+            failureMessages.add("Private key content and key path can't be both set");
+        } else if (config.getPrivateKeyContent() == null && config.getMantaKeyPath() == null) {
+            failureMessages.add("Manta key path or private key content must be specified");
+        }
+
+        if (config.noAuth() != null && !config.noAuth()) {
+            if (config.getMantaKeyId() == null) {
+                failureMessages.add("Manta key id must be specified");
+            }
+        }
+
+        if (StringUtils.startsWith(config.getMantaKeyId(), "SHA256:")) {
+            failureMessages.add("We don't support SHA256 "
+                    + "fingerprints yet. Change fingerprint to MD5 format.");
+        }
+
+        if (!failureMessages.isEmpty()) {
+            String messages = StringUtils.join(failureMessages, System.lineSeparator());
+            ConfigurationException e = new ConfigurationException(
+                    "Errors when loading Manta SDK configuration:"
+                    + System.lineSeparator() + messages);
+
+            // We don't dump all of the configuration settings, just the important ones
+
+            e.setContextValue(MapConfigContext.MANTA_URL_KEY, config.getMantaURL());
+            e.setContextValue(MapConfigContext.MANTA_USER_KEY, config.getMantaUser());
+            e.setContextValue(MapConfigContext.MANTA_KEY_ID_KEY, config.getMantaKeyId());
+            e.setContextValue(MapConfigContext.MANTA_NO_AUTH_KEY, config.noAuth());
+            e.setContextValue(MapConfigContext.MANTA_KEY_PATH_KEY, config.getMantaKeyPath());
+
+            final String redactedPrivateKeyContent;
+            if (config.getPrivateKeyContent() == null) {
+                redactedPrivateKeyContent = "null";
+            } else {
+                redactedPrivateKeyContent = "non-null";
+            }
+
+            e.setContextValue(MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY, redactedPrivateKeyContent);
+            e.setContextValue(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
+                    config.isClientEncryptionEnabled());
+
+            throw e;
+        }
     }
 }

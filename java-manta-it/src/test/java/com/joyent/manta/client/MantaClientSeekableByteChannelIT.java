@@ -1,9 +1,8 @@
 package com.joyent.manta.client;
 
-import com.google.api.client.util.IOUtils;
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
+import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -19,6 +18,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.Charset;
 import java.util.UUID;
 
 
@@ -38,19 +38,17 @@ public class MantaClientSeekableByteChannelIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+                            @Optional Integer mantaTimeout)
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("/%s/stor/%s/",
@@ -60,7 +58,7 @@ public class MantaClientSeekableByteChannelIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
@@ -146,14 +144,14 @@ public class MantaClientSeekableByteChannelIT {
         try (MantaSeekableByteChannel channel = mantaClient.getSeekableByteChannel(path, position)) {
             final String expected = TEST_DATA.substring(position);
 
-            Assert.assertEquals(MantaUtils.inputStreamToString(channel),
+            Assert.assertEquals(IOUtils.toString(channel, Charset.defaultCharset()),
                     expected, "Couldn't read the same bytes as written");
 
             final int secondPosition = 7;
             final String secondExpected = TEST_DATA.substring(secondPosition);
             try (MantaSeekableByteChannel channel2 = (MantaSeekableByteChannel)channel.position(secondPosition)) {
 
-                Assert.assertEquals(MantaUtils.inputStreamToString(channel2),
+                Assert.assertEquals(IOUtils.toString(channel2, Charset.defaultCharset()),
                         secondExpected, "Couldn't read the same bytes as written");
             }
         }
@@ -170,7 +168,7 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(channel.skip(5), 5L, "Didn't skip the expected number of bytes");
             Assert.assertEquals(channel.position(), 5L, "Position didn't update properly");
 
-            Assert.assertEquals(MantaUtils.inputStreamToString(channel),
+            Assert.assertEquals(IOUtils.toString(channel, Charset.defaultCharset()),
                     expected, "Couldn't read the same bytes as written");
 
             Assert.assertEquals(channel.position(), TEST_DATA.length(),

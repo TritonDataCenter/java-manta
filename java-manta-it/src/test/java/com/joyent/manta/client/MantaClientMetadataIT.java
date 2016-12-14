@@ -3,10 +3,8 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.test.util.MantaAssert;
-import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -16,8 +14,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.UUID;
-
-import static com.joyent.manta.exception.MantaErrorCode.INVALID_UPDATE_ERROR;
 
 
 /**
@@ -33,22 +29,20 @@ public class MantaClientMetadataIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
+                            @Optional Integer mantaTimeout)
             throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s/",
+        testPathPrefix = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, null);
     }
@@ -138,20 +132,27 @@ public class MantaClientMetadataIT {
         cleared.remove("m-force");
 
         MantaObject head = mantaClient.head(path);
-        Assert.assertEquals(cleared, head.getMetadata());
+        Assert.assertEquals(updated, head.getMetadata(),
+                String.format("Actual metadata: %s", head.getMetadata()));
 
         mantaClient.delete(path);
     }
 
     @Test(groups = { "metadata", "directory" })
-    public void cantAddMetadataToDirectory() throws IOException {
+    public void canAddMetadataToDirectory() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
         MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-test", "value");
 
-        MantaAssert.assertResponseFailureStatusCode(400, INVALID_UPDATE_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.putMetadata(dir, metadata));
+        mantaClient.putMetadata(dir, metadata);
+
+        MantaObject head = mantaClient.head(dir);
+        MantaMetadata remoteMetadata = head.getMetadata();
+
+        Assert.assertTrue(remoteMetadata.containsKey("m-test"));
+        Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
+                "Set metadata doesn't equal actual metadata");
     }
 }

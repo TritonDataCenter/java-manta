@@ -1,97 +1,171 @@
-/**
+/*
  * Copyright (c) 2014, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.exception;
 
 
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.json.GenericJson;
-import com.google.api.client.json.JsonObjectParser;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.ObjectParser;
-import com.joyent.manta.client.MantaHttpHeaders;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.client.MantaObjectMapper;
+import com.joyent.manta.domain.ErrorDetail;
+import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
-
-import static com.joyent.manta.client.MantaHttpHeaders.REQUEST_ID;
+import java.io.InputStream;
 
 /**
- * Convenience wrapper over {@link HttpResponseException} so that consumers of this library don't have to depend on the
- * underlying HTTP client implementation.
- *
- * @author Yunong Xiao
+ * Exception class representing a failure in the contract of Manta's behavior.
+ * This exception class is thrown when an unexpected response code is returned
+ * from Manta.
  */
 public class MantaClientHttpResponseException extends MantaIOException {
-
-    private static final long serialVersionUID = -5448972867288845768L;
+    private static final long serialVersionUID = 5696045042485801788L;
 
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaClientHttpResponseException.class);
-
-
-    /**
-     * JSON parser.
-     */
-    private static final ObjectParser PARSER = new JsonObjectParser(new JacksonFactory());
-
-    /**
-     * The underlying {@link HttpResponseException}.
-     * */
-    private final HttpResponseException innerException;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientHttpResponseException.class);
 
     /**
      * Server error code returned from Manta.
      */
-    private final MantaErrorCode serverCode;
-
-
-    /**
-     * Error message returned from Manta.
-     */
-    private final String message;
-
+    private MantaErrorCode serverCode;
 
     /**
      * Manta request id.
      */
-    private final String requestId;
-
+    private String requestId;
 
     /**
-     *
-     * @param innerException The {@link HttpResponseException} to be wrapped.
+     * Apache HTTP Client status response object giving us a code and phrase.
      */
-    public MantaClientHttpResponseException(final HttpResponseException innerException) {
-        super(innerException);
-        final String jsonContent = innerException.getContent();
-        final Map<String, Object> serverErrorInfo = parseJsonResponse(jsonContent);
+    private StatusLine statusLine;
 
-        this.innerException = innerException;
-        this.requestId = innerException.getHeaders().getFirstHeaderStringValue(REQUEST_ID);
-        this.serverCode = MantaErrorCode.valueOfCode(serverErrorInfo.get("code"));
+    /**
+     * Headers associated with request.
+     */
+    private MantaHttpHeaders headers;
 
-        if (serverErrorInfo.containsKey("message")) {
-            this.message = serverErrorInfo.get("message").toString();
-        } else {
-            this.message = null;
-        }
+    /**
+     * Content of HTTP response.
+     */
+    private String content;
+
+    /**
+     * Constructs an instance with {@code null}
+     * as its error detail message.
+     */
+    public MantaClientHttpResponseException() {
     }
 
+    /**
+     * Constructs an instance with the specified detail message.
+     *
+     * @param message The detail message (which is saved for later retrieval
+     *                by the {@link #getMessage()} method)
+     */
+    public MantaClientHttpResponseException(final String message) {
+        super(message);
+    }
+
+    /**
+     * Constructs an instance with the specified detail message
+     * and cause.
+     * <p>
+     * <p> Note that the detail message associated with {@code cause} is
+     * <i>not</i> automatically incorporated into this exception's detail
+     * message.
+     *
+     * @param message The detail message (which is saved for later retrieval
+     *                by the {@link #getMessage()} method)
+     * @param cause   The cause (which is saved for later retrieval by the
+     *                {@link #getCause()} method).  (A null value is permitted,
+     */
+    public MantaClientHttpResponseException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * Constructs an instance with the specified cause and a
+     * detail message of {@code (cause==null ? null : cause.toString())}
+     * (which typically contains the class and detail message of {@code cause}).
+     * This constructor is useful for IO exceptions that are little more
+     * than wrappers for other throwables.
+     *
+     * @param cause The cause (which is saved for later retrieval by the
+     *              {@link #getCause()} method).  (A null value is permitted,
+     *              and indicates that the cause is nonexistent or unknown.)
+     */
+    public MantaClientHttpResponseException(final Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Builds a client exception object that is annotated with all of the
+     * relevant request and response debug information.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     */
+    public MantaClientHttpResponseException(final HttpRequest request,
+                                            final HttpResponse response,
+                                            final String path) {
+        super(String.format("HTTP HEAD request failed to: %s", path));
+        final HttpEntity entity = response.getEntity();
+        final String jsonMimeType = ContentType.APPLICATION_JSON.getMimeType();
+
+        final String mimeType;
+
+        if (entity != null && entity.getContentType() != null) {
+            mimeType = entity.getContentType().getValue();
+        } else {
+            mimeType = null;
+        }
+
+        ErrorDetail errorDetail = null;
+        ObjectMapper mapper = MantaObjectMapper.INSTANCE;
+
+        if (entity != null && (mimeType == null || mimeType.equals(jsonMimeType))) {
+            try {
+                try (InputStream json = entity.getContent()) {
+                    errorDetail = mapper.readValue(json, ErrorDetail.class);
+                } catch (RuntimeException e) {
+                    LOGGER.warn("Unable to deserialize json error data", e);
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Problem getting response error content", e);
+            }
+        }
+
+        setRequestId(HttpHelper.extractRequestId(response));
+        setStatusLine(response.getStatusLine());
+
+        if (errorDetail == null) {
+            setServerCode(MantaErrorCode.NO_CODE_ERROR);
+        } else {
+            setServerCode(MantaErrorCode.valueOfCode(errorDetail.getCode()));
+            setContextValue("server_message", errorDetail.getMessage());
+        }
+
+        HttpHelper.annotateContextedException(this, request, response);
+    }
 
     /**
      * @return Whether received a successful HTTP status code {@code >= 200 && < 300} (see {@link #getStatusCode()}).
      */
+    @Deprecated
     public final boolean isSuccessStatusCode() {
-        return this.innerException.isSuccessStatusCode();
+        final int code = getStatusCode();
+        return code >= HttpStatus.SC_OK && code < HttpStatus.SC_BAD_REQUEST;
     }
 
 
@@ -99,7 +173,11 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @return The HTTP status code or {@code 0} for none.
      */
     public final int getStatusCode() {
-        return this.innerException.getStatusCode();
+        if (this.statusLine != null) {
+            return statusLine.getStatusCode();
+        } else {
+            return 0;
+        }
     }
 
 
@@ -107,7 +185,11 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @return The HTTP status message or {@code null} for none.
      */
     public final String getStatusMessage() {
-        return this.innerException.getStatusMessage();
+        if (this.statusLine != null) {
+            return statusLine.getReasonPhrase();
+        } else {
+            return null;
+        }
     }
 
 
@@ -115,7 +197,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @return The HTTP response headers.
      */
     public final MantaHttpHeaders getHeaders() {
-        return new MantaHttpHeaders(innerException.getHeaders());
+        return this.headers;
     }
 
     /**
@@ -124,44 +206,8 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @return HTTP body
      */
     public String getContent() {
-        return innerException.getContent();
+        return this.content;
     }
-
-
-    @Override
-    public String getLocalizedMessage() {
-        return getMessage();
-    }
-
-
-    @Override
-    public String getMessage() {
-        if (serverCode.equals(MantaErrorCode.NO_CODE_ERROR)) {
-            return innerException.getMessage();
-        } else if (serverCode.equals(MantaErrorCode.UNKNOWN_ERROR)) {
-            return String.format("%d %s (request: %s) - Unknown error content: %s",
-                    innerException.getStatusCode(),
-                    innerException.getStatusMessage(),
-                    this.getRequestId(),
-                    innerException.getContent());
-        // On signing failures, we display the signed date to help debug
-        } else if (serverCode.equals(MantaErrorCode.INVALID_SIGNATURE_ERROR)) {
-            return String.format("%d %s (request: %s, signed date: %s, authorization: %s) - [%s] %s",
-                    innerException.getStatusCode(),
-                    innerException.getStatusMessage(),
-                    this.getRequestId(),
-                    innerException.getHeaders().getDate(),
-                    innerException.getHeaders().getAuthorization(),
-                    this.serverCode.getCode(), this.message);
-        } else {
-            return String.format("%d %s (request: %s) - [%s] %s",
-                    innerException.getStatusCode(),
-                    innerException.getStatusMessage(),
-                    this.getRequestId(),
-                    this.serverCode.getCode(), this.message);
-        }
-    }
-
 
     /**
      * Error code returned from server. This is a String constant defined by
@@ -171,17 +217,6 @@ public class MantaClientHttpResponseException extends MantaIOException {
     public MantaErrorCode getServerCode() {
         return this.serverCode;
     }
-
-
-    /**
-     * Error message returned from Manta API.
-     *
-     * @return server error message, if unavailable null
-     */
-    public String getServerMessage() {
-        return this.message;
-    }
-
 
     /**
      * The request id for the request as automatically assigned.
@@ -193,25 +228,66 @@ public class MantaClientHttpResponseException extends MantaIOException {
     }
 
     /**
-     * Parses JSON error message returned from the Manta API.
+     * Sets the request id that uniquely identifies HTTP request to Manta.
      *
-     * @param content JSON content
-     * @return Map containing JSON values
+     * @param requestId UUID as a string
+     * @return the current instance of {@link MantaClientHttpResponseException}
      */
-    static Map<String, Object> parseJsonResponse(final String content) {
-        if (content == null || content.isEmpty()) {
-            return Collections.emptyMap();
-        }
+    @SuppressWarnings("UnusedReturnValue")
+    public MantaClientHttpResponseException setRequestId(final String requestId) {
+        this.requestId = requestId;
+        setContextValue("requestId", requestId);
+        return this;
+    }
 
-        final Reader reader = new StringReader(content);
-        final GenericJson genericJson;
-        try {
-            genericJson = PARSER.parseAndClose(reader, GenericJson.class);
-        } catch (IOException e) {
-            LOG.warn("Unable to parse JSON response from API", e);
-            return Collections.emptyMap();
-        }
+    /**
+     * Sets the {@link StatusLine} returned from the HTTP request associated
+     * with this exception.
+     *
+     * @param statusLine Apache HTTP Client status line object
+     * @return the current instance of {@link MantaClientHttpResponseException}
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public MantaClientHttpResponseException setStatusLine(final StatusLine statusLine) {
+        this.statusLine = statusLine;
+        setContextValue("statusLine", statusLine);
+        return this;
+    }
 
-        return genericJson;
+    /**
+     * Sets the headers used to make the request that caused this exception.
+     * @param headers Manta headers object
+     *
+     * @return the current instance of {@link MantaClientHttpResponseException}
+     */
+    public MantaClientHttpResponseException setHeaders(final MantaHttpHeaders headers) {
+        this.headers = headers;
+        setContextValue("headers", headers.toString());
+        return this;
+    }
+
+    /**
+     * Sets the content of the response that caused this exception.
+     *
+     * @param content free form text of associated content
+     * @return the current instance of {@link MantaClientHttpResponseException}
+     */
+    public MantaClientHttpResponseException setContent(final String content) {
+        this.content = content;
+        setContextValue("content", content);
+        return this;
+    }
+
+    /**
+     * Sets the Manta server error code associated with this exception.
+     *
+     * @param serverCode enum of the server error code
+     * @return the current instance of {@link MantaClientHttpResponseException}
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public MantaClientHttpResponseException setServerCode(final MantaErrorCode serverCode) {
+        this.serverCode = serverCode;
+        setContextValue("serverCode", serverCode.getCode());
+        return this;
     }
 }

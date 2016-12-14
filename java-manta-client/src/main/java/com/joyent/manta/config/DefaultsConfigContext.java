@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.config;
@@ -38,7 +38,7 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final String MANTA_KEY_PATH;
 
     /**
-     * The default {@link com.google.api.client.http.HttpTransport} implementation to use.
+     * This default is no longer used.
      */
     public static final String DEFAULT_HTTP_TRANSPORT = "ApacheHttpTransport";
 
@@ -127,6 +127,7 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return DEFAULT_HTTP_TRANSPORT;
     }
@@ -154,6 +155,31 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getSignatureCacheTTL() {
         return DEFAULT_SIGNATURE_CACHE_TTL;
+    }
+
+    @Override
+    public Boolean isClientEncryptionEnabled() {
+        return false;
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        return false;
+    }
+
+    @Override
+    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+        return EncryptionObjectAuthenticationMode.DEFAULT_MODE;
+    }
+
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return null;
+    }
+
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        return null;
     }
 
     @Override

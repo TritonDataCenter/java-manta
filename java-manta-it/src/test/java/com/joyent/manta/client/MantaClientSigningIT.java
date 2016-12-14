@@ -1,11 +1,11 @@
-/**
+/*
  * Copyright (c) 2016, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
+import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,19 +42,17 @@ public class MantaClientSigningIT {
     private ConfigContext config;
 
     @BeforeClass()
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+                            @Optional Integer mantaTimeout)
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/%s/",
@@ -63,7 +62,7 @@ public class MantaClientSigningIT {
 
 
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
@@ -90,10 +89,10 @@ public class MantaClientSigningIT {
             connection.connect();
 
             if (connection.getResponseCode() != 200) {
-                Assert.fail(MantaUtils.inputStreamToString(connection.getErrorStream()));
+                Assert.fail(IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset()));
             }
 
-            String actual = MantaUtils.inputStreamToString(is);
+            String actual = IOUtils.toString(is, Charset.defaultCharset());
             Assert.assertEquals(actual, TEST_DATA);
         } finally {
             connection.disconnect();
@@ -123,7 +122,7 @@ public class MantaClientSigningIT {
             Map<String, List<String>> headers = connection.getHeaderFields();
 
             if (connection.getResponseCode() != 200) {
-                Assert.fail(MantaUtils.inputStreamToString(connection.getErrorStream()));
+                Assert.fail(IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset()));
             }
 
             Assert.assertNotNull(headers);
@@ -196,7 +195,7 @@ public class MantaClientSigningIT {
             Map<String, List<String>> headers = connection.getHeaderFields();
 
             if (connection.getResponseCode() != 200) {
-                String errorText = MantaUtils.inputStreamToString(connection.getErrorStream());
+                String errorText = IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset());
 
                 if (config.getMantaUser().contains("/")) {
                     String msg = String.format("This fails due to an outstanding bug: MANTA-2839.\n%s",

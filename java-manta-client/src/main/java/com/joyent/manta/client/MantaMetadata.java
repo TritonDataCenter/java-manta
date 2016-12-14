@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
@@ -7,7 +7,6 @@ import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.collections4.map.PredicatedMap;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
@@ -27,9 +26,10 @@ import java.util.function.Function;
  * metadata. It accepts them without throwing an error, but it will only
  * ingest a single value out of multiple values.</p>
  *
+ * <p>This class is NOT thread-safe.</p>
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
     private static final long serialVersionUID = -5828336629480323042L;
 
@@ -55,7 +55,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     public MantaMetadata(final Map<? extends String, ? extends String> m) {
         this();
-        innerMap.putAll(m);
+        putAll(m);
     }
 
 
@@ -72,6 +72,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return new MantaMetadata(this);
@@ -298,7 +299,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     @Override
     public boolean equals(final Object object) {
-        return innerMap.equals(object);
+        return getClass().equals(object.getClass())
+                && innerMap.equals(object);
     }
 
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.exception;
@@ -114,10 +114,10 @@ public enum MantaErrorCode {
 
 
     /**
-     * Thread-safe reference to a lookup map for codes to enum. This is populated
+     * Thread-safe reference to a LOOKUP map for codes to enum. This is populated
      * upon first invocation of valueOfCode().
      */
-    private static AtomicReference<Map<String, MantaErrorCode>> lookup =
+    private static final AtomicReference<Map<String, MantaErrorCode>> LOOKUP =
             new AtomicReference<>();
 
     /**
@@ -144,15 +144,15 @@ public enum MantaErrorCode {
      * @return Manta error code enum associated with serverCode parameter
      */
     public static MantaErrorCode valueOfCode(final String serverCode) {
-        if (lookup.get() == null) {
+        if (LOOKUP.get() == null) {
             Map<String, MantaErrorCode> backing = new HashMap<>(values().length);
             for (MantaErrorCode m : values()) {
                 backing.put(m.getCode(), m);
             }
-            lookup.compareAndSet(null, Collections.unmodifiableMap(backing));
+            LOOKUP.compareAndSet(null, Collections.unmodifiableMap(backing));
         }
 
-        MantaErrorCode found = lookup.get().getOrDefault(serverCode, UNKNOWN_ERROR);
+        MantaErrorCode found = LOOKUP.get().getOrDefault(serverCode, UNKNOWN_ERROR);
 
         if (found.equals(UNKNOWN_ERROR)) {
             LOG.warn("Unknown error code received from Manta: {}", serverCode);

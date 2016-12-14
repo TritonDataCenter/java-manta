@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.0.0] - ?
+### Changed
+ - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
+ - Moved configuration validation into a static method on ConfigContext.
+ - Removed MantaCryptoException.
+ - Manta specific content-types are now contained in `MantaContentTypes`.
+ - MantaClient.close() no longer throws Exception.
+### Added
+ - Added version information to user agent and debug output. 
+ - Added simple CLI to use for debugging.
+ - Added configuration dump system property: manta.configDump
+
 ## [2.7.2] - ?
 ### Changed
  - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.

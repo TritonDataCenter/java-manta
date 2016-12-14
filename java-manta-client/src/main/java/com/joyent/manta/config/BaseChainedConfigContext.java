@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.config;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -12,6 +13,7 @@ import java.util.Objects;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@SuppressWarnings("unused")
 public abstract class BaseChainedConfigContext implements ConfigContext {
     /**
      * Manta service endpoint.
@@ -59,7 +61,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private String password;
 
     /**
-     * The class name of the {@link com.google.api.client.http.HttpTransport} implementation to use.
+     * This field has been deprecated.
      */
     private String httpTransport;
 
@@ -87,6 +89,33 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * Time in milliseconds to cache HTTP signature headers.
      */
     private Integer signatureCacheTTL;
+
+    /**
+     * Flag indicating when client-side encryption is enabled.
+     */
+    private Boolean clientEncryptionEnabled;
+
+    /**
+     * Flag indicating when downloading unencrypted files is allowed in
+     * encryption mode.
+     */
+    private Boolean permitUnencryptedDownloads;
+
+    /**
+     * Enum specifying if we are in strict ciphertext authentication mode or not.
+     */
+    private EncryptionObjectAuthenticationMode encryptionAuthenticationMode;
+
+    /**
+     * Path to the private encryption key on the filesystem (can't be used if
+     * private key bytes is not null).
+     */
+    private String encryptionPrivateKeyPath;
+
+    /**
+     * Private encryption key data (can't be used if private key path is not null).
+     */
+    private byte[] encryptionPrivateKeyBytes;
 
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
@@ -160,6 +189,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return this.httpTransport;
     }
@@ -185,8 +215,40 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public Integer getSignatureCacheTTL() {
         return signatureCacheTTL;
+    }
+
+    @Override
+    public Boolean isClientEncryptionEnabled() {
+        return clientEncryptionEnabled;
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        return permitUnencryptedDownloads;
+    }
+
+    @Override
+    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+        return encryptionAuthenticationMode;
+    }
+
+    /**
+     * @return path to the private encryption key on the filesystem (can't be used if private key bytes is not null)
+     */
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return encryptionPrivateKeyPath;
+    }
+
+    /**
+     * @return private encryption key data (can't be used if private key path is not null)
+     */
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        return encryptionPrivateKeyBytes;
     }
 
     /**
@@ -241,10 +303,6 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
             this.password = context.getPassword();
         }
 
-        if (isPresent(context.getHttpTransport())) {
-            this.httpTransport = context.getHttpTransport();
-        }
-
         if (isPresent(context.getHttpsProtocols())) {
             this.httpsProtocols = context.getHttpsProtocols();
         }
@@ -259,10 +317,6 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
         if (context.disableNativeSignatures() != null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
-        }
-
-        if (context.getSignatureCacheTTL() != null) {
-            this.signatureCacheTTL = context.getSignatureCacheTTL();
         }
     }
 
@@ -388,11 +442,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     /**
-     * Sets the class name of the {@link com.google.api.client.http.HttpTransport}
-     * implementation to use. Use the strings ApacheHttpTransport, NetHttpTransport
-     * or MockHttpTransport to use the included implementations. If the value
-     * is not one of those three - then we default to the ApacheHttpTransport
-     * method.
+     * This method is no longer used.
      *
      * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
      * @return the current instance of {@link BaseChainedConfigContext}
@@ -476,6 +526,80 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
+    /**
+     * Sets flag indicating when client-side encryption is enabled.
+     *
+     * @param clientEncryptionEnabled true if client-side encryption is enabled
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
+        this.clientEncryptionEnabled = clientEncryptionEnabled;
+
+        return this;
+    }
+
+    /**
+     * Sets flag indicating when downloading unencrypted files is allowed in
+     * encryption mode.
+     *
+     * @param permitUnencryptedDownloads true if downloading unencrypted data is permitted when in encrypted mode
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setPermitUnencryptedDownloads(final Boolean permitUnencryptedDownloads) {
+        this.permitUnencryptedDownloads = permitUnencryptedDownloads;
+
+        return this;
+    }
+
+    /**
+     * Sets enum specifying if we are in strict ciphertext authentication mode
+     * or not.
+     *
+     * @param encryptionAuthenticationMode enum of authentication mode
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setEncryptionAuthenticationMode(
+            final EncryptionObjectAuthenticationMode encryptionAuthenticationMode) {
+        this.encryptionAuthenticationMode = encryptionAuthenticationMode;
+
+        return this;
+    }
+
+    /**
+     * Sets the path to the private encryption key on the filesystem (can't be
+     * used if private key bytes is not null).
+     *
+     * @param encryptionPrivateKeyPath path to private encryption key of file system
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setEncryptionPrivateKeyPath(final String encryptionPrivateKeyPath) {
+        if (encryptionPrivateKeyBytes != null) {
+            String msg = "You can't set both encryption key content and a private encryption key path";
+            throw new IllegalArgumentException(msg);
+        }
+        this.encryptionPrivateKeyPath = encryptionPrivateKeyPath;
+
+        return this;
+    }
+
+    /**
+     * Sets the private encryption key data in memory (can't be used if private
+     * key path is not null).
+     *
+     * @param encryptionPrivateKeyBytes byte array containing private key data
+     * @return the current instance of {@link BaseChainedConfigContext}
+     */
+    public BaseChainedConfigContext setEncryptionPrivateKeyBytes(final byte[] encryptionPrivateKeyBytes) {
+        if (isPresent(encryptionPrivateKeyPath)) {
+            String msg = "You can't set both a private encryption key path and encryption key content";
+            throw new IllegalArgumentException(msg);
+        }
+
+        this.encryptionPrivateKeyBytes = encryptionPrivateKeyBytes;
+
+        return this;
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {
@@ -501,7 +625,12 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(httpsCiphers, that.httpsCiphers)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
-                && Objects.equals(signatureCacheTTL, that.signatureCacheTTL);
+                && Objects.equals(signatureCacheTTL, that.signatureCacheTTL)
+                && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
+                && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
+                && Objects.equals(encryptionAuthenticationMode, that.encryptionAuthenticationMode)
+                && Objects.equals(encryptionPrivateKeyPath, that.encryptionPrivateKeyPath)
+                && Arrays.equals(encryptionPrivateKeyBytes, that.encryptionPrivateKeyBytes);
     }
 
     @Override
@@ -509,7 +638,10 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpTransport, httpsProtocols, httpsCiphers, noAuth,
-                disableNativeSignatures, signatureCacheTTL);
+                disableNativeSignatures, signatureCacheTTL,
+                clientEncryptionEnabled, permitUnencryptedDownloads,
+                encryptionAuthenticationMode, encryptionPrivateKeyPath,
+                encryptionPrivateKeyBytes);
     }
 
     @Override

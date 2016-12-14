@@ -1,9 +1,11 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
+
+import java.util.Base64;
 
 /**
  * An implementation of {@link ConfigContext} that reads its configuration
@@ -83,9 +85,39 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_NO_NATIVE_SIGS_ENV_KEY = "MANTA_NO_NATIVE_SIGS";
 
     /**
-     * Environment variable for looking up the time in milliseconds to cache HTTP signature headers.
+     * Environment variable for looking up the time in milliseconds to cache
+     * HTTP signature headers.
      */
     public static final String MANTA_SIGS_CACHE_TTL_ENV_KEY = "MANTA_SIGS_CACHE_TTL";
+
+    /**
+     * Environment variable for flag indicating when client-side encryption is enabled.
+     */
+    public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
+
+    /**
+     * Environment variable for flag indicating when downloading unencrypted
+     * files is allowed in encryption mode.
+     */
+    public static final String MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY = "MANTA_UNENCRYPTED_DOWNLOADS";
+
+    /**
+     * Environment variable for enum specifying if we are in strict ciphertext
+     * authentication mode or not.
+     */
+    public static final String MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY = "MANTA_ENCRYPTION_AUTH_MODE";
+
+    /**
+     * Environment variable for path to the private encryption key on the
+     * filesystem (can't be used if private key bytes is not null).
+     */
+    public static final String MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY = "MANTA_ENCRYPTION_KEY_PATH";
+
+    /**
+     * Environment variable for private encryption key data (can't be used if
+     * private key path is not null) and must be passed in base64 encoding.
+     */
+    public static final String MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY = "MANTA_ENCRYPTION_KEY_BYTES";
 
     /**
      * Array of all environment variable names used.
@@ -97,7 +129,12 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
-            MANTA_SIGS_CACHE_TTL_ENV_KEY
+            MANTA_SIGS_CACHE_TTL_ENV_KEY,
+            MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
+            MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
+            MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY,
+            MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
+            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY
     };
 
     /**
@@ -172,6 +209,7 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
+    @Deprecated
     public String getHttpTransport() {
         return getEnv(MANTA_HTTP_TRANSPORT_ENV_KEY);
     }
@@ -203,6 +241,43 @@ public class EnvVarConfigContext implements ConfigContext {
         String ttl = getEnv(MANTA_SIGS_CACHE_TTL_ENV_KEY);
 
         return MantaUtils.parseIntegerOrNull(ttl);
+    }
+
+    @Override
+    public Boolean isClientEncryptionEnabled() {
+        String enabled = getEnv(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY);
+
+        return MantaUtils.parseBooleanOrNull(enabled);
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        String permit = getEnv(MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY);
+
+        return MantaUtils.parseBooleanOrNull(permit);
+    }
+
+    @Override
+    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+        String enumValue = getEnv(MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY);
+
+        return MantaUtils.parseEnumOrNull(enumValue, EncryptionObjectAuthenticationMode.class);
+    }
+
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return getEnv(MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY);
+    }
+
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        String base64 = getEnv(MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY);
+
+        if (base64 == null) {
+            return null;
+        }
+
+        return Base64.getDecoder().decode(base64);
     }
 
     @Override

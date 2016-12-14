@@ -1,12 +1,12 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.test.util.ThreeTriesRetryAnalyzer;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -19,10 +19,12 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,19 +47,17 @@ public class MantaClientJobIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
+    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
     public void beforeClass(@Optional String mantaUrl,
                             @Optional String mantaUser,
                             @Optional String mantaKeyPath,
                             @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+                            @Optional Integer mantaTimeout)
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
 
         mantaClient = new MantaClient(config);
 
@@ -226,9 +226,14 @@ public class MantaClientJobIT {
             Thread.sleep(1000);
         }
 
-        try (Stream<MantaJob> jobs = mantaClient.getAllJobs()) {
-            List<MantaJob> found = jobs.filter(job -> job.getId().equals(job1id) || job.getId().equals(job2id))
-                    .collect(Collectors.toList());
+        Predicate<? super MantaJob> findByJobIdFilter = job -> {
+            Assert.assertNotNull(job);
+            return job.getId().equals(job1id) || job.getId().equals(job2id);
+        };
+
+        try (Stream<MantaJob> jobs = mantaClient.getAllJobs();
+             Stream<MantaJob> filtered = jobs.filter(findByJobIdFilter)) {
+            List<MantaJob> found = filtered.collect(Collectors.toList());
 
             Assert.assertEquals(found.size(), 2, "We should have found both jobs");
         }  catch (AssertionError e) {
@@ -404,7 +409,7 @@ public class MantaClientJobIT {
                 .forEach(o -> {
                     count.incrementAndGet();
                     try {
-                        String content = MantaUtils.inputStreamToString(o);
+                        String content = IOUtils.toString(o, Charset.defaultCharset());
                         Assert.assertEquals(content, TEST_DATA);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);

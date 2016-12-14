@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.client;
@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -185,6 +186,7 @@ public class MantaJobBuilder {
          * @param additionalPhases phases to add
          * @return reference to the create fluent builder
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Create addPhases(final Iterable<MantaJobPhase> additionalPhases) {
             Objects.requireNonNull(phases, "Phases must be present");
 
@@ -220,9 +222,7 @@ public class MantaJobBuilder {
         public Create addPhases(final MantaJobPhase... additionalPhases) {
             Objects.requireNonNull(phases, "Phases must be present");
 
-            for (MantaJobPhase phase : additionalPhases) {
-                phases.add(phase);
-            }
+            Collections.addAll(phases, additionalPhases);
 
             return this;
         }
@@ -262,6 +262,7 @@ public class MantaJobBuilder {
          * @param additionalInputs multiple inputs to add
          * @return reference to the create fluent builder
          */
+        @SuppressWarnings("UnusedReturnValue")
         public Create addInputs(final Stream<String> additionalInputs) {
             additionalInputs.forEach(inputs::add);
 
@@ -276,9 +277,7 @@ public class MantaJobBuilder {
          * @return reference to the create fluent builder
          */
         public Create addInputs(final String... additionalInputs) {
-            for (String input : additionalInputs) {
-                inputs.add(input);
-            }
+            Collections.addAll(inputs, additionalInputs);
 
             return this;
         }
@@ -314,18 +313,16 @@ public class MantaJobBuilder {
             if (!generalExceptions.isEmpty() || !mantaExceptions.isEmpty()) {
                 builder.append("Error with inputs:");
 
-                generalExceptions.entrySet().stream().forEach(entry -> {
-                        builder.append("\n")
-                               .append("[").append(entry.getKey()).append("] ")
-                               .append(entry.getValue().getMessage());
-                });
+                generalExceptions.entrySet().forEach(entry ->
+                        builder.append(System.lineSeparator())
+                       .append("[").append(entry.getKey()).append("] ")
+                       .append(entry.getValue().getMessage()));
 
-                mantaExceptions.entrySet().stream().forEach(entry -> {
-                    builder.append("\n")
-                            .append("[").append(entry.getKey()).append("] ")
-                            .append("(").append(entry.getValue().getServerCode()).append(") ")
-                            .append(entry.getValue().getMessage());
-                });
+                mantaExceptions.entrySet().forEach(entry ->
+                        builder.append(System.lineSeparator())
+                        .append("[").append(entry.getKey()).append("] ")
+                        .append("(").append(entry.getValue().getServerCode()).append(") ")
+                        .append(entry.getValue().getMessage()));
 
                 throw new MantaJobException(builder.toString());
             }
