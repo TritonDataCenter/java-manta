@@ -4,6 +4,7 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.apache.commons.lang3.Validate;
 
 import java.util.List;
 import java.util.Objects;
@@ -90,7 +91,7 @@ public class MantaJobPhase {
      * @return reference to the current instance
      */
     public MantaJobPhase setType(final String type) {
-        Objects.requireNonNull(type, "Type must be present");
+        Validate.notNull(type, "Type must not be null");
 
         if (!(type.equals("map") || type.equals("reduce"))) {
             throw new IllegalArgumentException("Type must equal map or reduce");

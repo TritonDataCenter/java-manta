@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.bouncycastle.util.encoders.Base64;
 
 import java.io.IOException;
@@ -61,12 +62,10 @@ public class UriSigner {
      */
     public URI signURI(final URI uri, final String method, final long expires)
             throws IOException {
-        Objects.requireNonNull(method, "Method must be present");
-        Objects.requireNonNull(uri, "URI must be present");
+        Validate.notNull(method, "Method must not be null");
+        Validate.notNull(uri, "URI must not be null");
 
-        if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
-            throw new IllegalArgumentException("Query must be empty");
-        }
+        Validate.notEmpty(uri.getQuery(), "Query must not be null nor empty");
 
         final String charset = "UTF-8";
         final String algorithm = "RSA-SHA256";

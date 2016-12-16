@@ -539,7 +539,7 @@ public class HttpHelper implements AutoCloseable {
     public static void annotateContextedException(final ExceptionContext exception,
                                                   final HttpRequest request,
                                                   final HttpResponse response) {
-        Objects.requireNonNull(exception, "Exception context object must be present");
+        Validate.notNull(exception, "Exception context object must not be null");
 
         if (request != null) {
             final String requestId = extractRequestId(response);

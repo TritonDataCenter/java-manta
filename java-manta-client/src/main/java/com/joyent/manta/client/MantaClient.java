@@ -561,7 +561,7 @@ public class MantaClient implements AutoCloseable {
     public URI getAsSignedURI(final String path, final String method,
                               final TemporalAmount expiresIn)
             throws IOException {
-        Validate.notNull(expiresIn, "Duration must be present");
+        Validate.notNull(expiresIn, "expires in duration must not be null");
         final Instant expires = Instant.now().plus(expiresIn);
         return getAsSignedURI(path, method, expires);
     }
@@ -585,7 +585,7 @@ public class MantaClient implements AutoCloseable {
     public URI getAsSignedURI(final String path, final String method,
                               final Instant expires)
             throws IOException {
-        Validate.notNull(expires, "Expires must be present");
+        Validate.notNull(expires, "Expires setting must not be null");
 
         return getAsSignedURI(path, method, expires.getEpochSecond());
     }
@@ -688,7 +688,7 @@ public class MantaClient implements AutoCloseable {
             String name = Objects.toString(item.get("name"));
             String mtime = Objects.toString(item.get("mtime"));
             String type = Objects.toString(item.get("type"));
-            Validate.notNull(name, "File name must be present");
+            Validate.notNull(name, "File name must not be null");
             String objPath = String.format("%s%s%s",
                     StringUtils.removeEnd(path, SEPARATOR),
                     SEPARATOR,
@@ -748,7 +748,7 @@ public class MantaClient implements AutoCloseable {
 
         if (size == null) {
             MantaClientException e = new MantaClientException(
-                "Expected result-set-size header to be present but it was not"
+                "Expected result-set-size header to be non-null but it was not"
                         + " part of the response");
             e.setContextValue("path", path);
             throw e;
@@ -1217,7 +1217,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaObjectResponse putMetadata(final String path, final MantaHttpHeaders headers)
             throws IOException {
-        Validate.notNull(headers, "Headers must be present");
+        Validate.notNull(headers, "Headers must not be null");
 
         final MantaMetadata metadata = new MantaMetadata(headers.metadataAsStrings());
         return putMetadata(path, headers, metadata);
@@ -1498,7 +1498,7 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when there are problems creating the job over the network
      */
     public UUID createJob(final MantaJob job) throws IOException {
-        Validate.notNull(job, "Manta job must be present");
+        Validate.notNull(job, "Manta job must not be null");
 
         String path = formatPath(String.format("%s/jobs", home));
         ObjectMapper mapper = MantaObjectMapper.INSTANCE;

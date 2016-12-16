@@ -55,9 +55,8 @@ public final class MantaUtils {
      * @return true if last character in StringBuilder matches
      */
     public static boolean endsWith(final StringBuilder builder, final char match) {
-        if (builder == null) {
-            throw new IllegalArgumentException("StringBuilder must not be null");
-        }
+        Validate.notNull(builder, "StringBuilder object must not be null");
+
         if (builder.length() == 0) {
             return false;
         }
@@ -228,7 +227,7 @@ public final class MantaUtils {
      *         the subuser (if it exists)
      */
     public static String[] parseAccount(final String account) {
-        Objects.requireNonNull(account, "Account must be present");
+        Validate.notNull(account, "Account must not be null");
 
         final int slashPos = account.indexOf("/");
 
@@ -319,7 +318,7 @@ public final class MantaUtils {
      * @return collection containing each value between each comma
      */
     public static Collection<String> fromCsv(final String line) {
-        Objects.requireNonNull(line, "Line must be present");
+        Validate.notNull(line, "Line must not be null");
 
         final List<String> list = new ArrayList<>();
 
@@ -341,11 +340,7 @@ public final class MantaUtils {
      * @return the last file or directory in path
      */
     public static String lastItemInPath(final String path) {
-        Objects.requireNonNull(path, "Path must be present");
-
-        if (path.isEmpty()) {
-            throw new IllegalArgumentException("Path must not be empty");
-        }
+        Validate.notEmpty(path, "Path must not be null nor empty");
 
         final Path asNioPath = Paths.get(path);
         final int count = asNioPath.getNameCount();
@@ -366,7 +361,7 @@ public final class MantaUtils {
      * @return a string map
      */
     public static Map<String, String> asStringMap(final Map<String, ?> map) {
-        Objects.requireNonNull(map, "Map must be present");
+        Validate.notNull(map, "Map must not be null");
 
         if (map.isEmpty()) {
             return Collections.emptyMap();
@@ -411,7 +406,7 @@ public final class MantaUtils {
      * @return CSV string or empty string
      */
     public static String csv(final Map<?, ?> map) {
-        Objects.requireNonNull(map, "Map must be present");
+        Validate.notNull(map, "Map must not be null");
 
         final StringBuilder builder = new StringBuilder();
 
@@ -513,7 +508,7 @@ public final class MantaUtils {
      * @return an array of Strings for each token between a comma
      */
     public static String[] csv2array(final String line) {
-        Objects.requireNonNull(line, "Line must be present");
+        Validate.notNull(line, "Line must not be null");
 
         if (line.contains(",")) {
             return line.split(",\\s*");

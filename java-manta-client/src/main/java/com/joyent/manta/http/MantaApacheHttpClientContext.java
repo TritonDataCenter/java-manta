@@ -37,7 +37,7 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      */
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory) {
         Validate.notNull(connectionFactory,
-                "Connection factory must be present");
+                "Connection factory must not be null");
 
         this.httpClient = connectionFactory.createConnection();
         this.httpContext = buildHttpContext();

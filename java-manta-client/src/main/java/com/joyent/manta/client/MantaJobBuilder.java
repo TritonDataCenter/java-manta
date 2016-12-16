@@ -7,6 +7,7 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaJobException;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,9 +78,7 @@ public class MantaJobBuilder {
      * @return a fluent interface providing job management options
      */
     public Run lookupJob(final MantaJob job) {
-        if (job == null) {
-            throw new IllegalArgumentException("job must be present");
-        }
+        Validate.notNull(job, "Job must not be null");
 
         return lookupJob(job.getId());
     }
@@ -91,9 +90,7 @@ public class MantaJobBuilder {
      * @return a fluent interface providing job management options
      */
     public Run lookupJob(final UUID jobId) {
-        if (jobId == null) {
-            throw new IllegalArgumentException("jobId must be present");
-        }
+        Validate.notNull("Job id must not be null");
 
         return new MantaJobBuilder.Run(this, jobId);
     }
@@ -174,7 +171,7 @@ public class MantaJobBuilder {
          * @return reference to the create fluent builder
          */
         public Create addPhase(final MantaJobPhase phase) {
-            Objects.requireNonNull(phase, "Phase must be present");
+            Validate.notNull(phase, "Phase must not be null");
             phases.add(phase);
             return this;
         }
@@ -188,7 +185,7 @@ public class MantaJobBuilder {
          */
         @SuppressWarnings("UnusedReturnValue")
         public Create addPhases(final Iterable<MantaJobPhase> additionalPhases) {
-            Objects.requireNonNull(phases, "Phases must be present");
+            Validate.notNull(phases, "Phases must not be null");
 
             for (MantaJobPhase phase : additionalPhases) {
                 phases.add(phase);
@@ -205,7 +202,7 @@ public class MantaJobBuilder {
          * @return reference to the create fluent builder
          */
         public Create addPhases(final Stream<MantaJobPhase> additionalPhases) {
-            Objects.requireNonNull(phases, "Phases must be present");
+            Validate.notNull(phases, "Phases must not be null");
 
             additionalPhases.forEach(phases::add);
 
@@ -220,7 +217,7 @@ public class MantaJobBuilder {
          * @return reference to the create fluent builder
          */
         public Create addPhases(final MantaJobPhase... additionalPhases) {
-            Objects.requireNonNull(phases, "Phases must be present");
+            Validate.notNull(phases, "Phases must not be null");
 
             Collections.addAll(phases, additionalPhases);
 

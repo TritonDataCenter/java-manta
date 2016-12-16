@@ -9,6 +9,7 @@ import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.HttpHelper;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -113,9 +114,9 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                                          final String path,
                                          final HttpHelper httpHelper,
                                          final int pagingSize) {
-        Objects.requireNonNull(url, "URL must be present");
-        Objects.requireNonNull(path, "Path must be present");
-        Objects.requireNonNull(httpHelper, "HTTP help must be present");
+        Validate.notNull(url, "URL must not be null");
+        Validate.notNull(path, "Path must not be null");
+        Validate.notNull(httpHelper, "HTTP help must not be null");
 
         this.url = url;
         this.path = path;
@@ -220,7 +221,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                     new TypeReference<Map<String, Object>>() { });
             final String name = Objects.toString(lookup.get("name"));
 
-            Objects.requireNonNull(name, "Name must be present in JSON input");
+            Validate.notNull(name, "Name must not be nullin JSON input");
 
             this.lastMarker = name;
 

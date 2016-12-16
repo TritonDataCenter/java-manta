@@ -4,6 +4,7 @@
 package com.joyent.manta.client;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -140,7 +141,7 @@ public class StringIteratorHttpContent implements HttpEntity {
      * @throws IOException thrown when we can't write
      */
     protected void writeIterator(final OutputStream out) throws IOException {
-        Objects.requireNonNull(iterator, "Iterator must be present");
+        Validate.notNull(iterator, "Iterator must not be null");
 
         // Start length at zero because it is set to -1 by default
         length = 0L;
@@ -168,7 +169,7 @@ public class StringIteratorHttpContent implements HttpEntity {
      * @throws IOException thrown when we can't write
      */
     protected void writeStream(final OutputStream out) throws IOException {
-        Objects.requireNonNull(stream, "Stream must be present");
+        Validate.notNull(stream, "Stream must not be null");
 
         // Start length at zero because it is set to -1 by default
         length = 0L;

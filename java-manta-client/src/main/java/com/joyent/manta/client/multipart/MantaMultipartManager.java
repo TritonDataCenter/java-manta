@@ -17,6 +17,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,9 +115,8 @@ public class MantaMultipartManager {
      * @param mantaClient Manta client instance to use to communicate with server
      */
     public MantaMultipartManager(final MantaClient mantaClient) {
-        if (mantaClient == null) {
-            throw new IllegalArgumentException("Manta client must be present");
-        }
+        Validate.notNull(mantaClient, "Manta client object must not be null");
+
         this.mantaClient = mantaClient;
 
         this.resolvedMultipartUploadDirectory =
@@ -262,9 +262,7 @@ public class MantaMultipartManager {
                                                 final int partNumber,
                                                 final String contents)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return uploadPart(upload.getId(), partNumber, contents);
     }
@@ -301,9 +299,7 @@ public class MantaMultipartManager {
                                                final int partNumber,
                                                final byte[] bytes)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return uploadPart(upload.getId(), partNumber, bytes);
     }
@@ -339,9 +335,7 @@ public class MantaMultipartManager {
                                                final int partNumber,
                                                final File file)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return uploadPart(upload.getId(), partNumber, file);
     }
@@ -377,9 +371,7 @@ public class MantaMultipartManager {
                                                final int partNumber,
                                                final InputStream inputStream)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return uploadPart(upload.getId(), partNumber, inputStream);
     }
@@ -413,9 +405,7 @@ public class MantaMultipartManager {
     public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
                                             final int partNumber)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return getPart(upload.getId(), partNumber);
     }
@@ -445,9 +435,7 @@ public class MantaMultipartManager {
      */
     public MantaMultipartStatus getStatus(final MantaMultipartUpload upload)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return getStatus(upload.getId());
     }
@@ -473,7 +461,7 @@ public class MantaMultipartManager {
      */
     private MantaMultipartStatus getStatus(final UUID uploadId,
                                            final UUID jobId) throws IOException {
-        Objects.requireNonNull(uploadId);
+        Validate.notNull(uploadId, "Multipart upload id must not be null");
 
         final String dir = multipartUploadDir(uploadId);
         final MantaObjectResponse response;
@@ -555,9 +543,7 @@ public class MantaMultipartManager {
      */
     public Stream<MantaMultipartUploadPart> listParts(final MantaMultipartUpload upload)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return listParts(upload.getId());
     }
@@ -587,9 +573,7 @@ public class MantaMultipartManager {
      */
     public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
             throws IOException, MantaMultipartException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         validateThatThereAreSequentialPartNumbers(upload.getId());
     }
@@ -603,9 +587,7 @@ public class MantaMultipartManager {
      */
     public void validateThatThereAreSequentialPartNumbers(final UUID id)
             throws IOException, MantaMultipartException {
-        if (id == null) {
-            throw new IllegalArgumentException("Upload id must be present");
-        }
+        Validate.notNull(id, "Multipart transaction id must not be null");
 
         //noinspection ResultOfMethodCallIgnored
         listParts(id)
@@ -630,9 +612,7 @@ public class MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public void abort(final MantaMultipartUpload upload) throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         abort(upload.getId());
     }
@@ -670,9 +650,7 @@ public class MantaMultipartManager {
     public void complete(final MantaMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         complete(upload.getId(), parts);
     }
@@ -687,9 +665,7 @@ public class MantaMultipartManager {
     public void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         complete(upload.getId(), partsStream);
     }
@@ -720,9 +696,7 @@ public class MantaMultipartManager {
     public void complete(final UUID id,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
-        if (id == null) {
-            throw new IllegalArgumentException("Upload id must be present");
-        }
+        Validate.notNull(id, "Upload id must not be null");
 
         LOGGER.debug("Completing multipart upload [{}]", id);
 
@@ -860,8 +834,8 @@ public class MantaMultipartManager {
      */
     protected void writeJobIdToMetadata(final UUID uploadId, final UUID jobId)
             throws IOException {
-        Objects.requireNonNull(uploadId);
-        Objects.requireNonNull(jobId);
+        Validate.notNull(uploadId, "Multipart upload id must not be null");
+        Validate.notNull(jobId, "Job id must not be null");
 
         final String uploadDir = multipartUploadDir(uploadId);
         final String metadataPath = uploadDir + METADATA_FILE;
@@ -882,7 +856,7 @@ public class MantaMultipartManager {
      */
     protected UUID getJobIdFromMetadata(final UUID uploadId)
             throws IOException {
-        Objects.requireNonNull(uploadId);
+        Validate.notNull(uploadId, "Multipart upload id must not be null");
 
         final String uploadDir = multipartUploadDir(uploadId);
         final String metadataPath = uploadDir + METADATA_FILE;
@@ -917,9 +891,7 @@ public class MantaMultipartManager {
     public <R> R waitForCompletion(final MantaMultipartUpload upload,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return waitForCompletion(upload.getId(), executeWhenTimesToPollExceeded);
     }
@@ -956,9 +928,7 @@ public class MantaMultipartManager {
                                    final int timesToPoll,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
-        if (upload == null) {
-            throw new IllegalArgumentException("Upload must be present");
-        }
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
         return waitForCompletion(upload.getId(), pingInterval, timesToPoll, executeWhenTimesToPollExceeded);
     }
@@ -1085,9 +1055,7 @@ public class MantaMultipartManager {
      * @return temporary Manta directory in which to upload parts
      */
     String multipartUploadDir(final UUID id) {
-        if (id == null) {
-            throw new IllegalArgumentException("Transaction id must be present");
-        }
+        Validate.notNull(id, "Multipart transaction id must not be null");
 
         return this.resolvedMultipartUploadDirectory
                 + SEPARATOR + id.toString() + SEPARATOR;

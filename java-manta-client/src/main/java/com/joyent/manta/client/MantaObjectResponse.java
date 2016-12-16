@@ -113,9 +113,7 @@ public class MantaObjectResponse implements MantaObject {
      * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
     public MantaObjectResponse(final String path) {
-        if (path == null) {
-            throw new IllegalArgumentException("Path must be present");
-        }
+        Validate.notNull(path, "Path must not be null");
 
         this.path = path;
         this.httpHeaders = new MantaHttpHeaders();

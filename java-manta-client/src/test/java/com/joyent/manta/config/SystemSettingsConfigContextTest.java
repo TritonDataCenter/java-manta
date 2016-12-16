@@ -1,10 +1,13 @@
 package com.joyent.manta.config;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Properties;
 
 import static com.joyent.manta.config.MapConfigContext.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -31,6 +34,19 @@ public class SystemSettingsConfigContextTest {
                 properties.getProperty(MANTA_KEY_PATH_KEY));
         assertEquals(String.valueOf(config.getTimeout()),
                 properties.getProperty(MANTA_TIMEOUT_KEY));
+    }
+
+    @Test(groups = { "config" })
+    public void contextOverwritesDefaults() {
+        final String expectedKeyPath = "/home/dude/.ssh/my_key";
+        ConfigContext overwrite = mock(ConfigContext.class);
+        when(overwrite.getMantaKeyPath()).thenReturn(expectedKeyPath);
+        when(overwrite.getMantaURL()).thenReturn("https://manta.host.com");
+
+        SystemSettingsConfigContext config = new SystemSettingsConfigContext(overwrite);
+
+        Assert.assertEquals(config.getMantaKeyPath(), overwrite.getMantaKeyPath());
+        Assert.assertEquals(config.getMantaURL(), overwrite.getMantaURL());
     }
 
     @Test(groups = { "config" })

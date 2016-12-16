@@ -89,7 +89,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @param headers headers to prepopulate
      */
     public MantaHttpHeaders(final Map<? extends String, ?> headers) {
-        Objects.requireNonNull(headers, "Headers should be present");
+        Validate.notNull(headers, "Headers must not be null");
         wrappedHeaders.putAll(headers);
     }
 
