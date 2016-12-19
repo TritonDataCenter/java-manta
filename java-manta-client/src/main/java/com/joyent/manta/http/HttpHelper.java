@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.function.Function;
 
 import static com.joyent.manta.util.MantaUtils.asString;

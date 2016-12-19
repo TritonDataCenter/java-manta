@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.security.KeyPair;
-import java.util.Objects;
 
 /**
  * Class used to create signed URLs using the Manta-compatible HTTP signature
