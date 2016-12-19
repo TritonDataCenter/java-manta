@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureConfigurator;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
@@ -16,6 +17,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
+import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
@@ -52,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -117,6 +120,12 @@ public class MantaConnectionFactory implements Closeable {
     private final HttpClientConnectionManager connectionManager;
 
     /**
+     * Weak reference (because we don't want this object to own it) to signer
+     * thread local container.
+     */
+    private final WeakReference<ThreadLocalSigner> signerThreadLocalRef;
+
+    /**
      * Create new instance using the passed configuration.
      * @param config configuration of the connection parameters
      * @param keyPair cryptographic signing key pair used for HTTP signatures
@@ -134,17 +143,40 @@ public class MantaConnectionFactory implements Closeable {
         useNativeCodeToSign = config.disableNativeSignatures() == null
                 || !config.disableNativeSignatures();
 
+        final HttpSignatureAuthScheme authScheme;
+
+        // If we have auth disabled, then we don't assign any signer classes
         if (config.noAuth()) {
             this.signatureConfigurator = null;
+            authScheme = null;
+            this.signerThreadLocalRef = new WeakReference<>(null);
+        // When auth is enabled we assign a configurator that sets up signing
+        // using RSA keys
         } else {
             this.signatureConfigurator = new HttpSignatureConfigurator(
                     keyPair,
                     createCredentials(),
                     useNativeCodeToSign);
+
+            AuthScheme rawAuthScheme = this.signatureConfigurator.getAuthScheme();
+
+            // We should never have a non-HttpSignatureAuthScheme but we still
+            // have to check because of Java's type system
+            if (rawAuthScheme instanceof HttpSignatureAuthScheme) {
+                authScheme = (HttpSignatureAuthScheme) rawAuthScheme;
+                // We assign the thread local signer instance to the factory,
+                // so that we can remove thread local variables on close()
+                this.signerThreadLocalRef = new WeakReference<>(authScheme.getSigner());
+            } else {
+                authScheme = null;
+                this.signerThreadLocalRef = new WeakReference<>(null);
+            }
         }
 
         this.connectionManager = buildConnectionManager();
-        this.httpClientBuilder = createBuilder();
+
+
+        this.httpClientBuilder = createBuilder(authScheme);
     }
 
     /**
@@ -231,9 +263,10 @@ public class MantaConnectionFactory implements Closeable {
      * Configures the builder class with all of the settings needed to connect to
      * Manta.
      *
+     * @param authScheme authentication scheme to use (null if noAuth is enabled)
      * @return configured instance
      */
-    protected HttpClientBuilder createBuilder() {
+    protected HttpClientBuilder createBuilder(final HttpSignatureAuthScheme authScheme) {
         final boolean noAuth = ObjectUtils.firstNonNull(config.noAuth(), false);
 
         final int maxConns = ObjectUtils.firstNonNull(
@@ -287,11 +320,7 @@ public class MantaConnectionFactory implements Closeable {
         builder.addInterceptorFirst(new RequestIdInterceptor());
         builder.setConnectionManager(this.connectionManager);
 
-        if (!noAuth) {
-            @SuppressWarnings("unchecked")
-            HttpSignatureAuthScheme authScheme =
-                    (HttpSignatureAuthScheme)this.signatureConfigurator.getAuthScheme();
-
+        if (!noAuth && authScheme != null) {
             builder.addInterceptorLast(new HttpSignatureRequestInterceptor(
                     authScheme,
                     this.createCredentials(),
@@ -503,6 +532,15 @@ public class MantaConnectionFactory implements Closeable {
     public void close() throws IOException {
         if (this.connectionManager != null) {
             connectionManager.shutdown();
+        }
+
+        /* We clear all thread local instances of the signer class so that
+         * there are no dangling thread-local variables when the connection
+         * factory is closed (typically when MantaClient is closed).
+         */
+        ThreadLocalSigner signerThreadLocal = this.signerThreadLocalRef.get();
+        if (signerThreadLocal != null) {
+            signerThreadLocal.clearAll();
         }
     }
 }
