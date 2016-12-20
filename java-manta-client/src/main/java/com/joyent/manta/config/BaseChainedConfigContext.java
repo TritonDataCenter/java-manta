@@ -258,6 +258,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * @param context context to overwrite configuration with
      */
     public void overwriteWithContext(final ConfigContext context) {
+        /* If a default context is being used to overwrite after this
+         * context has been initialized, then we want to be careful to not
+         * overwrite values that have already been set with defaults. */
+        boolean isDefaultContext = context instanceof DefaultsConfigContext;
+
+        if (isDefaultContext) {
+            overwriteWithDefaultContext((DefaultsConfigContext)context);
+            return;
+        }
+
         if (isPresent(context.getMantaURL())) {
             this.mantaURL = context.getMantaURL();
         }
@@ -318,7 +328,96 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         if (context.disableNativeSignatures() != null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
+
+        if (context.isClientEncryptionEnabled() != null) {
+            this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (context.getEncryptionAuthenticationMode() != null) {
+            this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
+        }
+
+        if (context.getEncryptionPrivateKeyPath() != null) {
+            this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
+        }
+
+        if (context.getEncryptionPrivateKeyBytes() != null) {
+            this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
+        }
     }
+
+    /**
+     * Overwrites this context with the supplied defaults context instance.
+     *
+     * @param context default configuration context
+     */
+    protected void overwriteWithDefaultContext(final DefaultsConfigContext context) {
+        if (!isPresent(this.getMantaURL())) {
+            this.mantaURL = context.getMantaURL();
+        }
+
+        if (!isPresent(this.getMantaUser())) {
+            this.account = context.getMantaUser();
+        }
+
+        if (!isPresent(this.getMantaKeyId())) {
+            this.mantaKeyId = context.getMantaKeyId();
+        }
+
+        if (!isPresent(this.getMantaKeyPath()) && !isPresent(this.getPrivateKeyContent())) {
+            this.mantaKeyPath = context.getMantaKeyPath();
+        }
+
+        if (this.getTimeout() == null) {
+            this.timeout = context.getTimeout();
+        }
+
+        if (this.getRetries() == null) {
+            this.retries = context.getRetries();
+        }
+
+        if (this.getMaximumConnections() == null) {
+            this.maxConnections = context.getMaximumConnections();
+        }
+
+        if (!isPresent(this.getPassword())) {
+            this.password = context.getPassword();
+        }
+
+        if (!isPresent(this.getHttpsProtocols())) {
+            this.httpsProtocols = context.getHttpsProtocols();
+        }
+
+        if (!isPresent(this.getHttpsCipherSuites())) {
+            this.httpsCiphers = context.getHttpsCipherSuites();
+        }
+
+        if (this.noAuth() == null) {
+            this.noAuth = context.noAuth();
+        }
+
+        if (this.disableNativeSignatures() == null) {
+            this.disableNativeSignatures = context.disableNativeSignatures();
+        }
+
+        if (this.clientEncryptionEnabled == null) {
+            this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (this.encryptionAuthenticationMode == null) {
+            this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
+        }
+
+        if (this.getEncryptionPrivateKeyPath() == null) {
+            this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
+        }
+
+        /* Note: we purposely omitted privateKeyContent and
+         * EncryptionPrivateKeyBytes because there are never going to
+         * be defaults for those values.
+         */
+    }
+
 
     /**
      * Checks to see that a given string is neither empty nor null.
