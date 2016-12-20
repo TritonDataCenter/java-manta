@@ -4,7 +4,6 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.config.EncryptionObjectAuthenticationMode;
-import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -45,7 +44,7 @@ public class MantaUtilsTest {
         Assert.assertFalse(actual, "Matched last character in StringBuilder when we shouldn't have");
     }
 
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = { NullPointerException.class })
     public final void errorOnNullStringBuilder() {
         MantaUtils.endsWith(null, 'c');
     }
