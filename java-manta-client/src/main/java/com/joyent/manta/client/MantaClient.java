@@ -467,6 +467,24 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
+     * Get a Manta object's data as a {@link String} using the specified encoding.
+     * This method is not memory efficient, by loading the data into a String you are
+     * loading all of the Object's data into memory.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param charset The encoding type used to convert bytes from the
+     *                stream into characters to be scanned
+     * @return String containing the entire Manta object
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    public String getAsString(final String path, final Charset charset) throws IOException {
+        try (InputStream is = getAsInputStream(path)) {
+            return IOUtils.toString(is, charset);
+        }
+    }
+
+
+    /**
      * Copies Manta object's data to a temporary file on the file system and return
      * a reference to the file using a NIO {@link Path}. This method is memory
      * efficient because it uses streams to do the copy.
@@ -1029,8 +1047,48 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaObjectResponse put(final String path,
                                    final String string) throws IOException {
-        return put(path, string, null, null);
+        return put(path, string, Charset.defaultCharset());
     }
+
+
+    /**
+     * Copies the supplied {@link String} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string string to copy
+     * @param charsetName character set to encode string as
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final String string,
+                                   final String charsetName) throws IOException {
+        return put(path, string, Charset.forName(charsetName));
+    }
+
+
+    /**
+     * Copies the supplied {@link String} to a remote Manta object at the specified
+     * path using the default JVM character encoding as a binary representation.
+     *
+     * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string string to copy
+     * @param charset character set to encode string as
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    public MantaObjectResponse put(final String path,
+                                   final String string,
+                                   final Charset charset) throws IOException {
+        ContentType contentType = ContentType.TEXT_PLAIN.withCharset(charset);
+
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentType(contentType.toString());
+
+        return put(path, string, headers, null);
+    }
+
 
     /**
      * Copies the supplied {@link File} to a remote Manta object at the specified
