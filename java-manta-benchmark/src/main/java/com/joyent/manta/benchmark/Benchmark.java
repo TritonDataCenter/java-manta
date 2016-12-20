@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.UUID;
 
 /**
@@ -189,7 +188,7 @@ public final class Benchmark {
         final String serverLatencyString;
         try (MantaObjectInputStream is = client.getAsInputStream(path)) {
             while (is.skip(SKIP_VALUE) != 0) { }
-            serverLatencyString = ((ArrayList<?>)is.getHeader("x-response-time")).get(0).toString();
+            serverLatencyString = is.getHeader("x-response-time").toString();
         }
         final Instant stop = Instant.now();
 
