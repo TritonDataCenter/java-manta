@@ -9,6 +9,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Removed MantaCryptoException.
  - Manta specific content-types are now contained in `MantaContentTypes`.
  - MantaClient.close() no longer throws Exception.
+ - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
 ### Added
  - Added version information to user agent and debug output. 
  - Added simple CLI to use for debugging.
@@ -16,10 +17,6 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133) 
 ### Fixed
  - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
-
-## [2.7.2] - ?
-### Changed
- - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
 
 ## [2.7.1] - 2016-11-11
 ### Added
