@@ -31,6 +31,7 @@ import java.util.UUID;
  *
  * @author Elijah Zupancic
  */
+@Test
 public class MantaClientSigningIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";

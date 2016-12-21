@@ -64,7 +64,10 @@ public class UriSigner {
         Validate.notNull(method, "Method must not be null");
         Validate.notNull(uri, "URI must not be null");
 
-        Validate.notEmpty(uri.getQuery(), "Query must not be null nor empty");
+        if (uri.getQuery() != null) {
+            Validate.isTrue(StringUtils.isEmpty(uri.getQuery()),
+                    "Query must be null or empty. URI: %s", uri);
+        }
 
         final String charset = "UTF-8";
         final String algorithm = "RSA-SHA256";
@@ -83,7 +86,8 @@ public class UriSigner {
 
         StringBuilder request = new StringBuilder();
         final byte[] sigBytes = sigText.toString().getBytes();
-        final byte[] signed = signer.get().sign(config.getMantaUser(), config.getMantaKeyId(), keyPair, sigBytes);
+        final byte[] signed = signer.get().sign(config.getMantaUser(),
+                config.getMantaKeyId(), keyPair, sigBytes);
         final String encoded = new String(Base64.encode(signed), charset);
         final String urlEncoded = URLEncoder.encode(encoded, charset);
 
