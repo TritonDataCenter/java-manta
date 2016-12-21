@@ -5,6 +5,7 @@ package com.joyent.manta.config;
 
 import com.joyent.manta.util.MantaUtils;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 
@@ -138,7 +139,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
             MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
             MANTA_PASSWORD_KEY, MANTA_HTTP_TRANSPORT_KEY,
-            MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_KEY,
+            MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
             MANTA_SIGS_CACHE_TTL_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
@@ -148,6 +149,11 @@ public class MapConfigContext implements ConfigContext {
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY
     };
+
+    static {
+        // Sorts the properties so that we can do a binary search on them if needed
+        Arrays.sort(ALL_PROPERTIES);
+    }
 
     /**
      * Internal map used as the source of the configuration bean values.

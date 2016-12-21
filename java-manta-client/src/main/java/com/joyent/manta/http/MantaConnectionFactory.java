@@ -8,6 +8,7 @@ import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureConfigurator;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.ConfigContextMBean;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaVersion;
@@ -32,7 +33,6 @@ import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.DnsResolver;
-import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.HttpConnectionFactory;
 import org.apache.http.conn.ManagedHttpClientConnection;
 import org.apache.http.conn.routing.HttpRoute;
@@ -52,8 +52,13 @@ import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.DynamicMBean;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -64,7 +69,12 @@ import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Factory class that creates instances of
@@ -79,6 +89,12 @@ public class MantaConnectionFactory implements Closeable {
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaConnectionFactory.class);
+
+    /**
+     * A running count of the times we have created new {@link MantaConnectionFactory}
+     * instances.
+     */
+    private static final AtomicInteger CONNECTION_FACTORY_COUNT = new AtomicInteger(0);
 
     /**
      * Default DNS resolver for all connections to the Manta.
@@ -117,13 +133,18 @@ public class MantaConnectionFactory implements Closeable {
     /**
      * Connection manager instance that is associated with a single Manta client.
      */
-    private final HttpClientConnectionManager connectionManager;
+    private final PoolingHttpClientConnectionManager connectionManager;
 
     /**
      * Weak reference (because we don't want this object to own it) to signer
      * thread local container.
      */
     private final WeakReference<ThreadLocalSigner> signerThreadLocalRef;
+
+    /**
+     * List of all MBeans to be added to JMX.
+     */
+    private final Map<ObjectName, DynamicMBean> jmxDynamicBeans;
 
     /**
      * Create new instance using the passed configuration.
@@ -133,6 +154,8 @@ public class MantaConnectionFactory implements Closeable {
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair) {
         Validate.notNull(config, "Configuration context must not be null");
+
+        CONNECTION_FACTORY_COUNT.incrementAndGet();
 
         this.config = config;
 
@@ -177,6 +200,80 @@ public class MantaConnectionFactory implements Closeable {
 
 
         this.httpClientBuilder = createBuilder(authScheme);
+        this.jmxDynamicBeans = buildMBeans();
+
+        registerMBeans();
+    }
+
+    /**
+     * Registers the beans stored in <code>this.jmxDynamicBeans</code> so
+     * that they can be exposed via JMX.
+     */
+    protected void registerMBeans() {
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+        Set<Map.Entry<ObjectName, DynamicMBean>> beans = this.jmxDynamicBeans.entrySet();
+
+        for (Map.Entry<ObjectName, DynamicMBean> bean : beans) {
+            try {
+                server.registerMBean(bean.getValue(), bean.getKey());
+            } catch (JMException e) {
+                String msg = String.format("Error registering [%s] MBean in JMX",
+                        bean.getKey());
+                LOGGER.warn(msg, e);
+            }
+        }
+    }
+
+    /**
+     * Unregisters the beans stored in <code>this.jmxDynamicBeans</code> so
+     * that they are no longer visible via JMX.
+     */
+    protected void unregisterMBeans() {
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+        Set<Map.Entry<ObjectName, DynamicMBean>> beans = this.jmxDynamicBeans.entrySet();
+
+        for (Map.Entry<ObjectName, DynamicMBean> bean : beans) {
+            try {
+                server.unregisterMBean(bean.getKey());
+            } catch (JMException e) {
+                String msg = String.format("Error registering [%s] MBean in JMX",
+                        bean.getKey());
+                LOGGER.warn(msg, e);
+            }
+        }
+    }
+
+    /**
+     * Builds the MBeans used to expose data to JMX.
+     * @return populated Map of beans
+     */
+    protected Map<ObjectName, DynamicMBean> buildMBeans() {
+        Map<ObjectName, DynamicMBean> beans = new HashMap<>();
+
+        try {
+            String poolStatsObjectName = String.format(
+                    "com.joyent.manta.client:type=PoolStatsMBean[%d]",
+                    CONNECTION_FACTORY_COUNT.get());
+            ObjectName poolStatsName = new ObjectName(poolStatsObjectName);
+            beans.put(poolStatsName, new PoolStatsMBean(this.connectionManager));
+        } catch (JMException e) {
+            LOGGER.warn("Error creating PoolStatsMBean", e);
+        }
+
+        try {
+            String configObjectName = String.format(
+                    "com.joyent.manta.client:type=ConfigMBean[%d]",
+                    CONNECTION_FACTORY_COUNT.get());
+            ObjectName configName = new ObjectName(configObjectName);
+            beans.put(configName, new ConfigContextMBean(this.config));
+        } catch (JMException e) {
+            LOGGER.warn("Error creating ConfigMBean", e);
+        }
+
+        // If we had any errors, we just return no mbeans
+        return Collections.unmodifiableMap(beans);
     }
 
     /**
@@ -229,7 +326,7 @@ public class MantaConnectionFactory implements Closeable {
      *
      * @return fully configured connection manager
      */
-    protected HttpClientConnectionManager buildConnectionManager() {
+    protected PoolingHttpClientConnectionManager buildConnectionManager() {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -542,5 +639,7 @@ public class MantaConnectionFactory implements Closeable {
         if (signerThreadLocal != null) {
             signerThreadLocal.clearAll();
         }
+
+        unregisterMBeans();
     }
 }

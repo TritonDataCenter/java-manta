@@ -13,6 +13,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Added version information to user agent and debug output. 
  - Added simple CLI to use for debugging.
  - Added configuration dump system property: manta.configDump
+ - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133) 
 ### Fixed
  - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
 

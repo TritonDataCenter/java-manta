@@ -17,7 +17,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Benchmark class that can be invoked to get some simple benchmarks about
@@ -40,6 +49,11 @@ public final class Benchmark {
      * Default number of iterations.
      */
     private static final int DEFAULT_ITERATIONS = 10;
+
+    /**
+     * Default number of threads to concurrently run.
+     */
+    private static final int DEFAULT_CONCURRENCY = 1;
 
     /**
      * Number of bytes to skip at one time when looping over streams.
@@ -101,43 +115,145 @@ public final class Benchmark {
                 iterations = DEFAULT_ITERATIONS;
             }
 
-            System.out.printf("Testing latencies on a %d kb object for %d iterations\n",
-                    sizeInKb, iterations);
+            final int concurrency;
+            if (argv.length > 2) {
+                concurrency = Integer.parseInt(argv[2]);
+            } else {
+                concurrency = DEFAULT_CONCURRENCY;
+            }
+
+            System.out.printf("Testing latencies on a %d kb object for %d "
+                            + "iterations with a concurrency value of %d\n",
+                    sizeInKb, iterations, concurrency);
 
             setupTestDirectory();
             String path = addTestFile(FileUtils.ONE_KB * sizeInKb);
 
-            long fullAggregation = 0;
-            long serverAggregation = 0;
+            if (concurrency == 1) {
+                singleThreadedBenchmark(path, iterations);
+            } else {
+                multithreadedBenchmark(path, iterations, concurrency);
+            }
+        } catch (IOException e) {
+            LOG.error("Error running benchmark", e);
+        } finally {
+            cleanUp();
+            client.closeWithWarning();
+        }
+    }
 
-            long testStart = System.currentTimeMillis();
+    /**
+     * Method used to run a simple single-threaded benchmark.
+     *
+     * @param path path to store benchmarking test data
+     * @param iterations number of iterations to run
+     * @throws IOException thrown when we can't communicate with the server
+     */
+    private static void singleThreadedBenchmark(final String path,
+                                                final int iterations) throws IOException {
+        long fullAggregation = 0;
+        long serverAggregation = 0;
 
-            for (int i = 0; i < iterations; i++) {
+        final long testStart = System.currentTimeMillis();
+
+        for (int i = 0; i < iterations; i++) {
+            Duration[] durations = measureGet(path);
+            long fullLatency = durations[0].toMillis();
+            long serverLatency = durations[1].toMillis();
+            fullAggregation += fullLatency;
+            serverAggregation += serverLatency;
+
+            System.out.printf("Read %d full=%dms, server=%dms\n",
+                    i, fullLatency, serverLatency);
+        }
+
+        final long testEnd = System.currentTimeMillis();
+
+        final long fullAverage = Math.round(fullAggregation / iterations);
+        final long serverAverage = Math.round(serverAggregation / iterations);
+        final long totalTime = testEnd - testStart;
+
+        System.out.printf("Average full latency: %d ms\n", fullAverage);
+        System.out.printf("Average server latency: %d ms\n", serverAverage);
+        System.out.printf("Total test time: %d ms\n", totalTime);
+    }
+
+    /**
+     * Method used to run a multi-threaded benchmark.
+     *
+     * @param path path to store benchmarking test data
+     * @param iterations number of iterations to run
+     * @param concurrency number of threads to run
+     * @throws IOException thrown when we can't communicate with the server
+     */
+    private static void multithreadedBenchmark(final String path,
+                                               final int iterations,
+                                               final int concurrency) throws IOException {
+        final AtomicLong fullAggregation = new AtomicLong(0L);
+        final AtomicLong serverAggregation = new AtomicLong(0L);
+        final AtomicLong count = new AtomicLong(0L);
+        final CountDownLatch latch = new CountDownLatch(concurrency);
+        final long testStart = System.currentTimeMillis();
+
+        final Callable<Void> worker = () -> {
+            long i;
+
+            while ((i = count.incrementAndGet()) <= iterations) {
                 Duration[] durations = measureGet(path);
                 long fullLatency = durations[0].toMillis();
                 long serverLatency = durations[1].toMillis();
-                fullAggregation += fullLatency;
-                serverAggregation += serverLatency;
+                fullAggregation.addAndGet(fullLatency);
+                serverAggregation.addAndGet(serverLatency);
 
                 System.out.printf("Read %d full=%dms, server=%dms\n",
                         i, fullLatency, serverLatency);
             }
 
-            long testEnd = System.currentTimeMillis();
+            latch.countDown();
+            return null;
+        };
 
-            final long fullAverage = Math.round(fullAggregation / iterations);
-            final long serverAverage = Math.round(serverAggregation / iterations);
-            final long totalTime = testEnd - testStart;
+        final Thread.UncaughtExceptionHandler handler = (t, e) ->
+                LOG.error("Error when executing benchmark", e);
 
-            System.out.printf("Average full latency: %d ms\n", fullAverage);
-            System.out.printf("Average server latency: %d ms\n", serverAverage);
-            System.out.printf("Total test time: %d ms\n", totalTime);
-        } catch (IOException e) {
-            LOG.error("Error running benchmark", e);
-        } finally {
-            cleanUp();
-            client.closeQuietly();
+        final AtomicInteger threadCounter = new AtomicInteger(0);
+        ThreadFactory threadFactory = r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setUncaughtExceptionHandler(handler);
+            t.setName(String.format("benchmark-%d", threadCounter.incrementAndGet()));
+
+            return t;
+        };
+
+        ExecutorService executor = Executors.newFixedThreadPool(concurrency, threadFactory);
+
+        List<Callable<Void>> workers = new ArrayList<>(concurrency);
+        for (int i = 0; i < concurrency; i++) {
+            workers.add(worker);
         }
+
+
+        try {
+            executor.invokeAll(workers);
+            latch.await();
+        } catch (InterruptedException e) {
+            return;
+        } finally {
+            executor.shutdown();
+        }
+
+
+        final long testEnd = System.currentTimeMillis();
+
+        final long fullAverage = Math.round(fullAggregation.get() / iterations);
+        final long serverAverage = Math.round(serverAggregation.get() / iterations);
+        final long totalTime = testEnd - testStart;
+
+        System.out.printf("Average full latency: %d ms\n", fullAverage);
+        System.out.printf("Average server latency: %d ms\n", serverAverage);
+        System.out.printf("Total test time: %d ms\n", totalTime);
+        System.out.printf("Total invocations: %d\n", count.get());
     }
 
     /**

@@ -14,7 +14,7 @@ import java.util.Objects;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @SuppressWarnings("unused")
-public abstract class BaseChainedConfigContext implements ConfigContext {
+public abstract class BaseChainedConfigContext implements SettableConfigContext<BaseChainedConfigContext> {
     /**
      * Manta service endpoint.
      */
@@ -428,41 +428,25 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return string != null && !string.isEmpty();
     }
 
-    /**
-     * Sets the Manta service endpoint.
-     * @param mantaURL Manta service endpoint
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaURL(final String mantaURL) {
         this.mantaURL = mantaURL;
         return this;
     }
 
-    /**
-     * Sets the account associated with the Manta service.
-     * @param mantaUser Manta user account
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaUser(final String mantaUser) {
         this.account = mantaUser;
         return this;
     }
 
-    /**
-     * Sets the RSA key fingerprint of the private key used to access Manta.
-     * @param mantaKeyId RSA key fingerprint
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaKeyId(final String mantaKeyId) {
         this.mantaKeyId = mantaKeyId;
         return this;
     }
 
-    /**
-     * Sets the path on the filesystem to the private RSA key used to access Manta.
-     * @param mantaKeyPath path on the filesystem
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaKeyPath(final String mantaKeyPath) {
         if (isPresent(privateKeyContent)) {
             String msg = "You can't set both a private key path and private key content";
@@ -473,21 +457,13 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the general connection timeout for the Manta service.
-     * @param timeout timeout in milliseconds
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setTimeout(final Integer timeout) {
         this.timeout = timeout;
         return this;
     }
 
-    /**
-     * Sets the number of times to retry failed HTTP requests.
-     * @param retries number of times to retry
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setRetries(final Integer retries) {
         if (retries < 0) {
             throw new IllegalArgumentException("Retries must be zero or greater");
@@ -496,11 +472,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the maximum number of open connections to the Manta API.
-     * @param maxConns number of connections greater than zero
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMaximumConnections(final Integer maxConns) {
         if (maxConns < 1) {
             throw new IllegalArgumentException("Maximum number of connections must "
@@ -511,12 +483,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the private key content used to authenticate. This can't be set if
-     * you already have a private key path specified.
-     * @param privateKeyContent contents of private key in plain text
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setPrivateKeyContent(final String privateKeyContent) {
         if (isPresent(mantaKeyPath)) {
             String msg = "You can't set both a private key path and private key content";
@@ -528,135 +495,77 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the password used for the private key. This is optional and not
-     * typically used.
-     * @param password password to set
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setPassword(final String password) {
         this.password = password;
 
         return this;
     }
 
-    /**
-     * This method is no longer used.
-     *
-     * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setHttpTransport(final String httpTransport) {
         this.httpTransport = httpTransport;
 
         return this;
     }
 
-    /**
-     * Set the supported TLS protocols.
-     *
-     * @param httpsProtocols comma delimited list of TLS protocols
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setHttpsProtocols(final String httpsProtocols) {
         this.httpsProtocols = httpsProtocols;
 
         return this;
     }
 
-    /**
-     * Set the supported TLS ciphers.
-     *
-     * @param httpsCiphers comma delimited list of TLS ciphers
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setHttpsCiphers(final String httpsCiphers) {
         this.httpsCiphers = httpsCiphers;
 
         return this;
     }
 
-    /**
-     * Change the state of whether or not HTTP signatures are sent to the Manta API.
-     *
-     * @param noAuth true to disable HTTP signatures
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setNoAuth(final Boolean noAuth) {
         this.noAuth = noAuth;
 
         return this;
     }
 
-    /**
-     * Change the state of whether or not HTTP signatures are using native code
-     * to generate the cryptographic signatures.
-     *
-     * @param disableNativeSignatures true to disable
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setDisableNativeSignatures(final Boolean disableNativeSignatures) {
         this.disableNativeSignatures = disableNativeSignatures;
 
         return this;
     }
 
-    /**
-     * Sets the time in milliseconds to cache HTTP signature headers.
-     *
-     * @param signatureCacheTTL time in milliseconds to cache HTTP signature headers
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setSignatureCacheTTL(final Integer signatureCacheTTL) {
         this.signatureCacheTTL = signatureCacheTTL;
 
         return this;
     }
 
-    /**
-     * Sets the maximum number of open connections to the Manta API.
-     *
-     * @param maxConnections maximum number of open connections to open
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMaxConnections(final Integer maxConnections) {
         this.maxConnections = maxConnections;
 
         return this;
     }
 
-    /**
-     * Sets flag indicating when client-side encryption is enabled.
-     *
-     * @param clientEncryptionEnabled true if client-side encryption is enabled
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
 
         return this;
     }
 
-    /**
-     * Sets flag indicating when downloading unencrypted files is allowed in
-     * encryption mode.
-     *
-     * @param permitUnencryptedDownloads true if downloading unencrypted data is permitted when in encrypted mode
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setPermitUnencryptedDownloads(final Boolean permitUnencryptedDownloads) {
         this.permitUnencryptedDownloads = permitUnencryptedDownloads;
 
         return this;
     }
 
-    /**
-     * Sets enum specifying if we are in strict ciphertext authentication mode
-     * or not.
-     *
-     * @param encryptionAuthenticationMode enum of authentication mode
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setEncryptionAuthenticationMode(
             final EncryptionObjectAuthenticationMode encryptionAuthenticationMode) {
         this.encryptionAuthenticationMode = encryptionAuthenticationMode;
@@ -664,13 +573,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the path to the private encryption key on the filesystem (can't be
-     * used if private key bytes is not null).
-     *
-     * @param encryptionPrivateKeyPath path to private encryption key of file system
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setEncryptionPrivateKeyPath(final String encryptionPrivateKeyPath) {
         if (encryptionPrivateKeyBytes != null) {
             String msg = "You can't set both encryption key content and a private encryption key path";
@@ -681,13 +584,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the private encryption key data in memory (can't be used if private
-     * key path is not null).
-     *
-     * @param encryptionPrivateKeyBytes byte array containing private key data
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setEncryptionPrivateKeyBytes(final byte[] encryptionPrivateKeyBytes) {
         if (isPresent(encryptionPrivateKeyPath)) {
             String msg = "You can't set both a private encryption key path and encryption key content";

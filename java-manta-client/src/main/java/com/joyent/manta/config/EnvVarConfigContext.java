@@ -5,6 +5,7 @@ package com.joyent.manta.config;
 
 import com.joyent.manta.util.MantaUtils;
 
+import java.util.Arrays;
 import java.util.Base64;
 
 /**
@@ -136,6 +137,11 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY
     };
+
+    static {
+        // Sorts the properties so that we can do a binary search on them if needed
+        Arrays.sort(ALL_PROPERTIES);
+    }
 
     /**
      * Creates a new instance that provides configuration beans via the

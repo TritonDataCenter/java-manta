@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -252,6 +253,82 @@ public interface ConfigContext {
                     config.isClientEncryptionEnabled());
 
             throw e;
+        }
+    }
+
+    /**
+     * Finds a configuration value based on a key name.
+     *
+     * @param attribute key name to search for
+     * @param config configuration context to search within
+     * @return null if not found, otherwise the configuration value
+     */
+    static Object getAttributeFromContext(final String attribute, final ConfigContext config) {
+        switch (attribute) {
+            case MapConfigContext.MANTA_URL_KEY:
+            case EnvVarConfigContext.MANTA_URL_ENV_KEY:
+                return config.getMantaURL();
+            case MapConfigContext.MANTA_USER_KEY:
+            case EnvVarConfigContext.MANTA_ACCOUNT_ENV_KEY:
+                return config.getMantaUser();
+            case MapConfigContext.MANTA_KEY_ID_KEY:
+            case EnvVarConfigContext.MANTA_KEY_ID_ENV_KEY:
+                return config.getMantaKeyId();
+            case MapConfigContext.MANTA_KEY_PATH_KEY:
+            case EnvVarConfigContext.MANTA_KEY_PATH_ENV_KEY:
+                return config.getMantaKeyPath();
+            case MapConfigContext.MANTA_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_TIMEOUT_ENV_KEY:
+                return config.getTimeout();
+            case MapConfigContext.MANTA_RETRIES_KEY:
+            case EnvVarConfigContext.MANTA_RETRIES_ENV_KEY:
+                return config.getRetries();
+            case MapConfigContext.MANTA_MAX_CONNS_KEY:
+            case EnvVarConfigContext.MANTA_MAX_CONNS_ENV_KEY:
+                return config.getMaximumConnections();
+            case MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY:
+            case EnvVarConfigContext.MANTA_PRIVATE_KEY_CONTENT_ENV_KEY:
+                return config.getPrivateKeyContent();
+            case MapConfigContext.MANTA_PASSWORD_KEY:
+            case EnvVarConfigContext.MANTA_PASSWORD_ENV_KEY:
+                return config.getPassword();
+            case MapConfigContext.MANTA_HTTP_TRANSPORT_KEY:
+            case EnvVarConfigContext.MANTA_HTTP_TRANSPORT_ENV_KEY:
+                return config.getHttpTransport();
+            case MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY:
+            case EnvVarConfigContext.MANTA_HTTPS_PROTOCOLS_ENV_KEY:
+                return config.getHttpsProtocols();
+            case MapConfigContext.MANTA_HTTPS_CIPHERS_KEY:
+            case EnvVarConfigContext.MANTA_HTTPS_CIPHERS_ENV_KEY:
+                return config.getHttpsCipherSuites();
+            case MapConfigContext.MANTA_NO_AUTH_KEY:
+            case EnvVarConfigContext.MANTA_NO_AUTH_ENV_KEY:
+                return config.noAuth();
+            case MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY:
+            case EnvVarConfigContext.MANTA_NO_NATIVE_SIGS_ENV_KEY:
+                return config.disableNativeSignatures();
+            case MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY:
+            case EnvVarConfigContext.MANTA_SIGS_CACHE_TTL_ENV_KEY:
+                return config.getSignatureCacheTTL();
+            case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
+            case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
+                return config.isClientEncryptionEnabled();
+            case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
+            case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
+                return config.permitUnencryptedDownloads();
+            case MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY:
+            case EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY:
+                return config.getEncryptionAuthenticationMode();
+            case MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY:
+            case EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY:
+                return config.getEncryptionPrivateKeyPath();
+            case MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY:
+                return config.getEncryptionPrivateKeyBytes();
+            case MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY:
+            case EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY:
+                return Base64.getEncoder().encode(config.getEncryptionPrivateKeyBytes());
+            default:
+                return null;
         }
     }
 }
