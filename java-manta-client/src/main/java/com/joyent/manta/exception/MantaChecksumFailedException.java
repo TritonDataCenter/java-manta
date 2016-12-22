@@ -4,6 +4,9 @@
 package com.joyent.manta.exception;
 
 /**
+ * Exception thrown when the checksum for a file that is being uploaded doesn't
+ * match the server-side generated checksum.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
@@ -23,7 +26,7 @@ public class MantaChecksumFailedException extends MantaIOException {
      * @param message The detail message (which is saved for later retrieval
      *                by the {@link #getMessage()} method)
      */
-    public MantaChecksumFailedException(String message) {
+    public MantaChecksumFailedException(final String message) {
         super(message);
     }
 
@@ -40,7 +43,7 @@ public class MantaChecksumFailedException extends MantaIOException {
      * @param cause   The cause (which is saved for later retrieval by the
      *                {@link #getCause()} method).  (A null value is permitted,
      */
-    public MantaChecksumFailedException(String message, Throwable cause) {
+    public MantaChecksumFailedException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
@@ -55,7 +58,7 @@ public class MantaChecksumFailedException extends MantaIOException {
      *              {@link #getCause()} method).  (A null value is permitted,
      *              and indicates that the cause is nonexistent or unknown.)
      */
-    public MantaChecksumFailedException(Throwable cause) {
+    public MantaChecksumFailedException(final Throwable cause) {
         super(cause);
     }
 }

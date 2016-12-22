@@ -33,7 +33,12 @@ class Md5DigestedEntity implements HttpEntity {
      */
     private final HttpEntity wrapped;
 
-    public Md5DigestedEntity(final HttpEntity wrapped) {
+    /**
+     * Creates a entity that wraps another entity.
+     *
+     * @param wrapped entity to wrap
+     */
+    Md5DigestedEntity(final HttpEntity wrapped) {
         this.wrapped = wrapped;
     }
 

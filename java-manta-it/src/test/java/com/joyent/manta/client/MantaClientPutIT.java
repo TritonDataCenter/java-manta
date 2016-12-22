@@ -4,6 +4,7 @@ import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Test
@@ -106,7 +108,7 @@ public class MantaClientPutIT {
 
 
     @Test
-    public final void testPutWithRetryableStream() throws IOException {
+    public final void testPutWithMarkSupportedStream() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -125,7 +127,7 @@ public class MantaClientPutIT {
     }
 
     @Test
-    public final void testPutWithNonRetryableStream() throws IOException {
+    public final void testPutWithMarkUnsupportedStream() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -139,7 +141,24 @@ public class MantaClientPutIT {
     }
 
     @Test
-    public final void testPutWithPlainTextFile() throws IOException {
+    public final void testPutWithByteArray() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = TEST_DATA.getBytes(Charsets.UTF_8);
+
+        MantaObject response = mantaClient.put(path, content);
+        String contentType = response.getContentType();
+        Assert.assertEquals(contentType, "application/octet-stream",
+                "Content type wasn't set to expected default");
+
+        final String actual = mantaClient.getAsString(path, Charsets.UTF_8);
+
+        Assert.assertEquals(actual, TEST_DATA,
+                "Uploaded byte array was malformed");
+    }
+
+    @Test
+    public final void testPutWithPlainTextFileUTF8RomanCharacters() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         File temp = File.createTempFile("upload", ".txt");
@@ -160,6 +179,29 @@ public class MantaClientPutIT {
     }
 
     @Test
+    public final void testPutWithPlainTextFileUTF8NonRomanCharacters() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        File temp = File.createTempFile("upload", ".txt");
+
+        final String content = "これは日本語です。";
+
+        try {
+            Files.write(temp.toPath(), content.getBytes(Charsets.UTF_8));
+            MantaObject response = mantaClient.put(path, temp);
+            String contentType = response.getContentType();
+            Assert.assertEquals(contentType, "text/plain",
+                    "Content type wasn't detected correctly");
+        } finally {
+            Files.delete(temp.toPath());
+        }
+
+        String actual = mantaClient.getAsString(path);
+        Assert.assertEquals(actual, content,
+                "Uploaded file didn't match expectation");
+    }
+
+    @Test
     public final void testPutWithJPGFile() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -173,12 +215,17 @@ public class MantaClientPutIT {
             String contentType = response.getContentType();
             Assert.assertEquals(contentType, "image/jpeg",
                     "Content type wasn't detected correctly");
+
+
+            try (InputStream in = mantaClient.getAsInputStream(path)) {
+                byte[] actual = IOUtils.toByteArray(in);
+                byte[] expected = FileUtils.readFileToByteArray(temp);
+
+                Assert.assertTrue(Arrays.equals(actual, expected),
+                        "Uploaded file isn't the same as actual file");
+            }
         } finally {
             Files.delete(temp.toPath());
         }
-
-        String actual = mantaClient.getAsString(path);
-        Assert.assertEquals(actual, TEST_DATA,
-                "Uploaded file didn't match expectation");
     }
 }
