@@ -37,9 +37,11 @@
             <class name="com.joyent.manta.client.multipart.MantaMultipartUploadManagerTest" />
         </classes>
     </test>
-    <test name="Integration Tests Depending on Shaded Resources">
-        <classes>
-            <class name="com.joyent.manta.client.MantaClientConnectionFailuresIT" />
-        </classes>
-    </test>
+    <!-- This is commented out because it is an integration test and it doesn't
+         play nicely with unit test only runs in CI -->
+    <!--<test name="Integration Tests Depending on Shaded Resources">-->
+        <!--<classes>-->
+            <!--<class name="com.joyent.manta.client.MantaClientConnectionFailuresIT" />-->
+        <!--</classes>-->
+    <!--</test>-->
 </suite>
