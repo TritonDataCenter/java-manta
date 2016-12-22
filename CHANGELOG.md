@@ -17,6 +17,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133) 
 ### Fixed
  - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
+ - [Add capability to calculate a Content-MD5 on putting of objects](https://github.com/joyent/java-manta/issues/95) 
 
 ## [2.7.1] - 2016-11-11
 ### Added
