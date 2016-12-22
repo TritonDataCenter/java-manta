@@ -117,6 +117,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      */
     private byte[] encryptionPrivateKeyBytes;
 
+    /**
+     * Flag indicating the the mantaKeyPath has been set only by the defaults.
+     * True = set by defaults.
+     * False = overwritten by non-defaults.
+     */
+    private boolean mantaKeyPathSetOnlyByDefaults = false;
+
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
             new DefaultsConfigContext();
@@ -301,7 +308,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         }
 
         if (isPresent(context.getPrivateKeyContent())) {
-            if (isPresent(mantaKeyPath)) {
+            if (isPresent(mantaKeyPath) && !this.mantaKeyPathSetOnlyByDefaults) {
                 String msg = "You can't set both a private key path and private key content";
                 throw new IllegalArgumentException(msg);
             }
@@ -365,6 +372,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         }
 
         if (!isPresent(this.getMantaKeyPath()) && !isPresent(this.getPrivateKeyContent())) {
+            this.mantaKeyPathSetOnlyByDefaults = true;
             this.mantaKeyPath = context.getMantaKeyPath();
         }
 

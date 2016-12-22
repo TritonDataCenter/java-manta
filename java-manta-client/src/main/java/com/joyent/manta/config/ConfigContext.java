@@ -210,12 +210,6 @@ public interface ConfigContext {
             failureMessages.add("Manta timeout must be 0 or greater");
         }
 
-        if (config.getPrivateKeyContent() != null && config.getMantaKeyPath() != null) {
-            failureMessages.add("Private key content and key path can't be both set");
-        } else if (config.getPrivateKeyContent() == null && config.getMantaKeyPath() == null) {
-            failureMessages.add("Manta key path or private key content must be specified");
-        }
-
         if (config.noAuth() != null && !config.noAuth()) {
             if (config.getMantaKeyId() == null) {
                 failureMessages.add("Manta key id must be specified");
