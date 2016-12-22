@@ -16,6 +16,7 @@
     <description>Integration and functional tests for Java Manta SDK</description>
 
     <properties>
+        <dependency.commons-codec.version>1.9</dependency.commons-codec.version>
     </properties>
 
     <dependencies>
@@ -47,9 +48,17 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${dependency.commons-codec.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${dependency.commons-io.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- Library for generating more robust UUIDs -->
