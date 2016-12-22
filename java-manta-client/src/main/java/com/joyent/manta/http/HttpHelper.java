@@ -261,6 +261,11 @@ public class HttpHelper implements AutoCloseable {
             return;
         }
 
+        if (serverMd5 == null || serverMd5.length == 0) {
+            LOGGER.warn("No cryptographic check performed by the server");
+            return;
+        }
+
         final byte[] clientMd5 = entity.getDigest();
         final boolean areMd5sTheSame = Arrays.equals(serverMd5, clientMd5);
 
