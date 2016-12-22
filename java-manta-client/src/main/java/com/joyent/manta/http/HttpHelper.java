@@ -8,6 +8,7 @@ import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.util.MantaUtils;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -205,13 +206,13 @@ public class HttpHelper implements AutoCloseable {
         final HttpPut put = connectionFactory.put(path);
         put.setHeaders(httpHeaders.asApacheHttpHeaders());
 
-        final Md5DigestedEntity digestedEntity;
+        final DigestedEntity md5DigestedEntity;
 
         if (entity != null) {
-            digestedEntity = new Md5DigestedEntity(entity);
-            put.setEntity(digestedEntity);
+            md5DigestedEntity = new DigestedEntity(entity, MessageDigestAlgorithms.MD5);
+            put.setEntity(md5DigestedEntity);
         } else {
-            digestedEntity = null;
+            md5DigestedEntity = null;
         }
 
         CloseableHttpClient client = connectionContext.getHttpClient();
@@ -239,7 +240,7 @@ public class HttpHelper implements AutoCloseable {
                 obj.setContentType(entity.getContentType().getValue());
             }
 
-            validateChecksum(digestedEntity, obj.getMd5Bytes());
+            validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
 
             return obj;
         }
@@ -253,14 +254,14 @@ public class HttpHelper implements AutoCloseable {
      * @param serverMd5 service side computed MD5 value
      * @throws MantaChecksumFailedException thrown if the MD5 values do not match
      */
-    private static void validateChecksum(final Md5DigestedEntity entity,
+    private static void validateChecksum(final DigestedEntity entity,
                                          final byte[] serverMd5)
             throws MantaChecksumFailedException {
         if (entity == null) {
             return;
         }
 
-        final byte[] clientMd5 = entity.getMd5();
+        final byte[] clientMd5 = entity.getDigest();
         final boolean areMd5sTheSame = Arrays.equals(serverMd5, clientMd5);
 
         if (!areMd5sTheSame) {

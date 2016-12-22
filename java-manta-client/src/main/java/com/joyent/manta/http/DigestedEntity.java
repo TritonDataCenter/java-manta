@@ -3,8 +3,8 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -14,19 +14,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Class that wraps an {@link HttpEntity} instance and calculates a running
- * MD5 digests on the data written out.
+ * digest on the data written out.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-class Md5DigestedEntity implements HttpEntity {
+class DigestedEntity implements HttpEntity {
     /**
      * Calculates a running MD5 as data is streamed out.
      */
-    private final MessageDigest md5Digest = DigestUtils.getMd5Digest();
+    private final MessageDigest messageDigest;
 
     /**
      * Wrapped entity implementation in which the API is proxied through.
@@ -34,12 +35,23 @@ class Md5DigestedEntity implements HttpEntity {
     private final HttpEntity wrapped;
 
     /**
-     * Creates a entity that wraps another entity.
+     * Creates a entity that wraps another entity and calcuates a running
+     * digest.
      *
      * @param wrapped entity to wrap
+     * @param algorithm lookup name of cryptographic digest
      */
-    Md5DigestedEntity(final HttpEntity wrapped) {
+    DigestedEntity(final HttpEntity wrapped,
+                   final String algorithm) {
         this.wrapped = wrapped;
+
+        try {
+            this.messageDigest = MessageDigest.getInstance(algorithm);
+        } catch (NoSuchAlgorithmException e) {
+            String msg = String.format("No digest algorithm by the name of " +
+                    "[%s] available in the JVM");
+            throw new MantaException(msg);
+        }
     }
 
     @Override
@@ -78,7 +90,7 @@ class Md5DigestedEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream out) throws IOException {
-        try (DigestOutputStream dout = new DigestOutputStream(out, md5Digest)) {
+        try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest)) {
             wrapped.writeTo(dout);
         }
     }
@@ -95,19 +107,19 @@ class Md5DigestedEntity implements HttpEntity {
     }
 
     /**
-     * MD5 hash of all data that has passed through the
-     * {@link Md5DigestedEntity#writeTo(OutputStream)} method's stream.
+     * Digest hash of all data that has passed through the
+     * {@link DigestedEntity#writeTo(OutputStream)} method's stream.
      *
      * @return a byte array containing the md5 value
      */
-    public byte[] getMd5() {
-        return md5Digest.digest();
+    public byte[] getDigest() {
+        return messageDigest.digest();
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("md5Digest", MantaUtils.byteArrayAsHexString(getMd5()))
+                .append("messageDigest", MantaUtils.byteArrayAsHexString(getDigest()))
                 .append("wrapped", wrapped)
                 .toString();
     }
