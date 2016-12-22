@@ -24,6 +24,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -84,8 +85,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.joyent.manta.util.MantaUtils.formatPath;
 import static com.joyent.manta.exception.MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR;
+import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
  * Manta client object that allows for doing CRUD operations against the Manta HTTP
@@ -158,6 +159,22 @@ public class MantaClient implements AutoCloseable {
      * Connection factory instance used for building requests to Manta.
      */
     private final MantaConnectionFactory connectionFactory;
+
+    /* We preform some sanity checks against the JVM in order to determine if
+     * we can actually run on the platform. */
+    static {
+        if (!MantaUtils.isDigestSupported(MessageDigestAlgorithms.MD5)) {
+            String msg = "The MD5 digest algorithm is not supported on this JVM. "
+                    + "Please choose a different JVM to run the Manta SDK.";
+            throw new MantaException(msg);
+        }
+
+        if (!MantaUtils.isDigestSupported(MessageDigestAlgorithms.SHA_256)) {
+            String msg = "The SHA-256 digest algorithm is not supported on this JVM. "
+                    + "Please choose a different JVM to run the Manta SDK.";
+            throw new MantaException(msg);
+        }
+    }
 
     /**
      * Creates a new instance of a Manta client.

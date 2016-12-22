@@ -5,7 +5,9 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -28,10 +30,11 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Function;
 
-import static com.joyent.manta.util.MantaUtils.asString;
 import static com.joyent.manta.http.MantaHttpHeaders.REQUEST_ID;
+import static com.joyent.manta.util.MantaUtils.asString;
 import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
@@ -199,11 +202,21 @@ public class HttpHelper implements AutoCloseable {
             httpHeaders.putAll(metadata);
         }
 
+        if (HttpEntityDigestGenerator.canGenerateDigest(entity)) {
+            HttpEntityCalculatedDigest digests = HttpEntityDigestGenerator.generate(entity);
+            digests.addAsHeaders(httpHeaders);
+        }
+
         final HttpPut put = connectionFactory.put(path);
         put.setHeaders(httpHeaders.asApacheHttpHeaders());
 
+        final Md5DigestedEntity digestedEntity;
+
         if (entity != null) {
-            put.setEntity(entity);
+            digestedEntity = new Md5DigestedEntity(entity);
+            put.setEntity(digestedEntity);
+        } else {
+            digestedEntity = null;
         }
 
         CloseableHttpClient client = connectionContext.getHttpClient();
@@ -223,14 +236,48 @@ public class HttpHelper implements AutoCloseable {
                         put.getURI().getPath());
             }
 
+            /* We set the content type on the result object from the entity
+             * PUT if that content type isn't already present on the result object.
+             * This allows for the result object to have the original
+             * content-type even if it isn't part of any response headers. */
             if (obj.getContentType() == null && entity != null && entity.getContentType() != null) {
                 obj.setContentType(entity.getContentType().getValue());
             }
+
+            validateChecksum(digestedEntity, obj.getMd5Bytes());
 
             return obj;
         }
     }
 
+    /**
+     * Checks to make sure that the uploaded entity's MD5 matches the MD5 as
+     * calculated on the server. This check is skipped if the entity is null.
+     *
+     * @param entity null or the entity object
+     * @param serverMd5 service side computed MD5 value
+     * @throws MantaChecksumFailedException thrown if the MD5 values do not match
+     */
+    private static void validateChecksum(final Md5DigestedEntity entity,
+                                         final byte[] serverMd5)
+            throws MantaChecksumFailedException {
+        if (entity == null) {
+            return;
+        }
+
+        final byte[] clientMd5 = entity.getMd5();
+        final boolean areMd5sTheSame = Arrays.equals(serverMd5, clientMd5);
+
+        if (!areMd5sTheSame) {
+            String msg = "Client calculated MD5 and server calculated "
+                    + "MD5 do not match";
+            MantaChecksumFailedException e = new MantaChecksumFailedException(msg);
+            e.setContextValue("serverMd5", MantaUtils.byteArrayAsHexString(serverMd5));
+            e.setContextValue("clientMd5", MantaUtils.byteArrayAsHexString(clientMd5));
+
+            throw e;
+        }
+    }
 
     /**
      * Executes a {@link HttpRequest}, logs the request and returns back the
