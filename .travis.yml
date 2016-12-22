@@ -1,3 +1,4 @@
+dist: trusty
 language: java
 sudo: false
 
@@ -16,6 +17,11 @@ matrix:
     - jdk: oraclejdk8
       env:
         - DESC="oraclejdk8 unit tests"
+        - CMD="mvn clean test -Dcheckstyle.skip=true"
+    # unit tests (openjdk8)
+    - jdk: openjdk8
+      env:
+        - DESC="openjdk8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
 
 script: echo ${CMD}; ${CMD}
