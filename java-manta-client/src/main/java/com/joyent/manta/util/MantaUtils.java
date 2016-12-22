@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.util;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -18,6 +19,8 @@ import java.net.InetAddress;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -540,5 +543,35 @@ public final class MantaUtils {
      */
     public static Date parseHttpDate(final String date) {
         return DateUtils.parseDate(date);
+    }
+
+    /**
+     * Queries the JVM implementation to determine if a given digest algorithm
+     * is supported.
+     *
+     * @param digestName digest name to query for
+     * @return true if supported false if not supported
+     */
+    public static boolean isDigestSupported(final String digestName) {
+        try {
+            MessageDigest.getInstance(digestName);
+        } catch (NoSuchAlgorithmException e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Byte array as represented as a string of hex digits.
+     * @param bytes byte array to convert
+     * @return null on null input or string of hex digits
+     */
+    public static String byteArrayAsHexString(final byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+
+        return Hex.encodeHexString(bytes);
     }
 }

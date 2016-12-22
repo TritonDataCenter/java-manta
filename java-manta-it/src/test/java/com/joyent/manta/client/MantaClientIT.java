@@ -3,9 +3,8 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.benchmark.RandomInputStream;
-import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
@@ -46,7 +45,6 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
-    private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
     private MantaClient mantaClient;
 
@@ -212,107 +210,6 @@ public class MantaClientIT {
 
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
-    }
-
-
-    @Test
-    public final void testPutWithStringUTF8() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-
-        MantaObject response = mantaClient.put(path, TEST_DATA, Charsets.UTF_8);
-        String contentType = response.getContentType();
-        Assert.assertEquals(contentType, "text/plain; charset=UTF-8",
-                "Content type wasn't detected correctly");
-
-        try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
-            String actual = IOUtils.toString(object, Charsets.UTF_8);
-            String contentMd5 = object.getHttpHeaders().getFirstHeaderStringValue("content-md5");
-
-            Assert.assertEquals(actual, TEST_DATA,
-                    "Uploaded string didn't match expectation");
-
-            Assert.assertEquals(contentMd5, "FsdpTF2dV/QZ50ylTCIA1w==",
-                    "Content MD5 returned was incorrect");
-        }
-    }
-
-
-    @Test
-    public final void testPutWithStringUTF16() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-
-        MantaObject response = mantaClient.put(path, TEST_DATA, Charsets.UTF_16);
-        String contentType = response.getContentType();
-        Assert.assertEquals(contentType, "text/plain; charset=UTF-16",
-                "Content type wasn't detected correctly");
-
-        try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
-            String actual = IOUtils.toString(object, Charsets.UTF_16);
-            String contentMd5 = object.getHttpHeaders().getFirstHeaderStringValue("content-md5");
-
-            Assert.assertEquals(actual, TEST_DATA,
-                    "Uploaded string didn't match expectation");
-
-            Assert.assertEquals(contentMd5, "YZBaIz8cxVhRT0Vpb/nFXA==",
-                    "Content MD5 returned was incorrect");
-        }
-    }
-
-
-    @Test
-    public final void testPutWithRetryableStream() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
-
-        try (InputStream testDataInputStream = classLoader.getResourceAsStream(TEST_FILENAME)) {
-            Assert.assertTrue(testDataInputStream.markSupported(),
-                    "Mark should be supported so that it computes computed-md5 before sending");
-            mantaClient.put(path, testDataInputStream);
-            MantaObjectResponse head = mantaClient.head(path);
-            String contentMd5 = head.getHttpHeaders().getFirstHeaderStringValue("content-md5");
-
-            Assert.assertEquals(contentMd5, "aa3zMQAwSpnbQMpk26h4Aw==",
-                    "Content MD5 returned was incorrect");
-        }
-    }
-
-    @Test
-    public final void testPutWithNonRetryableStream() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
-
-        try (InputStream testDataInputStream = new RandomInputStream(1024L)) {
-            Assert.assertFalse(testDataInputStream.markSupported(),
-                    "Mark should be not be supported so that it doesn't compute computed-md5");
-            mantaClient.put(path, testDataInputStream);
-        }
-    }
-
-    @Test
-    public final void testPutWithFile() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        File temp = File.createTempFile("upload", ".txt");
-
-        try {
-            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
-            MantaObject response = mantaClient.put(path, temp);
-            String contentType = response.getContentType();
-            Assert.assertEquals(contentType, "text/plain",
-                    "Content type wasn't detected correctly");
-        } finally {
-            Files.delete(temp.toPath());
-        }
-
-        String actual = mantaClient.getAsString(path);
-        Assert.assertEquals(actual, TEST_DATA,
-                "Uploaded file didn't match expectation");
     }
 
 
