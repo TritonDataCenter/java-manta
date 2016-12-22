@@ -199,6 +199,11 @@ public class HttpHelper implements AutoCloseable {
             httpHeaders.putAll(metadata);
         }
 
+        if (HttpEntityDigestGenerator.canGenerateDigest(entity)) {
+            HttpEntityCalculatedDigest digests = HttpEntityDigestGenerator.generate(entity);
+            digests.addAsHeaders(httpHeaders);
+        }
+
         final HttpPut put = connectionFactory.put(path);
         put.setHeaders(httpHeaders.asApacheHttpHeaders());
 

@@ -61,6 +61,11 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String COMPUTED_MD5 = "computed-md5";
 
     /**
+     * HTTP header containing the sha256 value for this object as calculated on the client.
+     */
+    public static final String CONTENT_SHA256 = "m-content-sha256";
+
+    /**
      * HTTP header containing the size of a set of results returned from Manta.
      */
     public static final String RESULT_SET_SIZE = "result-set-size";

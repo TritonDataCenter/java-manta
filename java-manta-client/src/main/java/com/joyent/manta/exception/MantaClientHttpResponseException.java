@@ -119,7 +119,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
     public MantaClientHttpResponseException(final HttpRequest request,
                                             final HttpResponse response,
                                             final String path) {
-        super(String.format("HTTP HEAD request failed to: %s", path));
+        super(String.format("HTTP request failed to: %s", path));
         final HttpEntity entity = response.getEntity();
         final String jsonMimeType = ContentType.APPLICATION_JSON.getMimeType();
 
