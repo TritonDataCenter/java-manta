@@ -5,6 +5,7 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
+import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -28,6 +29,11 @@ class DigestedEntity implements HttpEntity {
      * Calculates a running MD5 as data is streamed out.
      */
     private final MessageDigest messageDigest;
+
+    /**
+     * Total number of bytes processed.
+     */
+    private long byteCount = 0L;
 
     /**
      * Wrapped entity implementation in which the API is proxied through.
@@ -90,8 +96,12 @@ class DigestedEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream out) throws IOException {
-        try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest)) {
-            wrapped.writeTo(dout);
+        this.byteCount = 0;
+
+        try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest);
+             CountingOutputStream cout = new CountingOutputStream(dout)) {
+            wrapped.writeTo(cout);
+            this.byteCount = cout.getByteCount();
         }
     }
 
@@ -113,13 +123,22 @@ class DigestedEntity implements HttpEntity {
      * @return a byte array containing the md5 value
      */
     public byte[] getDigest() {
-        return messageDigest.digest();
+        return this.messageDigest.digest();
+    }
+
+    /**
+     * Total number of bytes written from this entity.
+     * @return number of bytes written
+     */
+    public long getByteCount() {
+        return this.byteCount;
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .append("messageDigest", MantaUtils.byteArrayAsHexString(getDigest()))
+                .append("byteCount", byteCount)
                 .append("wrapped", wrapped)
                 .toString();
     }
