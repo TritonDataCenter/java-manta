@@ -54,8 +54,8 @@ class DigestedEntity implements HttpEntity {
         try {
             this.messageDigest = MessageDigest.getInstance(algorithm);
         } catch (NoSuchAlgorithmException e) {
-            String msg = String.format("No digest algorithm by the name of " +
-                    "[%s] available in the JVM");
+            String msg = String.format("No digest algorithm by the name of "
+                    + "[%s] available in the JVM");
             throw new MantaException(msg);
         }
     }
