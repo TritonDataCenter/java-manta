@@ -5,6 +5,7 @@ package com.joyent.manta.cli;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -15,7 +16,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Class providing a CLI interface to the Java Manta SDK.
@@ -60,6 +67,28 @@ public final class MantaCLI {
                 case "dump-config":
                     System.out.println(dumpConfig());
                     break;
+                case "generate-key":
+                    if (argv.length < 4) {
+                        System.err.println(help());
+                        System.err.println();
+                        System.err.println("generate-key requires three parameters: cipher, bits and path");
+                        break;
+                    }
+
+                    System.out.println(generateKey(argv[1].trim(), Integer.valueOf(argv[2].trim()),
+                            Paths.get(argv[3].trim())));
+                    break;
+                case "validate-key":
+                    if (argv.length < 3) {
+                        System.err.println(help());
+                        System.err.println();
+                        System.err.println("validate-key requires two parameters: cipher and path");
+                        break;
+                    }
+
+                    System.out.println(validateKey(argv[1].trim(),
+                            Paths.get(argv[3].trim())));
+                    break;
                 case "help":
                 default:
                     System.out.println(help());
@@ -77,7 +106,7 @@ public final class MantaCLI {
     public static String help() {
         StringBuilder b = new StringBuilder();
 
-        String jar = String.format("java-manta-client-%s(-with-dependencies).jar", MantaVersion.VERSION);
+        String jar = String.format("java-manta-client-%s.jar", MantaVersion.VERSION);
 
         b.append("Java Manta SDK").append(BR)
          .append(MantaVersion.VERSION).append(" ").append(MantaVersion.DATE).append(BR)
@@ -86,11 +115,15 @@ public final class MantaCLI {
          .append("java -jar ").append(jar).append(" <command>").append(BR)
          .append(BR)
          .append("Commands:").append(BR)
-         .append(INDENT).append("connect-test        ")
+         .append(INDENT).append("connect-test                        ")
                         .append("Attempts to connect to Manta using system properties and environment variables for configuration.").append(BR)
-         .append(INDENT).append("dump-config         ")
+         .append(INDENT).append("dump-config                         ")
                         .append("Dumps the configuration that was loaded using defaults, system properties and environment variables").append(BR)
-         .append(INDENT).append("help                ")
+         .append(INDENT).append("generate-key <cipher> <bits> <path> ")
+                        .append("Generates a client-side encryption key and saves it to the specified location").append(BR)
+         .append(INDENT).append("validate-key <cipher> <path> ")
+         .append("Validates that the client-side encryption key is loadable by the Manta SDK").append(BR)
+         .append(INDENT).append("help                                ")
                         .append("Displays this message");
 
         return b.toString();
@@ -132,6 +165,87 @@ public final class MantaCLI {
 
         ConfigContext config = buildConfig();
         b.append(ConfigContext.toString(config));
+
+        return b.toString();
+    }
+
+    /**
+     * Generates a client-side encryption key with the specified cipher and bits
+     * at the specified path.
+     *
+     * @param cipher cipher to generate key for
+     * @param bits number of bits of the key
+     * @param path path to write the key to
+     * @return String containing the output of the operation
+     */
+    protected static String generateKey(final String cipher, final int bits,
+                                        final Path path) {
+        StringBuilder b = new StringBuilder();
+
+        try {
+            b.append("Generating key").append(BR);
+            SecretKey key = SecretKeyUtils.generate(cipher, bits);
+
+            b.append(String.format("Writing [%s-%d] key to [%s]", cipher, bits, path));
+            b.append(BR);
+            SecretKeyUtils.writeKeyToPath(key, path);
+        } catch (NoSuchAlgorithmException e) {
+            System.err.printf("The running JVM [%s/%s] doesn't support the "
+                + "supplied cipher name [%s]", System.getProperty("java.version"),
+                    System.getProperty("java.vendor"), cipher);
+            System.err.println();
+            return "";
+        } catch (IOException e) {
+            String msg = String.format("Unable to write key to path [%s]",
+                    path);
+            throw new UncheckedIOException(msg, e);
+        }
+
+        return b.toString();
+    }
+
+    /**
+     * Validates that the supplied key is supported by the SDK's client-side
+     * encryption functionality.
+     *
+     * @param cipher cipher to validate the key against
+     * @param path path to read the key from
+     * @return String containing the output of the operation
+     */
+    protected static String validateKey(final String cipher, final Path path) {
+        StringBuilder b = new StringBuilder();
+
+        try {
+            b.append(String.format("Loading key from path [%s]", path)).append(BR);
+            SecretKeySpec key = SecretKeyUtils.loadKeyFromPath(path, cipher);
+
+            if (key.getAlgorithm().equals(cipher)) {
+                b.append("Cipher of key is [")
+                 .append(cipher)
+                 .append("] as expected")
+                 .append(BR);
+            } else {
+                b.append("Cipher of key is [")
+                 .append(key.getAlgorithm())
+                 .append("] - it doesn't match the expected cipher of [")
+                 .append(cipher)
+                 .append("]").append(BR);
+            }
+
+            b.append("Key format is [")
+             .append(key.getFormat())
+             .append("]").append(BR);
+        } catch (NoSuchAlgorithmException e) {
+            System.err.printf("The running JVM [%s/%s] doesn't support the "
+                            + "supplied cipher name [%s]", System.getProperty("java.version"),
+                    System.getProperty("java.vendor"), cipher);
+            System.err.println();
+            return "";
+        } catch (IOException e) {
+            String msg = String.format("Unable to read key from path [%s]",
+                    path);
+            throw new UncheckedIOException(msg, e);
+        }
 
         return b.toString();
     }
