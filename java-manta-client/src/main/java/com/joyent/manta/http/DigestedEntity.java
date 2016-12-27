@@ -110,7 +110,7 @@ class DigestedEntity implements HttpEntity {
         return this.wrapped.isStreaming();
     }
 
-    @SuppressWarnings("deprecated")
+    @SuppressWarnings("deprecation")
     @Override
     public void consumeContent() throws IOException {
         this.wrapped.consumeContent();

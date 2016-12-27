@@ -10,6 +10,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Manta specific content-types are now contained in `MantaContentTypes`.
  - MantaClient.close() no longer throws Exception.
  - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
+ - Job related classes have been moved to the com.joyent.manta.client.jobs package.
 ### Added
  - Added version information to user agent and debug output. 
  - Added simple CLI to use for debugging.

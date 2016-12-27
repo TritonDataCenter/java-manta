@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.client.jobs;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

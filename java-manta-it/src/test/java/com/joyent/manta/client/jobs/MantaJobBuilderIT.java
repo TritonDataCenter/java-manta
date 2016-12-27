@@ -1,8 +1,12 @@
 /*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.client.jobs;
 
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.jobs.MantaJob;
+import com.joyent.manta.client.jobs.MantaJobBuilder;
+import com.joyent.manta.client.jobs.MantaJobPhase;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;

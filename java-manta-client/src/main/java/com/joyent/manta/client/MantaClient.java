@@ -4,6 +4,9 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joyent.manta.client.jobs.MantaJob;
+import com.joyent.manta.client.jobs.MantaJobBuilder;
+import com.joyent.manta.client.jobs.MantaJobError;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.KeyPairFactory;

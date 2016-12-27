@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.exception;
 
-import com.joyent.manta.client.MantaJobError;
+import com.joyent.manta.client.jobs.MantaJobError;
 
 import java.util.Collections;
 import java.util.Iterator;

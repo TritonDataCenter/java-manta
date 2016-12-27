@@ -4,7 +4,7 @@ import com.fasterxml.uuid.Generators;
 import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.client.MantaJob;
+import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.IntegrationTestConfigContext;

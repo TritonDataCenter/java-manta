@@ -1,8 +1,11 @@
 /*
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.client.jobs;
 
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
@@ -47,15 +50,18 @@ public class MantaJobBuilder {
     private final MantaClient client;
 
     /**
-     * Package scope constructor used because we don't want consumers
-     * of the library directly creating instances of {@link MantaJobBuilder}
-     * because it will require closing the resource. Thus, to keep it simple
-     * we provide a method on {@link MantaClient#jobBuilder()} that allows
-     * for creating a {@link MantaJobBuilder}.
+     * <p><em>WARNING: Avoid creating an instance using this constructor. If you do,
+     * you will need to close this job builder instance independently of
+     * any {@link MantaClient} instances.</em></p>
+     *
+     * <p>Thus, to keep it simple we provide a method on
+     * {@link MantaClient#jobBuilder()} that allows
+     * for creating a {@link MantaJobBuilder}. Use that method instead of this
+     * constructor when building job builder instances.</p>
      *
      * @param client Reference to the {@link MantaClient} used to execute jobs
      */
-    MantaJobBuilder(final MantaClient client) {
+    public MantaJobBuilder(final MantaClient client) {
         this.client = client;
     }
 

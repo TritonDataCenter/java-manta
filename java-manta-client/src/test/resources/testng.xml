@@ -28,8 +28,8 @@
     </test>
     <test name="Job Tests">
         <classes>
-            <class name="com.joyent.manta.client.MantaJobTest" />
-            <class name="com.joyent.manta.client.MantaJobPhaseTest" />
+            <class name="com.joyent.manta.client.jobs.MantaJobTest" />
+            <class name="com.joyent.manta.client.jobs.MantaJobPhaseTest" />
         </classes>
     </test>
     <test name="Multipart Tests">

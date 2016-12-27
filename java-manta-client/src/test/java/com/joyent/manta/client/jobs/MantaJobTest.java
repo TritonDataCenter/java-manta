@@ -1,8 +1,10 @@
 /**
  * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.client.jobs;
 
+import com.joyent.manta.client.jobs.MantaJob;
+import com.joyent.manta.client.jobs.MantaJobPhase;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
