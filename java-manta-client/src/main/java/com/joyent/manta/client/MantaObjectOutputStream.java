@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -12,6 +13,8 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +38,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2.4.0
  */
 public class MantaObjectOutputStream extends OutputStream {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectOutputStream.class);
+
     /**
      * Thread group for all Manta output stream threads.
      */
@@ -304,15 +312,55 @@ public class MantaObjectOutputStream extends OutputStream {
      * @return reference to closed property or null if unavailable
      */
     protected static Boolean isInnerStreamClosed(final OutputStream stream) {
+        OutputStream inner = findMostInnerOutputStream(stream);
+
         try {
-            Field f = FieldUtils.getField(stream.getClass(), "closed", true);
-            Object result = f.get(stream);
+            Field f = FieldUtils.getField(inner.getClass(), "closed", true);
+
+            if (f == null) {
+                throw new IllegalArgumentException("FieldUtils.getField(inner.getClass()) "
+                        + "returned null");
+            }
+
+            Object result = f.get(inner);
             return  (boolean)result;
         } catch (IllegalArgumentException | IllegalAccessException | ClassCastException e) {
+            String msg = String.format("Error finding [closed] field on class: %s",
+                    inner.getClass());
+            LOGGER.warn(msg, e);
             /* If we don't have an inner field called closed, it is inaccessible or
              * the field isn't a boolean, return null because we are now dealing with
              * undefined behavior. */
             return null;
+        }
+    }
+
+    /**
+     * Finds the most inner stream if the embedded stream is stored on the passed
+     * stream as a field named <code>out</code>. This hold true for all classes
+     * that extend {@link java.io.FilterOutputStream}.
+     *
+     * @param stream stream to search for inner stream
+     * @return reference to inner stream class
+     */
+    protected static OutputStream findMostInnerOutputStream(final OutputStream stream) {
+        Field f = FieldUtils.getField(stream.getClass(), "out", true);
+
+        if (f == null) {
+            return stream;
+        } else {
+            try {
+                Object result = f.get(stream);
+
+                if (result instanceof OutputStream) {
+                    return findMostInnerOutputStream((OutputStream) result);
+                } else {
+                    return stream;
+                }
+            } catch (IllegalAccessException e) {
+                // If we can't access the field, then we just return back the original stream
+                return stream;
+            }
         }
     }
 
@@ -335,7 +383,7 @@ public class MantaObjectOutputStream extends OutputStream {
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
-            throw new IOException(e);
+            throw new MantaIOException(e);
         }
     }
 
