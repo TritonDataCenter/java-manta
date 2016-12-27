@@ -98,10 +98,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
     /**
      * Set the supported TLS ciphers.
      *
-     * @param httpsCiphers comma delimited list of TLS ciphers
+     * @param httpsCipherSuites comma delimited list of TLS ciphers
      * @return the current instance of {@link T}
      */
-    T setHttpsCiphers(String httpsCiphers);
+    T setHttpsCipherSuites(String httpsCipherSuites);
 
     /**
      * Change the state of whether or not HTTP signatures are sent to the Manta API.
@@ -241,7 +241,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
                 break;
             case MapConfigContext.MANTA_HTTPS_CIPHERS_KEY:
             case EnvVarConfigContext.MANTA_HTTPS_CIPHERS_ENV_KEY:
-                config.setHttpsCiphers(Objects.toString(value));
+                config.setHttpsCipherSuites(Objects.toString(value));
                 break;
             case MapConfigContext.MANTA_NO_AUTH_KEY:
             case EnvVarConfigContext.MANTA_NO_AUTH_ENV_KEY:

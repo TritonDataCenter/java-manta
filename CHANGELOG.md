@@ -11,11 +11,15 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - MantaClient.close() no longer throws Exception.
  - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
  - Job related classes have been moved to the com.joyent.manta.client.jobs package.
+ - In `BaseChainedConfigContext`, `setHttpsCiphers` has been renamed to 
+   `setHttpsCipherSuites` to be in alignment with the getter of a similar name.
 ### Added
  - Added version information to user agent and debug output. 
  - Added simple CLI to use for debugging.
  - Added configuration dump system property: manta.configDump
- - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133) 
+ - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133)
+ - SettableConfigContext has been added as an interface to indicate that a given
+   config context has settable properties.
 ### Fixed
  - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
  - [Add capability to calculate a Content-MD5 on putting of objects](https://github.com/joyent/java-manta/issues/95) 

@@ -73,7 +73,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * Comma delimited list of supported TLS ciphers.
      */
-    private String httpsCiphers;
+    private String httpsCipherSuites;
 
     /**
      * Flag indicating if HTTP signatures are turned off.
@@ -208,7 +208,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
     @Override
     public String getHttpsCipherSuites() {
-        return httpsCiphers;
+        return httpsCipherSuites;
     }
 
     @Override
@@ -325,7 +325,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         }
 
         if (isPresent(context.getHttpsCipherSuites())) {
-            this.httpsCiphers = context.getHttpsCipherSuites();
+            this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
 
         if (context.noAuth() != null) {
@@ -397,7 +397,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         }
 
         if (!isPresent(this.getHttpsCipherSuites())) {
-            this.httpsCiphers = context.getHttpsCipherSuites();
+            this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
 
         if (this.noAuth() == null) {
@@ -525,8 +525,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setHttpsCiphers(final String httpsCiphers) {
-        this.httpsCiphers = httpsCiphers;
+    public BaseChainedConfigContext setHttpsCipherSuites(final String httpsCipherSuites) {
+        this.httpsCipherSuites = httpsCipherSuites;
 
         return this;
     }
@@ -626,7 +626,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(password, that.password)
                 && Objects.equals(httpTransport, that.httpTransport)
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
-                && Objects.equals(httpsCiphers, that.httpsCiphers)
+                && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(signatureCacheTTL, that.signatureCacheTTL)
@@ -641,7 +641,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
-                httpTransport, httpsProtocols, httpsCiphers, noAuth,
+                httpTransport, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, signatureCacheTTL,
                 clientEncryptionEnabled, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
