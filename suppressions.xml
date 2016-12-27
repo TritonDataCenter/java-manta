@@ -3,6 +3,7 @@
 <suppressions>
     <suppress checks="DesignForExtension" files="MantaClient.java" />
     <suppress checks="LineLength" files="MantaCLI.java" />
+    <suppress checks="MagicNumber" files="MantaCLI.java" />
     <!-- ignore suppressions for test classes -->
     <suppress checks="MagicNumber" files="^.*Test\.java$" />
     <suppress checks="JavadocMethod" files="^.*Test\.java$" />
