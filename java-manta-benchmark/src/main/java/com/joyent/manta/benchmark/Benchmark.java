@@ -21,12 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 /**
  * Benchmark class that can be invoked to get some simple benchmarks about
@@ -59,6 +60,11 @@ public final class Benchmark {
      * Number of bytes to skip at one time when looping over streams.
      */
     private static final int SKIP_VALUE = 1024;
+
+    /**
+     * Time to wait until checking to see if a thread pool has finished.
+     */
+    private static final long CHECK_INTERVAL = Duration.ofSeconds(1).getSeconds();
 
     /**
      * Configuration context that informs the Manta client about its settings.
@@ -122,9 +128,11 @@ public final class Benchmark {
                 concurrency = DEFAULT_CONCURRENCY;
             }
 
+            final long actualIterations = perThreadCount(iterations, concurrency) * concurrency;
+
             System.out.printf("Testing latencies on a %d kb object for %d "
                             + "iterations with a concurrency value of %d\n",
-                    sizeInKb, iterations, concurrency);
+                    sizeInKb, actualIterations, concurrency);
 
             setupTestDirectory();
             String path = addTestFile(FileUtils.ONE_KB * sizeInKb);
@@ -194,32 +202,27 @@ public final class Benchmark {
         final AtomicLong fullAggregation = new AtomicLong(0L);
         final AtomicLong serverAggregation = new AtomicLong(0L);
         final AtomicLong count = new AtomicLong(0L);
-        final CountDownLatch latch = new CountDownLatch(concurrency);
+        final long perThreadCount = perThreadCount(iterations, concurrency);
+
+        System.out.printf("Running %d iterations per thread\n", perThreadCount);
+
         final long testStart = System.currentTimeMillis();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (latch.getCount() > 0) {
-                System.err.printf("Latches left: %d\n", latch.getCount());
-            }
-
-            cleanUp();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(Benchmark::cleanUp));
 
         final Callable<Void> worker = () -> {
-            long i;
-
-            while ((i = count.incrementAndGet()) <= iterations) {
+            for (int i = 0; i < perThreadCount; i++) {
                 Duration[] durations = measureGet(path);
                 long fullLatency = durations[0].toMillis();
                 long serverLatency = durations[1].toMillis();
                 fullAggregation.addAndGet(fullLatency);
                 serverAggregation.addAndGet(serverLatency);
 
-                System.out.printf("Read %d full=%dms, server=%dms\n",
-                        i, fullLatency, serverLatency);
+                System.out.printf("Read %d full=%dms, server=%dms, thread=%s\n",
+                        count.getAndIncrement(), fullLatency, serverLatency,
+                        Thread.currentThread().getName());
             }
 
-            latch.countDown();
             return null;
         };
 
@@ -243,12 +246,21 @@ public final class Benchmark {
             workers.add(worker);
         }
 
-
         try {
-            executor.invokeAll(workers);
-            latch.await();
+            List<Future<Void>> futures = executor.invokeAll(workers);
+
+            boolean completed = false;
+            while (!completed) {
+                try (Stream<Future<Void>> stream = futures.stream()) {
+                    completed = stream.allMatch((f) -> f.isDone() || f.isCancelled());
+
+                    if (!completed) {
+                        Thread.sleep(CHECK_INTERVAL);
+                    }
+                }
+            }
+
         } catch (InterruptedException e) {
-            System.err.printf("Latches left: %d\n", latch.getCount());
             return;
         } finally {
             System.err.println("Shutting down the thread pool");
@@ -266,6 +278,18 @@ public final class Benchmark {
         System.out.printf("Average server latency: %d ms\n", serverAverage);
         System.out.printf("Total test time: %d ms\n", totalTime);
         System.out.printf("Total invocations: %d\n", count.get());
+    }
+
+    /**
+     * Calculates the number of iterations to run per thread.
+     *
+     * @param iterations number of iterations to run
+     * @param concurrency number of threads to run
+     * @return iterations / concurrency properly rounded
+     */
+    private static long perThreadCount(final int iterations,
+                                       final int concurrency) {
+        return (long) Math.floorDiv(iterations, concurrency);
     }
 
     /**
