@@ -238,8 +238,10 @@ public final class Benchmark {
             executor.invokeAll(workers);
             latch.await();
         } catch (InterruptedException e) {
+            System.err.printf("Latches left: %d\n", latch.getCount());
             return;
         } finally {
+            System.err.println("Shutting down the thread pool");
             executor.shutdown();
         }
 
