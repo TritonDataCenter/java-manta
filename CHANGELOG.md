@@ -20,6 +20,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133)
  - SettableConfigContext has been added as an interface to indicate that a given
    config context has settable properties.
+ - Added isClosed() method to MantaClient.
 ### Fixed
  - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
  - [Add capability to calculate a Content-MD5 on putting of objects](https://github.com/joyent/java-manta/issues/95) 

@@ -122,6 +122,11 @@ public class MantaClient implements AutoCloseable {
     private static final int MAX_RESULTS = 1024;
 
     /**
+     * Flag indicating if the client instance has been closed.
+     */
+    private volatile boolean closed = false;
+
+    /**
      * A string representation of the manta service endpoint URL.
      */
     private final String url;
@@ -2287,9 +2292,24 @@ public class MantaClient implements AutoCloseable {
         return stream;
     }
 
+    /**
+     * Flag indicating if the client is closed or is in the process of being
+     * closed.
+     *
+     * @return true if closed
+     */
+    public boolean isClosed() {
+        return closed;
+    }
 
     @Override
     public void close() {
+        if (this.closed) {
+            return;
+        }
+
+        this.closed = true;
+
         final List<Exception> exceptions = new ArrayList<>();
 
         /* We explicitly close all streams that may have been opened when

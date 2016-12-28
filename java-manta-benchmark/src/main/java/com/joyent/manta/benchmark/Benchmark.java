@@ -151,6 +151,8 @@ public final class Benchmark {
      */
     private static void singleThreadedBenchmark(final String path,
                                                 final int iterations) throws IOException {
+        Runtime.getRuntime().addShutdownHook(new Thread(Benchmark::cleanUp));
+
         long fullAggregation = 0;
         long serverAggregation = 0;
 
@@ -194,6 +196,14 @@ public final class Benchmark {
         final AtomicLong count = new AtomicLong(0L);
         final CountDownLatch latch = new CountDownLatch(concurrency);
         final long testStart = System.currentTimeMillis();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (latch.getCount() > 0) {
+                System.err.printf("Latches left: %d\n", latch.getCount());
+            }
+
+            cleanUp();
+        }));
 
         final Callable<Void> worker = () -> {
             long i;
@@ -272,7 +282,10 @@ public final class Benchmark {
      */
     private static void cleanUp() {
         try {
-            client.deleteRecursive(testDirectory);
+            if (!client.isClosed()) {
+                client.deleteRecursive(testDirectory);
+                client.closeWithWarning();
+            }
         } catch (Exception e) {
             LOG.error("Error cleaning up benchmark", e);
         }
