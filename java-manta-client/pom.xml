@@ -17,7 +17,7 @@
 
     <properties>
         <!-- Dependency versions -->
-        <wmv-maven-plugin.version>2.1.2</wmv-maven-plugin.version>
+        <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
     </properties>
 
     <dependencies>
@@ -243,16 +243,35 @@
             </plugin>
             <!-- Library that creates a properties file containing version info -->
             <plugin>
-                <groupId>com.github.anirudhvarma12</groupId>
-                <artifactId>wmv-maven-plugin</artifactId>
-                <version>${wmv-maven-plugin.version}</version>
+                <groupId>com.google.code.maven-replacer-plugin</groupId>
+                <artifactId>replacer</artifactId>
+                <version>${maven-replacer-plugin-plugin.version}</version>
                 <executions>
                     <execution>
+                        <id>replace-version-number</id>
+                        <phase>generate-sources</phase>
                         <goals>
-                            <goal>generate-version-info</goal>
+                            <goal>replace</goal>
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <basedir>${project.basedir}/src/main/java</basedir>
+                    <includes>
+                        <include>**/MantaVersion.java</include>
+                    </includes>
+                    <preserveDir>true</preserveDir>
+                    <replacements>
+                        <replacement>
+                            <token>VERSION = ".*";</token>
+                            <value>VERSION = "${project.version}";</value>
+                        </replacement>
+                        <replacement>
+                            <token>DATE = Instant\..*;</token>
+                            <value>DATE = Instant.parse("${maven.build.timestamp}");</value>
+                        </replacement>
+                    </replacements>
+                </configuration>
             </plugin>
         </plugins>
     </build>
