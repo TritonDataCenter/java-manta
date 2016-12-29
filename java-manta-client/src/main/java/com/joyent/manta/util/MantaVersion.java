@@ -23,5 +23,5 @@ public final class MantaVersion {
     /**
      * Release date of the SDK.
      */
-    public static final Instant DATE = Instant.parse("2016-12-29T21:26:19Z");
+    public static final Instant DATE = Instant.now();
 }

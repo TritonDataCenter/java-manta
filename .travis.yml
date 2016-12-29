@@ -2,6 +2,9 @@ dist: trusty
 language: java
 sudo: false
 
+env:
+  - LANG=en_US.utf8
+
 before_install:
   - echo 'MAVEN_OPTS="-Dorg.slf4j.simpleLogger.defaultLogLevel=warn"' >~/.mavenrc
 
