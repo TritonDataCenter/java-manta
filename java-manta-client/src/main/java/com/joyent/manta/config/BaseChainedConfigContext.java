@@ -61,7 +61,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private String password;
 
     /**
-     * Size of buffer in bytes to use to buffer streams of HTTP data
+     * Size of buffer in bytes to use to buffer streams of HTTP data.
      */
     private Integer httpBufferSize;
 
