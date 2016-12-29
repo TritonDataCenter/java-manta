@@ -2,9 +2,6 @@ dist: trusty
 language: java
 sudo: false
 
-env:
-  - LANG=en_US.utf8
-
 before_install:
   - echo 'MAVEN_OPTS="-Dorg.slf4j.simpleLogger.defaultLogLevel=warn"' >~/.mavenrc
 
@@ -16,15 +13,18 @@ matrix:
       env:
         - DESC="checkstyle"
         - CMD="mvn clean checkstyle:check"
+        - LANG=en_US.utf8
     # unit tests (oraclejdk8)
     - jdk: oraclejdk8
       env:
         - DESC="oraclejdk8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
+        - LANG=en_US.utf8
     # unit tests (openjdk8)
     - jdk: openjdk8
       env:
         - DESC="openjdk8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
+        - LANG=en_US.utf8
 
 script: echo ${CMD}; ${CMD}
