@@ -61,9 +61,9 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private String password;
 
     /**
-     * This field has been deprecated.
+     * Size of buffer in bytes to use to buffer streams of HTTP data
      */
-    private String httpTransport;
+    private Integer httpBufferSize;
 
     /**
      * Comma delimited list of supported TLS protocols.
@@ -88,7 +88,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * Time in milliseconds to cache HTTP signature headers.
      */
-    private Integer signatureCacheTTL;
+    private Integer tcpSocketTimeout;
 
     /**
      * Flag indicating when client-side encryption is enabled.
@@ -196,9 +196,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    @Deprecated
-    public String getHttpTransport() {
-        return this.httpTransport;
+    public Integer getHttpBufferSize() {
+        return this.httpBufferSize;
     }
 
     @Override
@@ -222,9 +221,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    @Deprecated
-    public Integer getSignatureCacheTTL() {
-        return signatureCacheTTL;
+    public Integer getTcpSocketTimeout() {
+        return tcpSocketTimeout;
     }
 
     @Override
@@ -336,6 +334,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
 
+        if (context.getHttpBufferSize() != null) {
+            this.httpBufferSize = context.getHttpBufferSize();
+        }
+
+        if (context.getTcpSocketTimeout() != null) {
+            this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
@@ -406,6 +412,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.disableNativeSignatures() == null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
+        }
+
+        if (this.httpBufferSize == null) {
+            this.httpBufferSize = context.getHttpBufferSize();
+        }
+
+        if (this.tcpSocketTimeout == null) {
+            this.tcpSocketTimeout = context.getTcpSocketTimeout();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -511,8 +525,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setHttpTransport(final String httpTransport) {
-        this.httpTransport = httpTransport;
+    public BaseChainedConfigContext setHttpBufferSize(final Integer httpBufferSize) {
+        this.httpBufferSize = httpBufferSize;
 
         return this;
     }
@@ -546,8 +560,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setSignatureCacheTTL(final Integer signatureCacheTTL) {
-        this.signatureCacheTTL = signatureCacheTTL;
+    public BaseChainedConfigContext setTcpSocketTimeout(final Integer tcpSocketTimeout) {
+        this.tcpSocketTimeout = tcpSocketTimeout;
 
         return this;
     }
@@ -624,12 +638,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(maxConnections, that.maxConnections)
                 && Objects.equals(privateKeyContent, that.privateKeyContent)
                 && Objects.equals(password, that.password)
-                && Objects.equals(httpTransport, that.httpTransport)
+                && Objects.equals(httpBufferSize, that.httpBufferSize)
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
                 && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
-                && Objects.equals(signatureCacheTTL, that.signatureCacheTTL)
+                && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
                 && Objects.equals(encryptionAuthenticationMode, that.encryptionAuthenticationMode)
@@ -641,8 +655,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
-                httpTransport, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, signatureCacheTTL,
+                httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
+                disableNativeSignatures, tcpSocketTimeout,
                 clientEncryptionEnabled, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
                 encryptionPrivateKeyBytes);

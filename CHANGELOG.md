@@ -4,9 +4,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.0.0] - ?
 ### Changed
- - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Moved configuration validation into a static method on ConfigContext.
- - Removed MantaCryptoException.
  - Manta specific content-types are now contained in `MantaContentTypes`.
  - MantaClient.close() no longer throws Exception.
  - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
@@ -21,6 +19,12 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - SettableConfigContext has been added as an interface to indicate that a given
    config context has settable properties.
  - Added isClosed() method to MantaClient.
+ - Added HTTP buffer size and TCP socket time out configuration parameters.
+### Removed
+ - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
+ - Removed MantaCryptoException.
+ - Removed signature cache TTL and HTTP transport configuration parameters because
+   they are no longer relevant in the 3.0 implementation.  
 ### Fixed
  - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
  - [Add capability to calculate a Content-MD5 on putting of objects](https://github.com/joyent/java-manta/issues/95) 

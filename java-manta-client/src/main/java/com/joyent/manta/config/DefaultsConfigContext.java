@@ -38,9 +38,10 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final String MANTA_KEY_PATH;
 
     /**
-     * This default is no longer used.
+     * The size of the internal socket buffer used to buffer data
+     * while receiving / transmitting HTTP messages.
      */
-    public static final String DEFAULT_HTTP_TRANSPORT = "ApacheHttpTransport";
+    public static final int DEFAULT_HTTP_BUFFER_SIZE = 8192;
 
     /**
      * Default TLS protocols.
@@ -57,9 +58,10 @@ public class DefaultsConfigContext implements ConfigContext {
           + "TLS_RSA_WITH_AES_128_CBC_SHA256";
 
     /**
-     * Default HTTP signature cache TTL.
+     * Default number of milliseconds to wait for a TCP socket's connection to
+     * timeout.
      */
-    public static final int DEFAULT_SIGNATURE_CACHE_TTL = 0;
+    public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
 
     static {
         // Don't even bother setting a default key path if it doesn't exist
@@ -127,9 +129,8 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    @Deprecated
-    public String getHttpTransport() {
-        return DEFAULT_HTTP_TRANSPORT;
+    public Integer getHttpBufferSize() {
+        return DEFAULT_HTTP_BUFFER_SIZE;
     }
 
     @Override
@@ -153,8 +154,8 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        return DEFAULT_SIGNATURE_CACHE_TTL;
+    public Integer getTcpSocketTimeout() {
+        return DEFAULT_TCP_SOCKET_TIMEOUT;
     }
 
     @Override

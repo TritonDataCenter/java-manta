@@ -110,12 +110,6 @@ public class MantaConnectionFactory implements Closeable {
     );
 
     /**
-     * The size of the internal socket buffer used to buffer data
-     * while receiving / transmitting HTTP messages.
-     */
-    private static final int SOCKET_BUFFER_SIZE = 8192;
-
-    /**
      * Configuration context that provides connection details.
      */
     private final ConfigContext config;
@@ -294,8 +288,9 @@ public class MantaConnectionFactory implements Closeable {
      * @return fully configured instance
      */
     protected SocketConfig buildSocketConfig() {
-        final int timeout = ObjectUtils.firstNonNull(config.getTimeout(),
-                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+        final int socketTimeout = ObjectUtils.firstNonNull(
+                config.getTcpSocketTimeout(),
+                DefaultsConfigContext.DEFAULT_TCP_SOCKET_TIMEOUT);
 
         return SocketConfig.custom()
                 /* Disable Nagle's algorithm for this connection.  Written data
@@ -304,8 +299,7 @@ public class MantaConnectionFactory implements Closeable {
                  */
                 .setTcpNoDelay(true)
                 /* Set a timeout on blocking Socket operations. */
-                .setSoTimeout(timeout)
-
+                .setSoTimeout(socketTimeout)
                 .setSoKeepAlive(true)
                 .build();
     }
@@ -315,8 +309,12 @@ public class MantaConnectionFactory implements Closeable {
      * @return fully configured instance
      */
     protected ConnectionConfig buildConnectionConfig() {
+        final int bufferSize = ObjectUtils.firstNonNull(
+                config.getHttpBufferSize(),
+                DefaultsConfigContext.DEFAULT_HTTP_BUFFER_SIZE);
+
         return ConnectionConfig.custom()
-                .setBufferSize(SOCKET_BUFFER_SIZE)
+                .setBufferSize(bufferSize)
                 .build();
     }
 

@@ -64,9 +64,9 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_PASSWORD_KEY = "manta.password";
 
     /**
-     * Property key for setting HttpTransport implementation.
+     * Property key for setting HTTP buffer size.
      */
-    public static final String MANTA_HTTP_TRANSPORT_KEY = "manta.http_transport";
+    public static final String MANTA_HTTP_BUFFER_SIZE_KEY = "manta.http_buffer_size";
 
     /**
      * Property key for setting TLS protocols.
@@ -89,9 +89,9 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_NO_NATIVE_SIGS_KEY = "manta.disable_native_sigs";
 
     /**
-     * Property key for looking up the time in milliseconds to cache HTTP signature headers.
+     * Property key for looking up the timeout value for TCP sockets.
      */
-    public static final String MANTA_SIGS_CACHE_TTL_KEY = "http.signature.cache.ttl";
+    public static final String MANTA_TCP_SOCKET_TIMEOUT_KEY = "manta.tcp_socket_timeout";
 
     /**
      * Property key for flag indicating when client-side encryption is enabled.
@@ -138,10 +138,10 @@ public class MapConfigContext implements ConfigContext {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
             MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
             MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
-            MANTA_PASSWORD_KEY, MANTA_HTTP_TRANSPORT_KEY,
+            MANTA_PASSWORD_KEY, MANTA_HTTP_BUFFER_SIZE_KEY,
             MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
-            MANTA_SIGS_CACHE_TTL_KEY,
+            MANTA_TCP_SOCKET_TIMEOUT_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY,
@@ -245,10 +245,14 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    @Deprecated
-    public String getHttpTransport() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(
-                MANTA_HTTP_TRANSPORT_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY);
+    public Integer getHttpBufferSize() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_HTTP_BUFFER_SIZE_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_HTTP_BUFFER_SIZE_ENV_KEY));
     }
 
     @Override
@@ -286,14 +290,14 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SIGS_CACHE_TTL_KEY));
+    public Integer getTcpSocketTimeout() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_KEY));
 
         if (mapValue != null) {
             return mapValue;
         }
 
-        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SIGS_CACHE_TTL_ENV_KEY));
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY));
     }
 
     @Override

@@ -45,23 +45,23 @@ add it as a dependency to your Java project.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                              | TestNG Param         | System Property           | Environment Variable      |
-|--------------------------------------|----------------------|---------------------------|---------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url            | manta.url                 | MANTA_URL                 |
-|                                      | manta.user           | manta.user                | MANTA_USER                |
-|                                      | manta.key_id         | manta.key_id              | MANTA_KEY_ID              |
-| $HOME/.ssh/id_rsa                    | manta.key_path       | manta.key_path            | MANTA_KEY_PATH            |
-|                                      |                      | manta.key_content         | MANTA_KEY_CONTENT         |
-|                                      |                      | manta.password            | MANTA_PASSWORD            |
-| 20000                                | manta.timeout        | manta.timeout             | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)          |                      | manta.retries             | MANTA_HTTP_RETRIES        |
-| 24                                   |                      | manta.max_connections     | MANTA_MAX_CONNS           |
-| ApacheHttpTransport                  | manta.http_transport | manta.http_transport      | MANTA_HTTP_TRANSPORT      |
-| TLSv1.2                              |                      | https.protocols           | MANTA_HTTPS_PROTOCOLS     |
-| <value too big - see code>           |                      | https.cipherSuites        | MANTA_HTTPS_CIPHERS       |
-| false                                |                      | manta.no_auth             | MANTA_NO_AUTH             |
-| false                                |                      | manta.disable_native_sigs | MANTA_NO_NATIVE_SIGS      |
-| 0                                    |                      | http.signature.cache.ttl  | MANTA_SIGS_CACHE_TTL      |
+| Default                              | TestNG Param             | System Property           | Environment Variable      |
+|--------------------------------------|--------------------------|---------------------------|---------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url                | manta.url                 | MANTA_URL                 |
+|                                      | manta.user               | manta.user                | MANTA_USER                |
+|                                      | manta.key_id             | manta.key_id              | MANTA_KEY_ID              |
+| $HOME/.ssh/id_rsa                    | manta.key_path           | manta.key_path            | MANTA_KEY_PATH            |
+|                                      |                          | manta.key_content         | MANTA_KEY_CONTENT         |
+|                                      |                          | manta.password            | MANTA_PASSWORD            |
+| 20000                                | manta.timeout            | manta.timeout             | MANTA_TIMEOUT             |
+| 3 (6 for integration tests)          |                          | manta.retries             | MANTA_HTTP_RETRIES        |
+| 24                                   |                          | manta.max_connections     | MANTA_MAX_CONNS           |
+| 8192                                 | manta.http_buffer_size   | manta.http_buffer_size    | MANTA_HTTP_BUFFER_SIZE    |
+| TLSv1.2                              |                          | https.protocols           | MANTA_HTTPS_PROTOCOLS     |
+| <value too big - see code>           |                          | https.cipherSuites        | MANTA_HTTPS_CIPHERS       |
+| false                                |                          | manta.no_auth             | MANTA_NO_AUTH             |
+| false                                |                          | manta.disable_native_sigs | MANTA_NO_NATIVE_SIGS      |
+| 10000                                | manta.tcp_socket_timeout | manta.tcp_socket_timeout  | MANTA_TCP_SOCKET_TIMEOUT  |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -83,8 +83,8 @@ The number of milliseconds to wait after a request was made to Manta before fail
 The number of times to retry failed HTTP requests.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
 The maximum number of open HTTP connections to the Manta API.
-* `manta.http_transport` (**MANTA_HTTP_TRANSPORT**)
-The HTTP transport library to use. Either the Apache HTTP Client (ApacheHttpTransport) or the native JDK HTTP library (NetHttpTransport).
+* `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
+The size of the buffer to allocate when processing streaming HTTP data.
 * `https.protocols` (**MANTA_HTTPS_PROTOCOLS**)
 A comma delimited list of TLS protocols.
 * `https.cipherSuites` (**MANTA_HTTPS_CIPHERS**)
@@ -94,9 +94,8 @@ When set to true, this disables HTTP Signature authentication entirely. This is
 only really useful when you are running the library as part of a Manta job.
 * `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
 When set to true, this disables the use of native code libraries for cryptography.
-* `http.signature.cache.ttl` (**MANTA_SIGS_CACHE_TTL**)
-Time in milliseconds to cache the HTTP signature authorization header. A setting of
-0ms disables the cache entirely.
+* `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
+Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever. 
 
 Below is an example of using all of the defaults and only setting the `manta.user` and `manta.key_id`.
 
@@ -161,22 +160,23 @@ public class App {
                 .setMantaUser("user/subuser")
                 .setMantaKeyPath("src/test/java/data/id_rsa")
                 .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
-        MantaClient client = new MantaClient(config);
-
-        String mantaFile = "/user/stor/foo";
-
-        // Print out every line from file streamed real-time from Manta
-        try (InputStream is = client.getAsInputStream(mantaFile);
-             Scanner scanner = new Scanner(is)) {
-
-            while (scanner.hasNextLine()) {
-                System.out.println(scanner.nextLine());
+        
+        try (MantaClient client = new MantaClient(config)) {
+            String mantaFile = "/user/stor/foo";
+    
+            // Print out every line from file streamed real-time from Manta
+            try (InputStream is = client.getAsInputStream(mantaFile);
+                 Scanner scanner = new Scanner(is)) {
+    
+                while (scanner.hasNextLine()) {
+                    System.out.println(scanner.nextLine());
+                }
             }
+    
+            // Load file into memory as a string directly from Manta
+            String data = client.getAsString(mantaFile);
+            System.out.println(data);        
         }
-
-        // Load file into memory as a string directly from Manta
-        String data = client.getAsString(mantaFile);
-        System.out.println(data);
     }
 }
 ```
@@ -359,8 +359,8 @@ job initialization.
 
 ```java
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaJobBuilder;
-import com.joyent.manta.client.MantaJobPhase;
+import com.joyent.manta.client.jobs.MantaJobBuilder;
+import com.joyent.manta.client.jobs.MantaJobPhase;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 
@@ -415,13 +415,10 @@ For more examples, check the included integration tests.
 
 ### Logging
 
-The SDK utilizes [slf4j](http://www.slf4j.org/), and logging
-can be configured using a SLF4J implementation. The underlying
-[google-http-java-client](https://code.google.com/p/google-http-java-client/)
-utilizes
-[java.util.logging.Logger](http://docs.oracle.com/javase/7/docs/api/java/util/logging/Logger.html),
-which can be configured
-[accordingly](https://code.google.com/p/google-http-java-client/wiki/HTTP).
+The SDK utilizes [slf4j](http://www.slf4j.org/), and logging can be configured 
+using a SLF4J implementation. Apache HTTP Client is bundled as a shaded artifact 
+as well as an Apache Commons Logger adaptor to SLF4J so Apache HTTP Client logs
+will also be output via SLF4J.
 
 ## Subuser Difficulties
 

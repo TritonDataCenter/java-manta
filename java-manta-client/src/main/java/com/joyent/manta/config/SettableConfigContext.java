@@ -80,12 +80,12 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setPassword(String password);
 
     /**
-     * This method is no longer used.
+     * Sets the size of buffer in bytes to use to buffer streams of HTTP data.
      *
-     * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
+     * @param httpBufferSize buffer size in bytes
      * @return the current instance of {@link T}
      */
-    T setHttpTransport(String httpTransport);
+    T setHttpBufferSize(Integer httpBufferSize);
 
     /**
      * Set the supported TLS protocols.
@@ -121,12 +121,13 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setDisableNativeSignatures(Boolean disableNativeSignatures);
 
     /**
-     * Sets the time in milliseconds to cache HTTP signature headers.
+     * Sets the time in milliseconds to wait to see if a TCP socket has timed out.
      *
-     * @param signatureCacheTTL time in milliseconds to cache HTTP signature headers
+     * @see java.net.SocketOptions#SO_TIMEOUT
+     * @param tcpSocketTimeout time in milliseconds to cache HTTP signature headers
      * @return the current instance of {@link T}
      */
-    T setSignatureCacheTTL(Integer signatureCacheTTL);
+    T setTcpSocketTimeout(Integer tcpSocketTimeout);
 
     /**
      * Sets the maximum number of open connections to the Manta API.
@@ -231,9 +232,9 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case EnvVarConfigContext.MANTA_PASSWORD_ENV_KEY:
                 config.setPassword(Objects.toString(value));
                 break;
-            case MapConfigContext.MANTA_HTTP_TRANSPORT_KEY:
-            case EnvVarConfigContext.MANTA_HTTP_TRANSPORT_ENV_KEY:
-                config.setHttpTransport(Objects.toString(value));
+            case MapConfigContext.MANTA_HTTP_BUFFER_SIZE_KEY:
+            case EnvVarConfigContext.MANTA_HTTP_BUFFER_SIZE_ENV_KEY:
+                config.setHttpBufferSize(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY:
             case EnvVarConfigContext.MANTA_HTTPS_PROTOCOLS_ENV_KEY:
@@ -251,9 +252,9 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case EnvVarConfigContext.MANTA_NO_NATIVE_SIGS_ENV_KEY:
                 config.disableNativeSignatures();
                 break;
-            case MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY:
-            case EnvVarConfigContext.MANTA_SIGS_CACHE_TTL_ENV_KEY:
-                config.setSignatureCacheTTL(MantaUtils.parseIntegerOrNull(value));
+            case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
+                config.setTcpSocketTimeout(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:

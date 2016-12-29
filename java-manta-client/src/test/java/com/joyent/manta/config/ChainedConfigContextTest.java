@@ -16,10 +16,13 @@ public class ChainedConfigContextTest {
         context1.setMantaURL("https://manta.host.com");
         context1.setClientEncryptionEnabled(true);
         context1.setTimeout(3000);
+        context1.setTcpSocketTimeout(40);
 
         StandardConfigContext context2 = new StandardConfigContext();
         context2.setMantaURL(expectedUrl);
         context2.setRetries(2);
+        context2.setTcpSocketTimeout(100);
+        context2.setHttpBufferSize(1024);
 
         DefaultsConfigContext defaults = new DefaultsConfigContext();
         ChainedConfigContext chained = new ChainedConfigContext(
@@ -33,6 +36,9 @@ public class ChainedConfigContextTest {
         Assert.assertEquals(chained.getEncryptionPrivateKeyPath(), defaults.getEncryptionPrivateKeyPath());
         Assert.assertEquals(chained.getMantaHomeDirectory(), defaults.getMantaHomeDirectory());
         Assert.assertEquals(chained.getMantaKeyId(), defaults.getMantaKeyId());
+
+        Assert.assertEquals(chained.getTcpSocketTimeout().intValue(), 100);
+        Assert.assertEquals(chained.getHttpBufferSize().intValue(), 1024);
 
         // This is important because we need to confirm that it isn't overwritten
         Assert.assertEquals(chained.getMantaKeyPath(), expectedKeyPath);

@@ -71,10 +71,9 @@ public interface ConfigContext {
     Integer getMaximumConnections();
 
     /**
-     * @return always null - this config value is not used in 3.x
+     * @return size of buffer in bytes to use to buffer streams of HTTP data
      */
-    @Deprecated
-    String getHttpTransport();
+    Integer getHttpBufferSize();
 
     /**
      * @return a comma delimited list of HTTPS protocols
@@ -97,10 +96,10 @@ public interface ConfigContext {
     Boolean disableNativeSignatures();
 
     /**
-     * @return time in milliseconds to cache HTTP signature headers
+     * @see java.net.SocketOptions#SO_TIMEOUT
+     * @return time in milliseconds to wait to see if a TCP socket has timed out
      */
-    @Deprecated
-    Integer getSignatureCacheTTL();
+    Integer getTcpSocketTimeout();
 
     /**
      * @return true when client-side encryption is enabled.
@@ -159,12 +158,12 @@ public interface ConfigContext {
         sb.append(", timeout=").append(context.getTimeout());
         sb.append(", retries=").append(context.getRetries());
         sb.append(", maxConnections=").append(context.getMaximumConnections());
-        sb.append(", httpTransport='").append(context.getHttpTransport()).append('\'');
+        sb.append(", httpBufferSize='").append(context.getHttpBufferSize()).append('\'');
         sb.append(", httpsProtocols='").append(context.getHttpsProtocols()).append('\'');
         sb.append(", httpsCiphers='").append(context.getHttpsCipherSuites()).append('\'');
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
-        sb.append(", signatureCacheTTL=").append(context.getSignatureCacheTTL());
+        sb.append(", tcpSocketTimeout=").append(context.getTcpSocketTimeout());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -286,9 +285,9 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_PASSWORD_KEY:
             case EnvVarConfigContext.MANTA_PASSWORD_ENV_KEY:
                 return config.getPassword();
-            case MapConfigContext.MANTA_HTTP_TRANSPORT_KEY:
-            case EnvVarConfigContext.MANTA_HTTP_TRANSPORT_ENV_KEY:
-                return config.getHttpTransport();
+            case MapConfigContext.MANTA_HTTP_BUFFER_SIZE_KEY:
+            case EnvVarConfigContext.MANTA_HTTP_BUFFER_SIZE_ENV_KEY:
+                return config.getHttpBufferSize();
             case MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY:
             case EnvVarConfigContext.MANTA_HTTPS_PROTOCOLS_ENV_KEY:
                 return config.getHttpsProtocols();
@@ -301,9 +300,9 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY:
             case EnvVarConfigContext.MANTA_NO_NATIVE_SIGS_ENV_KEY:
                 return config.disableNativeSignatures();
-            case MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY:
-            case EnvVarConfigContext.MANTA_SIGS_CACHE_TTL_ENV_KEY:
-                return config.getSignatureCacheTTL();
+            case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
+                return config.getTcpSocketTimeout();
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();

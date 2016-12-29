@@ -61,9 +61,9 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_PASSWORD_ENV_KEY = "MANTA_PASSWORD";
 
     /**
-     * Environment variable for setting HttpTransport implementation.
+     * Environment variable for setting HTTP buffer size.
      */
-    public static final String MANTA_HTTP_TRANSPORT_ENV_KEY = "MANTA_HTTP_TRANSPORT";
+    public static final String MANTA_HTTP_BUFFER_SIZE_ENV_KEY = "MANTA_HTTP_BUFFER_SIZE";
 
     /**
      * Environment variable for setting TLS protocols.
@@ -86,10 +86,9 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_NO_NATIVE_SIGS_ENV_KEY = "MANTA_NO_NATIVE_SIGS";
 
     /**
-     * Environment variable for looking up the time in milliseconds to cache
-     * HTTP signature headers.
+     * Environment variable for looking up the timeout value for TCP sockets.
      */
-    public static final String MANTA_SIGS_CACHE_TTL_ENV_KEY = "MANTA_SIGS_CACHE_TTL";
+    public static final String MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY = "MANTA_TCP_SOCKET_TIMEOUT";
 
     /**
      * Environment variable for flag indicating when client-side encryption is enabled.
@@ -127,10 +126,10 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
             MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_KEY_CONTENT_ENV_KEY,
-            MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY,
+            MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_BUFFER_SIZE_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
-            MANTA_SIGS_CACHE_TTL_ENV_KEY,
+            MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY,
@@ -215,9 +214,9 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
-    @Deprecated
-    public String getHttpTransport() {
-        return getEnv(MANTA_HTTP_TRANSPORT_ENV_KEY);
+    public Integer getHttpBufferSize() {
+        String sizeString = getEnv(MANTA_HTTP_BUFFER_SIZE_ENV_KEY);
+        return MantaUtils.parseIntegerOrNull(sizeString);
     }
 
     @Override
@@ -243,10 +242,10 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        String ttl = getEnv(MANTA_SIGS_CACHE_TTL_ENV_KEY);
+    public Integer getTcpSocketTimeout() {
+        String timeoutString = getEnv(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY);
 
-        return MantaUtils.parseIntegerOrNull(ttl);
+        return MantaUtils.parseIntegerOrNull(timeoutString);
     }
 
     @Override
