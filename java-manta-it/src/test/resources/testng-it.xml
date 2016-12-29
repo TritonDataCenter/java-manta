@@ -13,6 +13,7 @@
         <packages>
             <package name="com.joyent.manta.client.*" />
             <package name="com.joyent.manta.client.multipart.*" />
+            <package name="com.joyent.manta.client.jobs.*" />
         </packages>
     </test>
 </suite>
