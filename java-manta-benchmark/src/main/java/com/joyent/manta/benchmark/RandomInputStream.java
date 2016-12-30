@@ -39,10 +39,9 @@ public class RandomInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        if (count > maximumBytes) {
+        if (count++ >= maximumBytes) {
             return EOF;
         }
-        count++;
 
         return RandomUtils.nextInt(0, Integer.MAX_VALUE);
     }
