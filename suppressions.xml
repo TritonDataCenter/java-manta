@@ -4,6 +4,7 @@
     <suppress checks="DesignForExtension" files="MantaClient.java" />
     <suppress checks="LineLength" files="MantaCLI.java" />
     <suppress checks="MagicNumber" files="MantaCLI.java" />
+    <suppress checks="MagicNumber" files="Benchmark.java" />
     <!-- ignore suppressions for test classes -->
     <suppress checks="MagicNumber" files="^.*Test\.java$" />
     <suppress checks="JavadocMethod" files="^.*Test\.java$" />
@@ -14,4 +15,6 @@
     <suppress checks="AvoidStarImport" files="^.*Test\.java$" />
     <suppress checks="ImportControl" files="^.*Test\.java$" />
     <suppress checks="EmptyBlock" files="Benchmark.java" />
+
+    <suppress checks="[a-zA-Z0-9]*" files="BlockSizeBench.java" />
 </suppressions>

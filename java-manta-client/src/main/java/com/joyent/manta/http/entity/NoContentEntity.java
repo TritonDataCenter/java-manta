@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.http;
+package com.joyent.manta.http.entity;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016, Joyent, Inc. All rights reserved.
  */
-package com.joyent.manta.http;
+package com.joyent.manta.http.entity;
 
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-class DigestedEntity implements HttpEntity {
+public class DigestedEntity implements HttpEntity {
     /**
      * Calculates a running MD5 as data is streamed out.
      */
@@ -33,7 +33,7 @@ class DigestedEntity implements HttpEntity {
     /**
      * Total number of bytes processed.
      */
-    private long byteCount = 0L;
+    private long byteCount = -1L;
 
     /**
      * Wrapped entity implementation in which the API is proxied through.
@@ -47,7 +47,7 @@ class DigestedEntity implements HttpEntity {
      * @param wrapped entity to wrap
      * @param algorithm lookup name of cryptographic digest
      */
-    DigestedEntity(final HttpEntity wrapped,
+    public DigestedEntity(final HttpEntity wrapped,
                    final String algorithm) {
         this.wrapped = wrapped;
 
@@ -74,7 +74,13 @@ class DigestedEntity implements HttpEntity {
 
     @Override
     public long getContentLength() {
-        return this.wrapped.getContentLength();
+        final long wrappedContentLength = this.wrapped.getContentLength();
+
+        if (wrappedContentLength < 0) {
+            return byteCount;
+        } else {
+            return this.wrapped.getContentLength();
+        }
     }
 
     @Override
@@ -96,12 +102,31 @@ class DigestedEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream out) throws IOException {
-        this.byteCount = 0;
+        // If our wrapped entity is backed by a buffer of some form
+        // we can read easily read the whole buffer into our message digest.
+        if (wrapped instanceof MemoryBackedEntity) {
+            MemoryBackedEntity entity = (MemoryBackedEntity)wrapped;
+            messageDigest.update(entity.getBackingBuffer());
+            this.byteCount = this.wrapped.getContentLength();
 
-        try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest);
-             CountingOutputStream cout = new CountingOutputStream(dout)) {
-            wrapped.writeTo(cout);
-            this.byteCount = cout.getByteCount();
+            wrapped.writeTo(out);
+
+            return;
+        }
+
+        // Count the bytes of the entity as we stream if it isn't available
+        if (this.wrapped.getContentLength() < 0) {
+            try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest);
+                 CountingOutputStream cout = new CountingOutputStream(dout)) {
+                wrapped.writeTo(cout);
+                this.byteCount = cout.getByteCount();
+            }
+        // Otherwise, we trust the byte count and just digest streaming
+        } else {
+            try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest)) {
+                wrapped.writeTo(dout);
+                this.byteCount = this.wrapped.getContentLength();
+            }
         }
     }
 
@@ -124,14 +149,6 @@ class DigestedEntity implements HttpEntity {
      */
     public byte[] getDigest() {
         return this.messageDigest.digest();
-    }
-
-    /**
-     * Total number of bytes written from this entity.
-     * @return number of bytes written
-     */
-    public long getByteCount() {
-        return this.byteCount;
     }
 
     @Override

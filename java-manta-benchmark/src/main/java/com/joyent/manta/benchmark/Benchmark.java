@@ -9,6 +9,7 @@ import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
+import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,11 @@ public final class Benchmark {
     private static String testDirectory;
 
     /**
+     * Size of object in kilobytes.
+     */
+    private static long sizeInKb;
+
+    /**
      * Use the main method and not the constructor.
      */
     private Benchmark() {
@@ -94,7 +100,7 @@ public final class Benchmark {
 
     /**
      * Entrance to benchmark utility.
-     * @param argv first param is the size of object in kb, second param is the number of iterations
+     * @param argv param1: method, param2: size of object in kb, param3: no of iterations, param4: threads
      * @throws Exception when something goes wrong
      */
     public static void main(final String[] argv) throws Exception {
@@ -106,24 +112,30 @@ public final class Benchmark {
         testDirectory = String.format("%s/stor/benchmark-%s",
                 config.getMantaHomeDirectory(), testRunId);
 
+        if (argv.length == 0) {
+            System.err.println("Benchmark requires the following parameters:\n"
+            + "method, size of object in kb, number of iterations, concurrency");
+        }
+
+        String method = argv[0];
+
         try {
-            final long sizeInKb;
-            if (argv.length > 0) {
-                sizeInKb = Long.parseLong(argv[0]);
+            if (argv.length > 1) {
+                sizeInKb = Long.parseLong(argv[1]);
             } else {
                 sizeInKb = DEFAULT_OBJ_SIZE_KB;
             }
 
             final int iterations;
-            if (argv.length > 1) {
-                iterations = Integer.parseInt(argv[1]);
+            if (argv.length > 2) {
+                iterations = Integer.parseInt(argv[2]);
             } else {
                 iterations = DEFAULT_ITERATIONS;
             }
 
             final int concurrency;
-            if (argv.length > 2) {
-                concurrency = Integer.parseInt(argv[2]);
+            if (argv.length > 3) {
+                concurrency = Integer.parseInt(argv[3]);
             } else {
                 concurrency = DEFAULT_CONCURRENCY;
             }
@@ -138,9 +150,9 @@ public final class Benchmark {
             String path = addTestFile(FileUtils.ONE_KB * sizeInKb);
 
             if (concurrency == 1) {
-                singleThreadedBenchmark(path, iterations);
+                singleThreadedBenchmark(method, path, iterations);
             } else {
-                multithreadedBenchmark(path, iterations, concurrency);
+                multithreadedBenchmark(method, path, iterations, concurrency);
             }
         } catch (IOException e) {
             LOG.error("Error running benchmark", e);
@@ -153,11 +165,13 @@ public final class Benchmark {
     /**
      * Method used to run a simple single-threaded benchmark.
      *
+     * @param method to measure
      * @param path path to store benchmarking test data
      * @param iterations number of iterations to run
      * @throws IOException thrown when we can't communicate with the server
      */
-    private static void singleThreadedBenchmark(final String path,
+    private static void singleThreadedBenchmark(final String method,
+                                                final String path,
                                                 final int iterations) throws IOException {
         Runtime.getRuntime().addShutdownHook(new Thread(Benchmark::cleanUp));
 
@@ -167,14 +181,21 @@ public final class Benchmark {
         final long testStart = System.currentTimeMillis();
 
         for (int i = 0; i < iterations; i++) {
-            Duration[] durations = measureGet(path);
+            Duration[] durations;
+
+            if (method.equals("put")) {
+                durations = measurePut(sizeInKb);
+            } else {
+                durations = measureGet(path);
+            }
+
             long fullLatency = durations[0].toMillis();
             long serverLatency = durations[1].toMillis();
             fullAggregation += fullLatency;
             serverAggregation += serverLatency;
 
-            System.out.printf("Read %d full=%dms, server=%dms\n",
-                    i, fullLatency, serverLatency);
+            System.out.printf("%s %d full=%dms, server=%dms\n",
+                    method, i, fullLatency, serverLatency);
         }
 
         final long testEnd = System.currentTimeMillis();
@@ -191,12 +212,14 @@ public final class Benchmark {
     /**
      * Method used to run a multi-threaded benchmark.
      *
+     * @param method to measure
      * @param path path to store benchmarking test data
      * @param iterations number of iterations to run
      * @param concurrency number of threads to run
      * @throws IOException thrown when we can't communicate with the server
      */
-    private static void multithreadedBenchmark(final String path,
+    private static void multithreadedBenchmark(final String method,
+                                               final String path,
                                                final int iterations,
                                                final int concurrency) throws IOException {
         final AtomicLong fullAggregation = new AtomicLong(0L);
@@ -212,14 +235,21 @@ public final class Benchmark {
 
         final Callable<Void> worker = () -> {
             for (int i = 0; i < perThreadCount; i++) {
-                Duration[] durations = measureGet(path);
+                Duration[] durations;
+
+                if (method.equals("put")) {
+                    durations = measurePut(sizeInKb);
+                } else {
+                    durations = measureGet(path);
+                }
+
                 long fullLatency = durations[0].toMillis();
                 long serverLatency = durations[1].toMillis();
                 fullAggregation.addAndGet(fullLatency);
                 serverAggregation.addAndGet(serverLatency);
 
-                System.out.printf("Read %d full=%dms, server=%dms, thread=%s\n",
-                        count.getAndIncrement(), fullLatency, serverLatency,
+                System.out.printf("%s %d full=%dms, server=%dms, thread=%s\n",
+                        method, count.getAndIncrement(), fullLatency, serverLatency,
                         Thread.currentThread().getName());
             }
 
@@ -305,6 +335,8 @@ public final class Benchmark {
      * Cleans up the test directory.
      */
     private static void cleanUp() {
+        System.out.printf("Attempting to clean up remote files in %s\n",
+                testDirectory);
         try {
             if (!client.isClosed()) {
                 client.deleteRecursive(testDirectory);
@@ -345,6 +377,34 @@ public final class Benchmark {
             while (is.skip(SKIP_VALUE) != 0) { }
             serverLatencyString = is.getHeader("x-response-time").toString();
         }
+        final Instant stop = Instant.now();
+
+        Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));
+        Duration fullLatency = Duration.between(start, stop);
+        return new Duration[] {fullLatency, serverLatency};
+    }
+
+    /**
+     * Measures the total time to put an object to Manta.
+     *
+     * @param length number of bytes to write
+     * @return two durations - full time in the JVM, server time processing
+     * @throws IOException thrown when we can't access Manta over the network
+     */
+    private static Duration[] measurePut(final long length) throws IOException {
+        final String path = String.format("%s/%s", testDirectory,
+                UUID.randomUUID());
+        final Instant start = Instant.now();
+        final String serverLatencyString;
+
+        try (RandomInputStream rand = new RandomInputStream(length)) {
+            MantaHttpHeaders headers = new MantaHttpHeaders();
+            headers.setDurabilityLevel(2);
+
+            serverLatencyString = client.put(path, rand, length, headers, null)
+                    .getHeader("x-response-time").toString();
+        }
+
         final Instant stop = Instant.now();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));

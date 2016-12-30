@@ -6,6 +6,7 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CountingInputStream;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -18,7 +19,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -108,21 +112,39 @@ public class MantaClientPutIT {
 
 
     @Test
-    public final void testPutWithMarkSupportedStream() throws IOException {
+    public final void testPutWithMarkSupportedStream() throws IOException, URISyntaxException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
-        try (InputStream testDataInputStream = classLoader.getResourceAsStream(TEST_FILENAME)) {
-            Assert.assertTrue(testDataInputStream.markSupported(),
-                    "Mark should be supported so that it computes computed-md5 before sending");
-            mantaClient.put(path, testDataInputStream);
+        final String expectedMd5 = "aa3zMQAwSpnbQMpk26h4Aw==";
+
+        try (InputStream testDataInputStream = classLoader.getResourceAsStream(TEST_FILENAME);
+             CountingInputStream countingInputStream = new CountingInputStream(testDataInputStream)) {
+            Assert.assertTrue(countingInputStream.markSupported());
+            mantaClient.put(path, countingInputStream);
             MantaObjectResponse head = mantaClient.head(path);
             String contentMd5 = head.getHttpHeaders().getFirstHeaderStringValue("content-md5");
 
-            Assert.assertEquals(contentMd5, "aa3zMQAwSpnbQMpk26h4Aw==",
-                    "Content MD5 returned was incorrect");
+
+            if (!contentMd5.equals(expectedMd5)) {
+                Path localFile = Paths.get(classLoader.getResource(TEST_FILENAME).toURI());
+
+                long expectedLength = Files.size(localFile);
+                long actualLength = head.getContentLength();
+
+                String msg = String.format("Content MD5 returned was incorrect.\n"
+                    + "Expected MD5 : %s\n"
+                    + "Actual MD5   : %s\n"
+                    + "Expected Content Length   : %d\n"
+                    + "Bytes Read Content Length : %d\n"
+                    + "Actual Content Length     : %d\n",
+                    expectedMd5, contentMd5, expectedLength,
+                    countingInputStream.getByteCount(), actualLength);
+
+                Assert.fail(msg);
+            }
         }
     }
 
@@ -133,10 +155,23 @@ public class MantaClientPutIT {
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
-        try (InputStream testDataInputStream = new RandomInputStream(1024L)) {
-            Assert.assertFalse(testDataInputStream.markSupported(),
-                    "Mark should be not be supported so that it doesn't compute computed-md5");
+        final int length = 20 * 1024;
+        try (InputStream testDataInputStream = new RandomInputStream(length)) {
+            Assert.assertFalse(testDataInputStream.markSupported());
             mantaClient.put(path, testDataInputStream);
+        }
+    }
+
+    @Test
+    public final void testPutWithStreamAndKnownContentLength() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
+
+        final int length = 20 * 1024;
+        try (InputStream testDataInputStream = new RandomInputStream(length)) {
+            mantaClient.put(path, testDataInputStream, length, null, null);
         }
     }
 

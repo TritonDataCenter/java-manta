@@ -24,7 +24,9 @@ import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.NoContentEntity;
+import com.joyent.manta.http.entity.ExposedByteArrayEntity;
+import com.joyent.manta.http.entity.ExposedStringEntity;
+import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
@@ -44,17 +46,16 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -62,6 +63,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.net.URI;
@@ -833,20 +835,7 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
                                    final MantaHttpHeaders headers) throws IOException {
-        Validate.notNull(path, "Path must not be null");
-
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
-                ContentType.APPLICATION_OCTET_STREAM);
-
-        final HttpEntity entity;
-
-        if (source == null) {
-            entity = null;
-        } else {
-            entity = new InputStreamEntity(source, contentType);
-        }
-
-        return httpHelper.httpPut(path, headers, entity, null);
+        return put(path, source, headers, null);
     }
 
     /**
@@ -862,48 +851,87 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(path, "Path must not be null");
-
-        final ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
-
-        final HttpEntity entity;
-
-        if (source == null) {
-            entity = null;
-        } else {
-            entity = new InputStreamEntity(source, contentType);
-        }
-
-        return httpHelper.httpPut(path, null, entity, metadata);
+        return put(path, source, null, metadata);
     }
 
 
     /**
-     * Puts an object into Manta.
+     * Puts an object into Manta using a stream with an unknown length. Since
+     * we don't know the length,
      *
      * @param path     The path to the Manta object.
      * @param source   {@link InputStream} to copy object data from
      * @param headers  optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
+        return put(path, source, -1L, headers, metadata);
+    }
+
+
+    /**
+     * Puts an object into Manta.
+     *
+     * @param path The path to the Manta object.
+     * @param source {@link InputStream} to copy object data from
+     * @param contentLength the total length of the stream (-1 if unknown)
+     * @param headers optional HTTP headers to include when copying the object
+     * @param metadata optional user-supplied metadata for object
+     * @return Manta response object
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     */
+    public MantaObjectResponse put(final String path,
+                                   final InputStream source,
+                                   final long contentLength,
+                                   final MantaHttpHeaders headers,
+                                   final MantaMetadata metadata) throws IOException {
         Validate.notNull(path, "Path must not be null");
+        Validate.notNull(source, "Input stream must not be null");
 
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM);
 
+        final int preLoadSize = 4096;
         final HttpEntity entity;
 
-        if (source == null) {
-            entity = null;
+        /* We don't know how big the stream is, so we read N bytes from it and
+         * see if it ends. If it ended, then we just convert that buffer into
+         * an entity and pass it. If it didn't end, then we create new stream
+         * that concatenates the bytes read with the source stream.
+         * Unfortunately, this will put us in a chunked transfer encoding and
+         * it will affect performance. */
+        if (contentLength < 0) {
+            byte[] preLoad = new byte[preLoadSize];
+            int read = IOUtils.read(source, preLoad);
+
+            // The total amount of bytes read was less than the preload size,
+            // so we can just return a in-memory non-streaming entity
+            if (read < preLoadSize) {
+                entity = new ExposedByteArrayEntity(preLoad, 0, read, contentType);
+            } else {
+                ByteArrayInputStream bin = new ByteArrayInputStream(preLoad);
+                SequenceInputStream sin = new SequenceInputStream(bin, source);
+
+                entity = new InputStreamEntity(sin, contentType);
+            }
+        /* We know how big the stream is, so we can decide if it is within our
+         * preload threshold and load it into memory or if it isn't within the
+         * threshold, we can pass it on as a streamed entity in non-chunked mode. */
         } else {
-            entity = new InputStreamEntity(source, contentType);
+            if (contentLength <= preLoadSize && contentLength <= Integer.MAX_VALUE) {
+                byte[] preLoad = new byte[(int)contentLength];
+                IOUtils.read(source, preLoad);
+                entity = new ExposedByteArrayEntity(preLoad, contentType);
+            } else {
+                entity = new InputStreamEntity(source, contentLength, contentType);
+            }
         }
 
         return httpHelper.httpPut(path, headers, entity, metadata);
@@ -1055,7 +1083,7 @@ public class MantaClient implements AutoCloseable {
         if (string == null) {
             entity = null;
         } else {
-            entity = new StringEntity(string, contentType);
+            entity = new ExposedStringEntity(string, contentType);
         }
 
         return httpHelper.httpPut(path, headers, entity, metadata);
@@ -1270,7 +1298,7 @@ public class MantaClient implements AutoCloseable {
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
                 headers, path, ContentType.APPLICATION_OCTET_STREAM);
 
-        final HttpEntity entity = new ByteArrayEntity(bytes, contentType);
+        final HttpEntity entity = new ExposedByteArrayEntity(bytes, contentType);
 
         return httpHelper.httpPut(path, headers, entity, metadata);
     }
@@ -1587,7 +1615,7 @@ public class MantaClient implements AutoCloseable {
         ObjectMapper mapper = MantaObjectMapper.INSTANCE;
         byte[] json = mapper.writeValueAsBytes(job);
 
-        HttpEntity entity = new ByteArrayEntity(json,
+        HttpEntity entity = new ExposedByteArrayEntity(json,
                 ContentType.APPLICATION_JSON);
 
         HttpPost post = connectionFactory.post(path);

@@ -7,6 +7,7 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
