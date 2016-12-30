@@ -4,11 +4,8 @@
 package com.joyent.manta.client.jobs;
 
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.jobs.MantaJob;
-import com.joyent.manta.client.jobs.MantaJobBuilder;
-import com.joyent.manta.client.jobs.MantaJobPhase;
-import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import org.testng.Assert;
