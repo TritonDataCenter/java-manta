@@ -49,6 +49,7 @@
         <module>java-manta-client</module>
         <module>java-manta-it</module>
         <module>java-manta-benchmark</module>
+        <module>java-manta-examples</module>
     </modules>
 
     <scm>

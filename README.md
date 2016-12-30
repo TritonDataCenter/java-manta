@@ -135,281 +135,20 @@ spec](https://github.com/joyent/node-http-signature/blob/master/http_signing.md)
 
 For detailed usage instructions, consult the provided javadoc.
 
-## Test Suite
-By default, the test suite invokes the java manta client against the live manta
-service.  In order to run the test suite, you will need to specify environment
-variables, system properties or TestNG parameters to tell the library how to
-authenticate against Manta.
+### General Examples
+ 
+* [Get request and client setup](java-manta-examples/src/main/java/SimpleClient.java)
+* [Multipart upload](java-manta-examples/src/main/java/Multipart.java)
 
-### Example Get Request
-```java
-import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Scanner;
-
-public class App {
-
-    public static void main(String... args) throws IOException {
-        ConfigContext config = new StandardConfigContext()
-                .setMantaURL("https://us-east.manta.joyent.com")
-                // If there is no subuser, then just use the account name
-                .setMantaUser("user/subuser")
-                .setMantaKeyPath("src/test/java/data/id_rsa")
-                .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
-        
-        try (MantaClient client = new MantaClient(config)) {
-            String mantaFile = "/user/stor/foo";
-    
-            // Print out every line from file streamed real-time from Manta
-            try (InputStream is = client.getAsInputStream(mantaFile);
-                 Scanner scanner = new Scanner(is)) {
-    
-                while (scanner.hasNextLine()) {
-                    System.out.println(scanner.nextLine());
-                }
-            }
-    
-            // Load file into memory as a string directly from Manta
-            String data = client.getAsString(mantaFile);
-            System.out.println(data);        
-        }
-    }
-}
-```
-
-### Example Multipart Upload
-```java
-    // instantiated with a reference to the class the actually connects to Manta
-    MantaMultipartManager multipart = new MantaMultipartManager(mantaClient);
-
-    String uploadObject = "/username/stor/test/file";
-
-    /* I'm using File objects below, but I could be using byte[] arrays,
-     * Strings, or InputStreams as well. */
-    File part1file = new File("part-1.data");
-    File part2file = new File("part-2.data");
-    File part3file = new File("part-3.data");
-
-    // We can set any metadata for the final object
-    MantaMetadata metadata = new MantaMetadata();
-    metadata.put("m-test-metadata", "any value");
-
-    // We can set any header for the final object
-    MantaHttpHeaders headers = new MantaHttpHeaders();
-    headers.setContentType("text/plain");
-
-    // We catch network errors and handle them here
-    try {
-        // We get a response object
-        MantaMultipartUpload upload = multipart.initiateUpload(uploadObject);
-
-        // It contains a UUID transaction id
-        UUID id = upload.getId();
-        // It also contains the path of the final object
-        String uploadPath = upload.getPath();
-
-        // Everywhere below that we specified "upload" we could also just
-        // use the upload transaction id
-
-        List<MantaMultipartUploadPart> parts = new ArrayList<>();
-        
-        // We can add the parts in any order
-        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, part2file);
-        // Each put of a part is a synchronous operation
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, part1file);
-        // Although in a later version we could make an async option
-        MantaMultipartUploadPart part3 = multipart.uploadPart(upload, 3, part3file);
-        
-        parts.add(part1);
-        parts.add(part3);
-        parts.add(part2);
-        
-        // If we want to give up now, we could always abort
-        // multipart.abort(upload);
-
-        // We've uploaded all of the parts, now lets join them
-        multipart.complete(upload, parts.stream());
-
-        // If we want to pause execution until it is committed
-        int timesToPoll = 10;
-        multipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll,
-                uuid -> { throw new RuntimeException("Multipart completion timed out"); });
-        
-    } catch (MantaClientHttpResponseException e) {
-        // This catch block is for when we actually have a response code from Manta
-
-        // We can handle specific HTTP responses here
-        if (e.getStatusCode() == 503) {
-            LOG.warn("Manta is unavailable. Please try again");
-            return;
-        }
-
-        // We could rethrow as a more detailed exception as below
-        throw new RuntimeException(e);
-    } catch (IOException e) {
-        // This catch block is for general network failures
-        // Note: MantaClientHttpResponseException inherits from IOException
-        // so if it is not explicitly caught, it would go to this block
-
-        ContextedRuntimeException exception = new ContextedRuntimeException(
-                "A network error occurred when doing a multipart upload to" +
-                        "Manta. See context for details.");
-        // We should all of the diagnostic context that we need
-        exception.setContextValue("parts", "[part-1.data, part-2.data, part-3.data]");
-
-        // We rethrow the exception with additional detail
-        throw exception;
-    }
-```
-
-### Example Job Execution
+### Job Examples
 
 Jobs can be created directly with the `MantaClient` class or they can be created
 using the `MantaJobBuilder` class. `MantaJobBuilder` provides a fluent interface
 that allows for an easier API for job creation and it provides a number of
 useful functions for common use cases.
 
-#### Using MantaClient
-
-Creating a job using the `MantaClient` API is done by making a number of calls
-against the API and passing the job id to each API call. Here is an example that
-processes 4 input files, greps them for 'foo' and returns the unique values.
-
-```java
-import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaJob;
-import com.joyent.manta.client.MantaJobPhase;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Stream;
-
-public class App {
-    public static void main(String... args) throws IOException, InterruptedException {
-        ConfigContext config = new StandardConfigContext()
-                .setMantaURL("https://us-east.manta.joyent.com")
-                // If there is no subuser, then just use the account name
-                .setMantaUser("user/subuser")
-                .setMantaKeyPath("src/test/java/data/id_rsa")
-                .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
-        MantaClient client = new MantaClient(config);
-
-        List<String> inputs = new ArrayList<>();
-        // You will need to change these to reflect the files that you want
-        // to process
-        inputs.add("/user/stor/logs/input_1");
-        inputs.add("/user/stor/logs/input_2");
-        inputs.add("/user/stor/logs/input_3");
-        inputs.add("/user/stor/logs/input_4");
-
-        List<MantaJobPhase> phases = new ArrayList<>();
-        // This creates a map step that greps for 'foo' in all of the inputs
-        MantaJobPhase map = new MantaJobPhase()
-                .setType("map")
-                .setExec("grep foo");
-        // This returns unique values from all of the map outputs
-        MantaJobPhase reduce = new MantaJobPhase()
-                .setType("reduce")
-                .setExec("sort | uniq");
-        phases.add(map);
-        phases.add(reduce);
-
-        // This builds a job
-        MantaJob job = new MantaJob("example", phases);
-        UUID jobId = client.createJob(job);
-
-        // This attaches the input data to the job
-        client.addJobInputs(jobId, inputs.iterator());
-
-        // This runs the job
-        client.endJobInput(jobId);
-
-        // This will get the status of the job
-        MantaJob runningJob = client.getJob(jobId);
-
-        // Wait until job finishes
-        while (!client.getJob(jobId).getState().equals("done")) {
-            Thread.sleep(3000L);
-        }
-
-        // Grab the results of the job as a string - in this case, there will
-        // be only a single output
-        // You will always need to close streams because we do everything online
-        try (Stream<String> outputs = client.getJobOutputsAsStrings(jobId)) {
-            // Print each output
-            outputs.forEach(o -> System.out.println(o));
-        }
-    }
-}
-```
-
-#### Using MantaJobBuilder
-
-Creating a job using the `MantaJobBuilder` allows for a more fluent style of
-job creation. Using this approach allows for a more fluent configuration of
-job initialization.
-
-```java
-import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.jobs.MantaJobBuilder;
-import com.joyent.manta.client.jobs.MantaJobPhase;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
-public class App {
-    public static void main(String... args) throws IOException, InterruptedException {
-        ConfigContext config = new StandardConfigContext()
-                .setMantaURL("https://us-east.manta.joyent.com")
-                // If there is no subuser, then just use the account name
-                .setMantaUser("user/subuser")
-                .setMantaKeyPath("src/test/java/data/id_rsa")
-                .setMantaKeyId("04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df");
-        MantaClient client = new MantaClient(config);
-
-        // You can only get a builder from a MantaClient
-        final MantaJobBuilder builder = client.jobBuilder();
-
-        MantaJobBuilder.Run runningJob = builder.newJob("example")
-                .addInputs("/user/stor/logs/input_1",
-                        "/user/stor/logs/input_2",
-                        "/user/stor/logs/input_3",
-                        "/user/stor/logs/input_4")
-                .addPhase(new MantaJobPhase()
-                        .setType("map")
-                        .setExec("grep foo"))
-                .addPhase(new MantaJobPhase()
-                        .setType("reduce")
-                        .setExec("sort | uniq"))
-                // This is an optional command that will validate that the inputs
-                // specified are available
-                .validateInputs()
-                .run();
-
-        // This will wait until the job is finished
-        MantaJobBuilder.Done finishedJob = runningJob.waitUntilDone()
-                // This will validate if the job finished without errors.
-                // If there was an error an exception will be thrown
-                .validateJobsSucceeded();
-
-        // You will always need to close streams because we do everything online
-        try (Stream<String> outputs = finishedJob.outputs()) {
-            // Print each output
-            outputs.forEach(o -> System.out.println(o));
-        }
-    }
-}
-```
+* [Jobs using MantaClient](java-manta-examples/src/main/java/JobsWithMantaClient.java)
+* [Jobs using MantaJobBuilder](java-manta-examples/src/main/java/JobsWithMantaJobBuilder.java)
 
 For more examples, check the included integration tests.
 
@@ -441,12 +180,17 @@ on getting started.
 
 ### Testing
 
-When running the unit tests, you will need an active account on the Joyent public
+When running the integration tests, you will need an active account on the Joyent public
 cloud or a private Manta instance. To test:
 ```
 # Assuming you have already set your environment variables and/or system properties
 mvn test
 ```
+
+By default, the test suite invokes the java manta client against the live manta
+service.  In order to run the test suite, you will need to specify environment
+variables, system properties or TestNG parameters to tell the library how to
+authenticate against Manta.
 
 ### Releasing
 
