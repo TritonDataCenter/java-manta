@@ -335,10 +335,11 @@ public final class Benchmark {
      * Cleans up the test directory.
      */
     private static void cleanUp() {
-        System.out.printf("Attempting to clean up remote files in %s\n",
-                testDirectory);
         try {
             if (!client.isClosed()) {
+                System.out.printf("Attempting to clean up remote files in %s\n",
+                        testDirectory);
+
                 client.deleteRecursive(testDirectory);
                 client.closeWithWarning();
             }
