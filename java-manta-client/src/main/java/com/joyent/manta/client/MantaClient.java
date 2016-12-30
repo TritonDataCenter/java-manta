@@ -1818,7 +1818,7 @@ public class MantaClient implements AutoCloseable {
 
         try {
             request = connectionFactory.get(livePath);
-            response = client.execute(request, connectionContext.getHttpContext());
+            response = client.execute(request);
             StatusLine statusLine = response.getStatusLine();
 
             // If we can't get the live status of the job, we try to get the archived
@@ -1832,7 +1832,7 @@ public class MantaClient implements AutoCloseable {
                 // We close the request that was previously opened, because it
                 // didn't have what we need.
                 IOUtils.closeQuietly(response);
-                response = client.execute(request, connectionContext.getHttpContext());
+                response = client.execute(request);
                 statusLine = response.getStatusLine();
 
                 // Job wasn't available via live status nor archive

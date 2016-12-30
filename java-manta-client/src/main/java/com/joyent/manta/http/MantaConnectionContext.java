@@ -4,7 +4,6 @@
 package com.joyent.manta.http;
 
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.protocol.HttpContext;
 
 /**
  * Interface describing the contract for a context class that stores state between
@@ -19,10 +18,4 @@ public interface MantaConnectionContext extends AutoCloseable {
      * @return connection object to Manta
      */
     CloseableHttpClient getHttpClient();
-
-    /**
-     * HTTP context object used to share state between HTTP requests.
-     * @return HTTP connection context object
-     */
-    HttpContext getHttpContext();
 }

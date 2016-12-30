@@ -4,9 +4,7 @@
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.Validate;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.protocol.HttpContext;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -27,11 +25,6 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     private final CloseableHttpClient httpClient;
 
     /**
-     * HTTP context object used to share state between HTTP requests.
-     */
-    private final HttpContext httpContext;
-
-    /**
      * Creates a new instance using the passed in factory class.
      * @param connectionFactory factory class that creates configured connections
      */
@@ -40,27 +33,11 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
                 "Connection factory must not be null");
 
         this.httpClient = connectionFactory.createConnection();
-        this.httpContext = buildHttpContext();
-    }
-
-    /**
-     * Builds a configured HTTP context object that is pre-configured for
-     * using HTTP Signature authentication.
-     *
-     * @return configured HTTP context object
-     */
-    protected HttpContext buildHttpContext() {
-        return HttpClientContext.create();
     }
 
     @Override
     public CloseableHttpClient getHttpClient() {
         return httpClient;
-    }
-
-    @Override
-    public HttpContext getHttpContext() {
-        return httpContext;
     }
 
     @Override

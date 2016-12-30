@@ -322,8 +322,7 @@ public class HttpHelper implements AutoCloseable {
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
-        CloseableHttpResponse response = client.execute(request,
-                connectionContext.getHttpContext());
+        CloseableHttpResponse response = client.execute(request);
         StatusLine statusLine = response.getStatusLine();
 
         if (LOGGER.isDebugEnabled() && logMessage != null) {
@@ -403,8 +402,7 @@ public class HttpHelper implements AutoCloseable {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
-        CloseableHttpResponse response = client.execute(request,
-                connectionContext.getHttpContext());
+        CloseableHttpResponse response = client.execute(request);
 
         try {
             StatusLine statusLine = response.getStatusLine();
@@ -503,8 +501,7 @@ public class HttpHelper implements AutoCloseable {
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
-        CloseableHttpResponse response = client.execute(request,
-                connectionContext.getHttpContext());
+        CloseableHttpResponse response = client.execute(request);
         try {
             StatusLine statusLine = response.getStatusLine();
 
