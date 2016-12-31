@@ -130,12 +130,22 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setTcpSocketTimeout(Integer tcpSocketTimeout);
 
     /**
-     * Sets the maximum number of open connections to the Manta API.
+     * Sets if we verify the uploaded file's checksum against the server's
+     * checksum (MD5).
      *
-     * @param maxConnections maximum number of open connections to open
+     * @param verify true to verify
      * @return the current instance of {@link T}
      */
-    T setMaxConnections(Integer maxConnections);
+    T setVerifyUploads(Boolean verify);
+
+    /**
+     * Sets the number of bytes to read into memory for a streaming upload before
+     * deciding if we want to load it in memory before send it.
+     *
+     * @param size size of the buffer in bytes
+     * @return the current instance of {@link T}
+     */
+    T setUploadBufferSize(Integer size);
 
     /**
      * Sets flag indicating when client-side encryption is enabled.

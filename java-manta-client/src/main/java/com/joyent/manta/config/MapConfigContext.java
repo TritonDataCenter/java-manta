@@ -94,6 +94,16 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_KEY = "manta.tcp_socket_timeout";
 
     /**
+     * Property key for enabling the checksum verification of uploaded files.
+     */
+    public static final String MANTA_VERIFY_UPLOADS_KEY = "manta.verify_uploads";
+
+    /**
+     * Property key for setting the size of pre-streaming upload buffers.
+     */
+    public static final String MANTA_UPLOAD_BUFFER_SIZE_KEY = "manta.upload_buffer_size";
+
+    /**
      * Property key for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
@@ -142,6 +152,8 @@ public class MapConfigContext implements ConfigContext {
             MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
+            MANTA_VERIFY_UPLOADS_KEY,
+            MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY,
@@ -298,6 +310,28 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_VERIFY_UPLOADS_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_VERIFY_UPLOADS_ENV_KEY));
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_UPLOAD_BUFFER_SIZE_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY));
     }
 
     @Override

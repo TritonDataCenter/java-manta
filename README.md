@@ -45,23 +45,31 @@ add it as a dependency to your Java project.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                              | TestNG Param             | System Property           | Environment Variable      |
-|--------------------------------------|--------------------------|---------------------------|---------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url                | manta.url                 | MANTA_URL                 |
-|                                      | manta.user               | manta.user                | MANTA_USER                |
-|                                      | manta.key_id             | manta.key_id              | MANTA_KEY_ID              |
-| $HOME/.ssh/id_rsa                    | manta.key_path           | manta.key_path            | MANTA_KEY_PATH            |
-|                                      |                          | manta.key_content         | MANTA_KEY_CONTENT         |
-|                                      |                          | manta.password            | MANTA_PASSWORD            |
-| 20000                                | manta.timeout            | manta.timeout             | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)          |                          | manta.retries             | MANTA_HTTP_RETRIES        |
-| 24                                   |                          | manta.max_connections     | MANTA_MAX_CONNS           |
-| 8192                                 | manta.http_buffer_size   | manta.http_buffer_size    | MANTA_HTTP_BUFFER_SIZE    |
-| TLSv1.2                              |                          | https.protocols           | MANTA_HTTPS_PROTOCOLS     |
-| <value too big - see code>           |                          | https.cipherSuites        | MANTA_HTTPS_CIPHERS       |
-| false                                |                          | manta.no_auth             | MANTA_NO_AUTH             |
-| false                                |                          | manta.disable_native_sigs | MANTA_NO_NATIVE_SIGS      |
-| 10000                                | manta.tcp_socket_timeout | manta.tcp_socket_timeout  | MANTA_TCP_SOCKET_TIMEOUT  |
+| Default                              | TestNG Param             | System Property                    | Environment Variable        |
+|--------------------------------------|--------------------------|------------------------------------|-----------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url                | manta.url                          | MANTA_URL                   |
+|                                      | manta.user               | manta.user                         | MANTA_USER                  |
+|                                      | manta.key_id             | manta.key_id                       | MANTA_KEY_ID                |
+| $HOME/.ssh/id_rsa                    | manta.key_path           | manta.key_path                     | MANTA_KEY_PATH              |
+|                                      |                          | manta.key_content                  | MANTA_KEY_CONTENT           |
+|                                      |                          | manta.password                     | MANTA_PASSWORD              |
+| 20000                                | manta.timeout            | manta.timeout                      | MANTA_TIMEOUT               |
+| 3 (6 for integration tests)          |                          | manta.retries                      | MANTA_HTTP_RETRIES          |
+| 24                                   |                          | manta.max_connections              | MANTA_MAX_CONNS             |
+| 8192                                 | manta.http_buffer_size   | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE      |
+| TLSv1.2                              |                          | https.protocols                    | MANTA_HTTPS_PROTOCOLS       |
+| <value too big - see code>           |                          | https.cipherSuites                 | MANTA_HTTPS_CIPHERS         |
+| false                                |                          | manta.no_auth                      | MANTA_NO_AUTH               |
+| false                                |                          | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS        |
+| 10000                                | manta.tcp_socket_timeout | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT    |
+| true                                 |                          | manta.verify_uploads               | MANTA_VERIFY_UPLOADS        |
+| 16384                                |                          | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE    |
+| false                                |                          | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION     |
+| false                                |                          | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS |
+| Mandatory                            |                          | manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE  |
+|                                      |                          | manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH   |
+|                                      |                          | manta.encryption_key_bytes         |                             |
+|                                      |                          | manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES  |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -84,7 +92,9 @@ The number of times to retry failed HTTP requests.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
 The maximum number of open HTTP connections to the Manta API.
 * `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
-The size of the buffer to allocate when processing streaming HTTP data.
+The size of the buffer to allocate when processing streaming HTTP data. This sets the value
+used by Apache HTTP Client `SessionInputBufferImpl` implementation. Ranges from 1024-16384
+are acceptable depending on your average object size and streaming needs.
 * `https.protocols` (**MANTA_HTTPS_PROTOCOLS**)
 A comma delimited list of TLS protocols.
 * `https.cipherSuites` (**MANTA_HTTPS_CIPHERS**)
@@ -95,7 +105,14 @@ only really useful when you are running the library as part of a Manta job.
 * `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
 When set to true, this disables the use of native code libraries for cryptography.
 * `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
-Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever. 
+Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
+* `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
+When set to true, the client calculates a MD5 checksum of the file being uploaded
+to Manta and then checks it against the result returned by Manta.
+* `manta.upload_buffer_size` (**MANTA_UPLOAD_BUFFER_SIZE**)
+The initial amount of bytes to attempt to load into memory when uploading a stream. If the
+entirety of the stream fits within the number of bytes of this value, then the
+contents of the buffer are directly uploaded to Manta in a retryable form.
 
 Below is an example of using all of the defaults and only setting the `manta.user` and `manta.key_id`.
 

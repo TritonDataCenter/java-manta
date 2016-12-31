@@ -149,13 +149,14 @@ public class MantaClientPutIT {
     }
 
     @Test
-    public final void testPutWithMarkUnsupportedStream() throws IOException {
+    public final void testPutWithStreamThatDoesntFitInBuffer() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
-        final int length = 20 * 1024;
+        final int length = mantaClient.getContext().getUploadBufferSize() + 1024;
+
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             Assert.assertFalse(testDataInputStream.markSupported());
             mantaClient.put(path, testDataInputStream);
@@ -170,6 +171,19 @@ public class MantaClientPutIT {
         Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
         final int length = 20 * 1024;
+        try (InputStream testDataInputStream = new RandomInputStream(length)) {
+            mantaClient.put(path, testDataInputStream, length, null, null);
+        }
+    }
+
+    @Test
+    public final void testPutWithStreamAndKnownContentLengthBeyondBuffer() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
+
+        final int length = mantaClient.getContext().getUploadBufferSize() + 1024;
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             mantaClient.put(path, testDataInputStream, length, null, null);
         }

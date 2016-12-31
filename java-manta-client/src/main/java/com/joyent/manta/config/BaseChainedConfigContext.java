@@ -91,6 +91,18 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Integer tcpSocketTimeout;
 
     /**
+     * Flag indicating if we verify the uploaded file's checksum against the
+     * server's checksum (MD5).
+     */
+    private Boolean verifyUploads;
+
+    /**
+     * Number of bytes to read into memory for a streaming upload before
+     * deciding if we want to load it in memory before send it.
+     */
+    private Integer uploadBufferSize;
+
+    /**
      * Flag indicating when client-side encryption is enabled.
      */
     private Boolean clientEncryptionEnabled;
@@ -226,6 +238,16 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Boolean verifyUploads() {
+        return verifyUploads;
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        return uploadBufferSize;
+    }
+
+    @Override
     public Boolean isClientEncryptionEnabled() {
         return clientEncryptionEnabled;
     }
@@ -342,6 +364,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.tcpSocketTimeout = context.getTcpSocketTimeout();
         }
 
+        if (context.verifyUploads() != null) {
+            this.verifyUploads = context.verifyUploads();
+        }
+
+        if (context.getUploadBufferSize() != null) {
+            this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
@@ -420,6 +450,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.tcpSocketTimeout == null) {
             this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
+        if (this.verifyUploads == null) {
+            this.verifyUploads = context.verifyUploads();
+        }
+
+        if (this.uploadBufferSize == null) {
+            this.uploadBufferSize = context.getUploadBufferSize();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -567,8 +605,15 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setMaxConnections(final Integer maxConnections) {
-        this.maxConnections = maxConnections;
+    public BaseChainedConfigContext setVerifyUploads(final Boolean verify) {
+        this.verifyUploads = verify;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setUploadBufferSize(final Integer size) {
+        this.uploadBufferSize = size;
 
         return this;
     }
@@ -644,6 +689,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
+                && Objects.equals(verifyUploads, that.verifyUploads)
+                && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
                 && Objects.equals(encryptionAuthenticationMode, that.encryptionAuthenticationMode)
@@ -657,6 +704,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, tcpSocketTimeout,
+                verifyUploads, uploadBufferSize,
                 clientEncryptionEnabled, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
                 encryptionPrivateKeyBytes);

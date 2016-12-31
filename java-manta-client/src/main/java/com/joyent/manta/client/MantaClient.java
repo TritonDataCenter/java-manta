@@ -31,6 +31,7 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -205,9 +206,14 @@ public class MantaClient implements AutoCloseable {
 
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
+
+        final boolean verifyUploads = BooleanUtils.toBooleanDefaultIfNull(config.verifyUploads(),
+                true);
+
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(connectionContext, connectionFactory);
+        this.httpHelper = new HttpHelper(connectionContext, connectionFactory,
+                verifyUploads);
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
@@ -237,7 +243,12 @@ public class MantaClient implements AutoCloseable {
 
         this.connectionFactory = connectionFactory;
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(connectionContext, connectionFactory);
+
+        final boolean verifyUploads = BooleanUtils.toBooleanDefaultIfNull(config.verifyUploads(),
+                true);
+
+        this.httpHelper = new HttpHelper(connectionContext, connectionFactory,
+                verifyUploads);
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
@@ -898,7 +909,7 @@ public class MantaClient implements AutoCloseable {
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM);
 
-        final int preLoadSize = 4096;
+        final int preLoadSize = config.getUploadBufferSize();
         final HttpEntity entity;
 
         /* We don't know how big the stream is, so we read N bytes from it and

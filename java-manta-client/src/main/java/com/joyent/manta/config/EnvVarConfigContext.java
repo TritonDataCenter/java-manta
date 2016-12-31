@@ -91,6 +91,16 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY = "MANTA_TCP_SOCKET_TIMEOUT";
 
     /**
+     * Environment variable for enabling the checksum verification of uploaded files.
+     */
+    public static final String MANTA_VERIFY_UPLOADS_ENV_KEY = "MANTA_VERIFY_UPLOADS";
+
+    /**
+     * Environment variable for setting the size of pre-streaming upload buffers.
+     */
+    public static final String MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY = "MANTA_UPLOAD_BUFFER_SIZE";
+
+    /**
      * Environment variable for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
@@ -130,6 +140,8 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
+            MANTA_VERIFY_UPLOADS_ENV_KEY,
+            MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY,
@@ -246,6 +258,19 @@ public class EnvVarConfigContext implements ConfigContext {
         String timeoutString = getEnv(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY);
 
         return MantaUtils.parseIntegerOrNull(timeoutString);
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        String verify = getEnv(MANTA_VERIFY_UPLOADS_ENV_KEY);
+        return MantaUtils.parseBooleanOrNull(verify);
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        String buffString = getEnv(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY);
+
+        return MantaUtils.parseIntegerOrNull(buffString);
     }
 
     @Override

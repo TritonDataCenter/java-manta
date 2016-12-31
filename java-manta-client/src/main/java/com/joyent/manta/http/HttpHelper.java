@@ -61,6 +61,8 @@ public class HttpHelper implements AutoCloseable {
      */
     private final MantaConnectionContext connectionContext;
 
+    private final boolean validateUploads;
+
     /**
      * Creates a new instance of the helper class.
      *
@@ -68,10 +70,11 @@ public class HttpHelper implements AutoCloseable {
      * @param connectionFactory instance used for building requests to Manta
      */
     public HttpHelper(final MantaConnectionContext connectionContext,
-                      final MantaConnectionFactory connectionFactory) {
+                      final MantaConnectionFactory connectionFactory,
+                      final boolean validateUploads) {
         this.connectionContext = connectionContext;
         this.connectionFactory = connectionFactory;
-
+        this.validateUploads = validateUploads;
     }
 
     /**
@@ -241,7 +244,9 @@ public class HttpHelper implements AutoCloseable {
                 obj.setContentType(entity.getContentType().getValue());
             }
 
-            validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
+            if (validateUploads) {
+                validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
+            }
 
             return obj;
         }

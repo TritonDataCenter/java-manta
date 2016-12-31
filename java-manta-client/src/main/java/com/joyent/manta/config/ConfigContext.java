@@ -102,6 +102,18 @@ public interface ConfigContext {
     Integer getTcpSocketTimeout();
 
     /**
+     * @return true when we verify the uploaded file's checksum against the
+     *         server's checksum (MD5)
+     */
+    Boolean verifyUploads();
+
+    /**
+     * @return number of bytes to read into memory for a streaming upload before
+     *         deciding if we want to load it in memory before send it
+     */
+    Integer getUploadBufferSize();
+
+    /**
      * @return true when client-side encryption is enabled.
      */
     Boolean isClientEncryptionEnabled();
@@ -164,6 +176,8 @@ public interface ConfigContext {
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
         sb.append(", tcpSocketTimeout=").append(context.getTcpSocketTimeout());
+        sb.append(", verifyUploads=").append(context.verifyUploads());
+        sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -306,6 +320,12 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();
+            case MapConfigContext.MANTA_VERIFY_UPLOADS_KEY:
+            case EnvVarConfigContext.MANTA_VERIFY_UPLOADS_ENV_KEY:
+                return config.verifyUploads();
+            case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
+            case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
+                return config.getUploadBufferSize();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();

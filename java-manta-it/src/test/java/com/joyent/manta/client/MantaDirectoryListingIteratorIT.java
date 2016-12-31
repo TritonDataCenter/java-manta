@@ -67,7 +67,8 @@ public class MantaDirectoryListingIteratorIT {
         final KeyPair keyPair = keyPairFactory.createKeyPair();
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(connectionContext, connectionFactory);
+        this.httpHelper = new HttpHelper(connectionContext, connectionFactory,
+                false);
     }
 
 

@@ -63,6 +63,11 @@ public class DefaultsConfigContext implements ConfigContext {
      */
     public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
 
+    /**
+     * Default size of pre-streaming upload buffer (16K).
+     */
+    public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
+
     static {
         // Don't even bother setting a default key path if it doesn't exist
         String defaultKeyPath = String.format("%s/.ssh/id_rsa",
@@ -156,6 +161,16 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getTcpSocketTimeout() {
         return DEFAULT_TCP_SOCKET_TIMEOUT;
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        return true;
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        return DEFAULT_UPLOAD_BUFFER_SIZE;
     }
 
     @Override

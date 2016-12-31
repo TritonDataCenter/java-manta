@@ -19,7 +19,10 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - SettableConfigContext has been added as an interface to indicate that a given
    config context has settable properties.
  - Added isClosed() method to MantaClient.
- - Added HTTP buffer size and TCP socket time out configuration parameters.
+ - Added HTTP buffer size configuration parameter.
+ - Added TCP socket time out configuration parameter.
+ - Added verify upload checksum configuration parameter.
+ - Added upload buffer size configuration parameter.
 ### Removed
  - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Removed MantaCryptoException.
