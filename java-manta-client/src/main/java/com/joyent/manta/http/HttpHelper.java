@@ -61,6 +61,9 @@ public class HttpHelper implements AutoCloseable {
      */
     private final MantaConnectionContext connectionContext;
 
+    /**
+     * Flag toggling the checksum verification of uploaded files.
+     */
     private final boolean validateUploads;
 
     /**
@@ -68,6 +71,7 @@ public class HttpHelper implements AutoCloseable {
      *
      * @param connectionContext saved context used between requests to the Manta client
      * @param connectionFactory instance used for building requests to Manta
+     * @param validateUploads flag toggling the checksum verification of uploaded files
      */
     public HttpHelper(final MantaConnectionContext connectionContext,
                       final MantaConnectionFactory connectionFactory,
