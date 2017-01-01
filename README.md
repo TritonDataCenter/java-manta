@@ -221,3 +221,17 @@ See <https://github.com/joyent/java-manta/issues>.
 Java Manta is licensed under the MPLv2. Please see the [LICENSE.txt](LICENSE.txt) 
 file for more details. The license was changed from the MIT license to the MPLv2
 license starting at version 2.3.0.
+
+### Credits
+We are grateful for the functionality provided by the libraries that this project
+depends on. Without them, we would be building everything from scratch. A thank you
+goes out to:
+
+* [The Apache Commons Project](https://commons.apache.org/)
+* [The Apache HTTP Components Project](http://hc.apache.org/)
+* [The FastXML Project](https://github.com/FasterXML)
+* [The Legion of the Bouncy Castle Project](https://www.bouncycastle.org/)
+* [The SLF4J Project](http://www.slf4j.org/)
+* [The JNAGMP Project](https://github.com/square/jna-gmp)
+* [The TestNG Project](http://testng.org/doc/index.html)
+* [The Mockito Project](http://site.mockito.org/)
