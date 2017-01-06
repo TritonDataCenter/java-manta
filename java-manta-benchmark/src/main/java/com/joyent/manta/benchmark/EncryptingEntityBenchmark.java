@@ -6,7 +6,6 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.output.NullOutputStream;
 
 import javax.crypto.SecretKey;
@@ -36,7 +35,7 @@ public final class EncryptingEntityBenchmark {
     private static void throughputTest(final int tries, final SecureRandom random)
             throws IOException {
         final long oneMb = 1_048_576L;
-        final Charset charset = Charsets.US_ASCII;
+        final Charset charset = Charset.forName("US-ASCII");
 
         Duration[] durations = new Duration[tries];
 
