@@ -178,7 +178,7 @@ public final class Benchmark {
         long fullAggregation = 0;
         long serverAggregation = 0;
 
-        final long testStart = System.currentTimeMillis();
+        final long testStart = System.nanoTime();
 
         for (int i = 0; i < iterations; i++) {
             Duration[] durations;
@@ -198,15 +198,18 @@ public final class Benchmark {
                     method, i, fullLatency, serverLatency);
         }
 
-        final long testEnd = System.currentTimeMillis();
+        final long testEnd = System.nanoTime();
 
         final long fullAverage = Math.round(fullAggregation / iterations);
         final long serverAverage = Math.round(serverAggregation / iterations);
         final long totalTime = testEnd - testStart;
 
-        System.out.printf("Average full latency: %d ms\n", fullAverage);
-        System.out.printf("Average server latency: %d ms\n", serverAverage);
-        System.out.printf("Total test time: %d ms\n", totalTime);
+        System.out.printf("Average full latency: %d ms\n",
+                Duration.ofNanos(fullAverage).toMillis()) ;
+        System.out.printf("Average server latency: %d ms\n",
+                Duration.ofNanos(serverAverage).toMillis());
+        System.out.printf("Total test time: %d ms\n",
+                Duration.ofNanos(totalTime).toMillis());
     }
 
     /**
@@ -229,7 +232,7 @@ public final class Benchmark {
 
         System.out.printf("Running %d iterations per thread\n", perThreadCount);
 
-        final long testStart = System.currentTimeMillis();
+        final long testStart = System.nanoTime();
 
         Runtime.getRuntime().addShutdownHook(new Thread(Benchmark::cleanUp));
 
@@ -298,11 +301,11 @@ public final class Benchmark {
         }
 
 
-        final long testEnd = System.currentTimeMillis();
+        final long testEnd = System.nanoTime();
 
         final long fullAverage = Math.round(fullAggregation.get() / iterations);
         final long serverAverage = Math.round(serverAggregation.get() / iterations);
-        final long totalTime = testEnd - testStart;
+        final long totalTime = Duration.ofNanos(testEnd - testStart).toMillis();
 
         System.out.printf("Average full latency: %d ms\n", fullAverage);
         System.out.printf("Average server latency: %d ms\n", serverAverage);
@@ -395,7 +398,7 @@ public final class Benchmark {
     private static Duration[] measurePut(final long length) throws IOException {
         final String path = String.format("%s/%s", testDirectory,
                 UUID.randomUUID());
-        final Instant start = Instant.now();
+        final long start = System.nanoTime();
         final String serverLatencyString;
 
         try (RandomInputStream rand = new RandomInputStream(length)) {
@@ -406,10 +409,10 @@ public final class Benchmark {
                     .getHeader("x-response-time").toString();
         }
 
-        final Instant stop = Instant.now();
+        final long stop = System.nanoTime();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));
-        Duration fullLatency = Duration.between(start, stop);
+        Duration fullLatency = Duration.ofNanos(stop - start);
         return new Duration[] {fullLatency, serverLatency};
     }
 }
