@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
         <version>3.0.0-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>java-manta-benchmark</artifactId>
+    <artifactId>java-manta-cli</artifactId>
     <packaging>jar</packaging>
-
-    <properties>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -36,11 +34,6 @@
             <artifactId>commons-lang3</artifactId>
             <version>${dependency.commons-lang.version}</version>
         </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${dependency.commons-io.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -50,7 +43,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.joyent.manta.benchmark.Benchmark</mainClass>
+                            <mainClass>com.joyent.manta.cli.MantaCLI</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
@@ -73,15 +66,7 @@
                 <version>${maven-exec-plugin.version}</version>
                 <configuration>
                     <executable>java</executable>
-                    <mainClass>com.joyent.manta.benchmark.Benchmark</mainClass>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>${maven-deploy-plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
+                    <mainClass>com.joyent.manta.cli.MantaCLI</mainClass>
                 </configuration>
             </plugin>
         </plugins>

@@ -47,6 +47,7 @@
 
     <modules>
         <module>java-manta-client</module>
+        <module>java-manta-cli</module>
         <module>java-manta-it</module>
         <module>java-manta-benchmark</module>
         <module>java-manta-examples</module>
@@ -106,6 +107,7 @@
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
+        <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>3.0.1</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.2</dependency.apache-http-client.version>
