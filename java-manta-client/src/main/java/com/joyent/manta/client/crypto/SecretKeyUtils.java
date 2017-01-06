@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -35,19 +36,36 @@ public final class SecretKeyUtils {
     /**
      * Generates a new symmetric key using the specified cipher.
      *
-     * @param cipher cipher to generate key for
+     * @param cipherDetails cipher to generate key for
+     * @return new instance of key
+     * @throws MantaClientEncryptionException thrown if there is a problem getting the cipher
+     */
+    public static SecretKey generate(final SupportedCipherDetails cipherDetails) {
+        try {
+            return generate(cipherDetails.getKeyGenerationAlgorithm(), cipherDetails.getKeyLengthBits());
+        } catch (NoSuchAlgorithmException e) {
+            String msg = String.format("Couldn't find algorithm [%s]");
+            throw new MantaClientEncryptionException(msg, e);
+        }
+    }
+
+    /**
+     * Generates a new symmetric key using the specified cipher.
+     *
+     * @param algorithm cipher to generate key for
      * @param bits number of bits of key
      * @return new instance of key
      * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
      */
-    public static SecretKey generate(final String cipher, final int bits)
+    public static SecretKey generate(final String algorithm, final int bits)
             throws NoSuchAlgorithmException {
-        Validate.notNull(cipher, "Cipher must not be null");
+        Validate.notNull(algorithm, "Cipher must not be null");
         Validate.isTrue(bits > 0, "Cipher bits must be greater than zero");
 
-        KeyGenerator symKeyGenerator = KeyGenerator.getInstance(cipher);
+        KeyGenerator symKeyGenerator = KeyGenerator.getInstance(algorithm,
+                BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
         symKeyGenerator.init(bits);
-        return  symKeyGenerator.generateKey();
+        return symKeyGenerator.generateKey();
     }
 
     /**
@@ -102,19 +120,38 @@ public final class SecretKeyUtils {
      * close the supplied stream and will read the entire contents of the
      * stream supplied.
      *
-     * @param in stream to read secret key from
-     * @param cipher the secret key's cipher name
+     * @param bytes byte array to read secret key from
+     * @param cipherDetails the secret key's cipher
      * @return a new instance based on the secret key loaded
      * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
      * @throws IOException thrown when there is a problem reading or parsing the key
      */
-    public static SecretKeySpec loadKey(final InputStream in, final String cipher)
+    public static SecretKeySpec loadKey(final byte[] bytes, final SupportedCipherDetails cipherDetails) {
+        Validate.notNull(bytes, "Byte array must not be null");
+        Validate.notNull(cipherDetails, "Cipher details must not be null");
+
+        return new SecretKeySpec(bytes, cipherDetails.getKeyGenerationAlgorithm());
+    }
+
+    /**
+     * Loads symmetric secret key with the specified cipher into a
+     * {@link SecretKeySpec} object from a stream. Note: This method doesn't
+     * close the supplied stream and will read the entire contents of the
+     * stream supplied.
+     *
+     * @param in stream to read secret key from
+     * @param algorithm the secret key's cipher name
+     * @return a new instance based on the secret key loaded
+     * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
+     * @throws IOException thrown when there is a problem reading or parsing the key
+     */
+    public static SecretKeySpec loadKey(final InputStream in, final String algorithm)
             throws NoSuchAlgorithmException, IOException {
         Validate.notNull(in, "InputStream must not be null");
-        Validate.notNull(cipher, "Cipher must not be null");
+        Validate.notNull(algorithm, "Cipher must not be null");
         byte[] bytesAsEncodedKey = IOUtils.toByteArray(in);
 
-        return new SecretKeySpec(bytesAsEncodedKey, cipher);
+        return new SecretKeySpec(bytesAsEncodedKey, algorithm);
     }
 
     /**
@@ -122,16 +159,16 @@ public final class SecretKeyUtils {
      * {@link SecretKeySpec} object from a path.
      *
      * @param path path to read secret key from
-     * @param cipher the secret key's cipher name
+     * @param algorithm the secret key's cipher name
      * @return a new instance based on the secret key loaded
      * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
      * @throws IOException thrown when there is a problem reading or parsing the key
      */
-    public static SecretKeySpec loadKeyFromPath(final Path path, final String cipher)
+    public static SecretKeySpec loadKeyFromPath(final Path path, final String algorithm)
             throws NoSuchAlgorithmException, IOException {
         Validate.notNull(path, "Path must not be null");
         try (InputStream in = Files.newInputStream(path)) {
-            return loadKey(in, cipher);
+            return loadKey(in, algorithm);
         }
     }
 
@@ -140,14 +177,14 @@ public final class SecretKeyUtils {
      * {@link SecretKeySpec} object from a path.
      *
      * @param file file to read secret key from
-     * @param cipher the secret key's cipher name
+     * @param algorithm the secret key's cipher name
      * @return a new instance based on the secret key loaded
      * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
      * @throws IOException thrown when there is a problem reading or parsing the key
      */
-    public static SecretKeySpec loadKeyFromFile(final File file, final String cipher)
+    public static SecretKeySpec loadKeyFromFile(final File file, final String algorithm)
             throws NoSuchAlgorithmException, IOException {
         Validate.notNull(file, "File must not be null");
-        return loadKeyFromPath(file.toPath(), cipher);
+        return loadKeyFromPath(file.toPath(), algorithm);
     }
 }
