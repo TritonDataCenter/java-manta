@@ -213,13 +213,6 @@
                             </excludes>
                         </filter>
                     </filters>
-                    <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <manifestEntries>
-                                <Main-Class>com.joyent.manta.cli.MantaCLI</Main-Class>
-                            </manifestEntries>
-                        </transformer>
-                    </transformers>
                 </configuration>
                 <executions>
                     <execution>
