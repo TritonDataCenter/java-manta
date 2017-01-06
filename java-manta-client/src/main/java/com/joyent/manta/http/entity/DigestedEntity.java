@@ -5,7 +5,6 @@ package com.joyent.manta.http.entity;
 
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -29,11 +28,6 @@ public class DigestedEntity implements HttpEntity {
      * Calculates a running MD5 as data is streamed out.
      */
     private final MessageDigest messageDigest;
-
-    /**
-     * Total number of bytes processed.
-     */
-    private long byteCount = -1L;
 
     /**
      * Wrapped entity implementation in which the API is proxied through.
@@ -74,13 +68,7 @@ public class DigestedEntity implements HttpEntity {
 
     @Override
     public long getContentLength() {
-        final long wrappedContentLength = this.wrapped.getContentLength();
-
-        if (wrappedContentLength < 0) {
-            return byteCount;
-        } else {
-            return this.wrapped.getContentLength();
-        }
+        return this.wrapped.getContentLength();
     }
 
     @Override
@@ -107,25 +95,11 @@ public class DigestedEntity implements HttpEntity {
         if (wrapped instanceof MemoryBackedEntity) {
             MemoryBackedEntity entity = (MemoryBackedEntity)wrapped;
             messageDigest.update(entity.getBackingBuffer());
-            this.byteCount = this.wrapped.getContentLength();
 
             wrapped.writeTo(out);
-
-            return;
-        }
-
-        // Count the bytes of the entity as we stream if it isn't available
-        if (this.wrapped.getContentLength() < 0) {
-            try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest);
-                 CountingOutputStream cout = new CountingOutputStream(dout)) {
-                wrapped.writeTo(cout);
-                this.byteCount = cout.getByteCount();
-            }
-        // Otherwise, we trust the byte count and just digest streaming
         } else {
             try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest)) {
                 wrapped.writeTo(dout);
-                this.byteCount = this.wrapped.getContentLength();
             }
         }
     }
@@ -155,7 +129,6 @@ public class DigestedEntity implements HttpEntity {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("messageDigest", MantaUtils.byteArrayAsHexString(getDigest()))
-                .append("byteCount", byteCount)
                 .append("wrapped", wrapped)
                 .toString();
     }

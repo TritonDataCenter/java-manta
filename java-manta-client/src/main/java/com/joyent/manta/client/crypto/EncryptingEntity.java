@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 /**
@@ -59,7 +58,7 @@ public class EncryptingEntity implements HttpEntity {
     /**
      * Total length of the stream in bytes.
      */
-    private final long length;
+    private long originalLength;
 
     /**
      * Underlying entity that is being encrypted.
@@ -72,16 +71,23 @@ public class EncryptingEntity implements HttpEntity {
     private Cipher cipher;
 
     /**
+     * Source of entropy for the encryption algorithm.
+     */
+    private SecureRandom random;
+
+    /**
      * Creates a new instance with an unknown stream size.
      *
      * @param key key to encrypt stream with
      * @param cipherDetails cipher to encrypt stream with
      * @param wrapped underlying stream to encrypt
+     * @param random source of entropy for the encryption algorithm
      */
     public EncryptingEntity(final SecretKey key,
                             final SupportedCipherDetails cipherDetails,
-                            final HttpEntity wrapped) {
-        this(key, cipherDetails, UNKNOWN_LENGTH, wrapped);
+                            final HttpEntity wrapped,
+                            final SecureRandom random) {
+        this(key, cipherDetails, UNKNOWN_LENGTH, wrapped, random);
     }
 
     /**
@@ -89,14 +95,16 @@ public class EncryptingEntity implements HttpEntity {
      *
      * @param key key to encrypt stream with
      * @param cipherDetails cipher to encrypt stream with
-     * @param length length of the underlying stream
+     * @param originalLength length of the underlying stream
      * @param wrapped underlying stream to encrypt
+     * @param random source of entropy for the encryption algorithm
      */
     public EncryptingEntity(final SecretKey key,
                             final SupportedCipherDetails cipherDetails,
-                            final long length,
-                            final HttpEntity wrapped) {
-        if (length > cipherDetails.getMaximumPlaintextSizeInBytes()) {
+                            final long originalLength,
+                            final HttpEntity wrapped,
+                            final SecureRandom random) {
+        if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
             String msg = String.format("Input content length exceeded maximum "
             + "[%d] number of bytes supported by cipher [%s]",
                     cipherDetails.getMaximumPlaintextSizeInBytes(),
@@ -106,8 +114,9 @@ public class EncryptingEntity implements HttpEntity {
 
         this.key = key;
         this.cipherDetails = cipherDetails;
-        this.length = length;
+        this.originalLength = originalLength;
         this.wrapped = wrapped;
+        this.random = random;
     }
 
     @Override
@@ -117,13 +126,13 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public boolean isChunked() {
-        return length < 0;
+        return originalLength < 0;
     }
 
     @Override
     public long getContentLength() {
-        if (length > 0) {
-            return cipherDetails.cipherTextSize(length);
+        if (originalLength > 0) {
+            return cipherDetails.cipherTextSize(originalLength);
         } else {
             return UNKNOWN_LENGTH;
         }
@@ -149,7 +158,6 @@ public class EncryptingEntity implements HttpEntity {
         cipher = cipherDetails.getCipher();
 
         try {
-            SecureRandom random = SecureRandom.getInstanceStrong();
             byte[] iv = new byte[cipherDetails.getIVLengthInBytes()];
             random.nextBytes(iv);
 
@@ -161,9 +169,6 @@ public class EncryptingEntity implements HttpEntity {
                     key.getAlgorithm(), key.getFormat());
             mcee.setContextValue("key_details", details);
             throw mcee;
-        } catch (NoSuchAlgorithmException e) {
-            throw new MantaClientEncryptionException(
-                    "There was a problem getting a random provider", e);
         } catch (InvalidAlgorithmParameterException e) {
             throw new MantaClientEncryptionException(
                     "There was a problem with the passed algorithm parameters", e);

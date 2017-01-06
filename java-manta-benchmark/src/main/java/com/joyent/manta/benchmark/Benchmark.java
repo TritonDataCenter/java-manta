@@ -204,7 +204,7 @@ public final class Benchmark {
         final long serverAverage = Math.round(serverAggregation / iterations);
         final long totalTime = testEnd - testStart;
 
-        System.out.printf("Average full latency: %d ms\n", fullAverage) ;
+        System.out.printf("Average full latency: %d ms\n", fullAverage);
         System.out.printf("Average server latency: %d ms\n", serverAverage);
         System.out.printf("Total test time: %d ms\n",
                 Duration.ofNanos(totalTime).toMillis());

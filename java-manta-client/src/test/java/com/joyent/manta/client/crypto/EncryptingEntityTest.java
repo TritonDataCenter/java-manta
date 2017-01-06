@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
+import java.security.SecureRandom;
 
 @Test
 public class EncryptingEntityTest {
@@ -29,7 +30,8 @@ public class EncryptingEntityTest {
 
         EncryptingEntity encryptingEntity = new EncryptingEntity(key,
                 cipherDetails,
-                stringEntity.getContentLength(), stringEntity);
+                stringEntity.getContentLength(), stringEntity,
+                new SecureRandom());
 
         File file = File.createTempFile("ciphertext-", ".data");
         FileUtils.forceDeleteOnExit(file);
