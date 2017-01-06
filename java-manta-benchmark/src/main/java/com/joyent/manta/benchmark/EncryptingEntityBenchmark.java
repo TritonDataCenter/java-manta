@@ -84,10 +84,14 @@ public final class EncryptingEntityBenchmark {
             tries = Integer.parseInt(argv[0].trim());
         }
 
-        if (argv.length < 2 && !argv[1].trim().equalsIgnoreCase("strong")) {
+        if (argv.length < 2) {
             random = new SecureRandom();
         } else {
-            random = SecureRandom.getInstanceStrong();
+            if (argv[1].trim().equalsIgnoreCase("strong")) {
+                random = SecureRandom.getInstanceStrong();
+            } else {
+                random = new SecureRandom();
+            }
         }
 
         throughputTest(tries, random);
