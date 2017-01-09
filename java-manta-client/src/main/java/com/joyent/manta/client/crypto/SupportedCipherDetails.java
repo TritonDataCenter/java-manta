@@ -55,7 +55,7 @@ public interface SupportedCipherDetails {
     /**
      * @return size of authentication tag or MAC in bytes
      */
-    int getAuthenticationTagOrMacLengthInBytes();
+    int getAuthenticationTagOrHmacLengthInBytes();
 
     /**
      * @return maximum size of plaintext data in bytes

@@ -4,6 +4,7 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -76,32 +77,15 @@ public class EncryptingEntity implements HttpEntity {
     private SecureRandom random;
 
     /**
-     * Creates a new instance with an unknown stream size.
-     *
-     * @param key key to encrypt stream with
-     * @param cipherDetails cipher to encrypt stream with
-     * @param wrapped underlying stream to encrypt
-     * @param random source of entropy for the encryption algorithm
-     */
-    public EncryptingEntity(final SecretKey key,
-                            final SupportedCipherDetails cipherDetails,
-                            final HttpEntity wrapped,
-                            final SecureRandom random) {
-        this(key, cipherDetails, UNKNOWN_LENGTH, wrapped, random);
-    }
-
-    /**
      * Creates a new instance with an known stream size.
      *
      * @param key key to encrypt stream with
      * @param cipherDetails cipher to encrypt stream with
-     * @param originalLength length of the underlying stream
      * @param wrapped underlying stream to encrypt
      * @param random source of entropy for the encryption algorithm
      */
     public EncryptingEntity(final SecretKey key,
                             final SupportedCipherDetails cipherDetails,
-                            final long originalLength,
                             final HttpEntity wrapped,
                             final SecureRandom random) {
         if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
@@ -114,7 +98,7 @@ public class EncryptingEntity implements HttpEntity {
 
         this.key = key;
         this.cipherDetails = cipherDetails;
-        this.originalLength = originalLength;
+        this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
         this.random = random;
     }
@@ -136,6 +120,10 @@ public class EncryptingEntity implements HttpEntity {
         } else {
             return UNKNOWN_LENGTH;
         }
+    }
+
+    public long getOriginalLength() {
+        return originalLength;
     }
 
     @Override
@@ -175,8 +163,20 @@ public class EncryptingEntity implements HttpEntity {
         }
 
         try (CipherOutputStream cout = new CipherOutputStream(out, cipher)) {
-            IOUtils.copy(getContent(), cout);
+            long bytesCopied = IOUtils.copyLarge(getContent(), cout);
             cout.flush();
+
+            /* If we don't know the length of the underlying content stream, we
+             * count the number of bytes written, so that it is available. */
+            if (originalLength == UNKNOWN_LENGTH) {
+                originalLength = bytesCopied;
+            } else if (originalLength != bytesCopied) {
+                MantaIOException e = new MantaIOException("Bytes copied doesn't equal the "
+                        + "specified content length");
+                e.setContextValue("specifiedContentLength", originalLength);
+                e.setContextValue("actualContentLength", bytesCopied);
+                throw e;
+            }
         }
     }
 

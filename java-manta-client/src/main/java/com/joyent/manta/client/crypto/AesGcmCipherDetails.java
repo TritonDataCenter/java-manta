@@ -65,7 +65,7 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
     }
 
     @Override
-    public int getAuthenticationTagOrMacLengthInBytes() {
+    public int getAuthenticationTagOrHmacLengthInBytes() {
         return 16;
     }
 
@@ -87,13 +87,13 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
                 "Initialization vector has the wrong byte count [%d] "
                 + "expected [%d] bytes", iv.length, getIVLengthInBytes());
 
-        int tagSizeInBits = getAuthenticationTagOrMacLengthInBytes() << 3;
+        int tagSizeInBits = getAuthenticationTagOrHmacLengthInBytes() << 3;
         return new GCMParameterSpec(tagSizeInBits, iv);
     }
 
     @Override
     public long cipherTextSize(final long plainTextSize) {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
-        return plainTextSize + getAuthenticationTagOrMacLengthInBytes();
+        return plainTextSize + getAuthenticationTagOrHmacLengthInBytes();
     }
 }
