@@ -644,7 +644,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setEncryptionKeyId(String keyId) {
+    public BaseChainedConfigContext setEncryptionKeyId(final String keyId) {
         this.encryptionKeyId = keyId;
 
         return this;
