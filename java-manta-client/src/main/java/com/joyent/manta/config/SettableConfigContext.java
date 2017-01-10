@@ -166,6 +166,13 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setEncryptionKeyId(String keyId);
 
     /**
+     * Sets the algorithm name in the format of <code>cipher/mode/padding state</code>.
+     *
+     * @param algorithm the name of the algorithm used to encrypt and decrypt
+     */
+    T setEncryptionAlgorithm(String algorithm);
+
+    /**
      * Sets flag indicating when downloading unencrypted files is allowed in
      * encryption mode.
      *

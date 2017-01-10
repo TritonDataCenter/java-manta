@@ -7,8 +7,8 @@ package com.joyent.manta.exception;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.domain.ErrorDetail;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.StandardHttpHelper;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -146,7 +146,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
             }
         }
 
-        setRequestId(StandardHttpHelper.extractRequestId(response));
+        setRequestId(HttpHelper.extractRequestId(response));
         setStatusLine(response.getStatusLine());
 
         if (errorDetail == null) {
@@ -156,7 +156,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
             setContextValue("server_message", errorDetail.getMessage());
         }
 
-        StandardHttpHelper.annotateContextedException(this, request, response);
+        HttpHelper.annotateContextedException(this, request, response);
     }
 
     /**

@@ -3,6 +3,8 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.crypto.AesGcmCipherDetails;
+
 import java.io.File;
 
 /**
@@ -181,6 +183,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public String getEncryptionKeyId() {
         return null;
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return AesGcmCipherDetails.INSTANCE.getCipherAlgorithm();
     }
 
     @Override

@@ -111,6 +111,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_ENCRYPTION_KEY_ID_ENV_KEY = "MANTA_CLIENT_ENCRYPTION_KEY_ID";
 
     /**
+     * Environment variable for setting the name of the algorithm used to encrypt and decrypt.
+     */
+    public static final String MANTA_ENCRYPTION_ALGORITHM_ENV_KEY = "MANTA_ENCRYPTION_ALGORITHM";
+
+    /**
      * Environment variable for flag indicating when downloading unencrypted
      * files is allowed in encryption mode.
      */
@@ -289,6 +294,11 @@ public class EnvVarConfigContext implements ConfigContext {
     @Override
     public String getEncryptionKeyId() {
         return getEnv(MANTA_ENCRYPTION_KEY_ID_ENV_KEY);
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return getEnv(MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
     }
 
     @Override

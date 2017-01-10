@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -139,6 +140,13 @@ public interface ConfigContext {
     String getEncryptionKeyId();
 
     /**
+     * Gets the algorithm name in the format of <code>cipher/mode/padding state</code>.
+     *
+     * @return the name of the algorithm used to encrypt and decrypt
+     */
+    String getEncryptionAlgorithm();
+
+    /**
      * @return path to the private encryption key on the filesystem (can't be used if private key bytes is not null)
      */
     String getEncryptionPrivateKeyPath();
@@ -192,6 +200,7 @@ public interface ConfigContext {
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
         sb.append(", encryptionKeyId=").append(context.getEncryptionKeyId());
+        sb.append(", encryptionAlgorithm=").append(context.getEncryptionAlgorithm());
         sb.append(", encryptionPrivateKeyPath=").append(context.getEncryptionPrivateKeyPath());
 
         if (context.getEncryptionPrivateKeyBytes() == null) {
@@ -302,6 +311,24 @@ public interface ConfigContext {
                     failureMessages.add("Encryption private key byte length must be greater than zero");
                 }
             }
+
+            // CIPHER ALGORITHM VALIDATIONS
+
+            if (config.getEncryptionAlgorithm() == null) {
+                failureMessages.add("Encryption algorithm must not be null");
+            }
+
+            if (StringUtils.isBlank(config.getEncryptionAlgorithm())) {
+                failureMessages.add("Encryption algorithm must not be blank");
+            }
+
+            if (!SupportedCipherDetails.SUPPORTED_CIPHERS.containsKey(config.getEncryptionAlgorithm())) {
+                String availableAlgorithms = StringUtils.join(
+                        SupportedCipherDetails.SUPPORTED_CIPHERS.keySet(), ", ");
+                failureMessages.add(String.format("Cipher algorithm [%s] was not found among "
+                        + "the list of supported algorithms [%s]", config.getEncryptionAlgorithm(),
+                        availableAlgorithms));
+            }
         }
 
         if (!failureMessages.isEmpty()) {
@@ -402,6 +429,9 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY:
             case EnvVarConfigContext.MANTA_ENCRYPTION_KEY_ID_ENV_KEY:
                 return config.getEncryptionKeyId();
+            case MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY:
+            case EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY:
+                return config.getEncryptionAlgorithm();
             case MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY:
             case EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY:
                 return config.getEncryptionAuthenticationMode();
