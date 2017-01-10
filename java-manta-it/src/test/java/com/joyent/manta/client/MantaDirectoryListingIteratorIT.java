@@ -3,13 +3,14 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
+import com.joyent.manta.http.StandardHttpHelper;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -67,7 +68,7 @@ public class MantaDirectoryListingIteratorIT {
         final KeyPair keyPair = keyPairFactory.createKeyPair();
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(connectionContext, connectionFactory,
+        this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
                 false);
     }
 

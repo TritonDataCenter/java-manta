@@ -24,6 +24,7 @@ import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.StandardHttpHelper;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
@@ -212,8 +213,26 @@ public class MantaClient implements AutoCloseable {
 
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new HttpHelper(connectionContext, connectionFactory,
-                verifyUploads);
+
+//        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+//            final SecretKey secretKey;
+//
+//            if (config.getEncryptionPrivateKeyPath() != null) {
+//                File keyFile = new File(config.getEncryptionPrivateKeyPath());
+//                secretKey = SecretKeyUtils.loadKeyFromPath(keyFile.toPath(), );
+//            } else if (config.getEncryptionPrivateKeyBytes() != null){
+//
+//            } else {
+//                throw new IllegalStateException("Either private key path or bytes must be specified");
+//            }
+//
+//            this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
+//                    verifyUploads, config.getEncryptionKeyId(), config.permitUnencryptedDownloads(),
+//                    config.getEncryptionAuthenticationMode(), secretKey);
+//        } else {
+            this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
+                    verifyUploads);
+//        }
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
@@ -247,8 +266,13 @@ public class MantaClient implements AutoCloseable {
         final boolean verifyUploads = BooleanUtils.toBooleanDefaultIfNull(config.verifyUploads(),
                 true);
 
-        this.httpHelper = new HttpHelper(connectionContext, connectionFactory,
-                verifyUploads);
+//        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+//            this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
+//                    verifyUploads);
+//        } else {
+            this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
+                    verifyUploads);
+//        }
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
