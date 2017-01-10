@@ -1,5 +1,6 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.config.EncryptionObjectAuthenticationMode;
 
 import javax.crypto.SecretKey;
@@ -33,6 +34,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     private final SecretKey secretKey;
 
     /**
+     * Cipher implementation used to encrypt and decrypt data.
+     */
+    private final SupportedCipherDetails cipherDetails;
+
+    /**
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
@@ -42,6 +48,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param permitUnencryptedDownloads true when downloading unencrypted files is allowed in encryption mode
      * @param encryptionAuthenticationMode specifies if we are in strict ciphertext authentication mode or not
      * @param secretKey secret key used to encrypt and decrypt data
+     * @param cipherDetails cipher implementation used to encrypt and decrypt data.
      */
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
                                 final MantaConnectionFactory connectionFactory,
@@ -49,12 +56,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                                 final String encryptionKeyId,
                                 final boolean permitUnencryptedDownloads,
                                 final EncryptionObjectAuthenticationMode encryptionAuthenticationMode,
-                                final SecretKey secretKey) {
+                                final SecretKey secretKey,
+                                final SupportedCipherDetails cipherDetails) {
         super(connectionContext, connectionFactory, validateUploads);
 
         this.encryptionKeyId = encryptionKeyId;
         this.permitUnencryptedDownloads = permitUnencryptedDownloads;
         this.encryptionAuthenticationMode = encryptionAuthenticationMode;
         this.secretKey = secretKey;
+        this.cipherDetails = cipherDetails;
     }
 }
