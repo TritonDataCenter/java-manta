@@ -7,10 +7,41 @@ import javax.crypto.SecretKey;
 
 @Test
 public class SecretKeyUtilsTest {
-    private final SupportedCipherDetails aesGcmCipherDetails = AesGcmCipherDetails.INSTANCE;
 
-    public void canGenerateAesGCMNoPaddingKey() {
-        SecretKey key = SecretKeyUtils.generate(aesGcmCipherDetails);
+
+    public void canGenerateAesGcmNoPaddingKey() {
+        SecretKey key = SecretKeyUtils.generate(AesGcmCipherDetails.INSTANCE);
         Assert.assertNotNull(key, "Generated key was null");
+
+        byte[] bytes = key.getEncoded();
+
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesGcmCipherDetails.INSTANCE);
+
+        Assert.assertEquals(loaded, key,
+                "Generated key doesn't match loaded key");
+    }
+
+    public void canGenerateAesCtrNoPaddingKey() {
+        SecretKey key = SecretKeyUtils.generate(AesCtrCipherDetails.INSTANCE);
+        Assert.assertNotNull(key, "Generated key was null");
+
+        byte[] bytes = key.getEncoded();
+
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesCtrCipherDetails.INSTANCE);
+
+        Assert.assertEquals(loaded, key,
+                "Generated key doesn't match loaded key");
+    }
+
+    public void canGenerateAesCbcPkcs5PaddingKey() {
+        SecretKey key = SecretKeyUtils.generate(AesCbcCipherDetails.INSTANCE);
+        Assert.assertNotNull(key, "Generated key was null");
+
+        byte[] bytes = key.getEncoded();
+
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesCbcCipherDetails.INSTANCE);
+
+        Assert.assertEquals(loaded, key,
+                "Generated key doesn't match loaded key");
     }
 }

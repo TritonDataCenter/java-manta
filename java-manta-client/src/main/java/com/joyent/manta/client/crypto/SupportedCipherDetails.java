@@ -77,6 +77,13 @@ public interface SupportedCipherDetails {
     long cipherTextSize(long plainTextSize);
 
     /**
+     * Flag indicating if authentication is built into the cipher's design.
+     *
+     * @return true if AEAD cipher is supported
+     */
+    boolean isAEADCipher();
+
+    /**
      * Creates the {@link AlgorithmParameterSpec} object needed for the associated
      * algorithm that is seeded with the passed initialization vector (IV).
      *

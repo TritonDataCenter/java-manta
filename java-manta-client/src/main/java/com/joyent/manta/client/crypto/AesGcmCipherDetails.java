@@ -66,7 +66,7 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
 
     @Override
     public int getAuthenticationTagOrHmacLengthInBytes() {
-        return 16;
+        return 16; // 128 bits
     }
 
     @Override
@@ -95,5 +95,10 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
     public long cipherTextSize(final long plainTextSize) {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
         return plainTextSize + getAuthenticationTagOrHmacLengthInBytes();
+    }
+
+    @Override
+    public boolean isAEADCipher() {
+        return true;
     }
 }
