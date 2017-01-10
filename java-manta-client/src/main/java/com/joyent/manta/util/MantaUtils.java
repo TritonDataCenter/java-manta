@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -573,5 +574,65 @@ public final class MantaUtils {
         }
 
         return Hex.encodeHexString(bytes);
+    }
+
+    /**
+     * Creates a new unmodifiable {@link HashMap} with the passed parameters.
+     *
+     * @param key1 First key value pair's key
+     * @param val1 First key value pair's valueS
+     * @param <K> type of key for the map
+     * @param <V> type of value for the map
+     * @return new instance populated with the passed values
+     */
+    public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1) {
+        Map<K, V> map = new HashMap<K, V>();
+        map.put(key1, val1);
+
+        return Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * Creates a new unmodifiable {@link HashMap} with the passed parameters.
+     *
+     * @param key1 First key value pair's key
+     * @param val1 First key value pair's value
+     * @param key2 Second key value pair's key
+     * @param val2 Second key value pair's value
+     * @param <K> type of key for the map
+     * @param <V> type of value for the map
+     * @return new instance populated with the passed values
+     */
+    public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1,
+                                                   final K key2, final V val2) {
+        Map<K, V> map = new HashMap<K, V>();
+        map.put(key1, val1);
+        map.put(key2, val2);
+
+        return Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * Creates a new unmodifiable {@link HashMap} with the passed parameters.
+     *
+     * @param key1 First key value pair's key
+     * @param val1 First key value pair's value
+     * @param key2 Second key value pair's key
+     * @param val2 Second key value pair's value
+     * @param key3 Third key value pair's key
+     * @param val3 Third key value pair's value
+     * @param <K> type of key for the map
+     * @param <V> type of value for the map
+     * @return new instance populated with the passed values
+     */
+    public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1,
+                                                   final K key2, final V val2,
+                                                   final K key3, final V val3) {
+        Map<K, V> map = new HashMap<K, V>();
+        map.put(key1, val1);
+        map.put(key2, val2);
+        map.put(key3, val3);
+
+        return Collections.unmodifiableMap(map);
     }
 }
