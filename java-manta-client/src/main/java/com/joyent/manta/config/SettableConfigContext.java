@@ -169,6 +169,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * Sets the algorithm name in the format of <code>cipher/mode/padding state</code>.
      *
      * @param algorithm the name of the algorithm used to encrypt and decrypt
+     * @return the current instance of {@link T}
      */
     T setEncryptionAlgorithm(String algorithm);
 

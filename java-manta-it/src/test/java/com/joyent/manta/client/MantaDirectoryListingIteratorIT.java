@@ -69,7 +69,7 @@ public class MantaDirectoryListingIteratorIT {
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
         this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
-                false);
+                config);
     }
 
 

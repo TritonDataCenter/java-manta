@@ -44,7 +44,8 @@ public final class SecretKeyUtils {
         try {
             return generate(cipherDetails.getKeyGenerationAlgorithm(), cipherDetails.getKeyLengthBits());
         } catch (NoSuchAlgorithmException e) {
-            String msg = String.format("Couldn't find algorithm [%s]");
+            String msg = String.format("Couldn't find algorithm [%s]",
+                    cipherDetails.getCipherAlgorithm());
             throw new MantaClientEncryptionException(msg, e);
         }
     }
@@ -123,8 +124,6 @@ public final class SecretKeyUtils {
      * @param bytes byte array to read secret key from
      * @param cipherDetails the secret key's cipher
      * @return a new instance based on the secret key loaded
-     * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
-     * @throws IOException thrown when there is a problem reading or parsing the key
      */
     public static SecretKeySpec loadKey(final byte[] bytes, final SupportedCipherDetails cipherDetails) {
         Validate.notNull(bytes, "Byte array must not be null");
@@ -176,15 +175,36 @@ public final class SecretKeyUtils {
      * Loads symmetric secret key with the specified cipher into a
      * {@link SecretKeySpec} object from a path.
      *
-     * @param file file to read secret key from
-     * @param algorithm the secret key's cipher name
+     * @param path path to read secret key from
+     * @param cipherDetails cipher detail object
      * @return a new instance based on the secret key loaded
-     * @throws NoSuchAlgorithmException thrown when no cipher is available by the passed name
      * @throws IOException thrown when there is a problem reading or parsing the key
      */
-    public static SecretKeySpec loadKeyFromFile(final File file, final String algorithm)
-            throws NoSuchAlgorithmException, IOException {
+    public static SecretKeySpec loadKeyFromPath(final Path path,
+                                                final SupportedCipherDetails cipherDetails)
+            throws IOException {
+        Validate.notNull(path, "Path must not be null");
+        try (InputStream in = Files.newInputStream(path)) {
+            return loadKey(in, cipherDetails.getCipherAlgorithm());
+        } catch (NoSuchAlgorithmException e) {
+            String msg = String.format("Couldn't find algorithm [%s]",
+                    cipherDetails.getCipherAlgorithm());
+            throw new MantaClientEncryptionException(msg, e);
+        }
+    }
+
+    /**
+     * Loads symmetric secret key with the specified cipher into a
+     * {@link SecretKeySpec} object from a path.
+     *
+     * @param file file to read secret key from
+     * @param cipherDetails cipher detail object
+     * @return a new instance based on the secret key loaded
+     * @throws IOException thrown when there is a problem reading or parsing the key
+     */
+    public static SecretKeySpec loadKeyFromFile(final File file, final SupportedCipherDetails cipherDetails)
+            throws IOException {
         Validate.notNull(file, "File must not be null");
-        return loadKeyFromPath(file.toPath(), algorithm);
+        return loadKeyFromPath(file.toPath(), cipherDetails);
     }
 }

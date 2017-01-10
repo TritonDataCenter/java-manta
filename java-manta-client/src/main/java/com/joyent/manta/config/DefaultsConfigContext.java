@@ -4,6 +4,7 @@
 package com.joyent.manta.config;
 
 import com.joyent.manta.client.crypto.AesGcmCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
 
 import java.io.File;
 
@@ -49,6 +50,23 @@ public class DefaultsConfigContext implements ConfigContext {
      * Default TLS protocols.
      */
     public static final String DEFAULT_HTTPS_PROTOCOLS = "TLSv1.2";
+
+    /**
+     * By default we verify that checksums on all uploads.
+     */
+    public static final boolean DEFAULT_VERIFY_UPLOADS = true;
+
+    /**
+     * By default we don't allow downloading unencrypted data when using
+     * client-side encryption.
+     */
+    public static final boolean DEFAULT_PERMIT_UNENCRYPTED_DOWNLOADS = false;
+
+    /**
+     * Default client-side encryption cipher algorithm.
+     */
+    public static final SupportedCipherDetails DEFAULT_CIPHER =
+            AesGcmCipherDetails.INSTANCE;
 
     /**
      * Default TLS cipher suites.
@@ -167,7 +185,7 @@ public class DefaultsConfigContext implements ConfigContext {
 
     @Override
     public Boolean verifyUploads() {
-        return true;
+        return DEFAULT_VERIFY_UPLOADS;
     }
 
     @Override
@@ -187,12 +205,12 @@ public class DefaultsConfigContext implements ConfigContext {
 
     @Override
     public String getEncryptionAlgorithm() {
-        return AesGcmCipherDetails.INSTANCE.getCipherAlgorithm();
+        return DEFAULT_CIPHER.getCipherAlgorithm();
     }
 
     @Override
     public Boolean permitUnencryptedDownloads() {
-        return false;
+        return DEFAULT_PERMIT_UNENCRYPTED_DOWNLOADS;
     }
 
     @Override

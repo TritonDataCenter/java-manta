@@ -5,12 +5,15 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -62,14 +65,15 @@ public class StandardHttpHelper implements HttpHelper {
      *
      * @param connectionContext saved context used between requests to the Manta client
      * @param connectionFactory instance used for building requests to Manta
-     * @param validateUploads flag toggling the checksum verification of uploaded files
+     * @param config configuration context object
      */
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaConnectionFactory connectionFactory,
-                              final boolean validateUploads) {
+                              final ConfigContext config) {
         this.connectionContext = connectionContext;
         this.connectionFactory = connectionFactory;
-        this.validateUploads = validateUploads;
+        this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
+                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
     }
 
     @Override

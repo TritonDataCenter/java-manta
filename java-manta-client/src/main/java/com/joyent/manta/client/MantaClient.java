@@ -18,6 +18,7 @@ import com.joyent.manta.exception.MantaJobException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.http.ContentTypeLookup;
+import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
@@ -214,25 +215,13 @@ public class MantaClient implements AutoCloseable {
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
 
-//        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-//            final SecretKey secretKey;
-//
-//            if (config.getEncryptionPrivateKeyPath() != null) {
-//                File keyFile = new File(config.getEncryptionPrivateKeyPath());
-//                secretKey = SecretKeyUtils.loadKeyFromPath(keyFile.toPath(), );
-//            } else if (config.getEncryptionPrivateKeyBytes() != null){
-//
-//            } else {
-//                throw new IllegalStateException("Either private key path or bytes must be specified");
-//            }
-//
-//            this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
-//                    verifyUploads, config.getEncryptionKeyId(), config.permitUnencryptedDownloads(),
-//                    config.getEncryptionAuthenticationMode(), secretKey);
-//        } else {
+        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+            this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
+                    config);
+        } else {
             this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
-                    verifyUploads);
-//        }
+                    config);
+        }
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
@@ -266,13 +255,13 @@ public class MantaClient implements AutoCloseable {
         final boolean verifyUploads = BooleanUtils.toBooleanDefaultIfNull(config.verifyUploads(),
                 true);
 
-//        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-//            this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
-//                    verifyUploads);
-//        } else {
+        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+            this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
+                    config);
+        } else {
             this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
-                    verifyUploads);
-//        }
+                    config);
+        }
 
         this.uriSigner = new UriSigner(this.config, keyPair);
     }
