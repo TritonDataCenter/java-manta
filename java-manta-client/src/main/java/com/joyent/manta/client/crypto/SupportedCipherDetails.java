@@ -10,8 +10,10 @@ import javax.crypto.NoSuchPaddingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Interface describing a cipher that is supported by the Manta SDK.
@@ -23,9 +25,12 @@ public interface SupportedCipherDetails {
     /**
      * Map of all of the ciphers supported by the SDK indexed by algorithm name.
      */
-    Map<String, SupportedCipherDetails> SUPPORTED_CIPHERS =
-            Collections.singletonMap(AesGcmCipherDetails.INSTANCE.getCipherAlgorithm(),
-                    AesGcmCipherDetails.INSTANCE);
+    static Map<String, SupportedCipherDetails> SUPPORTED_CIPHERS = Collections.unmodifiableMap(
+        Arrays.stream(new Object[][]{
+            { AesGcmCipherDetails.INSTANCE.getCipherAlgorithm(), AesGcmCipherDetails.INSTANCE },
+            { AesCtrCipherDetails.INSTANCE.getCipherAlgorithm(), AesCtrCipherDetails.INSTANCE },
+            { AesCbcCipherDetails.INSTANCE.getCipherAlgorithm(), AesCbcCipherDetails.INSTANCE },
+    }).collect(Collectors.toMap(kv -> (String)kv[0], kv -> (SupportedCipherDetails)kv[1])));
 
     /**
      * @return algorithm name used by key generation (e.g. {@link SecretKeyUtils#generate(String, int)})
