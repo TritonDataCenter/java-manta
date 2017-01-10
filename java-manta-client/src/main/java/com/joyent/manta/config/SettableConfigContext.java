@@ -156,6 +156,16 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setClientEncryptionEnabled(Boolean clientEncryptionEnabled);
 
     /**
+     * Sets a plain-text identifier for the encryption key used. It shouldn't
+     * contain whitespace and is encoded in US-ASCII. The value of this setting
+     * has no current functional impact.
+     *
+     * @param keyId the unique identifier of the key used for encryption
+     * @return the current instance of {@link T}
+     */
+    T setEncryptionKeyId(String keyId);
+
+    /**
      * Sets flag indicating when downloading unencrypted files is allowed in
      * encryption mode.
      *
@@ -269,6 +279,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 config.setClientEncryptionEnabled(MantaUtils.parseBooleanOrNull(value));
+                break;
+            case MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY:
+            case EnvVarConfigContext.MANTA_ENCRYPTION_KEY_ID_ENV_KEY:
+                config.setEncryptionKeyId(Objects.toString(value));
                 break;
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:

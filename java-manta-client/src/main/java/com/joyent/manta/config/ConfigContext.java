@@ -3,10 +3,11 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -129,6 +130,15 @@ public interface ConfigContext {
     EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode();
 
     /**
+     * A plain-text identifier for the encryption key used. It doesn't contain
+     * whitespace and is encoded in US-ASCII. The value of this setting has
+     * no current functional impact.
+     *
+     * @return the unique identifier of the key used for encryption
+     */
+    String getEncryptionKeyId();
+
+    /**
      * @return path to the private encryption key on the filesystem (can't be used if private key bytes is not null)
      */
     String getEncryptionPrivateKeyPath();
@@ -181,6 +191,7 @@ public interface ConfigContext {
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
+        sb.append(", encryptionKeyId=").append(context.getEncryptionKeyId());
         sb.append(", encryptionPrivateKeyPath=").append(context.getEncryptionPrivateKeyPath());
 
         if (context.getEncryptionPrivateKeyBytes() == null) {
@@ -232,6 +243,65 @@ public interface ConfigContext {
         if (StringUtils.startsWith(config.getMantaKeyId(), "SHA256:")) {
             failureMessages.add("We don't support SHA256 "
                     + "fingerprints yet. Change fingerprint to MD5 format.");
+        }
+
+        if (config.isClientEncryptionEnabled()) {
+
+            // KEY ID VALIDATIONS
+
+            if (config.getEncryptionKeyId() == null) {
+                failureMessages.add("Encryption key id must not be null");
+            }
+            if (StringUtils.isEmpty(config.getEncryptionKeyId())) {
+                failureMessages.add("Encryption key id must not be empty");
+            }
+            if (StringUtils.containsWhitespace(config.getEncryptionKeyId())) {
+                failureMessages.add("Encryption key id must not contain whitespace");
+            }
+            if (!StringUtils.isAsciiPrintable(config.getEncryptionKeyId())) {
+                failureMessages.add(("Encryption key id must only contain printable ASCII characters"));
+            }
+
+            // AUTHENTICATION MODE VALIDATIONS
+
+            if (config.getEncryptionAuthenticationMode() == null) {
+                failureMessages.add("Encryption authentication mode must not be null");
+            }
+
+            // PERMIT UNENCRYPTED DOWNLOADS VALIDATIONS
+
+            if (config.permitUnencryptedDownloads() == null) {
+                failureMessages.add("Encryption setting permit unencrypted downloads must not be null");
+            }
+
+            // PRIVATE KEY VALIDATIONS
+
+            if (config.getEncryptionPrivateKeyPath() == null && config.getEncryptionPrivateKeyBytes() == null) {
+                failureMessages.add("Both encryption private key path and private key bytes must not be null");
+            }
+
+            if (config.getEncryptionPrivateKeyPath() != null && config.getEncryptionPrivateKeyBytes() != null) {
+                failureMessages.add("Both encryption private key path and private key bytes must "
+                        + "not be set. Choose one or the other.");
+            }
+
+            if (config.getEncryptionPrivateKeyPath() != null) {
+                File keyFile = new File(config.getEncryptionPrivateKeyPath());
+
+                if (!keyFile.exists()) {
+                    failureMessages.add(String.format("Key file couldn't be found at path: %s",
+                            config.getEncryptionPrivateKeyPath()));
+                } else if (!keyFile.canRead()) {
+                    failureMessages.add(String.format("Key file couldn't be read at path: %s",
+                            config.getEncryptionPrivateKeyPath()));
+                }
+            }
+
+            if (config.getEncryptionPrivateKeyBytes() != null) {
+                if (config.getEncryptionPrivateKeyBytes().length == 0) {
+                    failureMessages.add("Encryption private key byte length must be greater than zero");
+                }
+            }
         }
 
         if (!failureMessages.isEmpty()) {
@@ -329,6 +399,9 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();
+            case MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY:
+            case EnvVarConfigContext.MANTA_ENCRYPTION_KEY_ID_ENV_KEY:
+                return config.getEncryptionKeyId();
             case MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY:
             case EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY:
                 return config.getEncryptionAuthenticationMode();

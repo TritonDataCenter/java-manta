@@ -179,6 +179,11 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public String getEncryptionKeyId() {
+        return null;
+    }
+
+    @Override
     public Boolean permitUnencryptedDownloads() {
         return false;
     }

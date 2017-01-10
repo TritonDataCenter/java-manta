@@ -108,6 +108,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Boolean clientEncryptionEnabled;
 
     /**
+     * The unique identifier of the key used for encryption.
+     */
+    private String encryptionKeyId;
+
+    /**
      * Flag indicating when downloading unencrypted files is allowed in
      * encryption mode.
      */
@@ -253,6 +258,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public String getEncryptionKeyId() {
+        return encryptionKeyId;
+    }
+
+    @Override
     public Boolean permitUnencryptedDownloads() {
         return permitUnencryptedDownloads;
     }
@@ -376,6 +386,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
 
+        if (context.getEncryptionKeyId() != null) {
+            this.encryptionKeyId = context.getEncryptionKeyId();
+        }
+
         if (context.getEncryptionAuthenticationMode() != null) {
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
@@ -462,6 +476,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.clientEncryptionEnabled == null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (this.encryptionKeyId == null) {
+            this.encryptionKeyId = context.getEncryptionKeyId();
         }
 
         if (this.encryptionAuthenticationMode == null) {
@@ -626,6 +644,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setEncryptionKeyId(String keyId) {
+        this.encryptionKeyId = keyId;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setPermitUnencryptedDownloads(final Boolean permitUnencryptedDownloads) {
         this.permitUnencryptedDownloads = permitUnencryptedDownloads;
 
@@ -692,6 +717,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
+                && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
                 && Objects.equals(encryptionAuthenticationMode, that.encryptionAuthenticationMode)
                 && Objects.equals(encryptionPrivateKeyPath, that.encryptionPrivateKeyPath)
@@ -705,9 +731,9 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, tcpSocketTimeout,
                 verifyUploads, uploadBufferSize,
-                clientEncryptionEnabled, permitUnencryptedDownloads,
-                encryptionAuthenticationMode, encryptionPrivateKeyPath,
-                encryptionPrivateKeyBytes);
+                clientEncryptionEnabled, encryptionKeyId,
+                permitUnencryptedDownloads, encryptionAuthenticationMode,
+                encryptionPrivateKeyPath, encryptionPrivateKeyBytes);
     }
 
     @Override

@@ -21,6 +21,7 @@ public class SystemSettingsConfigContextTest {
         properties.setProperty(MANTA_KEY_ID_KEY, "00:00");
         properties.setProperty(MANTA_KEY_PATH_KEY, "/home/username/.ssh/foo_rsa");
         properties.setProperty(MANTA_TIMEOUT_KEY, "12");
+        properties.setProperty(MANTA_ENCRYPTION_KEY_ID_KEY, "my-unique-key");
 
         ConfigContext config = new SystemSettingsConfigContext(false, properties);
 
@@ -34,6 +35,8 @@ public class SystemSettingsConfigContextTest {
                 properties.getProperty(MANTA_KEY_PATH_KEY));
         assertEquals(String.valueOf(config.getTimeout()),
                 properties.getProperty(MANTA_TIMEOUT_KEY));
+        assertEquals(config.getEncryptionKeyId(),
+                properties.getProperty(MANTA_ENCRYPTION_KEY_ID_KEY));
     }
 
     @Test(groups = { "config" })
@@ -50,7 +53,7 @@ public class SystemSettingsConfigContextTest {
     }
 
     @Test(groups = { "config" })
-    public void environmentVarsTakePrecendenceOverSystemProps() {
+    public void environmentVarsTakePrecedenceOverSystemProps() {
         Properties properties = new Properties();
         properties.setProperty(MANTA_URL_KEY, "https://manta.triton.zone");
         properties.setProperty(MANTA_USER_KEY, "username");

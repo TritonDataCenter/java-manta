@@ -109,6 +109,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
 
     /**
+     * Property key for setting an identifier for the client-side encryption key used.
+     */
+    public static final String MANTA_ENCRYPTION_KEY_ID_KEY = "manta.encryption_key_id";
+
+    /**
      * Property key for flag indicating when downloading unencrypted
      * files is allowed in encryption mode.
      */
@@ -156,6 +161,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
+            MANTA_ENCRYPTION_KEY_ID_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY,
@@ -343,6 +349,13 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY));
+    }
+
+
+    @Override
+    public String getEncryptionKeyId() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_ENCRYPTION_KEY_ID_KEY, MANTA_ENCRYPTION_KEY_ID_ENV_KEY);
     }
 
     @Override

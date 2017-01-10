@@ -106,6 +106,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
 
     /**
+     * Environment variable for setting an identifier for the client-side encryption key used.
+     */
+    public static final String MANTA_ENCRYPTION_KEY_ID_ENV_KEY = "MANTA_CLIENT_ENCRYPTION_KEY_ID";
+
+    /**
      * Environment variable for flag indicating when downloading unencrypted
      * files is allowed in encryption mode.
      */
@@ -143,6 +148,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
+            MANTA_ENCRYPTION_KEY_ID_ENV_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
@@ -278,6 +284,11 @@ public class EnvVarConfigContext implements ConfigContext {
         String enabled = getEnv(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY);
 
         return MantaUtils.parseBooleanOrNull(enabled);
+    }
+
+    @Override
+    public String getEncryptionKeyId() {
+        return getEnv(MANTA_ENCRYPTION_KEY_ID_ENV_KEY);
     }
 
     @Override
