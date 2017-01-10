@@ -45,31 +45,33 @@ add it as a dependency to your Java project.
 Configuration parameters take precedence from left to right - values on the
 left are overridden by values on the right.
 
-| Default                              | TestNG Param             | System Property                    | Environment Variable        |
-|--------------------------------------|--------------------------|------------------------------------|-----------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url                | manta.url                          | MANTA_URL                   |
-|                                      | manta.user               | manta.user                         | MANTA_USER                  |
-|                                      | manta.key_id             | manta.key_id                       | MANTA_KEY_ID                |
-| $HOME/.ssh/id_rsa                    | manta.key_path           | manta.key_path                     | MANTA_KEY_PATH              |
-|                                      |                          | manta.key_content                  | MANTA_KEY_CONTENT           |
-|                                      |                          | manta.password                     | MANTA_PASSWORD              |
-| 20000                                | manta.timeout            | manta.timeout                      | MANTA_TIMEOUT               |
-| 3 (6 for integration tests)          |                          | manta.retries                      | MANTA_HTTP_RETRIES          |
-| 24                                   |                          | manta.max_connections              | MANTA_MAX_CONNS             |
-| 8192                                 | manta.http_buffer_size   | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE      |
-| TLSv1.2                              |                          | https.protocols                    | MANTA_HTTPS_PROTOCOLS       |
-| <value too big - see code>           |                          | https.cipherSuites                 | MANTA_HTTPS_CIPHERS         |
-| false                                |                          | manta.no_auth                      | MANTA_NO_AUTH               |
-| false                                |                          | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS        |
-| 10000                                | manta.tcp_socket_timeout | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT    |
-| true                                 |                          | manta.verify_uploads               | MANTA_VERIFY_UPLOADS        |
-| 16384                                |                          | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE    |
-| false                                |                          | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION     |
-| false                                |                          | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS |
-| Mandatory                            |                          | manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE  |
-|                                      |                          | manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH   |
-|                                      |                          | manta.encryption_key_bytes         |                             |
-|                                      |                          | manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES  |
+| Default                              | System Property                    | Environment Variable           |
+|--------------------------------------|------------------------------------|--------------------------------|
+| https://us-east.manta.joyent.com:443 | manta.url                          | MANTA_URL                      |
+|                                      | manta.user                         | MANTA_USER                     |
+|                                      | manta.key_id                       | MANTA_KEY_ID                   |
+| $HOME/.ssh/id_rsa                    | manta.key_path                     | MANTA_KEY_PATH                 |
+|                                      | manta.key_content                  | MANTA_KEY_CONTENT              |
+|                                      | manta.password                     | MANTA_PASSWORD                 |
+| 20000       manta.timeout            | manta.timeout                      | MANTA_TIMEOUT                  |
+| 3 (6 for integration tests)          | manta.retries                      | MANTA_HTTP_RETRIES             |
+| 24                                   | manta.max_connections              | MANTA_MAX_CONNS                |
+| 8192                                 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         |
+| TLSv1.2                              | https.protocols                    | MANTA_HTTPS_PROTOCOLS          |
+| <value too big - see code>           | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            |
+| false                                | manta.no_auth                      | MANTA_NO_AUTH                  |
+| false                                | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           |
+| 10000                                | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       |
+| true                                 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           |
+| 16384                                | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       |
+| false                                | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        |
+|                                      | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |
+| AES/GCM/NoPadding                    | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     |
+| false                                | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    |
+| Mandatory                            | manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     |
+|                                      | manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |
+|                                      | manta.encryption_key_bytes         |                                |
+|                                      | manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -113,6 +115,26 @@ to Manta and then checks it against the result returned by Manta.
 The initial amount of bytes to attempt to load into memory when uploading a stream. If the
 entirety of the stream fits within the number of bytes of this value, then the
 contents of the buffer are directly uploaded to Manta in a retryable form.
+* `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
+Boolean indicating if client-side encryption is enabled.
+* `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
+Unique id of the client-side encryption key being used. It must be in US-ASCII
+using only printable characters and with no whitespace.
+* `manta.encryption_algorithm` (**MANTA_ENCRYPTION_ALGORITHM**)
+The client-side encryption algorithm used to encrypt and decrypt data. Valid
+values are listed in [SupportedCipherDetails](java-manta-client/src/main/java/com/joyent/manta/client/crypto/SupportedCipherDetails.java#L26).
+* `manta.permit_unencrypted_downloads` (**MANTA_UNENCRYPTED_DOWNLOADS**)
+Boolean indicating that unencrypted files can be downloaded when client-side
+encryption is enabled.
+* `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
+[EncryptionObjectAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionObjectAuthenticationMode.java) 
+enum type indicating that
+
+* `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
+
+* `manta.encryption_key_bytes`
+
+* `manta.encryption_key_bytes_base64` (**MANTA_ENCRYPTION_KEY_BYTES**)
 
 Below is an example of using all of the defaults and only setting the `manta.user` and `manta.key_id`.
 
