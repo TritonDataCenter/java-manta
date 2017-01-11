@@ -10,7 +10,6 @@ import org.apache.commons.lang3.Validate;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -103,19 +102,6 @@ public final class SecretKeyUtils {
     }
 
     /**
-     * Writes the specified key in X509 encoding to a {@link File}.
-     *
-     * @param key key to write
-     * @param file file to write to
-     * @throws IOException thrown when there is a problem writing the key
-     */
-    public static void writeKeyKeyToFile(final SecretKey key, final File file)
-            throws IOException {
-        Validate.notNull(file, "File must not be null");
-        writeKeyToPath(key, file.toPath());
-    }
-
-    /**
      * Loads symmetric secret key with the specified cipher into a
      * {@link SecretKeySpec} object from a stream. Note: This method doesn't
      * close the supplied stream and will read the entire contents of the
@@ -185,26 +171,11 @@ public final class SecretKeyUtils {
             throws IOException {
         Validate.notNull(path, "Path must not be null");
         try (InputStream in = Files.newInputStream(path)) {
-            return loadKey(in, cipherDetails.getCipherAlgorithm());
+            return loadKey(in, cipherDetails.getKeyGenerationAlgorithm());
         } catch (NoSuchAlgorithmException e) {
             String msg = String.format("Couldn't find algorithm [%s]",
-                    cipherDetails.getCipherAlgorithm());
+                    cipherDetails.getKeyGenerationAlgorithm());
             throw new MantaClientEncryptionException(msg, e);
         }
-    }
-
-    /**
-     * Loads symmetric secret key with the specified cipher into a
-     * {@link SecretKeySpec} object from a path.
-     *
-     * @param file file to read secret key from
-     * @param cipherDetails cipher detail object
-     * @return a new instance based on the secret key loaded
-     * @throws IOException thrown when there is a problem reading or parsing the key
-     */
-    public static SecretKeySpec loadKeyFromFile(final File file, final SupportedCipherDetails cipherDetails)
-            throws IOException {
-        Validate.notNull(file, "File must not be null");
-        return loadKeyFromPath(file.toPath(), cipherDetails);
     }
 }

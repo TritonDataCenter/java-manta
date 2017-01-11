@@ -129,12 +129,16 @@ encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
 [EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java) 
 enum type indicating that
-
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
-
+The path on the local filesystem or a URI understandable by the JVM indicating the
+location of the private key used to perform client-side encryption. If this value is
+non-null, then no other encryption key values can be non-null.
 * `manta.encryption_key_bytes`
-
+The private key used to perform client-side encryption as a byte array. If this value is
+non-null, then no other encryption key values can be non-null.
 * `manta.encryption_key_bytes_base64` (**MANTA_ENCRYPTION_KEY_BYTES**)
+The private key used to perform client-side encryption encoded as a base64 string.
+If this value is non-null, then no other encryption key values can be non-null.
 
 Below is an example of using all of the defaults and only setting the `manta.user` and `manta.key_id`.
 

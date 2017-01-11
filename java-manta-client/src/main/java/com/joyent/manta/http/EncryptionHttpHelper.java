@@ -12,9 +12,10 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.HttpEntity;
 
 import javax.crypto.SecretKey;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 
 import static com.joyent.manta.client.crypto.SupportedCipherDetails.SUPPORTED_CIPHERS;
@@ -86,14 +87,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         );
 
         if (config.getEncryptionPrivateKeyPath() != null) {
-            File keyFile = new File(config.getEncryptionPrivateKeyPath());
+            Path keyPath = Paths.get(config.getEncryptionPrivateKeyPath());
 
             try {
-                secretKey = SecretKeyUtils.loadKeyFromFile(keyFile,
+                secretKey = SecretKeyUtils.loadKeyFromPath(keyPath,
                         this.cipherDetails);
             } catch (IOException e) {
                 String msg = String.format("Unable to load secret key from file: %s",
-                        keyFile.getAbsolutePath());
+                        keyPath);
                 throw new UncheckedIOException(msg, e);
             }
         } else if (config.getEncryptionPrivateKeyBytes() != null) {
