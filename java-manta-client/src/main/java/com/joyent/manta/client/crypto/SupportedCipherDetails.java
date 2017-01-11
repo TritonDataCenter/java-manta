@@ -4,14 +4,12 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
-import com.joyent.manta.util.MantaUtils;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.Map;
 
 /**
  * Interface describing a cipher that is supported by the Manta SDK.
@@ -23,11 +21,8 @@ public interface SupportedCipherDetails {
     /**
      * Map of all of the ciphers supported by the SDK indexed by algorithm name.
      */
-    Map<String, SupportedCipherDetails> SUPPORTED_CIPHERS = MantaUtils.unmodifiableMap(
-            AesGcmCipherDetails.INSTANCE.getCipherAlgorithm(), AesGcmCipherDetails.INSTANCE,
-            AesCtrCipherDetails.INSTANCE.getCipherAlgorithm(), AesCtrCipherDetails.INSTANCE,
-            AesCbcCipherDetails.INSTANCE.getCipherAlgorithm(), AesCbcCipherDetails.INSTANCE
-    );
+    SupportedCiphersLookupMap SUPPORTED_CIPHERS = new SupportedCiphersLookupMap();
+
     /**
      * @return algorithm name used by key generation (e.g. {@link SecretKeyUtils#generate(String, int)})
      */

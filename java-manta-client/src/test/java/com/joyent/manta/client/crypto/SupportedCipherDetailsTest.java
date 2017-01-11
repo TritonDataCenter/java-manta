@@ -26,6 +26,10 @@ public class SupportedCipherDetailsTest {
             Cipher cipher = SupportedCipherDetails.findCipher(algorithm,
                     BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
             Assert.assertNotNull(cipher, "Couldn't find cipher for algorithm: " + algorithm);
+
+            Cipher cipherLowercase = SupportedCipherDetails.findCipher(algorithm.toLowerCase(),
+                    BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+            Assert.assertNotNull(cipherLowercase, "Couldn't find cipher for algorithm: " + algorithm);
         }
     }
 }

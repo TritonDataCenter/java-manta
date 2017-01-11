@@ -71,7 +71,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 EncryptionObjectAuthenticationMode.DEFAULT_MODE);
 
         this.cipherDetails = ObjectUtils.firstNonNull(
-                SUPPORTED_CIPHERS.get(config.getEncryptionAlgorithm()),
+                SUPPORTED_CIPHERS.getWithCaseInsensitiveKey(config.getEncryptionAlgorithm()),
                 DefaultsConfigContext.DEFAULT_CIPHER
         );
 

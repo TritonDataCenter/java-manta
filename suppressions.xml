@@ -6,6 +6,7 @@
     <suppress checks="MagicNumber" files="MantaCLI.java" />
     <suppress checks="MagicNumber" files="Benchmark.java" />
     <suppress checks="MagicNumber" files="^.*CipherDetails\.java" />
+    <suppress checks="LineLength" files="SupportedCiphersLookupMap.java" />
     <!-- ignore suppressions for test classes -->
     <suppress checks="MagicNumber" files="^.*Test\.java$" />
     <suppress checks="JavadocMethod" files="^.*Test\.java$" />

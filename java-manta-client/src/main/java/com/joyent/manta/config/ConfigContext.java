@@ -322,7 +322,8 @@ public interface ConfigContext {
                 failureMessages.add("Encryption algorithm must not be blank");
             }
 
-            if (!SupportedCipherDetails.SUPPORTED_CIPHERS.containsKey(config.getEncryptionAlgorithm())) {
+            if (!SupportedCipherDetails.SUPPORTED_CIPHERS.containsKeyCaseInsensitive(
+                    config.getEncryptionAlgorithm())) {
                 String availableAlgorithms = StringUtils.join(
                         SupportedCipherDetails.SUPPORTED_CIPHERS.keySet(), ", ");
                 failureMessages.add(String.format("Cipher algorithm [%s] was not found among "
