@@ -61,7 +61,7 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
 
     @Override
     public int getIVLengthInBytes() {
-        return 12;
+        return 16;
     }
 
     @Override
