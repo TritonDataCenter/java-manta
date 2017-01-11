@@ -3,9 +3,9 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -14,6 +14,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+
+import static com.joyent.manta.client.crypto.SupportedCipherDetails.SUPPORTED_CIPHERS;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -239,7 +241,7 @@ public interface ConfigContext {
             }
         }
 
-        if (config.getTimeout() < 0) {
+        if (config.getTimeout() != null && config.getTimeout() < 0) {
             failureMessages.add("Manta timeout must be 0 or greater");
         }
 
@@ -254,82 +256,21 @@ public interface ConfigContext {
                     + "fingerprints yet. Change fingerprint to MD5 format.");
         }
 
-        if (config.isClientEncryptionEnabled()) {
+        if (config.getMantaKeyPath() == null && config.getPrivateKeyContent() == null) {
+            failureMessages.add("Either the Manta key path must be set or the private "
+                    + "key content must be set. Both can't be null.");
+        }
 
-            // KEY ID VALIDATIONS
+        if (config.getMantaKeyPath() != null && StringUtils.isBlank(config.getMantaKeyPath())) {
+            failureMessages.add("Manta key path must not be blank");
+        }
 
-            if (config.getEncryptionKeyId() == null) {
-                failureMessages.add("Encryption key id must not be null");
-            }
-            if (StringUtils.isEmpty(config.getEncryptionKeyId())) {
-                failureMessages.add("Encryption key id must not be empty");
-            }
-            if (StringUtils.containsWhitespace(config.getEncryptionKeyId())) {
-                failureMessages.add("Encryption key id must not contain whitespace");
-            }
-            if (!StringUtils.isAsciiPrintable(config.getEncryptionKeyId())) {
-                failureMessages.add(("Encryption key id must only contain printable ASCII characters"));
-            }
+        if (config.getPrivateKeyContent() != null && StringUtils.isBlank(config.getPrivateKeyContent())) {
+            failureMessages.add("Manta private key content must not be blank");
+        }
 
-            // AUTHENTICATION MODE VALIDATIONS
-
-            if (config.getEncryptionAuthenticationMode() == null) {
-                failureMessages.add("Encryption authentication mode must not be null");
-            }
-
-            // PERMIT UNENCRYPTED DOWNLOADS VALIDATIONS
-
-            if (config.permitUnencryptedDownloads() == null) {
-                failureMessages.add("Encryption setting permit unencrypted downloads must not be null");
-            }
-
-            // PRIVATE KEY VALIDATIONS
-
-            if (config.getEncryptionPrivateKeyPath() == null && config.getEncryptionPrivateKeyBytes() == null) {
-                failureMessages.add("Both encryption private key path and private key bytes must not be null");
-            }
-
-            if (config.getEncryptionPrivateKeyPath() != null && config.getEncryptionPrivateKeyBytes() != null) {
-                failureMessages.add("Both encryption private key path and private key bytes must "
-                        + "not be set. Choose one or the other.");
-            }
-
-            if (config.getEncryptionPrivateKeyPath() != null) {
-                File keyFile = new File(config.getEncryptionPrivateKeyPath());
-
-                if (!keyFile.exists()) {
-                    failureMessages.add(String.format("Key file couldn't be found at path: %s",
-                            config.getEncryptionPrivateKeyPath()));
-                } else if (!keyFile.canRead()) {
-                    failureMessages.add(String.format("Key file couldn't be read at path: %s",
-                            config.getEncryptionPrivateKeyPath()));
-                }
-            }
-
-            if (config.getEncryptionPrivateKeyBytes() != null) {
-                if (config.getEncryptionPrivateKeyBytes().length == 0) {
-                    failureMessages.add("Encryption private key byte length must be greater than zero");
-                }
-            }
-
-            // CIPHER ALGORITHM VALIDATIONS
-
-            if (config.getEncryptionAlgorithm() == null) {
-                failureMessages.add("Encryption algorithm must not be null");
-            }
-
-            if (StringUtils.isBlank(config.getEncryptionAlgorithm())) {
-                failureMessages.add("Encryption algorithm must not be blank");
-            }
-
-            if (!SupportedCipherDetails.SUPPORTED_CIPHERS.containsKeyCaseInsensitive(
-                    config.getEncryptionAlgorithm())) {
-                String availableAlgorithms = StringUtils.join(
-                        SupportedCipherDetails.SUPPORTED_CIPHERS.keySet(), ", ");
-                failureMessages.add(String.format("Cipher algorithm [%s] was not found among "
-                        + "the list of supported algorithms [%s]", config.getEncryptionAlgorithm(),
-                        availableAlgorithms));
-            }
+        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+            encryptionSettings(config, failureMessages);
         }
 
         if (!failureMessages.isEmpty()) {
@@ -358,6 +299,93 @@ public interface ConfigContext {
                     config.isClientEncryptionEnabled());
 
             throw e;
+        }
+    }
+
+    /**
+     * Utility method for validating that the client-side encryption
+     * configuration has been instantiated with valid settings.
+     *
+     * @param config configuration to test
+     * @param failureMessages list of messages to present the user for validation failures
+     * @throws ConfigurationException thrown when validation fails
+     */
+    static void encryptionSettings(final ConfigContext config,
+                                   final List<String> failureMessages) {
+        // KEY ID VALIDATIONS
+
+        if (config.getEncryptionKeyId() == null) {
+            failureMessages.add("Encryption key id must not be null");
+        }
+        if (config.getEncryptionKeyId() != null && StringUtils.isEmpty(config.getEncryptionKeyId())) {
+            failureMessages.add("Encryption key id must not be empty");
+        }
+        if (config.getEncryptionKeyId() != null && StringUtils.containsWhitespace(config.getEncryptionKeyId())) {
+            failureMessages.add("Encryption key id must not contain whitespace");
+        }
+        if (config.getEncryptionKeyId() != null && !StringUtils.isAsciiPrintable(config.getEncryptionKeyId())) {
+            failureMessages.add(("Encryption key id must only contain printable ASCII characters"));
+        }
+
+        // AUTHENTICATION MODE VALIDATIONS
+
+        if (config.getEncryptionAuthenticationMode() == null) {
+            failureMessages.add("Encryption authentication mode must not be null");
+        }
+
+        // PERMIT UNENCRYPTED DOWNLOADS VALIDATIONS
+
+        if (config.permitUnencryptedDownloads() == null) {
+            failureMessages.add("Permit unencrypted downloads flag must not be null");
+        }
+
+        // PRIVATE KEY VALIDATIONS
+
+        if (config.getEncryptionPrivateKeyPath() == null && config.getEncryptionPrivateKeyBytes() == null) {
+            failureMessages.add("Both encryption private key path and private key bytes must not be null");
+        }
+
+        if (config.getEncryptionPrivateKeyPath() != null && config.getEncryptionPrivateKeyBytes() != null) {
+            failureMessages.add("Both encryption private key path and private key bytes must "
+                    + "not be set. Choose one or the other.");
+        }
+
+        if (config.getEncryptionPrivateKeyPath() != null) {
+            File keyFile = new File(config.getEncryptionPrivateKeyPath());
+
+            if (!keyFile.exists()) {
+                failureMessages.add(String.format("Key file couldn't be found at path: %s",
+                        config.getEncryptionPrivateKeyPath()));
+            } else if (!keyFile.canRead()) {
+                failureMessages.add(String.format("Key file couldn't be read at path: %s",
+                        config.getEncryptionPrivateKeyPath()));
+            }
+        }
+
+        if (config.getEncryptionPrivateKeyBytes() != null) {
+            if (config.getEncryptionPrivateKeyBytes().length == 0) {
+                failureMessages.add("Encryption private key byte length must be greater than zero");
+            }
+        }
+
+        // CIPHER ALGORITHM VALIDATIONS
+
+        final String algorithm = config.getEncryptionAlgorithm();
+
+        if (algorithm == null) {
+            failureMessages.add("Encryption algorithm must not be null");
+        }
+
+        if (algorithm != null && StringUtils.isBlank(algorithm)) {
+            failureMessages.add("Encryption algorithm must not be blank");
+        }
+
+        if (algorithm != null && !SUPPORTED_CIPHERS.containsKeyCaseInsensitive(algorithm)) {
+            String availableAlgorithms = StringUtils.join(
+                    SUPPORTED_CIPHERS.keySet(), ", ");
+            failureMessages.add(String.format("Cipher algorithm [%s] was not found among "
+                            + "the list of supported algorithms [%s]", algorithm,
+                    availableAlgorithms));
         }
     }
 
