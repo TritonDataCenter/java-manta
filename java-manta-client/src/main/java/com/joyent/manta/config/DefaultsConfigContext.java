@@ -214,8 +214,8 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
-        return EncryptionObjectAuthenticationMode.DEFAULT_MODE;
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
+        return EncryptionAuthenticationMode.DEFAULT_MODE;
     }
 
     @Override

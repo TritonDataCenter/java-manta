@@ -9,7 +9,7 @@ package com.joyent.manta.config;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.8.0
  */
-public enum EncryptionObjectAuthenticationMode {
+public enum EncryptionAuthenticationMode {
     /**
      * Optional mode allows for the selective skipping of authentication if it is
      * incompatible with an operation being attempted like HTTP range requests.
@@ -27,5 +27,5 @@ public enum EncryptionObjectAuthenticationMode {
     /**
      * The default encryption object authentication mode (Mandatory).
      */
-    public static final EncryptionObjectAuthenticationMode DEFAULT_MODE = Mandatory;
+    public static final EncryptionAuthenticationMode DEFAULT_MODE = Mandatory;
 }

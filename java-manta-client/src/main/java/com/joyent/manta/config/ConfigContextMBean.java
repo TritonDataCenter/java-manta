@@ -141,7 +141,7 @@ public class ConfigContextMBean implements DynamicMBean {
                         "Flag indicating that downloading unencrypted files is allowed in encryption mode",
                         true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY,
-                        EncryptionObjectAuthenticationMode.class.getName(),
+                        EncryptionAuthenticationMode.class.getName(),
                         "Ciphertext authentication mode",
                         true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
@@ -235,7 +235,7 @@ public class ConfigContextMBean implements DynamicMBean {
         for (String a : attributes) {
             Object result = ConfigContext.getAttributeFromContext(a, config);
 
-            if (result instanceof EncryptionObjectAuthenticationMode) {
+            if (result instanceof EncryptionAuthenticationMode) {
                 result = Objects.toString(result);
             }
 

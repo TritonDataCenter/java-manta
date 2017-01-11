@@ -4,7 +4,7 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.config.EncryptionObjectAuthenticationMode;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
 import org.apache.commons.lang3.ObjectUtils;
 
 import javax.crypto.SecretKey;
@@ -35,7 +35,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     /**
      * Specifies if we are in strict ciphertext authentication mode or not.
      */
-    private final EncryptionObjectAuthenticationMode encryptionAuthenticationMode;
+    private final EncryptionAuthenticationMode encryptionAuthenticationMode;
 
     /**
      * Secret key used to encrypt and decrypt data.
@@ -68,7 +68,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         this.encryptionAuthenticationMode = ObjectUtils.firstNonNull(
                 config.getEncryptionAuthenticationMode(),
-                EncryptionObjectAuthenticationMode.DEFAULT_MODE);
+                EncryptionAuthenticationMode.DEFAULT_MODE);
 
         this.cipherDetails = ObjectUtils.firstNonNull(
                 SUPPORTED_CIPHERS.getWithCaseInsensitiveKey(config.getEncryptionAlgorithm()),

@@ -5,7 +5,7 @@ package com.joyent.manta.exception;
 
 /**
  * Exception thrown when an operation that doesn't support authentication was
- * attempted when running in EncryptionObjectAuthenticationMode.Mandatory mode.
+ * attempted when running in EncryptionAuthenticationMode.Mandatory mode.
  *
  * @author Elijah Zupancic
  * @since 2.8.0

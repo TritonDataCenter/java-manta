@@ -3,7 +3,7 @@
  */
 package com.joyent.manta.util;
 
-import com.joyent.manta.config.EncryptionObjectAuthenticationMode;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -145,11 +145,11 @@ public class MantaUtilsTest {
     }
 
     public void canParseEnumValue() {
-        EncryptionObjectAuthenticationMode expected = EncryptionObjectAuthenticationMode.Optional;
+        EncryptionAuthenticationMode expected = EncryptionAuthenticationMode.Optional;
         String enumValue = expected.toString();
 
-        EncryptionObjectAuthenticationMode actual = MantaUtils.parseEnumOrNull(
-                enumValue, EncryptionObjectAuthenticationMode.class);
+        EncryptionAuthenticationMode actual = MantaUtils.parseEnumOrNull(
+                enumValue, EncryptionAuthenticationMode.class);
 
         Assert.assertEquals(actual, expected, "Parsed enum value doesn't match");
     }
@@ -157,8 +157,8 @@ public class MantaUtilsTest {
     public void wontParseInvalidEnumValue() {
         String enumValue = "Invalid";
 
-        EncryptionObjectAuthenticationMode actual = MantaUtils.parseEnumOrNull(
-                enumValue, EncryptionObjectAuthenticationMode.class);
+        EncryptionAuthenticationMode actual = MantaUtils.parseEnumOrNull(
+                enumValue, EncryptionAuthenticationMode.class);
 
         Assert.assertNull(actual, "Parsed enum value should be null");
     }

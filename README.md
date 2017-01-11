@@ -127,7 +127,7 @@ values are listed in [SupportedCipherDetails](java-manta-client/src/main/java/co
 Boolean indicating that unencrypted files can be downloaded when client-side
 encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
-[EncryptionObjectAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionObjectAuthenticationMode.java) 
+[EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java) 
 enum type indicating that
 
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)

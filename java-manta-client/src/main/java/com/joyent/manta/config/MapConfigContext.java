@@ -382,16 +382,16 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
-        EncryptionObjectAuthenticationMode authMode = MantaUtils.parseEnumOrNull(
-                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY), EncryptionObjectAuthenticationMode.class);
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
+        EncryptionAuthenticationMode authMode = MantaUtils.parseEnumOrNull(
+                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY), EncryptionAuthenticationMode.class);
 
         if (authMode != null) {
             return authMode;
         }
 
         return MantaUtils.parseEnumOrNull(
-                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY), EncryptionObjectAuthenticationMode.class);
+                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY), EncryptionAuthenticationMode.class);
     }
 
     @Override

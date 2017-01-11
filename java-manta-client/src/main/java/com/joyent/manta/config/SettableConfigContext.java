@@ -190,7 +190,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @return the current instance of {@link T}
      */
     T setEncryptionAuthenticationMode(
-            EncryptionObjectAuthenticationMode encryptionAuthenticationMode);
+            EncryptionAuthenticationMode encryptionAuthenticationMode);
 
     /**
      * Sets the path to the private encryption key on the filesystem (can't be
@@ -305,7 +305,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
 
                 try {
                     config.setEncryptionAuthenticationMode(
-                            EncryptionObjectAuthenticationMode.valueOf(stringVal));
+                            EncryptionAuthenticationMode.valueOf(stringVal));
                 } catch (IllegalArgumentException e) {
                     // error parsing enum value, so we just exit the function
                     return;

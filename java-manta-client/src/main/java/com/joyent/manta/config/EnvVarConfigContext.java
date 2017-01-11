@@ -309,10 +309,10 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
-    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
         String enumValue = getEnv(MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY);
 
-        return MantaUtils.parseEnumOrNull(enumValue, EncryptionObjectAuthenticationMode.class);
+        return MantaUtils.parseEnumOrNull(enumValue, EncryptionAuthenticationMode.class);
     }
 
     @Override

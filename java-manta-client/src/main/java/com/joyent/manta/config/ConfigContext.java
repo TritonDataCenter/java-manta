@@ -128,7 +128,7 @@ public interface ConfigContext {
     /**
      * @return specifies if we are in strict ciphertext authentication mode or not
      */
-    EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode();
+    EncryptionAuthenticationMode getEncryptionAuthenticationMode();
 
     /**
      * A plain-text identifier for the encryption key used. It doesn't contain

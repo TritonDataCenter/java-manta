@@ -127,7 +127,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * Enum specifying if we are in strict ciphertext authentication mode or not.
      */
-    private EncryptionObjectAuthenticationMode encryptionAuthenticationMode;
+    private EncryptionAuthenticationMode encryptionAuthenticationMode;
 
     /**
      * Path to the private encryption key on the filesystem (can't be used if
@@ -279,7 +279,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
         return encryptionAuthenticationMode;
     }
 
@@ -685,7 +685,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
     @Override
     public BaseChainedConfigContext setEncryptionAuthenticationMode(
-            final EncryptionObjectAuthenticationMode encryptionAuthenticationMode) {
+            final EncryptionAuthenticationMode encryptionAuthenticationMode) {
         this.encryptionAuthenticationMode = encryptionAuthenticationMode;
 
         return this;
