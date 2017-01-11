@@ -1,16 +1,21 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.HttpEntity;
 
 import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.security.SecureRandom;
 
 import static com.joyent.manta.client.crypto.SupportedCipherDetails.SUPPORTED_CIPHERS;
 
@@ -46,6 +51,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Cipher implementation used to encrypt and decrypt data.
      */
     private final SupportedCipherDetails cipherDetails;
+
+    /**
+     * We use the default entropy source configured in the JVM.
+     */
+    private final SecureRandom secureRandom = new SecureRandom();
 
     /**
      * Creates a new instance of the helper class.
@@ -92,5 +102,31 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         } else {
             throw new IllegalStateException("Either private key path or bytes must be specified");
         }
+    }
+
+    @Override
+    public MantaObjectResponse httpPut(final String path,
+                                       final MantaHttpHeaders headers,
+                                       final HttpEntity originalEntity,
+                                       final MantaMetadata metadata) throws IOException {
+        final MantaHttpHeaders httpHeaders;
+
+        if (headers == null) {
+            httpHeaders = new MantaHttpHeaders();
+        } else {
+            httpHeaders = headers;
+        }
+
+        if (metadata != null) {
+            httpHeaders.putAll(metadata);
+        }
+
+        // Add encryption HTTP headers here
+
+        EncryptingEntity encryptingEntity = new EncryptingEntity(
+                secretKey, cipherDetails, originalEntity, secureRandom
+        );
+
+        return super.httpPut(path, httpHeaders, encryptingEntity, metadata);
     }
 }

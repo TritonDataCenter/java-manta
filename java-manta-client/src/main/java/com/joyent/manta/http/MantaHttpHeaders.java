@@ -76,6 +76,70 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String ACCEPT_VERSION = "accept-version";
 
     /**
+     * Header that indicates that a file is encrypted using client-side encryption
+     * and specifies the version of client-side encryption.
+     */
+    public static final String ENCRYPTION_TYPE = "m-encrypt-type";
+
+    /**
+     * Header storing a unique id for the key used to encrypt.
+     */
+    public static final String ENCRYPTION_KEY_ID = "m-encrypt-key-id";
+
+    /**
+     * The initialization vector (IV) used when encrypting.
+     */
+    public static final String ENCRYPTION_IV = "m-encrypt-iv";
+
+    /**
+     * The name of the HMAC implementation used to authenticate ciphertext.
+     */
+    public static final String ENCRYPTION_HMAC_TYPE = "m-encrypt-hmac-type";
+
+    /**
+     * The number of bytes used to store an AEAD cipher's authentication data.
+     */
+    public static final String ENCRYPTION_AEAD_TAG_LENGTH = "m-encrypt-aead-tag-length";
+
+    /**
+     * The name of the cipher used to encrypt (<code>cipher/mode/padding state</code>).
+     */
+    public static final String ENCRYPTION_CIPHER = "m-encrypt-cipher";
+
+    /**
+     * The value of this header is the total amount of bytes of the plaintext content represented as an integer.
+     */
+    public static final String ENCRYPTION_PLAINTEXT_CONTENT_LENGTH = "m-encrypt-plaintext-content-length";
+
+    /**
+     * The value of this header is a base64 encoded encrypted data blob containing
+     * encrypted metadata.
+     */
+    public static final String ENCRYPTION_METADATA = "m-encrypt-metadata";
+
+    /**
+     * The initialization vector (IV) used to encrypt the encrypted metadata.
+     */
+    public static final String ENCRYPTION_METADATA_IV = "m-encrypt-metadata-iv";
+
+    /**
+     * The name of the HMAC implementation used to authenticate metadata ciphertext.
+     */
+    public static final String ENCRYPTION_METADATA_HMAC = "m-encrypt-metadata-hmac";
+
+    /**
+     * The number of bytes used to store an AEAD cipher's authentication data for
+     * the encrypted metadata.
+     */
+    public static final String ENCRYPTION_METADATA_AEAD_TAG_LENGTH = "m-encrypt-metadata-aead-tag-length";
+
+    /**
+     * The name of the cipher used to encrypt (<code>cipher/mode/padding state</code>)
+     * the encrypted metadata.
+     */
+    public static final String ENCRYPTION_METADATA_CIPHER = "m-encrypt-metadata-cipher";
+
+    /**
      * HttpHeaders delegate which is wrapped by this class.
      */
     private final transient CaseInsensitiveMap<String, Object> wrappedHeaders =
