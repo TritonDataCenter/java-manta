@@ -253,4 +253,23 @@ public class MantaUtilsTest {
         final String[] actual = MantaUtils.csv2array("hello, goodbye, farewell");
         assertEquals(actual, expected, "expecting array to match CSV value");
     }
+
+    public void unmodifiableMapVarArgsManyParams() {
+        Map<String, Integer> many = MantaUtils.unmodifiableMap(
+                "one", 1,
+                "two", 2,
+                "three", 3,
+                "four", 4,
+                "five", 5,
+                "six", 6,
+                "seven", 7);
+
+        Assert.assertEquals(many.get("one"), Integer.valueOf(1));
+        Assert.assertEquals(many.get("two"), Integer.valueOf(2));
+        Assert.assertEquals(many.get("three"), Integer.valueOf(3));
+        Assert.assertEquals(many.get("four"), Integer.valueOf(4));
+        Assert.assertEquals(many.get("five"), Integer.valueOf(5));
+        Assert.assertEquals(many.get("six"), Integer.valueOf(6));
+        Assert.assertEquals(many.get("seven"), Integer.valueOf(7));
+    }
 }

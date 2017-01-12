@@ -635,4 +635,43 @@ public final class MantaUtils {
 
         return Collections.unmodifiableMap(map);
     }
+
+    /**
+     * Creates a new unmodifiable {@link HashMap} with the passed parameters.
+     *
+     * @param key1 First key value pair's key
+     * @param val1 First key value pair's value
+     * @param nPairs vararg array of key value pairs to add to the map
+     * @param <K> type of key for the map
+     * @param <V> type of value for the map
+     * @return new instance populated with the passed values
+     */
+    @SuppressWarnings("unchecked")
+    public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1,
+                                                   Object... nPairs) {
+        if (nPairs == null) {
+            return unmodifiableMap(key1, val1);
+        }
+
+        if (nPairs.length % 2 != 0) {
+            throw new IllegalArgumentException("Vararg must be provided in even numbers");
+        }
+
+        Map<K, V> map = new HashMap<K, V>();
+        map.put(key1, val1);
+
+        K key = null;
+        V val = null;
+
+        for (int i = 0; i < nPairs.length; i++) {
+            if (i % 2 == 0) {
+                key = (K)nPairs[i];
+            } else {
+                val = (V)nPairs[i];
+                map.put(key, val);
+            }
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
 }
