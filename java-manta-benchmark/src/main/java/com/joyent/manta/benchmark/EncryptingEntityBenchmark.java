@@ -1,6 +1,5 @@
 package com.joyent.manta.benchmark;
 
-import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -30,20 +29,25 @@ public final class EncryptingEntityBenchmark {
      *
      * @param tries number of times to execute
      * @param random source of entropy for the encryption algorithm
+     * @param cipherDetails cipher implementation to benchmark
      * @throws IOException thrown when there is a problem streaming
      */
-    private static void throughputTest(final int tries, final SecureRandom random)
+    private static void throughputTest(final int tries, final SecureRandom random,
+                                       final SupportedCipherDetails cipherDetails)
             throws IOException {
         final long oneMb = 1_048_576L;
         final Charset charset = Charset.forName("US-ASCII");
 
         Duration[] durations = new Duration[tries];
 
-        for (int i = 0; i < tries; i++) {
+        long totalMs = 0L;
+        long totalMbs = 0L;
+        long totalMbps = 0L;
+
+        for (int i = 0; i < tries + 1; i++) {
             try (RandomInputStream in = new RandomInputStream(oneMb);
                  OutputStream noopOut = new NullOutputStream()) {
 
-                SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE;
                 MantaInputStreamEntity entity = new MantaInputStreamEntity(in, oneMb);
 
                 byte[] keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes(charset);
@@ -60,12 +64,25 @@ public final class EncryptingEntityBenchmark {
                 long end = System.nanoTime();
 
                 Duration duration = Duration.ofNanos(end - start);
-                durations[i] = duration;
-                System.out.printf("Total time=%dms, mbs=%d, mbps=%d\n",
-                        duration.toMillis(), duration.toMillis() * 1000,
-                        (duration.toMillis() * 1000) * 8);
+
+                // We throw out the first try because the JVM is warming up
+                if (i > 0) {
+                    durations[i - 1] = duration;
+                    long timeMs = duration.toMillis();
+                    totalMs += timeMs;
+                    long mbs = timeMs * 1000;
+                    totalMbs += mbs;
+                    long mbps = timeMs * 1000 * 8;
+                    totalMbps += mbps;
+
+                    System.out.printf("Total time=%dms, mbs=%d, mbps=%d\n",
+                            timeMs, mbs, mbps);
+                }
             }
         }
+
+        System.out.printf("\nAverage time=%dms, mbs=%d, mbps=%d\n",
+                totalMs / tries, totalMbs / tries, totalMbps / tries);
     }
 
     /**
@@ -84,16 +101,27 @@ public final class EncryptingEntityBenchmark {
             tries = Integer.parseInt(argv[0].trim());
         }
 
+        String randomName;
+
         if (argv.length < 2) {
             random = new SecureRandom();
+            randomName = "default";
         } else {
             if (argv[1].trim().equalsIgnoreCase("strong")) {
                 random = SecureRandom.getInstanceStrong();
+                randomName = "strong";
             } else {
                 random = new SecureRandom();
+                randomName = "default";
             }
         }
 
-        throughputTest(tries, random);
+        for (SupportedCipherDetails cipherDetails : SupportedCipherDetails.SUPPORTED_CIPHERS.values()) {
+            System.out.println("===================================================");
+            System.out.printf("%s Timings [random: %s]:\n", cipherDetails.getCipherAlgorithm(),
+                    randomName);
+            System.out.println("===================================================");
+            throughputTest(tries, random, cipherDetails);
+        }
     }
 }
