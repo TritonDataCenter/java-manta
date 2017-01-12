@@ -25,6 +25,11 @@ public interface SupportedCipherDetails {
     SupportedCiphersLookupMap SUPPORTED_CIPHERS = new SupportedCiphersLookupMap();
 
     /**
+     * Map of all of the HMACs supported by the SDK indexed by algorithm name.
+     */
+    SupportedHmacsLookupMap SUPPORTED_HMACS_LOOKUP_MAP = new SupportedHmacsLookupMap();
+
+    /**
      * @return algorithm name used by key generation (e.g. {@link SecretKeyUtils#generate(String, int)})
      */
     String getKeyGenerationAlgorithm();

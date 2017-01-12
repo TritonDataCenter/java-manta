@@ -648,7 +648,7 @@ public final class MantaUtils {
      */
     @SuppressWarnings("unchecked")
     public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1,
-                                                   Object... nPairs) {
+                                                   final Object... nPairs) {
         if (nPairs == null) {
             return unmodifiableMap(key1, val1);
         }
