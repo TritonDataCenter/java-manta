@@ -97,7 +97,7 @@ public final class AesCbcCipherDetails implements SupportedCipherDetails {
     @Override
     public Mac getAuthenticationHmac() {
         try {
-            return Mac.getInstance("HmacSHA256");
+            return Mac.getInstance("HmacSHA512");
         } catch (NoSuchAlgorithmException e) {
             throw new MantaClientEncryptionException(e);
         }
