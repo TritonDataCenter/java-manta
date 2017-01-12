@@ -11,12 +11,14 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.HttpEntity;
 
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.util.Base64;
 
 import static com.joyent.manta.client.crypto.SupportedCipherDetails.SUPPORTED_CIPHERS;
 
@@ -109,7 +111,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public MantaObjectResponse httpPut(final String path,
                                        final MantaHttpHeaders headers,
                                        final HttpEntity originalEntity,
-                                       final MantaMetadata metadata) throws IOException {
+                                       final MantaMetadata originalMetadata) throws IOException {
         final MantaHttpHeaders httpHeaders;
 
         if (headers == null) {
@@ -118,15 +120,46 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             httpHeaders = headers;
         }
 
-        if (metadata != null) {
-            httpHeaders.putAll(metadata);
-        }
-
-        // Add encryption HTTP headers here
-
         EncryptingEntity encryptingEntity = new EncryptingEntity(
                 secretKey, cipherDetails, originalEntity, secureRandom
         );
+
+        final MantaMetadata metadata;
+
+        if (originalMetadata != null) {
+            metadata = originalMetadata;
+        } else {
+            metadata = new MantaMetadata();
+        }
+
+        // Secret Key ID
+        metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
+                encryptionKeyId);
+        // Encryption Cipher
+        metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
+                cipherDetails.getCipherAlgorithm());
+        // IV Used to Encrypt
+        String ivBase64 = Base64.getEncoder().encodeToString(
+                encryptingEntity.getCipher().getIV());
+        metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_IV,
+                ivBase64);
+        // Plaintext content-length if available
+        if (encryptingEntity.getOriginalLength() > EncryptingEntity.UNKNOWN_LENGTH) {
+            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    String.valueOf(encryptingEntity.getOriginalLength()));
+        }
+        // AEAD Tag Length if AEAD Cipher
+        if (cipherDetails.isAEADCipher()) {
+            metadata.put(MantaHttpHeaders.ENCRYPTION_AEAD_TAG_LENGTH,
+                    String.valueOf(cipherDetails.getAuthenticationTagOrHmacLengthInBytes()));
+        // HMAC Type because we are doing MtE
+        } else {
+            Mac hmac = cipherDetails.getAuthenticationHmac();
+            metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC,
+                    hmac.getAlgorithm());
+        }
+
+        // Create and add encrypted metadata
 
         return super.httpPut(path, httpHeaders, encryptingEntity, metadata);
     }

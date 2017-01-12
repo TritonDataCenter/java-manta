@@ -6,6 +6,7 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
@@ -87,6 +88,14 @@ public interface SupportedCipherDetails {
      * @return configured instance
      */
     AlgorithmParameterSpec getEncryptionParameterSpec(byte[] iv);
+
+    /**
+     * Creates a new instance of a HMAC calculating class that performs
+     * authentication against the ciphertext.
+     *
+     * @return null if AEAD cipher, otherwise a new instance of authentication HMAC
+     */
+    Mac getAuthenticationHmac();
 
     /**
      * Finds a cipher by name and provider. Only throws runtime exceptions.

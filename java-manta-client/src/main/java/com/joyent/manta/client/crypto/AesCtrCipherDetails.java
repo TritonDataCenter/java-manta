@@ -1,9 +1,12 @@
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
 
 /**
@@ -20,9 +23,15 @@ public final class AesCtrCipherDetails implements SupportedCipherDetails {
     public static final AesCtrCipherDetails INSTANCE = new AesCtrCipherDetails();
 
     /**
+     * The size of the HMAC signature in bytes.
+     */
+    private final int macLength;
+
+    /**
      * Creates a new instance of a AES-CTR cipher for the static instance.
      */
     private AesCtrCipherDetails() {
+        this.macLength = getAuthenticationHmac().getMacLength();
     }
 
     @Override
@@ -52,7 +61,7 @@ public final class AesCtrCipherDetails implements SupportedCipherDetails {
 
     @Override
     public int getAuthenticationTagOrHmacLengthInBytes() {
-        return 16; // 128 bits
+        return this.macLength;
     }
 
     @Override
@@ -69,13 +78,21 @@ public final class AesCtrCipherDetails implements SupportedCipherDetails {
     @Override
     public long cipherTextSize(final long plainTextSize) {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
-        return plainTextSize;
+        return plainTextSize + getAuthenticationTagOrHmacLengthInBytes();
     }
-
 
     @Override
     public boolean isAEADCipher() {
         return false;
+    }
+
+    @Override
+    public Mac getAuthenticationHmac() {
+        try {
+            return Mac.getInstance("HmacSHA256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new MantaClientEncryptionException(e);
+        }
     }
 
     @Override

@@ -1,9 +1,12 @@
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
 
 /**
@@ -20,9 +23,15 @@ public final class AesCbcCipherDetails implements SupportedCipherDetails {
     public static final AesCbcCipherDetails INSTANCE = new AesCbcCipherDetails();
 
     /**
+     * The size of the HMAC signature in bytes.
+     */
+    private final int macLength;
+
+    /**
      * Creates a new instance of a AES-CBC cipher for the static instance.
      */
     private AesCbcCipherDetails() {
+        this.macLength = getAuthenticationHmac().getMacLength();
     }
 
     @Override
@@ -52,7 +61,7 @@ public final class AesCbcCipherDetails implements SupportedCipherDetails {
 
     @Override
     public int getAuthenticationTagOrHmacLengthInBytes() {
-        return 16;
+        return this.macLength;
     }
 
     @Override
@@ -71,17 +80,27 @@ public final class AesCbcCipherDetails implements SupportedCipherDetails {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
 
         if (plainTextSize <= 0) {
-            return getBlockSizeInBytes();
+            return getBlockSizeInBytes() + getAuthenticationTagOrHmacLengthInBytes();
         }
 
         long totalBlocks = plainTextSize / getBlockSizeInBytes();
 
-        return totalBlocks * getBlockSizeInBytes() + getBlockSizeInBytes();
+        return totalBlocks * getBlockSizeInBytes() + getBlockSizeInBytes()
+                + getAuthenticationTagOrHmacLengthInBytes();
     }
 
     @Override
     public boolean isAEADCipher() {
         return false;
+    }
+
+    @Override
+    public Mac getAuthenticationHmac() {
+        try {
+            return Mac.getInstance("HmacSHA256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new MantaClientEncryptionException(e);
+        }
     }
 
     @Override

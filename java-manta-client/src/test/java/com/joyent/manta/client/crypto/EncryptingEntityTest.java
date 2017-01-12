@@ -5,6 +5,7 @@ import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.http.HttpEntity;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -213,18 +214,32 @@ public class EncryptingEntityTest {
             encryptingEntity.writeTo(out);
         }
 
-        Assert.assertEquals(file.length(), encryptingEntity.getContentLength());
+        Assert.assertEquals(file.length(), encryptingEntity.getContentLength(),
+                "Expected ciphertext file size doesn't match actual file size -");
 
         byte[] iv = encryptingEntity.getCipher().getIV();
         Cipher cipher = cipherDetails.getCipher();
         cipher.init(Cipher.DECRYPT_MODE, key, cipherDetails.getEncryptionParameterSpec(iv));
 
+        final long ciphertextSize;
+
+        if (cipherDetails.isAEADCipher()) {
+            ciphertextSize = encryptingEntity.getContentLength();
+        } else {
+            ciphertextSize = encryptingEntity.getContentLength() - cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+        }
+
         try (FileInputStream in = new FileInputStream(file);
-             CipherInputStream cin = new CipherInputStream(in, cipher)) {
+             BoundedInputStream bin = new BoundedInputStream(in, ciphertextSize);
+             CipherInputStream cin = new CipherInputStream(bin, cipher)) {
             final byte[] actualBytes = IOUtils.toByteArray(cin);
+
+            final byte[] hmacBytes = new byte[cipherDetails.getAuthenticationTagOrHmacLengthInBytes()];
+            in.read(hmacBytes);
 
             Assert.assertTrue(validator.test(actualBytes),
                     "Entity validation failed");
+
         }
     }
 }
