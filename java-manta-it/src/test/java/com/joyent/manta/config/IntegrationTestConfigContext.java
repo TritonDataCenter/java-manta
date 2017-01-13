@@ -16,7 +16,11 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * properties and an addition context passed in.
      */
     public IntegrationTestConfigContext() {
-        this(false);
+        super();
+
+        if (isClientEncryptionEnabled()) {
+            enableTestEncryption();
+        }
     }
 
     /**
@@ -28,11 +32,15 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         super();
 
         if (BooleanUtils.isTrue(usingEncryption)) {
-            setClientEncryptionEnabled(true);
-            setEncryptionKeyId("integration-test-key");
-            setEncryptionAlgorithm("AES/GCM/NoPadding");
-            setEncryptionPrivateKeyBytes("FFFFFFFBD96783C6C91E2222"
-                    .getBytes(Charsets.US_ASCII));
+            enableTestEncryption();
         }
+    }
+
+    private void enableTestEncryption() {
+        setClientEncryptionEnabled(true);
+        setEncryptionKeyId("integration-test-key");
+        setEncryptionAlgorithm("AES/GCM/NoPadding");
+        setEncryptionPrivateKeyBytes("FFFFFFFBD96783C6C91E2222"
+                .getBytes(Charsets.US_ASCII));
     }
 }
