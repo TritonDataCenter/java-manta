@@ -189,6 +189,9 @@ public class EncryptingEntity implements HttpEntity {
             hmac = cipherDetails.getAuthenticationHmac();
             try {
                 hmac.init(key);
+                /* The first bytes of the HMAC are the IV. This is done in order to
+                 * prevent IV collision or spoofing attacks. */
+                hmac.update(cipher.getIV());
             } catch (InvalidKeyException e) {
                 String msg = "Error initializing HMAC with secret key";
                 throw new MantaClientEncryptionException(msg, e);
