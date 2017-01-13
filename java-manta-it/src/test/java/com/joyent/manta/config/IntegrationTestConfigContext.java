@@ -1,7 +1,12 @@
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.crypto.SecretKeyUtils;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.BooleanUtils;
+
+import javax.crypto.SecretKey;
+import java.util.Base64;
 
 /**
  * {@link ConfigContext} implementation that loads
@@ -35,9 +40,14 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         if (usingEncryption) {
             context.setClientEncryptionEnabled(true);
             context.setEncryptionKeyId("integration-test-key");
-            context.setEncryptionAlgorithm("AES/GCM/NoPadding");
-            context.setEncryptionPrivateKeyBytes("FFFFFFFBD96783C6C91E2222"
-                    .getBytes(Charsets.US_ASCII));
+
+            SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
+            context.setEncryptionAlgorithm(cipherDetails.getCipherId());
+            SecretKey key = SecretKeyUtils.generate(cipherDetails);
+            context.setEncryptionPrivateKeyBytes(key.getEncoded());
+
+            System.out.printf("Secret Key used for test (base64):\n%s\n",
+                    Base64.getEncoder().encodeToString(key.getEncoded()));
         }
 
         return context;
