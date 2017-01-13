@@ -47,21 +47,21 @@ public class EncryptingEntityTest {
     /* AES-GCM-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesGcm() throws Exception {
-        verifyEncryptionWorksRoundTrip(keyBytes, AesGcmCipherDetails.INSTANCE);
+        verifyEncryptionWorksRoundTrip(keyBytes, AesGcmCipherDetails.INSTANCE_128);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesGcm() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesGcmCipherDetails.INSTANCE);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AesGcmCipherDetails.INSTANCE_128);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesGcm() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE);
+        canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE_128);
     }
 
     @Test(expectedExceptions = AEADBadTagException.class)
     public void canEncryptAndDecryptToAndFromFileInAesGcmAndThrowWhenCiphertextIsAltered()
             throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE;
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128;
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL resource = classLoader.getResource("com/joyent/manta/client/crypto/EncryptingEntityTest.class");
         Path path = Paths.get(resource.toURI());
@@ -111,29 +111,29 @@ public class EncryptingEntityTest {
     /* AES-CTR-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCtr() throws Exception {
-        verifyEncryptionWorksRoundTrip(keyBytes, AesCtrCipherDetails.INSTANCE);
+        verifyEncryptionWorksRoundTrip(keyBytes, AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesCtr() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesCtrCipherDetails.INSTANCE);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesCtr() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesCtrCipherDetails.INSTANCE);
+        canCountBytesFromStreamWithUnknownLength(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     /* AES-CBC-PKCS5Padding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCbc() throws Exception {
-        verifyEncryptionWorksRoundTrip(keyBytes, AesCbcCipherDetails.INSTANCE);
+        verifyEncryptionWorksRoundTrip(keyBytes, AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesCbc() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesCbcCipherDetails.INSTANCE);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesCbc() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesCbcCipherDetails.INSTANCE);
+        canCountBytesFromStreamWithUnknownLength(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     /* Test helper methods */

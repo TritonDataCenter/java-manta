@@ -73,12 +73,12 @@ public class EncryptingEntity implements HttpEntity {
     /**
      * Cipher implementation used to encrypt as a stream.
      */
-    private Cipher cipher;
+    private final Cipher cipher;
 
     /**
      * Source of entropy for the encryption algorithm.
      */
-    private SecureRandom random;
+    private final SecureRandom random;
 
     /**
      * Creates a new instance with an known stream size.
@@ -100,11 +100,26 @@ public class EncryptingEntity implements HttpEntity {
             throw new MantaClientEncryptionException(msg);
         }
 
+        @SuppressWarnings("MagicNumber")
+        final int keyBits = key.getEncoded().length << 3;
+
+        if (keyBits != cipherDetails.getKeyLengthBits()) {
+            String msg = "Mismatch between algorithm definition and secret key size";
+            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+            e.setContextValue("cipherDetails", cipherDetails.toString());
+            e.setContextValue("secretKeyAlgorithm", key.getAlgorithm());
+            e.setContextValue("secretKeySizeInBits", String.valueOf(keyBits));
+            e.setContextValue("expectedKeySizeInBits", cipherDetails.getKeyLengthBits());
+            throw e;
+        }
+
         this.key = key;
         this.cipherDetails = cipherDetails;
         this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
         this.random = random;
+        this.cipher = cipherDetails.getCipher();
+        initializeCipher();
     }
 
     @Override
@@ -147,25 +162,6 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        cipher = cipherDetails.getCipher();
-
-        try {
-            byte[] iv = new byte[cipherDetails.getIVLengthInBytes()];
-            random.nextBytes(iv);
-
-            cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
-        } catch (InvalidKeyException e) {
-            MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                    "There was a problem loading private key", e);
-            String details = String.format("key=%s, algorithm=%s",
-                    key.getAlgorithm(), key.getFormat());
-            mcee.setContextValue("key_details", details);
-            throw mcee;
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new MantaClientEncryptionException(
-                    "There was a problem with the passed algorithm parameters", e);
-        }
-
         /* We have to use a "close shield" here because when close() is called
          * on a CipherOutputStream() for two reasons:
          *
@@ -254,5 +250,28 @@ public class EncryptingEntity implements HttpEntity {
 
     public Cipher getCipher() {
         return cipher;
+    }
+
+    /**
+     * Initializes the cipher with an IV (initialization vector), so that
+     * the cipher is ready to be used to encrypt.
+     */
+    private void initializeCipher() {
+        try {
+            byte[] iv = new byte[cipherDetails.getIVLengthInBytes()];
+            random.nextBytes(iv);
+
+            cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
+        } catch (InvalidKeyException e) {
+            MantaClientEncryptionException mcee = new MantaClientEncryptionException(
+                    "There was a problem loading private key", e);
+            String details = String.format("key=%s, algorithm=%s",
+                    key.getAlgorithm(), key.getFormat());
+            mcee.setContextValue("key_details", details);
+            throw mcee;
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new MantaClientEncryptionException(
+                    "There was a problem with the passed algorithm parameters", e);
+        }
     }
 }

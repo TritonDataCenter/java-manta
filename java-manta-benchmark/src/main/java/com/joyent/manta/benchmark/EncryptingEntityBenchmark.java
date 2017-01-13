@@ -3,6 +3,7 @@ package com.joyent.manta.benchmark;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.io.output.NullOutputStream;
@@ -10,7 +11,6 @@ import org.apache.commons.io.output.NullOutputStream;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.time.Duration;
 
@@ -36,7 +36,6 @@ public final class EncryptingEntityBenchmark {
                                        final SupportedCipherDetails cipherDetails)
             throws IOException {
         final long oneMb = 1_048_576L;
-        final Charset charset = Charset.forName("US-ASCII");
 
         Duration[] durations = new Duration[tries];
 
@@ -49,9 +48,7 @@ public final class EncryptingEntityBenchmark {
                  OutputStream noopOut = new NullOutputStream()) {
 
                 MantaInputStreamEntity entity = new MantaInputStreamEntity(in, oneMb);
-
-                byte[] keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes(charset);
-                SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
+                SecretKey key = SecretKeyUtils.generate(cipherDetails);
 
                 EncryptingEntity encryptingEntity = new EncryptingEntity(key,
                         cipherDetails, entity, random);
@@ -116,9 +113,9 @@ public final class EncryptingEntityBenchmark {
             }
         }
 
-        for (SupportedCipherDetails cipherDetails : SupportedCipherDetails.SUPPORTED_CIPHERS.values()) {
+        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
             System.out.println("===================================================");
-            System.out.printf("%s Timings [random: %s]:\n", cipherDetails.getCipherAlgorithm(),
+            System.out.printf(" %s Timings [random: %s]:\n", cipherDetails.getCipherId(),
                     randomName);
             System.out.println("===================================================");
             throughputTest(tries, random, cipherDetails);

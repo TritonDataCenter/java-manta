@@ -3,8 +3,10 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,8 +16,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-
-import static com.joyent.manta.client.crypto.SupportedCipherDetails.SUPPORTED_CIPHERS;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -298,6 +298,19 @@ public interface ConfigContext {
             e.setContextValue(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
                     config.isClientEncryptionEnabled());
 
+            if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+                e.setContextValue(MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY,
+                        config.getEncryptionKeyId());
+                e.setContextValue(MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
+                        config.permitUnencryptedDownloads());
+                e.setContextValue(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY,
+                        config.getEncryptionAlgorithm());
+                e.setContextValue(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
+                        config.getEncryptionPrivateKeyPath());
+                e.setContextValue(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY + "_size",
+                        ArrayUtils.getLength(config.getEncryptionPrivateKeyBytes()));
+            }
+
             throw e;
         }
     }
@@ -380,9 +393,9 @@ public interface ConfigContext {
             failureMessages.add("Encryption algorithm must not be blank");
         }
 
-        if (algorithm != null && !SUPPORTED_CIPHERS.containsKeyCaseInsensitive(algorithm)) {
+        if (algorithm != null && !SupportedCiphersLookupMap.INSTANCE.containsKeyCaseInsensitive(algorithm)) {
             String availableAlgorithms = StringUtils.join(
-                    SUPPORTED_CIPHERS.keySet(), ", ");
+                    SupportedCiphersLookupMap.INSTANCE.keySet(), ", ");
             failureMessages.add(String.format("Cipher algorithm [%s] was not found among "
                             + "the list of supported algorithms [%s]", algorithm,
                     availableAlgorithms));

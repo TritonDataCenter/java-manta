@@ -5,8 +5,6 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.lang3.Validate;
 
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import java.security.spec.AlgorithmParameterSpec;
 
@@ -16,7 +14,7 @@ import java.security.spec.AlgorithmParameterSpec;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public final class AesGcmCipherDetails implements SupportedCipherDetails {
+public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     /**
      * The maximum number of 16 byte blocks that can be encrypted with a
      * AES GCM cipher: 2^32 - 2.
@@ -30,55 +28,33 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
     private static final long MAX_PLAIN_TEXT_SIZE_BYTES = MAX_AES_GCM_BLOCKS << 4;
 
     /**
-     * Global instance of AES-GCM cipher.
+     * Instance of AES128-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE = new AesGcmCipherDetails();
+    public static final AesGcmCipherDetails INSTANCE_128 = new AesGcmCipherDetails(128);
+
+    /**
+     * Instance of AES192-GCM cipher.
+     */
+    public static final AesGcmCipherDetails INSTANCE_192 = new AesGcmCipherDetails(192);
+
+    /**
+     * Instance of AES256-GCM cipher.
+     */
+    public static final AesGcmCipherDetails INSTANCE_256 = new AesGcmCipherDetails(256);
 
     /**
      * Creates a new instance of a AES-GCM cipher for the static instance.
+     *
+     * @param keyLengthBits size of the private key - which determines the AES algorithm type
      */
-    private AesGcmCipherDetails() {
-    }
-
-    @Override
-    public String getKeyGenerationAlgorithm() {
-        return "AES";
-    }
-
-    @Override
-    public String getCipherAlgorithm() {
-        return "AES/GCM/NoPadding";
-    }
-
-    @Override
-    public int getKeyLengthBits() {
-        return 256;
-    }
-
-    @Override
-    public int getBlockSizeInBytes() {
-        return 16;
-    }
-
-    @Override
-    public int getIVLengthInBytes() {
-        return 16;
-    }
-
-    @Override
-    public int getAuthenticationTagOrHmacLengthInBytes() {
-        return 16; // 128 bits
+    private AesGcmCipherDetails(final int keyLengthBits) {
+        // Use 128-bit AEAD tag
+        super(keyLengthBits, "AES/GCM/NoPadding", 16);
     }
 
     @Override
     public long getMaximumPlaintextSizeInBytes() {
         return MAX_PLAIN_TEXT_SIZE_BYTES;
-    }
-
-    @Override
-    public Cipher getCipher() {
-        return SupportedCipherDetails.findCipher(getCipherAlgorithm(),
-                BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
     }
 
     @Override
@@ -96,16 +72,5 @@ public final class AesGcmCipherDetails implements SupportedCipherDetails {
     public long cipherTextSize(final long plainTextSize) {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
         return plainTextSize + getAuthenticationTagOrHmacLengthInBytes();
-    }
-
-    @Override
-    public boolean isAEADCipher() {
-        return true;
-    }
-
-    @Override
-    public Mac getAuthenticationHmac() {
-        // This is an AEAD cipher, so no Hmac is needed
-        return null;
     }
 }

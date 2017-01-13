@@ -586,7 +586,7 @@ public final class MantaUtils {
      * @return new instance populated with the passed values
      */
     public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1) {
-        Map<K, V> map = new HashMap<K, V>();
+        Map<K, V> map = Collections.singletonMap(key1, val1);
         map.put(key1, val1);
 
         return Collections.unmodifiableMap(map);
@@ -605,7 +605,7 @@ public final class MantaUtils {
      */
     public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1,
                                                    final K key2, final V val2) {
-        Map<K, V> map = new HashMap<K, V>();
+        Map<K, V> map = new LinkedHashMap<>(2);
         map.put(key1, val1);
         map.put(key2, val2);
 
@@ -628,7 +628,8 @@ public final class MantaUtils {
     public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1,
                                                    final K key2, final V val2,
                                                    final K key3, final V val3) {
-        Map<K, V> map = new HashMap<K, V>();
+        @SuppressWarnings("MagicNumber")
+        Map<K, V> map = new LinkedHashMap<K, V>(3);
         map.put(key1, val1);
         map.put(key2, val2);
         map.put(key3, val3);
@@ -657,7 +658,7 @@ public final class MantaUtils {
             throw new IllegalArgumentException("Vararg must be provided in even numbers");
         }
 
-        Map<K, V> map = new HashMap<K, V>();
+        Map<K, V> map = new LinkedHashMap<>(1 + (nPairs.length / 2));
         map.put(key1, val1);
 
         K key = null;

@@ -17,11 +17,16 @@ import java.util.function.Supplier;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class SupportedHmacsLookupMap extends LookupMap<String, Supplier<Mac>> {
+public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<Mac>> {
+    /**
+     * Map of all of the HMACs supported by the SDK indexed by algorithm name.
+     */
+    public static final SupportedHmacsLookupMap INSTANCE = new SupportedHmacsLookupMap();
+
     /**
      * Package default constructor because interface is through {@link SupportedCipherDetails}.
      */
-    SupportedHmacsLookupMap() {
+    private SupportedHmacsLookupMap() {
         super(MantaUtils.unmodifiableMap(
                 "HmacMD5", hmacSupplierByName("HmacMD5"),
                 "HmacSHA1", hmacSupplierByName("HmacSHA1"),

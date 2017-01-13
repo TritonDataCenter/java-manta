@@ -20,19 +20,14 @@ import java.security.spec.AlgorithmParameterSpec;
  */
 public interface SupportedCipherDetails {
     /**
-     * Map of all of the ciphers supported by the SDK indexed by algorithm name.
-     */
-    SupportedCiphersLookupMap SUPPORTED_CIPHERS = new SupportedCiphersLookupMap();
-
-    /**
-     * Map of all of the HMACs supported by the SDK indexed by algorithm name.
-     */
-    SupportedHmacsLookupMap SUPPORTED_HMACS_LOOKUP_MAP = new SupportedHmacsLookupMap();
-
-    /**
      * @return algorithm name used by key generation (e.g. {@link SecretKeyUtils#generate(String, int)})
      */
     String getKeyGenerationAlgorithm();
+
+    /**
+     * @return Unique identifier used for identifying cipher in Manta
+     */
+    String getCipherId();
 
     /**
      * @return algorithm name used when initializing a cipher

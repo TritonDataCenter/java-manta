@@ -5,6 +5,7 @@ import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
@@ -19,8 +20,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
-
-import static com.joyent.manta.client.crypto.SupportedCipherDetails.SUPPORTED_CIPHERS;
 
 /**
  * {@link HttpHelper} implementation that transparently handles client-side
@@ -84,9 +83,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 EncryptionAuthenticationMode.DEFAULT_MODE);
 
         this.cipherDetails = ObjectUtils.firstNonNull(
-                SUPPORTED_CIPHERS.getWithCaseInsensitiveKey(config.getEncryptionAlgorithm()),
-                DefaultsConfigContext.DEFAULT_CIPHER
-        );
+                SupportedCiphersLookupMap.INSTANCE.getWithCaseInsensitiveKey(
+                        config.getEncryptionAlgorithm()), DefaultsConfigContext.DEFAULT_CIPHER);
 
         if (config.getEncryptionPrivateKeyPath() != null) {
             Path keyPath = Paths.get(config.getEncryptionPrivateKeyPath());
@@ -141,8 +139,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         // IV Used to Encrypt
         String ivBase64 = Base64.getEncoder().encodeToString(
                 encryptingEntity.getCipher().getIV());
-        metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_IV,
-                ivBase64);
+        metadata.put(MantaHttpHeaders.ENCRYPTION_IV, ivBase64);
         // Plaintext content-length if available
         if (encryptingEntity.getOriginalLength() > EncryptingEntity.UNKNOWN_LENGTH) {
             metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,

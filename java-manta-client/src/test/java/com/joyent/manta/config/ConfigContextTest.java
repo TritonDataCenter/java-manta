@@ -1,8 +1,6 @@
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.crypto.AesCbcCipherDetails;
 import com.joyent.manta.client.crypto.AesGcmCipherDetails;
-import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.Test;
@@ -90,7 +88,7 @@ public class ConfigContextTest {
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
         config.setEncryptionPrivateKeyPath(encryptionPrivateKey.getAbsolutePath());
-        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE.getCipherAlgorithm());
+        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128.getCipherId());
         ConfigContext.validate(config);
     }
 
@@ -105,7 +103,7 @@ public class ConfigContextTest {
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
         config.setEncryptionPrivateKeyBytes(keyBytes);
-        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE.getCipherAlgorithm());
+        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128.getCipherId());
         ConfigContext.validate(config);
     }
 }

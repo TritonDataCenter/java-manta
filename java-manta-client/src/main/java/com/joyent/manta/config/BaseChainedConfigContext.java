@@ -416,6 +416,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (context.getEncryptionPrivateKeyBytes() != null) {
             this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
         }
+
+        if (context.permitUnencryptedDownloads() != null) {
+            this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
+        }
     }
 
     /**
@@ -505,8 +509,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
 
-        if (this.getEncryptionPrivateKeyPath() == null) {
+        if (this.encryptionPrivateKeyPath == null) {
             this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
+        }
+
+        if (this.permitUnencryptedDownloads == null) {
+            this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
         }
 
         /* Note: we purposely omitted privateKeyContent and

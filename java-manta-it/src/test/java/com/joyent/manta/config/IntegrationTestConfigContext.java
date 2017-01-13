@@ -16,11 +16,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * properties and an addition context passed in.
      */
     public IntegrationTestConfigContext() {
-        super();
-
-        if (isClientEncryptionEnabled()) {
-            enableTestEncryption();
-        }
+        super(enableTestEncryption(new StandardConfigContext(),  encryptionEnabled()));
     }
 
     /**
@@ -29,18 +25,28 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * client-side encryption configuration settings.
      */
     public IntegrationTestConfigContext(Boolean usingEncryption) {
-        super();
-
-        if (BooleanUtils.isTrue(usingEncryption)) {
-            enableTestEncryption();
-        }
+        super(enableTestEncryption(new StandardConfigContext(),
+                encryptionEnabled() || BooleanUtils.isNotFalse(usingEncryption)));
     }
 
-    private void enableTestEncryption() {
-        setClientEncryptionEnabled(true);
-        setEncryptionKeyId("integration-test-key");
-        setEncryptionAlgorithm("AES/GCM/NoPadding");
-        setEncryptionPrivateKeyBytes("FFFFFFFBD96783C6C91E2222"
-                .getBytes(Charsets.US_ASCII));
+    private static <T> SettableConfigContext<T> enableTestEncryption(
+            final SettableConfigContext<T> context,
+            final boolean usingEncryption) {
+        if (usingEncryption) {
+            context.setClientEncryptionEnabled(true);
+            context.setEncryptionKeyId("integration-test-key");
+            context.setEncryptionAlgorithm("AES/GCM/NoPadding");
+            context.setEncryptionPrivateKeyBytes("FFFFFFFBD96783C6C91E2222"
+                    .getBytes(Charsets.US_ASCII));
+        }
+
+        return context;
+    }
+
+    public static boolean encryptionEnabled() {
+        String sysProp = System.getProperty(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY);
+        String envVar = System.getenv(EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY);
+
+        return BooleanUtils.toBoolean(sysProp) || BooleanUtils.toBoolean(envVar);
     }
 }
