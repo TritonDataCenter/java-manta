@@ -4,8 +4,8 @@
 package com.joyent.manta.client.jobs;
 
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.test.util.ThreeTriesRetryAnalyzer;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -14,8 +14,6 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -48,17 +46,10 @@ public class MantaClientJobIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout)
-            throws IOException {
+    public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
+        ConfigContext config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
 

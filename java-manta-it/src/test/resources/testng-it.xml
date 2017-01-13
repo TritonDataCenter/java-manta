@@ -1,18 +1,24 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Java Manta SDK Integration Test Suite" verbose="1">
-
-    <!-- You can optionally define runtime configuration here:
-    <parameter name="manta.url" value="https://us-east.manta.joyent.com"/>
-    <parameter name="manta.user" value="username"/>
-    <parameter name="manta.key_path" value="manta-test_id_rsa"/>
-    <parameter name="manta.key_id" value="7d:dd:93:d0:a8:62:e7:e0:e5:82:34:98:67:23:cd:22"/>
-    <parameter name="manta.timeout" value="30000"/>
-    -->
-
-    <test name="Manta Client Integration Tests">
+    <test name="Manta Client Integration Tests [Unencrypted]">
         <packages>
             <package name="com.joyent.manta.client.*" />
             <package name="com.joyent.manta.client.multipart.*" />
+        </packages>
+    </test>
+
+    <!-- We run many of the integration tests over again using client-side encryption -->
+    <test name="Manta Client Integration Tests [Encrypted]">
+        <parameter name="usingEncryption" value="true"/>
+
+        <packages>
+            <package name="com.joyent.manta.client.*" />
+            <package name="com.joyent.manta.client.multipart.*" />
+        </packages>
+    </test>
+
+    <test name="Manta Job Tests">
+        <packages>
             <package name="com.joyent.manta.client.jobs.*" />
         </packages>
     </test>

@@ -53,17 +53,11 @@ public class MantaMultipartManagerIT {
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
     @BeforeClass()
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout)
-            throws IOException {
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         this.mantaClient = new MantaClient(config);
         this.multipart = new MantaMultipartManager(this.mantaClient);
