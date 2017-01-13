@@ -34,20 +34,10 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 @Test
 public class EncryptingEntityTest {
-    private final byte[] keyBytes;
-
-    {
-        try {
-            keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError(e.getMessage());
-        }
-    }
-
     /* AES-GCM-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesGcm() throws Exception {
-        verifyEncryptionWorksRoundTrip(keyBytes, AesGcmCipherDetails.INSTANCE_128);
+        verifyEncryptionWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesGcm() throws Exception {
@@ -70,8 +60,7 @@ public class EncryptingEntityTest {
         MantaInputStreamEntity entity = new MantaInputStreamEntity(resource.openStream(),
                 size);
 
-        SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
-
+        SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptingEntity encryptingEntity = new EncryptingEntity(key,
                 cipherDetails, entity, new SecureRandom());
 
@@ -111,7 +100,7 @@ public class EncryptingEntityTest {
     /* AES-CTR-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCtr() throws Exception {
-        verifyEncryptionWorksRoundTrip(keyBytes, AesCtrCipherDetails.INSTANCE_128_BIT);
+        verifyEncryptionWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesCtr() throws Exception {
@@ -125,7 +114,7 @@ public class EncryptingEntityTest {
     /* AES-CBC-PKCS5Padding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCbc() throws Exception {
-        verifyEncryptionWorksRoundTrip(keyBytes, AesCbcCipherDetails.INSTANCE_128_BIT);
+        verifyEncryptionWorksRoundTrip(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesCbc() throws Exception {
@@ -150,6 +139,8 @@ public class EncryptingEntityTest {
         Assert.assertEquals(entity.getContentLength(), -1L,
                 "Content length should be set to unknown value");
 
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+
         verifyEncryptionWorksRoundTrip(keyBytes, cipherDetails,
                 entity, (actualBytes) -> {
                     Assert.assertEquals(actualBytes.length, size,
@@ -171,6 +162,8 @@ public class EncryptingEntityTest {
             ExposedStringEntity stringEntity = new ExposedStringEntity(
                     expectedString, charset);
 
+            byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+
             verifyEncryptionWorksRoundTrip(keyBytes, cipherDetails,
                     stringEntity, (actualBytes) -> {
                         final String actual = new String(actualBytes, charset);
@@ -181,8 +174,8 @@ public class EncryptingEntityTest {
         }
     }
 
-    private static void verifyEncryptionWorksRoundTrip(
-            byte[] keyBytes, SupportedCipherDetails cipherDetails) throws Exception {
+    private static void verifyEncryptionWorksRoundTrip(SupportedCipherDetails cipherDetails) throws Exception {
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
         final Charset charset = Charsets.US_ASCII;
         final String expectedString = "012345678901245601234567890124";
         ExposedStringEntity stringEntity = new ExposedStringEntity(
