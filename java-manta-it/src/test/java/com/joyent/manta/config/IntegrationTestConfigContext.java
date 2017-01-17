@@ -2,7 +2,6 @@ package com.joyent.manta.config;
 
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.BooleanUtils;
 
 import javax.crypto.SecretKey;
@@ -21,7 +20,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * properties and an addition context passed in.
      */
     public IntegrationTestConfigContext() {
-        super(enableTestEncryption(new StandardConfigContext(),  encryptionEnabled()));
+        super(enableTestEncryption(new StandardConfigContext(), encryptionEnabled()));
     }
 
     /**
@@ -31,7 +30,8 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      */
     public IntegrationTestConfigContext(Boolean usingEncryption) {
         super(enableTestEncryption(new StandardConfigContext(),
-                encryptionEnabled() || BooleanUtils.isNotFalse(usingEncryption)));
+                (encryptionEnabled() && usingEncryption == null) ||
+                        BooleanUtils.isTrue(usingEncryption)));
     }
 
     private static <T> SettableConfigContext<T> enableTestEncryption(

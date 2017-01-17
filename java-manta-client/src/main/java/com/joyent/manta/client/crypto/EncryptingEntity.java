@@ -6,6 +6,7 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.util.HmacOutputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.Validate;
@@ -14,6 +15,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
@@ -34,6 +37,11 @@ import java.security.SecureRandom;
  * @since 3.0.0
  */
 public class EncryptingEntity implements HttpEntity {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingEntity.class);
+
     /**
      * Value for an unknown stream length.
      */
@@ -205,6 +213,11 @@ public class EncryptingEntity implements HttpEntity {
                 byte[] hmacBytes = hmac.doFinal();
                 Validate.isTrue(hmacBytes.length == cipherDetails.getAuthenticationTagOrHmacLengthInBytes(),
                         "HMAC actual bytes doesn't equal the number of bytes expected");
+
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
+                }
+
                 httpOut.write(hmacBytes);
             }
         } finally {

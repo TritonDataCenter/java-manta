@@ -64,7 +64,6 @@ public class HmacOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
-        hmac.doFinal();
         chained.close();
     }
 }

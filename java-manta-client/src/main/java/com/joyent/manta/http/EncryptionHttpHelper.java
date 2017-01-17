@@ -1,16 +1,26 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.EncryptingEntity;
+import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
+import com.joyent.manta.exception.MantaClientEncryptionException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -29,6 +39,11 @@ import java.util.Base64;
  * @since 3.0.0
  */
 public class EncryptionHttpHelper extends StandardHttpHelper {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptionHttpHelper.class);
+
     /**
      * The unique identifier of the key used for encryption.
      */
@@ -133,31 +148,69 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         // Secret Key ID
         metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 encryptionKeyId);
+        LOGGER.debug("Secret key id: {}", encryptionKeyId);
+
         // Encryption Cipher
         metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
-                cipherDetails.getCipherAlgorithm());
+                cipherDetails.getCipherId());
+        LOGGER.debug("Encryption cipher: {}", cipherDetails.getCipherId());
+
         // IV Used to Encrypt
         String ivBase64 = Base64.getEncoder().encodeToString(
                 encryptingEntity.getCipher().getIV());
         metadata.put(MantaHttpHeaders.ENCRYPTION_IV, ivBase64);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("IV: {}", Hex.encodeHexString(encryptingEntity.getCipher().getIV()));
+        }
+
         // Plaintext content-length if available
         if (encryptingEntity.getOriginalLength() > EncryptingEntity.UNKNOWN_LENGTH) {
+            String originalLength = String.valueOf(encryptingEntity.getOriginalLength());
             metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
-                    String.valueOf(encryptingEntity.getOriginalLength()));
+                    originalLength);
+            LOGGER.debug("Plaintext content-length: {}", originalLength);
         }
         // AEAD Tag Length if AEAD Cipher
         if (cipherDetails.isAEADCipher()) {
             metadata.put(MantaHttpHeaders.ENCRYPTION_AEAD_TAG_LENGTH,
                     String.valueOf(cipherDetails.getAuthenticationTagOrHmacLengthInBytes()));
+            LOGGER.debug("AEAD tag length: {}", cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
         // HMAC Type because we are doing MtE
         } else {
             Mac hmac = cipherDetails.getAuthenticationHmac();
-            metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC,
+            metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
                     hmac.getAlgorithm());
+            LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
         }
 
         // Create and add encrypted metadata
 
         return super.httpPut(path, httpHeaders, encryptingEntity, metadata);
+    }
+
+    @Override
+    public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
+                                                           final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
+
+        final String cipherId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
+
+        if (cipherId == null) {
+            if (permitUnencryptedDownloads) {
+                return rawStream;
+            } else {
+                String msg = "Unable to download a unencrypted file when "
+                        + "client-side encryption is enabled unless the "
+                        + "permit unencrypted downloads configuration setting "
+                        + "is enabled";
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, null);
+
+                throw e;
+            }
+        }
+
+        return new MantaEncryptedObjectInputStream(rawStream, secretKey);
     }
 }

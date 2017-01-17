@@ -1,6 +1,10 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -13,6 +17,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.slf4j.MDC;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.function.Function;
 
 import static com.joyent.manta.http.MantaHttpHeaders.REQUEST_ID;
@@ -76,6 +81,19 @@ public interface HttpHelper extends AutoCloseable {
     HttpResponse httpPost(String path,
                           MantaHttpHeaders headers,
                           HttpEntity entity) throws IOException;
+
+    /**
+     * <p>Returns the results of a HTTP request as an {@link InputStream}.</p>
+     *
+     * <p><strong>The underlying HttpResponse is not closed in this method.</strong></p>
+     *
+     * @param request The HTTP request object to be read as stream
+     * @param headers optional HTTP headers to include when getting an object
+     * @return {@link InputStream} that extends {@link MantaObjectResponse}.
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    MantaObjectInputStream httpRequestAsInputStream(
+            HttpUriRequest request, MantaHttpHeaders headers) throws IOException;
 
     /**
      * Executes an HTTP PUT against the remote Manta API.

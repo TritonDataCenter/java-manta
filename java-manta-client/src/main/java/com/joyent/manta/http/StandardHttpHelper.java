@@ -1,14 +1,17 @@
 /*
- * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
  */
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaChecksumFailedException;
+import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
@@ -16,6 +19,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -26,6 +30,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,6 +213,79 @@ public class StandardHttpHelper implements HttpHelper {
 
             return obj;
         }
+    }
+
+    @Override
+    public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
+                                                           final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        if (requestHeaders != null) {
+            request.setHeaders(requestHeaders.asApacheHttpHeaders());
+        }
+
+        final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
+            HttpEntity entity = response.getEntity();
+
+            if (entity == null) {
+                final String msg = "Can't process null response entity.";
+                final MantaClientException exception = new MantaClientException(msg);
+                exception.setContextValue("uri", request.getRequestLine().getUri());
+                exception.setContextValue("method", request.getRequestLine().getMethod());
+
+                throw exception;
+            }
+
+            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getAllHeaders());
+            final String path = request.getURI().getPath();
+            final MantaObjectResponse metadata = new MantaObjectResponse(path, responseHeaders);
+
+            if (metadata.isDirectory()) {
+                final String msg = "Directories do not have data, so data streams "
+                        + "from directories are not possible.";
+                final MantaClientException exception = new MantaClientException(msg);
+                exception.setContextValue("path", path);
+
+                throw exception;
+            }
+
+            EofSensorInputStream backingStream;
+
+            try {
+                if (!entity.getContent().getClass().equals(EofSensorInputStream.class)) {
+                    String msg = String.format("We are expecting an instance of [%s] as "
+                            + "a stream, but instead received: [%s]", EofSensorInputStream.class,
+                            entity.getContent().getClass());
+                    throw new UnsupportedOperationException(msg);
+                }
+
+                backingStream = (EofSensorInputStream)entity.getContent();
+            } catch (IOException ioe) {
+                String msg = String.format("Error getting stream from entity content for path: %s",
+                        path);
+                MantaObjectException e = new MantaObjectException(msg, ioe);
+                HttpHelper.annotateContextedException(e, request, response);
+                throw e;
+            }
+
+            MantaObjectInputStream in = new MantaObjectInputStream(metadata, response,
+                    backingStream);
+
+            return in;
+        };
+
+        final int expectedHttpStatus;
+
+        if (requestHeaders != null && requestHeaders.containsKey(HttpHeaders.RANGE)) {
+            expectedHttpStatus = HttpStatus.SC_PARTIAL_CONTENT;
+        } else {
+            expectedHttpStatus = HttpStatus.SC_OK;
+        }
+
+        return executeRequest(
+                request,
+                expectedHttpStatus,
+                responseAction,
+                false, "GET    {} response [{}] {} ");
     }
 
     /**
@@ -399,7 +477,7 @@ public class StandardHttpHelper implements HttpHelper {
      * @return boolean true indicates the request failed
      */
     protected static boolean isFailedStatusCode(final Integer expectedStatusCode,
-                                              final StatusLine statusLine) {
+                                                final StatusLine statusLine) {
         int code = statusLine.getStatusCode();
 
         if (expectedStatusCode == null) {

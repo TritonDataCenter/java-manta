@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.conn.EofSensorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,7 @@ import java.util.Date;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject {
-    private static final long serialVersionUID = 4129729453592380566L;
+    private static final long serialVersionUID = -4692104903008485259L;
 
     /**
      * Logger instance.
@@ -36,7 +37,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     /**
      * The backing {@link InputStream} implementation.
      */
-    private final InputStream backingStream;
+    private final EofSensorInputStream backingStream;
 
     /**
      * The HTTP response sent from the Manta API.
@@ -51,12 +52,23 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
      * @param httpResponse Response object created
      * @param backingStream Underlying stream being wrapped
      */
-    MantaObjectInputStream(final MantaObjectResponse response,
-                           final CloseableHttpResponse httpResponse,
-                           final InputStream backingStream) {
+    public MantaObjectInputStream(final MantaObjectResponse response,
+                                  final CloseableHttpResponse httpResponse,
+                                  final EofSensorInputStream backingStream) {
+        this.backingStream = backingStream;
         this.response = response;
         this.httpResponse = httpResponse;
-        this.backingStream = backingStream;
+    }
+
+    /**
+     * Creates a new instance based on an existing instance.
+     * @param copy instance to copy properties from
+     */
+    @SuppressWarnings("unchecked")
+    protected MantaObjectInputStream(final MantaObjectInputStream copy) {
+        this.backingStream = (EofSensorInputStream)copy.getBackingStream();
+        this.response = copy.response;
+        this.httpResponse = copy.httpResponse;
     }
 
     @Override
@@ -129,14 +141,21 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
         return response.getRequestId();
     }
 
-    @Override
-    public int read() throws IOException {
-        return backingStream.read();
+    protected MantaObjectResponse getResponse() {
+        return response;
+    }
+
+    protected CloseableHttpResponse getHttpResponse() {
+        return httpResponse;
+    }
+
+    public InputStream getBackingStream() {
+        return this.backingStream;
     }
 
     @Override
-    public int read(final byte[] b) throws IOException {
-        return backingStream.read(b);
+    public int read() throws IOException {
+        return backingStream.read();
     }
 
     @Override
@@ -145,8 +164,8 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     }
 
     @Override
-    public long skip(final long n) throws IOException {
-        return backingStream.skip(n);
+    public int read(final byte[] b) throws IOException {
+        return backingStream.read(b);
     }
 
     @Override
@@ -156,8 +175,10 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
 
     @Override
     public void close() throws IOException {
-        LOGGER.debug("Closing backingStream {} and response {}",
-                backingStream, httpResponse);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Closing backingStream {} and response {}",
+                    this.backingStream, httpResponse);
+        }
 
         IOUtils.closeQuietly(backingStream);
         IOUtils.closeQuietly(httpResponse);
@@ -176,5 +197,17 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
     @Override
     public boolean markSupported() {
         return backingStream.markSupported();
+    }
+
+    /**
+     * Aborts this stream.
+     * This is a special version of {@link #close close()} which prevents
+     * re-use of the underlying connection, if any. Calling this method
+     * indicates that there should be no attempt to read until the end of
+     * the stream.
+     * @throws IOException thrown when unable to abort connection
+     */
+    public void abortConnection() throws IOException {
+        backingStream.abortConnection();
     }
 }

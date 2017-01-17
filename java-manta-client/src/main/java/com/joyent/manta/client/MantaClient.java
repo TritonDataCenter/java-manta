@@ -15,7 +15,6 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaJobException;
-import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.http.ContentTypeLookup;
 import com.joyent.manta.http.EncryptionHttpHelper;
@@ -393,9 +392,12 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Get a Manta object's data as an {@link InputStream}. This method allows you to
+     * <p>Get a Manta object's data as an {@link InputStream}. This method allows you to
      * stream data from the Manta storage service in a memory efficient manner to your
-     * application.
+     * application.</p>
+     *
+     * <p><strong>It is your responsibility to close this stream. Otherwise, you
+     * may end up with resource leaks.</strong></p>
      *
      * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param requestHeaders optional HTTP headers to include when getting an object
@@ -408,65 +410,12 @@ public class MantaClient implements AutoCloseable {
         final String path = formatPath(rawPath);
         final HttpGet get = connectionFactory.get(path);
 
-        if (requestHeaders != null) {
-            get.setHeaders(requestHeaders.asApacheHttpHeaders());
-        }
+        MantaObjectInputStream stream = httpHelper.httpRequestAsInputStream(get,
+                requestHeaders);
 
-        final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
-            HttpEntity entity = response.getEntity();
+        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
 
-            if (entity == null) {
-                final String msg = "Can't process null response entity.";
-                final MantaClientException exception = new MantaClientException(msg);
-                exception.setContextValue("path", path);
-
-                throw exception;
-            }
-
-            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getAllHeaders());
-            final MantaObjectResponse metadata = new MantaObjectResponse(path, responseHeaders);
-
-            if (metadata.isDirectory()) {
-                final String msg = "Directories do not have data, so data streams "
-                        + "from directories are not possible.";
-                final MantaClientException exception = new MantaClientException(msg);
-                exception.setContextValue("path", path);
-
-                throw exception;
-            }
-
-            InputStream backingStream;
-
-            try {
-                backingStream = entity.getContent();
-            } catch (IOException ioe) {
-                String msg = String.format("Error getting stream from entity content for path: %s",
-                        path);
-                MantaObjectException e = new MantaObjectException(msg, ioe);
-                HttpHelper.annotateContextedException(e, get, response);
-                throw e;
-            }
-
-            MantaObjectInputStream in = new MantaObjectInputStream(metadata, response,
-                    backingStream);
-            danglingStreams.add(new WeakReference<AutoCloseable>(in));
-
-            return in;
-        };
-
-        final int expectedHttpStatus;
-
-        if (requestHeaders != null && requestHeaders.containsKey(HttpHeaders.RANGE)) {
-            expectedHttpStatus = HttpStatus.SC_PARTIAL_CONTENT;
-        } else {
-            expectedHttpStatus = HttpStatus.SC_OK;
-        }
-
-        return httpHelper.executeRequest(
-                get,
-                expectedHttpStatus,
-                responseAction,
-                false, "GET    {} response [{}] {} ");
+        return stream;
     }
 
     /**

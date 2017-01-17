@@ -6,8 +6,8 @@ package com.joyent.manta.exception;
 /**
  * Root exception type for all client-side encryption exceptions.
  *
- * @author Elijah Zupancic
- * @since 2.8.0
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 3.0.0
  */
 public class MantaClientEncryptionException extends MantaException {
     private static final long serialVersionUID = -1687775226513239704L;

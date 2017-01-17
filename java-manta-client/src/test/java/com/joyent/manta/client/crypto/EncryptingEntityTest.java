@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -46,55 +45,6 @@ public class EncryptingEntityTest {
 
     public void canCountBytesFromStreamWithUnknownLengthInAesGcm() throws Exception {
         canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE_128);
-    }
-
-    @Test(expectedExceptions = AEADBadTagException.class)
-    public void canEncryptAndDecryptToAndFromFileInAesGcmAndThrowWhenCiphertextIsAltered()
-            throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128;
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        URL resource = classLoader.getResource("com/joyent/manta/client/crypto/EncryptingEntityTest.class");
-        Path path = Paths.get(resource.toURI());
-        long size = path.toFile().length();
-
-        MantaInputStreamEntity entity = new MantaInputStreamEntity(resource.openStream(),
-                size);
-
-        SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        EncryptingEntity encryptingEntity = new EncryptingEntity(key,
-                cipherDetails, entity, new SecureRandom());
-
-        File file = File.createTempFile("ciphertext-", ".data");
-        FileUtils.forceDeleteOnExit(file);
-
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            encryptingEntity.writeTo(out);
-        }
-
-        Assert.assertEquals(file.length(), encryptingEntity.getContentLength());
-
-        try (FileChannel fc = (FileChannel.open(file.toPath(), READ, WRITE))) {
-            fc.position(2);
-            ByteBuffer buff = ByteBuffer.wrap(new byte[] { 20, 20 });
-            fc.write(buff);
-        }
-
-        byte[] iv = encryptingEntity.getCipher().getIV();
-        Cipher cipher = cipherDetails.getCipher();
-        cipher.init(Cipher.DECRYPT_MODE, key, cipherDetails.getEncryptionParameterSpec(iv));
-
-        try (FileInputStream in = new FileInputStream(file);
-             CipherInputStream cin = new CipherInputStream(in, cipher)) {
-            IOUtils.toByteArray(cin);
-        } catch (IOException e) {
-            Throwable cause = e.getCause();
-
-            if (cause instanceof AEADBadTagException) {
-                throw (AEADBadTagException)cause;
-            } else {
-                throw e;
-            }
-        }
     }
 
     /* AES-CTR-NoPadding Tests */
