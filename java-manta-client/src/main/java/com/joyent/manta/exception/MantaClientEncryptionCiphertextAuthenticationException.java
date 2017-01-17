@@ -11,12 +11,15 @@ package com.joyent.manta.exception;
  * @since 3.0.0
  */
 public class MantaClientEncryptionCiphertextAuthenticationException extends MantaClientEncryptionException {
+    private static final long serialVersionUID = 6663027525586063919L;
+
     /**
      * Default message displayed when exception is thrown.
      */
     private static final String DEFAULT_MESSAGE = "Unable to authenticate object's ciphertext. It failed "
             + "the authenticity checksum. Check to see that the object's "
             + "binary data hasn't been modified.";
+
 
     /**
      * Default constructor.

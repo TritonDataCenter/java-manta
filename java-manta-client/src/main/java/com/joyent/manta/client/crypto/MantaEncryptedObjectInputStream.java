@@ -38,6 +38,7 @@ import java.util.function.Supplier;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
+@SuppressWarnings("Duplicates")
 public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private static final long serialVersionUID = 8536248985759134599L;
 
@@ -141,7 +142,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
         } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
             String msg = "Error initializing cipher";
-            MantaClientEncryptionException mce = new MantaClientEncryptionException(e);
+            MantaClientEncryptionException mce = new MantaClientEncryptionException(msg, e);
             annotateException(mce);
             throw mce;
         }
@@ -336,8 +337,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         do {
             skippedInLastRead = read(buf);
             skipped += skippedInLastRead;
-            hmac.update(buf, 0, skippedInLastRead);
-        } while (skippedInLastRead > -1 || skipped == numberOfBytesToSkip);
+        } while (skippedInLastRead > -1 || skipped < numberOfBytesToSkip);
 
         return skipped;
     }
@@ -362,8 +362,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         byte[] buf = new byte[bufferSize];
         int read;
 
-        while ((read = cipherInputStream.read(buf)) >= 0) {
-            hmac.update(buf, 0, read);
+        while ((read = read(buf)) >= 0) {
+            if (hmac != null) {
+                hmac.update(buf, 0, read);
+            }
         }
     }
 
