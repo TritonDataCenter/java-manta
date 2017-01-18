@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1371,6 +1372,26 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         wrappedHeaders.putAll(map);
     }
 
+    /**
+     * Adds all entries from the metadata collection that are unencrypted metadata
+     * entries.
+     *
+     * @param metadata metadata object to add metadata from
+     */
+    public void putAll(final MantaMetadata metadata) {
+        Validate.notNull(metadata, "Metadata object must not be null");
+
+        Set<Map.Entry<String, String>> entrySet = metadata.entrySet();
+        Iterator<Entry<String, String>> iterator = entrySet.iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> next = iterator.next();
+
+            if (next.getKey().startsWith(MantaMetadata.METADATA_PREFIX)) {
+                wrappedHeaders.put(next.getKey(), next.getValue());
+            }
+        }
+    }
 
     /**
      * {@inheritDoc}

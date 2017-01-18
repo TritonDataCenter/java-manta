@@ -44,10 +44,19 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     private static final char ASCIICODE_32_SPACE = ' ';
 
     /**
+     * Prefix required for metadata keys being stored via HTTP headers on Manta.
+     */
+    public static final String METADATA_PREFIX = "m-";
+
+    /**
+     * Prefix required for encrypted metadata keys being stored in ciphertext.
+     */
+    public static final String ENCRYPTED_METADATA_PREFIX = "e-";
+
+    /**
      * The backing map data structure.
      */
     private final PredicatedMap<String, String> innerMap;
-
 
     /**
      * Create a new instance backed with the specified map.
@@ -119,7 +128,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          * @return true if the string starts with a valid prefix, false otherwise.
          */
         private boolean validPrefix(final String input) {
-            return input.toLowerCase(Locale.ENGLISH).startsWith("m-");
+            return input.toLowerCase(Locale.ENGLISH).startsWith(METADATA_PREFIX)
+                   || input.toLowerCase(Locale.ENGLISH).startsWith(ENCRYPTED_METADATA_PREFIX);
         }
 
         /**
@@ -159,7 +169,6 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
     }
 
-
     /**
      * Deletes user-supplied metadata associated with a Manta object.
      * @param key key to delete
@@ -167,7 +176,6 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     public void delete(final String key) {
         put(key, null);
     }
-
 
     /**
      * {@inheritDoc}

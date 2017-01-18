@@ -170,6 +170,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     originalLength);
             LOGGER.debug("Plaintext content-length: {}", originalLength);
         }
+
         // AEAD Tag Length if AEAD Cipher
         if (cipherDetails.isAEADCipher()) {
             metadata.put(MantaHttpHeaders.ENCRYPTION_AEAD_TAG_LENGTH,
