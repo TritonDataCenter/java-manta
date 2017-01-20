@@ -23,12 +23,12 @@ public final class MantaVersion {
     /**
      * Minimum version of client-side encryption supported.
      */
-    public static final String CLIENT_SIDE_ENCRYPTION_MIN_VERSION = "1";
+    public static final int CLIENT_SIDE_ENCRYPTION_MIN_VERSION = 1;
 
     /**
      * Maximum version of client-side encryption supported.
      */
-    public static final String CLIENT_SIDE_ENCRYPTION_MAX_VERSION = "1";
+    public static final int CLIENT_SIDE_ENCRYPTION_MAX_VERSION = 1;
 
     /**
      * Release date of the SDK.

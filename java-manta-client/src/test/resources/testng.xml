@@ -39,17 +39,14 @@
         </classes>
     </test>
     <test name="Encryption Tests">
+        <packages>
+            <package name="com.joyent.manta.client.crypto.*" />
+        </packages>
         <classes>
-            <class name="com.joyent.manta.client.crypto.BouncyCastleLoaderTest" />
-            <class name="com.joyent.manta.client.crypto.EncryptingEntityTest" />
-            <class name="com.joyent.manta.client.crypto.SecretKeyUtilsTest" />
-            <class name="com.joyent.manta.client.crypto.SupportedCiphersLookupMapTest" />
-            <class name="com.joyent.manta.client.crypto.EncryptedMetadataUtilsTest" />
-            <class name="com.joyent.manta.client.crypto.MantaEncryptedObjectInputStreamTest" />
-            <class name="com.joyent.manta.client.crypto.SupportedCipherDetailsTest" />
             <class name="com.joyent.manta.http.EncryptedHttpHelperTest" />
         </classes>
     </test>
+
     <!-- This is commented out because it is an integration test and it doesn't
          play nicely with unit test only runs in CI -->
     <!--<test name="Integration Tests Depending on Shaded Resources">-->

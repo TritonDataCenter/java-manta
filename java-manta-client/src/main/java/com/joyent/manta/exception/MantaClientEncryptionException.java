@@ -9,7 +9,7 @@ package com.joyent.manta.exception;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class MantaClientEncryptionException extends MantaException {
+public class MantaClientEncryptionException extends MantaEncryptionException {
     private static final long serialVersionUID = -1687775226513239704L;
 
     /**

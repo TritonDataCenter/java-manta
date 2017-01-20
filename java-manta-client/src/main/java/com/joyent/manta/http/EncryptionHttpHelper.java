@@ -8,6 +8,7 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
 import com.joyent.manta.client.crypto.EncryptingEntity;
+import com.joyent.manta.client.crypto.EncryptionType;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -179,6 +180,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 encryptionKeyId);
         LOGGER.debug("Secret key id: {}", encryptionKeyId);
+
+        // Encryption type identifier
+        metadata.put(MantaHttpHeaders.ENCRYPTION_TYPE, EncryptionType.CLIENT.toString());
+        LOGGER.debug("Encryption type: {}", EncryptionType.CLIENT);
 
         // Encryption Cipher
         metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
@@ -352,6 +357,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
         MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
+
+        try {
+            EncryptionType.validateEncryptionTypeIsSupported(rawStream.getHeaderAsString(
+                    MantaHttpHeaders.ENCRYPTION_TYPE));
+        } catch (MantaClientEncryptionException e) {
+            HttpHelper.annotateContextedException(e, request, null);
+            throw e;
+        }
 
         final String cipherId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
 
