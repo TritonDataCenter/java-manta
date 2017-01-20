@@ -35,16 +35,33 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     }
 
     @Override
-    public long cipherTextSize(final long plainTextSize) {
-        Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
+    public long ciphertextSize(final long plaintextSize) {
+        Validate.inclusiveBetween(0L, Long.MAX_VALUE, plaintextSize);
 
-        if (plainTextSize <= 0) {
+        if (plaintextSize <= 0) {
             return getBlockSizeInBytes() + getAuthenticationTagOrHmacLengthInBytes();
         }
 
-        long totalBlocks = plainTextSize / getBlockSizeInBytes();
+        long totalBlocks = plaintextSize / getBlockSizeInBytes();
 
         return totalBlocks * getBlockSizeInBytes() + getBlockSizeInBytes()
                 + getAuthenticationTagOrHmacLengthInBytes();
+    }
+
+    @Override
+    public long plaintextSize(final long ciphertextSize) {
+        Validate.inclusiveBetween(0L, Long.MAX_VALUE, ciphertextSize);
+
+        if (ciphertextSize == getBlockSizeInBytes() + getAuthenticationTagOrHmacLengthInBytes()) {
+            return 0L;
+        }
+
+        return ciphertextSize - getBlockSizeInBytes()
+                - getAuthenticationTagOrHmacLengthInBytes();
+    }
+
+    @Override
+    public boolean plaintextSizeCalculationIsAnEstimate() {
+        return true;
     }
 }

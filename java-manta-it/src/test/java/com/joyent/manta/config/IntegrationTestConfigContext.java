@@ -46,7 +46,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
             SecretKey key = SecretKeyUtils.generate(cipherDetails);
             context.setEncryptionPrivateKeyBytes(key.getEncoded());
 
-            System.out.printf("Secret Key used for test (base64):\n%s\n",
+            System.out.printf("Unique secret key used for test (base64):\n%s\n",
                     Base64.getEncoder().encodeToString(key.getEncoded()));
         }
 

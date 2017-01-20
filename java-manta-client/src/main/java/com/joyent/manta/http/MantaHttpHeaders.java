@@ -135,12 +135,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String ENCRYPTION_METADATA_AEAD_TAG_LENGTH = "m-encrypt-metadata-aead-tag-length";
 
     /**
-     * The name of the cipher used to encrypt (<code>cipher/mode/padding state</code>)
-     * the encrypted metadata.
-     */
-    public static final String ENCRYPTION_METADATA_CIPHER = "m-encrypt-metadata-cipher";
-
-    /**
      * HttpHeaders delegate which is wrapped by this class.
      */
     private final transient CaseInsensitiveMap<String, Object> wrappedHeaders =
@@ -172,7 +166,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public MantaHttpHeaders(final MantaObject mantaObject) {
         wrappedHeaders.putAll(mantaObject.getHttpHeaders().wrappedHeaders);
     }
-
 
     /**
      * Creates an instance with headers prepopulated from Apache HTTP client.
@@ -247,7 +240,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return group;
     }
 
-
     /**
      * Returns the headers as an array of {@link org.apache.http.Header} instances.
      *
@@ -278,7 +270,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return Arrays.copyOfRange(headers, 0, i);
     }
 
-
     /**
      * Returns all headers corresponding to manta-service custom metadata.
      * The metadata values will be typed according to the underlying header implementation.
@@ -295,7 +286,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
 
         return metadata;
     }
-
 
     /**
      * Returns all headers corresponding to manta-service custom metadata.
@@ -314,19 +304,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return metadata;
     }
 
-
-    /**
-     * Adds all entries of specified metadata to this metadata.
-     *
-     * @param metadata the metadata to be added
-     */
-    public void putAllMetadata(final MantaMetadata metadata) {
-        for (Map.Entry<String, String> entry : metadata.entrySet()) {
-            put(entry.getKey(), entry.getValue());
-        }
-    }
-
-
     /**
      * Returns the value of request id header.
      *
@@ -335,7 +312,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getRequestId() {
         return getMultipleValuesAsString(REQUEST_ID);
     }
-
 
     /**
      * Sets the number of replicated copies of the object in Manta.
@@ -352,7 +328,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         put(HTTP_DURABILITY_LEVEL, String.valueOf(copies));
     }
 
-
     /**
      * Gets the number of replicated copies of the object in Manta.
      *
@@ -361,7 +336,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Integer getDurabilityLevel() {
         return getIntegerFromHeader(HTTP_DURABILITY_LEVEL);
     }
-
 
     /**
      * Sets the header defining RBAC roles used for this object.
@@ -376,7 +350,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
          */
         put(HTTP_ROLE_TAG, MantaUtils.asString(roles));
     }
-
 
     /**
      * Gets the header defining RBAC roles used for this object.
@@ -421,7 +394,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return Collections.unmodifiableSet(roles);
     }
 
-
     /**
      * Parses the value of the Result-Set-Size HTTP header returned from Manta.
      *
@@ -440,7 +412,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return getMultipleValuesAsString(HttpHeaders.ACCEPT);
     }
 
-
     /**
      * Sets the {@code "Accept"} header or {@code null} for none.
      *
@@ -457,7 +428,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Accept-Encoding"} header or {@code null} for none.
      *
@@ -466,7 +436,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getAcceptEncoding() {
         return Objects.toString(get(HttpHeaders.ACCEPT_ENCODING));
     }
-
 
     /**
      * Sets the {@code "Accept-Encoding"} header or {@code null} for none.
@@ -483,7 +452,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Authorization"} header or {@code null} for none.
      *
@@ -493,7 +461,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return getMultipleValuesAsString(HttpHeaders.AUTHORIZATION);
     }
 
-
     /**
      * Returns all {@code "Authorization"} headers or {@code null} for none.
      *
@@ -502,7 +469,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public List<String> getAuthorizationAsList() {
         return getHeaderStringValues(HttpHeaders.AUTHORIZATION);
     }
-
 
     /**
      * Sets the {@code "Authorization"} header or {@code null} for none.
@@ -519,7 +485,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         put(HttpHeaders.AUTHORIZATION, authorization);
         return this;
     }
-
 
     /**
      * Sets the {@code "Authorization"} header or {@code null} for none.
@@ -538,7 +503,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Cache-Control"} header or {@code null} for none.
      *
@@ -547,7 +511,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getCacheControl() {
         return getMultipleValuesAsString(HttpHeaders.CACHE_CONTROL);
     }
-
 
     /**
      * Sets the {@code "Cache-Control"} header or {@code null} for none.
@@ -565,7 +528,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Content-Encoding"} header or {@code null} for none.
      *
@@ -574,7 +536,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getContentEncoding() {
         return getMultipleValuesAsString(HttpHeaders.CONTENT_ENCODING);
     }
-
 
     /**
      * Sets the {@code "Content-Encoding"} header or {@code null} for none.
@@ -593,7 +554,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Content-Length"} header or {@code null} for none.
      *
@@ -602,7 +562,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Long getContentLength() {
         return getLongFromHeader(HttpHeaders.CONTENT_LENGTH);
     }
-
 
     /**
      * Sets the {@code "Content-Length"} header or {@code null} for none.
@@ -621,7 +580,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Content-MD5"} header or {@code null} for none.
      *
@@ -630,7 +588,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getContentMD5() {
         return getMultipleValuesAsString((HttpHeaders.CONTENT_MD5));
     }
-
 
     /**
      * Sets the {@code "Content-MD5"} header or {@code null} for none.
@@ -648,7 +605,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Content-Range"} header or {@code null} for none.
      *
@@ -657,7 +613,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getContentRange() {
         return getMultipleValuesAsString(HttpHeaders.CONTENT_RANGE);
     }
-
 
     /**
      * Sets the {@code "Content-Range"} header or {@code null} for none.
@@ -675,7 +630,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Content-Type"} header or {@code null} for none.
      *
@@ -684,7 +638,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getContentType() {
         return getMultipleValuesAsString(HttpHeaders.CONTENT_TYPE);
     }
-
 
     /**
      * Sets the {@code "Content-Type"} header or {@code null} for none.
@@ -702,7 +655,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Cookie"} header or {@code null} for none.
      *
@@ -716,7 +668,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getCookie() {
         return getMultipleValuesAsString("Cookie");
     }
-
 
     /**
      * Sets the {@code "Cookie"} header or {@code null} for none.
@@ -735,7 +686,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Date"} header or {@code null} for none.
      *
@@ -744,7 +694,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getDate() {
         return getMultipleValuesAsString(HttpHeaders.DATE);
     }
-
 
     /**
      * Sets the {@code "Date"} header or {@code null} for none.
@@ -762,7 +711,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "ETag"} header or {@code null} for none.
      *
@@ -771,7 +719,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getETag() {
         return getMultipleValuesAsString(HttpHeaders.ETAG);
     }
-
 
     /**
      * Sets the {@code "ETag"} header or {@code null} for none.
@@ -790,7 +737,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Expires"} header or {@code null} for none.
      *
@@ -799,7 +745,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getExpires() {
         return getMultipleValuesAsString(HttpHeaders.EXPIRES);
     }
-
 
     /**
      * Sets the {@code "Expires"} header or {@code null} for none.
@@ -817,7 +762,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "If-Modified-Since"} header or {@code null} for none.
      *
@@ -826,7 +770,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getIfModifiedSince() {
         return getMultipleValuesAsString(HttpHeaders.IF_MODIFIED_SINCE);
     }
-
 
     /**
      * Sets the {@code "If-Modified-Since"} header or {@code null} for none.
@@ -844,7 +787,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "If-Match"} header or {@code null} for none.
      *
@@ -853,7 +795,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getIfMatch() {
         return getMultipleValuesAsString(HttpHeaders.IF_MATCH);
     }
-
 
     /**
      * Sets the {@code "If-Match"} header or {@code null} for none.
@@ -871,7 +812,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "If-None-Match"} header or {@code null} for none.
      *
@@ -880,7 +820,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getIfNoneMatch() {
         return getMultipleValuesAsString(HttpHeaders.IF_NONE_MATCH);
     }
-
 
     /**
      * Sets the {@code "If-None-Match"} header or {@code null} for none.
@@ -898,7 +837,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "If-Unmodified-Since"} header or {@code null} for none.
      *
@@ -907,7 +845,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getIfUnmodifiedSince() {
         return getMultipleValuesAsString(HttpHeaders.IF_MODIFIED_SINCE);
     }
-
 
     /**
      * Sets the {@code "If-Unmodified-Since"} header or {@code null} for none.
@@ -925,7 +862,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "If-Range"} header or {@code null} for none.
      *
@@ -934,8 +870,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getIfRange() {
         return getMultipleValuesAsString(HttpHeaders.IF_RANGE);
     }
-
-
 
     /**
      * Sets the {@code "If-Range"} header or {@code null} for none.
@@ -953,7 +887,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Last-Modified"} header or {@code null} for none.
      *
@@ -962,7 +895,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getLastModified() {
         return getMultipleValuesAsString(HttpHeaders.LAST_MODIFIED);
     }
-
 
     /**
      * Sets the {@code "Last-Modified"} header or {@code null} for none.
@@ -981,7 +913,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Location"} header or {@code null} for none.
      *
@@ -990,7 +921,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getLocation() {
         return getMultipleValuesAsString(HttpHeaders.LOCATION);
     }
-
 
     /**
      * Sets the {@code "Location"} header or {@code null} for none.
@@ -1008,7 +938,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "MIME-Version"} header or {@code null} for none.
      *
@@ -1018,7 +947,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getMimeVersion() {
         return getMultipleValuesAsString("MIME-Version");
     }
-
 
     /**
      * Sets the {@code "MIME-Version"} header or {@code null} for none.
@@ -1037,7 +965,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Range"} header or {@code null} for none.
      *
@@ -1046,7 +973,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getRange() {
         return getMultipleValuesAsString(HttpHeaders.RANGE);
     }
-
 
     /**
      * Sets the {@code "Range"} header or {@code null} for none.
@@ -1064,7 +990,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Retry-After"} header or {@code null} for none.
      *
@@ -1073,7 +998,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getRetryAfter() {
         return getMultipleValuesAsString(HttpHeaders.RETRY_AFTER);
     }
-
 
     /**
      * Sets the {@code "Retry-After"} header or {@code null} for none.
@@ -1091,7 +1015,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "User-Agent"} header or {@code null} for none.
      *
@@ -1100,7 +1023,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public String getUserAgent() {
         return getMultipleValuesAsString(HttpHeaders.USER_AGENT);
     }
-
 
     /**
      * Sets the {@code "User-Agent"} header or {@code null} for none.
@@ -1118,7 +1040,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "WWW-Authenticate"} header or {@code null} for none.
      *
@@ -1128,7 +1049,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return getMultipleValuesAsString(HttpHeaders.WWW_AUTHENTICATE);
     }
 
-
     /**
      * Returns all {@code "WWW-Authenticate"} headers or {@code null} for none.
      *
@@ -1137,7 +1057,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public List<String> getAuthenticateAsList() {
         return getHeaderStringValues(HttpHeaders.WWW_AUTHENTICATE);
     }
-
 
     /**
      * Sets the {@code "WWW-Authenticate"} header or {@code null} for none.
@@ -1155,7 +1074,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return this;
     }
 
-
     /**
      * Returns the first {@code "Age"} header or {@code null} for none.
      *
@@ -1164,7 +1082,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Long getAge() {
         return getLongFromHeader(HttpHeaders.AGE);
     }
-
 
     /**
      * Sets the {@code "Age"} header or {@code null} for none.
@@ -1181,7 +1098,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         put(HttpHeaders.AGE, age);
         return this;
     }
-
 
     /**
      * Sets the {@code authorization} header as specified in <a
@@ -1354,7 +1270,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return MantaUtils.asString(get(name));
     }
 
-
     /**
      * {@inheritDoc}
      * {@link java.util.AbstractMap#put}
@@ -1362,7 +1277,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Object put(final String fieldName, final Object value) {
         return wrappedHeaders.put(fieldName, value);
     }
-
 
     /**
      * {@inheritDoc}
@@ -1401,7 +1315,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return wrappedHeaders.remove(name);
     }
 
-
     /**
      * {@inheritDoc}
      * {@link java.util.AbstractMap#entrySet}
@@ -1409,7 +1322,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Set<Map.Entry<String, Object>> entrySet() {
         return wrappedHeaders.entrySet();
     }
-
 
     /**
      * This returns a copy of the backing map. In versions, 2.x this returned
@@ -1422,7 +1334,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return wrappedHeaders.clone();
     }
 
-
     /**
      * Sets the map of unknown data key name to value.
      *
@@ -1433,7 +1344,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         wrappedHeaders.putAll(unknownFields);
     }
 
-
     /**
      * {@inheritDoc}
      * {@link java.util.Map#entrySet}
@@ -1441,7 +1351,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public int size() {
         return wrappedHeaders.size();
     }
-
 
     /**
      * {@inheritDoc}
@@ -1451,7 +1360,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return wrappedHeaders.isEmpty();
     }
 
-
     /**
      * {@inheritDoc}
      * {@link java.util.Map#containsValue}
@@ -1459,7 +1367,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public boolean containsValue(final Object value) {
         return wrappedHeaders.containsValue(value);
     }
-
 
     /**
      * {@inheritDoc}
@@ -1469,7 +1376,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return wrappedHeaders.containsKey(key);
     }
 
-
     /**
      * {@inheritDoc}
      * {@link java.util.Map#clear}
@@ -1477,7 +1383,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public void clear() {
         wrappedHeaders.clear();
     }
-
 
     /**
      * {@inheritDoc}
@@ -1487,7 +1392,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return wrappedHeaders.keySet();
     }
 
-
     /**
      * {@inheritDoc}
      * {@link java.util.Map#values}
@@ -1495,7 +1399,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Collection<Object> values() {
         return wrappedHeaders.values();
     }
-
 
     /**
      * Equivalent to the put operation.
@@ -1532,9 +1435,9 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
 
     @Override
     public String toString() {
-        return "MantaHttpHeaders{"
-                + "wrappedHeaders="
-                + wrappedHeaders
-                + '}';
+        final StringBuilder sb = new StringBuilder("MantaHttpHeaders{");
+        sb.append("wrappedHeaders=").append(wrappedHeaders);
+        sb.append('}');
+        return sb.toString();
     }
 }

@@ -78,6 +78,16 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private final CipherInputStream cipherInputStream;
 
     /**
+     * The total number of plaintext bytes read.
+     */
+    private long plaintextBytesRead = 0L;
+
+    /**
+     * Flag indicating that the underlying stream is closed.
+     */
+    private boolean isClosed = false;
+
+    /**
      * Creates a new instance that decrypts the backing stream with the specified key.
      *
      * @param backingStream stream to read data from
@@ -257,6 +267,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             if (hmac != null && b != -1) {
                 hmac.update((byte) b);
             }
+
+            if (b > 0) {
+                plaintextBytesRead++;
+            }
+
             return b;
         } catch (IOException e) {
             final Throwable cause = e.getCause();
@@ -279,6 +294,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 hmac.update(bytes, 0, read);
             }
 
+            if (read > 0) {
+                plaintextBytesRead += read;
+            }
+
             return read;
         } catch (IOException e) {
             final Throwable cause = e.getCause();
@@ -299,6 +318,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
             if (hmac != null && read > 0) {
                 hmac.update(bytes, off, read);
+            }
+
+            if (read > 0) {
+                plaintextBytesRead += read;
             }
 
             return read;
@@ -392,7 +415,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     public void close() throws IOException {
         readRemainingBytes();
 
-        cipherInputStream.close();
+        try {
+            cipherInputStream.close();
+        } finally {
+            this.isClosed = true;
+        }
 
         if (hmac != null) {
             byte[] checksum = hmac.doFinal();
@@ -444,5 +471,39 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         } else {
             exception.setContextValue("hmac", "null");
         }
+    }
+
+    @Override
+    public String getContentType() {
+        return getMetadata().getOrDefault("e-content-length", super.getContentType());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Unlike the typical implementation, in some cases this method may return an inaccurate
+     * size because the plaintext size is not stored in metadata, the stream isn't finished
+     * reading nor is the calculation of the plaintext size from ciphertext size accurate.</p>
+     *
+     * @return a potentially inaccurate content length
+     */
+    @Override
+    public Long getContentLength() {
+        String plaintextLengthString = getHeaderAsString(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
+
+        if (plaintextLengthString != null) {
+            return Long.parseLong(plaintextLengthString);
+        }
+
+        if (isClosed) {
+            return this.plaintextBytesRead;
+        }
+
+        // If the plaintext size isn't stored we attempt to compute it, but it may be inaccurate
+        if (LOGGER.isInfoEnabled() && cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
+            LOGGER.info("Plaintext size reported may be inaccurate for object: {}", getPath());
+        }
+
+        return cipherDetails.plaintextSize(super.getContentLength());
     }
 }

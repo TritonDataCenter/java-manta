@@ -1332,7 +1332,7 @@ public class MantaClient implements AutoCloseable {
             }
         }
 
-        headers.putAllMetadata(metadata);
+        headers.putAll(metadata);
         headers.setContentEncoding("chunked");
 
         String path = formatPath(rawPath);

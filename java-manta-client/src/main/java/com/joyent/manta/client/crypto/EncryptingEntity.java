@@ -143,7 +143,7 @@ public class EncryptingEntity implements HttpEntity {
     @Override
     public long getContentLength() {
         if (originalLength >= 0) {
-            return cipherDetails.cipherTextSize(originalLength);
+            return cipherDetails.ciphertextSize(originalLength);
         } else {
             return UNKNOWN_LENGTH;
         }

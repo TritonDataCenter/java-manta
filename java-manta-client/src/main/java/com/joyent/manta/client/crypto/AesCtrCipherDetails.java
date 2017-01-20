@@ -35,8 +35,19 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
 
 
     @Override
-    public long cipherTextSize(final long plainTextSize) {
-        Validate.inclusiveBetween(0L, Long.MAX_VALUE, plainTextSize);
-        return plainTextSize + getAuthenticationTagOrHmacLengthInBytes();
+    public long ciphertextSize(final long plaintextSize) {
+        Validate.inclusiveBetween(0L, Long.MAX_VALUE, plaintextSize);
+        return plaintextSize + getAuthenticationTagOrHmacLengthInBytes();
+    }
+
+    @Override
+    public long plaintextSize(final long ciphertextSize) {
+        Validate.inclusiveBetween(0L, Long.MAX_VALUE, ciphertextSize);
+        return ciphertextSize - getAuthenticationTagOrHmacLengthInBytes();
+    }
+
+    @Override
+    public boolean plaintextSizeCalculationIsAnEstimate() {
+        return false;
     }
 }

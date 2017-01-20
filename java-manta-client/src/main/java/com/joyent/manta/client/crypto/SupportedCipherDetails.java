@@ -68,10 +68,25 @@ public interface SupportedCipherDetails {
      * Calculates the size of the output ciphertext based on the plaintext
      * size.
      *
-     * @param plainTextSize size of the plaintext input
+     * @param plaintextSize size of the plaintext input
      * @return size of the ciphertext output
      */
-    long cipherTextSize(long plainTextSize);
+    long ciphertextSize(long plaintextSize);
+
+    /**
+     * Calculates the size of the plaintext data based on the ciphertext
+     * size. In some cases, this value will be just an estimation.
+     *
+     * @param ciphertextSize size of the ciphertext input
+     * @return size of the plaintext output
+     */
+    long plaintextSize(long ciphertextSize);
+
+    /**
+     * Flag indicating of the plaintext size calculation is not exact.
+     * @return true if the value returned from plaintextSize is not an exact value
+     */
+    boolean plaintextSizeCalculationIsAnEstimate();
 
     /**
      * Flag indicating if authentication is built into the cipher's design.
