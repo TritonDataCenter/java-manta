@@ -56,7 +56,7 @@ left are overridden by values on the right.
 | 20000       manta.timeout            | manta.timeout                      | MANTA_TIMEOUT                  |
 | 3 (6 for integration tests)          | manta.retries                      | MANTA_HTTP_RETRIES             |
 | 24                                   | manta.max_connections              | MANTA_MAX_CONNS                |
-| 8192                                 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         |
+| 4096                                 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         |
 | TLSv1.2                              | https.protocols                    | MANTA_HTTPS_PROTOCOLS          |
 | <value too big - see code>           | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            |
 | false                                | manta.no_auth                      | MANTA_NO_AUTH                  |

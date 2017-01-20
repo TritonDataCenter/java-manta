@@ -44,7 +44,7 @@ public class DefaultsConfigContext implements ConfigContext {
      * The size of the internal socket buffer used to buffer data
      * while receiving / transmitting HTTP messages.
      */
-    public static final int DEFAULT_HTTP_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_HTTP_BUFFER_SIZE = 4096;
 
     /**
      * Default TLS protocols.
