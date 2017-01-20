@@ -176,6 +176,57 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             metadata = new MantaMetadata();
         }
 
+        attachEncryptionMetadata(metadata, httpHeaders, encryptingEntity);
+
+        MantaObjectResponse response = super.httpPut(path, httpHeaders, encryptingEntity, metadata);
+
+        /* We rewrite in the content-type so that from the perspective of the API consumer,
+         * they are seeing the object written as if it wasn't encrypted. */
+        String contentType = findOriginalContentType(originalEntity, httpHeaders);
+
+        // Only add the wrapped content type if it isn't explicitly set
+        if (contentType != null && !metadata.containsKey("e-content-type")) {
+            metadata.put("e-content-type", contentType);
+        }
+
+        /* Emulate the setting of the content-type to our API consumer - when
+         * in fact we are setting a different content type. */
+        response.setContentType(contentType);
+
+        /* If we sent over an entity where it was impossible to know the original size until
+         * we finished streaming, then we do an additional call to update the metadata of the
+         * object so that the plaintext size is stored.
+         *
+         * Having this data available allows MantaEncryptedObjectInputStream.getContentLength()
+         * to return the actual plaintext value. Most of the time, this value can be gotten
+         * via a calculation based on the ciphertext size. However, in the cases of
+         * the AES/CBC ciphers, we can't calculate the plaintext size via the ciphertext
+         * size, so we do a metadata update call to update the value.
+         *
+         * We only append plaintext content-length header if we are using an algorithm
+         * that doesn't support an accurate calculation of plaintext content length in
+         * order to minimize the calls per operation made to Manta.
+         */
+
+        // content-length of -1 means we are sending in chunked mode
+        if (originalEntity.getContentLength() < 0 && encryptionCipherDetails.plaintextSizeCalculationIsAnEstimate()) {
+            appendPlaintextContentLength(path, encryptingEntity, metadata, response);
+        }
+
+        return response;
+    }
+
+    /**
+     * Adds headers and metadata needed for client-side encryption to a request
+     * (typically a PUT).
+     *
+     * @param metadata metadata to append additional values to
+     * @param httpHeaders headers to append additional values to
+     * @param encryptingEntity encrypting entity that wraps the original entity
+     */
+    private void attachEncryptionMetadata(final MantaMetadata metadata,
+                                          final MantaHttpHeaders httpHeaders,
+                                          final EncryptingEntity encryptingEntity) {
         // Secret Key ID
         metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 encryptionKeyId);
@@ -211,28 +262,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             metadata.put(MantaHttpHeaders.ENCRYPTION_AEAD_TAG_LENGTH,
                     String.valueOf(encryptionCipherDetails.getAuthenticationTagOrHmacLengthInBytes()));
             LOGGER.debug("AEAD tag length: {}", encryptionCipherDetails.getAuthenticationTagOrHmacLengthInBytes());
-        // HMAC Type because we are doing MtE
+            // HMAC Type because we are doing MtE
         } else {
             Mac hmac = encryptionCipherDetails.getAuthenticationHmac();
             metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
                     hmac.getAlgorithm());
             LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
-        }
-
-        // Add default metadata values
-        final String entityContentType;
-        if (originalEntity.getContentType() == null) {
-            entityContentType = null;
-        } else {
-            entityContentType = originalEntity.getContentType().getValue();
-        }
-
-        String contentType = ObjectUtils.firstNonNull(
-                httpHeaders.getContentType(),
-                entityContentType);
-
-        if (contentType != null && !metadata.containsKey("e-content-type")) {
-            metadata.put("e-content-type", contentType);
         }
 
         // Create and add encrypted metadata
@@ -275,30 +310,27 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             LOGGER.debug("Encrypted metadata HMAC: {}", checksumBase64);
         }
+    }
 
-        MantaObjectResponse response = super.httpPut(path, httpHeaders, encryptingEntity, metadata);
+    /**
+     * Looks up the content-type used in the entity being encrypted.
+     *
+     * @param originalEntity reference to original entity
+     * @param httpHeaders reference to http headers that may also have a content-type
+     * @return the content-type found or null if not found
+     */
+    private String findOriginalContentType(final HttpEntity originalEntity,
+                                           final MantaHttpHeaders httpHeaders) {
+        final String entityContentType;
 
-        /* We rewrite in the content-type so that from the perspective of the API consumer,
-         * they are seeing the object written as if it wasn't encrypted. */
-        response.setContentType(contentType);
-
-        /* If we sent over an entity where it was impossible to know the original size until
-         * we finished streaming, then we do an additional call to update the metadata of the
-         * object so that the plaintext size is stored.
-         *
-         * Having this data available allows MantaEncryptedObjectInputStream.getContentLength()
-         * to return the actual plaintext value. Most of the time, this value can be gotten
-         * via a calculation based on the ciphertext size. However, in the cases of
-         * the AES/CBC ciphers, we can't calculate the plaintext size via the ciphertext
-         * size, so we do a metadata update call to update the value.
-         */
-
-        // content-length of -1 means we are sending in chunked mode
-        if (originalEntity.getContentLength() < 0 && encryptionCipherDetails.plaintextSizeCalculationIsAnEstimate()) {
-            appendPlaintextContentLength(path, encryptingEntity, metadata, response);
+        if (originalEntity.getContentType() == null) {
+            entityContentType = null;
+        } else {
+            entityContentType = originalEntity.getContentType().getValue();
         }
 
-        return response;
+        return ObjectUtils.firstNonNull(httpHeaders.getContentType(),
+                entityContentType);
     }
 
     /**
@@ -310,9 +342,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      *
      * <p>This method makes use of the <code>If-Match</code> and
      * <code>If-Unmodified-Since</code> HTTP headers. There is the possibility of a
-     * race condition if the clock has not incremented one second since the original
+     * race condition if the clock has not incremented one second and another call
+     * came and updated the metadata before this call was performed because the original
      * call because the <code>If-Unmodified-Since</code> header only has a resolution
-     * of seconds. This means that in some cases the metadata will not be updated.</p>
+     * of seconds. This means that in some cases the metadata may overwrite other
+     * changes if you are doing metadata modifications from another client at
+     * very low latencies that land right after the object is added. This is
+     * a hypothetical and unlikely scenario.</p>
      *
      * @param path path to the object
      * @param encryptingEntity the encrypting entity that streamed the object
