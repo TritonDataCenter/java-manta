@@ -26,11 +26,6 @@ public interface MantaObject extends Serializable {
     String MANTA_OBJECT_TYPE_DIRECTORY = "directory";
 
     /**
-     * Manta directory header.
-     */
-    String DIRECTORY_HEADER = "application/x-json-stream; type=directory";
-
-    /**
      * Returns the path value.
      *
      * @return the path

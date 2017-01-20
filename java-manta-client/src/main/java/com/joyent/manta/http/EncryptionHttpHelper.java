@@ -24,8 +24,11 @@ import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
@@ -152,6 +155,90 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     }
 
     @Override
+    public HttpResponse httpHead(final String path) throws IOException {
+        HttpResponse response = super.httpHead(path);
+
+        Header contentTypeHeader = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
+        final String contentType;
+
+        if (contentTypeHeader == null) {
+            contentType = null;
+        } else {
+            contentType = contentTypeHeader.getValue();
+        }
+
+        // No encryption operations are needed on directories, so we just pass
+        // back the object as is
+        if (contentType != null && contentType.equals(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            return response;
+        }
+
+        String cipherId = null;
+        String encryptionType = null;
+        String metadataIvBase64 = null;
+        String metadataCiphertextBase64 = null;
+        String hmacId = null;
+        String metadataHmacBase64 = null;
+
+        final Header[] headers = response.getAllHeaders();
+        for (int i = 0; i < headers.length; i++) {
+            final Header h = headers[i];
+
+            // Don't bother to parse anything that isn't Manta specific metadata
+            if (!h.getName().startsWith("m-")) {
+                continue;
+            }
+
+            switch (h.getName()) {
+                case MantaHttpHeaders.ENCRYPTION_TYPE:
+                    encryptionType = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_METADATA_IV:
+                    metadataIvBase64 = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_CIPHER:
+                    cipherId = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_METADATA:
+                    metadataCiphertextBase64 = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_HMAC_TYPE:
+                    hmacId = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_METADATA_HMAC:
+                    metadataHmacBase64 = h.getValue();
+                    continue;
+            }
+        }
+
+        /* Object is not encrypted - since we aren't downloading anything, we
+         * assume a peek at the headers is safe. We will just pass along the
+         * response value with no additional modifications. */
+        if (cipherId == null) {
+            return response;
+        }
+
+        Map<String, String> encryptedMetadata = buildEncryptedMetadata(
+                encryptionType, metadataIvBase64, cipherId,
+                metadataCiphertextBase64, hmacId, metadataHmacBase64, null, response);
+
+        for (Map.Entry<String, String> entry : encryptedMetadata.entrySet()) {
+            response.setHeader(entry.getKey(), entry.getValue());
+        }
+
+        String encryptedContentType = encryptedMetadata.get(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE);
+        if (encryptedContentType != null) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Encrypted content-type [{}] overwriting returned content-type [{}]",
+                        encryptedContentType, response.getFirstHeader(HttpHeaders.CONTENT_TYPE));
+            }
+            response.setHeader(HttpHeaders.CONTENT_TYPE, encryptedContentType);
+        }
+
+        return response;
+    }
+
+    @Override
     public MantaObjectResponse httpPut(final String path,
                                        final MantaHttpHeaders headers,
                                        final HttpEntity originalEntity,
@@ -176,18 +263,19 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             metadata = new MantaMetadata();
         }
 
-        attachEncryptionMetadata(metadata, httpHeaders, encryptingEntity);
-
-        MantaObjectResponse response = super.httpPut(path, httpHeaders, encryptingEntity, metadata);
-
         /* We rewrite in the content-type so that from the perspective of the API consumer,
          * they are seeing the object written as if it wasn't encrypted. */
         String contentType = findOriginalContentType(originalEntity, httpHeaders);
 
         // Only add the wrapped content type if it isn't explicitly set
-        if (contentType != null && !metadata.containsKey("e-content-type")) {
-            metadata.put("e-content-type", contentType);
+        if (contentType != null && !metadata.containsKey(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE)) {
+            metadata.put(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE, contentType);
         }
+
+        // Insert all of the encrypted metadata values into the metadata map
+        attachEncryptionMetadata(metadata, httpHeaders, encryptingEntity);
+
+        MantaObjectResponse response = super.httpPut(path, httpHeaders, encryptingEntity, metadata);
 
         /* Emulate the setting of the content-type to our API consumer - when
          * in fact we are setting a different content type. */
@@ -215,6 +303,162 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         return response;
     }
+
+    @Override
+    public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
+                                                           final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        final MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
+        @SuppressWarnings("unchecked")
+        final HttpResponse response = (HttpResponse)rawStream.getHttpResponse();
+
+        final String cipherId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
+
+        if (cipherId == null) {
+            if (permitUnencryptedDownloads) {
+                return rawStream;
+            } else {
+                String msg = "Unable to download a unencrypted file when "
+                        + "client-side encryption is enabled unless the "
+                        + "permit unencrypted downloads configuration setting "
+                        + "is enabled";
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, response);
+                throw e;
+            }
+        }
+
+        final String encryptionType = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_TYPE);
+        final String metadataIvBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_IV);
+        final String metadataCiphertextBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA);
+        final String hmacId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE);
+        final String metadataHmacBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC);
+
+        Map<String, String> encryptedMetadata = buildEncryptedMetadata(
+                encryptionType, metadataIvBase64, cipherId,
+                metadataCiphertextBase64, hmacId, metadataHmacBase64, request, response);
+
+        rawStream.getMetadata().putAll(encryptedMetadata);
+
+        return new MantaEncryptedObjectInputStream(rawStream, secretKey);
+    }
+
+
+    /**
+     * Builds a {@link Map} of decrypted metadata keys and values.
+     *
+     * @param encryptionType encryption type header value
+     * @param metadataIvBase64 metadata ciphertext iv header value
+     * @param metadataCipherId metadata cipher identifier header value
+     * @param metadataCiphertextBase64 metadata ciphertext header value
+     * @param hmacId hmac identifier header value
+     * @param metadataHmacBase64 metadata hmac header value
+     * @param request http request object
+     * @param response http response object
+     * @return decrypted map of encrypted metadata
+     */
+    private Map<String, String> buildEncryptedMetadata(final String encryptionType,
+                                                       final String metadataIvBase64,
+                                                       final String metadataCipherId,
+                                                       final String metadataCiphertextBase64,
+                                                       final String hmacId,
+                                                       final String metadataHmacBase64,
+                                                       final HttpRequest request,
+                                                       final HttpResponse response) {
+        try {
+            EncryptionType.validateEncryptionTypeIsSupported(encryptionType);
+        } catch (MantaClientEncryptionException e) {
+            HttpHelper.annotateContextedException(e, request, response);
+            throw e;
+        }
+
+        byte[] metadataIv = Base64.getDecoder().decode(metadataIvBase64);
+
+        if (metadataCipherId == null) {
+            String msg = "No metadata cipher specified";
+            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+            HttpHelper.annotateContextedException(e, request, response);
+            throw e;
+        }
+
+        SupportedCipherDetails metadataCipherDetails = SupportedCiphersLookupMap.INSTANCE.get(
+                metadataCipherId);
+
+        if (metadataCipherDetails == null) {
+            String msg = String.format("Unsupported metadata cipher specified: %s",
+                    metadataCipherId);
+            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+            HttpHelper.annotateContextedException(e, request, response);
+            throw e;
+        }
+
+        Cipher metadataCipher = buildMetadataDecryptCipher(metadataCipherDetails, metadataIv);
+
+        if (metadataCiphertextBase64 == null) {
+            String msg = "No encrypted metadata stored on object";
+            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+            HttpHelper.annotateContextedException(e, request, response);
+            throw e;
+        }
+
+        byte[] metadataCipherText = Base64.getDecoder().decode(metadataCiphertextBase64);
+
+        // Validate Hmac if we aren't using AEAD
+        if (!encryptionCipherDetails.isAEADCipher()) {
+            if (hmacId == null) {
+                String msg = "No HMAC algorithm specified for metadata ciphertext authentication";
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, response);
+                throw e;
+            }
+
+            Supplier<Mac> hmacSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacId);
+            if (hmacSupplier == null) {
+                String msg = String.format("Unsupported HMAC specified: %s",
+                        hmacId);
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, response);
+                throw e;
+            }
+
+            Mac hmac = hmacSupplier.get();
+
+            try {
+                hmac.init(secretKey);
+            } catch (InvalidKeyException e) {
+                MantaClientEncryptionException mcee = new MantaClientEncryptionException(
+                        "There was a problem loading private key", e);
+                String details = String.format("key=%s, algorithm=%s",
+                        secretKey.getAlgorithm(), secretKey.getFormat());
+                mcee.setContextValue("key_details", details);
+                throw mcee;
+            }
+
+            byte[] actualHmac = hmac.doFinal(metadataCipherText);
+
+            if (metadataHmacBase64 == null) {
+                String msg = "No metadata HMAC is available to authenticate metadata ciphertext";
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, response);
+                throw e;
+            }
+
+            byte[] expectedHmac = Base64.getDecoder().decode(metadataHmacBase64);
+
+            if (!Arrays.equals(expectedHmac, actualHmac)) {
+                String msg = "The expected HMAC value for metadata ciphertext didn't equal the actual value";
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, null);
+                e.setContextValue("expected", Hex.encodeHexString(expectedHmac));
+                e.setContextValue("actual", Hex.encodeHexString(actualHmac));
+                throw e;
+            }
+        }
+
+        byte[] plaintext = decryptMetadata(metadataCipherText, metadataCipher);
+        return EncryptedMetadataUtils.plaintextMetadataAsMap(plaintext);
+    }
+
 
     /**
      * Adds headers and metadata needed for client-side encryption to a request
@@ -388,134 +632,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
-    @Override
-    public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
-                                                           final MantaHttpHeaders requestHeaders)
-            throws IOException {
-        MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
-
-        try {
-            EncryptionType.validateEncryptionTypeIsSupported(rawStream.getHeaderAsString(
-                    MantaHttpHeaders.ENCRYPTION_TYPE));
-        } catch (MantaClientEncryptionException e) {
-            HttpHelper.annotateContextedException(e, request, null);
-            throw e;
-        }
-
-        final String cipherId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
-
-        if (cipherId == null) {
-            if (permitUnencryptedDownloads) {
-                return rawStream;
-            } else {
-                String msg = "Unable to download a unencrypted file when "
-                        + "client-side encryption is enabled unless the "
-                        + "permit unencrypted downloads configuration setting "
-                        + "is enabled";
-                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-                HttpHelper.annotateContextedException(e, request, null);
-                throw e;
-            }
-        }
-
-        String metadataIvBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_IV);
-        byte[] metadataIv = Base64.getDecoder().decode(metadataIvBase64);
-
-        String metadataCipherId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
-
-        if (metadataCipherId == null) {
-            String msg = "No metadata cipher specified";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            HttpHelper.annotateContextedException(e, request, null);
-            throw e;
-        }
-
-        SupportedCipherDetails metadataCipherDetails = SupportedCiphersLookupMap.INSTANCE.get(
-                metadataCipherId);
-
-        if (metadataCipherDetails == null) {
-            String msg = String.format("Unsupported metadata cipher specified: %s",
-                    metadataCipherId);
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            HttpHelper.annotateContextedException(e, request, null);
-            throw e;
-        }
-
-        Cipher metadataCipher = buildMetadataDecryptCipher(metadataCipherDetails, metadataIv);
-
-        String metadataCiphertextBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA);
-
-        if (metadataCiphertextBase64 == null) {
-            String msg = "No encrypted metadata stored on object";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            HttpHelper.annotateContextedException(e, request, null);
-            throw e;
-        }
-
-        byte[] metadataCipherText = Base64.getDecoder().decode(metadataCiphertextBase64);
-
-        // Validate Hmac if we aren't using AEAD
-        if (!encryptionCipherDetails.isAEADCipher()) {
-            String hmacId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE);
-
-            if (hmacId == null) {
-                String msg = "No HMAC algorithm specified for metadata ciphertext authentication";
-                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-                HttpHelper.annotateContextedException(e, request, null);
-                throw e;
-            }
-
-            Supplier<Mac> hmacSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacId);
-            if (hmacSupplier == null) {
-                String msg = String.format("Unsupported HMAC specified: %s",
-                        hmacId);
-                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-                HttpHelper.annotateContextedException(e, request, null);
-                throw e;
-            }
-
-            Mac hmac = hmacSupplier.get();
-
-            try {
-                hmac.init(secretKey);
-            } catch (InvalidKeyException e) {
-                MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                        "There was a problem loading private key", e);
-                String details = String.format("key=%s, algorithm=%s",
-                        secretKey.getAlgorithm(), secretKey.getFormat());
-                mcee.setContextValue("key_details", details);
-                throw mcee;
-            }
-
-            byte[] actualHmac = hmac.doFinal(metadataCipherText);
-
-            String hmacBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC);
-
-            if (hmacBase64 == null) {
-                String msg = "No metadata HMAC is available to authenticate metadata ciphertext";
-                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-                HttpHelper.annotateContextedException(e, request, null);
-                throw e;
-            }
-
-            byte[] expectedHmac = Base64.getDecoder().decode(hmacBase64);
-
-            if (!Arrays.equals(expectedHmac, actualHmac)) {
-                String msg = "The expected HMAC value for metadata ciphertext didn't equal the actual value";
-                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-                HttpHelper.annotateContextedException(e, request, null);
-                e.setContextValue("expected", Hex.encodeHexString(expectedHmac));
-                e.setContextValue("actual", Hex.encodeHexString(actualHmac));
-                throw e;
-            }
-        }
-
-        byte[] plaintext = decryptMetadata(metadataCipherText, metadataCipher);
-        Map<String, String> encryptedMetadata = EncryptedMetadataUtils.plaintextMetadataAsMap(plaintext);
-        rawStream.getMetadata().putAll(encryptedMetadata);
-
-        return new MantaEncryptedObjectInputStream(rawStream, secretKey);
-    }
 
     /**
      * Encrypts a plaintext object metadata string.

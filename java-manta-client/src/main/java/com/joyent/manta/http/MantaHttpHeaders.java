@@ -135,6 +135,11 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String ENCRYPTION_METADATA_AEAD_TAG_LENGTH = "m-encrypt-metadata-aead-tag-length";
 
     /**
+     * Encrypted metadata header that stores the object's real content-type.
+     */
+    public static final String ENCRYPTED_CONTENT_TYPE = "e-content-type";
+
+    /**
      * HttpHeaders delegate which is wrapped by this class.
      */
     private final transient CaseInsensitiveMap<String, Object> wrappedHeaders =

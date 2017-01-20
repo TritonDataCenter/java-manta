@@ -145,7 +145,12 @@ public class MantaObjectInputStream extends InputStream implements MantaObject {
         return response;
     }
 
-    protected CloseableHttpResponse getHttpResponse() {
+    /**
+     * Returns the HTTP Client response object. This may be useful for debugging.
+     *
+     * @return the underlying HTTP response object
+     */
+    public Object getHttpResponse() {
         return httpResponse;
     }
 
