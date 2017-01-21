@@ -248,7 +248,13 @@ public class EncryptingEntity implements HttpEntity {
             cout.flush();
             bytesCopied = cout.getByteCount();
         } else {
-            bytesCopied = IOUtils.copyLarge(getContent(), out);
+            /* We choose a small buffer because large buffer don't result in
+             * better performance when writing to a CipherOutputStream. You
+             * can try this yourself by fiddling with this value and running
+             * EncryptingEntityBenchmark. */
+            final int bufferSize = 128;
+
+            bytesCopied = IOUtils.copy(getContent(), out, bufferSize);
             out.flush();
         }
 
