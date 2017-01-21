@@ -41,8 +41,11 @@ public class MantaClientDirectoriesIT {
         config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        String testPathBase = String.format("%s/stor/java-manta-integration-tests",
+                config.getMantaHomeDirectory());
+        testPathPrefix = String.format("%s/%s",
+                testPathBase, UUID.randomUUID());
+        mantaClient.putDirectory(testPathBase, true);
     }
 
 

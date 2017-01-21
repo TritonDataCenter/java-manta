@@ -109,7 +109,7 @@ public final class Benchmark {
                 new SystemSettingsConfigContext()
         );
         client = new MantaClient(config);
-        testDirectory = String.format("%s/stor/benchmark-%s",
+        testDirectory = String.format("%s/stor/java-manta-integration-tests/benchmark-%s",
                 config.getMantaHomeDirectory(), testRunId);
 
         if (argv.length == 0) {
@@ -329,7 +329,7 @@ public final class Benchmark {
      * @throws IOException thrown when we can't access Manta over the network
      */
     private static void setupTestDirectory() throws IOException {
-        client.putDirectory(testDirectory);
+        client.putDirectory(testDirectory, true);
     }
 
     /**

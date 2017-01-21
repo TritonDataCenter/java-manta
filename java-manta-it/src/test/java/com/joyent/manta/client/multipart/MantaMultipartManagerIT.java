@@ -61,9 +61,9 @@ public class MantaMultipartManagerIT {
 
         this.mantaClient = new MantaClient(config);
         this.multipart = new MantaMultipartManager(this.mantaClient);
-        testPathPrefix = String.format("%s/stor/%s/",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        mantaClient.putDirectory(testPathPrefix);
+        mantaClient.putDirectory(testPathPrefix, true);
     }
 
 
