@@ -65,6 +65,10 @@ public class MantaClientSigningIT {
 
     @Test
     public final void testCanCreateSignedGETUriFromPath() throws IOException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -87,6 +91,7 @@ public class MantaClientSigningIT {
             }
 
             String actual = IOUtils.toString(is, Charset.defaultCharset());
+
             Assert.assertEquals(actual, TEST_DATA);
         } finally {
             connection.disconnect();
@@ -95,6 +100,10 @@ public class MantaClientSigningIT {
 
     @Test
     public final void testCanCreateSignedHEADUriFromPath() throws IOException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -128,7 +137,12 @@ public class MantaClientSigningIT {
 
 
     @Test
-    public final void testCanCreateSignedPUTUriFromPath() throws IOException, InterruptedException {
+    public final void testCanCreateSignedPUTUriFromPath()
+            throws IOException, InterruptedException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -165,7 +179,12 @@ public class MantaClientSigningIT {
 
 
     @Test
-    public final void testCanCreateSignedOPTIONSUriFromPath() throws IOException, InterruptedException {
+    public final void testCanCreateSignedOPTIONSUriFromPath()
+            throws IOException, InterruptedException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
