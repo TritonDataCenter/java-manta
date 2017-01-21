@@ -453,10 +453,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             if (this.closed) {
                 return;
             }
+
+            readRemainingBytes();
             this.closed = true;
         }
 
-        readRemainingBytes();
         IOUtils.closeQuietly(cipherInputStream);
 
         if (hmac != null) {
