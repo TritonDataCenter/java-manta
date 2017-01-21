@@ -42,7 +42,6 @@ public class MantaClientSigningIT {
     private ConfigContext config;
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
     public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables

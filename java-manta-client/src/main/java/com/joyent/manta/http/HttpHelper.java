@@ -111,6 +111,21 @@ public interface HttpHelper extends AutoCloseable {
                                 MantaMetadata metadata) throws IOException;
 
     /**
+     * Replaces the specified metadata to an existing Manta object using the
+     * specified HTTP headers.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers HTTP headers to include when copying the object
+     * @param metadata user-supplied metadata for object
+     * @return Manta response object
+     * @throws IOException when there is a problem sending the metadata over the network
+     */
+    MantaObjectResponse httpPutMetadata(String path,
+                                        MantaHttpHeaders headers,
+                                        MantaMetadata metadata)
+            throws IOException;
+
+    /**
      * Executes a {@link HttpRequest}, logs the request and returns back the
      * response.
      *

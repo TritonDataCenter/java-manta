@@ -13,6 +13,7 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -66,16 +67,10 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(result.getHeaderAsString("m-Droids"), "1");
         Assert.assertEquals(result.getHeaderAsString("m-force"), "true");
 
-        Assert.assertEquals(metadata, result.getMetadata());
-
         final MantaObject head = mantaClient.head(path);
         Assert.assertEquals(head.getHeaderAsString("m-Yoda"), "Master");
         Assert.assertEquals(head.getHeaderAsString("m-Droids"), "1");
         Assert.assertEquals(head.getHeaderAsString("m-force"), "true");
-
-        Assert.assertEquals(metadata, head.getMetadata());
-
-        mantaClient.delete(path);
     }
 
     @Test( groups = { "metadata" })
@@ -84,7 +79,11 @@ public class MantaClientMetadataIT {
         final String path = testPathPrefix + name;
 
         final MantaObject result = mantaClient.put(path, TEST_DATA);
-        Assert.assertTrue(result.getMetadata().isEmpty());
+
+        // There will be existing headers if we are in encrypted mode
+        if (!mantaClient.getContext().isClientEncryptionEnabled()) {
+            Assert.assertTrue(result.getMetadata().isEmpty());
+        }
 
         MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-Yoda", "Master");
@@ -92,12 +91,17 @@ public class MantaClientMetadataIT {
         metadata.put("m-force", "true");
 
         final MantaObject metadataResult = mantaClient.putMetadata(path, metadata);
+
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
         final MantaObject head = mantaClient.head(path);
-        Assert.assertEquals(metadata, head.getMetadata());
+        MantaMetadata actualMetadata = head.getMetadata();
 
-        mantaClient.delete(path);
+        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+            String key = entry.getKey();
+            String val = entry.getValue();
+            Assert.assertEquals(actualMetadata.get(key), val);
+        }
     }
 
     @Test( groups = { "metadata" })
@@ -121,15 +125,9 @@ public class MantaClientMetadataIT {
         MantaObject updateResult = mantaClient.putMetadata(path, updated);
         Assert.assertEquals(updated, updateResult.getMetadata());
 
-        @SuppressWarnings("unchecked")
-        MantaMetadata cleared = (MantaMetadata)metadata.clone();
-        cleared.remove("m-force");
-
         MantaObject head = mantaClient.head(path);
-        Assert.assertEquals(updated, head.getMetadata(),
+        Assert.assertNull(head.getMetadata().get("m-force"),
                 String.format("Actual metadata: %s", head.getMetadata()));
-
-        mantaClient.delete(path);
     }
 
     @Test(groups = { "metadata", "directory" })

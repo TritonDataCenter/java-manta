@@ -13,6 +13,7 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.entity.DigestedEntity;
+import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
@@ -22,6 +23,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -32,11 +34,14 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -214,6 +219,40 @@ public class StandardHttpHelper implements HttpHelper {
 
             if (validateUploadsEnabled()) {
                 validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
+            }
+
+            return obj;
+        }
+    }
+
+    @Override
+    public MantaObjectResponse httpPutMetadata(final String path,
+                                               final MantaHttpHeaders headers,
+                                               final MantaMetadata metadata) throws IOException {
+        headers.putAll(metadata);
+        headers.setContentEncoding("chunked");
+
+        List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
+
+        HttpPut put = connectionFactory.put(path, pairs);
+        put.setHeaders(headers.asApacheHttpHeaders());
+        put.setEntity(NoContentEntity.INSTANCE);
+
+        try (CloseableHttpResponse response = executeRequest(
+                put, HttpStatus.SC_NO_CONTENT,
+                "PUT    {} response [{}] {} ")) {
+
+            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(
+                    response.getAllHeaders());
+
+            MantaObjectResponse obj = new MantaObjectResponse(path,
+                    responseHeaders, metadata);
+
+            HttpEntity entity = response.getEntity();
+
+            if (obj.getContentType() == null && entity != null
+                    && entity.getContentType() != null) {
+                obj.setContentType(entity.getContentType().getValue());
             }
 
             return obj;

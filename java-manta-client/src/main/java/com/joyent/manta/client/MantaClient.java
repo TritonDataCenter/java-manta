@@ -27,7 +27,6 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.StandardHttpHelper;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
-import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
@@ -1309,7 +1308,7 @@ public class MantaClient implements AutoCloseable {
 
 
     /**
-     * Appends the specified metadata to an existing Manta object using the
+     * Replaces the specified metadata to an existing Manta object using the
      * specified HTTP headers.
      *
      * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
@@ -1332,35 +1331,8 @@ public class MantaClient implements AutoCloseable {
             }
         }
 
-        headers.putAll(metadata);
-        headers.setContentEncoding("chunked");
-
         String path = formatPath(rawPath);
-        List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
-
-        HttpPut put = connectionFactory.put(path, pairs);
-        put.setHeaders(headers.asApacheHttpHeaders());
-        put.setEntity(NoContentEntity.INSTANCE);
-
-        try (CloseableHttpResponse response = httpHelper.executeRequest(
-                put, HttpStatus.SC_NO_CONTENT,
-                "PUT    {} response [{}] {} ")) {
-
-            final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(
-                    response.getAllHeaders());
-
-            MantaObjectResponse obj = new MantaObjectResponse(path,
-                    responseHeaders, metadata);
-
-            HttpEntity entity = response.getEntity();
-
-            if (obj.getContentType() == null && entity != null
-                    && entity.getContentType() != null) {
-                obj.setContentType(entity.getContentType().getValue());
-            }
-
-            return obj;
-        }
+        return httpHelper.httpPutMetadata(path, headers, metadata);
     }
 
     /**
