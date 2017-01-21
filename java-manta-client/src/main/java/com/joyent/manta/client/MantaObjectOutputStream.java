@@ -6,13 +6,9 @@ package com.joyent.manta.client;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.entity.EmbeddedHttpContent;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -53,6 +50,25 @@ public class MantaObjectOutputStream extends OutputStream {
      */
     private static final long CLOSED_CHECK_INTERVAL = 50L;
 
+
+    /* Note: Do not turn this into a lambda expression - as of now it causes
+     * a compilation error. */
+    /**
+     * Unhandled exception handler that logs errors that happened when reading
+     * from the {@link InputStream}.
+     */
+    private static final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER =
+            new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(final Thread t, final Throwable e) {
+                    String msg = String.format("An error occurred in the "
+                            + "reading thread [%s] when attempting to "
+                            + "write to an object via an OutputStream.",
+                            t.getName());
+                    LOGGER.error(msg, e);
+                }
+            };
+
     /**
      * Custom thread factory that makes sensibly named daemon threads.
      */
@@ -64,6 +80,7 @@ public class MantaObjectOutputStream extends OutputStream {
             final String name = String.format("stream-%d", count.getAndIncrement());
             Thread thread = new Thread(THREAD_GROUP, runnable, name);
             thread.setDaemon(true);
+            thread.setUncaughtExceptionHandler(EXCEPTION_HANDLER);
 
             return thread;
         }
@@ -76,144 +93,6 @@ public class MantaObjectOutputStream extends OutputStream {
      * if needed.
      */
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
-
-    /**
-     * Inner class that provides visibility into the {@link org.apache.http.HttpEntity} object being
-     * put to the server. This allows us to proxy all of the {@link OutputStream} API
-     * calls.
-     */
-    private class EmbeddedHttpContent implements HttpEntity {
-        /**
-         * The actual output stream that is used by Apache HTTP Client.
-         */
-        private volatile OutputStream writer;
-
-        @Override
-        public synchronized void writeTo(final OutputStream out) throws IOException {
-            writer = out;
-
-            /* Loop while the parent OutputStream is still open. This allows us to write
-             * to the stream from the parent class while keeping the stream open with
-             * another thread. */
-            while (!isClosed) {
-                try {
-                    this.wait(CLOSED_CHECK_INTERVAL);
-                } catch (InterruptedException e) {
-                    return; // exit loop and assume closed if interrupted
-                }
-            }
-        }
-
-        @Override
-        public boolean isRepeatable() {
-            return false;
-        }
-
-        @Override
-        public boolean isChunked() {
-            return false;
-        }
-
-        @Override
-        public long getContentLength() {
-            return -1L;
-        }
-
-        /**
-         * Obtains the Content-Type header, if known.
-         * This is the header that should be used when sending the entity,
-         * or the one that was received with the entity. It can include a
-         * charset attribute.
-         *
-         * @return the Content-Type header for this entity, or
-         * {@code null} if the content type is unknown
-         */
-        @Override
-        public Header getContentType() {
-            return new BasicHeader(HttpHeaders.CONTENT_TYPE, contentType.toString());
-        }
-
-        /**
-         * Obtains the Content-Encoding header, if known.
-         * This is the header that should be used when sending the entity,
-         * or the one that was received with the entity.
-         * Wrapping entities that modify the content encoding should
-         * adjust this header accordingly.
-         *
-         * @return the Content-Encoding header for this entity, or
-         * {@code null} if the content encoding is unknown
-         */
-        @Override
-        public Header getContentEncoding() {
-            return null;
-        }
-
-        /**
-         * Returns a content stream of the entity.
-         * {@link #isRepeatable Repeatable} entities are expected
-         * to create a new instance of {@link InputStream} for each invocation
-         * of this method and therefore can be consumed multiple times.
-         * Entities that are not {@link #isRepeatable repeatable} are expected
-         * to return the same {@link InputStream} instance and therefore
-         * may not be consumed more than once.
-         * <p>
-         * IMPORTANT: Please note all entity implementations must ensure that
-         * all allocated resources are properly deallocated after
-         * the {@link InputStream#close()} method is invoked.
-         *
-         * @return content stream of the entity.
-         * @throws IOException                   if the stream could not be created
-         * @throws UnsupportedOperationException if entity content cannot be represented as {@link InputStream}.
-         * @see #isRepeatable()
-         */
-        @Override
-        public InputStream getContent() throws IOException, UnsupportedOperationException {
-            throw new UnsupportedOperationException("getContent is not supported");
-        }
-
-        /**
-         * Tells whether this entity depends on an underlying stream.
-         * Streamed entities that read data directly from the socket should
-         * return {@code true}. Self-contained entities should return
-         * {@code false}. Wrapping entities should delegate this call
-         * to the wrapped entity.
-         *
-         * @return {@code true} if the entity content is streamed,
-         * {@code false} otherwise
-         */
-        @Override
-        public boolean isStreaming() {
-            return false;
-        }
-
-        /**
-         * This method is deprecated since version 4.1. Please use standard
-         * java convention to ensure resource deallocation by calling
-         * {@link InputStream#close()} on the input stream returned by
-         * {@link #getContent()}
-         * <p>
-         * This method is called to indicate that the content of this entity
-         * is no longer required. All entity implementations are expected to
-         * release all allocated resources as a result of this method
-         * invocation. Content streaming entities are also expected to
-         * dispose of the remaining content, if any. Wrapping entities should
-         * delegate this call to the wrapped entity.
-         * <p>
-         * This method is of particular importance for entities being
-         * received from a {@link org.apache.http.client.HttpClient connection}.
-         * The entity needs to be consumed completely in order to re-use the
-         * connection with keep-alive.
-         *
-         * @throws IOException if an I/O error occurs.
-         * @see #getContent() and #writeTo(OutputStream)
-         * @deprecated (4.1) Use {@link EntityUtils#consume(HttpEntity)}
-         */
-        @Override
-        @Deprecated
-        public void consumeContent() throws IOException {
-            throw new UnsupportedOperationException("consumeContent is not supported");
-        }
-    }
 
     /**
      * Content type value for the file being uploaded.
@@ -243,7 +122,12 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * Flag indicating that this stream has been closed.
      */
-    private volatile boolean isClosed = false;
+    private AtomicBoolean closed = new AtomicBoolean(false);
+
+    /**
+     * Path of the object being written to.
+     */
+    private final String path;
 
     /**
      * Creates a new instance of an {@link OutputStream} that wraps PUT
@@ -260,7 +144,10 @@ public class MantaObjectOutputStream extends OutputStream {
                             final MantaMetadata metadata,
                             final ContentType contentType) {
         this.contentType = contentType;
-        this.httpContent = new EmbeddedHttpContent();
+        this.httpContent = new EmbeddedHttpContent(contentType.toString(),
+                closed);
+        this.path = path;
+
         /*
          * Thread execution definition that runs the HTTP PUT operation.
          */
@@ -271,7 +158,7 @@ public class MantaObjectOutputStream extends OutputStream {
          * We have to wait here until the upload to Manta starts and a Writer
          * becomes available.
          */
-        while (httpContent.writer == null) {
+        while (httpContent.getWriter() == null) {
             try {
                 Thread.sleep(CLOSED_CHECK_INTERVAL);
             } catch (InterruptedException e) {
@@ -282,25 +169,47 @@ public class MantaObjectOutputStream extends OutputStream {
 
     @Override
     public void write(final int b) throws IOException {
-        httpContent.writer.write(b);
+        if (this.closed.get()) {
+            MantaIOException e = new MantaIOException("Can't write to a closed stream");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        httpContent.getWriter().write(b);
         bytesWritten++;
     }
 
     @Override
     public void write(final byte[] b) throws IOException {
-        httpContent.writer.write(b);
+        if (this.closed.get()) {
+            MantaIOException e = new MantaIOException("Can't write to a closed stream");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        httpContent.getWriter().write(b);
         bytesWritten += b.length;
     }
 
     @Override
     public void write(final byte[] b, final int off, final int len) throws IOException {
-        httpContent.writer.write(b, off, len);
+        if (this.closed.get()) {
+            MantaIOException e = new MantaIOException("Can't write to a closed stream");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        httpContent.getWriter().write(b, off, len);
         bytesWritten += b.length;
     }
 
     @Override
     public void flush() throws IOException {
-        httpContent.writer.flush();
+        if (this.closed.get()) {
+            return;
+        }
+
+        httpContent.getWriter().flush();
     }
 
     /**
@@ -366,12 +275,12 @@ public class MantaObjectOutputStream extends OutputStream {
 
     @Override
     public synchronized void close() throws IOException {
-        Boolean innerIsClosed = isInnerStreamClosed(this.httpContent.writer);
-        if (innerIsClosed != null && !innerIsClosed) {
-            this.httpContent.writer.flush();
-        }
+        this.closed.compareAndSet(false, true);
 
-        this.isClosed = true;
+        Boolean innerIsClosed = isInnerStreamClosed(this.httpContent.getWriter());
+        if (innerIsClosed != null && !innerIsClosed) {
+            this.httpContent.getWriter().flush();
+        }
 
         synchronized (this.httpContent) {
             this.httpContent.notify();
@@ -393,7 +302,7 @@ public class MantaObjectOutputStream extends OutputStream {
      * @return true if closed, otherwise false
      */
     public boolean isClosed() {
-        return isClosed;
+        return closed.get();
     }
 
     /**

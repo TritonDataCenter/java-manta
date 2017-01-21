@@ -5,10 +5,12 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.http.entity.EmbeddedHttpContent;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -234,8 +236,21 @@ public class EncryptingEntity implements HttpEntity {
      * @throws IOException throw when there is a problem writing to the streams
      */
     private void copyContentToOutputStream(final OutputStream out) throws IOException {
-        long bytesCopied = IOUtils.copyLarge(getContent(), out);
-        out.flush();
+        final long bytesCopied;
+
+        /* Only the EmbeddedHttpContent class requires us to actually call
+         * write out on the wrapped object. In its particular case it is doing
+         * a wrapping operation between an InputStream and an OutputStream in
+         * order to provide an OutputStream interface to MantaClient. */
+        if (this.wrapped.getClass().equals(EmbeddedHttpContent.class)) {
+            CountingOutputStream cout = new CountingOutputStream(out);
+            this.wrapped.writeTo(cout);
+            cout.flush();
+            bytesCopied = cout.getByteCount();
+        } else {
+            bytesCopied = IOUtils.copyLarge(getContent(), out);
+            out.flush();
+        }
 
         /* If we don't know the length of the underlying content stream, we
          * count the number of bytes written, so that it is available. */

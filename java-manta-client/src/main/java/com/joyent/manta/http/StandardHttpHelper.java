@@ -176,8 +176,13 @@ public class StandardHttpHelper implements HttpHelper {
         final DigestedEntity md5DigestedEntity;
 
         if (entity != null) {
-            md5DigestedEntity = new DigestedEntity(entity, MessageDigestAlgorithms.MD5);
-            put.setEntity(md5DigestedEntity);
+            if (validateUploadsEnabled()) {
+                md5DigestedEntity = new DigestedEntity(entity, MessageDigestAlgorithms.MD5);
+                put.setEntity(md5DigestedEntity);
+            } else {
+                md5DigestedEntity = null;
+                put.setEntity(entity);
+            }
         } else {
             md5DigestedEntity = null;
         }
@@ -297,7 +302,7 @@ public class StandardHttpHelper implements HttpHelper {
      * @throws MantaChecksumFailedException thrown if the MD5 values do not match
      */
     protected static void validateChecksum(final DigestedEntity entity,
-                                         final byte[] serverMd5)
+                                           final byte[] serverMd5)
             throws MantaChecksumFailedException {
         if (entity == null) {
             return;

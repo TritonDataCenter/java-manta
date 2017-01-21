@@ -208,6 +208,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 case MantaHttpHeaders.ENCRYPTION_METADATA_HMAC:
                     metadataHmacBase64 = h.getValue();
                     continue;
+                default:
             }
         }
 
@@ -357,6 +358,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param response http response object
      * @return decrypted map of encrypted metadata
      */
+    @SuppressWarnings("ParameterNumber")
     private Map<String, String> buildEncryptedMetadata(final String encryptionType,
                                                        final String metadataIvBase64,
                                                        final String metadataCipherId,

@@ -3,23 +3,24 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.UUID;
 
 @Test
 public class MantaObjectOutputStreamIT {
-    private static final Logger LOG = LoggerFactory.getLogger(MantaObjectOutputStreamIT.class);
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private MantaClient mantaClient;
@@ -74,6 +75,7 @@ public class MantaObjectOutputStreamIT {
     public void canUploadMuchLargerFile() throws IOException {
         String path = testPathPrefix + "uploaded-" + UUID.randomUUID() + ".txt";
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(6553600);
 
         MessageDigest md5Digest = DigestUtils.getMd5Digest();
         long totalBytes = 0;
@@ -85,6 +87,7 @@ public class MantaObjectOutputStreamIT {
                 md5Digest.update(randomBytes);
                 totalBytes += randomBytes.length;
                 out.write(randomBytes);
+                bout.write(randomBytes);
 
                 // periodically flush
                 if (i % 25 == 0) {
@@ -93,23 +96,22 @@ public class MantaObjectOutputStreamIT {
             }
         } finally {
             out.close();
+            bout.close();
         }
 
-        MantaObject uploaded = out.getObjectResponse();
+        try (InputStream in = mantaClient.getAsInputStream(path)) {
+            byte[] expected = bout.toByteArray();
+            byte[] actual = IOUtils.readFully(in, (int)totalBytes);
 
-        Assert.assertEquals(uploaded.getContentLength().longValue(), totalBytes,
-                "Uploaded content length response doesn't match");
-
-        Assert.assertEquals(uploaded.getMd5Bytes(),
-                md5Digest.digest());
-
-        Assert.assertTrue(mantaClient.existsAndIsAccessible(path),
-                "File wasn't uploaded: " + path);
+            AssertJUnit.assertArrayEquals("Bytes written via OutputStream don't match read bytes",
+                    expected, actual);
+        }
     }
 
     public void canUploadMuchLargerFileWithPeriodicWaits() throws IOException, InterruptedException {
         String path = testPathPrefix + "uploaded-" + UUID.randomUUID() + ".txt";
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(6553600);
 
         MessageDigest md5Digest = DigestUtils.getMd5Digest();
         long totalBytes = 0;
@@ -121,6 +123,7 @@ public class MantaObjectOutputStreamIT {
                 md5Digest.update(randomBytes);
                 totalBytes += randomBytes.length;
                 out.write(randomBytes);
+                bout.write(randomBytes);
 
                 // periodically wait
                 if (i % 3 == 0) {
@@ -129,17 +132,15 @@ public class MantaObjectOutputStreamIT {
             }
         } finally {
             out.close();
+            bout.close();
         }
 
-        MantaObject uploaded = out.getObjectResponse();
+        try (InputStream in = mantaClient.getAsInputStream(path)) {
+            byte[] expected = bout.toByteArray();
+            byte[] actual = IOUtils.readFully(in, (int)totalBytes);
 
-        Assert.assertEquals(uploaded.getContentLength().longValue(), totalBytes,
-                "Uploaded content length response doesn't match");
-
-        Assert.assertEquals(uploaded.getMd5Bytes(),
-                md5Digest.digest());
-
-        Assert.assertTrue(mantaClient.existsAndIsAccessible(path),
-                "File wasn't uploaded: " + path);
+            AssertJUnit.assertArrayEquals("Bytes written via OutputStream don't match read bytes",
+                    expected, actual);
+        }
     }
 }

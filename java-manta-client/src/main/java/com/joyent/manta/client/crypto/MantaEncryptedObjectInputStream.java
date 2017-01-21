@@ -9,6 +9,7 @@ import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.lang3.ObjectUtils;
@@ -85,7 +86,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * Flag indicating that the underlying stream is closed.
      */
-    private boolean isClosed = false;
+    private volatile boolean closed = false;
+
+    /**
+     * Lock object used to synchronize close calls.
+     */
+    private final Object closeLock = new Object();
 
     /**
      * Creates a new instance that decrypts the backing stream with the specified key.
@@ -261,6 +267,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public int read() throws IOException {
+        if (this.closed) {
+            MantaIOException e = new MantaIOException("Can't read a closed stream");
+            e.setContextValue("path", getPath());
+            throw e;
+        }
+
         try {
             final int b = cipherInputStream.read();
 
@@ -287,6 +299,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public int read(final byte[] bytes) throws IOException {
+        if (this.closed) {
+            MantaIOException e = new MantaIOException("Can't read a closed stream");
+            e.setContextValue("path", getPath());
+            throw e;
+        }
+
         try {
             final int read = cipherInputStream.read(bytes);
 
@@ -313,6 +331,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public int read(final byte[] bytes, final int off, final int len) throws IOException {
+        if (this.closed) {
+            MantaIOException e = new MantaIOException("Can't read a closed stream");
+            e.setContextValue("path", getPath());
+            throw e;
+        }
+
         try {
             final int read = cipherInputStream.read(bytes, off, len);
 
@@ -339,6 +363,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public long skip(final long numberOfBytesToSkip) throws IOException {
+        if (this.closed) {
+            MantaIOException e = new MantaIOException("Can't skip a closed stream");
+            e.setContextValue("path", getPath());
+            throw e;
+        }
+
         if (numberOfBytesToSkip <= 0) {
             return 0;
         }
@@ -367,6 +397,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public int available() throws IOException {
+        if (this.closed) {
+            MantaIOException e = new MantaIOException("Can't calculate available on a closed stream");
+            e.setContextValue("path", getPath());
+            throw e;
+        }
+
         return cipherInputStream.available();
     }
 
@@ -413,23 +449,25 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public void close() throws IOException {
-        readRemainingBytes();
-
-        try {
-            cipherInputStream.close();
-        } finally {
-            this.isClosed = true;
+        synchronized (this.closeLock) {
+            if (this.closed) {
+                return;
+            }
+            this.closed = true;
         }
+
+        readRemainingBytes();
+        IOUtils.closeQuietly(cipherInputStream);
 
         if (hmac != null) {
             byte[] checksum = hmac.doFinal();
-            byte[] expected = new byte[cipherDetails.getAuthenticationTagOrHmacLengthInBytes()];
+            byte[] expected = new byte[this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
             if (readHmacBytes != cipherDetails.getAuthenticationTagOrHmacLengthInBytes()) {
                 MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
                 annotateException(e);
-                e.setContextValue("expectedHmacSize", cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
+                e.setContextValue("expectedHmacSize", this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
                 e.setContextValue("actualHmacSize", readHmacBytes);
                 throw e;
             }
@@ -495,15 +533,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return Long.parseLong(plaintextLengthString);
         }
 
-        if (isClosed) {
+        if (this.closed) {
             return this.plaintextBytesRead;
         }
 
         // If the plaintext size isn't stored we attempt to compute it, but it may be inaccurate
-        if (LOGGER.isInfoEnabled() && cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
+        if (LOGGER.isInfoEnabled() && this.cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
             LOGGER.info("Plaintext size reported may be inaccurate for object: {}", getPath());
         }
 
-        return cipherDetails.plaintextSize(super.getContentLength());
+        return this.cipherDetails.plaintextSize(super.getContentLength());
     }
 }
