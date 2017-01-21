@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.http.entity;
 
 import org.apache.http.Header;
@@ -14,6 +17,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Class that provides visibility into the {@link org.apache.http.HttpEntity}
  * object being put to the server. This allows us to proxy all of the
  * {@link OutputStream} API calls.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 3.0.0
  */
 public class EmbeddedHttpContent implements HttpEntity {
     /**
