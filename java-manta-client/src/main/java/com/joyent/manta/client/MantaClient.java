@@ -1047,8 +1047,16 @@ public class MantaClient implements AutoCloseable {
 
         String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
+        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
+                headers,
                 ContentType.APPLICATION_OCTET_STREAM);
+
+        /* We remove the content-type from the headers, because
+         * it will be automatically from the entity. Adding it twice
+         * can confuse our contract. */
+        if (headers != null) {
+            headers.remove(HttpHeaders.CONTENT_TYPE);
+        }
 
         final HttpEntity entity;
 
@@ -1107,7 +1115,6 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final Charset charset) throws IOException {
         ContentType contentType = ContentType.TEXT_PLAIN.withCharset(charset);
-
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType.toString());
 

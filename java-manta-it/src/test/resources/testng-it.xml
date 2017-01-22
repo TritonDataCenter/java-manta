@@ -1,6 +1,11 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Java Manta SDK Integration Test Suite" verbose="1">
     <test name="Manta Client Integration Tests [Unencrypted]">
+        <groups>
+            <run>
+                <exclude name="encrypted"/>
+            </run>
+        </groups>
         <packages>
             <package name="com.joyent.manta.client.*" />
             <package name="com.joyent.manta.client.multipart.*" />

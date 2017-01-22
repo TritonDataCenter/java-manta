@@ -4,6 +4,7 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
@@ -173,55 +174,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             return response;
         }
 
-        String cipherId = null;
-        String encryptionType = null;
-        String metadataIvBase64 = null;
-        String metadataCiphertextBase64 = null;
-        String hmacId = null;
-        String metadataHmacBase64 = null;
-
-        final Header[] headers = response.getAllHeaders();
-        for (int i = 0; i < headers.length; i++) {
-            final Header h = headers[i];
-
-            // Don't bother to parse anything that isn't Manta specific metadata
-            if (!h.getName().startsWith("m-")) {
-                continue;
-            }
-
-            switch (h.getName()) {
-                case MantaHttpHeaders.ENCRYPTION_TYPE:
-                    encryptionType = h.getValue();
-                    continue;
-                case MantaHttpHeaders.ENCRYPTION_METADATA_IV:
-                    metadataIvBase64 = h.getValue();
-                    continue;
-                case MantaHttpHeaders.ENCRYPTION_CIPHER:
-                    cipherId = h.getValue();
-                    continue;
-                case MantaHttpHeaders.ENCRYPTION_METADATA:
-                    metadataCiphertextBase64 = h.getValue();
-                    continue;
-                case MantaHttpHeaders.ENCRYPTION_HMAC_TYPE:
-                    hmacId = h.getValue();
-                    continue;
-                case MantaHttpHeaders.ENCRYPTION_METADATA_HMAC:
-                    metadataHmacBase64 = h.getValue();
-                    continue;
-                default:
-            }
-        }
+        Map<String, String> encryptedMetadata = extractEncryptionHeadersFromResponse(response);
 
         /* Object is not encrypted - since we aren't downloading anything, we
          * assume a peek at the headers is safe. We will just pass along the
          * response value with no additional modifications. */
-        if (cipherId == null) {
+        if (encryptedMetadata == null) {
             return response;
         }
-
-        Map<String, String> encryptedMetadata = buildEncryptedMetadata(
-                encryptionType, metadataIvBase64, cipherId,
-                metadataCiphertextBase64, hmacId, metadataHmacBase64, null, response);
 
         for (Map.Entry<String, String> entry : encryptedMetadata.entrySet()) {
             response.setHeader(entry.getKey(), entry.getValue());
@@ -273,8 +233,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             metadata.put(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE, contentType);
         }
 
+        // Insert all of the headers needed for identifying the ciphers and HMACs used to encrypt
+        attachEncryptionCipherHeaders(metadata);
+        // Insert all of the headers and metadata needed for describing the encrypted entity
+        attachEncryptedEntityHeaders(metadata, encryptingEntity);
         // Insert all of the encrypted metadata values into the metadata map
-        attachEncryptionMetadata(metadata, httpHeaders, encryptingEntity);
+        attachEncryptedMetadata(metadata);
 
         MantaObjectResponse response = super.httpPut(path, httpHeaders, encryptingEntity, metadata);
 
@@ -344,6 +308,136 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         return new MantaEncryptedObjectInputStream(rawStream, secretKey);
     }
 
+    @Override
+    public MantaObjectResponse httpPutMetadata(final String path,
+                                               final MantaHttpHeaders headers,
+                                               final MantaMetadata metadata)
+            throws IOException {
+        /* Since metadata operations in Manta are always a replace operation,
+         * we have to get the current metadata for the object and persist
+         * the encryption-specific metadata headers. While at the same time
+         * overwriting all other metadata values. Unfortunately, this process
+         * requires two steps. */
+        HttpResponse response = httpHead(path);
+
+        boolean isEncryptedObject = response.getFirstHeader(MantaHttpHeaders.ENCRYPTION_CIPHER) != null;
+        Header contentType = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
+        if (contentType == null) {
+            MantaIOException e = new MantaIOException("Content-Type value expected from Manta unavailable");
+            HttpHelper.annotateContextedException(e, null, response);
+            throw e;
+        }
+
+        boolean isDirectory = contentType.getValue().equals(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
+
+        // Return back the default implementation if the object is unencrypted or is a directory
+        if (!isEncryptedObject || isDirectory) {
+            return super.httpPutMetadata(path, headers, metadata);
+        }
+
+        /* Detect if the object we are operating on is encrypted, if not just
+         * perform the default operation. */
+        if (response.getFirstHeader(MantaHttpHeaders.ENCRYPTION_CIPHER) == null) {
+            return super.httpPutMetadata(path, headers, metadata);
+        }
+
+        Header etag = response.getFirstHeader(HttpHeaders.ETAG);
+        if (etag == null) {
+            MantaIOException e = new MantaIOException("ETag value expected from Manta unavailable");
+            HttpHelper.annotateContextedException(e, null, response);
+            throw e;
+        }
+
+        Header lastModified = response.getFirstHeader(HttpHeaders.LAST_MODIFIED);
+        if (lastModified == null) {
+            MantaIOException e = new MantaIOException("Last-Modified value expected from Manta unavailable");
+            HttpHelper.annotateContextedException(e, null, response);
+            throw e;
+        }
+
+        Header actualContentType = response.getFirstHeader(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE);
+
+        /* We add the encrypted content-type value back into the metadata if
+         * it wasn't explicitly added to the metadata to replace, so that the
+         * ciphertext's content-type will remain consistent. */
+        if (actualContentType != null) {
+            metadata.putIfAbsent(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE,
+                    actualContentType.getValue());
+        }
+
+        for (String h : MantaHttpHeaders.ENCRYPTED_ENTITY_HEADERS) {
+            final Header header = response.getFirstHeader(h);
+            if (header == null) {
+                continue;
+            }
+
+            metadata.putIfAbsent(h, header.getValue());
+        }
+
+        headers.put(HttpHeaders.IF_MATCH, etag.getValue());
+        headers.put(HttpHeaders.IF_UNMODIFIED_SINCE, lastModified.getValue());
+
+        attachEncryptionCipherHeaders(metadata);
+        attachEncryptedMetadata(metadata);
+        return super.httpPutMetadata(path, headers, metadata);
+    }
+
+    /**
+     * Finds the headers used for encryption, parses their values and
+     * converts them to a {@link Map}.
+     *
+     * @param response response object to parse
+     * @return map containing encryption headers and values or null if unencrypted object
+     */
+    private Map<String, String> extractEncryptionHeadersFromResponse(
+            final HttpResponse response) {
+        String cipherId = null;
+        String encryptionType = null;
+        String metadataIvBase64 = null;
+        String metadataCiphertextBase64 = null;
+        String hmacId = null;
+        String metadataHmacBase64 = null;
+
+        final Header[] headers = response.getAllHeaders();
+        for (int i = 0; i < headers.length; i++) {
+            final Header h = headers[i];
+
+            // Don't bother to parse anything that isn't Manta specific metadata
+            if (!h.getName().startsWith("m-")) {
+                continue;
+            }
+
+            switch (h.getName()) {
+                case MantaHttpHeaders.ENCRYPTION_TYPE:
+                    encryptionType = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_METADATA_IV:
+                    metadataIvBase64 = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_CIPHER:
+                    cipherId = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_METADATA:
+                    metadataCiphertextBase64 = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_HMAC_TYPE:
+                    hmacId = h.getValue();
+                    continue;
+                case MantaHttpHeaders.ENCRYPTION_METADATA_HMAC:
+                    metadataHmacBase64 = h.getValue();
+                    continue;
+                default:
+            }
+        }
+
+        if (cipherId == null) {
+            return null;
+        }
+
+        return buildEncryptedMetadata(
+                encryptionType, metadataIvBase64, cipherId,
+                metadataCiphertextBase64, hmacId, metadataHmacBase64, null, response);
+    }
 
     /**
      * Builds a {@link Map} of decrypted metadata keys and values.
@@ -461,18 +555,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         return EncryptedMetadataUtils.plaintextMetadataAsMap(plaintext);
     }
 
-
     /**
      * Adds headers and metadata needed for client-side encryption to a request
      * (typically a PUT).
      *
      * @param metadata metadata to append additional values to
-     * @param httpHeaders headers to append additional values to
-     * @param encryptingEntity encrypting entity that wraps the original entity
      */
-    private void attachEncryptionMetadata(final MantaMetadata metadata,
-                                          final MantaHttpHeaders httpHeaders,
-                                          final EncryptingEntity encryptingEntity) {
+    private void attachEncryptionCipherHeaders(final MantaMetadata metadata) {
         // Secret Key ID
         metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 encryptionKeyId);
@@ -486,7 +575,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
                 encryptionCipherDetails.getCipherId());
         LOGGER.debug("Encryption cipher: {}", encryptionCipherDetails.getCipherId());
+    }
 
+
+    private void attachEncryptedEntityHeaders(final MantaMetadata metadata,
+                                              final EncryptingEntity encryptingEntity)
+            throws IOException {
         // IV Used to Encrypt
         String ivBase64 = Base64.getEncoder().encodeToString(
                 encryptingEntity.getCipher().getIV());
@@ -515,11 +609,21 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     hmac.getAlgorithm());
             LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
         }
+    }
+
+    /**
+     * Attaches encrypted metadata (with e-* values) to the object.
+     *
+     * @param metadata metadata to append additional values to
+     * @throws IOException thrown when there is a problem attaching metadata
+     */
+    private void attachEncryptedMetadata(final MantaMetadata metadata)
+        throws IOException {
 
         // Create and add encrypted metadata
         Cipher metadataCipher = buildMetadataEncryptCipher(this.encryptionCipherDetails);
 
-        httpHeaders.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
+        metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
                 encryptionCipherDetails.getCipherId());
 
         String metadataIvBase64 = Base64.getEncoder().encodeToString(

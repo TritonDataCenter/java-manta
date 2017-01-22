@@ -129,15 +129,23 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String ENCRYPTION_METADATA_HMAC = "m-encrypt-metadata-hmac";
 
     /**
-     * The number of bytes used to store an AEAD cipher's authentication data for
-     * the encrypted metadata.
-     */
-    public static final String ENCRYPTION_METADATA_AEAD_TAG_LENGTH = "m-encrypt-metadata-aead-tag-length";
-
-    /**
      * Encrypted metadata header that stores the object's real content-type.
      */
     public static final String ENCRYPTED_CONTENT_TYPE = "e-content-type";
+
+    /**
+     * The headers that are directly related to an object and not to an object's
+     * encrypted metadata.
+     */
+    public static final String[] ENCRYPTED_ENTITY_HEADERS = new String[] {
+            ENCRYPTION_CIPHER,
+            ENCRYPTION_TYPE,
+            ENCRYPTION_AEAD_TAG_LENGTH,
+            ENCRYPTION_HMAC_TYPE,
+            ENCRYPTION_IV,
+            ENCRYPTION_KEY_ID,
+            ENCRYPTION_PLAINTEXT_CONTENT_LENGTH
+    };
 
     /**
      * HttpHeaders delegate which is wrapped by this class.
@@ -301,7 +309,10 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public Map<String, String> metadataAsStrings() {
         final Map<String, String> metadata = new HashMap<>();
         for (Map.Entry<String, Object> entry : wrappedHeaders.entrySet()) {
-            if (entry.getKey().startsWith("m-")) {
+            boolean hasMPrefix = entry.getKey().startsWith(MantaMetadata.METADATA_PREFIX);
+            boolean hasEPrefix = entry.getKey().startsWith(MantaMetadata.ENCRYPTED_METADATA_PREFIX);
+
+            if (hasMPrefix || hasEPrefix) {
                 metadata.put(entry.getKey(), MantaUtils.asString(entry.getValue()));
             }
         }

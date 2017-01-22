@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
@@ -22,6 +23,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@Test( groups = { "metadata" })
 public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -51,9 +53,7 @@ public class MantaClientMetadataIT {
         }
     }
 
-
-    @Test( groups = { "metadata" })
-    public final void verifyMetadataIsAddedOnPut() throws IOException {
+    public final void verifyAddMetadataToObjectOnPut() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -73,7 +73,6 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(head.getHeaderAsString("m-force"), "true");
     }
 
-    @Test( groups = { "metadata" })
     public final void verifyMetadataCanBeAddedLater() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -104,7 +103,6 @@ public class MantaClientMetadataIT {
         }
     }
 
-    @Test( groups = { "metadata" })
     public final void verifyCanRemoveMetadata() throws IOException, CloneNotSupportedException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -146,5 +144,65 @@ public class MantaClientMetadataIT {
         Assert.assertTrue(remoteMetadata.containsKey("m-test"));
         Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
                 "Set metadata doesn't equal actual metadata");
+    }
+
+    @Test(groups = "encrypted")
+    public void verifyAddEncryptedMetadataToObjectOnPut() throws IOException {
+        if (!mantaClient.getContext().isClientEncryptionEnabled()) {
+            throw new SkipException("Test is only relevant when client-side encryption is enabled");
+        }
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put("e-Yoda", "Master");
+        metadata.put("e-Droids", "1");
+        metadata.put("e-force", "true");
+
+        final MantaObject result = mantaClient.put(path, TEST_DATA, metadata);
+        Assert.assertEquals(result.getMetadata().get("e-Yoda"), "Master");
+        Assert.assertEquals(result.getMetadata().get("e-Droids"), "1");
+        Assert.assertEquals(result.getMetadata().get("e-force"), "true");
+
+        final MantaObject head = mantaClient.head(path);
+        Assert.assertEquals(head.getHeaderAsString("e-Yoda"), "Master");
+        Assert.assertEquals(head.getHeaderAsString("e-Droids"), "1");
+        Assert.assertEquals(head.getHeaderAsString("e-force"), "true");
+    }
+
+    @Test(groups = "encrypted")
+    public final void verifyEncryptedMetadataCanBeAddedLater() throws IOException {
+        if (!mantaClient.getContext().isClientEncryptionEnabled()) {
+            throw new SkipException("Test is only relevant when client-side encryption is enabled");
+        }
+
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        final MantaObject result = mantaClient.put(path, TEST_DATA);
+
+        // There will be existing headers if we are in encrypted mode
+        if (!mantaClient.getContext().isClientEncryptionEnabled()) {
+            Assert.assertTrue(result.getMetadata().isEmpty());
+        }
+
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put("e-Yoda", "Master");
+        metadata.put("e-Droids", "1");
+        metadata.put("e-force", "true");
+
+        final MantaObject metadataResult = mantaClient.putMetadata(path, metadata);
+
+        Assert.assertEquals(metadataResult.getMetadata(), metadata);
+
+        final MantaObject head = mantaClient.head(path);
+        MantaMetadata actualMetadata = head.getMetadata();
+
+        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+            String key = entry.getKey();
+            String val = entry.getValue();
+            Assert.assertEquals(actualMetadata.get(key), val);
+        }
     }
 }
