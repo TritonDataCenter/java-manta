@@ -44,7 +44,6 @@ public class MantaClientMetadataIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void cleanup() throws IOException {
         if (mantaClient != null) {
@@ -71,6 +70,11 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(head.getHeaderAsString("m-Yoda"), "Master");
         Assert.assertEquals(head.getHeaderAsString("m-Droids"), "1");
         Assert.assertEquals(head.getHeaderAsString("m-force"), "true");
+
+        final MantaObject get = mantaClient.head(path);
+        Assert.assertEquals(get.getHeaderAsString("m-Yoda"), "Master");
+        Assert.assertEquals(get.getHeaderAsString("m-Droids"), "1");
+        Assert.assertEquals(get.getHeaderAsString("m-force"), "true");
     }
 
     public final void verifyMetadataCanBeAddedLater() throws IOException {
@@ -93,13 +97,25 @@ public class MantaClientMetadataIT {
 
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
-        final MantaObject head = mantaClient.head(path);
-        MantaMetadata actualMetadata = head.getMetadata();
+        {
+            final MantaObject head = mantaClient.head(path);
+            MantaMetadata actualMetadata = head.getMetadata();
 
-        for (Map.Entry<String, String> entry : metadata.entrySet()) {
-            String key = entry.getKey();
-            String val = entry.getValue();
-            Assert.assertEquals(actualMetadata.get(key), val);
+            for (Map.Entry<String, String> entry : metadata.entrySet()) {
+                String key = entry.getKey();
+                String val = entry.getValue();
+                Assert.assertEquals(actualMetadata.get(key), val);
+            }
+        }
+        {
+            final MantaObject get = mantaClient.get(path);
+            MantaMetadata actualMetadata = get.getMetadata();
+
+            for (Map.Entry<String, String> entry : metadata.entrySet()) {
+                String key = entry.getKey();
+                String val = entry.getValue();
+                Assert.assertEquals(actualMetadata.get(key), val);
+            }
         }
     }
 
@@ -126,6 +142,10 @@ public class MantaClientMetadataIT {
         MantaObject head = mantaClient.head(path);
         Assert.assertNull(head.getMetadata().get("m-force"),
                 String.format("Actual metadata: %s", head.getMetadata()));
+
+        MantaObject get = mantaClient.get(path);
+        Assert.assertNull(get.getMetadata().get("m-force"),
+                String.format("Actual metadata: %s", get.getMetadata()));
     }
 
     @Test(groups = { "metadata", "directory" })
@@ -138,12 +158,23 @@ public class MantaClientMetadataIT {
 
         mantaClient.putMetadata(dir, metadata);
 
-        MantaObject head = mantaClient.head(dir);
-        MantaMetadata remoteMetadata = head.getMetadata();
+        {
+            MantaObject head = mantaClient.head(dir);
+            MantaMetadata remoteMetadata = head.getMetadata();
 
-        Assert.assertTrue(remoteMetadata.containsKey("m-test"));
-        Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
-                "Set metadata doesn't equal actual metadata");
+            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
+            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
+                    "Set metadata doesn't equal actual metadata");
+        }
+
+        {
+            MantaObject get = mantaClient.get(dir);
+            MantaMetadata remoteMetadata = get.getMetadata();
+
+            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
+            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
+                    "Set metadata doesn't equal actual metadata");
+        }
     }
 
     @Test(groups = "encrypted")
@@ -169,6 +200,11 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(head.getHeaderAsString("e-Yoda"), "Master");
         Assert.assertEquals(head.getHeaderAsString("e-Droids"), "1");
         Assert.assertEquals(head.getHeaderAsString("e-force"), "true");
+
+        final MantaObject get = mantaClient.get(path);
+        Assert.assertEquals(get.getHeaderAsString("e-Yoda"), "Master");
+        Assert.assertEquals(get.getHeaderAsString("e-Droids"), "1");
+        Assert.assertEquals(get.getHeaderAsString("e-force"), "true");
     }
 
     @Test(groups = "encrypted")
@@ -196,13 +232,26 @@ public class MantaClientMetadataIT {
 
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
-        final MantaObject head = mantaClient.head(path);
-        MantaMetadata actualMetadata = head.getMetadata();
+        {
+            final MantaObject head = mantaClient.head(path);
+            MantaMetadata actualMetadata = head.getMetadata();
 
-        for (Map.Entry<String, String> entry : metadata.entrySet()) {
-            String key = entry.getKey();
-            String val = entry.getValue();
-            Assert.assertEquals(actualMetadata.get(key), val);
+            for (Map.Entry<String, String> entry : metadata.entrySet()) {
+                String key = entry.getKey();
+                String val = entry.getValue();
+                Assert.assertEquals(actualMetadata.get(key), val);
+            }
+        }
+
+        {
+            final MantaObject get = mantaClient.head(path);
+            MantaMetadata actualMetadata = get.getMetadata();
+
+            for (Map.Entry<String, String> entry : metadata.entrySet()) {
+                String key = entry.getKey();
+                String val = entry.getValue();
+                Assert.assertEquals(actualMetadata.get(key), val);
+            }
         }
     }
 }

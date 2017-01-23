@@ -157,43 +157,15 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     @Override
     public HttpResponse httpHead(final String path) throws IOException {
         HttpResponse response = super.httpHead(path);
+        attachMetadata(response);
 
-        Header contentTypeHeader = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
-        final String contentType;
+        return response;
+    }
 
-        if (contentTypeHeader == null) {
-            contentType = null;
-        } else {
-            contentType = contentTypeHeader.getValue();
-        }
-
-        // No encryption operations are needed on directories, so we just pass
-        // back the object as is
-        if (contentType != null && contentType.equals(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE)) {
-            return response;
-        }
-
-        Map<String, String> encryptedMetadata = extractEncryptionHeadersFromResponse(response);
-
-        /* Object is not encrypted - since we aren't downloading anything, we
-         * assume a peek at the headers is safe. We will just pass along the
-         * response value with no additional modifications. */
-        if (encryptedMetadata == null) {
-            return response;
-        }
-
-        for (Map.Entry<String, String> entry : encryptedMetadata.entrySet()) {
-            response.setHeader(entry.getKey(), entry.getValue());
-        }
-
-        String encryptedContentType = encryptedMetadata.get(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE);
-        if (encryptedContentType != null) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Encrypted content-type [{}] overwriting returned content-type [{}]",
-                        encryptedContentType, response.getFirstHeader(HttpHeaders.CONTENT_TYPE));
-            }
-            response.setHeader(HttpHeaders.CONTENT_TYPE, encryptedContentType);
-        }
+    @Override
+    public HttpResponse httpGet(final String path) throws IOException {
+        HttpResponse response = super.httpGet(path);
+        attachMetadata(response);
 
         return response;
     }
@@ -382,6 +354,49 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     }
 
     /**
+     * Attaches encrypted metadata headers to an HTTP response.
+     * @param response response to attach metadata to
+     */
+    private void attachMetadata(final HttpResponse response) {
+        Header contentTypeHeader = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
+        final String contentType;
+
+        if (contentTypeHeader == null) {
+            contentType = null;
+        } else {
+            contentType = contentTypeHeader.getValue();
+        }
+
+        // No encryption operations are needed on directories, so we just pass
+        // back the object as is
+        if (contentType != null && contentType.equals(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            return;
+        }
+
+        Map<String, String> encryptedMetadata = extractEncryptionHeadersFromResponse(response);
+
+        /* Object is not encrypted - since we aren't downloading anything, we
+         * assume a peek at the headers is safe. We will just pass along the
+         * response value with no additional modifications. */
+        if (encryptedMetadata == null) {
+            return;
+        }
+
+        for (Map.Entry<String, String> entry : encryptedMetadata.entrySet()) {
+            response.setHeader(entry.getKey(), entry.getValue());
+        }
+
+        String encryptedContentType = encryptedMetadata.get(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE);
+        if (encryptedContentType != null) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Encrypted content-type [{}] overwriting returned content-type [{}]",
+                        encryptedContentType, response.getFirstHeader(HttpHeaders.CONTENT_TYPE));
+            }
+            response.setHeader(HttpHeaders.CONTENT_TYPE, encryptedContentType);
+        }
+    }
+
+    /**
      * Finds the headers used for encryption, parses their values and
      * converts them to a {@link Map}.
      *
@@ -398,9 +413,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         String metadataHmacBase64 = null;
 
         final Header[] headers = response.getAllHeaders();
-        for (int i = 0; i < headers.length; i++) {
-            final Header h = headers[i];
-
+        for (final Header h : headers) {
             // Don't bother to parse anything that isn't Manta specific metadata
             if (!h.getName().startsWith("m-")) {
                 continue;
