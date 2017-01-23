@@ -4,7 +4,6 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
-import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
@@ -577,7 +576,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         LOGGER.debug("Encryption cipher: {}", encryptionCipherDetails.getCipherId());
     }
 
-
+    /**
+     * Adds headers related directly to the encrypted object being stored.
+     *
+     * @param metadata Manta metadata object
+     * @param encryptingEntity HTTP Entity object that encrypts the Manta object data
+     * @throws IOException thrown when unable to append metadata
+     */
     private void attachEncryptedEntityHeaders(final MantaMetadata metadata,
                                               final EncryptingEntity encryptingEntity)
             throws IOException {
