@@ -437,8 +437,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         long cipherTextContentLength = contentLength;
         if (this.cipherDetails.isAEADCipher()) {
             cipherTextContentLength -= this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
-        }
-        else {
+        } else {
             cipherTextContentLength -= this.hmac.getMacLength();
         }
         final int bufferSize;
