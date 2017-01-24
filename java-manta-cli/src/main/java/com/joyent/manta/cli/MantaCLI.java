@@ -82,7 +82,7 @@ public final class MantaCLI {
                     if (argv.length < 2) {
                         System.err.println(help());
                         System.err.println();
-                        System.err.println("validate-key requires one parameter: filePath");
+                        System.err.println("get-file requires one parameter: filePath");
                         break;
                     }
 
