@@ -179,8 +179,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final long hmacSize = this.hmac.getMacLength();
         final long adjustedContentLength = super.getContentLength() - hmacSize;
         CloseShieldInputStream closeShieldInputStream = new CloseShieldInputStream(super.getBackingStream());
-        BoundedInputStream bin = new BoundedInputStream(closeShieldInputStream,
-                adjustedContentLength);
+        BoundedInputStream bin = new BoundedInputStream(closeShieldInputStream, adjustedContentLength);
         return new CipherInputStream(bin, this.cipher);
     }
 
@@ -435,7 +434,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      */
     private int calculateBufferSize() {
         final long contentLength = ObjectUtils.firstNonNull(getContentLength(), -1L);
-        final long cipherTextContentLength = contentLength - cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+        long cipherTextContentLength = contentLength;
+        if (this.cipherDetails.isAEADCipher()) {
+            cipherTextContentLength -= this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+        } else {
+            cipherTextContentLength -= this.hmac.getMacLength();
+        }
         final int bufferSize;
 
         if (cipherTextContentLength > DEFAULT_BUFFER_SIZE || cipherTextContentLength < 0) {
@@ -462,13 +466,13 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         if (hmac != null) {
             byte[] checksum = hmac.doFinal();
-            byte[] expected = new byte[this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes()];
+            byte[] expected = new byte[this.hmac.getMacLength()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
-            if (readHmacBytes != cipherDetails.getAuthenticationTagOrHmacLengthInBytes()) {
+            if (readHmacBytes != this.hmac.getMacLength()) {
                 MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
                 annotateException(e);
-                e.setContextValue("expectedHmacSize", this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
+                e.setContextValue("expectedHmacSize", this.hmac.getMacLength());
                 e.setContextValue("actualHmacSize", readHmacBytes);
                 throw e;
             }

@@ -78,6 +78,16 @@ public final class MantaCLI {
                     System.out.println(generateKey(argv[1].trim(), Integer.valueOf(argv[2].trim()),
                             Paths.get(argv[3].trim())));
                     break;
+                case "get-file":
+                    if (argv.length < 2) {
+                        System.err.println(help());
+                        System.err.println();
+                        System.err.println("get-file requires one parameter: filePath");
+                        break;
+                    }
+
+                    System.out.println(getFile(argv[1].trim()));
+                    break;
                 case "validate-key":
                     if (argv.length < 3) {
                         System.err.println(help());
@@ -199,6 +209,35 @@ public final class MantaCLI {
             String msg = String.format("Unable to write key to path [%s]",
                     path);
             throw new UncheckedIOException(msg, e);
+        }
+
+        return b.toString();
+    }
+
+    /**
+     * Performs a download of file in Manta.
+     * @param filePath in Manta to download
+     * @return String containing the output of the operation
+     * @throws IOException thrown when we are unable to connect to Manta
+     */
+    protected static String getFile(final String filePath) throws IOException {
+        final StringBuilder b = new StringBuilder();
+
+        b.append("Creating connection configuration").append(BR);
+        ConfigContext config = buildConfig();
+        b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
+
+        b.append("Creating new connection object").append(BR);
+        try (MantaClient client = new MantaClient(config)) {
+            b.append(INDENT).append(client).append(BR);
+
+            b.append("Attempting GET request to: ").append(filePath).append(BR);
+            b.append("\nMetadata values: \n").append(client.get(filePath).getMetadata().toString());
+            b.append("\n\nPayload: \n");
+
+            String response = client.getAsString(filePath);
+            b.append(INDENT).append(response).append(BR);
+            b.append("Request was successful");
         }
 
         return b.toString();
