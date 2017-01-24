@@ -20,7 +20,7 @@ import java.util.Set;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = { "headers" })
+@Test
 public class MantaHttpHeadersTest {
     private static final Header[] DIR_LIST_HEADERS = new Header[] {
         new BasicHeader("Last-Modified","Fri, 09 Dec 2016 22:09:44 GMT"),

@@ -6,6 +6,11 @@
             <class name="com.joyent.manta.util.MantaVersionTest" />
         </classes>
     </test>
+    <test name="Manta HTTP Tests">
+        <packages>
+            <package name="com.joyent.manta.http.*" />
+        </packages>
+    </test>
     <test name="Configuration Context Tests">
         <groups>
             <define name="config" />
