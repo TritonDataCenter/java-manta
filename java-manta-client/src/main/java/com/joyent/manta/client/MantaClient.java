@@ -418,6 +418,27 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
+     * @see #getAsInputStream(String, MantaHttpHeaders)
+     *
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param requestHeaders optional HTTP headers to include when getting an object
+     * @param startPosition @see MantaRequestHeaders.setByteRange(Long, Long)
+     * @param endPosition @see MantaRequestHeaders.setByteRange(Long, Long)
+     * @return {@link InputStream} that extends {@link MantaObjectResponse}.
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    public MantaObjectInputStream getAsInputStream(final String rawPath,
+                                                   final MantaHttpHeaders requestHeaders,
+                                                   final Long startPosition,
+                                                   final Long endPosition) throws IOException {
+        if (requestHeaders.getRange() != null) {
+            throw new IllegalArgumentException("Ambiguous request, requestHeaders already has a Range");
+        }
+        requestHeaders.setByteRange(startPosition, endPosition);
+        return getAsInputStream(rawPath, requestHeaders);
+    }
+
+    /**
      * Get a Manta object's data as an {@link InputStream}. This method allows you to
      * stream data from the Manta storage service in a memory efficient manner to your
      * application.

@@ -542,6 +542,20 @@ public class MantaClientIT {
         }
     }
 
+    @Test
+    public final void testCanGetWithComputedRangeHeader() throws IOException {
+        // see testCanGetWithRangeHeader above
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final String expected = TEST_DATA.substring(7, 18); // substring is inclusive, exclusive
+        mantaClient.put(path, TEST_DATA);
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        try (final InputStream min = mantaClient.getAsInputStream(path, headers, 7L, 17L)) {
+            String actual = IOUtils.toString(min, Charset.defaultCharset());
+            Assert.assertEquals(actual, expected, "Didn't receive correct range value");
+        }
+    }
 
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDate() {

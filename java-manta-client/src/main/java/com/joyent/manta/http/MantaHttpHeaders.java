@@ -1007,6 +1007,48 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     }
 
     /**
+     * A convenience method to set the {@code "Range"} header by
+     * specifying start and end byte positions instead of requiring
+     * the caller to pre-assemble a string.  This method only handles
+     * a single multi-byte range.  For example, this method can
+     * express the byte range "5-10" but not "0,5-10,100-200".
+
+     * @param start The byte position to start at. If {@code null},
+     * then the range is computed from the <strong>end</strong>.
+     * @param end The ending byte position. If {@code null} then the
+     * range has no end bound.
+     * @return this instance
+     */
+    public MantaHttpHeaders setByteRange(final Long start, final Long end) {
+        String prefix = "bytes=";
+        String expression = null;
+        if (start == null && end == null) {
+            throw new IllegalArgumentException("one of range {start,end} must be non-null");
+        } else if (end == null) {
+            if (start < 0) {
+                throw new IllegalArgumentException("range start must be non-negative");
+            }
+            expression = String.format("%d-", start);
+
+        } else if (start == null) {
+            if (end <= 0) {
+                throw new IllegalArgumentException("range end from laste byte must be positive");
+            }
+            expression = String.format("-%d", end);
+        } else {
+            if (start > end) {
+                throw new IllegalArgumentException("range start must be less than end");
+            } else if (start < 0 || end < 0) {
+                throw new IllegalArgumentException("range {start,end} must be non-negative");
+            }
+            expression = String.format("%d-%d", start, end);
+        }
+        String rangeStr = prefix + expression;
+        put(HttpHeaders.RANGE, rangeStr);
+        return this;
+    }
+
+    /**
      * Returns the first {@code "Retry-After"} header or {@code null} for none.
      *
      * @return {@code "Retry-After"} header value as a {@code java.lang.String} value
