@@ -108,6 +108,7 @@
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
         <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
+        <maven-jacoco-plugin.version>0.7.8</maven-jacoco-plugin.version>
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>3.0.1</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.2</dependency.apache-http-client.version>
@@ -357,15 +358,44 @@
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${maven-jacoco-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
     <reporting>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jxr-plugin</artifactId>
                 <version>${maven-jxr-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
             </plugin>
         </plugins>
     </reporting>
