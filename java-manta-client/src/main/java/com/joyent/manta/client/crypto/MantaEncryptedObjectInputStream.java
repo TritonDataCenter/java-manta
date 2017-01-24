@@ -176,7 +176,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return new CipherInputStream(super.getBackingStream(), this.cipher);
         }
 
-        final long hmacSize = this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+        final long hmacSize = this.hmac.getMacLength();
         final long adjustedContentLength = super.getContentLength() - hmacSize;
         CloseShieldInputStream closeShieldInputStream = new CloseShieldInputStream(super.getBackingStream());
         BoundedInputStream bin = new BoundedInputStream(closeShieldInputStream,
