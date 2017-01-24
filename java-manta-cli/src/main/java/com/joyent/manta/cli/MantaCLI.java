@@ -232,6 +232,8 @@ public final class MantaCLI {
             b.append(INDENT).append(client).append(BR);
 
             b.append("Attempting GET request to: ").append(filePath).append(BR);
+            b.append("\nMetadata values: \n").append(client.get(filePath).getMetadata().toString());
+            b.append("\n\nPayload: \n");
 
             String response = client.getAsString(filePath);
             b.append(INDENT).append(response).append(BR);
