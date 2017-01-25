@@ -354,7 +354,7 @@ public class MantaEncryptedObjectInputStreamTest {
              FileOutputStream out = new FileOutputStream(temp)) {
             MantaInputStreamEntity entity = new MantaInputStreamEntity(in, plainTextSize);
             EncryptingEntity encryptingEntity = new EncryptingEntity(
-                    key, cipherDetails, entity, random);
+                    key, cipherDetails, entity);
             encryptingEntity.writeTo(out);
 
             Assert.assertEquals(temp.length(), encryptingEntity.getContentLength(),

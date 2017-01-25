@@ -51,7 +51,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Base64;
@@ -102,11 +101,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Cipher implementation used to encrypt data.
      */
     private final SupportedCipherDetails encryptionCipherDetails;
-
-    /**
-     * We use the default entropy source configured in the JVM.
-     */
-    private final SecureRandom secureRandom = new SecureRandom();
 
     /**
      * Creates a new instance of the helper class.
@@ -184,8 +178,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
 
         EncryptingEntity encryptingEntity = new EncryptingEntity(
-                secretKey, encryptionCipherDetails, originalEntity, secureRandom
-        );
+                secretKey, encryptionCipherDetails, originalEntity);
 
         final MantaMetadata metadata;
 
@@ -244,7 +237,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
-        if (requestHeaders != null && requestHeaders.getRange() != null && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
+        if (requestHeaders != null && requestHeaders.getRange() != null
+                && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
             String msg = "HTTP range requests (random reads) aren't supported when using "
                     + "client-side encryption in mandatory authentication mode.";
             MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
@@ -826,8 +820,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @return a configured cipher instance
      */
     private Cipher buildMetadataEncryptCipher(final SupportedCipherDetails cipherDetails) {
-        byte[] metadataIv = new byte[cipherDetails.getIVLengthInBytes()];
-        secureRandom.nextBytes(metadataIv);
+        byte[] metadataIv = cipherDetails.generateIv();
         Cipher metadataCipher = cipherDetails.getCipher();
         try {
             AlgorithmParameterSpec spec = cipherDetails.getEncryptionParameterSpec(metadataIv);

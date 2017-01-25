@@ -7,7 +7,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
+import java.security.AlgorithmParameters;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -51,6 +55,13 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * Flag indicating if the cipher uses AEAD.
      */
     private final boolean isAEADCipher;
+
+    /**
+     * Source of entropy for the encryption algorithm.
+     * We use the JVM's {@link SecureRandom} because it
+     * is configurable by the user.
+     */
+    private final SecureRandom random = new SecureRandom();
 
     /**
      * Creates a new instance for a AEAD cipher.
@@ -180,6 +191,14 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     @Override
     public boolean isAEADCipher() {
         return this.isAEADCipher;
+    }
+
+    @Override
+    public byte[] generateIv() {
+        byte[] iv = new byte[getIVLengthInBytes()];
+        random.nextBytes(iv);
+
+        return iv;
     }
 
     @Override
