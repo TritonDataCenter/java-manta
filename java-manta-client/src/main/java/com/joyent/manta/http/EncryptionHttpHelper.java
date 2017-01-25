@@ -680,6 +680,17 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         if (!encryptionCipherDetails.isAEADCipher()) {
             Mac hmac = encryptionCipherDetails.getAuthenticationHmac();
+            try {
+                hmac.init(secretKey);
+            } catch (InvalidKeyException e) {
+                MantaClientEncryptionException mcee = new MantaClientEncryptionException(
+                        "There was a problem loading private key", e);
+                String details = String.format("key=%s, algorithm=%s",
+                        secretKey.getAlgorithm(), secretKey.getFormat());
+                mcee.setContextValue("key_details", details);
+                throw mcee;
+            }
+
             byte[] checksum = hmac.doFinal(metadataCipherText);
             String checksumBase64 = Base64.getEncoder().encodeToString(checksum);
             metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC, checksumBase64);

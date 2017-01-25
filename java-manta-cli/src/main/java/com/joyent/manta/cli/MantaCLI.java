@@ -18,6 +18,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -87,6 +88,16 @@ public final class MantaCLI {
                     }
 
                     System.out.println(getFile(argv[1].trim()));
+                    break;
+                case "put-file":
+                    if (argv.length < 3) {
+                        System.err.println(help());
+                        System.err.println();
+                        System.err.println("put-file requires two parameters: localFilePath and Manta filePath");
+                        break;
+                    }
+
+                    System.out.println(putFile(argv[1].trim(), argv[2].trim()));
                     break;
                 case "validate-key":
                     if (argv.length < 3) {
@@ -237,6 +248,34 @@ public final class MantaCLI {
 
             String response = client.getAsString(filePath);
             b.append(INDENT).append(response).append(BR);
+            b.append("Request was successful");
+        }
+
+        return b.toString();
+    }
+
+    /**
+     * Performs a put of a local file to Manta.
+     * @param filePath of file to upload/put
+     * @param mantaPath in Manta to upload to
+     * @return String containing the output of the operation
+     * @throws IOException thrown when we are unable to connect or upload to Manta
+     */
+    protected static String putFile(final String filePath, final String mantaPath) throws IOException {
+        final StringBuilder b = new StringBuilder();
+
+        b.append("Creating connection configuration").append(BR);
+        ConfigContext config = buildConfig();
+        b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
+
+        b.append("Creating new connection object").append(BR);
+        try (MantaClient client = new MantaClient(config)) {
+            b.append(INDENT).append(client).append(BR);
+
+            b.append("Attempting PUT request to: ").append(filePath).append(BR);
+            File file = new File(filePath);
+            MantaObjectResponse response = client.put(mantaPath, file);
+            b.append(response.toString());
             b.append("Request was successful");
         }
 
