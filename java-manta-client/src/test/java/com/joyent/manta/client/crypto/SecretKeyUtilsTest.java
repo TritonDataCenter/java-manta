@@ -26,12 +26,12 @@ public class SecretKeyUtilsTest {
     }
 
     public void canGenerateAesGcmNoPaddingKey() {
-        SecretKey key = SecretKeyUtils.generate(AesGcmCipherDetails.INSTANCE_128);
+        SecretKey key = SecretKeyUtils.generate(AesGcmCipherDetails.INSTANCE_128_BIT);
         Assert.assertNotNull(key, "Generated key was null");
 
         byte[] bytes = key.getEncoded();
 
-        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesGcmCipherDetails.INSTANCE_128);
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesGcmCipherDetails.INSTANCE_128_BIT);
 
         Assert.assertEquals(loaded, key,
                 "Generated key doesn't match loaded key");
@@ -67,8 +67,8 @@ public class SecretKeyUtilsTest {
         FileUtils.writeByteArrayToFile(file, keyBytes);
         URI uri = URI.create("file://" + file.getAbsolutePath());
 
-        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128);
-        SecretKey actual = SecretKeyUtils.loadKeyFromPath(Paths.get(uri), AesGcmCipherDetails.INSTANCE_128);
+        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128_BIT);
+        SecretKey actual = SecretKeyUtils.loadKeyFromPath(Paths.get(uri), AesGcmCipherDetails.INSTANCE_128_BIT);
 
         Assert.assertEquals(actual.getAlgorithm(), expected.getAlgorithm());
         Assert.assertTrue(Arrays.equals(expected.getEncoded(), actual.getEncoded()),
@@ -81,8 +81,8 @@ public class SecretKeyUtilsTest {
         FileUtils.writeByteArrayToFile(file, keyBytes);
         Path path = file.toPath();
 
-        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128);
-        SecretKey actual = SecretKeyUtils.loadKeyFromPath(path, AesGcmCipherDetails.INSTANCE_128);
+        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128_BIT);
+        SecretKey actual = SecretKeyUtils.loadKeyFromPath(path, AesGcmCipherDetails.INSTANCE_128_BIT);
 
         Assert.assertEquals(actual.getAlgorithm(), expected.getAlgorithm());
         Assert.assertTrue(Arrays.equals(expected.getEncoded(), actual.getEncoded()),

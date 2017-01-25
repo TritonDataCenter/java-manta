@@ -49,6 +49,8 @@
         </packages>
         <classes>
             <class name="com.joyent.manta.http.EncryptedHttpHelperTest" />
+            <class name="com.joyent.manta.http.MantaHttpHeadersByteRangeTest" />
+            <class name="com.joyent.manta.http.MantaHttpHeadersTest" />
         </classes>
     </test>
 

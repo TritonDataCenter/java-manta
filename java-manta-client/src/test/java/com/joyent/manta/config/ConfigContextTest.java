@@ -88,7 +88,7 @@ public class ConfigContextTest {
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
         config.setEncryptionPrivateKeyPath(encryptionPrivateKey.getAbsolutePath());
-        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128.getCipherId());
+        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId());
         ConfigContext.validate(config);
     }
 
@@ -103,7 +103,7 @@ public class ConfigContextTest {
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
         config.setEncryptionPrivateKeyBytes(keyBytes);
-        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128.getCipherId());
+        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId());
         ConfigContext.validate(config);
     }
 }

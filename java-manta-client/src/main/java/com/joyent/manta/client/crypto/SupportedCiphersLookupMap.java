@@ -24,9 +24,9 @@ public final class SupportedCiphersLookupMap extends LookupMap<String, Supported
      */
     private SupportedCiphersLookupMap() {
         super(MantaUtils.unmodifiableMap(
-                AesGcmCipherDetails.INSTANCE_128.getCipherId(), AesGcmCipherDetails.INSTANCE_128,
-                AesGcmCipherDetails.INSTANCE_192.getCipherId(), AesGcmCipherDetails.INSTANCE_192,
-                AesGcmCipherDetails.INSTANCE_256.getCipherId(), AesGcmCipherDetails.INSTANCE_256,
+                AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_128_BIT,
+                AesGcmCipherDetails.INSTANCE_192_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_192_BIT,
+                AesGcmCipherDetails.INSTANCE_256_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_256_BIT,
 
                 AesCtrCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_128_BIT,
                 AesCtrCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_192_BIT,

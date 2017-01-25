@@ -26,6 +26,11 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     public static final AesCbcCipherDetails INSTANCE_256_BIT = new AesCbcCipherDetails(256);
 
     /**
+     * The largest ciphertext size allowed.
+     */
+    final long ciphertextMaxSize = (getMaximumPlaintextSizeInBytes() / getBlockSizeInBytes()) * getBlockSizeInBytes();
+
+    /**
      * Creates a new instance of a AES-CBC cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
@@ -63,5 +68,39 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     @Override
     public boolean plaintextSizeCalculationIsAnEstimate() {
         return true;
+    }
+
+    @Override
+    public long[] translateByteRange(final long startInclusive, final long endInclusive) {
+
+        Validate.inclusiveBetween(0, ciphertextMaxSize, startInclusive,
+                "Start position should be between 0 and 9223372036854775807");
+        Validate.inclusiveBetween(-1, ciphertextMaxSize, endInclusive,
+                "End position should be between -1 (undefined) and 9223372036854775807");
+
+        long[] ranges = new long[4];
+
+        final int blockSize = getBlockSizeInBytes();
+        final long adjustedStart;
+        final long adjustedEnd;
+
+        if (startInclusive % blockSize == 0) {
+            adjustedStart = startInclusive;
+        } else {
+            adjustedStart = (startInclusive / blockSize) * blockSize;
+        }
+
+        if (endInclusive % blockSize == 0) {
+            adjustedEnd = endInclusive;
+        } else {
+            adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize;
+        }
+
+        ranges[0] = adjustedStart;
+        ranges[1] = 0L;
+        ranges[2] = adjustedEnd;
+        ranges[3] = 0L;
+
+        return ranges;
     }
 }

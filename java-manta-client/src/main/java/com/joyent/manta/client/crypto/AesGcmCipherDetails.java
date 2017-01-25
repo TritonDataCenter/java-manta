@@ -30,17 +30,17 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_128 = new AesGcmCipherDetails(128);
+    public static final AesGcmCipherDetails INSTANCE_128_BIT = new AesGcmCipherDetails(128);
 
     /**
      * Instance of AES192-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_192 = new AesGcmCipherDetails(192);
+    public static final AesGcmCipherDetails INSTANCE_192_BIT = new AesGcmCipherDetails(192);
 
     /**
      * Instance of AES256-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_256 = new AesGcmCipherDetails(256);
+    public static final AesGcmCipherDetails INSTANCE_256_BIT = new AesGcmCipherDetails(256);
 
     /**
      * Creates a new instance of a AES-GCM cipher for the static instance.
@@ -90,5 +90,12 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     @Override
     public boolean plaintextSizeCalculationIsAnEstimate() {
         return false;
+    }
+
+    @Override
+    public long[] translateByteRange(final long startInclusive, final long endInclusive) {
+        long[] ranges = new long[4];
+
+        return ranges;
     }
 }

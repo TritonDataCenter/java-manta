@@ -97,7 +97,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public long getMaximumPlaintextSizeInBytes() {
-        return Long.MAX_VALUE;
+        return Long.MAX_VALUE - getAuthenticationTagOrHmacLengthInBytes();
     }
 
     @Override

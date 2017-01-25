@@ -10,17 +10,13 @@ import org.apache.http.HttpEntity;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,23 +24,20 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 @Test
 public class EncryptingEntityTest {
     /* AES-GCM-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesGcm() throws Exception {
-        verifyEncryptionWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128);
+        verifyEncryptionWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesGcm() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesGcmCipherDetails.INSTANCE_128);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesGcm() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE_128);
+        canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     /* AES-CTR-NoPadding Tests */
