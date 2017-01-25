@@ -244,6 +244,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
+        if (requestHeaders != null && requestHeaders.getRange() != null && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
+            String msg = "HTTP range requests (random reads) aren't supported when using "
+                    + "client-side encryption in mandatory authentication mode.";
+            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+            HttpHelper.annotateContextedException(e, request, null);
+            throw e;
+        }
+
         final MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
         @SuppressWarnings("unchecked")
         final HttpResponse response = (HttpResponse)rawStream.getHttpResponse();

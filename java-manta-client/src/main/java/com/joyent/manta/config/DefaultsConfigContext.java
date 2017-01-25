@@ -66,7 +66,7 @@ public class DefaultsConfigContext implements ConfigContext {
      * Default client-side encryption cipher algorithm.
      */
     public static final SupportedCipherDetails DEFAULT_CIPHER =
-            AesGcmCipherDetails.INSTANCE_128;
+            AesGcmCipherDetails.INSTANCE_128_BIT;
 
     /**
      * Default TLS cipher suites.

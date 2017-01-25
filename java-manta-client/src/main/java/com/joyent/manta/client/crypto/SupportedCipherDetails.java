@@ -113,6 +113,18 @@ public interface SupportedCipherDetails {
     Mac getAuthenticationHmac();
 
     /**
+     * Translates a plaintext byte range to a ciphertext byte range with
+     * skip modifier.
+     *
+     * @param startInclusive starting position of byte range (0-Long.MAX)
+     * @param endInclusive ending position of byte range (-1, 0-Long.MAX)
+     * @return long array with 4 elements
+     *         (ciphertext start, plaintext adjustment, ciphertext end,
+     *          plaintext end position)
+     */
+    long[] translateByteRange(long startInclusive, long endInclusive);
+
+    /**
      * Finds a cipher by name and provider. Only throws runtime exceptions.
      *
      * @param cipherName Cipher name

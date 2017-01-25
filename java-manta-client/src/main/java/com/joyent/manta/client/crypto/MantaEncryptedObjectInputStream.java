@@ -15,12 +15,12 @@ import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
+import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
