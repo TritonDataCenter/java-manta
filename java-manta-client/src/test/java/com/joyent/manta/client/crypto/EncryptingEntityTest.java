@@ -141,7 +141,7 @@ public class EncryptingEntityTest {
         SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
 
         EncryptingEntity encryptingEntity = new EncryptingEntity(key,
-                cipherDetails, entity, new SecureRandom());
+                cipherDetails, entity);
 
         File file = File.createTempFile("ciphertext-", ".data");
         FileUtils.forceDeleteOnExit(file);

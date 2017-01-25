@@ -51,7 +51,7 @@ public final class EncryptingEntityBenchmark {
                 SecretKey key = SecretKeyUtils.generate(cipherDetails);
 
                 EncryptingEntity encryptingEntity = new EncryptingEntity(key,
-                        cipherDetails, entity, random);
+                        cipherDetails, entity);
 
                 DigestedEntity digestedEntity = new DigestedEntity(encryptingEntity,
                         "MD5");

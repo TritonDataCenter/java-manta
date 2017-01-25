@@ -125,6 +125,14 @@ public interface SupportedCipherDetails {
     long[] translateByteRange(long startInclusive, long endInclusive);
 
     /**
+     * Generates an initialization vector that is appropriate for the
+     * cipher and cipher mode.
+     *
+     * @return an initialization vector in bytes
+     */
+    byte[] generateIv();
+
+    /**
      * Finds a cipher by name and provider. Only throws runtime exceptions.
      *
      * @param cipherName Cipher name

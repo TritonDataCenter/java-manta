@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.SecureRandom;
 
 /**
  * {@link HttpEntity} implementation that wraps an entity and encrypts its
@@ -86,22 +85,15 @@ public class EncryptingEntity implements HttpEntity {
     private final Cipher cipher;
 
     /**
-     * Source of entropy for the encryption algorithm.
-     */
-    private final SecureRandom random;
-
-    /**
      * Creates a new instance with an known stream size.
      *
      * @param key key to encrypt stream with
      * @param cipherDetails cipher to encrypt stream with
      * @param wrapped underlying stream to encrypt
-     * @param random source of entropy for the encryption algorithm
      */
     public EncryptingEntity(final SecretKey key,
                             final SupportedCipherDetails cipherDetails,
-                            final HttpEntity wrapped,
-                            final SecureRandom random) {
+                            final HttpEntity wrapped) {
         if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
             String msg = String.format("Input content length exceeded maximum "
             + "[%d] number of bytes supported by cipher [%s]",
@@ -127,7 +119,6 @@ public class EncryptingEntity implements HttpEntity {
         this.cipherDetails = cipherDetails;
         this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
-        this.random = random;
         this.cipher = cipherDetails.getCipher();
         initializeCipher();
     }
@@ -292,9 +283,7 @@ public class EncryptingEntity implements HttpEntity {
      */
     private void initializeCipher() {
         try {
-            byte[] iv = new byte[cipherDetails.getIVLengthInBytes()];
-            random.nextBytes(iv);
-
+            byte[] iv = cipherDetails.generateIv();
             cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(

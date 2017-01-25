@@ -28,7 +28,8 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     /**
      * The largest ciphertext size allowed.
      */
-    final long ciphertextMaxSize = (getMaximumPlaintextSizeInBytes() / getBlockSizeInBytes()) * getBlockSizeInBytes();
+    private final long ciphertextMaxSize = (getMaximumPlaintextSizeInBytes() / getBlockSizeInBytes())
+            * getBlockSizeInBytes();
 
     /**
      * Creates a new instance of a AES-CBC cipher for the static instance.

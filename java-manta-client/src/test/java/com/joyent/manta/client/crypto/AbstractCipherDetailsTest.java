@@ -103,7 +103,7 @@ public abstract class AbstractCipherDetailsTest {
         ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;;
         ExposedByteArrayEntity entity = new ExposedByteArrayEntity(plaintext, contentType);
         EncryptingEntity encryptingEntity = new EncryptingEntity(secretKey, cipherDetails,
-                entity, new SecureRandom());
+                entity);
 
         final byte[] ciphertext;
         final byte[] iv = encryptingEntity.getCipher().getIV();
