@@ -23,6 +23,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Added TCP socket time out configuration parameter.
  - Added verify upload checksum configuration parameter.
  - Added upload buffer size configuration parameter.
+ - Added getInputStream method that accepts byte range parameter.
 ### Removed
  - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Removed MantaCryptoException.
