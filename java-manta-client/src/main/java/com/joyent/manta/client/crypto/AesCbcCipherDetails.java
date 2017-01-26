@@ -43,15 +43,30 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     @Override
     public long ciphertextSize(final long plaintextSize) {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plaintextSize);
+        int blockBytes = getBlockSizeInBytes();
+        int tagOrHmacBytes = getAuthenticationTagOrHmacLengthInBytes();
 
         if (plaintextSize <= 0) {
-            return getBlockSizeInBytes() + getAuthenticationTagOrHmacLengthInBytes();
+            return blockBytes + tagOrHmacBytes;
         }
 
-        long totalBlocks = plaintextSize / getBlockSizeInBytes();
+        long calculatedContentLength = 0L;
+        long padding = 0L;
+        if (plaintextSize > blockBytes) {
+            padding = plaintextSize % blockBytes;
+        } else {
+            calculatedContentLength = blockBytes;
+        }
 
-        return totalBlocks * getBlockSizeInBytes() + getBlockSizeInBytes()
-                + getAuthenticationTagOrHmacLengthInBytes();
+        // e.g. content is 20 bytes, block is 16, padding is 4, result = 32
+        if (padding > 0) {
+            calculatedContentLength = (plaintextSize - padding) + blockBytes;
+        }
+
+        // Append a block of 0's at the end of stream
+        calculatedContentLength += tagOrHmacBytes;
+
+        return calculatedContentLength;
     }
 
     @Override
