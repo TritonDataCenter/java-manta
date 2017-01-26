@@ -39,7 +39,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 @Test
 public class MantaEncryptedObjectInputStreamTest {
-    private final SecureRandom random = new SecureRandom();
     private final URL testURL;
     private final int plainTextSize;
     private final byte[] plainTextBytes;
@@ -65,99 +64,191 @@ public class MantaEncryptedObjectInputStreamTest {
         }
     }
 
-    /**
-     * Test that loops through all of the ciphers and attempts to decrypt an
-     * encrypted stream. An assertion fails if the original plaintext and the
-     * decrypted plaintext don't match. Additionally, this test tries to read
-     * data from the stream using three different read methods and makes sure
-     * that all read methods function correctly.
-     */
-    public void canDecryptEntireObjectAllCiphers() throws IOException {
-        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
-            System.out.printf("Testing decryption of [%s] as full read of stream\n",
-                    cipherDetails.getCipherId());
-
-            System.out.println(" Reading byte by byte");
-            canDecryptEntireObject(cipherDetails, new SingleReads());
-            System.out.println(" Reading bytes by chunk");
-            canDecryptEntireObject(cipherDetails, new ByteChunkReads());
-            System.out.println(" Reading bytes by chunks with offset");
-            canDecryptEntireObject(cipherDetails, new ByteChunkOffsetReads());
-            System.out.println("---------------------------------");
-        }
+    public void canDecryptEntireObjectAesCbc128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
-    /**
-     * Test that loops through all of the ciphers and attempts to decrypt an
-     * encrypted stream that had its ciphertext altered. An assertion fails if
-     * the underlying stream fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
-     * Additionally, this test tries to read data from the stream using three
-     * different read methods and makes sure that all read methods function
-     * correctly.
-     */
-    public void willErrorIfCiphertextIsModifiedAllCiphers() throws IOException {
-        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
-            System.out.printf("Testing authentication of corrupted ciphertext with [%s] as full read of stream\n",
-                    cipherDetails.getCipherId());
-
-            System.out.println(" Reading byte by byte");
-            willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new SingleReads());
-            System.out.println(" Reading bytes by chunk");
-            willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ByteChunkReads());
-            System.out.println(" Reading bytes by chunks with offset");
-            willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ByteChunkOffsetReads());
-        }
+    public void canDecryptEntireObjectAesCbc192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_192_BIT);
     }
 
-    /**
-     * Test that loops through all of the ciphers and attempts to decrypt an
-     * encrypted stream that had its ciphertext altered. In this case, the
-     * stream is closed before all of the bytes are read from it. An assertion
-     * fails if the underlying stream fails to throw a
-     * {@link MantaClientEncryptionCiphertextAuthenticationException}.
-     */
-    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAllCiphers() throws IOException {
-        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
-            System.out.printf("Testing authentication of corrupted ciphertext with [%s] as partial read of stream\n",
-                    cipherDetails.getCipherId());
-
-            System.out.println(" Reading only one byte and then closing");
-            willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new PartialRead());
-        }
+    public void canDecryptEntireObjectAesCbc256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
 
-    /**
-     * Test that loops through all of the ciphers and attempts to skip bytes
-     * from an encrypted stream. This test verifies that the checksums are being
-     * calculated correctly even if bytes are skipped.
-     */
-    public void canSkipBytesAllCiphers() throws IOException {
-        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
-            System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
-                    cipherDetails.getCipherId());
-
-            System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
-            canReadObject(cipherDetails, new ReadSkipReadSkip());
-        }
+    public void canDecryptEntireObjectAesCtr128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
-    /**
-     Test that loops through all of the ciphers and attempts to skip bytes from
-     * an encrypted stream that had its ciphertext altered. In this case, the
-     * stream is closed before all of the bytes are read from it. An assertion
-     * fails if the underlying stream fails to throw a
-     * {@link MantaClientEncryptionCiphertextAuthenticationException}.
-     */
-    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAllCiphers() throws IOException {
-        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
-            System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
-                    cipherDetails.getCipherId());
-
-            System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
-            willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ReadSkipReadSkip());
-        }
+    public void canDecryptEntireObjectAesCtr192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
+    public void canDecryptEntireObjectAesCtr256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void canDecryptEntireObjectAesGcm128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canDecryptEntireObjectAesGcm192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canDecryptEntireObjectAesGcm256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+    
+
+    public void willErrorIfCiphertextIsModifiedAesCbc128() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesCbc192() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesCbc256() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesCtr128() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesCtr192() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCtrCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesCtr256() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesGcm128() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesGcm192() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesGcm256() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCbc128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCbc192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCbc256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCtr128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCtr192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCtrCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCtr256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesGcm128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesGcm192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesGcm256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+
+
+    public void canSkipBytesAllCiphersAesCbc128() throws IOException {
+        canSkipBytesAllCiphers(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesCbc192() throws IOException {
+        canSkipBytesAllCiphers(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesCbc256() throws IOException {
+        canSkipBytesAllCiphers(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesCtr128() throws IOException {
+        canSkipBytesAllCiphers(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesCtr192() throws IOException {
+        canSkipBytesAllCiphers(AesCtrCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesCtr256() throws IOException {
+        canSkipBytesAllCiphers(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesGcm128() throws IOException {
+        canSkipBytesAllCiphers(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesGcm192() throws IOException {
+        canSkipBytesAllCiphers(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canSkipBytesAllCiphersAesGcm256() throws IOException {
+        canSkipBytesAllCiphers(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCtr128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCtr192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCtrCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCtr256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+    
+    
     /* TEST UTILITY CLASSES */
 
     private static class EncryptedFile {
@@ -280,6 +371,74 @@ public class MantaEncryptedObjectInputStreamTest {
 
     /* TEST UTILITY METHODS */
 
+    /**
+     * Test that loops through all of the ciphers and attempts to decrypt an
+     * encrypted stream. An assertion fails if the original plaintext and the
+     * decrypted plaintext don't match. Additionally, this test tries to read
+     * data from the stream using three different read methods and makes sure
+     * that all read methods function correctly.
+     */
+    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing decryption of [%s] as full read of stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading byte by byte");
+        canDecryptEntireObject(cipherDetails, new SingleReads());
+        System.out.println(" Reading bytes by chunk");
+        canDecryptEntireObject(cipherDetails, new ByteChunkReads());
+        System.out.println(" Reading bytes by chunks with offset");
+        canDecryptEntireObject(cipherDetails, new ByteChunkOffsetReads());
+        System.out.println("---------------------------------");
+    }
+
+    /**
+     * Test that loops through all of the ciphers and attempts to decrypt an
+     * encrypted stream that had its ciphertext altered. An assertion fails if
+     * the underlying stream fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     * Additionally, this test tries to read data from the stream using three
+     * different read methods and makes sure that all read methods function
+     * correctly.
+     */
+    private void willErrorIfCiphertextIsModifiedAllReadModes(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as full read of stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading byte by byte");
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new SingleReads());
+        System.out.println(" Reading bytes by chunk");
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ByteChunkReads());
+        System.out.println(" Reading bytes by chunks with offset");
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ByteChunkOffsetReads());
+    }
+
+    /**
+     * Test that loops through all of the ciphers and attempts to decrypt an
+     * encrypted stream that had its ciphertext altered. In this case, the
+     * stream is closed before all of the bytes are read from it. An assertion
+     * fails if the underlying stream fails to throw a
+     * {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     */
+    private void willErrorIfCiphertextIsModifiedAndNotReadFully(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as partial read of stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading only one byte and then closing");
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new PartialRead());
+    }
+
+    /**
+     * Test that loops through all of the ciphers and attempts to skip bytes
+     * from an encrypted stream. This test verifies that the checksums are being
+     * calculated correctly even if bytes are skipped.
+     */
+    private void canSkipBytesAllCiphers(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
+        canReadObject(cipherDetails, new ReadSkipReadSkip());
+    }
+    
     private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
                                         ReadBytes readBytes) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
@@ -299,6 +458,21 @@ public class MantaEncryptedObjectInputStreamTest {
                 System.out.println(" Plaintext matched decrypted data and authentication succeeded");
             }
         }
+    }
+
+    /**
+     Test that loops through all of the ciphers and attempts to skip bytes from
+     * an encrypted stream that had its ciphertext altered. In this case, the
+     * stream is closed before all of the bytes are read from it. An assertion
+     * fails if the underlying stream fails to throw a
+     * {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     */
+    private void willErrorIfCiphertextIsModifiedAndBytesAreSkipped(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ReadSkipReadSkip());
     }
 
     private void canReadObject(SupportedCipherDetails cipherDetails,
