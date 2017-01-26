@@ -112,25 +112,22 @@ public abstract class AbstractCipherDetailsTest {
             ciphertext = Arrays.copyOf(out.toByteArray(), out.toByteArray().length - cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
         }
 
-        long startPlaintextRange = 16;
+        long startPlaintextRange = 22;
         long endPlaintextRange = 129;
 
         byte[] adjustedPlaintext = Arrays.copyOfRange(plaintext,
-                (int)startPlaintextRange, (int)(endPlaintextRange - startPlaintextRange));
+                (int)startPlaintextRange, (int)endPlaintextRange);
 
         long[] ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
         long startCipherTextRange = ranges[0];
-        long adjustedPlaintextRange = ranges[1];
         long endCipherTextRange = ranges[2];
         long adjustedPlaintextLength = ranges[3];
+        long block = ranges[4];
 
         Cipher decryptor = cipherDetails.getCipher();
 
-        AlgorithmParameterSpec spec = calculateIVForOffset(
-                (IvParameterSpec)cipherDetails.getEncryptionParameterSpec(iv),
-                2, cipherDetails.getBlockSizeInBytes());
-
-        decryptor.init(Cipher.DECRYPT_MODE, secretKey, spec);
+        decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
+        long adjustedPlaintextRange = cipherDetails.updateCipherToPosition(decryptor, startPlaintextRange);
 
         byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int)startCipherTextRange, (int)endCipherTextRange);
         byte[] out = decryptor.doFinal(adjustedCipherText);
@@ -142,27 +139,5 @@ public abstract class AbstractCipherDetailsTest {
         Assert.assertEquals(decryptedText, adjustedText,
                 "Random read output from ciphertext doesn't match expectation " +
                         "[cipher=" + cipherDetails.getCipherId() + "]");
-    }
-
-    protected static IvParameterSpec calculateIVForOffset(final IvParameterSpec iv,
-                                                          final long blockOffset,
-                                                          final int blockSize) {
-        final BigInteger ivBI = new BigInteger(1, iv.getIV());
-        final BigInteger ivForOffsetBI = ivBI.add(BigInteger.valueOf(blockOffset
-                / blockSize));
-
-        final byte[] ivForOffsetBA = ivForOffsetBI.toByteArray();
-        final IvParameterSpec ivForOffset;
-        if (ivForOffsetBA.length >= blockSize) {
-            ivForOffset = new IvParameterSpec(ivForOffsetBA, ivForOffsetBA.length - blockSize,
-                    blockSize);
-        } else {
-            final byte[] ivForOffsetBASized = new byte[blockSize];
-            System.arraycopy(ivForOffsetBA, 0, ivForOffsetBASized, blockSize
-                    - ivForOffsetBA.length, ivForOffsetBA.length);
-            ivForOffset = new IvParameterSpec(ivForOffsetBASized);
-        }
-
-        return ivForOffset;
     }
 }

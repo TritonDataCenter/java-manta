@@ -12,6 +12,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
 import org.mockito.Mockito;
 import org.testng.Assert;
+import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
@@ -29,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
@@ -64,40 +64,77 @@ public class MantaEncryptedObjectInputStreamTest {
         }
     }
 
-    public void canDecryptEntireObjectAesCbc128() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesCbc128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesCbc192() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_192_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesCbc192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_192_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesCbc256() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_256_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesCbc256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_256_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesCtr128() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_128_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesCtr128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_128_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesCtr192() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_192_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesCtr192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_192_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesCtr256() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_256_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesCtr256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_256_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesGcm128() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_128_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesGcm128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_128_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesGcm192() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_192_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesGcm192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_192_BIT, true);
     }
 
-    public void canDecryptEntireObjectAesGcm256() throws IOException {
-        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT);
+    public void canDecryptEntireObjectAuthenticatedAesGcm256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT, true);
+    }
+
+
+    public void canDecryptEntireObjectUnauthenticatedAesCbc128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesCbc192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_192_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesCbc256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_256_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesCtr128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_128_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesCtr192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_192_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesCtr256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesCtrCipherDetails.INSTANCE_256_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesGcm128() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_128_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesGcm192() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_192_BIT, false);
+    }
+
+    public void canDecryptEntireObjectUnauthenticatedAesGcm256() throws IOException {
+        canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT, false);
     }
     
 
@@ -175,42 +212,79 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
 
-    public void canSkipBytesAllCiphersAesCbc128() throws IOException {
-        canSkipBytesAllCiphers(AesCbcCipherDetails.INSTANCE_128_BIT);
+    public void canSkipBytesAuthenticatedAesCbc128() throws IOException {
+        canSkipBytesAuthenticated(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesCbc192() throws IOException {
-        canSkipBytesAllCiphers(AesCbcCipherDetails.INSTANCE_192_BIT);
+    public void canSkipBytesAuthenticatedAesCbc192() throws IOException {
+        canSkipBytesAuthenticated(AesCbcCipherDetails.INSTANCE_192_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesCbc256() throws IOException {
-        canSkipBytesAllCiphers(AesCbcCipherDetails.INSTANCE_256_BIT);
+    public void canSkipBytesAuthenticatedAesCbc256() throws IOException {
+        canSkipBytesAuthenticated(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesCtr128() throws IOException {
-        canSkipBytesAllCiphers(AesCtrCipherDetails.INSTANCE_128_BIT);
+    public void canSkipBytesAuthenticatedAesCtr128() throws IOException {
+        canSkipBytesAuthenticated(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesCtr192() throws IOException {
-        canSkipBytesAllCiphers(AesCtrCipherDetails.INSTANCE_192_BIT);
+    public void canSkipBytesAuthenticatedAesCtr192() throws IOException {
+        canSkipBytesAuthenticated(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesCtr256() throws IOException {
-        canSkipBytesAllCiphers(AesCtrCipherDetails.INSTANCE_256_BIT);
+    public void canSkipBytesAuthenticatedAesCtr256() throws IOException {
+        canSkipBytesAuthenticated(AesCtrCipherDetails.INSTANCE_256_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesGcm128() throws IOException {
-        canSkipBytesAllCiphers(AesGcmCipherDetails.INSTANCE_128_BIT);
+    public void canSkipBytesAuthenticatedAesGcm128() throws IOException {
+        canSkipBytesAuthenticated(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesGcm192() throws IOException {
-        canSkipBytesAllCiphers(AesGcmCipherDetails.INSTANCE_192_BIT);
+    public void canSkipBytesAuthenticatedAesGcm192() throws IOException {
+        canSkipBytesAuthenticated(AesGcmCipherDetails.INSTANCE_192_BIT);
     }
 
-    public void canSkipBytesAllCiphersAesGcm256() throws IOException {
-        canSkipBytesAllCiphers(AesGcmCipherDetails.INSTANCE_256_BIT);
+    public void canSkipBytesAuthenticatedAesGcm256() throws IOException {
+        canSkipBytesAuthenticated(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
 
+
+    public void canSkipBytesUnauthenticatedAesCbc128() throws IOException {
+        canSkipBytesUnauthenticated(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesCbc192() throws IOException {
+        canSkipBytesUnauthenticated(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesCbc256() throws IOException {
+        canSkipBytesUnauthenticated(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesCtr128() throws IOException {
+        canSkipBytesUnauthenticated(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesCtr192() throws IOException {
+        canSkipBytesUnauthenticated(AesCtrCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesCtr256() throws IOException {
+        canSkipBytesUnauthenticated(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesGcm128() throws IOException {
+        canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesGcm192() throws IOException {
+        canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    public void canSkipBytesUnauthenticatedAesGcm256() throws IOException {
+        canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+    
 
     public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc128() throws IOException {
         willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_128_BIT);
@@ -378,16 +452,16 @@ public class MantaEncryptedObjectInputStreamTest {
      * data from the stream using three different read methods and makes sure
      * that all read methods function correctly.
      */
-    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails) throws IOException {
+    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails, boolean authenticate) throws IOException {
         System.out.printf("Testing decryption of [%s] as full read of stream\n",
                 cipherDetails.getCipherId());
 
         System.out.println(" Reading byte by byte");
-        canDecryptEntireObject(cipherDetails, new SingleReads());
+        canDecryptEntireObject(cipherDetails, new SingleReads(), authenticate);
         System.out.println(" Reading bytes by chunk");
-        canDecryptEntireObject(cipherDetails, new ByteChunkReads());
+        canDecryptEntireObject(cipherDetails, new ByteChunkReads(), authenticate);
         System.out.println(" Reading bytes by chunks with offset");
-        canDecryptEntireObject(cipherDetails, new ByteChunkOffsetReads());
+        canDecryptEntireObject(cipherDetails, new ByteChunkOffsetReads(), authenticate);
         System.out.println("---------------------------------");
     }
 
@@ -431,32 +505,41 @@ public class MantaEncryptedObjectInputStreamTest {
      * from an encrypted stream. This test verifies that the checksums are being
      * calculated correctly even if bytes are skipped.
      */
-    private void canSkipBytesAllCiphers(SupportedCipherDetails cipherDetails) throws IOException {
+    private void canSkipBytesAuthenticated(SupportedCipherDetails cipherDetails) throws IOException {
         System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
         System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
-        canReadObject(cipherDetails, new ReadSkipReadSkip());
+        canReadObject(cipherDetails, new ReadSkipReadSkip(), true);
+    }
+
+    /**
+     * Test that loops through all of the ciphers and attempts to skip bytes
+     * from an encrypted stream.
+     */
+    private void canSkipBytesUnauthenticated(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
+        canReadObject(cipherDetails, new ReadSkipReadSkip(), false);
     }
     
     private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
-                                        ReadBytes readBytes) throws IOException {
+                                        ReadBytes readBytes, boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
         long ciphertextSize = encryptedFile.file.length();
 
         try (FileInputStream in = new FileInputStream(encryptedFile.file);
              MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV())) {
+                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate)) {
 
             byte[] actual = new byte[plainTextSize];
             readBytes.readAll(min, actual);
 
-            if (!Arrays.equals(plainTextBytes, actual)) {
-                Assert.fail("Plaintext doesn't match decrypted data");
-            } else {
-                System.out.println(" Plaintext matched decrypted data and authentication succeeded");
-            }
+            AssertJUnit.assertArrayEquals("Plaintext doesn't match decrypted data", plainTextBytes, actual);
+            System.out.println(" Plaintext matched decrypted data and authentication succeeded");
         }
     }
 
@@ -476,14 +559,16 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     private void canReadObject(SupportedCipherDetails cipherDetails,
-                               ReadBytes readBytes) throws IOException {
+                               ReadBytes readBytes,
+                               boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
         long ciphertextSize = encryptedFile.file.length();
 
         try (FileInputStream in = new FileInputStream(encryptedFile.file);
              MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV())) {
+                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), 
+                     authenticate)) {
 
             byte[] actual = new byte[plainTextSize];
             readBytes.readAll(min, actual);
@@ -508,7 +593,7 @@ public class MantaEncryptedObjectInputStreamTest {
 
         try (FileInputStream in = new FileInputStream(encryptedFile.file);
              MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV())) {
+                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), true)) {
             byte[] actual = new byte[plainTextSize];
             readBytes.readAll(min, actual);
         }  catch (MantaClientEncryptionCiphertextAuthenticationException e) {
@@ -540,7 +625,7 @@ public class MantaEncryptedObjectInputStreamTest {
 
     private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
             SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
-            byte[] iv) {
+            byte[] iv, boolean authenticate) {
         String path = String.format("/test/stor/test-%s", UUID.randomUUID());
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.put(MantaHttpHeaders.ENCRYPTION_CIPHER, cipherDetails.getCipherId());
@@ -569,6 +654,6 @@ public class MantaEncryptedObjectInputStreamTest {
                 response, httpResponse, eofSensorInputStream
         );
 
-        return new MantaEncryptedObjectInputStream(mantaObjectInputStream, key);
+        return new MantaEncryptedObjectInputStream(mantaObjectInputStream, key, authenticate);
     }
 }

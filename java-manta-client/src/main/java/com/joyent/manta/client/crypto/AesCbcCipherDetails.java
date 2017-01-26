@@ -2,6 +2,8 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.lang3.Validate;
 
+import javax.crypto.Cipher;
+
 /**
  * Class that provides details about how the AES-CBC cipher's settings.
  *
@@ -118,5 +120,10 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
         ranges[3] = 0L;
 
         return ranges;
+    }
+
+    @Override
+    public long updateCipherToPosition(final Cipher cipher, final long position) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

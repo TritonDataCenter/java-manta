@@ -12,6 +12,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -23,10 +24,13 @@ import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.function.Supplier;
@@ -51,7 +55,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * Default buffer size to use when reading chunks of data from streams.
      */
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
+    private static final int DEFAULT_BUFFER_SIZE = 512;
 
     /**
      * The cipher and its settings used to decrypt the backing stream.
@@ -94,19 +98,27 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private final Object closeLock = new Object();
 
     /**
+     * Flag indicating if we perform authentication on the ciphertext.
+     */
+    private final boolean authenticateCiphertext;
+
+    /**
      * Creates a new instance that decrypts the backing stream with the specified key.
      *
      * @param backingStream stream to read data from
      * @param secretKey secret key used to decrypt
+     * @param authenticateCiphertext when true we perform authentication on the ciphertext
      */
     public MantaEncryptedObjectInputStream(final MantaObjectInputStream backingStream,
-                                           final SecretKey secretKey) {
+                                           final SecretKey secretKey,
+                                           final boolean authenticateCiphertext) {
         super(backingStream);
 
         this.cipherDetails = findCipherDetails();
         this.cipher = cipherDetails.getCipher();
         this.secretKey = secretKey;
         this.hmac = findHmac();
+        this.authenticateCiphertext = authenticateCiphertext;
         initializeCipher();
         initializeHmac();
         this.cipherInputStream = createCryptoStream();
@@ -172,15 +184,29 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      */
     private CipherInputStream createCryptoStream() {
         // No need to calculate HMAC because we are using a AEAD cipher
-        if (this.cipherDetails.isAEADCipher()) {
+        if (this.cipherDetails.isAEADCipher() && authenticateCiphertext) {
             return new CipherInputStream(super.getBackingStream(), this.cipher);
         }
 
-        final long hmacSize = this.hmac.getMacLength();
-        final long adjustedContentLength = super.getContentLength() - hmacSize;
-        CloseShieldInputStream closeShieldInputStream = new CloseShieldInputStream(super.getBackingStream());
-        BoundedInputStream bin = new BoundedInputStream(closeShieldInputStream, adjustedContentLength);
-        return new CipherInputStream(bin, this.cipher);
+        final long adjustedContentLength;
+
+        // We chop off the authentication tag if authenticate ciphertext is disabled
+        if (this.cipherDetails.isAEADCipher()) {
+            adjustedContentLength = super.getContentLength() - this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+        } else {
+            final long hmacSize = this.hmac.getMacLength();
+            adjustedContentLength = super.getContentLength() - hmacSize;
+        }
+
+        BoundedInputStream bin = new BoundedInputStream(super.getBackingStream(), adjustedContentLength);
+        bin.setPropagateClose(false);
+
+        if (this.cipherDetails.isAEADCipher() && !authenticateCiphertext) {
+            CountingInputStream cin = new CountingInputStream(bin);
+            return new UnauthenticatedCipherInputStream(bin, this.cipher, adjustedContentLength, cin);
+        } else {
+            return new CipherInputStream(bin, this.cipher);
+        }
     }
 
     /**
@@ -275,7 +301,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             final int b = cipherInputStream.read();
 
-            if (hmac != null && b != -1) {
+            if (hmac != null && b != -1 && authenticateCiphertext) {
                 hmac.update((byte) b);
             }
 
@@ -304,18 +330,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             throw e;
         }
 
+        final int read;
+
         try {
-            final int read = cipherInputStream.read(bytes);
-
-            if (hmac != null && read > 0) {
-                hmac.update(bytes, 0, read);
-            }
-
-            if (read > 0) {
-                plaintextBytesRead += read;
-            }
-
-            return read;
+            read = cipherInputStream.read(bytes);
         } catch (IOException e) {
             final Throwable cause = e.getCause();
             if (cause != null && cause.getClass().equals(AEADBadTagException.class)) {
@@ -326,6 +344,16 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 throw e;
             }
         }
+
+        if (hmac != null && read > 0 && authenticateCiphertext) {
+            hmac.update(bytes, 0, read);
+        }
+
+        if (read > 0) {
+            plaintextBytesRead += read;
+        }
+
+        return read;
     }
 
     @Override
@@ -339,7 +367,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             final int read = cipherInputStream.read(bytes, off, len);
 
-            if (hmac != null && read > 0) {
+            if (hmac != null && read > 0 && authenticateCiphertext) {
                 hmac.update(bytes, off, read);
             }
 
@@ -421,7 +449,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         int read;
 
         while ((read = read(buf)) >= 0) {
-            if (hmac != null) {
+            if (hmac != null && authenticateCiphertext) {
                 hmac.update(buf, 0, read);
             }
         }
@@ -458,13 +486,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 return;
             }
 
-            readRemainingBytes();
+            if (authenticateCiphertext) {
+                readRemainingBytes();
+            }
             this.closed = true;
         }
 
         IOUtils.closeQuietly(cipherInputStream);
 
-        if (hmac != null) {
+        if (hmac != null && authenticateCiphertext) {
             byte[] checksum = hmac.doFinal();
             byte[] expected = new byte[this.hmac.getMacLength()];
             int readHmacBytes = super.getBackingStream().read(expected);
@@ -508,6 +538,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         exception.setContextValue("path", getPath());
         exception.setContextValue("cipherId", getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER));
         exception.setContextValue("cipherDetails", this.cipherDetails);
+        exception.setContextValue("cipherInputStreamClass", cipherInputStream.getClass().getName());
 
         if (this.hmac != null) {
             exception.setContextValue("hmac", this.hmac.getAlgorithm());

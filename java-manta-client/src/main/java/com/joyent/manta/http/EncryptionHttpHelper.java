@@ -278,7 +278,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         rawStream.getMetadata().putAll(encryptedMetadata);
 
-        return new MantaEncryptedObjectInputStream(rawStream, secretKey);
+        return new MantaEncryptedObjectInputStream(rawStream, secretKey, true);
     }
 
     @Override

@@ -5,6 +5,7 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.lang3.Validate;
 
+import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import java.security.spec.AlgorithmParameterSpec;
 
@@ -97,5 +98,10 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
         long[] ranges = new long[4];
 
         return ranges;
+    }
+
+    @Override
+    public long updateCipherToPosition(final Cipher cipher, final long position) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

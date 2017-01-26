@@ -2,6 +2,8 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.lang3.Validate;
 
+import javax.crypto.Cipher;
+
 /**
  * Class that provides details about how the AES-CTR cipher's settings.
  *
@@ -65,22 +67,17 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         Validate.inclusiveBetween(-1, ciphertextMaxSize, endInclusive,
                 "End position should be between -1 (undefined) and 9223372036854775807");
 
-        long[] ranges = new long[4];
+        long[] ranges = new long[5];
 
         final int blockSize = getBlockSizeInBytes();
         final long adjustedStart;
-        final long plaintextStartAdjustment;
+
         final long adjustedEnd;
         final long plaintextEndLength;
+        final long plaintextStartAdjustment = startInclusive % blockSize;
 
-        if (startInclusive % blockSize == 0) {
-            adjustedStart = startInclusive;
-            plaintextStartAdjustment = 0L;
-        } else {
-            final long blockOverlap = (startInclusive / blockSize);
-            adjustedStart = blockOverlap * blockSize;
-            plaintextStartAdjustment = startInclusive - adjustedStart;
-        }
+        final long blockNumber = (startInclusive / blockSize);
+        adjustedStart = blockNumber * blockSize;
 
         if (endInclusive % blockSize == 0) {
             adjustedEnd = endInclusive;
@@ -94,7 +91,22 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         ranges[1] = plaintextStartAdjustment;
         ranges[2] = adjustedEnd;
         ranges[3] = plaintextEndLength;
+        ranges[4] = blockNumber;
 
         return ranges;
+    }
+
+    @Override
+    public long updateCipherToPosition(final Cipher cipher, final long position) {
+        final int blockSize = getBlockSizeInBytes();
+        final long block = position / blockSize;
+        final long skip = (position % blockSize);
+
+        byte[] throwaway = new byte[blockSize];
+        for (long i = 0; i < block; i++) {
+            cipher.update(throwaway);
+        }
+
+        return skip;
     }
 }
