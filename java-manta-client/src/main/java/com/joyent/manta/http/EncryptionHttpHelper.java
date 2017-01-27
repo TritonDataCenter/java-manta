@@ -670,7 +670,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      *
      * @param metadata metadata to append additional values to
      */
-    private void attachEncryptionCipherHeaders(final MantaMetadata metadata) {
+    protected void attachEncryptionCipherHeaders(final MantaMetadata metadata) {
         // Secret Key ID
         metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 encryptionKeyId);
@@ -693,7 +693,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param encryptingEntity HTTP Entity object that encrypts the Manta object data
      * @throws IOException thrown when unable to append metadata
      */
-    private void attachEncryptedEntityHeaders(final MantaMetadata metadata,
+    protected void attachEncryptedEntityHeaders(final MantaMetadata metadata,
                                               final EncryptingEntity encryptingEntity)
             throws IOException {
         // IV Used to Encrypt
@@ -732,7 +732,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param metadata metadata to append additional values to
      * @throws IOException thrown when there is a problem attaching metadata
      */
-    private void attachEncryptedMetadata(final MantaMetadata metadata)
+    protected void attachEncryptedMetadata(final MantaMetadata metadata)
         throws IOException {
 
         // Create and add encrypted metadata
