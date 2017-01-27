@@ -1021,7 +1021,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      */
     public MantaHttpHeaders setByteRange(final Long start, final Long end) {
         String prefix = "bytes=";
-        String expression = null;
+        String expression;
         if (start == null && end == null) {
             throw new IllegalArgumentException("one of range {start,end} must be non-null");
         } else if (end == null) {
@@ -1032,7 +1032,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
 
         } else if (start == null) {
             if (end <= 0) {
-                throw new IllegalArgumentException("range end from laste byte must be positive");
+                throw new IllegalArgumentException("range end from last byte must be positive");
             }
             expression = String.format("-%d", end);
         } else {
@@ -1046,6 +1046,30 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         String rangeStr = prefix + expression;
         put(HttpHeaders.RANGE, rangeStr);
         return this;
+    }
+
+    /**
+     * Translates the range request header into two values. The first value
+     * is the starting bytes of the binary file to read and the second value
+     * is the ending bytes of the file to read. If the range indicates the
+     * end of a file (unlimited), then the value will be set to Long.MAX.
+     *
+     * @return two value array containing the start and the end of a byte range
+     */
+    public long[] getByteRange() {
+        final String rangeString = getRange();
+        Validate.notNull(rangeString, "Range HTTP must not be null");
+        String[] rangeValuesStrings = StringUtils.split(rangeString, "bytes=");
+        Validate.isTrue(rangeValuesStrings.length == 1,
+                "Range header value doesn't begin with string: bytes=");
+
+        String[] rangeValues = StringUtils.split(rangeValuesStrings[0], '-');
+        // TODO: Deal with different http range settings
+
+        long startPos = Long.parseUnsignedLong(rangeValues[0]);
+        long endPos = Long.parseUnsignedLong(rangeValues[1]);
+
+        return new long[] { startPos, endPos };
     }
 
     /**
