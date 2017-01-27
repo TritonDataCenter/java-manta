@@ -117,6 +117,7 @@ public final class MantaCLI {
         } catch (Exception e) {
             System.err.println(e.getLocalizedMessage());
             System.err.println(ExceptionUtils.getStackTrace(e));
+            System.exit(1);
         }
     }
 
