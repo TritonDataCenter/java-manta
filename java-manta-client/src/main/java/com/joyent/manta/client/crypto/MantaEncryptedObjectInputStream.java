@@ -12,7 +12,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.bouncycastle.jcajce.io.CipherInputStream;
@@ -178,48 +177,48 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * @return potentially adjusted plaintext length
      */
     private long verifyAndConditionallyRecalculatePlaintextLength(final long aPlaintextLength) {
-        if (aPlaintextLength < 0) {
-            return aPlaintextLength;
-        }
-
-        // Ciphertext content-length (because it is coming from the super-class)
-        final Long contentLength = super.getContentLength();
-
-        Validate.notNull(contentLength,
-                "Manta should always return a content-length");
-
-        /* If content-length is available we want to verify that the plaintext length
-         * calculated to ciphertext length isn't bigger than the content-length. */
-
-        long ciphertextSizeCalculation = cipherDetails.ciphertextSize(
-                aPlaintextLength + initialBytesToSkip);
-
-        // Someone specified an inaccurate range and it brought us here
-        if (ciphertextSizeCalculation > contentLength) {
-            // If the calculation is accurate, then we attempt to calculate plaintext size
-            if (!cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
-                return cipherDetails.plaintextSize(contentLength);
-            }
-
-            // We try to get the metadata about the actual plaintext size
-            String plaintextLengthHeaderVal = getHeaderAsString(
-                    MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
-
-            // If it is there, we replace the plaintext length specified with the file size
-            if (plaintextLengthHeaderVal != null) {
-                return Long.parseLong(plaintextLengthHeaderVal);
-            }
-
-            // Otherwise we error
-            String msg = "Plaintext length specified is greater than "
-                    + "the size of the file and there is no reliable fallback "
-                    + "information for getting the real plaintext value";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            annotateException(e);
-            e.setContextValue("plaintextLength", aPlaintextLength);
-            e.setContextValue("ciphertextSize", ciphertextSizeCalculation);
-            throw e;
-        }
+//        if (aPlaintextLength < 0) {
+//            return aPlaintextLength;
+//        }
+//
+//        // Ciphertext content-length (because it is coming from the super-class)
+//        final Long contentLength = super.getContentLength();
+//
+//        Validate.notNull(contentLength,
+//                "Manta should always return a content-length");
+//
+//        /* If content-length is available we want to verify that the plaintext length
+//         * calculated to ciphertext length isn't bigger than the content-length. */
+//
+//        long ciphertextSizeCalculation = cipherDetails.ciphertextSize(
+//                aPlaintextLength + initialBytesToSkip);
+//
+//        // Someone specified an inaccurate range and it brought us here
+//        if (ciphertextSizeCalculation > contentLength) {
+//            // If the calculation is accurate, then we attempt to calculate plaintext size
+//            if (!cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
+//                return cipherDetails.plaintextSize(contentLength);
+//            }
+//
+//            // We try to get the metadata about the actual plaintext size
+//            String plaintextLengthHeaderVal = getHeaderAsString(
+//                    MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
+//
+//            // If it is there, we replace the plaintext length specified with the file size
+//            if (plaintextLengthHeaderVal != null) {
+//                return Long.parseLong(plaintextLengthHeaderVal);
+//            }
+//
+//            // Otherwise we error
+//            String msg = "Plaintext length specified is greater than "
+//                    + "the size of the file and there is no reliable fallback "
+//                    + "information for getting the real plaintext value";
+//            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+//            annotateException(e);
+//            e.setContextValue("plaintextLength", aPlaintextLength);
+//            e.setContextValue("ciphertextSize", ciphertextSizeCalculation);
+//            throw e;
+//        }
 
         return aPlaintextLength;
     }

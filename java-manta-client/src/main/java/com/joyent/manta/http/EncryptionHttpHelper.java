@@ -259,9 +259,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             plaintextRanges = requestHeaders.getByteRange();
             computedRanges = cipherDetails.translateByteRange(
                     plaintextRanges[0], plaintextRanges[1]);
-            requestHeaders.setRange(String.format("bytes=%d-%d", computedRanges[0], computedRanges[2]));
+            long binaryStartPositionInclusive = computedRanges[0];
+            long binaryEndPositionInclusive = computedRanges[2] + 1;
+            requestHeaders.setRange(String.format("bytes=%d-%d",
+                    binaryStartPositionInclusive, binaryEndPositionInclusive));
 
-            plaintextLength = plaintextRanges[1] - plaintextRanges[0] + computedRanges[1];
+            plaintextLength = computedRanges[3];
         } else {
             plaintextRanges = null;
             plaintextLength = -1L;
