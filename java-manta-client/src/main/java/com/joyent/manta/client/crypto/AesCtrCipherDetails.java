@@ -85,7 +85,7 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
             adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize;
         }
 
-        plaintextEndLength = endInclusive - startInclusive;
+        plaintextEndLength = endInclusive - startInclusive + 1;
 
         ranges[0] = adjustedStart;
         ranges[1] = plaintextStartAdjustment;
@@ -108,5 +108,10 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         }
 
         return skip;
+    }
+
+    @Override
+    public boolean supportsRandomAccess() {
+        return true;
     }
 }

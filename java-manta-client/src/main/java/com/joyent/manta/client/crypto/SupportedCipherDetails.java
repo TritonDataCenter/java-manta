@@ -120,7 +120,7 @@ public interface SupportedCipherDetails {
      * @param endInclusive ending position of byte range (-1, 0-Long.MAX)
      * @return long array with 5 elements
      *         (ciphertext start, plaintext adjustment, ciphertext end,
-     *          plaintext end position, starting block number)
+     *          plaintext length, starting block number)
      */
     long[] translateByteRange(long startInclusive, long endInclusive);
 
@@ -142,6 +142,11 @@ public interface SupportedCipherDetails {
      * @return an initialization vector in bytes
      */
     byte[] generateIv();
+
+    /**
+     * @return true when the cipher/mode supports reading from arbitrary positions
+     */
+    boolean supportsRandomAccess();
 
     /**
      * Finds a cipher by name and provider. Only throws runtime exceptions.

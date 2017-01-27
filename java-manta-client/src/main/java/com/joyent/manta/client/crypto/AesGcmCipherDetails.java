@@ -95,13 +95,16 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
 
     @Override
     public long[] translateByteRange(final long startInclusive, final long endInclusive) {
-        long[] ranges = new long[4];
-
-        return ranges;
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public boolean supportsRandomAccess() {
+        return false;
     }
 }

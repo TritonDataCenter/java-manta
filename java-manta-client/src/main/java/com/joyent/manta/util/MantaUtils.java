@@ -675,4 +675,24 @@ public final class MantaUtils {
 
         return Collections.unmodifiableMap(map);
     }
+
+    /**
+     * Method that converts long values that are over {@link Integer#MAX_VALUE}
+     * and under {@link Integer#MIN_VALUE} to their respective integer max and
+     * min values.
+     *
+     * @param value value to convert
+     * @return converted value if overflow, otherwise identical value as int
+     */
+    public static int overflowToIntMax(final long value) {
+        if (value > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+
+        if (value < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+
+        return (int)value;
+    }
 }

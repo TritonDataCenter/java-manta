@@ -63,20 +63,23 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
 
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes128() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
     }
 
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes192() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_192_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
     }
 
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes256() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
     }

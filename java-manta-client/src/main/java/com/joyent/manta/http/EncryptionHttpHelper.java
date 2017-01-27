@@ -6,6 +6,7 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.EncryptionType;
@@ -237,13 +238,33 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
-        if (requestHeaders != null && requestHeaders.getRange() != null
-                && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
+        final boolean hasRangeRequest = requestHeaders != null && requestHeaders.getRange() != null;
+
+        if (hasRangeRequest && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
             String msg = "HTTP range requests (random reads) aren't supported when using "
                     + "client-side encryption in mandatory authentication mode.";
             MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
             HttpHelper.annotateContextedException(e, request, null);
             throw e;
+        }
+
+        final Long[] plaintextRanges;
+        final long[] computedRanges;
+        final long plaintextLength;
+
+        if (hasRangeRequest) {
+            // TODO: Unhardcode cipher
+            SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+            // TODO: Deal with null cases
+            plaintextRanges = requestHeaders.getByteRange();
+            computedRanges = cipherDetails.translateByteRange(
+                    plaintextRanges[0], plaintextRanges[1]);
+            requestHeaders.setRange(String.format("bytes=%d-%d", computedRanges[0], computedRanges[2]));
+
+            plaintextLength = plaintextRanges[1] - plaintextRanges[0] + computedRanges[1];
+        } else {
+            plaintextRanges = null;
+            plaintextLength = -1L;
         }
 
         final MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
@@ -278,7 +299,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         rawStream.getMetadata().putAll(encryptedMetadata);
 
-        return new MantaEncryptedObjectInputStream(rawStream, secretKey, true);
+        if (hasRangeRequest) {
+            return new MantaEncryptedObjectInputStream(rawStream, secretKey, false, plaintextRanges[0],
+                    plaintextLength);
+        } else {
+            return new MantaEncryptedObjectInputStream(rawStream, secretKey, true);
+        }
     }
 
     @Override

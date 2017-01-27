@@ -90,40 +90,16 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
 
     @Override
     public long[] translateByteRange(final long startInclusive, final long endInclusive) {
-
-        Validate.inclusiveBetween(0, ciphertextMaxSize, startInclusive,
-                "Start position should be between 0 and 9223372036854775807");
-        Validate.inclusiveBetween(-1, ciphertextMaxSize, endInclusive,
-                "End position should be between -1 (undefined) and 9223372036854775807");
-
-        long[] ranges = new long[4];
-
-        final int blockSize = getBlockSizeInBytes();
-        final long adjustedStart;
-        final long adjustedEnd;
-
-        if (startInclusive % blockSize == 0) {
-            adjustedStart = startInclusive;
-        } else {
-            adjustedStart = (startInclusive / blockSize) * blockSize;
-        }
-
-        if (endInclusive % blockSize == 0) {
-            adjustedEnd = endInclusive;
-        } else {
-            adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize;
-        }
-
-        ranges[0] = adjustedStart;
-        ranges[1] = 0L;
-        ranges[2] = adjustedEnd;
-        ranges[3] = 0L;
-
-        return ranges;
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public boolean supportsRandomAccess() {
+        return false;
     }
 }

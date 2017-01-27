@@ -17,12 +17,14 @@ import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -39,23 +41,22 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 @Test
 public class MantaEncryptedObjectInputStreamTest {
+    private final Path testFile;
     private final URL testURL;
     private final int plainTextSize;
     private final byte[] plainTextBytes;
 
     public MantaEncryptedObjectInputStreamTest() {
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        this.testURL = classLoader.getResource("com/joyent/manta/client/crypto/MantaEncryptedObjectInputStreamTest.class");
-
-        Path path;
+        this.testURL = classLoader.getResource("test-data/chaucer.txt");
 
         try {
-            path = Paths.get(testURL.toURI());
+            testFile = Paths.get(testURL.toURI());
         } catch (URISyntaxException e) {
             throw new AssertionError(e);
         }
 
-        this.plainTextSize = (int)path.toFile().length();
+        this.plainTextSize = (int)testFile.toFile().length();
 
         try (InputStream in = this.testURL.openStream()) {
             this.plainTextBytes = IOUtils.readFully(in, plainTextSize);
@@ -136,7 +137,7 @@ public class MantaEncryptedObjectInputStreamTest {
     public void canDecryptEntireObjectUnauthenticatedAesGcm256() throws IOException {
         canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT, false);
     }
-    
+
 
     public void willErrorIfCiphertextIsModifiedAesCbc128() throws IOException {
         willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT);
@@ -284,7 +285,7 @@ public class MantaEncryptedObjectInputStreamTest {
     public void canSkipBytesUnauthenticatedAesGcm256() throws IOException {
         canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
-    
+
 
     public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc128() throws IOException {
         willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_128_BIT);
@@ -321,8 +322,127 @@ public class MantaEncryptedObjectInputStreamTest {
     public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm256() throws IOException {
         willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
-    
-    
+
+
+    public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() / 2;
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
+    public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr192() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() / 2;
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
+    public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr256() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() / 2;
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
+
+    public void canReadByteRangeStartingAtZeroEndingInThirdBlockAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() * 2 + (cipherDetails.getBlockSizeInBytes() / 2);
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
+    public void canReadByteRangeStartingAtZeroEndingInThirdBlockAesCtr192() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() * 2 + (cipherDetails.getBlockSizeInBytes() / 2);
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
+    public void canReadByteRangeStartingAtZeroEndingInThirdBlockAesCtr256() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() * 2 + (cipherDetails.getBlockSizeInBytes() / 2);
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
+
+    public void canReadByteRangeStartingAtThreeEndingInFirstBlockAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() / 2;
+        canReadByteRangeAllReadModes(cipherDetails, 3, endPos);
+    }
+
+    public void canReadByteRangeStartingAtThreeEndingInFirstBlockAesCtr192() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() / 2;
+        canReadByteRangeAllReadModes(cipherDetails, 3, endPos);
+    }
+
+    public void canReadByteRangeStartingAtThreeEndingInFirstBlockAesCtr256() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        int endPos = cipherDetails.getBlockSizeInBytes() / 2;
+        canReadByteRangeAllReadModes(cipherDetails, 3, endPos);
+    }
+
+    public void canReadByteRangeStartingAtThirdBlockEndingInFifthBlockAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int startPos = cipherDetails.getBlockSizeInBytes() * 3 + (cipherDetails.getBlockSizeInBytes() / 2);
+        int endPos = cipherDetails.getBlockSizeInBytes() * 5 + (cipherDetails.getBlockSizeInBytes() / 2);
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStartingAtThirdBlockEndingInFifthBlockAesCtr192() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        int startPos = cipherDetails.getBlockSizeInBytes() * 3 + (cipherDetails.getBlockSizeInBytes() / 2);
+        int endPos = cipherDetails.getBlockSizeInBytes() * 5 + (cipherDetails.getBlockSizeInBytes() / 2);
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStartingAtThirdBlockEndingInFifthBlockAesCtr256() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        int startPos = cipherDetails.getBlockSizeInBytes() * 3 + (cipherDetails.getBlockSizeInBytes() / 2);
+        int endPos = cipherDetails.getBlockSizeInBytes() * 5 + (cipherDetails.getBlockSizeInBytes() / 2);
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStarting25bytesFromEndToEndAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int endPos = plainTextSize - 1;
+        int startPos = endPos - 25;
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStarting25bytesFromEndToEndAesCtr192() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        int endPos = plainTextSize - 1;
+        int startPos = endPos - 25;
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStarting25bytesFromEndToEndAesCtr256() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        int endPos = plainTextSize - 1;
+        int startPos = endPos - 25;
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStarting25bytesFromEndToBeyondEndAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int endPos = plainTextSize * 2;
+        int startPos = plainTextSize - 26;
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStarting25bytesFromEndToBeyondEndAesCtr192() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        int endPos = plainTextSize * 2;
+        int startPos = plainTextSize - 26;
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
+    public void canReadByteRangeStarting25bytesFromEndToBeyondEndAesCtr256() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        int endPos = plainTextSize * 2;
+        int startPos = plainTextSize - 26;
+        canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
+    }
+
     /* TEST UTILITY CLASSES */
 
     private static class EncryptedFile {
@@ -345,8 +465,19 @@ public class MantaEncryptedObjectInputStreamTest {
             int totalRead = 0;
             int lastByte;
 
-            while ((lastByte = in.read()) != -1) {
-                target[totalRead++] = (byte)lastByte;
+            try {
+                while ((lastByte = in.read()) != -1) {
+                    target[totalRead++] = (byte) lastByte;
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                while (in.read() != -1) {
+                    totalRead++;
+                }
+
+                String msg = String.format("%d bytes available in stream, but "
+                        + "the byte array target has a length of %d bytes",
+                        totalRead, target.length);
+                throw new AssertionError(msg, e);
             }
 
             return totalRead;
@@ -368,9 +499,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 }
 
                 byte[] written = out.toByteArray();
-                for (int i = 0; i < target.length; i++) {
-                    target[i] = written[i];
-                }
+                System.arraycopy(written, 0, target, 0, target.length);
             }
 
             return totalRead;
@@ -392,9 +521,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 }
 
                 byte[] written = out.toByteArray();
-                for (int i = 0; i < target.length; i++) {
-                    target[i] = written[i];
-                }
+                System.arraycopy(written, 0, target, 0, target.length);
             }
 
             return totalRead;
@@ -524,7 +651,7 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
         canReadObject(cipherDetails, new ReadSkipReadSkip(), false);
     }
-    
+
     private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
                                         ReadBytes readBytes, boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
@@ -544,11 +671,10 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     /**
-     Test that loops through all of the ciphers and attempts to skip bytes from
-     * an encrypted stream that had its ciphertext altered. In this case, the
-     * stream is closed before all of the bytes are read from it. An assertion
-     * fails if the underlying stream fails to throw a
-     * {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     * Test that attempts to skip bytes from an encrypted stream that had its
+     * ciphertext altered. In this case, the stream is closed before all of the
+     * bytes are read from it. An assertion fails if the underlying stream
+     * fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
      */
     private void willErrorIfCiphertextIsModifiedAndBytesAreSkipped(SupportedCipherDetails cipherDetails) throws IOException {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
@@ -556,6 +682,96 @@ public class MantaEncryptedObjectInputStreamTest {
 
         System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
         willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ReadSkipReadSkip());
+    }
+
+    /**
+     * Test that attempts to read a byte range from an encrypted stream starting
+     * at the first byte.
+     */
+    private void canReadByteRangeAllReadModes(SupportedCipherDetails cipherDetails,
+                                              int startPosInclusive,
+                                              int endPosInclusive)
+            throws IOException {
+        System.out.printf("Testing byte range read starting from zero for cipher [%s] as full read of "
+                        + "truncated stream\n",
+                cipherDetails.getCipherId());
+
+        System.out.println(" Reading byte by byte");
+        canReadByteRange(cipherDetails, new SingleReads(), startPosInclusive, endPosInclusive);
+        System.out.println(" Reading bytes by chunk");
+        canReadByteRange(cipherDetails, new ByteChunkReads(), startPosInclusive, endPosInclusive);
+        System.out.println(" Reading bytes by chunks with offset");
+        canReadByteRange(cipherDetails, new ByteChunkOffsetReads(), startPosInclusive, endPosInclusive);
+    }
+
+    private void canReadByteRange(SupportedCipherDetails cipherDetails,
+                                  ReadBytes readBytes,
+                                  int startPosInclusive,
+                                  int endPosInclusive) throws IOException {
+        final byte[] content;
+        try (InputStream in = testURL.openStream();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
+            content = out.toByteArray();
+        }
+
+        /* If the plaintext size specified is greater than the actual plaintext
+         * size, we adjust it here. This is only for creating the expectation
+         * that we compare our output to. */
+        final int endPositionExclusive;
+
+        if (endPosInclusive + 1 > plainTextSize) {
+            endPositionExclusive = plainTextSize;
+        } else {
+            endPositionExclusive = endPosInclusive + 1;
+        }
+
+        byte[] expected = Arrays.copyOfRange(content, startPosInclusive, endPositionExclusive);
+
+        SecretKey key = SecretKeyUtils.generate(cipherDetails);
+        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
+        long ciphertextSize = encryptedFile.file.length();
+
+        /* Here we translate the plaintext ranges to ciphertext ranges. Notice
+         * that we take the input of endPos because it may overrun past the
+         * size of the plaintext. */
+        long[] ranges = cipherDetails.translateByteRange(startPosInclusive, endPosInclusive);
+        long ciphertextStart = ranges[0];
+        long plaintextLength = ranges[3];
+
+        /* Here, we simulate being passed only a subset of the total bytes of
+         * a file - just like how the output of a HTTP range request would be
+         * passed. */
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(encryptedFile.file, "r")) {
+            // We seek to the start of the ciphertext to emulate a HTTP byte range request
+            randomAccessFile.seek(ciphertextStart);
+            /* We then calculate the range length based on the *actual* ciphertext
+             * size so that we are emulating HTTP range requests by returning a
+             * the binary of the actual object (even if the range went beyond). */
+            long ciphertextByteRangeLength = ciphertextSize - ciphertextStart;
+            byte[] rangedBytes = new byte[(int)ciphertextByteRangeLength];
+            randomAccessFile.read(rangedBytes);
+
+            try (ByteArrayInputStream bin = new ByteArrayInputStream(rangedBytes);
+                /* When creating the fake stream, we feed it a content-length equal
+                 * to the size of the byte range because that is what Manta would
+                 * do. Also, we pass along the incorrect plaintext length and
+                 * test how the stream handles incorrect values of plaintext length. */
+                 MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, bin,
+                         ciphertextByteRangeLength, cipherDetails, encryptedFile.cipher.getIV(),
+                    false, startPosInclusive, plaintextLength)) {
+                byte[] actual = new byte[expected.length];
+                readBytes.readAll(min, actual);
+
+                try {
+                    AssertJUnit.assertArrayEquals("Byte range output doesn't match",
+                            expected, actual);
+                } catch (AssertionError e) {
+                    Assert.fail(String.format("%s\nexpected: %s\nactual  : %s",
+                            e.getMessage(), new String(expected), new String(actual)));
+                }
+            }
+        }
     }
 
     private void canReadObject(SupportedCipherDetails cipherDetails,
@@ -567,7 +783,7 @@ public class MantaEncryptedObjectInputStreamTest {
 
         try (FileInputStream in = new FileInputStream(encryptedFile.file);
              MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), 
+                     ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                      authenticate)) {
 
             byte[] actual = new byte[plainTextSize];
@@ -626,10 +842,17 @@ public class MantaEncryptedObjectInputStreamTest {
     private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
             SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
             byte[] iv, boolean authenticate) {
+        return createEncryptedObjectInputStream(key, in, contentLength, cipherDetails, iv,
+                authenticate, -1L, -1L);
+    }
+
+    private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
+            SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
+            byte[] iv, boolean authenticate, long startPos, long plaintextLength) {
         String path = String.format("/test/stor/test-%s", UUID.randomUUID());
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.put(MantaHttpHeaders.ENCRYPTION_CIPHER, cipherDetails.getCipherId());
-        headers.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH, plainTextSize);
+        headers.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH, this.plainTextSize);
         headers.put(MantaHttpHeaders.ENCRYPTION_KEY_ID, "unit-test-key");
 
         if (cipherDetails.isAEADCipher()) {
@@ -654,6 +877,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 response, httpResponse, eofSensorInputStream
         );
 
-        return new MantaEncryptedObjectInputStream(mantaObjectInputStream, key, authenticate);
+        return new MantaEncryptedObjectInputStream(mantaObjectInputStream, key, authenticate,
+                startPos, plaintextLength);
     }
 }
