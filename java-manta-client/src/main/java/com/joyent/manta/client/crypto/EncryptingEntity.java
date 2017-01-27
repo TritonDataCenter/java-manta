@@ -59,30 +59,20 @@ public class EncryptingEntity implements HttpEntity {
     private static final Header CRYPTO_CONTENT_TYPE = new BasicHeader(
             HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString());
 
-    /**
-     * Secret key to encrypt stream with.
-     */
-    private final SecretKey key;
-
-    /**
-     * Attributes of the cipher used for encryption.
-     */
-    private final SupportedCipherDetails cipherDetails;
 
     /**
      * Total length of the stream in bytes.
      */
     private long originalLength;
 
+
+    private final EncryptionContext eContext;
+
     /**
      * Underlying entity that is being encrypted.
      */
     private final HttpEntity wrapped;
 
-    /**
-     * Cipher implementation used to encrypt as a stream.
-     */
-    private final Cipher cipher;
 
     /**
      * Creates a new instance with an known stream size.
@@ -102,25 +92,10 @@ public class EncryptingEntity implements HttpEntity {
             throw new MantaClientEncryptionException(msg);
         }
 
-        @SuppressWarnings("MagicNumber")
-        final int keyBits = key.getEncoded().length << 3;
+        this.eContext = new EncryptionContext(key, cipherDetails);
 
-        if (keyBits != cipherDetails.getKeyLengthBits()) {
-            String msg = "Mismatch between algorithm definition and secret key size";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            e.setContextValue("cipherDetails", cipherDetails.toString());
-            e.setContextValue("secretKeyAlgorithm", key.getAlgorithm());
-            e.setContextValue("secretKeySizeInBits", String.valueOf(keyBits));
-            e.setContextValue("expectedKeySizeInBits", cipherDetails.getKeyLengthBits());
-            throw e;
-        }
-
-        this.key = key;
-        this.cipherDetails = cipherDetails;
         this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
-        this.cipher = cipherDetails.getCipher();
-        initializeCipher();
     }
 
     @Override
@@ -136,7 +111,7 @@ public class EncryptingEntity implements HttpEntity {
     @Override
     public long getContentLength() {
         if (originalLength >= 0) {
-            return cipherDetails.ciphertextSize(originalLength);
+            return eContext.getCipherDetails().ciphertextSize(originalLength);
         } else {
             return UNKNOWN_LENGTH;
         }
@@ -174,21 +149,21 @@ public class EncryptingEntity implements HttpEntity {
          *    thereby corrupting the ciphertext. */
 
         final CloseShieldOutputStream noCloseOut = new CloseShieldOutputStream(httpOut);
-        final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, cipher);
+        final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, eContext.getCipher());
         final OutputStream out;
         final Mac hmac;
 
         // Things are a lot more simple if we are using AEAD
-        if (cipherDetails.isAEADCipher()) {
+        if (eContext.getCipherDetails().isAEADCipher()) {
             out = cipherOut;
             hmac = null;
         } else {
-            hmac = cipherDetails.getAuthenticationHmac();
+            hmac = eContext.getCipherDetails().getAuthenticationHmac();
             try {
-                hmac.init(key);
+                hmac.init(eContext.getSecretKey());
                 /* The first bytes of the HMAC are the IV. This is done in order to
                  * prevent IV collision or spoofing attacks. */
-                hmac.update(cipher.getIV());
+                hmac.update(eContext.getCipher().getIV());
             } catch (InvalidKeyException e) {
                 String msg = "Error initializing HMAC with secret key";
                 throw new MantaClientEncryptionException(msg, e);
@@ -204,7 +179,7 @@ public class EncryptingEntity implements HttpEntity {
 
             if (hmac != null) {
                 byte[] hmacBytes = hmac.doFinal();
-                Validate.isTrue(hmacBytes.length == cipherDetails.getAuthenticationTagOrHmacLengthInBytes(),
+                Validate.isTrue(hmacBytes.length == eContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes(),
                         "HMAC actual bytes doesn't equal the number of bytes expected");
 
                 if (LOGGER.isDebugEnabled()) {
@@ -274,27 +249,7 @@ public class EncryptingEntity implements HttpEntity {
     }
 
     public Cipher getCipher() {
-        return cipher;
+        return eContext.getCipher();
     }
 
-    /**
-     * Initializes the cipher with an IV (initialization vector), so that
-     * the cipher is ready to be used to encrypt.
-     */
-    private void initializeCipher() {
-        try {
-            byte[] iv = cipherDetails.generateIv();
-            cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
-        } catch (InvalidKeyException e) {
-            MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                    "There was a problem loading private key", e);
-            String details = String.format("key=%s, algorithm=%s",
-                    key.getAlgorithm(), key.getFormat());
-            mcee.setContextValue("key_details", details);
-            throw mcee;
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new MantaClientEncryptionException(
-                    "There was a problem with the passed algorithm parameters", e);
-        }
-    }
 }
