@@ -204,6 +204,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         attachEncryptionCipherHeaders(metadata);
         // Insert all of the headers and metadata needed for describing the encrypted entity
         attachEncryptedEntityHeaders(metadata, encryptingEntity);
+        attachEncryptionPlaintextLengthHeader(metadata, encryptingEntity);
         // Insert all of the encrypted metadata values into the metadata map
         attachEncryptedMetadata(metadata);
 
@@ -694,7 +695,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @throws IOException thrown when unable to append metadata
      */
     protected void attachEncryptedEntityHeaders(final MantaMetadata metadata,
-                                              final EncryptingEntity encryptingEntity)
+                                                final EncryptingEntity encryptingEntity)
             throws IOException {
         // IV Used to Encrypt
         String ivBase64 = Base64.getEncoder().encodeToString(
@@ -702,14 +703,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         metadata.put(MantaHttpHeaders.ENCRYPTION_IV, ivBase64);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("IV: {}", Hex.encodeHexString(encryptingEntity.getCipher().getIV()));
-        }
-
-        // Plaintext content-length if available
-        if (encryptingEntity.getOriginalLength() > EncryptingEntity.UNKNOWN_LENGTH) {
-            String originalLength = String.valueOf(encryptingEntity.getOriginalLength());
-            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
-                    originalLength);
-            LOGGER.debug("Plaintext content-length: {}", originalLength);
         }
 
         // AEAD Tag Length if AEAD Cipher
@@ -724,6 +717,22 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     hmac.getAlgorithm());
             LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
         }
+    }
+
+    protected void attachEncryptionPlaintextLengthHeader(final MantaMetadata metadata,
+                                                          long length) {
+        // Plaintext content-length if available
+        if (length > EncryptingEntity.UNKNOWN_LENGTH) {
+            String originalLength = String.valueOf(length);
+            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    originalLength);
+            LOGGER.debug("Plaintext content-length: {}", originalLength);
+        }
+    }
+
+    protected void attachEncryptionPlaintextLengthHeader(final MantaMetadata metadata,
+                                                         final EncryptingEntity encryptingEntity) {
+        attachEncryptionPlaintextLengthHeader(metadata, encryptingEntity.getOriginalLength());
     }
 
     /**
