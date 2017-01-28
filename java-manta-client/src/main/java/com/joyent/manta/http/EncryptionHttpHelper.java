@@ -6,6 +6,7 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.EncryptionType;
@@ -24,6 +25,7 @@ import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -33,6 +35,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -237,13 +240,26 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
-        if (requestHeaders != null && requestHeaders.getRange() != null
-                && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
+        final boolean hasRangeRequest = requestHeaders != null && requestHeaders.getRange() != null;
+
+        if (hasRangeRequest && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
             String msg = "HTTP range requests (random reads) aren't supported when using "
                     + "client-side encryption in mandatory authentication mode.";
             MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
             HttpHelper.annotateContextedException(e, request, null);
             throw e;
+        }
+
+        final Long initialSkipBytes;
+        final Long plaintextRangeLength;
+
+        if (hasRangeRequest) {
+            Long[] rangeProperties = calculateSkipBytesAndPlaintextLength(request, requestHeaders);
+            initialSkipBytes = rangeProperties[0];
+            plaintextRangeLength = rangeProperties[1];
+        } else {
+            initialSkipBytes = null;
+            plaintextRangeLength = null;
         }
 
         final MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
@@ -278,8 +294,115 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         rawStream.getMetadata().putAll(encryptedMetadata);
 
-        return new MantaEncryptedObjectInputStream(rawStream, secretKey, true);
+        if (hasRangeRequest) {
+            return new MantaEncryptedObjectInputStream(rawStream, secretKey, false, initialSkipBytes,
+                    plaintextRangeLength);
+        } else {
+            return new MantaEncryptedObjectInputStream(rawStream, secretKey, true);
+        }
     }
+
+    /**
+     * Calculates the skip bytes and plaintext length for a encrypted ranged
+     * request.
+     *
+     * @param request source request that hasn't been made yet
+     * @param requestHeaders headers passed to the request
+     * @return a {@link Long} array containing two elements: skip bytes, plaintext length
+     * @throws IOException thrown when we fail making an additional HEAD request
+     */
+    @SuppressWarnings("MagicNumber")
+    private Long[] calculateSkipBytesAndPlaintextLength(final HttpUriRequest request,
+                                                        final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        // TODO: Unhardcode cipher
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+
+        final Long initialSkipBytes;
+        final Long plaintextRangeLength;
+
+        final long[] plaintextRanges = byteRangeAsNullSafe(requestHeaders.getByteRange(),
+                cipherDetails);
+
+        final long plaintextStart = plaintextRanges[0];
+        final long plaintextEnd = plaintextRanges[1];
+
+        final long binaryStartPositionInclusive;
+        final long binaryEndPositionInclusive;
+
+        final boolean negativeEndRequest = plaintextEnd < 0;
+
+        // We have been passed a request in the form of something like: bytes=-50
+        if (plaintextStart == 0 && negativeEndRequest) {
+            /* Since we don't know the size of the object, there is no way
+             * for us to know what the value of objectSize - N is. So we
+             * do a HEAD request and discover the plaintext object size
+             * and the size of the ciphertext. This allows us to have
+             * the information needed to do a proper range request. */
+            final String path = request.getURI().getPath();
+
+            // Forward on all headers to the HEAD request
+            HttpHead head = getConnectionFactory().head(path);
+            head.setHeaders(request.getAllHeaders());
+            head.removeHeaders(HttpHeaders.RANGE);
+
+            HttpResponse headResponse = super.executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
+            final MantaHttpHeaders headers = new MantaHttpHeaders(headResponse.getAllHeaders());
+            MantaObjectResponse objectResponse = new MantaObjectResponse(path, headers);
+
+            /* We make the actual GET request's success dependent on the
+             * object not changing since we did the HEAD request. */
+            request.setHeader(HttpHeaders.IF_MATCH, objectResponse.getEtag());
+            request.setHeader(HttpHeaders.IF_UNMODIFIED_SINCE,
+                    objectResponse.getHeaderAsString(HttpHeaders.LAST_MODIFIED));
+
+            Long ciphertextSize = objectResponse.getContentLength();
+            Validate.notNull(ciphertextSize,
+                    "Manta should always return a content-size");
+
+            // We query the response object for multiple properties that will
+            // give us the plaintext size. If not possible, this will error.
+            long fullPlaintextSize = HttpHelper.attempToFindPlaintextSize(
+                    objectResponse, ciphertextSize, cipherDetails);
+
+            // Since plaintextEnd is a negative value - this will be set to
+            // the number of bytes before the end of the file (in plaintext)
+            initialSkipBytes = plaintextEnd + fullPlaintextSize;
+
+            // calculates the ciphertext byte range
+            long[] computedRanges = cipherDetails.translateByteRange(
+                    initialSkipBytes, fullPlaintextSize - 1);
+
+            // We only use the ciphertext start position, because we already
+            // have the position of the end of the ciphertext (eg content-length)
+            binaryStartPositionInclusive = computedRanges[0];
+            binaryEndPositionInclusive = ciphertextSize;
+
+            plaintextRangeLength = computedRanges[3];
+        // This is the typical case like: bytes=3-44
+        } else {
+            initialSkipBytes = plaintextStart;
+            // calculates the ciphertext byte range
+            long[] computedRanges = cipherDetails.translateByteRange(
+                    initialSkipBytes, plaintextEnd);
+
+            binaryStartPositionInclusive = computedRanges[0];
+
+            if (computedRanges[2] > 0) {
+                binaryEndPositionInclusive = computedRanges[2] + 1;
+            } else {
+                binaryEndPositionInclusive = 0;
+            }
+
+            plaintextRangeLength = computedRanges[3];
+        }
+
+        requestHeaders.setRange(String.format("bytes=%d-%d",
+                binaryStartPositionInclusive, binaryEndPositionInclusive));
+
+        return new Long[] {initialSkipBytes, plaintextRangeLength};
+    }
+
 
     @Override
     public MantaObjectResponse httpPutMetadata(final String path,
@@ -865,5 +988,35 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     "There was a problem with the passed algorithm parameters", e);
         }
         return metadataCipher;
+    }
+
+    /**
+     * Converts a nullable {@link Long} array into a long primitive array.
+     * Unlimited positions are represented as the hard file size limits of the
+     * specified cipher.
+     *
+     * @param ranges array containing two elements
+     * @param cipherDetails cipher being used to compute range
+     * @return updated range coordinates based on cipher/cipher mode configuration
+     */
+    private static long[] byteRangeAsNullSafe(final Long[] ranges,
+                                              final SupportedCipherDetails cipherDetails) {
+        final long plaintextMax = cipherDetails.getMaximumPlaintextSizeInBytes();
+        final long startPos;
+        final long endPos;
+
+        if (ranges[0] == null) {
+            startPos = 0L;
+        } else {
+            startPos = ranges[0];
+        }
+
+        if (ranges[1] == null) {
+            endPos = plaintextMax;
+        } else {
+            endPos = ranges[1];
+        }
+
+        return new long[] {startPos, endPos};
     }
 }

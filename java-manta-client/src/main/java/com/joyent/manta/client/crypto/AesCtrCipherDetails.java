@@ -61,11 +61,33 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
 
     @Override
     public long[] translateByteRange(final long startInclusive, final long endInclusive) {
+        final long plaintextMax = getMaximumPlaintextSizeInBytes();
 
-        Validate.inclusiveBetween(0, ciphertextMaxSize, startInclusive,
-                "Start position should be between 0 and 9223372036854775807");
-        Validate.inclusiveBetween(-1, ciphertextMaxSize, endInclusive,
-                "End position should be between -1 (undefined) and 9223372036854775807");
+        if (startInclusive < 0) {
+            String msg = String.format("Start position must be zero or higher. Actually: %d",
+                    startInclusive);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (startInclusive > plaintextMax) {
+            String msg = String.format("Start position must be less than maximum "
+                            + "ciphertext size [%d]. Actually: %d",
+                    plaintextMax, startInclusive);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (endInclusive < 0) {
+            String msg = String.format("End position must be zero or higher. Actually: %d",
+                    endInclusive);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (endInclusive > plaintextMax) {
+            String msg = String.format("End position must be less than maximum "
+                            + "ciphertext size [%d]. Actually: %d",
+                    plaintextMax, endInclusive);
+            throw new IllegalArgumentException(msg);
+        }
 
         long[] ranges = new long[5];
 
@@ -79,13 +101,16 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         final long blockNumber = (startInclusive / blockSize);
         adjustedStart = blockNumber * blockSize;
 
-        if (endInclusive % blockSize == 0) {
+        /* Zero is a weird case. Having an inclusive start and inclusive end of
+         * zero is valid. When we modules zero, it results in an invalid
+         * calculation. */
+        if (endInclusive != 0 && endInclusive % blockSize == 0) {
             adjustedEnd = endInclusive;
         } else {
             adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize;
         }
 
-        plaintextEndLength = endInclusive - startInclusive;
+        plaintextEndLength = endInclusive - startInclusive + 1;
 
         ranges[0] = adjustedStart;
         ranges[1] = plaintextStartAdjustment;
@@ -108,5 +133,10 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         }
 
         return skip;
+    }
+
+    @Override
+    public boolean supportsRandomAccess() {
+        return true;
     }
 }

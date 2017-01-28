@@ -20,7 +20,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
@@ -120,7 +119,7 @@ public class EncryptingEntityTest {
     private static void verifyEncryptionWorksRoundTrip(SupportedCipherDetails cipherDetails) throws Exception {
         byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
         final Charset charset = Charsets.US_ASCII;
-        final String expectedString = "01234567890124560123456789012";
+        final String expectedString = "012345678901245601234567890124";
         ExposedStringEntity stringEntity = new ExposedStringEntity(
                 expectedString, charset);
 
@@ -140,7 +139,6 @@ public class EncryptingEntityTest {
             throws Exception {
         SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
 
-
         EncryptingEntity encryptingEntity = new EncryptingEntity(key,
                 cipherDetails, entity);
 
@@ -151,8 +149,9 @@ public class EncryptingEntityTest {
             encryptingEntity.writeTo(out);
         }
 
-        Assert.assertEquals(encryptingEntity.getContentLength(), file.length(),
-                "Expected ciphertext file size doesn't match actual file size -");
+        Assert.assertEquals(file.length(), encryptingEntity.getContentLength(),
+                "Expected ciphertext file size doesn't match actual file size " +
+                        "[originalContentLength=" + entity.getContentLength() + "] -");
 
         byte[] iv = encryptingEntity.getCipher().getIV();
         Cipher cipher = cipherDetails.getCipher();

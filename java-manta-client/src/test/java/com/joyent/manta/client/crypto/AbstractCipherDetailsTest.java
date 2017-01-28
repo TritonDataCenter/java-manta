@@ -6,13 +6,10 @@ import org.testng.Assert;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
@@ -75,27 +72,27 @@ public abstract class AbstractCipherDetailsTest {
     protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
                                                                   final SupportedCipherDetails cipherDetails)
             throws IOException, GeneralSecurityException {
-        String text = "A SERGEANT OF THE LAW, wary and wise,\n" +
-                "That often had y-been at the Parvis, <26>\n" +
-                "There was also, full rich of excellence.\n" +
-                "Discreet he was, and of great reverence:\n" +
-                "He seemed such, his wordes were so wise,\n" +
-                "Justice he was full often in assize,\n" +
-                "By patent, and by plein* commission;\n" +
-                "For his science, and for his high renown,\n" +
-                "Of fees and robes had he many one.\n" +
-                "So great a purchaser was nowhere none.\n" +
-                "All was fee simple to him, in effect\n" +
-                "His purchasing might not be in suspect*\n" +
-                "Nowhere so busy a man as he there was\n" +
-                "And yet he seemed busier than he was\n" +
-                "In termes had he case' and doomes* all\n" +
-                "That from the time of King Will. were fall.\n" +
-                "Thereto he could indite, and make a thing\n" +
-                "There coulde no wight *pinch at* his writing.\n" +
-                "And every statute coud* he plain by rote\n" +
-                "He rode but homely in a medley* coat,\n" +
-                "Girt with a seint* of silk, with barres small;\n" +
+        String text = "A SERGEANT OF THE LAW, wary and wise, " +
+                "That often had y-been at the Parvis, <26> " +
+                "There was also, full rich of excellence. " +
+                "Discreet he was, and of great reverence: " +
+                "He seemed such, his wordes were so wise, " +
+                "Justice he was full often in assize, " +
+                "By patent, and by plein* commission; " +
+                "For his science, and for his high renown, " +
+                "Of fees and robes had he many one. " +
+                "So great a purchaser was nowhere none. " +
+                "All was fee simple to him, in effect " +
+                "His purchasing might not be in suspect* " +
+                "Nowhere so busy a man as he there was " +
+                "And yet he seemed busier than he was " +
+                "In termes had he case' and doomes* all " +
+                "That from the time of King Will. were fall. " +
+                "Thereto he could indite, and make a thing " +
+                "There coulde no wight *pinch at* his writing. " +
+                "And every statute coud* he plain by rote " +
+                "He rode but homely in a medley* coat, " +
+                "Girt with a seint* of silk, with barres small; " +
                 "Of his array tell I no longer tale.";
 
         byte[] plaintext = text.getBytes(Charset.forName("US-ASCII"));
@@ -116,7 +113,7 @@ public abstract class AbstractCipherDetailsTest {
         long endPlaintextRange = 129;
 
         byte[] adjustedPlaintext = Arrays.copyOfRange(plaintext,
-                (int)startPlaintextRange, (int)endPlaintextRange);
+                (int)startPlaintextRange, (int)endPlaintextRange + 1);
 
         long[] ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
         long startCipherTextRange = ranges[0];
@@ -131,7 +128,8 @@ public abstract class AbstractCipherDetailsTest {
 
         byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int)startCipherTextRange, (int)endCipherTextRange);
         byte[] out = decryptor.doFinal(adjustedCipherText);
-        byte[] decrypted = Arrays.copyOfRange(out, (int)adjustedPlaintextRange, (int)adjustedPlaintextLength);
+        byte[] decrypted = Arrays.copyOfRange(out, (int)adjustedPlaintextRange,
+                (int)adjustedPlaintextLength + (int)adjustedPlaintextRange);
 
         String decryptedText = new String(decrypted);
         String adjustedText = new String(adjustedPlaintext);

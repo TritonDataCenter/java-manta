@@ -1086,7 +1086,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
             throw new IllegalArgumentException("range must exist with - separator");
         }
 
-        return new Long[] { startPos, endPos };
+        return new Long[] {startPos, endPos};
     }
 
     /**
