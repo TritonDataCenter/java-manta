@@ -65,7 +65,15 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
             calculatedContentLength = (plaintextSize - padding) + blockBytes;
         }
 
-        // Append a block of 0's at the end of stream
+        byte[] iv = this.getCipher().getIV();
+        // CBC requires an IV an extra block for chaining to work
+        if ((iv == null || iv.length == 0) && plaintextSize >= blockBytes) {
+            final double blocks = Math.floor(plaintextSize / ((long) blockBytes));
+            calculatedContentLength = (((long)blocks + 1) * blockBytes);
+        }
+
+
+        // Append tag or hmac to the end of the stream
         calculatedContentLength += tagOrHmacBytes;
 
         return calculatedContentLength;
