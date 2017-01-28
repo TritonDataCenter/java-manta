@@ -759,7 +759,8 @@ public class MantaEncryptedObjectInputStreamTest {
                  * test how the stream handles incorrect values of plaintext length. */
                  MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, bin,
                          ciphertextByteRangeLength, cipherDetails, encryptedFile.cipher.getIV(),
-                    false, startPosInclusive, plaintextLength)) {
+                    false, Integer.valueOf(startPosInclusive).longValue(),
+                         plaintextLength)) {
                 byte[] actual = new byte[expected.length];
                 readBytes.readAll(min, actual);
 
@@ -843,12 +844,12 @@ public class MantaEncryptedObjectInputStreamTest {
             SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
             byte[] iv, boolean authenticate) {
         return createEncryptedObjectInputStream(key, in, contentLength, cipherDetails, iv,
-                authenticate, -1L, -1L);
+                authenticate, null, null);
     }
 
     private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
             SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
-            byte[] iv, boolean authenticate, long startPos, long plaintextLength) {
+            byte[] iv, boolean authenticate, Long startPos, Long plaintextLength) {
         String path = String.format("/test/stor/test-%s", UUID.randomUUID());
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.put(MantaHttpHeaders.ENCRYPTION_CIPHER, cipherDetails.getCipherId());

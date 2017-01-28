@@ -7,11 +7,13 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.exception.MantaClientEncryptionCiphertextAuthenticationException;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.bouncycastle.jcajce.io.CipherInputStream;
@@ -100,13 +102,13 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * Starting position in plaintext.
      */
-    private final long startPosition;
+    private final Long startPosition;
 
     /**
      * Total length of plaintext including the bytes that are skipped initially.
      * Thus, this value could be bigger than endPosition - startPosition.
      */
-    private final long plaintextLength;
+    private final Long plaintextRangeLength;
 
     /**
      * The number of bytes to skip on the first read/skip operation.
@@ -123,7 +125,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     public MantaEncryptedObjectInputStream(final MantaObjectInputStream backingStream,
                                            final SecretKey secretKey,
                                            final boolean authenticateCiphertext) {
-        this(backingStream, secretKey, authenticateCiphertext, -1L, -1L);
+        this(backingStream, secretKey, authenticateCiphertext, null, null);
     }
 
     /**
@@ -134,19 +136,19 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * @param authenticateCiphertext when true we perform authentication on the ciphertext
      *                               value is ignored when operating with a AEAD cipher mode
      * @param startPositionInclusive starting position to read plaintext from
-     * @param plaintextLength the total length of plaintext bytes to read
+     * @param plaintextRangeLength the total length of plaintext bytes to read
      */
     public MantaEncryptedObjectInputStream(final MantaObjectInputStream backingStream,
                                            final SecretKey secretKey,
                                            final boolean authenticateCiphertext,
-                                           final long startPositionInclusive,
-                                           final long plaintextLength) {
+                                           final Long startPositionInclusive,
+                                           final Long plaintextRangeLength) {
         super(backingStream);
 
         this.startPosition = startPositionInclusive;
         this.cipherDetails = findCipherDetails();
 
-        if ((startPositionInclusive >= 0 || plaintextLength >= 0) && !cipherDetails.supportsRandomAccess()) {
+        if ((startPositionInclusive != null || plaintextRangeLength != null) && !cipherDetails.supportsRandomAccess()) {
             String msg = "Cipher and cipher mode specified doesn't support random access";
             MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
             annotateException(e);
@@ -159,8 +161,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         this.authenticateCiphertext = authenticateCiphertext;
 
         this.initialBytesToSkip = initializeCipher();
-        this.plaintextLength = verifyAndConditionallyRecalculatePlaintextLength(
-                plaintextLength);
+        this.plaintextRangeLength = verifyAndConditionallyRecalculatePlaintextLength(
+                plaintextRangeLength);
         this.cipherInputStream = createCryptoStream();
         initializeHmac();
     }
@@ -173,54 +175,34 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * be inaccurate, so it is ultimately the responsibility of the caller to
      * make sure that this value is accurate.
      *
-     * @param aPlaintextLength plaintext length
+     * @param aPlaintextRangeLength plaintext length
      * @return potentially adjusted plaintext length
      */
-    private long verifyAndConditionallyRecalculatePlaintextLength(final long aPlaintextLength) {
-//        if (aPlaintextLength < 0) {
-//            return aPlaintextLength;
-//        }
-//
-//        // Ciphertext content-length (because it is coming from the super-class)
-//        final Long contentLength = super.getContentLength();
-//
-//        Validate.notNull(contentLength,
-//                "Manta should always return a content-length");
-//
-//        /* If content-length is available we want to verify that the plaintext length
-//         * calculated to ciphertext length isn't bigger than the content-length. */
-//
-//        long ciphertextSizeCalculation = cipherDetails.ciphertextSize(
-//                aPlaintextLength + initialBytesToSkip);
-//
-//        // Someone specified an inaccurate range and it brought us here
-//        if (ciphertextSizeCalculation > contentLength) {
-//            // If the calculation is accurate, then we attempt to calculate plaintext size
-//            if (!cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
-//                return cipherDetails.plaintextSize(contentLength);
-//            }
-//
-//            // We try to get the metadata about the actual plaintext size
-//            String plaintextLengthHeaderVal = getHeaderAsString(
-//                    MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
-//
-//            // If it is there, we replace the plaintext length specified with the file size
-//            if (plaintextLengthHeaderVal != null) {
-//                return Long.parseLong(plaintextLengthHeaderVal);
-//            }
-//
-//            // Otherwise we error
-//            String msg = "Plaintext length specified is greater than "
-//                    + "the size of the file and there is no reliable fallback "
-//                    + "information for getting the real plaintext value";
-//            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-//            annotateException(e);
-//            e.setContextValue("plaintextLength", aPlaintextLength);
-//            e.setContextValue("ciphertextSize", ciphertextSizeCalculation);
-//            throw e;
-//        }
+    private Long verifyAndConditionallyRecalculatePlaintextLength(
+            final Long aPlaintextRangeLength) {
+        if (aPlaintextRangeLength == null) {
+            return null;
+        }
 
-        return aPlaintextLength;
+        // Ciphertext content-length (because it is coming from the super-class)
+        final Long contentLength = super.getContentLength();
+
+        Validate.notNull(contentLength,
+                "Manta should always return a content-length");
+
+        /* If content-length is available we want to verify that the plaintext length
+         * calculated to ciphertext length isn't bigger than the content-length. */
+
+        long ciphertextSizeCalculation = cipherDetails.ciphertextSize(
+                aPlaintextRangeLength + initialBytesToSkip);
+
+        // Someone specified an inaccurate range and it brought us here
+        if (ciphertextSizeCalculation > contentLength) {
+            return HttpHelper.attempToFindPlaintextSize(
+                    getResponse(), contentLength, cipherDetails);
+        }
+
+        return aPlaintextRangeLength;
     }
 
     /**
@@ -270,7 +252,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
-            if (startPosition > 0) {
+            if (startPosition != null && startPosition > 0) {
                 return cipherDetails.updateCipherToPosition(this.cipher, startPosition);
             } else {
                 return 0L;
@@ -317,7 +299,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         /* A plaintext value above -1 indicates that we aren't working with
          * a subset of the total object (byte range), so we can just pass back
          * the ciphertext stream without any limitations on its length. */
-        if (plaintextLength < 0) {
+        if (plaintextRangeLength == null) {
             return cin;
         }
 
@@ -326,7 +308,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         /* We adjust the maximum number of plaintext bytes that can be returned
          * as the plaintext length + skipped bytes because the plaintext length
          * already has the skipped bytes subtracted from it. */
-        final long plaintextLimit = plaintextLength + this.initialBytesToSkip;
+        final long plaintextLimit = plaintextRangeLength + this.initialBytesToSkip;
 
         return new BoundedInputStream(cin, plaintextLimit);
     }
