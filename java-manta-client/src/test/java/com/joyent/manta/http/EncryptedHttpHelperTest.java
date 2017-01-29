@@ -17,13 +17,11 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
-import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
-import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpContext;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -36,6 +34,7 @@ import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 
 @Test
 public class EncryptedHttpHelperTest {
@@ -55,13 +54,15 @@ public class EncryptedHttpHelperTest {
         public void close() throws IOException {
         }
 
+        @Deprecated
         @Override
-        public HttpParams getParams() {
+        public org.apache.http.params.HttpParams getParams() {
             return null;
         }
 
+        @Deprecated
         @Override
-        public ClientConnectionManager getConnectionManager() {
+        public org.apache.http.conn.ClientConnectionManager getConnectionManager() {
             return null;
         }
     }
