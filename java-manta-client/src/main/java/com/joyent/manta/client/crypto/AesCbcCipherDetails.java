@@ -28,12 +28,6 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     public static final AesCbcCipherDetails INSTANCE_256_BIT = new AesCbcCipherDetails(256);
 
     /**
-     * The largest ciphertext size allowed.
-     */
-    private final long ciphertextMaxSize = (getMaximumPlaintextSizeInBytes() / getBlockSizeInBytes())
-            * getBlockSizeInBytes();
-
-    /**
      * Creates a new instance of a AES-CBC cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
