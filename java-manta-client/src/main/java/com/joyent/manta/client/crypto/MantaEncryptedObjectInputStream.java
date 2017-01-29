@@ -119,19 +119,22 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * Creates a new instance that decrypts the backing stream with the specified key.
      *
      * @param backingStream stream to read data from
+     * @param cipherDetails cipher/mode properties definition object
      * @param secretKey secret key used to decrypt
      * @param authenticateCiphertext when true we perform authentication on the ciphertext
      */
     public MantaEncryptedObjectInputStream(final MantaObjectInputStream backingStream,
+                                           final SupportedCipherDetails cipherDetails,
                                            final SecretKey secretKey,
                                            final boolean authenticateCiphertext) {
-        this(backingStream, secretKey, authenticateCiphertext, null, null);
+        this(backingStream, cipherDetails, secretKey, authenticateCiphertext, null, null);
     }
 
     /**
      * Creates a new instance that decrypts the backing stream with the specified key.
      *
      * @param backingStream stream to read data from
+     * @param cipherDetails cipher/mode properties definition object
      * @param secretKey secret key used to decrypt
      * @param authenticateCiphertext when true we perform authentication on the ciphertext
      *                               value is ignored when operating with a AEAD cipher mode
@@ -139,6 +142,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * @param plaintextRangeLength the total length of plaintext bytes to read
      */
     public MantaEncryptedObjectInputStream(final MantaObjectInputStream backingStream,
+                                           final SupportedCipherDetails cipherDetails,
                                            final SecretKey secretKey,
                                            final boolean authenticateCiphertext,
                                            final Long startPositionInclusive,
@@ -146,7 +150,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         super(backingStream);
 
         this.startPosition = startPositionInclusive;
-        this.cipherDetails = findCipherDetails();
+        this.cipherDetails = cipherDetails;
 
         if ((startPositionInclusive != null || plaintextRangeLength != null) && !cipherDetails.supportsRandomAccess()) {
             String msg = "Cipher and cipher mode specified doesn't support random access";

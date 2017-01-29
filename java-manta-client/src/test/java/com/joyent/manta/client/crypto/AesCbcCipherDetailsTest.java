@@ -67,20 +67,20 @@ public class AesCbcCipherDetailsTest extends AbstractCipherDetailsTest {
     public void canQueryCiphertextByteRangeAes128() throws Exception {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_128_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        cipherDetails.translateByteRange(0, 128);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes192() throws Exception {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        cipherDetails.translateByteRange(0, 128);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        cipherDetails.translateByteRange(0, 128);
     }
 }

@@ -878,7 +878,8 @@ public class MantaEncryptedObjectInputStreamTest {
                 response, httpResponse, eofSensorInputStream
         );
 
-        return new MantaEncryptedObjectInputStream(mantaObjectInputStream, key, authenticate,
+        return new MantaEncryptedObjectInputStream(mantaObjectInputStream,
+                cipherDetails,key, authenticate,
                 startPos, plaintextLength);
     }
 }

@@ -6,7 +6,6 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.EncryptionType;
@@ -101,9 +100,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     private final SecretKey secretKey;
 
     /**
-     * Cipher implementation used to encrypt data.
+     * Cipher implementation used to encrypt and decrypt data.
      */
-    private final SupportedCipherDetails encryptionCipherDetails;
+    private final SupportedCipherDetails cipherDetails;
 
     /**
      * Creates a new instance of the helper class.
@@ -128,7 +127,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 config.getEncryptionAuthenticationMode(),
                 EncryptionAuthenticationMode.DEFAULT_MODE);
 
-        this.encryptionCipherDetails = ObjectUtils.firstNonNull(
+        this.cipherDetails = ObjectUtils.firstNonNull(
                 SupportedCiphersLookupMap.INSTANCE.getWithCaseInsensitiveKey(
                         config.getEncryptionAlgorithm()), DefaultsConfigContext.DEFAULT_CIPHER);
 
@@ -137,7 +136,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             try {
                 secretKey = SecretKeyUtils.loadKeyFromPath(keyPath,
-                        this.encryptionCipherDetails);
+                        this.cipherDetails);
             } catch (IOException e) {
                 String msg = String.format("Unable to load secret key from file: %s",
                         keyPath);
@@ -145,7 +144,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             }
         } else if (config.getEncryptionPrivateKeyBytes() != null) {
             secretKey = SecretKeyUtils.loadKey(config.getEncryptionPrivateKeyBytes(),
-                    encryptionCipherDetails);
+                    cipherDetails);
         } else {
             throw new IllegalStateException("Either private key path or bytes must be specified");
         }
@@ -181,7 +180,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
 
         EncryptingEntity encryptingEntity = new EncryptingEntity(
-                secretKey, encryptionCipherDetails, originalEntity);
+                secretKey, cipherDetails, originalEntity);
 
         final MantaMetadata metadata;
 
@@ -229,7 +228,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
          */
 
         // content-length of -1 means we are sending in chunked mode
-        if (originalEntity.getContentLength() < 0 && encryptionCipherDetails.plaintextSizeCalculationIsAnEstimate()) {
+        if (originalEntity.getContentLength() < 0 && cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
             appendPlaintextContentLength(path, encryptingEntity, metadata, response);
         }
 
@@ -282,6 +281,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             }
         }
 
+        enforceCipherAndMode(cipherId, request, response);
+
         final String encryptionType = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_TYPE);
         final String metadataIvBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_IV);
         final String metadataCiphertextBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA);
@@ -289,16 +290,18 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         final String metadataHmacBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC);
 
         Map<String, String> encryptedMetadata = buildEncryptedMetadata(
-                encryptionType, metadataIvBase64, cipherId,
-                metadataCiphertextBase64, hmacId, metadataHmacBase64, request, response);
+                encryptionType, metadataIvBase64, metadataCiphertextBase64,
+                hmacId, metadataHmacBase64, request, response);
 
         rawStream.getMetadata().putAll(encryptedMetadata);
 
         if (hasRangeRequest) {
-            return new MantaEncryptedObjectInputStream(rawStream, secretKey, false, initialSkipBytes,
+            return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
+                    secretKey, false, initialSkipBytes,
                     plaintextRangeLength);
         } else {
-            return new MantaEncryptedObjectInputStream(rawStream, secretKey, true);
+            return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
+                    secretKey, true);
         }
     }
 
@@ -315,14 +318,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     private Long[] calculateSkipBytesAndPlaintextLength(final HttpUriRequest request,
                                                         final MantaHttpHeaders requestHeaders)
             throws IOException {
-        // TODO: Unhardcode cipher
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
-
         final Long initialSkipBytes;
         final Long plaintextRangeLength;
 
         final long[] plaintextRanges = byteRangeAsNullSafe(requestHeaders.getByteRange(),
-                cipherDetails);
+                this.cipherDetails);
 
         final long plaintextStart = plaintextRanges[0];
         final long plaintextEnd = plaintextRanges[1];
@@ -363,14 +363,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             // We query the response object for multiple properties that will
             // give us the plaintext size. If not possible, this will error.
             long fullPlaintextSize = HttpHelper.attempToFindPlaintextSize(
-                    objectResponse, ciphertextSize, cipherDetails);
+                    objectResponse, ciphertextSize, this.cipherDetails);
 
             // Since plaintextEnd is a negative value - this will be set to
             // the number of bytes before the end of the file (in plaintext)
             initialSkipBytes = plaintextEnd + fullPlaintextSize;
 
             // calculates the ciphertext byte range
-            long[] computedRanges = cipherDetails.translateByteRange(
+            long[] computedRanges = this.cipherDetails.translateByteRange(
                     initialSkipBytes, fullPlaintextSize - 1);
 
             // We only use the ciphertext start position, because we already
@@ -383,7 +383,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         } else {
             initialSkipBytes = plaintextStart;
             // calculates the ciphertext byte range
-            long[] computedRanges = cipherDetails.translateByteRange(
+            long[] computedRanges = this.cipherDetails.translateByteRange(
                     initialSkipBytes, plaintextEnd);
 
             binaryStartPositionInclusive = computedRanges[0];
@@ -571,9 +571,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             return null;
         }
 
+        enforceCipherAndMode(cipherId, null, response);
+
         return buildEncryptedMetadata(
-                encryptionType, metadataIvBase64, cipherId,
-                metadataCiphertextBase64, hmacId, metadataHmacBase64, null, response);
+                encryptionType, metadataIvBase64, metadataCiphertextBase64,
+                hmacId, metadataHmacBase64, null, response);
     }
 
     /**
@@ -581,7 +583,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      *
      * @param encryptionType encryption type header value
      * @param metadataIvBase64 metadata ciphertext iv header value
-     * @param metadataCipherId metadata cipher identifier header value
      * @param metadataCiphertextBase64 metadata ciphertext header value
      * @param hmacId hmac identifier header value
      * @param metadataHmacBase64 metadata hmac header value
@@ -592,7 +593,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     @SuppressWarnings("ParameterNumber")
     private Map<String, String> buildEncryptedMetadata(final String encryptionType,
                                                        final String metadataIvBase64,
-                                                       final String metadataCipherId,
                                                        final String metadataCiphertextBase64,
                                                        final String hmacId,
                                                        final String metadataHmacBase64,
@@ -605,27 +605,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             throw e;
         }
 
-        byte[] metadataIv = Base64.getDecoder().decode(metadataIvBase64);
-
-        if (metadataCipherId == null) {
-            String msg = "No metadata cipher specified";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            HttpHelper.annotateContextedException(e, request, response);
-            throw e;
-        }
-
-        SupportedCipherDetails metadataCipherDetails = SupportedCiphersLookupMap.INSTANCE.get(
-                metadataCipherId);
-
-        if (metadataCipherDetails == null) {
-            String msg = String.format("Unsupported metadata cipher specified: %s",
-                    metadataCipherId);
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            HttpHelper.annotateContextedException(e, request, response);
-            throw e;
-        }
-
-        Cipher metadataCipher = buildMetadataDecryptCipher(metadataCipherDetails, metadataIv);
+        final byte[] metadataIv = Base64.getDecoder().decode(metadataIvBase64);
+        final Cipher metadataCipher = buildMetadataDecryptCipher(metadataIv);
 
         if (metadataCiphertextBase64 == null) {
             String msg = "No encrypted metadata stored on object";
@@ -634,10 +615,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             throw e;
         }
 
-        byte[] metadataCipherText = Base64.getDecoder().decode(metadataCiphertextBase64);
+        final byte[] metadataCipherText = Base64.getDecoder().decode(metadataCiphertextBase64);
 
         // Validate Hmac if we aren't using AEAD
-        if (!encryptionCipherDetails.isAEADCipher()) {
+        if (!cipherDetails.isAEADCipher()) {
             if (hmacId == null) {
                 String msg = "No HMAC algorithm specified for metadata ciphertext authentication";
                 MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
@@ -654,18 +635,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 throw e;
             }
 
-            Mac hmac = hmacSupplier.get();
-
-            try {
-                hmac.init(secretKey);
-            } catch (InvalidKeyException e) {
-                MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                        "There was a problem loading private key", e);
-                String details = String.format("key=%s, algorithm=%s",
-                        secretKey.getAlgorithm(), secretKey.getFormat());
-                mcee.setContextValue("key_details", details);
-                throw mcee;
-            }
+            final Mac hmac = hmacSupplier.get();
+            initHmac(this.secretKey, hmac);
 
             byte[] actualHmac = hmac.doFinal(metadataCipherText);
 
@@ -710,8 +681,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         // Encryption Cipher
         metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
-                encryptionCipherDetails.getCipherId());
-        LOGGER.debug("Encryption cipher: {}", encryptionCipherDetails.getCipherId());
+                cipherDetails.getCipherId());
+        LOGGER.debug("Encryption cipher: {}", cipherDetails.getCipherId());
     }
 
     /**
@@ -741,13 +712,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
 
         // AEAD Tag Length if AEAD Cipher
-        if (encryptionCipherDetails.isAEADCipher()) {
+        if (cipherDetails.isAEADCipher()) {
             metadata.put(MantaHttpHeaders.ENCRYPTION_AEAD_TAG_LENGTH,
-                    String.valueOf(encryptionCipherDetails.getAuthenticationTagOrHmacLengthInBytes()));
-            LOGGER.debug("AEAD tag length: {}", encryptionCipherDetails.getAuthenticationTagOrHmacLengthInBytes());
+                    String.valueOf(cipherDetails.getAuthenticationTagOrHmacLengthInBytes()));
+            LOGGER.debug("AEAD tag length: {}", cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
             // HMAC Type because we are doing MtE
         } else {
-            Mac hmac = encryptionCipherDetails.getAuthenticationHmac();
+            Mac hmac = cipherDetails.getAuthenticationHmac();
             metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
                     hmac.getAlgorithm());
             LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
@@ -764,10 +735,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         throws IOException {
 
         // Create and add encrypted metadata
-        Cipher metadataCipher = buildMetadataEncryptCipher(this.encryptionCipherDetails);
+        Cipher metadataCipher = buildMetadataEncryptCipher(this.cipherDetails);
 
         metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
-                encryptionCipherDetails.getCipherId());
+                cipherDetails.getCipherId());
 
         String metadataIvBase64 = Base64.getEncoder().encodeToString(
                 metadataCipher.getIV());
@@ -795,18 +766,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA, metadataCipherTextBase64);
 
-        if (!encryptionCipherDetails.isAEADCipher()) {
-            Mac hmac = encryptionCipherDetails.getAuthenticationHmac();
-            try {
-                hmac.init(secretKey);
-            } catch (InvalidKeyException e) {
-                MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                        "There was a problem loading private key", e);
-                String details = String.format("key=%s, algorithm=%s",
-                        secretKey.getAlgorithm(), secretKey.getFormat());
-                mcee.setContextValue("key_details", details);
-                throw mcee;
-            }
+        if (!this.cipherDetails.isAEADCipher()) {
+            final Mac hmac = this.cipherDetails.getAuthenticationHmac();
+            initHmac(this.secretKey, hmac);
 
             byte[] checksum = hmac.doFinal(metadataCipherText);
             String checksumBase64 = Base64.getEncoder().encodeToString(checksum);
@@ -966,15 +928,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Configures and instantiates the cipher object used for decrypting object
      * metadata.
      *
-     * @param cipherDetails cipher to use for encryption
      * @param metadataIv encrypted metadata initialization vector
      * @return a configured cipher instance
      */
-    private Cipher buildMetadataDecryptCipher(final SupportedCipherDetails cipherDetails,
-                                              final byte[] metadataIv) {
-        Cipher metadataCipher = cipherDetails.getCipher();
+    private Cipher buildMetadataDecryptCipher(final byte[] metadataIv) {
+        Cipher metadataCipher = this.cipherDetails.getCipher();
         try {
-            AlgorithmParameterSpec spec = cipherDetails.getEncryptionParameterSpec(metadataIv);
+            AlgorithmParameterSpec spec = this.cipherDetails.getEncryptionParameterSpec(metadataIv);
             metadataCipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(
@@ -988,6 +948,27 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     "There was a problem with the passed algorithm parameters", e);
         }
         return metadataCipher;
+    }
+
+    /**
+     * Verifies that the passed cipher id is the same as the configured cipher id.
+     *
+     * @param cipherId cipher id to verify
+     * @param request request object for debugging data
+     * @param response response object for debugging data
+     */
+    private void enforceCipherAndMode(final String cipherId,
+                                      final HttpRequest request,
+                                      final HttpResponse response) {
+        if (!cipherId.equals(this.cipherDetails.getCipherId())) {
+            String msg = "Cipher used to encrypt object is not the same as the "
+                    + "cipher configured.";
+            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+            HttpHelper.annotateContextedException(e, request, response);
+            e.setContextValue("objectCipherId", cipherId);
+            e.setContextValue("configCipherId", cipherDetails.getCipherId());
+            throw e;
+        }
     }
 
     /**
@@ -1018,5 +999,24 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
 
         return new long[] {startPos, endPos};
+    }
+
+    /**
+     * Initializes an HMAC instance using the specified secret key.
+     *
+     * @param secretKey secret key to initialize with
+     * @param hmac HMAC object to be initialized
+     */
+    private static void initHmac(final SecretKey secretKey, final Mac hmac) {
+        try {
+            hmac.init(secretKey);
+        } catch (InvalidKeyException e) {
+            MantaClientEncryptionException mcee = new MantaClientEncryptionException(
+                    "There was a problem loading private key", e);
+            String details = String.format("key=%s, algorithm=%s",
+                    secretKey.getAlgorithm(), secretKey.getFormat());
+            mcee.setContextValue("key_details", details);
+            throw mcee;
+        }
     }
 }
