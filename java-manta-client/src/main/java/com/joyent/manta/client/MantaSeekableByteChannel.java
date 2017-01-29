@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -54,7 +55,7 @@ public class MantaSeekableByteChannel extends InputStream
     /**
      * Current position in bytes from the start of the file.
      */
-    private volatile long position = 0L;
+    private AtomicLong position = new AtomicLong(0L);
 
     /**
      * Helper class providing useful HTTP functions.
@@ -89,7 +90,7 @@ public class MantaSeekableByteChannel extends InputStream
                                     final MantaConnectionFactory connectionFactory,
                                     final HttpHelper httpHelper) {
         this.path = path;
-        this.position = position;
+        this.position = new AtomicLong(position);
         this.connectionFactory = connectionFactory;
         this.httpHelper = httpHelper;
         this.requestRef = new AtomicReference<>();
@@ -124,7 +125,7 @@ public class MantaSeekableByteChannel extends InputStream
     protected MantaSeekableByteChannel(final AtomicReference<HttpUriRequest> requestRef,
                                        final AtomicReference<MantaObjectInputStream> responseStream,
                                        final String path,
-                                       final long position,
+                                       final AtomicLong position,
                                        final MantaConnectionFactory connectionFactory,
                                        final HttpHelper httpHelper) {
         this.requestRef = requestRef;
@@ -144,14 +145,14 @@ public class MantaSeekableByteChannel extends InputStream
         final MantaObjectInputStream stream = connectOrGetResponse();
         final long size = size();
 
-        if (position >= size) {
+        if (position.get() >= size) {
             return EOF;
         }
 
         final byte[] buff = dst.array();
         final int bytesRead = stream.read(buff);
 
-        position += bytesRead;
+        position.addAndGet(bytesRead);
 
         return bytesRead;
     }
@@ -178,7 +179,7 @@ public class MantaSeekableByteChannel extends InputStream
         final int read = stream.read();
 
         if (read > -1) {
-            position++;
+            position.incrementAndGet();
         }
 
         return read;
@@ -195,7 +196,7 @@ public class MantaSeekableByteChannel extends InputStream
         final int totalRead = stream.read(buffer);
 
         if (totalRead > -1) {
-            position += totalRead;
+            position.addAndGet(totalRead);
         }
 
         return totalRead;
@@ -213,7 +214,7 @@ public class MantaSeekableByteChannel extends InputStream
         final int totalRead = stream.read(buffer, offset, length);
 
         if (totalRead > -1) {
-            position += totalRead;
+            position.addAndGet(totalRead);
         }
 
         return totalRead;
@@ -228,7 +229,7 @@ public class MantaSeekableByteChannel extends InputStream
         final MantaObjectInputStream stream = connectOrGetResponse();
         final long totalSkipped = stream.skip(noOfBytesToSkip);
 
-        position += totalSkipped;
+        position.addAndGet(totalSkipped);
 
         return totalSkipped;
     }
@@ -254,7 +255,7 @@ public class MantaSeekableByteChannel extends InputStream
 
     @Override
     public long position() throws IOException {
-        return position;
+        return position.get();
     }
 
     @Override
@@ -263,7 +264,7 @@ public class MantaSeekableByteChannel extends InputStream
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 path,
-                newPosition,
+                new AtomicLong(newPosition),
                 connectionFactory,
                 httpHelper);
     }
@@ -347,7 +348,7 @@ public class MantaSeekableByteChannel extends InputStream
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
         // Set byte range requested via HTTP range header
-        headers.setRange(String.format("bytes=%d-", position));
+        headers.setRange(String.format("bytes=%d-", position.get()));
 
         // Store the request so that we can use it for adding information to exceptions
         this.requestRef.set(request);
