@@ -1052,9 +1052,10 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * Translates the range request header into two values. The first value
      * is the starting bytes of the binary file to read and the second value
      * is the ending bytes of the file to read. If the range indicates the
-     * end of a file (unlimited), then the value will be set to Long.MAX.
+     * end of a file (unlimited), then the end value will be set to null.
+     * Likewise, if the start position is unknown, it will be set to null.
      *
-     * @return two value array containing the start and the end of a byte range
+     * @return two value array containing the start and the end of a byte range as Long
      */
     public Long[] getByteRange() {
         final String rangeString = getRange();
