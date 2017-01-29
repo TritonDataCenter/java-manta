@@ -735,7 +735,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         throws IOException {
 
         // Create and add encrypted metadata
-        Cipher metadataCipher = buildMetadataEncryptCipher(this.cipherDetails);
+        Cipher metadataCipher = buildMetadataEncryptCipher();
 
         metadata.put(MantaHttpHeaders.ENCRYPTION_CIPHER,
                 cipherDetails.getCipherId());
@@ -901,14 +901,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Configures and instantiates the cipher object used for encrypting object
      * metadata.
      *
-     * @param cipherDetails cipher to use for encryption
      * @return a configured cipher instance
      */
-    private Cipher buildMetadataEncryptCipher(final SupportedCipherDetails cipherDetails) {
-        byte[] metadataIv = cipherDetails.generateIv();
-        Cipher metadataCipher = cipherDetails.getCipher();
+    private Cipher buildMetadataEncryptCipher() {
+        byte[] metadataIv = this.cipherDetails.generateIv();
+        Cipher metadataCipher = this.cipherDetails.getCipher();
         try {
-            AlgorithmParameterSpec spec = cipherDetails.getEncryptionParameterSpec(metadataIv);
+            AlgorithmParameterSpec spec = this.cipherDetails.getEncryptionParameterSpec(metadataIv);
             metadataCipher.init(Cipher.ENCRYPT_MODE, secretKey, spec);
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(
