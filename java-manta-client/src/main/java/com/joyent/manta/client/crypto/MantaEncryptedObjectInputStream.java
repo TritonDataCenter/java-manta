@@ -75,7 +75,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private final Mac hmac;
 
     /**
-     * The cipher stream that wraps the backing stream allowing for streaming decryption.
+     * The stream that wraps the backing stream allowing for streaming decryption.
+     * Somewhere chained in this stream is a {@link CipherInputStream}.
      */
     private final InputStream cipherInputStream;
 
