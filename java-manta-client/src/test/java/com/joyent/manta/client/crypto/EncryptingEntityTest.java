@@ -20,7 +20,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
@@ -151,7 +150,8 @@ public class EncryptingEntityTest {
         }
 
         Assert.assertEquals(file.length(), encryptingEntity.getContentLength(),
-                "Expected ciphertext file size doesn't match actual file size -");
+                "Expected ciphertext file size doesn't match actual file size " +
+                        "[originalContentLength=" + entity.getContentLength() + "] -");
 
         byte[] iv = encryptingEntity.getCipher().getIV();
         Cipher cipher = cipherDetails.getCipher();

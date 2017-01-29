@@ -43,7 +43,35 @@ public class MantaHttpHeadersByteRangeTest {
         headers.setByteRange(-22L, -2L);
     }
 
-    public void happyPath() {
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void multiRangeGetRange() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes=1-10,12-13");
+        headers.getByteRange();
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void negativeEndGetRange() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes=12--13");
+        headers.getByteRange();
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void negativeBeginGetRange() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes=-12-13");
+        headers.getByteRange();
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void noRangeGetRange() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes=10");
+        headers.getByteRange();
+    }
+
+    public void setByteRangeHappyPath() {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         Assert.assertEquals(headers.setByteRange(0L, 11L).getRange(),
                             "bytes=0-11");
@@ -63,5 +91,23 @@ public class MantaHttpHeadersByteRangeTest {
         Assert.assertEquals(headers.setByteRange(9500L, null).getRange(),
                             "bytes=9500-");
         
+    }
+
+    public void getByteRangeHappyPath() {
+        MantaHttpHeaders headers1 = new MantaHttpHeaders();
+        headers1.setRange("bytes=12-13");
+
+        Assert.assertEquals(headers1.getByteRange(), new Long[]{ 12L, 13L });
+
+
+        MantaHttpHeaders headers2 = new MantaHttpHeaders();
+        headers2.setRange("bytes=-13");
+
+        Assert.assertEquals(headers2.getByteRange(), new Long[]{ null, -13L });
+
+        MantaHttpHeaders headers3 = new MantaHttpHeaders();
+        headers3.setRange("bytes=13-");
+
+        Assert.assertEquals(headers3.getByteRange(), new Long[]{ 13L, null });
     }
 }

@@ -118,11 +118,22 @@ public interface SupportedCipherDetails {
      *
      * @param startInclusive starting position of byte range (0-Long.MAX)
      * @param endInclusive ending position of byte range (-1, 0-Long.MAX)
-     * @return long array with 4 elements
+     * @return long array with 5 elements
      *         (ciphertext start, plaintext adjustment, ciphertext end,
-     *          plaintext end position)
+     *          plaintext length, starting block number)
      */
     long[] translateByteRange(long startInclusive, long endInclusive);
+
+    /**
+     * Updates a given {@link Cipher}'s state such that it can decrypt
+     * data from a given position.
+     *
+     * @param cipher object to update
+     * @param position position to update to
+     * @return the number of bytes to skip from the plaintext output in
+     *         order to get to the desired position
+     */
+    long updateCipherToPosition(Cipher cipher, long position);
 
     /**
      * Generates an initialization vector that is appropriate for the
@@ -131,6 +142,11 @@ public interface SupportedCipherDetails {
      * @return an initialization vector in bytes
      */
     byte[] generateIv();
+
+    /**
+     * @return true when the cipher/mode supports reading from arbitrary positions
+     */
+    boolean supportsRandomAccess();
 
     /**
      * Finds a cipher by name and provider. Only throws runtime exceptions.

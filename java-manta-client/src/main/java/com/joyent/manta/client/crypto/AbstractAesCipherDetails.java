@@ -7,8 +7,12 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -18,6 +22,11 @@ import java.util.Objects;
  * @since 3.0.0
  */
 public abstract class AbstractAesCipherDetails implements SupportedCipherDetails {
+    /**
+     * Time interval in which to refresh the seed of the entropy source.
+     */
+    private static final Duration SEED_REFRESH_INTERVAL = Duration.ofHours(1);
+
     /**
      * Default HMAC algorithm to use for AES ciphers.
      */
@@ -58,7 +67,13 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * We use the JVM's {@link SecureRandom} because it
      * is configurable by the user.
      */
-    private final SecureRandom random = new SecureRandom();
+    private final SecureRandom random = findSecureRandomImplementation();
+
+    /**
+     * Timestamp in which the entropy's source was last refreshed with a
+     * new seed value.
+     */
+    private volatile Instant seedLastRefreshedTimestamp = Instant.now();
 
     /**
      * Creates a new instance for a AEAD cipher.
@@ -193,9 +208,26 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     @Override
     public byte[] generateIv() {
         byte[] iv = new byte[getIVLengthInBytes()];
-        random.nextBytes(iv);
+        getSecureRandom().nextBytes(iv);
 
         return iv;
+    }
+
+    /**
+     * <p>Gets the current instance of {@link SecureRandom} and periodically adds
+     * new random material to the seed.</p>
+     * @see <a href="https://www.cigital.com/blog/proper-use-of-javas-securerandom/">Proper Use Of Java SecureRandom</a>
+     *
+     * @return entropy source
+     */
+    protected SecureRandom getSecureRandom() {
+        Instant nextRefreshTimestamp = seedLastRefreshedTimestamp.plus(SEED_REFRESH_INTERVAL);
+        if (seedLastRefreshedTimestamp.isAfter(nextRefreshTimestamp)) {
+            this.random.setSeed(this.random.generateSeed(32));
+            seedLastRefreshedTimestamp = Instant.now();
+        }
+
+        return this.random;
     }
 
     @Override
@@ -233,5 +265,23 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
                 .append("cipherAlgorithmJavaName", cipherAlgorithmJavaName)
                 .append("isAEADCipher", isAEADCipher)
                 .toString();
+    }
+
+    /**
+     * This method attempts to find our first choice for a source of a source
+     * of entropy and then chooses the default if that choice is not available.
+     *
+     * @return specific implementation of {@link SecureRandom}
+     */
+    private static SecureRandom findSecureRandomImplementation() {
+        // First we attempt to a non-blocking source of entropy that typically
+        // reads from /dev/urandom
+        try {
+            return SecureRandom.getInstance("NativePRNGNonBlocking", "SUN");
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            // We are here if we were unable to load that source of entropy
+            // so we go with the default value
+            return new SecureRandom();
+        }
     }
 }

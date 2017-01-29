@@ -1,7 +1,9 @@
 package com.joyent.manta.client;
 
+import com.joyent.manta.config.BaseChainedConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.SettableConfigContext;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -42,7 +44,12 @@ public class MantaClientSeekableByteChannelIT {
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
+
+        // Range request have to be in optional authentication mode
+        if (config.isClientEncryptionEnabled()) {
+            config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
+        }
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
