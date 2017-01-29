@@ -980,8 +980,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param cipherDetails cipher being used to compute range
      * @return updated range coordinates based on cipher/cipher mode configuration
      */
-    private static long[] byteRangeAsNullSafe(final Long[] ranges,
-                                              final SupportedCipherDetails cipherDetails) {
+    static long[] byteRangeAsNullSafe(final Long[] ranges,
+                                      final SupportedCipherDetails cipherDetails) {
         final long plaintextMax = cipherDetails.getMaximumPlaintextSizeInBytes();
         final long startPos;
         final long endPos;
