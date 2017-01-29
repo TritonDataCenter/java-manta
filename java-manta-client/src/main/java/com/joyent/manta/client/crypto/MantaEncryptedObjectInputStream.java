@@ -511,10 +511,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         skipInitialBytes();
 
-        /* I would really love to actually use the CipherInputStream.skip() method
-         * when we aren't using authenticated encryption or we are using a AEAD cipher,
-         * but the CipherInputStream method is horribly broken in some cases
-         * and doesn't return back the actual number of bytes skipped. */
+        /* When using a CipherInputStream with some algorithms, the skip() method
+         * is horribly broken and doesn't return the correct number of bytes
+         * skipped. In order to accurately report the number of bytes skipped
+         * we use a read() method call, throw away the data and count the
+         * number of successful reads. */
         if (!authenticateCiphertext || cipherDetails.isAEADCipher()) {
             long skipped = 0L;
 
