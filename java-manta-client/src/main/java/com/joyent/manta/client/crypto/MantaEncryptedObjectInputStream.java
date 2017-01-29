@@ -101,13 +101,14 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private final boolean authenticateCiphertext;
 
     /**
-     * Starting position in plaintext.
+     * Starting position in plaintext. Null is interpreted as 0.
      */
     private final Long startPosition;
 
     /**
      * Total length of plaintext including the bytes that are skipped initially.
      * Thus, this value could be bigger than endPosition - startPosition.
+     * Null is interpreted as an unlimited plaintext length.
      */
     private final Long plaintextRangeLength;
 
@@ -139,8 +140,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * @param secretKey secret key used to decrypt
      * @param authenticateCiphertext when true we perform authentication on the ciphertext
      *                               value is ignored when operating with a AEAD cipher mode
-     * @param startPositionInclusive starting position to read plaintext from
-     * @param plaintextRangeLength the total length of plaintext bytes to read
+     * @param startPositionInclusive starting position to read plaintext from - null is interpreted as 0.
+     * @param plaintextRangeLength the total length of plaintext bytes to read - null is interpreted as unlimited length
      */
     public MantaEncryptedObjectInputStream(final MantaObjectInputStream backingStream,
                                            final SupportedCipherDetails cipherDetails,
