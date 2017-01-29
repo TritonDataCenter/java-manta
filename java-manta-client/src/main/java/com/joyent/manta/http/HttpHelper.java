@@ -355,9 +355,9 @@ public interface HttpHelper extends AutoCloseable {
      * @return plaintext size in bytes
      * @throws MantaClientEncryptionException thrown when unable to get the plaintext size
      */
-    static long attempToFindPlaintextSize(final MantaObjectResponse response,
-                                          final long ciphertextSize,
-                                          final SupportedCipherDetails cipherDetails) {
+    static long attemptToFindPlaintextSize(final MantaObjectResponse response,
+                                           final long ciphertextSize,
+                                           final SupportedCipherDetails cipherDetails) {
         // If the calculation is accurate, then we attempt to calculate plaintext size
         if (!cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
             return cipherDetails.plaintextSize(ciphertextSize);

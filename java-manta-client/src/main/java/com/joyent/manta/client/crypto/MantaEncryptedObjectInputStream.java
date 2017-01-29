@@ -177,9 +177,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * Verifies that the plaintext length supplied is less than or equal to the
      * size of the original plaintext object. If it is sized improperly, we
      * attempt to convert the plaintext length to the size of the plaintext object.
-     * If we have insufficient information, the plaintext value returned may
-     * be inaccurate, so it is ultimately the responsibility of the caller to
-     * make sure that this value is accurate.
      *
      * @param aPlaintextRangeLength plaintext length
      * @return potentially adjusted plaintext length
@@ -204,7 +201,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         // Someone specified an inaccurate range and it brought us here
         if (ciphertextSizeCalculation > contentLength) {
-            return HttpHelper.attempToFindPlaintextSize(
+            return HttpHelper.attemptToFindPlaintextSize(
                     getResponse(), contentLength, cipherDetails);
         }
 

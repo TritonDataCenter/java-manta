@@ -362,7 +362,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             // We query the response object for multiple properties that will
             // give us the plaintext size. If not possible, this will error.
-            long fullPlaintextSize = HttpHelper.attempToFindPlaintextSize(
+            long fullPlaintextSize = HttpHelper.attemptToFindPlaintextSize(
                     objectResponse, ciphertextSize, this.cipherDetails);
 
             // Since plaintextEnd is a negative value - this will be set to
