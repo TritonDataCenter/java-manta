@@ -1,5 +1,6 @@
 package com.joyent.manta.client.crypto;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
@@ -82,5 +83,19 @@ public class AesCbcCipherDetailsTest extends AbstractCipherDetailsTest {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         cipherDetails.translateByteRange(0, 128);
+    }
+
+    public void calculateContentLengthWorks() {
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(0, 16, 32, true), 48);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(1, 16, 32, true), 48);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(1, 16, 32, false), 48);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(16, 16, 32, false), 64);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(16, 16, 32, true), 48);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(17, 16, 32, true), 64);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(20, 16, 32, false), 64);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(32, 16, 32, true), 64);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(32, 16, 32, false), 80);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(33, 16, 32, false), 80);
+        Assert.assertEquals(AesCbcCipherDetails.calculateContentLength(33, 16, 32, true), 80);
     }
 }

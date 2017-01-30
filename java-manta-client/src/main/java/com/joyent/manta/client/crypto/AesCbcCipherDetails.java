@@ -41,36 +41,10 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
         Validate.inclusiveBetween(0L, Long.MAX_VALUE, plaintextSize);
         int blockBytes = getBlockSizeInBytes();
         int tagOrHmacBytes = getAuthenticationTagOrHmacLengthInBytes();
-
-        if (plaintextSize <= 0) {
-            return blockBytes + tagOrHmacBytes;
-        }
-
-        long calculatedContentLength = 0L;
-        long padding = 0L;
-        if (plaintextSize > blockBytes) {
-            padding = plaintextSize % blockBytes;
-        } else {
-            calculatedContentLength = blockBytes;
-        }
-
-        // e.g. content is 20 bytes, block is 16, padding is 4, result = 32
-        if (padding > 0) {
-            calculatedContentLength = (plaintextSize - padding) + blockBytes;
-        }
-
         byte[] iv = this.getCipher().getIV();
-        // CBC requires an IV an extra block for chaining to work
-        if ((iv == null || iv.length == 0) && plaintextSize >= blockBytes) {
-            final double blocks = Math.floor(plaintextSize / ((long) blockBytes));
-            calculatedContentLength = (((long)blocks + 1) * blockBytes);
-        }
+        boolean hasIV = (iv != null && iv.length > 0);
 
-
-        // Append tag or hmac to the end of the stream
-        calculatedContentLength += tagOrHmacBytes;
-
-        return calculatedContentLength;
+        return calculateContentLength(plaintextSize, blockBytes, tagOrHmacBytes, hasIV);
     }
 
     @Override
@@ -103,5 +77,44 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     @Override
     public boolean supportsRandomAccess() {
         return false;
+    }
+
+    /**
+     *
+     * @param plaintextSize size in bytes of unencrypted body
+     * @param blockBytes block size in bytes
+     * @param tagOrHmacBytes number of bytes needed for the hmac or authentication tag
+     * @return calculated byte size of encrypted body with the hmac/authentication tag appended
+     */
+    public static long calculateContentLength(final long plaintextSize, final int blockBytes, final int tagOrHmacBytes, final boolean hasIV) {
+        if (plaintextSize <= 0) {
+            return blockBytes + tagOrHmacBytes;
+        }
+
+        long calculatedContentLength = plaintextSize;
+        long padding = 0L;
+        if (plaintextSize > blockBytes) {
+            padding = plaintextSize % blockBytes;
+        } else {
+            calculatedContentLength = blockBytes;
+        }
+
+        // e.g. content is 20 bytes, block is 16, padding is 4, result = 32
+        if (padding > 0) {
+            calculatedContentLength = (plaintextSize - padding) + blockBytes;
+        }
+
+
+        // CBC requires an IV an extra block for chaining to work
+        if (!hasIV && plaintextSize >= blockBytes) {
+            final double blocks = Math.floor(plaintextSize / ((long) blockBytes));
+            calculatedContentLength = (((long)blocks + 1) * blockBytes);
+        }
+
+
+        // Append tag or hmac to the end of the stream
+        calculatedContentLength += tagOrHmacBytes;
+
+        return calculatedContentLength;
     }
 }
