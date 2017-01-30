@@ -118,7 +118,7 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
 
         byte[] plaintext = text.getBytes(Charset.forName("US-ASCII"));
 
-        ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;;
+        ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
         ExposedByteArrayEntity entity = new ExposedByteArrayEntity(plaintext, contentType);
         EncryptingEntity encryptingEntity = new EncryptingEntity(secretKey, cipherDetails,
                 entity);
@@ -136,10 +136,10 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         byte[] adjustedPlaintext = Arrays.copyOfRange(plaintext,
                 (int)startPlaintextRange, (int)endPlaintextRange + 1);
 
-        long[] ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
-        long startCipherTextRange = ranges[0];
-        long endCipherTextRange = ranges[2];
-        long adjustedPlaintextLength = ranges[3];
+        ByteRangeConversion ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
+        long startCipherTextRange = ranges.getCiphertextStartPositionInclusive();
+        long endCipherTextRange = ranges.getCiphertextEndPositionInclusive();
+        long adjustedPlaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
 
         Cipher decryptor = cipherDetails.getCipher();
 
