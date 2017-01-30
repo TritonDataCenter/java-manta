@@ -735,9 +735,9 @@ public class MantaEncryptedObjectInputStreamTest {
         /* Here we translate the plaintext ranges to ciphertext ranges. Notice
          * that we take the input of endPos because it may overrun past the
          * size of the plaintext. */
-        long[] ranges = cipherDetails.translateByteRange(startPosInclusive, endPosInclusive);
-        long ciphertextStart = ranges[0];
-        long plaintextLength = ranges[3];
+        ByteRangeConversion ranges = cipherDetails.translateByteRange(startPosInclusive, endPosInclusive);
+        long ciphertextStart = ranges.getCiphertextStartPositionInclusive();
+        long plaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
 
         /* Here, we simulate being passed only a subset of the total bytes of
          * a file - just like how the output of a HTTP range request would be

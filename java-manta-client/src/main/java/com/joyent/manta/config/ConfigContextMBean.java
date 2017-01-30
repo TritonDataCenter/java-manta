@@ -260,7 +260,8 @@ public class ConfigContextMBean implements DynamicMBean {
                 setAttribute(a);
                 setList.add(a);
             } catch (Exception e) {
-                String msg = String.format("Can't modify attribute %s");
+                String msg = String.format("Can't modify attribute %s",
+                        a.getName());
                 LOGGER.warn(msg, e);
             }
         }

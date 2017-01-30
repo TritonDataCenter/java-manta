@@ -629,7 +629,7 @@ public final class MantaUtils {
                                                    final K key2, final V val2,
                                                    final K key3, final V val3) {
         @SuppressWarnings("MagicNumber")
-        Map<K, V> map = new LinkedHashMap<K, V>(3);
+        Map<K, V> map = new LinkedHashMap<>(3);
         map.put(key1, val1);
         map.put(key2, val2);
         map.put(key3, val3);
@@ -662,7 +662,7 @@ public final class MantaUtils {
         map.put(key1, val1);
 
         K key = null;
-        V val = null;
+        V val;
 
         for (int i = 0; i < nPairs.length; i++) {
             if (i % 2 == 0) {

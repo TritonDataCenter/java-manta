@@ -116,13 +116,11 @@ public interface SupportedCipherDetails {
      * Translates a plaintext byte range to a ciphertext byte range with
      * skip modifier.
      *
-     * @param startInclusive starting position of byte range (0-Long.MAX)
-     * @param endInclusive ending position of byte range (-1, 0-Long.MAX)
-     * @return long array with 5 elements
-     *         (ciphertext start, plaintext adjustment, ciphertext end,
-     *          plaintext length, starting block number)
+     * @param startPositionInclusive starting position of byte range (0-Long.MAX)
+     * @param endPositionInclusive ending position of byte range (-1, 0-Long.MAX)
+     * @return object with the needed ciphertext numeric positions specified
      */
-    long[] translateByteRange(long startInclusive, long endInclusive);
+    ByteRangeConversion translateByteRange(long startPositionInclusive, long endPositionInclusive);
 
     /**
      * Updates a given {@link Cipher}'s state such that it can decrypt

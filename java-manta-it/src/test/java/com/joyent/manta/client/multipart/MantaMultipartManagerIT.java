@@ -142,11 +142,6 @@ public class MantaMultipartManagerIT {
                 "!"
         };
 
-        StringBuilder combined = new StringBuilder();
-        for (String p : parts) {
-            combined.append(p);
-        }
-
         final String name = uploadName("will-run-function-when-waiting-too-long");
         final String path = testPathPrefix + name;
 

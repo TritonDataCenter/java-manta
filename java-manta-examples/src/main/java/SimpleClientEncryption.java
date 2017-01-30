@@ -3,7 +3,6 @@ import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
 import sun.misc.BASE64Decoder;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;

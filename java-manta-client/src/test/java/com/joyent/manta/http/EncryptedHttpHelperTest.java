@@ -46,7 +46,10 @@ public class EncryptedHttpHelperTest {
         }
 
         @Override
-        protected CloseableHttpResponse doExecute(HttpHost target, HttpRequest request, HttpContext context) throws IOException, ClientProtocolException {
+        protected CloseableHttpResponse doExecute(HttpHost target,
+                                                  HttpRequest request,
+                                                  HttpContext context)
+                throws IOException {
             return response;
         }
 

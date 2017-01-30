@@ -6,6 +6,7 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.ByteRangeConversion;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.EncryptionType;
@@ -370,31 +371,31 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             initialSkipBytes = plaintextEnd + fullPlaintextSize;
 
             // calculates the ciphertext byte range
-            long[] computedRanges = this.cipherDetails.translateByteRange(
+            final ByteRangeConversion computedRanges = this.cipherDetails.translateByteRange(
                     initialSkipBytes, fullPlaintextSize - 1);
 
             // We only use the ciphertext start position, because we already
             // have the position of the end of the ciphertext (eg content-length)
-            binaryStartPositionInclusive = computedRanges[0];
+            binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
             binaryEndPositionInclusive = ciphertextSize;
 
-            plaintextRangeLength = computedRanges[3];
+            plaintextRangeLength = computedRanges.getLengthOfPlaintextIncludingSkipBytes();
         // This is the typical case like: bytes=3-44
         } else {
             initialSkipBytes = plaintextStart;
             // calculates the ciphertext byte range
-            long[] computedRanges = this.cipherDetails.translateByteRange(
+            final ByteRangeConversion computedRanges = this.cipherDetails.translateByteRange(
                     initialSkipBytes, plaintextEnd);
 
-            binaryStartPositionInclusive = computedRanges[0];
+            binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
 
-            if (computedRanges[2] > 0) {
-                binaryEndPositionInclusive = computedRanges[2] + 1;
+            if (computedRanges.getCiphertextEndPositionInclusive() > 0) {
+                binaryEndPositionInclusive = computedRanges.getCiphertextEndPositionInclusive();
             } else {
                 binaryEndPositionInclusive = 0;
             }
 
-            plaintextRangeLength = computedRanges[3];
+            plaintextRangeLength = computedRanges.getLengthOfPlaintextIncludingSkipBytes();
         }
 
         requestHeaders.setRange(String.format("bytes=%d-%d",

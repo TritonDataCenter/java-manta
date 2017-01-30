@@ -1,14 +1,11 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.client.MantaMetadata;
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicHeaderValueParser;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Scanner;
 
 @Test
 public class EncryptedMetadataUtilsTest {

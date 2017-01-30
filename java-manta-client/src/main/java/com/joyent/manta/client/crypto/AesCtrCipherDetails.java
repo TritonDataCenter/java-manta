@@ -60,7 +60,7 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     }
 
     @Override
-    public long[] translateByteRange(final long startInclusive, final long endInclusive) {
+    public ByteRangeConversion translateByteRange(final long startInclusive, final long endInclusive) {
         final long plaintextMax = getMaximumPlaintextSizeInBytes();
 
         if (startInclusive < 0) {
@@ -89,8 +89,6 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
             throw new IllegalArgumentException(msg);
         }
 
-        long[] ranges = new long[5];
-
         final int blockSize = getBlockSizeInBytes();
         final long adjustedStart;
 
@@ -105,20 +103,15 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
          * zero is valid. When we modules zero, it results in an invalid
          * calculation. */
         if (endInclusive != 0 && endInclusive % blockSize == 0) {
-            adjustedEnd = endInclusive;
+            adjustedEnd = endInclusive + 1;
         } else {
-            adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize;
+            adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize + 1;
         }
 
         plaintextEndLength = endInclusive - startInclusive + 1;
 
-        ranges[0] = adjustedStart;
-        ranges[1] = plaintextStartAdjustment;
-        ranges[2] = adjustedEnd;
-        ranges[3] = plaintextEndLength;
-        ranges[4] = blockNumber;
-
-        return ranges;
+        return new ByteRangeConversion(adjustedStart, plaintextStartAdjustment,
+                adjustedEnd, plaintextEndLength, blockNumber);
     }
 
     @Override

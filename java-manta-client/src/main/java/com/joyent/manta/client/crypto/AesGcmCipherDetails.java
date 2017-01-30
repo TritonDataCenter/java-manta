@@ -94,7 +94,7 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     }
 
     @Override
-    public long[] translateByteRange(final long startInclusive, final long endInclusive) {
+    public ByteRangeConversion translateByteRange(final long startInclusive, final long endInclusive) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
