@@ -1,9 +1,14 @@
 package com.joyent.manta.client.crypto;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test
 public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
+    public void doesntCalculateHmac() throws Exception {
+        Assert.assertEquals(AesGcmCipherDetails.INSTANCE_256_BIT.getAuthenticationHmac(), null);
+    }
+
     public void size1024bCalculationWorksRoundTripAes128() {
         final long size = 1024;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);

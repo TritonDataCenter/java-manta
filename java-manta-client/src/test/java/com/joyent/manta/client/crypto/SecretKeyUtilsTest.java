@@ -1,6 +1,7 @@
 package com.joyent.manta.client.crypto;
 
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -87,5 +88,39 @@ public class SecretKeyUtilsTest {
         Assert.assertEquals(actual.getAlgorithm(), expected.getAlgorithm());
         Assert.assertTrue(Arrays.equals(expected.getEncoded(), actual.getEncoded()),
                 "Secret key loaded from URI doesn't match");
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void writeKeyWithNullKey() throws IOException {
+        SecretKeyUtils.writeKey(null, null);
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void writeKeyWithNullOutStream() throws IOException {
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+
+        SecretKey key = SecretKeyUtils.loadKey(ByteUtils.subArray(keyBytes, 2), cipherDetails);
+        SecretKeyUtils.writeKey(key, null);
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void writeKeyToPathWithNullKey() throws IOException {
+        SecretKeyUtils.writeKeyToPath(null, null);
+    }
+
+    public void writeKeyToPath() throws IOException {
+        File file = File.createTempFile("ciphertext-", ".data");
+        FileUtils.forceDeleteOnExit(file);
+        Path path = file.toPath();
+
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+        SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
+        SecretKeyUtils.writeKeyToPath(key, path);
+
+        SecretKey actual = SecretKeyUtils.loadKeyFromPath(path, cipherDetails);
+        Assert.assertEquals(actual.getAlgorithm(), key.getAlgorithm());
+        Assert.assertTrue(Arrays.equals(key.getEncoded(), actual.getEncoded()));
     }
 }
