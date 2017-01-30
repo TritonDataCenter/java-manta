@@ -47,7 +47,8 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<Ma
             try {
                 return Mac.getInstance(algorithm);
             } catch (NoSuchAlgorithmException e) {
-                String msg = String.format("Hmac algorithm [%s] not supported");
+                String msg = String.format("Hmac algorithm [%s] not supported",
+                        algorithm);
                 throw new MantaClientEncryptionException(msg, e);
             }
         };

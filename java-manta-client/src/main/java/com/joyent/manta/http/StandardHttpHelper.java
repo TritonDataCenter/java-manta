@@ -311,10 +311,8 @@ public class StandardHttpHelper implements HttpHelper {
                 throw e;
             }
 
-            MantaObjectInputStream in = new MantaObjectInputStream(metadata, response,
+            return new MantaObjectInputStream(metadata, response,
                     backingStream);
-
-            return in;
         };
 
         final int expectedHttpStatus;

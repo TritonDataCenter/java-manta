@@ -44,7 +44,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
         } else {
             this.wrapped = Collections.unmodifiableMap(backingMap);
         }
-        this.lowercaseWrapped = new CaseInsensitiveMap<String, V>(this.wrapped);
+        this.lowercaseWrapped = new CaseInsensitiveMap<>(this.wrapped);
     }
 
     /**
