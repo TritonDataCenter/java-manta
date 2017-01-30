@@ -87,7 +87,7 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
      * @param hasIV indicates if the instance has an initialization vector
      * @return calculated byte size of encrypted body with the hmac/authentication tag appended
      */
-    public static long calculateContentLength(final long plaintextSize, final int blockBytes, final int tagOrHmacBytes,
+    static long calculateContentLength(final long plaintextSize, final int blockBytes, final int tagOrHmacBytes,
         final boolean hasIV) {
 
         if (plaintextSize <= 0) {
