@@ -2,8 +2,6 @@ package com.joyent.manta.client.crypto;
 
 import org.testng.annotations.Test;
 
-import javax.crypto.SecretKey;
-
 @Test
 public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
     public void size1024bCalculationWorksRoundTripAes128() {
@@ -63,21 +61,21 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
 
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes128() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        cipherDetails.translateByteRange(0, 128);
     }
 
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes192() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_192_BIT;
+        cipherDetails.translateByteRange(0, 128);
     }
 
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes256() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_256_BIT;
+        cipherDetails.translateByteRange(0, 128);
     }
 }

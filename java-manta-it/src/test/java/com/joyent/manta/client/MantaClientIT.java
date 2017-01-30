@@ -50,7 +50,6 @@ public class MantaClientIT {
 
     private String testPathPrefix;
 
-
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
@@ -521,41 +520,6 @@ public class MantaClientIT {
         Assert.assertFalse(actual, "File object shouldn't exist");
     }
 
-    @Test
-    public final void testCanGetWithRangeHeader() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        final String expected = TEST_DATA.substring(7, 18); // substring is inclusive, exclusive
-
-        // Test data: "EPISODEII_IS_BEST_EPISODE"
-        // Our Range:         [---------]
-
-        mantaClient.put(path, TEST_DATA);
-
-        final MantaHttpHeaders headers = new MantaHttpHeaders();
-        // Range is inclusive, inclusive
-        headers.setRange("bytes=7-17");
-
-        try (final InputStream min = mantaClient.getAsInputStream(path, headers)) {
-            String actual = IOUtils.toString(min, Charset.defaultCharset());
-            Assert.assertEquals(actual, expected, "Didn't receive correct range value");
-        }
-    }
-
-    @Test
-    public final void testCanGetWithComputedRangeHeader() throws IOException {
-        // see testCanGetWithRangeHeader above
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        final String expected = TEST_DATA.substring(7, 18); // substring is inclusive, exclusive
-        mantaClient.put(path, TEST_DATA);
-
-        final MantaHttpHeaders headers = new MantaHttpHeaders();
-        try (final InputStream min = mantaClient.getAsInputStream(path, headers, 7L, 17L)) {
-            String actual = IOUtils.toString(min, Charset.defaultCharset());
-            Assert.assertEquals(actual, expected, "Didn't receive correct range value");
-        }
-    }
 
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDate() {
