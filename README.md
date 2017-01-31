@@ -66,7 +66,7 @@ left are overridden by values on the right.
 | 16384                                | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       |
 | false                                | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        |
 |                                      | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |
-| AES/CTR/NoPadding                    | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     |
+| AES128/CTR/NoPadding                 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     |
 | false                                | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    |
 | Mandatory                            | manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     |
 |                                      | manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |
