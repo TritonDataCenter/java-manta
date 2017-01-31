@@ -33,9 +33,11 @@ import java.util.Base64;
 import java.util.function.Supplier;
 
 /**
- * An {@link InputStream} implementation that decrypts client-side encrypted
+ * <p>An {@link InputStream} implementation that decrypts client-side encrypted
  * Manta objects as a stream and performs authentication when the end of the
- * stream is reached.
+ * stream is reached.</p>
+ *
+ * <p><strong>This class is not thread-safe.</strong></p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
@@ -317,35 +319,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     }
 
     /**
-     * Finds the cipher used to encrypt the object that we are streaming.
-     *
-     * @return cipher details instance
-     * @throws MantaClientEncryptionException when the cipher specified is invalid
-     */
-    private SupportedCipherDetails findCipherDetails() {
-        final String cipherId = getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
-
-        if (cipherId == null || cipherId.isEmpty()) {
-            String msg = "Cipher id / cipher type must not be null nor empty";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            annotateException(e);
-            throw e;
-        }
-
-        SupportedCipherDetails details = SupportedCiphersLookupMap.INSTANCE.getWithCaseInsensitiveKey(cipherId);
-
-        if (details == null) {
-            String msg = "Unsupported cipher id / cipher type "
-                    + "used to encrypt object";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            annotateException(e);
-            throw e;
-        }
-
-        return details;
-    }
-
-    /**
      * Finds the correct HMAC instance based on the metadata supplied from the
      * encrypted object.
      *
@@ -401,24 +374,24 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     public int read() throws IOException {
         if (this.closed) {
             MantaIOException e = new MantaIOException("Can't read a closed stream");
-            e.setContextValue("path", getPath());
+            annotateException(e);
             throw e;
         }
 
         skipInitialBytes();
 
         try {
-            final int b = cipherInputStream.read();
+            final int read = cipherInputStream.read();
 
-            if (hmac != null && b != -1 && authenticateCiphertext) {
-                hmac.update((byte) b);
+            if (hmac != null && read > -1 && authenticateCiphertext) {
+                hmac.update((byte) read);
             }
 
-            if (b > 0) {
+            if (read > -1) {
                 plaintextBytesRead++;
             }
 
-            return b;
+            return read;
         } catch (IOException e) {
             final Throwable cause = e.getCause();
             if (cause != null && cause.getClass().equals(AEADBadTagException.class)) {
@@ -495,11 +468,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             }
         }
 
-        if (hmac != null && read > 0 && authenticateCiphertext) {
+        if (hmac != null && read > -1 && authenticateCiphertext) {
             hmac.update(bytes, 0, read);
         }
 
-        if (read > 0) {
+        if (read > -1) {
             plaintextBytesRead += read;
         }
 
@@ -519,11 +492,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             final int read = cipherInputStream.read(bytes, off, len);
 
-            if (hmac != null && read > 0 && authenticateCiphertext) {
+            if (hmac != null && read > -1 && authenticateCiphertext) {
                 hmac.update(bytes, off, read);
             }
 
-            if (read > 0) {
+            if (read > -1) {
                 plaintextBytesRead += read;
             }
 
@@ -550,6 +523,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         skipInitialBytes();
 
+        if (numberOfBytesToSkip <= 0) {
+            return 0;
+        }
+
         /* When using a CipherInputStream with some algorithms, the skip() method
          * is horribly broken and doesn't return the correct number of bytes
          * skipped. In order to accurately report the number of bytes skipped
@@ -567,10 +544,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             }
 
             return skipped;
-        }
-
-        if (numberOfBytesToSkip <= 0) {
-            return 0;
         }
 
         final int defaultBufferSize = calculateBufferSize();
@@ -620,7 +593,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         while (initialBytesToSkip > 0) {
             int read = cipherInputStream.read();
 
-            if (read >= 0) {
+            if (read > -1) {
                 initialBytesToSkip--;
             }
         }
@@ -641,7 +614,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final int bufferSize = calculateBufferSize();
         byte[] buf = new byte[bufferSize];
 
-        while (read(buf, false) >= 0);
+        while (read(buf, false) > -1);
     }
 
     /**
@@ -689,6 +662,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             byte[] expected = new byte[this.hmac.getMacLength()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+            }
+
             if (readHmacBytes != this.hmac.getMacLength()) {
                 MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
                 annotateException(e);
@@ -735,11 +712,13 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         exception.setContextValue("cipherDetails", this.cipherDetails);
         exception.setContextValue("cipherInputStream", this.cipherInputStream);
         exception.setContextValue("authenticationEnabled", this.authenticateCiphertext);
+        exception.setContextValue("threadName", Thread.currentThread().getName());
+        exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
 
         if (this.hmac != null) {
-            exception.setContextValue("hmac", this.hmac.getAlgorithm());
+            exception.setContextValue("hmacAlgorithm", this.hmac.getAlgorithm());
         } else {
-            exception.setContextValue("hmac", "null");
+            exception.setContextValue("hmacAlgorithm", "null");
         }
     }
 

@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -16,14 +17,23 @@ import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -92,7 +102,7 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void canReadStreamAndThenCloseWithNoErrors() throws IOException {
+    public final void canReadStreamAndThenCloseWithoutErrors() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
@@ -100,6 +110,57 @@ public class MantaClientIT {
         try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
             gotObject.read();
             gotObject.read();
+        }
+    }
+
+    @Test
+    public final void canCopyStreamToFileAndCloseWithoutErrors() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        try (InputStream in = new RandomInputStream(8000)) {
+            mantaClient.put(path, in);
+        }
+
+        File temp = File.createTempFile("object-" + name, ".data");
+        FileUtils.forceDeleteOnExit(temp);
+
+        InputStream in = mantaClient.getAsInputStream(path);
+        FileOutputStream out = new FileOutputStream(temp);
+
+        try {
+            IOUtils.copyLarge(in, out);
+        } finally {
+            in.close();
+            out.close();
+        }
+    }
+
+    @Test
+    public final void canCreateStreamInOneThreadAndCloseInAnother()
+            throws Exception {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        try (InputStream in = new RandomInputStream(8000)) {
+            mantaClient.put(path, in);
+        }
+
+        File temp = File.createTempFile("object-" + name, ".data");
+        FileUtils.forceDeleteOnExit(temp);
+
+        FileOutputStream out = new FileOutputStream(temp);
+
+        Callable<InputStream> callable = () -> mantaClient.getAsInputStream(path);
+
+        ExecutorService service = Executors.newFixedThreadPool(1);
+        InputStream in = service.submit(callable).get();
+
+        try {
+            IOUtils.copyLarge(in, out);
+        } finally {
+            in.close();
+            out.close();
         }
     }
 
