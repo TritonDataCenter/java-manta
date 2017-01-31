@@ -242,6 +242,8 @@ Below is a table of each of the supported encryption algorithms and the features
 *Note* that any algorithm that supports authenticated encryption will honor the `manta.encryption_auth_mode` setting. 
 
 *Note* that any non-authenticated encryption algorithm will have an HMAC generated.
+
+*Note* [IV attacks](https://en.wikipedia.org/wiki/Initialization_vector) are feasible when the same key is reused to encrypt 6 million+ objects.
  
 
 ## Subuser Difficulties
