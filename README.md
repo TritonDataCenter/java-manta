@@ -209,6 +209,41 @@ using a SLF4J implementation. Apache HTTP Client is bundled as a shaded artifact
 as well as an Apache Commons Logger adaptor to SLF4J so Apache HTTP Client logs
 will also be output via SLF4J.
 
+## Client-side Encryption
+
+In order to enable client side encryption for downloading and decrypting encrypted files, please set the following 
+system properties. Please consult the [Configuration]() for the corresponding environment variable.
+ 
+- `manta.client_encryption` - set to `true`
+- `manta.encryption_key_bytes_base64` or `manta.encryption_key_bytes`
+
+Additionally, you should set the following system properties to support encrypting and uploading files using client-side
+encryption.
+
+- `manta.encryption_algorithm`
+- `manta.encryption_key_id`
+
+Below is a table of each of the supported encryption algorithms and the features they provide.
+
+| Algorithm                            | Range Requests                     | Authenticated Encryption       |
+|--------------------------------------|------------------------------------|--------------------------------|
+| AES128/GCM/NoPadding                 | No                                 | Yes                            |
+| AES192/GCM/NoPadding                 | No                                 | Yes                            |
+| AES256/GCM/NoPadding                 | No                                 | Yes                            |
+|                                      |                                    |                                |
+| AES128/CTR/NoPadding                 | Yes                                | No                             |
+| AES192/CTR/NoPadding                 | Yes                                | No                             |
+| AES256/CTR/NoPadding                 | Yes                                | No                             |
+|                                      |                                    |                                |
+| AES128/CBC/PKCS5Padding              | No                                 | No                             |
+| AES192/CBC/PKCS5Padding              | No                                 | No                             |
+| AES256/CBC/PKCS5Padding              | No                                 | No                             |
+
+*Note* that any algorithm that supports authenticated encryption will honor the `manta.encryption_auth_mode` setting. 
+
+*Note* that any non-authenticated encryption algorithm will have an HMAC generated.
+ 
+
 ## Subuser Difficulties
 
 If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
