@@ -98,7 +98,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     /**
      * Secret key used to encrypt and decrypt data.
      */
-    private final SecretKey secretKey;
+    // FIXME
+    public final SecretKey secretKey;
 
     /**
      * Cipher implementation used to encrypt and decrypt data.
@@ -151,6 +152,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
+
+    public EncryptionContext newEncryptionContext() {
+        return new EncryptionContext(this.key, this.cipherDetails);
+    }
+        
     @Override
     public HttpResponse httpHead(final String path) throws IOException {
         HttpResponse response = super.httpHead(path);
