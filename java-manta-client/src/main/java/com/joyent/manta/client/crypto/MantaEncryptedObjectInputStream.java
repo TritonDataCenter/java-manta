@@ -558,12 +558,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         byte[] buf = new byte[bufferSize];
 
         long skipped = 0;
-        int skippedInLastRead;
+        int skippedInLastRead = 0;
 
-        do {
+        while (skippedInLastRead > -1 && skipped <= numberOfBytesToSkip) {
             skippedInLastRead = read(buf);
-            skipped += skippedInLastRead;
-        } while (skippedInLastRead > -1 || skipped < numberOfBytesToSkip);
+
+            if (skippedInLastRead > -1) {
+                skipped += skippedInLastRead;
+            }
+        }
 
         return skipped;
     }
