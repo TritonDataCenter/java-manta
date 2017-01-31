@@ -1,7 +1,6 @@
 package com.joyent.manta.client.crypto;
 
 import org.apache.commons.io.FileUtils;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -100,7 +99,7 @@ public class SecretKeyUtilsTest {
         SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
         byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
 
-        SecretKey key = SecretKeyUtils.loadKey(ByteUtils.subArray(keyBytes, 2), cipherDetails);
+        SecretKey key = SecretKeyUtils.loadKey(Arrays.copyOfRange(keyBytes, 2, 10), cipherDetails);
         SecretKeyUtils.writeKey(key, null);
     }
 
