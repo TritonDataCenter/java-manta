@@ -655,7 +655,7 @@ public class MantaEncryptedObjectInputStreamTest {
 
     /**
      * Attempts to copy a {@link MantaEncryptedObjectInputStream} stream to
-     * a {@link ByteArrayOutputStream} and close the streams. Copy is done using
+     * a {@link java.io.OutputStream} and close the streams. Copy is done using
      * a large buffer size and logic borrowed directly from COSBench.
      */
     private void canCopyToOutputStreamWithLargeBuffer(SupportedCipherDetails cipherDetails,
@@ -664,13 +664,20 @@ public class MantaEncryptedObjectInputStreamTest {
         final byte[] buffer = new byte[1024*1024];
         final int sourceLength = 8000;
         final byte[] sourceBytes = RandomUtils.nextBytes(sourceLength);
-        final byte[] iv = cipherDetails.generateIv();
 
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
+        final EncryptedFile encryptedFile;
 
-        ByteArrayInputStream backing = new ByteArrayInputStream(sourceBytes);
+        try (InputStream in = new ByteArrayInputStream(sourceBytes)) {
+            encryptedFile = encryptedFile(key, cipherDetails, sourceLength, in);
+        }
+
+        final byte[] iv = encryptedFile.cipher.getIV();
+
+        FileInputStream backing = new FileInputStream(encryptedFile.file);
         MantaEncryptedObjectInputStream in = createEncryptedObjectInputStream(
-                key, backing, (long)sourceLength, cipherDetails, iv, authenticate);
+                key, backing, (long)sourceLength, cipherDetails, iv, authenticate,
+                sourceLength);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
@@ -679,7 +686,6 @@ public class MantaEncryptedObjectInputStreamTest {
                 out.write(buffer, 0, n);
             }
         } finally {
-            backing.close();
             in.close();
             out.close();
         }
@@ -750,12 +756,13 @@ public class MantaEncryptedObjectInputStreamTest {
     private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
                                         ReadBytes readBytes, boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
+        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plainTextSize);
         long ciphertextSize = encryptedFile.file.length();
 
         FileInputStream in = new FileInputStream(encryptedFile.file);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate);
+                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
+                (long)this.plainTextSize);
 
         try {
             byte[] actual = new byte[plainTextSize];
@@ -827,7 +834,7 @@ public class MantaEncryptedObjectInputStreamTest {
         byte[] expected = Arrays.copyOfRange(content, startPosInclusive, endPositionExclusive);
 
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
+        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plainTextSize);
         long ciphertextSize = encryptedFile.file.length();
 
         /* Here we translate the plaintext ranges to ciphertext ranges. Notice
@@ -857,7 +864,8 @@ public class MantaEncryptedObjectInputStreamTest {
                  * test how the stream handles incorrect values of plaintext length. */
                  MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, bin,
                          ciphertextByteRangeLength, cipherDetails, encryptedFile.cipher.getIV(),
-                    false, Integer.valueOf(startPosInclusive).longValue(),
+                    false, (long)this.plainTextSize,
+                         Integer.valueOf(startPosInclusive).longValue(),
                          plaintextLength)) {
                 byte[] actual = new byte[expected.length];
                 readBytes.readAll(min, actual);
@@ -877,13 +885,13 @@ public class MantaEncryptedObjectInputStreamTest {
                                ReadBytes readBytes,
                                boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
+        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plainTextSize);
         long ciphertextSize = encryptedFile.file.length();
 
         FileInputStream in = new FileInputStream(encryptedFile.file);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
-                authenticate);
+                authenticate, (long)this.plainTextSize);
 
         try {
             byte[] actual = new byte[plainTextSize];
@@ -897,7 +905,7 @@ public class MantaEncryptedObjectInputStreamTest {
                                                            ReadBytes readBytes)
             throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails);
+        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plainTextSize);
 
         try (FileChannel fc = (FileChannel.open(encryptedFile.file.toPath(), READ, WRITE))) {
             fc.position(2);
@@ -911,7 +919,8 @@ public class MantaEncryptedObjectInputStreamTest {
 
         FileInputStream in = new FileInputStream(encryptedFile.file);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), true);
+                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
+                true, (long)this.plainTextSize);
 
         try {
             byte[] actual = new byte[plainTextSize];
@@ -926,13 +935,24 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     private EncryptedFile encryptedFile(
-            SecretKey key, SupportedCipherDetails cipherDetails) throws IOException {
+            SecretKey key, SupportedCipherDetails cipherDetails,
+            long plaintextSize) throws IOException {
         File temp = File.createTempFile("encrypted", ".data");
         FileUtils.forceDeleteOnExit(temp);
 
-        try (InputStream in = testURL.openStream();
-             FileOutputStream out = new FileOutputStream(temp)) {
-            MantaInputStreamEntity entity = new MantaInputStreamEntity(in, plainTextSize);
+        try (InputStream in = testURL.openStream()) {
+            return encryptedFile(key, cipherDetails, plaintextSize, in);
+        }
+    }
+
+    private EncryptedFile encryptedFile(
+            SecretKey key, SupportedCipherDetails cipherDetails, long plaintextSize,
+            InputStream in) throws IOException {
+        File temp = File.createTempFile("encrypted", ".data");
+        FileUtils.forceDeleteOnExit(temp);
+
+        try (FileOutputStream out = new FileOutputStream(temp)) {
+            MantaInputStreamEntity entity = new MantaInputStreamEntity(in, plaintextSize);
             EncryptingEntity encryptingEntity = new EncryptingEntity(
                     key, cipherDetails, entity);
             encryptingEntity.writeTo(out);
@@ -945,19 +965,20 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
-            SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
-            byte[] iv, boolean authenticate) {
+            SecretKey key, InputStream in, long contentLength,
+            SupportedCipherDetails cipherDetails,
+            byte[] iv, boolean authenticate, long plaintextSize) {
         return createEncryptedObjectInputStream(key, in, contentLength, cipherDetails, iv,
-                authenticate, null, null);
+                authenticate, plaintextSize, null, null);
     }
 
     private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
-            SecretKey key, InputStream in, long contentLength, SupportedCipherDetails cipherDetails,
-            byte[] iv, boolean authenticate, Long startPos, Long plaintextLength) {
+            SecretKey key, InputStream in, long ciphertextSize, SupportedCipherDetails cipherDetails,
+            byte[] iv, boolean authenticate, long plaintextSize, Long startPos, Long plaintextLength) {
         String path = String.format("/test/stor/test-%s", UUID.randomUUID());
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.put(MantaHttpHeaders.ENCRYPTION_CIPHER, cipherDetails.getCipherId());
-        headers.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH, this.plainTextSize);
+        headers.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH, plaintextSize);
         headers.put(MantaHttpHeaders.ENCRYPTION_KEY_ID, "unit-test-key");
 
         if (cipherDetails.isAEADCipher()) {
@@ -969,11 +990,20 @@ public class MantaEncryptedObjectInputStreamTest {
         headers.put(MantaHttpHeaders.ENCRYPTION_IV,
                 Base64.getEncoder().encodeToString(iv));
 
+        final long contentLength;
+
+        if (!cipherDetails.isAEADCipher() || !authenticate) {
+            contentLength = ciphertextSize;
+        } else {
+            contentLength = ciphertextSize + cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+        }
+
         headers.setContentLength(contentLength);
 
         MantaMetadata metadata = new MantaMetadata();
 
         MantaObjectResponse response = new MantaObjectResponse(path, headers, metadata);
+
         CloseableHttpResponse httpResponse = Mockito.mock(CloseableHttpResponse.class);
 
         EofSensorInputStream eofSensorInputStream = new EofSensorInputStream(in, null);
