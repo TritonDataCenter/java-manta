@@ -91,8 +91,19 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
+    @Test
+    public final void canReadStreamAndThenCloseWithNoErrors() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
 
-    @Test()
+        try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
+            gotObject.read();
+            gotObject.read();
+        }
+    }
+
+    @Test
     public final void testManyOperations() throws IOException {
         String dir = String.format("%s/multiple", testPathPrefix);
         mantaClient.putDirectory(dir);
