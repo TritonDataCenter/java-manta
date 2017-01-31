@@ -16,6 +16,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
@@ -28,7 +29,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 
 // FIXME: much dupe
-public class EncryptingEntity implements HttpEntity {
+public class EncryptingPartEntity implements HttpEntity {
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingPartEntity.class);
 
     /**
@@ -61,8 +62,10 @@ public class EncryptingEntity implements HttpEntity {
      */
     private final HttpEntity wrapped;
 
+    private final MultipartOutputStream multipartStream;
 
-    public EncryptingPartEntity(final EncryptionContext eContext, MultipartOutputStream multiPartSteram,
+
+    public EncryptingPartEntity(final EncryptionContext eContext, MultipartOutputStream multipartStream,
                                 final HttpEntity wrapped) {
         // if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
         //     String msg = String.format("Input content length exceeded maximum "
@@ -72,7 +75,7 @@ public class EncryptingEntity implements HttpEntity {
         //     throw new MantaClientEncryptionException(msg);
         // }
 
-        this.multiPartStream = multiPartStream;
+        this.multipartStream = multipartStream;
         this.eContext = eContext;
 
         //this.originalLength = wrapped.getContentLength();
@@ -119,10 +122,10 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
+        OutputStream out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
         try {
             final int bufferSize = 128;
-            int bytesCopied = IOUtils.copy(getContent(), multiPartStream, bufferSize);
+            long bytesCopied = IOUtils.copy(getContent(), multipartStream, bufferSize);
             out.flush();
             // how to close on final?            
             /* We don't close quietly because we want the operation to fail if

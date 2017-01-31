@@ -15,6 +15,7 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
+import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
@@ -154,7 +155,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
 
     public EncryptionContext newEncryptionContext() {
-        return new EncryptionContext(this.key, this.cipherDetails);
+        return new EncryptionContext(this.secretKey, this.cipherDetails);
     }
         
     @Override

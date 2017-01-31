@@ -138,7 +138,7 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
+        OutputStream out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
         try {
             copyContentToOutputStream(out);
             /* We don't close quietly because we want the operation to fail if
@@ -146,7 +146,7 @@ public class EncryptingEntity implements HttpEntity {
             out.close();
 
             if (out instanceof HmacOutputStream) {
-                byte[] hmacBytes = out.getHmac().doFinal();
+                byte[] hmacBytes = ((HmacOutputStream) out).getHmac().doFinal();
                 Validate.isTrue(hmacBytes.length == eContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes(),
                         "HMAC actual bytes doesn't equal the number of bytes expected");
 
