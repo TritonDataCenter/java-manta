@@ -17,6 +17,12 @@ SDK for interacting with Joyent's Manta system.
 ### Requirements
 * [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
 * [Maven 3.3.x](https://maven.apache.org/)
+* [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html)
+
+#### Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
+ 1. Edit "jre\lib\security\java.security " Add an entry for BouncyCastle  
+ `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
+ 2. Copy bc*.jar to jre\lib\ext
 
 ### Using Maven
 Add the latest java-manta dependency to your Maven `pom.xml`.
@@ -118,7 +124,7 @@ contents of the buffer are directly uploaded to Manta in a retryable form.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
 Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
-Unique id of the client-side encryption key being used. It must be in US-ASCII
+Unique ID of the client-side encryption key being used. It must be in US-ASCII
 using only printable characters and with no whitespace.
 * `manta.encryption_algorithm` (**MANTA_ENCRYPTION_ALGORITHM**)
 The client-side encryption algorithm used to encrypt and decrypt data. Valid
@@ -128,7 +134,7 @@ Boolean indicating that unencrypted files can be downloaded when client-side
 encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
 [EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java) 
-enum type indicating that
+enum type indicating that authenticating encryption verification is either Mandatory or Optional.
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
 The path on the local filesystem or a URI understandable by the JVM indicating the
 location of the private key used to perform client-side encryption. If this value is
@@ -182,6 +188,7 @@ For detailed usage instructions, consult the provided javadoc.
  
 * [Get request and client setup](java-manta-examples/src/main/java/SimpleClient.java)
 * [Multipart upload](java-manta-examples/src/main/java/Multipart.java)
+* [Client-side Encryption](java-manta-examples/src/main/java/SimpleClientEncryption.java)
 
 ### Job Examples
 
