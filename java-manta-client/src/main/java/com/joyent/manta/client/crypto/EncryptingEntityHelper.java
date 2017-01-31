@@ -41,49 +41,49 @@ public class EncryptingEntityHelper {
 
     }
 
-    /**
-     * Copies the entity content to the specified output stream and validates
-     * that the number of bytes copied is the same as specified when in the
-     * original content-length.
-     *
-     * @param out stream to copy to
-     * @throws IOException throw when there is a problem writing to the streams
-     */
-    private void copyContentToOutputStream(final OutputStream out) throws IOException {
-        final long bytesCopied;
+    // /**
+    //  * Copies the entity content to the specified output stream and validates
+    //  * that the number of bytes copied is the same as specified when in the
+    //  * original content-length.
+    //  *
+    //  * @param out stream to copy to
+    //  * @throws IOException throw when there is a problem writing to the streams
+    //  */
+    // private void copyContentToOutputStream(final OutputStream out) throws IOException {
+    //     final long bytesCopied;
 
-        /* Only the EmbeddedHttpContent class requires us to actually call
-         * write out on the wrapped object. In its particular case it is doing
-         * a wrapping operation between an InputStream and an OutputStream in
-         * order to provide an OutputStream interface to MantaClient. */
-        if (this.wrapped.getClass().equals(EmbeddedHttpContent.class)) {
-            CountingOutputStream cout = new CountingOutputStream(out);
-            this.wrapped.writeTo(cout);
-            cout.flush();
-            bytesCopied = cout.getByteCount();
-        } else {
-            /* We choose a small buffer because large buffer don't result in
-             * better performance when writing to a CipherOutputStream. You
-             * can try this yourself by fiddling with this value and running
-             * EncryptingEntityBenchmark. */
-            final int bufferSize = 128;
+    //     /* Only the EmbeddedHttpContent class requires us to actually call
+    //      * write out on the wrapped object. In its particular case it is doing
+    //      * a wrapping operation between an InputStream and an OutputStream in
+    //      * order to provide an OutputStream interface to MantaClient. */
+    //     if (this.wrapped.getClass().equals(EmbeddedHttpContent.class)) {
+    //         CountingOutputStream cout = new CountingOutputStream(out);
+    //         this.wrapped.writeTo(cout);
+    //         cout.flush();
+    //         bytesCopied = cout.getByteCount();
+    //     } else {
+    //         /* We choose a small buffer because large buffer don't result in
+    //          * better performance when writing to a CipherOutputStream. You
+    //          * can try this yourself by fiddling with this value and running
+    //          * EncryptingEntityBenchmark. */
+    //         final int bufferSize = 128;
 
-            bytesCopied = IOUtils.copy(getContent(), out, bufferSize);
-            out.flush();
-        }
+    //         bytesCopied = IOUtils.copy(getContent(), out, bufferSize);
+    //         out.flush();
+    //     }
 
-        /* If we don't know the length of the underlying content stream, we
-         * count the number of bytes written, so that it is available. */
-        if (originalLength == UNKNOWN_LENGTH) {
-            originalLength = bytesCopied;
-        } else if (originalLength != bytesCopied) {
-            MantaIOException e = new MantaIOException("Bytes copied doesn't equal the "
-                    + "specified content length");
-            e.setContextValue("specifiedContentLength", originalLength);
-            e.setContextValue("actualContentLength", bytesCopied);
-            throw e;
-        }
-    }
+    //     /* If we don't know the length of the underlying content stream, we
+    //      * count the number of bytes written, so that it is available. */
+    //     if (originalLength == UNKNOWN_LENGTH) {
+    //         originalLength = bytesCopied;
+    //     } else if (originalLength != bytesCopied) {
+    //         MantaIOException e = new MantaIOException("Bytes copied doesn't equal the "
+    //                 + "specified content length");
+    //         e.setContextValue("specifiedContentLength", originalLength);
+    //         e.setContextValue("actualContentLength", bytesCopied);
+    //         throw e;
+    //     }
+    // }
     
 
 }

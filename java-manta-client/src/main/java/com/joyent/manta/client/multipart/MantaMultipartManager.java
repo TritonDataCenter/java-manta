@@ -574,7 +574,7 @@ public class MantaMultipartManager {
     public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
             throws IOException, MantaMultipartException {
         Validate.notNull(upload, "Multipart upload object must not be null");
-
+        
         validateThatThereAreSequentialPartNumbers(upload.getId());
     }
 
