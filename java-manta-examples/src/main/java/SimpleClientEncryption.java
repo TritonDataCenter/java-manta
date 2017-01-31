@@ -1,16 +1,16 @@
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
-import sun.misc.BASE64Decoder;
 
+import java.util.Base64;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 
+
 /*
 * Usage: set the mantaUserName, privateKeyPath, and publicKeyId with your own values.
  */
-
 public class SimpleClientEncryption {
 
     public static void main(String... args) throws IOException {
@@ -32,7 +32,7 @@ public class SimpleClientEncryption {
                 .setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Mandatory)
                 .setPermitUnencryptedDownloads(false)
                 .setEncryptionKeyId("simple/example")
-                .setEncryptionPrivateKeyBytes((new BASE64Decoder()).decodeBuffer("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
+                .setEncryptionPrivateKeyBytes(Base64.getDecoder().decode("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
 
         try (MantaClient client = new MantaClient(config)) {
             String mantaPath = "/" + mantaUserName + "/stor/foo";
