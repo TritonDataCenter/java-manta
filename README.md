@@ -19,7 +19,9 @@ SDK for interacting with Joyent's Manta system.
 * [Maven 3.3.x](https://maven.apache.org/)
 * [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html)
 
-#### Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
+#### CLI Requirements
+
+Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
  1. Edit "jre\lib\security\java.security " Add an entry for BouncyCastle  
  `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
  2. Copy bc*.jar to jre\lib\ext
