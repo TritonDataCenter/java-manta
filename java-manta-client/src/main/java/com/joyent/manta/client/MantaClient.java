@@ -59,6 +59,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -901,18 +902,25 @@ public class MantaClient implements AutoCloseable {
          * Unfortunately, this will put us in a chunked transfer encoding and
          * it will affect performance. */
         if (contentLength < 0) {
-            byte[] preLoad = new byte[preLoadSize];
-            int read = IOUtils.read(source, preLoad);
-
-            // The total amount of bytes read was less than the preload size,
-            // so we can just return a in-memory non-streaming entity
-            if (read < preLoadSize) {
-                entity = new ExposedByteArrayEntity(preLoad, 0, read, contentType);
+            // If our stream is a FileInputStream, then we can pull the size off of it
+            if (source.getClass().equals(FileInputStream.class)) {
+                FileInputStream fsin = (FileInputStream)source;
+                entity = new InputStreamEntity(fsin, fsin.getChannel().size(), contentType);
             } else {
-                ByteArrayInputStream bin = new ByteArrayInputStream(preLoad);
-                SequenceInputStream sin = new SequenceInputStream(bin, source);
+                byte[] preLoad = new byte[preLoadSize];
+                int read = IOUtils.read(source, preLoad);
 
-                entity = new InputStreamEntity(sin, contentType);
+                // The total amount of bytes read was less than the preload size,
+                // so we can just return a in-memory non-streaming entity
+                if (read < preLoadSize) {
+                    entity = new ExposedByteArrayEntity(preLoad, 0, read, contentType);
+                } else {
+                    ByteArrayInputStream bin = new ByteArrayInputStream(preLoad);
+                    SequenceInputStream sin = new SequenceInputStream(bin, source);
+
+                    entity = new InputStreamEntity(sin, contentType);
+                }
+
             }
         /* We know how big the stream is, so we can decide if it is within our
          * preload threshold and load it into memory or if it isn't within the
