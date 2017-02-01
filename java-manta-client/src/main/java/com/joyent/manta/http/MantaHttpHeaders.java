@@ -128,6 +128,11 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String ENCRYPTION_METADATA_HMAC = "m-encrypt-metadata-hmac";
 
     /**
+     * When metadata uses AEAD, the number of bytes used to store an AEAD cipher's authentication data.
+     */
+    public static final String ENCRYPTION_METADATA_AEAD_TAG_LENGTH = "m-encrypt-metadata-aead-tag-length";
+
+    /**
      * Encrypted metadata header that stores the object's real content-type.
      */
     public static final String ENCRYPTED_CONTENT_TYPE = "e-content-type";
