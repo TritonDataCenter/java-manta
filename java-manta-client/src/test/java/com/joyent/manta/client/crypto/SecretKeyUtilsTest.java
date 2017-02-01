@@ -88,4 +88,38 @@ public class SecretKeyUtilsTest {
         Assert.assertTrue(Arrays.equals(expected.getEncoded(), actual.getEncoded()),
                 "Secret key loaded from URI doesn't match");
     }
+
+    @Test(expectedExceptions = Exception.class)
+    public void writeKeyWithNullKey() throws IOException {
+        SecretKeyUtils.writeKey(null, null);
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void writeKeyWithNullOutStream() throws IOException {
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+
+        SecretKey key = SecretKeyUtils.loadKey(Arrays.copyOfRange(keyBytes, 2, 10), cipherDetails);
+        SecretKeyUtils.writeKey(key, null);
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void writeKeyToPathWithNullKey() throws IOException {
+        SecretKeyUtils.writeKeyToPath(null, null);
+    }
+
+    public void writeKeyToPath() throws IOException {
+        File file = File.createTempFile("ciphertext-", ".data");
+        FileUtils.forceDeleteOnExit(file);
+        Path path = file.toPath();
+
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+        SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
+        SecretKeyUtils.writeKeyToPath(key, path);
+
+        SecretKey actual = SecretKeyUtils.loadKeyFromPath(path, cipherDetails);
+        Assert.assertEquals(actual.getAlgorithm(), key.getAlgorithm());
+        Assert.assertTrue(Arrays.equals(key.getEncoded(), actual.getEncoded()));
+    }
 }

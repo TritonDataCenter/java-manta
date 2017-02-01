@@ -1,6 +1,7 @@
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
+import com.joyent.manta.http.MantaHttpHeaders;
 
 import java.util.Base64;
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.util.Scanner;
 /*
 * Usage: set the mantaUserName, privateKeyPath, and publicKeyId with your own values.
  */
-public class SimpleClientEncryption {
+public class ClientEncryptionRangeDownload {
 
     public static void main(String... args) throws IOException {
         String mantaUserName = "USERNAME";
@@ -29,7 +30,7 @@ public class SimpleClientEncryption {
                 .setMantaKeyId(publicKeyId)
                 .setClientEncryptionEnabled(true)
                 .setEncryptionAlgorithm("AES256/CTR/NoPadding")
-                .setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Mandatory)
+                .setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional)
                 .setPermitUnencryptedDownloads(false)
                 .setEncryptionKeyId("simple/example")
                 .setEncryptionPrivateKeyBytes(Base64.getDecoder().decode("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
@@ -42,8 +43,11 @@ public class SimpleClientEncryption {
             System.out.println("HTTP Response headers:");
             System.out.println(response.getHttpHeaders().toString());
 
+            MantaHttpHeaders headers = new MantaHttpHeaders();
+            headers.setByteRange(5L, null);
+
             // Print out every line from file streamed real-time from Manta
-            try (InputStream is = client.getAsInputStream(mantaPath);
+            try (InputStream is = client.getAsInputStream(mantaPath, headers);
                  Scanner scanner = new Scanner(is)) {
 
                 while (scanner.hasNextLine()) {

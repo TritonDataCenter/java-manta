@@ -47,6 +47,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private static final long serialVersionUID = 8536248985759134599L;
 
     /**
+     * End of file marker for streams.
+     */
+    private static final int EOF = -1;
+
+    /**
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaEncryptedObjectInputStream.class);
@@ -301,7 +306,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         final CipherInputStream cin = new CipherInputStream(source, this.cipher);
 
-        /* A plaintext value above -1 indicates that we aren't working with
+        /* A plaintext value not null indicates that we aren't working with
          * a subset of the total object (byte range), so we can just pass back
          * the ciphertext stream without any limitations on its length. */
         if (plaintextRangeLength == null) {
@@ -383,11 +388,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             final int read = cipherInputStream.read();
 
-            if (hmac != null && read > -1 && authenticateCiphertext) {
+            if (hmac != null && read > EOF && authenticateCiphertext) {
                 hmac.update((byte) read);
             }
 
-            if (read > -1) {
+            if (read > EOF) {
                 plaintextBytesRead++;
             }
 
@@ -468,11 +473,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             }
         }
 
-        if (hmac != null && read > -1 && authenticateCiphertext) {
+        if (hmac != null && read > EOF && authenticateCiphertext) {
             hmac.update(bytes, 0, read);
         }
 
-        if (read > -1) {
+        if (read > EOF) {
             plaintextBytesRead += read;
         }
 
@@ -492,11 +497,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             final int read = cipherInputStream.read(bytes, off, len);
 
-            if (hmac != null && read > -1 && authenticateCiphertext) {
+            if (hmac != null && read > EOF && authenticateCiphertext) {
                 hmac.update(bytes, off, read);
             }
 
-            if (read > -1) {
+            if (read > EOF) {
                 plaintextBytesRead += read;
             }
 
@@ -538,7 +543,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             for (long l = 0L; l < numberOfBytesToSkip; l++) {
                 final int read = cipherInputStream.read();
 
-                if (read > -1) {
+                if (read > EOF) {
                     skipped++;
                 }
             }
@@ -560,10 +565,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         long skipped = 0;
         int skippedInLastRead = 0;
 
-        while (skippedInLastRead > -1 && skipped <= numberOfBytesToSkip) {
+        while (skippedInLastRead > EOF && skipped <= numberOfBytesToSkip) {
             skippedInLastRead = read(buf);
 
-            if (skippedInLastRead > -1) {
+            if (skippedInLastRead > EOF) {
                 skipped += skippedInLastRead;
             }
         }
@@ -596,7 +601,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         while (initialBytesToSkip > 0) {
             int read = cipherInputStream.read();
 
-            if (read > -1) {
+            if (read > EOF) {
                 initialBytesToSkip--;
             }
         }
@@ -617,7 +622,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final int bufferSize = calculateBufferSize();
         byte[] buf = new byte[bufferSize];
 
-        while (read(buf, false) > -1);
+        while (read(buf, false) > EOF);
     }
 
     /**
