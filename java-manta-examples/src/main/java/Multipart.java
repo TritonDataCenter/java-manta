@@ -1,5 +1,6 @@
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.multipart.JobsMultipartManager;
 import com.joyent.manta.client.multipart.MantaMultipartManager;
 import com.joyent.manta.client.multipart.MantaMultipartUpload;
 import com.joyent.manta.client.multipart.MantaMultipartUploadPart;
@@ -27,7 +28,7 @@ public class Multipart {
 
     private static void multipartUpload(MantaClient mantaClient) {
         // instantiated with a reference to the class the actually connects to Manta
-        MantaMultipartManager multipart = new MantaMultipartManager(mantaClient);
+        MantaMultipartManager multipart = new JobsMultipartManager(mantaClient);
 
         String uploadObject = "/username/stor/test/file";
 

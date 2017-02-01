@@ -46,7 +46,7 @@ import static org.testng.Assert.fail;
 @Test
 public class MantaMultipartManagerIT {
     private MantaClient mantaClient;
-    private MantaMultipartManager multipart;
+    private JobsMultipartManager multipart;
 
     private String testPathPrefix;
 
@@ -60,7 +60,7 @@ public class MantaMultipartManagerIT {
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         this.mantaClient = new MantaClient(config);
-        this.multipart = new MantaMultipartManager(this.mantaClient);
+        this.multipart = new JobsMultipartManager(this.mantaClient);
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
@@ -239,8 +239,8 @@ public class MantaMultipartManagerIT {
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
 
         assertEquals(remoteMetadata.size(), 4, "Unexpected metadata size");
-        assertTrue(remoteMetadata.containsKey(MantaMultipartManager.JOB_ID_METADATA_KEY));
-        assertTrue(remoteMetadata.containsKey(MantaMultipartManager.UPLOAD_ID_METADATA_KEY));
+        assertTrue(remoteMetadata.containsKey(JobsMultipartManager.JOB_ID_METADATA_KEY));
+        assertTrue(remoteMetadata.containsKey(JobsMultipartManager.UPLOAD_ID_METADATA_KEY));
         assertEquals(remoteMetadata.get("m-hello"), "world");
         assertEquals(remoteMetadata.get("m-foo"), "bar");
     }
