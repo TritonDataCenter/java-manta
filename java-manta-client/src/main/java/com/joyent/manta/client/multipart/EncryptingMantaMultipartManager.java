@@ -92,7 +92,7 @@ public class EncryptingMantaMultipartManager extends MantaMultipartManager {
                 Validate.isTrue(eState.lastPartNumber + 1 == partNumber,
                                 "Encrypted MPU parts must be serial and sequantial");
             } else {
-                eState.multipartStream = new MultipartOutputStream(null);
+                eState.multipartStream = new MultipartOutputStream(16); // need cipher block size
                 eState.cipherStream = EncryptingEntityHelper.makeCipherOutputforStream(eState.multipartStream, eState.eContext);
             }
             final String path = multipartPath(upload.getId(), partNumber);
