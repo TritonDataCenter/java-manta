@@ -22,8 +22,11 @@ import java.util.stream.Stream;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
+ *
+ * @param <UPLOAD> Manta multipart upload object used to manage MPU state
+ * @param <PART> Manta multipart upload part object used to manage MPU part state
  */
-public interface MantaMultipartManager {
+public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload, PART extends MantaMultipartUploadPart> {
     /**
      * Maximum number of parts for a single Manta object.
      * This value will be increased to 10,000 when multipart is implemented on
@@ -37,7 +40,7 @@ public interface MantaMultipartManager {
      * @return stream of objects representing files being uploaded via multipart
      * @throws IOException thrown when there are network issues
      */
-    Stream<MantaMultipartUpload> listInProgress() throws IOException;
+    Stream<UPLOAD> listInProgress() throws IOException;
 
     /**
      * Initializes a new multipart upload for an object.
@@ -46,7 +49,7 @@ public interface MantaMultipartManager {
      * @return unique id for the multipart upload
      * @throws IOException thrown when there are network issues
      */
-    MantaMultipartUpload initiateUpload(String path) throws IOException;
+    UPLOAD initiateUpload(String path) throws IOException;
 
 
     /**
@@ -57,8 +60,7 @@ public interface MantaMultipartManager {
      * @return object representing the multipart upload state as initiated
      * @throws IOException thrown when there are network issues
      */
-    MantaMultipartUpload initiateUpload(String path,
-                                        MantaMetadata mantaMetadata) throws IOException;
+    UPLOAD initiateUpload(String path, MantaMetadata mantaMetadata) throws IOException;
 
     /**
      * Initializes a new multipart upload for an object.
@@ -69,9 +71,9 @@ public interface MantaMultipartManager {
      * @return object representing the multipart upload state as initiated
      * @throws IOException thrown when there are network issues
      */
-    MantaMultipartUpload initiateUpload(String path,
-                                        MantaMetadata mantaMetadata,
-                                        MantaHttpHeaders httpHeaders) throws IOException;
+    UPLOAD initiateUpload(String path,
+                          MantaMetadata mantaMetadata,
+                          MantaHttpHeaders httpHeaders) throws IOException;
 
     /**
      * Uploads a single part of a multipart upload.
@@ -82,9 +84,7 @@ public interface MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload,
-                                        int partNumber,
-                                        String contents) throws IOException;
+    PART uploadPart(UPLOAD upload, int partNumber, String contents) throws IOException;
 
     /**
      * Uploads a single part of a multipart upload.
@@ -95,9 +95,7 @@ public interface MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload,
-                                        int partNumber,
-                                        byte[] bytes) throws IOException;
+    PART uploadPart(UPLOAD upload, int partNumber, byte[] bytes) throws IOException;
 
     /**
      * Uploads a single part of a multipart upload.
@@ -108,9 +106,8 @@ public interface MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload,
-                                        int partNumber,
-                                        File file) throws IOException;
+    PART uploadPart(UPLOAD upload, int partNumber, File file) throws IOException;
+
     /**
      * Uploads a single part of a multipart upload.
      *
@@ -120,9 +117,7 @@ public interface MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload,
-                                        int partNumber,
-                                        InputStream inputStream) throws IOException;
+    PART uploadPart(UPLOAD upload, int partNumber, InputStream inputStream) throws IOException;
 
     /**
      * Retrieves information about a single part of a multipart upload.
@@ -132,8 +127,7 @@ public interface MantaMultipartManager {
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaMultipartUploadPart getPart(MantaMultipartUpload upload,
-                                     int partNumber) throws IOException;
+    PART getPart(UPLOAD upload, int partNumber) throws IOException;
 
     /**
      * Retrieves the state of a given Manta multipart upload.
@@ -142,7 +136,7 @@ public interface MantaMultipartManager {
      * @return enum representing the state / status of the multipart upload
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaMultipartStatus getStatus(MantaMultipartUpload upload) throws IOException;
+    MantaMultipartStatus getStatus(UPLOAD upload) throws IOException;
 
     /**
      * Lists the parts that have already been uploaded.
@@ -151,7 +145,7 @@ public interface MantaMultipartManager {
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    Stream<MantaMultipartUploadPart> listParts(MantaMultipartUpload upload) throws IOException;
+    Stream<PART> listParts(UPLOAD upload) throws IOException;
 
     /**
      * Validates that there is no part missing from the sequence.
@@ -160,7 +154,7 @@ public interface MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      * @throws MantaMultipartException thrown went part numbers aren't sequential
      */
-    void validateThatThereAreSequentialPartNumbers(MantaMultipartUpload upload)
+    void validateThatThereAreSequentialPartNumbers(UPLOAD upload)
                    throws IOException, MantaMultipartException;
     /**
      * Aborts a multipart transfer.
@@ -168,7 +162,7 @@ public interface MantaMultipartManager {
      * @param upload multipart upload object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    void abort(MantaMultipartUpload upload) throws IOException;
+    void abort(UPLOAD upload) throws IOException;
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
@@ -177,8 +171,7 @@ public interface MantaMultipartManager {
      * @param parts iterable of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    void complete(MantaMultipartUpload upload,
-                  Iterable<? extends MantaMultipartUploadTuple> parts)
+    void complete(UPLOAD upload, Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException;
 
     /**
@@ -188,8 +181,7 @@ public interface MantaMultipartManager {
      * @param partsStream stream of multipart part objects
      * @throws java.io.IOException thrown if there is a problem connecting to Manta
      */
-    void complete(MantaMultipartUpload upload,
-                  Stream<? extends MantaMultipartUploadTuple> partsStream)
+    void complete(UPLOAD upload, Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException;
 
     /**
@@ -201,8 +193,7 @@ public interface MantaMultipartManager {
      * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    <R> R waitForCompletion(MantaMultipartUpload upload,
-                            Function<UUID, R> executeWhenTimesToPollExceeded)
+    <R> R waitForCompletion(UPLOAD upload, Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException;
 
     /**
@@ -216,7 +207,7 @@ public interface MantaMultipartManager {
      * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    <R> R waitForCompletion(MantaMultipartUpload upload,
+    <R> R waitForCompletion(UPLOAD upload,
                             Duration pingInterval,
                             int timesToPoll,
                             Function<UUID, R> executeWhenTimesToPollExceeded)

@@ -18,6 +18,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 
@@ -36,7 +37,11 @@ import java.util.stream.Stream;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class ServerSideMultipartManager implements MantaMultipartManager {
+public class ServerSideMultipartManager
+        implements MantaMultipartManager<ServerSideMultipartUpload, MantaMultipartUploadPart> {
+    /**
+     * Configuration context used to get home directory.
+     */
     private final ConfigContext config;
 
     /**
@@ -49,6 +54,14 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
      */
     private final MantaConnectionContext connectionContext;
 
+    /**
+     * Creates a new instance of a server-side MPU manager using the specified
+     * configuration and connection builder objects.
+     *
+     * @param config configuration context
+     * @param connectionFactory connection configuration and setup object
+     * @param connectionContext connection execution object
+     */
     public ServerSideMultipartManager(final ConfigContext config,
                                       final MantaConnectionFactory connectionFactory,
                                       final MantaConnectionContext connectionContext) {
@@ -58,29 +71,45 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
     }
 
     @Override
-    public Stream<MantaMultipartUpload> listInProgress() throws IOException {
-        return null;
+    public Stream<ServerSideMultipartUpload> listInProgress() throws IOException {
+        final String getPath = String.format("%s/uploads", config.getMantaHomeDirectory());
+        final HttpGet get = connectionFactory.get(getPath);
+
+        final int expectedStatusCode = HttpStatus.SC_OK;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
+            StatusLine statusLine = response.getStatusLine();
+            if (statusLine.getStatusCode() != expectedStatusCode) {
+                String msg = "Unable to list multipart uploads in progress";
+                MantaMultipartException e = new MantaMultipartException(msg);
+                HttpHelper.annotateContextedException(e, get, response);
+
+                throw e;
+            }
+
+            return null;
+        }
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path) throws IOException {
+    public ServerSideMultipartUpload initiateUpload(final String path) throws IOException {
         return initiateUpload(path, null, null);
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path,
-                                               final MantaMetadata mantaMetadata)
+    public ServerSideMultipartUpload initiateUpload(final String path,
+                                                    final MantaMetadata mantaMetadata)
             throws IOException {
         return initiateUpload(path, mantaMetadata, null);
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path,
+    public ServerSideMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders)
             throws IOException {
         final String postPath = String.format("%s/uploads", config.getMantaHomeDirectory());
-        HttpPost post = connectionFactory.post(postPath);
+        final HttpPost post = connectionFactory.post(postPath);
 
         final byte[] jsonRequest = createMpuRequestBody(path, mantaMetadata, httpHeaders);
         final HttpEntity entity = new ExposedByteArrayEntity(
@@ -144,7 +173,7 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
     }
 
     @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                final int partNumber,
                                                final String contents)
             throws IOException {
@@ -152,7 +181,7 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
     }
 
     @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                final int partNumber,
                                                final byte[] bytes)
             throws IOException {
@@ -160,14 +189,14 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
     }
 
     @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                final int partNumber,
                                                final File file) throws IOException {
         return null;
     }
 
     @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                final int partNumber,
                                                final InputStream inputStream)
             throws IOException {
@@ -175,57 +204,57 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
     }
 
     @Override
-    public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart getPart(final ServerSideMultipartUpload upload,
                                             final int partNumber) throws IOException {
         return null;
     }
 
     @Override
-    public MantaMultipartStatus getStatus(final MantaMultipartUpload upload)
+    public MantaMultipartStatus getStatus(final ServerSideMultipartUpload upload)
             throws IOException {
         return null;
     }
 
     @Override
-    public Stream<MantaMultipartUploadPart> listParts(final MantaMultipartUpload upload)
+    public Stream<MantaMultipartUploadPart> listParts(final ServerSideMultipartUpload upload)
             throws IOException {
         return null;
     }
 
     @Override
-    public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
+    public void validateThatThereAreSequentialPartNumbers(final ServerSideMultipartUpload upload)
             throws IOException, MantaMultipartException {
 
     }
 
     @Override
-    public void abort(final MantaMultipartUpload upload) throws IOException {
+    public void abort(final ServerSideMultipartUpload upload) throws IOException {
 
     }
 
     @Override
-    public void complete(final MantaMultipartUpload upload,
+    public void complete(final ServerSideMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
 
     }
 
     @Override
-    public void complete(final MantaMultipartUpload upload,
+    public void complete(final ServerSideMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
 
     }
 
     @Override
-    public <R> R waitForCompletion(final MantaMultipartUpload upload,
+    public <R> R waitForCompletion(final ServerSideMultipartUpload upload,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
         return null;
     }
 
     @Override
-    public <R> R waitForCompletion(final MantaMultipartUpload upload,
+    public <R> R waitForCompletion(final ServerSideMultipartUpload upload,
                                    final Duration pingInterval,
                                    final int timesToPoll,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)

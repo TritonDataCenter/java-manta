@@ -48,7 +48,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public class JobsMultipartManager implements MantaMultipartManager {
+public class JobsMultipartManager implements MantaMultipartManager<MantaMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
