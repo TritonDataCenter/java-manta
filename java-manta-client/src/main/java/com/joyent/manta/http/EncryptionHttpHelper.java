@@ -15,6 +15,7 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
+import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
@@ -98,7 +99,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     /**
      * Secret key used to encrypt and decrypt data.
      */
-    private final SecretKey secretKey;
+    // FIXME
+    public final SecretKey secretKey;
 
     /**
      * Cipher implementation used to encrypt and decrypt data.
@@ -151,6 +153,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
+
+    public EncryptionContext newEncryptionContext() {
+        return new EncryptionContext(this.secretKey, this.cipherDetails);
+    }
+        
     @Override
     public HttpResponse httpHead(final String path) throws IOException {
         HttpResponse response = super.httpHead(path);
@@ -204,6 +211,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         attachEncryptionCipherHeaders(metadata);
         // Insert all of the headers and metadata needed for describing the encrypted entity
         attachEncryptedEntityHeaders(metadata, encryptingEntity);
+        attachEncryptionPlaintextLengthHeader(metadata, encryptingEntity);
         // Insert all of the encrypted metadata values into the metadata map
         attachEncryptedMetadata(metadata);
 
@@ -670,7 +678,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      *
      * @param metadata metadata to append additional values to
      */
-    private void attachEncryptionCipherHeaders(final MantaMetadata metadata) {
+    protected void attachEncryptionCipherHeaders(final MantaMetadata metadata) {
         // Secret Key ID
         metadata.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 encryptionKeyId);
@@ -693,8 +701,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param encryptingEntity HTTP Entity object that encrypts the Manta object data
      * @throws IOException thrown when unable to append metadata
      */
-    private void attachEncryptedEntityHeaders(final MantaMetadata metadata,
-                                              final EncryptingEntity encryptingEntity)
+    protected void attachEncryptedEntityHeaders(final MantaMetadata metadata,
+                                                final EncryptingEntity encryptingEntity)
             throws IOException {
         // IV Used to Encrypt
         String ivBase64 = Base64.getEncoder().encodeToString(
@@ -702,14 +710,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         metadata.put(MantaHttpHeaders.ENCRYPTION_IV, ivBase64);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("IV: {}", Hex.encodeHexString(encryptingEntity.getCipher().getIV()));
-        }
-
-        // Plaintext content-length if available
-        if (encryptingEntity.getOriginalLength() > EncryptingEntity.UNKNOWN_LENGTH) {
-            String originalLength = String.valueOf(encryptingEntity.getOriginalLength());
-            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
-                    originalLength);
-            LOGGER.debug("Plaintext content-length: {}", originalLength);
         }
 
         // AEAD Tag Length if AEAD Cipher
@@ -726,13 +726,29 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
+    protected void attachEncryptionPlaintextLengthHeader(final MantaMetadata metadata,
+                                                          long length) {
+        // Plaintext content-length if available
+        if (length > EncryptingEntity.UNKNOWN_LENGTH) {
+            String originalLength = String.valueOf(length);
+            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    originalLength);
+            LOGGER.debug("Plaintext content-length: {}", originalLength);
+        }
+    }
+
+    protected void attachEncryptionPlaintextLengthHeader(final MantaMetadata metadata,
+                                                         final EncryptingEntity encryptingEntity) {
+        attachEncryptionPlaintextLengthHeader(metadata, encryptingEntity.getOriginalLength());
+    }
+
     /**
      * Attaches encrypted metadata (with e-* values) to the object.
      *
      * @param metadata metadata to append additional values to
      * @throws IOException thrown when there is a problem attaching metadata
      */
-    private void attachEncryptedMetadata(final MantaMetadata metadata)
+    protected void attachEncryptedMetadata(final MantaMetadata metadata)
         throws IOException {
 
         // Create and add encrypted metadata

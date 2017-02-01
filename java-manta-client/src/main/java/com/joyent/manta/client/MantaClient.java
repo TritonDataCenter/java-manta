@@ -137,7 +137,8 @@ public class MantaClient implements AutoCloseable {
     /**
      * The instance of the http helper class used to simplify creating requests.
      */
-    private final HttpHelper httpHelper;
+    // FIXME
+    public final HttpHelper httpHelper;
 
     /**
      * The home directory of the account.
