@@ -4,20 +4,34 @@ import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
+
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 @Test
 public class MantaClientPutIT {
@@ -250,5 +264,36 @@ public class MantaClientPutIT {
                         "Uploaded file isn't the same as actual file");
             }
         }
+    }
+
+    @Test
+    public final void testPutWithFileInputStreamAndNoContentLength() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        File temp = Files.createTempFile("name", ".data").toFile();
+        FileUtils.forceDeleteOnExit(temp);
+        FileUtils.writeStringToFile(temp, TEST_DATA, Charsets.UTF_8);
+
+        // Test putting with an unknown content length
+        try (FileInputStream in = new FileInputStream(temp)){
+            mantaClient.put(path, in);
+        }
+
+        try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
+            Assert.assertNotNull(gotObject);
+            Assert.assertNotNull(gotObject.getContentType());
+            Assert.assertNotNull(gotObject.getContentLength());
+            Assert.assertNotNull(gotObject.getEtag());
+            Assert.assertNotNull(gotObject.getMtime());
+            Assert.assertNotNull(gotObject.getPath());
+
+            final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
+            Assert.assertEquals(data, TEST_DATA);
+        }
+
+        mantaClient.delete(path);
+
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 }

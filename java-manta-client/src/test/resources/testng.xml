@@ -40,7 +40,7 @@
     </test>
     <test name="Multipart Tests">
         <classes>
-            <class name="com.joyent.manta.client.multipart.MantaMultipartUploadManagerTest" />
+            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerTest" />
         </classes>
     </test>
     <test name="Encryption Tests">

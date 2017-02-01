@@ -79,6 +79,21 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void translateByteRangeThrowsWithoutStartInclusive() {
+        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(-1, 0);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void translateByteRangeThrowsWithLargeStartInclusive() {
+        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(Long.MAX_VALUE, 0);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void translateByteRangeThrowsWithoutEndInclusive() {
+        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(1, -1);
+    }
+
     protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
                                                                   final SupportedCipherDetails cipherDetails)
             throws IOException, GeneralSecurityException {

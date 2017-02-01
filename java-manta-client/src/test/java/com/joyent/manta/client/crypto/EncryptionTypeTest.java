@@ -1,6 +1,7 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaEncryptionException;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test
@@ -8,6 +9,11 @@ public class EncryptionTypeTest {
     public void canValidateSupportedEncryptionType() {
         String supported = "client/1";
         EncryptionType.validateEncryptionTypeIsSupported(supported);
+    }
+
+    public void canCompareEncryptionTypes() {
+        Assert.assertEquals(EncryptionType.CLIENT, EncryptionType.CLIENT);
+        Assert.assertFalse(EncryptionType.CLIENT.equals(new Object()));
     }
 
     @Test(expectedExceptions = MantaEncryptionException.class)

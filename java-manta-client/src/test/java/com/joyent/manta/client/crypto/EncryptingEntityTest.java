@@ -1,5 +1,6 @@
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.codec.Charsets;
@@ -25,6 +26,20 @@ import java.util.function.Predicate;
 
 @Test
 public class EncryptingEntityTest {
+    /* Constructor Tests */
+
+    @Test(expectedExceptions = MantaClientEncryptionException.class)
+    public void throwsWithTooLargeContentLength() {
+        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
+
+        SecretKey key = SecretKeyUtils.loadKey(Arrays.copyOfRange(keyBytes, 2, 10), cipherDetails);
+
+        ExposedStringEntity stringEntity = new ExposedStringEntity("boo", Charsets.US_ASCII);
+
+        EncryptingEntity entity = new EncryptingEntity(key, cipherDetails, stringEntity);
+    }
+
     /* AES-GCM-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesGcm() throws Exception {

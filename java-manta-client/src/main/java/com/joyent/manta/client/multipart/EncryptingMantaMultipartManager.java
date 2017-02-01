@@ -48,7 +48,7 @@ import javax.crypto.CipherOutputStream;
 
 // SHHHH IT IS  A SECRET
 // DOC thread safety, init vs put and locking
-public class EncryptingMantaMultipartManager extends MantaMultipartManager {
+public class EncryptingMantaMultipartManager extends JobsMultipartManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingMantaMultipartManager.class);
 

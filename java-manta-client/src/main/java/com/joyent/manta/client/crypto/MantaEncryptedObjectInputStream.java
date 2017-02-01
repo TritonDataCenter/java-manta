@@ -33,9 +33,11 @@ import java.util.Base64;
 import java.util.function.Supplier;
 
 /**
- * An {@link InputStream} implementation that decrypts client-side encrypted
+ * <p>An {@link InputStream} implementation that decrypts client-side encrypted
  * Manta objects as a stream and performs authentication when the end of the
- * stream is reached.
+ * stream is reached.</p>
+ *
+ * <p><strong>This class is not thread-safe.</strong></p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
@@ -43,6 +45,11 @@ import java.util.function.Supplier;
 @SuppressWarnings("Duplicates")
 public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private static final long serialVersionUID = 8536248985759134599L;
+
+    /**
+     * End of file marker for streams.
+     */
+    private static final int EOF = -1;
 
     /**
      * Logger instance.
@@ -299,7 +306,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         final CipherInputStream cin = new CipherInputStream(source, this.cipher);
 
-        /* A plaintext value above -1 indicates that we aren't working with
+        /* A plaintext value not null indicates that we aren't working with
          * a subset of the total object (byte range), so we can just pass back
          * the ciphertext stream without any limitations on its length. */
         if (plaintextRangeLength == null) {
@@ -314,35 +321,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final long plaintextLimit = plaintextRangeLength + this.initialBytesToSkip;
 
         return new BoundedInputStream(cin, plaintextLimit);
-    }
-
-    /**
-     * Finds the cipher used to encrypt the object that we are streaming.
-     *
-     * @return cipher details instance
-     * @throws MantaClientEncryptionException when the cipher specified is invalid
-     */
-    private SupportedCipherDetails findCipherDetails() {
-        final String cipherId = getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
-
-        if (cipherId == null || cipherId.isEmpty()) {
-            String msg = "Cipher id / cipher type must not be null nor empty";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            annotateException(e);
-            throw e;
-        }
-
-        SupportedCipherDetails details = SupportedCiphersLookupMap.INSTANCE.getWithCaseInsensitiveKey(cipherId);
-
-        if (details == null) {
-            String msg = "Unsupported cipher id / cipher type "
-                    + "used to encrypt object";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            annotateException(e);
-            throw e;
-        }
-
-        return details;
     }
 
     /**
@@ -401,24 +379,24 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     public int read() throws IOException {
         if (this.closed) {
             MantaIOException e = new MantaIOException("Can't read a closed stream");
-            e.setContextValue("path", getPath());
+            annotateException(e);
             throw e;
         }
 
         skipInitialBytes();
 
         try {
-            final int b = cipherInputStream.read();
+            final int read = cipherInputStream.read();
 
-            if (hmac != null && b != -1 && authenticateCiphertext) {
-                hmac.update((byte) b);
+            if (hmac != null && read > EOF && authenticateCiphertext) {
+                hmac.update((byte) read);
             }
 
-            if (b > 0) {
+            if (read > EOF) {
                 plaintextBytesRead++;
             }
 
-            return b;
+            return read;
         } catch (IOException e) {
             final Throwable cause = e.getCause();
             if (cause != null && cause.getClass().equals(AEADBadTagException.class)) {
@@ -433,7 +411,46 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
     @Override
     public int read(final byte[] bytes) throws IOException {
-        if (this.closed) {
+        return read(bytes, true);
+    }
+
+    /**
+     * Reads some number of bytes from the input stream and stores them into
+     * the buffer array <code>b</code>. The number of bytes actually read is
+     * returned as an integer.  This method blocks until input data is
+     * available, end of file is detected, or an exception is thrown.
+     *
+     * <p> If the length of <code>b</code> is zero, then no bytes are read and
+     * <code>0</code> is returned; otherwise, there is an attempt to read at
+     * least one byte. If no byte is available because the stream is at the
+     * end of the file, the value <code>-1</code> is returned; otherwise, at
+     * least one byte is read and stored into <code>b</code>.
+     *
+     * <p> The first byte read is stored into element <code>b[0]</code>, the
+     * next one into <code>b[1]</code>, and so on. The number of bytes read is,
+     * at most, equal to the length of <code>b</code>. Let <i>k</i> be the
+     * number of bytes actually read; these bytes will be stored in elements
+     * <code>b[0]</code> through <code>b[</code><i>k</i><code>-1]</code>,
+     * leaving elements <code>b[</code><i>k</i><code>]</code> through
+     * <code>b[b.length-1]</code> unaffected.
+     *
+     * <p> The <code>read(b)</code> method for class <code>InputStream</code>
+     * has the same effect as: <pre><code> read(b, 0, b.length) </code></pre>
+     *
+     * @param      bytes   the buffer into which the data is read.
+     * @param      checkIfClosed when true an exception is thrown if close()
+     *                           has been called
+     * @return     the total number of bytes read into the buffer, or
+     *             <code>-1</code> if there is no more data because the end of
+     *             the stream has been reached.
+     * @exception  IOException  If the first byte cannot be read for any reason
+     * other than the end of the file, if the input stream has been closed, or
+     * if some other I/O error occurs.
+     * @exception  NullPointerException  if <code>b</code> is <code>null</code>.
+     * @see        java.io.InputStream#read(byte[], int, int)
+     */
+    private int read(final byte[] bytes, final boolean checkIfClosed) throws IOException {
+        if (this.closed && checkIfClosed) {
             MantaIOException e = new MantaIOException("Can't read a closed stream");
             e.setContextValue("path", getPath());
             throw e;
@@ -456,11 +473,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             }
         }
 
-        if (hmac != null && read > 0 && authenticateCiphertext) {
+        if (hmac != null && read > EOF && authenticateCiphertext) {
             hmac.update(bytes, 0, read);
         }
 
-        if (read > 0) {
+        if (read > EOF) {
             plaintextBytesRead += read;
         }
 
@@ -480,11 +497,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         try {
             final int read = cipherInputStream.read(bytes, off, len);
 
-            if (hmac != null && read > 0 && authenticateCiphertext) {
+            if (hmac != null && read > EOF && authenticateCiphertext) {
                 hmac.update(bytes, off, read);
             }
 
-            if (read > 0) {
+            if (read > EOF) {
                 plaintextBytesRead += read;
             }
 
@@ -511,6 +528,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         skipInitialBytes();
 
+        if (numberOfBytesToSkip <= 0) {
+            return 0;
+        }
+
         /* When using a CipherInputStream with some algorithms, the skip() method
          * is horribly broken and doesn't return the correct number of bytes
          * skipped. In order to accurately report the number of bytes skipped
@@ -522,16 +543,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             for (long l = 0L; l < numberOfBytesToSkip; l++) {
                 final int read = cipherInputStream.read();
 
-                if (read > -1) {
+                if (read > EOF) {
                     skipped++;
                 }
             }
 
             return skipped;
-        }
-
-        if (numberOfBytesToSkip <= 0) {
-            return 0;
         }
 
         final int defaultBufferSize = calculateBufferSize();
@@ -546,12 +563,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         byte[] buf = new byte[bufferSize];
 
         long skipped = 0;
-        int skippedInLastRead;
+        int skippedInLastRead = 0;
 
-        do {
+        while (skippedInLastRead > EOF && skipped <= numberOfBytesToSkip) {
             skippedInLastRead = read(buf);
-            skipped += skippedInLastRead;
-        } while (skippedInLastRead > -1 || skipped < numberOfBytesToSkip);
+
+            if (skippedInLastRead > EOF) {
+                skipped += skippedInLastRead;
+            }
+        }
 
         return skipped;
     }
@@ -581,7 +601,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         while (initialBytesToSkip > 0) {
             int read = cipherInputStream.read();
 
-            if (read >= 0) {
+            if (read > EOF) {
                 initialBytesToSkip--;
             }
         }
@@ -593,6 +613,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * and verify the HMAC or AEAD tag.
      * @throws IOException thrown when there is a problem reading the cipher text stream
      */
+    @SuppressWarnings("EmptyStatement")
     private void readRemainingBytes() throws IOException {
         if (cipherInputStream.available() <= 0) {
             return;
@@ -600,13 +621,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         final int bufferSize = calculateBufferSize();
         byte[] buf = new byte[bufferSize];
-        int read;
 
-        while ((read = read(buf)) >= 0) {
-            if (hmac != null && authenticateCiphertext) {
-                hmac.update(buf, 0, read);
-            }
-        }
+        while (read(buf, false) > EOF);
     }
 
     /**
@@ -640,10 +656,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 return;
             }
 
-            if (authenticateCiphertext) {
-                readRemainingBytes();
-            }
             this.closed = true;
+        }
+
+        if (authenticateCiphertext) {
+            readRemainingBytes();
         }
 
         IOUtils.closeQuietly(cipherInputStream);
@@ -652,6 +669,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             byte[] checksum = hmac.doFinal();
             byte[] expected = new byte[this.hmac.getMacLength()];
             int readHmacBytes = super.getBackingStream().read(expected);
+
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+            }
 
             if (readHmacBytes != this.hmac.getMacLength()) {
                 MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
@@ -692,16 +713,20 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         exception.setContextValue("path", getPath());
         exception.setContextValue("etag", this.getEtag());
         exception.setContextValue("lastModified", this.getLastModifiedTime());
-        exception.setContextValue("contentLength", this.getContentLength());
+        exception.setContextValue("ciphertextContentLength", super.getContentLength());
+        exception.setContextValue("plaintextContentLength", this.getContentLength());
+        exception.setContextValue("plaintextBytesRead", this.plaintextBytesRead);
         exception.setContextValue("cipherId", getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER));
         exception.setContextValue("cipherDetails", this.cipherDetails);
         exception.setContextValue("cipherInputStream", this.cipherInputStream);
         exception.setContextValue("authenticationEnabled", this.authenticateCiphertext);
+        exception.setContextValue("threadName", Thread.currentThread().getName());
+        exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
 
         if (this.hmac != null) {
-            exception.setContextValue("hmac", this.hmac.getAlgorithm());
+            exception.setContextValue("hmacAlgorithm", this.hmac.getAlgorithm());
         } else {
-            exception.setContextValue("hmac", "null");
+            exception.setContextValue("hmacAlgorithm", "null");
         }
     }
 

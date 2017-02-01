@@ -1,17 +1,16 @@
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
 
 import java.util.Base64;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Scanner;
 
 
 /*
 * Usage: set the mantaUserName, privateKeyPath, and publicKeyId with your own values.
  */
-public class SimpleClientEncryption {
+public class ClientEncryptionMetadata {
 
     public static void main(String... args) throws IOException {
         String mantaUserName = "USERNAME";
@@ -23,7 +22,6 @@ public class SimpleClientEncryption {
                 new EnvVarConfigContext(),
                 new MapConfigContext(System.getProperties()))
                 .setMantaURL("https://us-east.manta.joyent.com")
-                // If there is no subuser, then just use the account name
                 .setMantaUser(mantaUserName)
                 .setMantaKeyPath(privateKeyPath)
                 .setMantaKeyId(publicKeyId)
@@ -35,21 +33,21 @@ public class SimpleClientEncryption {
                 .setEncryptionPrivateKeyBytes(Base64.getDecoder().decode("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
 
         try (MantaClient client = new MantaClient(config)) {
-            String mantaPath = "/" + mantaUserName + "/stor/foo";
+            String mantaPath = "/" + mantaUserName + "/stor/meta";
 
-            MantaObjectResponse response = client.put(mantaPath, "This is my secret\nthat I want encrypted.");
+            MantaMetadata metadata = new MantaMetadata();
+            metadata.put("e-secretkey", "My Secret Value");
+            MantaObjectResponse putRes = client.put(mantaPath, "This is my secret message", metadata);
 
-            System.out.println("HTTP Response headers:");
-            System.out.println(response.getHttpHeaders().toString());
+            System.out.println("HTTP PUT Response headers:");
+            System.out.println(putRes.getHttpHeaders().toString());
 
-            // Print out every line from file streamed real-time from Manta
-            try (InputStream is = client.getAsInputStream(mantaPath);
-                 Scanner scanner = new Scanner(is)) {
 
-                while (scanner.hasNextLine()) {
-                    System.out.println(scanner.nextLine());
-                }
-            }
+            MantaObjectResponse getRes = client.get(mantaPath);
+            MantaMetadata resMetadata = getRes.getMetadata();
+
+            System.out.println("Stored Metadata:");
+            System.out.println(resMetadata.get("e-secretkey"));
         }
     }
 }
