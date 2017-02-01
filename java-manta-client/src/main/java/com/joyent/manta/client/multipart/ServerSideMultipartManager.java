@@ -1,10 +1,25 @@
 package com.joyent.manta.client.multipart;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaMultipartException;
+import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaConnectionContext;
+import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.entity.ExposedByteArrayEntity;
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +37,25 @@ import java.util.stream.Stream;
  * @since 3.0.0
  */
 public class ServerSideMultipartManager implements MantaMultipartManager {
+    private final ConfigContext config;
+
+    /**
+     * Reference to the Apache HTTP Client HTTP request creation class.
+     */
+    private final MantaConnectionFactory connectionFactory;
+
+    /**
+     * Current connection context used for maintaining state between requests.
+     */
+    private final MantaConnectionContext connectionContext;
+
+    public ServerSideMultipartManager(final ConfigContext config,
+                                      final MantaConnectionFactory connectionFactory,
+                                      final MantaConnectionContext connectionContext) {
+        this.config = config;
+        this.connectionFactory = connectionFactory;
+        this.connectionContext = connectionContext;
+    }
 
     @Override
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
@@ -30,14 +64,14 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
 
     @Override
     public MantaMultipartUpload initiateUpload(final String path) throws IOException {
-        return null;
+        return initiateUpload(path, null, null);
     }
 
     @Override
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata)
             throws IOException {
-        return null;
+        return initiateUpload(path, mantaMetadata, null);
     }
 
     @Override
@@ -45,7 +79,68 @@ public class ServerSideMultipartManager implements MantaMultipartManager {
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders)
             throws IOException {
-        return null;
+        final String postPath = String.format("%s/uploads", config.getMantaHomeDirectory());
+        HttpPost post = connectionFactory.post(postPath);
+
+        final byte[] jsonRequest = createMpuRequestBody(path, mantaMetadata, httpHeaders);
+        final HttpEntity entity = new ExposedByteArrayEntity(
+                jsonRequest, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+
+        final int expectedStatusCode = HttpStatus.SC_CREATED;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
+            StatusLine statusLine = response.getStatusLine();
+            if (statusLine.getStatusCode() != expectedStatusCode) {
+                String msg = "Unable to create multipart upload";
+                MantaMultipartException e = new MantaMultipartException(msg);
+                HttpHelper.annotateContextedException(e, post, response);
+                e.setContextValue("objectPath", path);
+                e.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
+
+                throw e;
+            }
+
+            if (response.getEntity() == null) {
+                String msg = "Entity response was null";
+                MantaMultipartException e = new MantaMultipartException(msg);
+                HttpHelper.annotateContextedException(e, post, response);
+                e.setContextValue("objectPath", path);
+                e.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
+
+                throw e;
+            }
+
+            try (InputStream in = response.getEntity().getContent()) {
+                ObjectNode mpu = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
+
+                JsonNode idNode = mpu.get("id");
+                Validate.notNull(idNode, "No multipart id returned in response");
+                UUID uploadId = UUID.fromString(idNode.textValue());
+
+                JsonNode partsDirectoryNode = mpu.get("partsDirectory");
+                Validate.notNull(partsDirectoryNode, "No parts directory returned in response");
+                String partsDirectory = partsDirectoryNode.textValue();
+
+                return new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+            } catch (NullPointerException | IllegalArgumentException e) {
+                String msg = "Expected response field was missing or malformed";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                HttpHelper.annotateContextedException(me, post, response);
+                me.setContextValue("objectPath", path);
+                me.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
+
+                throw me;
+            } catch (JsonParseException e) {
+                String msg = "Response body was not JSON";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                HttpHelper.annotateContextedException(me, post, response);
+                me.setContextValue("objectPath", path);
+                me.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
+
+                throw me;
+            }
+        }
     }
 
     @Override

@@ -161,7 +161,7 @@ public interface MantaMultipartManager {
      * @throws MantaMultipartException thrown went part numbers aren't sequential
      */
     void validateThatThereAreSequentialPartNumbers(MantaMultipartUpload upload)
-                                                                                                                                                          throws IOException, MantaMultipartException;
+                   throws IOException, MantaMultipartException;
     /**
      * Aborts a multipart transfer.
      *
