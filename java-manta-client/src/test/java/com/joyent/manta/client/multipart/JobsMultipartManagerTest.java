@@ -20,7 +20,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
 @Test
-public class MantaMultipartUploadManagerTest {
+public class JobsMultipartManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativePartNumbersAreRejected() {
         JobsMultipartManager.validatePartNumber(-1);
@@ -112,7 +112,7 @@ public class MantaMultipartUploadManagerTest {
         assertTrue(thrown, "Exception wasn't thrown");
     }
 
-    private MantaMultipartManager multipartInstance() {
+    private JobsMultipartManager multipartInstance() {
         return multipartInstance("user.name");
     }
 
