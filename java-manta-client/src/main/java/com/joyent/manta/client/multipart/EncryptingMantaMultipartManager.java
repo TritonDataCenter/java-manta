@@ -101,7 +101,7 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
             ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
             EncryptingPartEntity entity = new EncryptingPartEntity(eState.eContext, eState.multipartStream,
                                                                    new InputStreamEntity(inputStream, contentType));
-            //final MantaObjectResponse response = (this.mantaClient.httpHelper.super).httpPut(path, null, entity, null);
+            final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
             eState.lastPartNumber = partNumber;
             return null;
         } finally {
