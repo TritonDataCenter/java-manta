@@ -114,6 +114,8 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
         EncryptionState eState = uploadState.get(upload);
         eState.lock.lock();
         try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            baos.write(eState.multipartStream.getRemainder());
             // conditionally get hmac and upload part; yeah reenterant lock
             if (eState.cipherStream instanceof HmacOutputStream) {
                 byte[] hmacBytes = ((HmacOutputStream) eState.cipherStream).getHmac().doFinal();
@@ -123,9 +125,14 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
                 }
-                // TODO: figure out how to actuallu upload a part for hmac and adjust stream
+                baos.write(hmacBytes);
             }
-            super.complete(upload, partsStream);
+            ByteArrayEntity entity = new ByteArrayEntity(baos.toByteArray());
+            final String path = multipartPath(upload.getId(), eState.lastPartNumber++);
+            final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
+            MantaMultipartUploadPart finalPart = new MantaMultipartUploadPart(response);
+            super.complete(upload,
+                           Stream.concat(partsStream, Stream.of(finalPart)));
         } finally {
             eState.lock.unlock();
         }
