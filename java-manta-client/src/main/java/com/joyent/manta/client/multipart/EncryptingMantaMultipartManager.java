@@ -103,7 +103,7 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
                                                                    new InputStreamEntity(inputStream, contentType));
             final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
             eState.lastPartNumber = partNumber;
-            return null;
+            return new MantaMultipartUploadPart(response);
         } finally {
             eState.lock.unlock();
         }
