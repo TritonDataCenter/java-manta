@@ -81,7 +81,7 @@ public class JobsMultipartManager implements MantaMultipartManager {
      * Reference to {@link MantaClient} Manta client object providing access to
      * Manta.
      */
-    private final MantaClient mantaClient;
+    protected final MantaClient mantaClient;
 
     /**
      * Full path on Manta to the upload directory.
