@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
@@ -14,7 +15,10 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -79,12 +83,13 @@ public class ServerSideMultipartManager
 
         try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
             StatusLine statusLine = response.getStatusLine();
-            if (statusLine.getStatusCode() != expectedStatusCode) {
-                String msg = "Unable to list multipart uploads in progress";
-                MantaMultipartException e = new MantaMultipartException(msg);
-                HttpHelper.annotateContextedException(e, get, response);
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to list multipart uploads in progress", get,
+                    response, null, null);
+            validateEntityIsPresent(get, response, null, null);
 
-                throw e;
+            try (InputStream in = response.getEntity().getContent()) {
+                // TODO: Figure out how to parse output
             }
 
             return null;
@@ -105,8 +110,8 @@ public class ServerSideMultipartManager
 
     @Override
     public ServerSideMultipartUpload initiateUpload(final String path,
-                                               final MantaMetadata mantaMetadata,
-                                               final MantaHttpHeaders httpHeaders)
+                                                    final MantaMetadata mantaMetadata,
+                                                    final MantaHttpHeaders httpHeaders)
             throws IOException {
         final String postPath = String.format("%s/uploads", config.getMantaHomeDirectory());
         final HttpPost post = connectionFactory.post(postPath);
@@ -120,25 +125,11 @@ public class ServerSideMultipartManager
 
         try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
             StatusLine statusLine = response.getStatusLine();
-            if (statusLine.getStatusCode() != expectedStatusCode) {
-                String msg = "Unable to create multipart upload";
-                MantaMultipartException e = new MantaMultipartException(msg);
-                HttpHelper.annotateContextedException(e, post, response);
-                e.setContextValue("objectPath", path);
-                e.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
 
-                throw e;
-            }
-
-            if (response.getEntity() == null) {
-                String msg = "Entity response was null";
-                MantaMultipartException e = new MantaMultipartException(msg);
-                HttpHelper.annotateContextedException(e, post, response);
-                e.setContextValue("objectPath", path);
-                e.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
-
-                throw e;
-            }
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to create multipart upload", post,
+                    response, path, jsonRequest);
+            validateEntityIsPresent(post, response, path, jsonRequest);
 
             try (InputStream in = response.getEntity().getContent()) {
                 ObjectNode mpu = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
@@ -155,18 +146,12 @@ public class ServerSideMultipartManager
             } catch (NullPointerException | IllegalArgumentException e) {
                 String msg = "Expected response field was missing or malformed";
                 MantaMultipartException me = new MantaMultipartException(msg, e);
-                HttpHelper.annotateContextedException(me, post, response);
-                me.setContextValue("objectPath", path);
-                me.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
-
+                annotateException(me, post, response, path, jsonRequest);
                 throw me;
             } catch (JsonParseException e) {
                 String msg = "Response body was not JSON";
                 MantaMultipartException me = new MantaMultipartException(msg, e);
-                HttpHelper.annotateContextedException(me, post, response);
-                me.setContextValue("objectPath", path);
-                me.setContextValue("jsonRequestBody", new String(jsonRequest, Charsets.UTF_8));
-
+                annotateException(me, post, response, path, jsonRequest);
                 throw me;
             }
         }
@@ -284,6 +269,96 @@ public class ServerSideMultipartManager
         } catch (IOException e) {
             String msg = "Error serializing JSON for MPU request body";
             throw new MantaMultipartException(msg, e);
+        }
+    }
+
+    /**
+     * Validates that the status code received is the expected status code.
+     *
+     * @param expectedCode expected HTTP status code
+     * @param actualCode actual HTTP status code
+     * @param errorMessage error message to attach to exception
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param objectPath path to the object being operated on
+     * @param requestBody contents of request body as byte array
+     * @throws MantaMultipartException thrown when the status codes do not match
+     */
+    private void validateStatusCode(final int expectedCode,
+                                    final int actualCode,
+                                    final String errorMessage,
+                                    final HttpRequest request,
+                                    final HttpResponse response,
+                                    final String objectPath,
+                                    final byte[] requestBody) {
+        if (actualCode != expectedCode) {
+            MantaMultipartException e = new MantaMultipartException(errorMessage);
+            annotateException(e, request, response, objectPath, requestBody);
+            throw e;
+        }
+    }
+
+    /**
+     * Validates that the response has a valid entity.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param objectPath path to the object being operated on
+     * @param requestBody contents of request body as byte array
+     * @throws MantaMultipartException thrown when the entity is null
+     * @throws MantaIOException thrown when unable to get entity's InputStream
+     */
+    private void validateEntityIsPresent(final HttpRequest request,
+                                         final HttpResponse response,
+                                         final String objectPath,
+                                         final byte[] requestBody)
+            throws MantaIOException {
+        if (response.getEntity() == null) {
+            String msg = "Entity response was null";
+            MantaMultipartException e = new MantaMultipartException(msg);
+            annotateException(e, request, response, objectPath, requestBody);
+            throw e;
+        }
+
+        try {
+            if (response.getEntity().getContent() == null) {
+                String msg = "Entity content InputStream was null";
+                MantaMultipartException e = new MantaMultipartException(msg);
+                annotateException(e, request, response, objectPath, requestBody);
+                throw e;
+            }
+        } catch (IOException e) {
+            String msg = "Unable to get an InputStream from the HTTP entity";
+            MantaIOException mioe = new MantaIOException(msg, e);
+            annotateException(mioe, request, response, objectPath, requestBody);
+            throw mioe;
+        }
+    }
+
+    /**
+     * Appends context attributes for the HTTP request and HTTP response objects
+     * to a {@link ExceptionContext} instance using values relevant to this
+     * class.
+     *
+     * @param exception exception to append to
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param objectPath path to the object being operated on
+     * @param requestBody contents of request body as byte array
+     */
+    private void annotateException(final ExceptionContext exception,
+                                   final HttpRequest request,
+                                   final HttpResponse response,
+                                   final String objectPath,
+                                   final byte[] requestBody) {
+        HttpHelper.annotateContextedException(exception, request, response);
+
+        if (objectPath != null) {
+            exception.setContextValue("objectPath", objectPath);
+        }
+
+        if (requestBody != null) {
+            exception.setContextValue("requestBody", new String(requestBody, Charsets.UTF_8));
         }
     }
 }
