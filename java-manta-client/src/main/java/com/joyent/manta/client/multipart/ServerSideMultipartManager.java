@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client.multipart;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -51,7 +54,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @since 3.0.0
  */
 public class ServerSideMultipartManager
-        implements MantaMultipartManager<ServerSideMultipartUpload, MantaMultipartUploadPart> {
+        extends AbstractMultipartManager<ServerSideMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
@@ -99,6 +102,8 @@ public class ServerSideMultipartManager
                                       final MantaConnectionFactory connectionFactory,
                                       final MantaConnectionContext connectionContext,
                                       final MantaClient mantaClient) {
+        super();
+
         Validate.isTrue(!mantaClient.isClosed(), "MantaClient must not be closed");
 
         this.config = config;
@@ -274,15 +279,25 @@ public class ServerSideMultipartManager
                 etag = null;
             }
 
-            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etag);
+            /* Manta starts counting parts at 0 - the SDK starts counting at 1.
+             * This is for two reasons. 1) It provides better compatibility with libraries
+             * that also have to interact with S3. 2) It provides backwards compatibility
+             * with the jobs based multipart implementation.
+             */
+            final int adjustedPartNumber = partNumber - 1;
+
+            return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
         }
     }
 
     @Override
     public MantaMultipartUploadPart getPart(final ServerSideMultipartUpload upload,
                                             final int partNumber) throws IOException {
-
         Validate.notNull(upload, "Upload state object must not be null");
+        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
+                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+
+        final int adjustedPartNumber = partNumber - 1;
 
         final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
         final HttpGet get = connectionFactory.get(getPath);
@@ -318,7 +333,7 @@ public class ServerSideMultipartManager
             }
         }
 
-        final String headPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
+        final String headPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
         final HttpHead head = connectionFactory.head(headPath);
 
         final String etag;
@@ -412,13 +427,17 @@ public class ServerSideMultipartManager
     public Stream<MantaMultipartUploadPart> listParts(final ServerSideMultipartUpload upload)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
-        return null;
-    }
 
-    @Override
-    public void validateThatThereAreSequentialPartNumbers(final ServerSideMultipartUpload upload)
-            throws IOException, MantaMultipartException {
-        Validate.notNull(upload, "Upload state object must not be null");
+        final String partsDirectory = upload.getPartsDirectory();
+
+        return mantaClient.listObjects(partsDirectory).map(mantaObject -> {
+            final String item = FilenameUtils.getName(mantaObject.getPath());
+            final int adjustedPartNumber = Integer.parseInt(item) + 1;
+
+            final String etag = mantaObject.getEtag();
+
+            return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
+        });
     }
 
     @Override

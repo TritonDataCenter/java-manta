@@ -48,7 +48,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public class JobsMultipartManager implements MantaMultipartManager<MantaMultipartUpload, MantaMultipartUploadPart> {
+public class JobsMultipartManager extends AbstractMultipartManager<MantaMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
@@ -108,6 +108,8 @@ public class JobsMultipartManager implements MantaMultipartManager<MantaMultipar
      * @param mantaClient Manta client instance to use to communicate with server
      */
     public JobsMultipartManager(final MantaClient mantaClient) {
+        super();
+
         Validate.notNull(mantaClient, "Manta client object must not be null");
 
         this.mantaClient = mantaClient;
@@ -480,14 +482,6 @@ public class JobsMultipartManager implements MantaMultipartManager<MantaMultipar
                 .map(MantaMultipartUploadPart::new);
     }
 
-    @Override
-    public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
-            throws IOException, MantaMultipartException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        validateThatThereAreSequentialPartNumbers(upload.getId());
-    }
-
     /**
      * Validates that there is no part missing from the sequence.
      *
@@ -499,20 +493,8 @@ public class JobsMultipartManager implements MantaMultipartManager<MantaMultipar
             throws IOException, MantaMultipartException {
         Validate.notNull(id, "Multipart transaction id must not be null");
 
-        //noinspection ResultOfMethodCallIgnored
-        listParts(id)
-            .sorted()
-            .map(MantaMultipartUploadPart::getPartNumber)
-            .reduce(1, (memo, value) -> {
-                if (!memo.equals(value)) {
-                    MantaMultipartException e = new MantaMultipartException(
-                            "Missing part of multipart upload");
-                    e.setContextValue("missing_part", memo);
-                    throw e;
-                }
-
-                return memo + 1;
-            });
+        final MantaMultipartUpload upload = new MantaMultipartUpload(id, null);
+        validateThatThereAreSequentialPartNumbers(upload);
     }
 
     @Override
