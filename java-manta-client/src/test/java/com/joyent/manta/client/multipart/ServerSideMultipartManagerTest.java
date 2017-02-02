@@ -110,6 +110,18 @@ public class ServerSideMultipartManagerTest {
         Assert.assertTrue(caught, "Expected exception was not caught");
     }
 
+    public void canAbortMpu() throws IOException {
+        StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,
+                HttpStatus.SC_NO_CONTENT, "NO_CONTENT");
+        ServerSideMultipartManager manager = buildMockManager(statusLine, null);
+
+        UUID id = new UUID(0L, 0L);
+        String partsDirectory = manager.uuidPrefixedPath(id);
+        ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
+                id, null, partsDirectory);
+        manager.abort(upload);
+    }
+
     public void canCreateMpuRequestBodyJson() throws IOException {
         final ConfigContext config = mock(ConfigContext.class);
         final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
@@ -253,11 +265,12 @@ public class ServerSideMultipartManagerTest {
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
         when(response.getStatusLine()).thenReturn(statusLine);
-        final BasicHttpEntity entity = new BasicHttpEntity();
 
-        entity.setContent(IOUtils.toInputStream(responseBody, "UTF-8"));
-
-        when(response.getEntity()).thenReturn(entity);
+        if (responseBody != null) {
+            final BasicHttpEntity entity = new BasicHttpEntity();
+            entity.setContent(IOUtils.toInputStream(responseBody, "UTF-8"));
+            when(response.getEntity()).thenReturn(entity);
+        }
 
         final CloseableHttpClient fakeClient = new FakeCloseableHttpClient(response);
         when(connectionContext.getHttpClient()).thenReturn(fakeClient);

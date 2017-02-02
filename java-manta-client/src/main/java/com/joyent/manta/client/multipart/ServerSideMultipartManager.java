@@ -27,12 +27,11 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +52,11 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  */
 public class ServerSideMultipartManager
         implements MantaMultipartManager<ServerSideMultipartUpload, MantaMultipartUploadPart> {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerSideMultipartManager.class);
+
     /**
      * Maximum number of parts to allow in a multipart upload.
      */
@@ -277,7 +281,73 @@ public class ServerSideMultipartManager
     @Override
     public MantaMultipartUploadPart getPart(final ServerSideMultipartUpload upload,
                                             final int partNumber) throws IOException {
-        return null;
+
+        Validate.notNull(upload, "Upload state object must not be null");
+
+        final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
+        final HttpGet get = connectionFactory.get(getPath);
+
+        final String objectPath;
+
+        final int expectedStatusCode = HttpStatus.SC_OK;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
+            StatusLine statusLine = response.getStatusLine();
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to get status for multipart upload", get,
+                    response, null, null);
+            validateEntityIsPresent(get, response, null, null);
+
+            try (InputStream in = response.getEntity().getContent()) {
+                ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
+
+                JsonNode objectPathNode = objectNode.get("objectPath");
+                Validate.notNull(objectPathNode, "Unable to read object path from response");
+                objectPath = objectPathNode.textValue();
+                Validate.notBlank(objectPath, "Object path field was blank in response");
+            } catch (JsonParseException e) {
+                String msg = "Response body was not JSON";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, get, response, null, null);
+                throw me;
+            } catch (NullPointerException | IllegalArgumentException e) {
+                String msg = "Expected response field was missing or malformed";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, get, response, null, null);
+                throw me;
+            }
+        }
+
+        final String headPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
+        final HttpHead head = connectionFactory.head(headPath);
+
+        final String etag;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(head)) {
+            StatusLine statusLine = response.getStatusLine();
+
+            if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                return null;
+            }
+
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to get status for multipart upload part", get,
+                    response, null, null);
+
+            try {
+                final Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
+                Validate.notNull(etagHeader, "ETag header was not returned");
+                etag = etagHeader.getValue();
+                Validate.notBlank(etag, "ETag is blank");
+            } catch (NullPointerException | IllegalArgumentException e) {
+                String msg = "Expected header was missing or malformed";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, get, response, null, null);
+                throw me;
+            }
+        }
+
+        return new MantaMultipartUploadPart(partNumber, objectPath, etag);
     }
 
     @Override
@@ -300,11 +370,37 @@ public class ServerSideMultipartManager
             try (InputStream in = response.getEntity().getContent()) {
                 ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
 
-                // TODO: Finish me
+                JsonNode stateNode = objectNode.get("state");
+                Validate.notNull(stateNode, "Unable to get state from response");
+                String state = stateNode.textValue();
+                Validate.notBlank(state, "State field was blank in response");
 
-                return null;
+                if (state.equals("CREATED")) {
+                    return MantaMultipartStatus.CREATED;
+                }
+
+                if (state.equals("FINALIZING")) {
+                    JsonNode typeNode = objectNode.get("type");
+                    Validate.notNull(typeNode, "Unable to get type from response");
+                    String type = typeNode.textValue();
+                    Validate.notBlank(type, "Type field was blank in response");
+
+                    if (type.equals("COMMIT")) {
+                        return MantaMultipartStatus.COMMITTING;
+                    }
+                    if (type.equals("ABORT")) {
+                        return MantaMultipartStatus.ABORTING;
+                    }
+                }
+
+                return MantaMultipartStatus.UNKNOWN;
             } catch (JsonParseException e) {
                 String msg = "Response body was not JSON";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, get, response, null, null);
+                throw me;
+            }  catch (NullPointerException | IllegalArgumentException e) {
+                String msg = "Expected response field was missing or malformed";
                 MantaMultipartException me = new MantaMultipartException(msg, e);
                 annotateException(me, get, response, null, null);
                 throw me;
@@ -332,16 +428,15 @@ public class ServerSideMultipartManager
         final String postPath = upload.getPartsDirectory() + SEPARATOR + "abort";
         final HttpPost post = connectionFactory.post(postPath);
 
-        final int expectedStatusCode = HttpStatus.SC_OK;
+        final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
         try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to abort multipart upload", post,
                     response, null, null);
-            // TODO: Verify there is no content returned
+            LOGGER.info("Aborted multipart upload [id={}]", upload.getId());
         }
-
     }
 
     @Override
@@ -442,7 +537,7 @@ public class ServerSideMultipartManager
      * @param uuid uuid to create path from
      * @return uuid prefixed directories
      */
-    private String uuidPrefixedPath(final UUID uuid) {
+    String uuidPrefixedPath(final UUID uuid) {
         Validate.notNull(uuid, "UUID must not be null");
 
         final String uuidString = uuid.toString();
