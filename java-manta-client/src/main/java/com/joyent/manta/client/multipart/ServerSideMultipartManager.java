@@ -28,6 +28,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
@@ -251,11 +252,12 @@ public class ServerSideMultipartManager
                                                 final int partNumber,
                                                 final HttpEntity entity)
             throws IOException {
+        Validate.notNull(upload, "Upload state object must not be null");
         Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
                 "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
 
         final String putPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
-        HttpPut put = connectionFactory.put(putPath);
+        final HttpPut put = connectionFactory.put(putPath);
         put.setEntity(entity);
 
         try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put)) {
@@ -281,23 +283,64 @@ public class ServerSideMultipartManager
     @Override
     public MantaMultipartStatus getStatus(final ServerSideMultipartUpload upload)
             throws IOException {
-        return null;
+        Validate.notNull(upload, "Upload state object must not be null");
+
+        final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
+        final HttpGet get = connectionFactory.get(getPath);
+
+        final int expectedStatusCode = HttpStatus.SC_OK;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
+            StatusLine statusLine = response.getStatusLine();
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to get status for multipart upload", get,
+                    response, null, null);
+            validateEntityIsPresent(get, response, null, null);
+
+            try (InputStream in = response.getEntity().getContent()) {
+                ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
+
+                // TODO: Finish me
+
+                return null;
+            } catch (JsonParseException e) {
+                String msg = "Response body was not JSON";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, get, response, null, null);
+                throw me;
+            }
+        }
     }
 
     @Override
     public Stream<MantaMultipartUploadPart> listParts(final ServerSideMultipartUpload upload)
             throws IOException {
+        Validate.notNull(upload, "Upload state object must not be null");
         return null;
     }
 
     @Override
     public void validateThatThereAreSequentialPartNumbers(final ServerSideMultipartUpload upload)
             throws IOException, MantaMultipartException {
-
+        Validate.notNull(upload, "Upload state object must not be null");
     }
 
     @Override
     public void abort(final ServerSideMultipartUpload upload) throws IOException {
+        Validate.notNull(upload, "Upload state object must not be null");
+
+        final String postPath = upload.getPartsDirectory() + SEPARATOR + "abort";
+        final HttpPost post = connectionFactory.post(postPath);
+
+        final int expectedStatusCode = HttpStatus.SC_OK;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
+            StatusLine statusLine = response.getStatusLine();
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to abort multipart upload", post,
+                    response, null, null);
+            // TODO: Verify there is no content returned
+        }
 
     }
 
@@ -305,20 +348,21 @@ public class ServerSideMultipartManager
     public void complete(final ServerSideMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
-
+        Validate.notNull(upload, "Upload state object must not be null");
     }
 
     @Override
     public void complete(final ServerSideMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
-
+        Validate.notNull(upload, "Upload state object must not be null");
     }
 
     @Override
     public <R> R waitForCompletion(final ServerSideMultipartUpload upload,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
+        Validate.notNull(upload, "Upload state object must not be null");
         return null;
     }
 
@@ -328,6 +372,7 @@ public class ServerSideMultipartManager
                                    final int timesToPoll,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
+        Validate.notNull(upload, "Upload state object must not be null");
         return null;
     }
 
