@@ -3,9 +3,10 @@ package com.joyent.manta.client.multipart;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +26,7 @@ class CreateMPURequestBody {
     /**
      * Headers associated with object.
      */
-    private final Map<String, Object> headers = new LinkedHashMap<>();
+    private final Map<String, Object> headers = new CaseInsensitiveMap<>();
 
     /**
      * <p>Creates a new instance with header fields populated from header object
@@ -62,6 +63,10 @@ class CreateMPURequestBody {
      * @param mantaHttpHeaders HTTP headers associated with object
      */
     private void importHeaders(final MantaHttpHeaders mantaHttpHeaders) {
+        String contentType = mantaHttpHeaders.getContentType();
+        if (!StringUtils.isBlank(contentType)) {
+            this.headers.put(HttpHeaders.CONTENT_TYPE, contentType);
+        }
         Integer durabilityLevel = mantaHttpHeaders.getDurabilityLevel();
         if (durabilityLevel != null) {
             this.headers.put(MantaHttpHeaders.HTTP_DURABILITY_LEVEL, durabilityLevel);
@@ -71,14 +76,14 @@ class CreateMPURequestBody {
             this.headers.put(HttpHeaders.CONTENT_LENGTH, contentLength);
         }
         String contentMd5 = mantaHttpHeaders.getContentMD5();
-        if (contentMd5 != null) {
+        if (!StringUtils.isBlank(contentMd5)) {
             this.headers.put(HttpHeaders.CONTENT_MD5, contentMd5);
         }
         /* The roles header isn't supported in the initial MPU release, but it
          * may be in the future, so we are adding it because the server will
          * throw it away if it can't user it. */
         String roles = mantaHttpHeaders.getFirstHeaderStringValue(MantaHttpHeaders.HTTP_ROLE_TAG);
-        if (roles != null) {
+        if (!StringUtils.isBlank(roles)) {
             this.headers.put(MantaHttpHeaders.HTTP_ROLE_TAG, roles);
         }
     }

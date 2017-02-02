@@ -2,6 +2,7 @@ package com.joyent.manta.client.multipart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.config.ConfigContext;
@@ -20,6 +21,7 @@ import org.apache.http.HttpVersion;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicStatusLine;
 import org.testng.Assert;
@@ -112,8 +114,9 @@ public class ServerSideMultipartManagerTest {
         final ConfigContext config = mock(ConfigContext.class);
         final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
+        final MantaClient client = mock(MantaClient.class);
         final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext);
+                config, connectionFactory, connectionContext, client);
 
         final String path = "/user/stor/object";
 
@@ -128,8 +131,9 @@ public class ServerSideMultipartManagerTest {
         final ConfigContext config = mock(ConfigContext.class);
         final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
+        final MantaClient client = mock(MantaClient.class);
         final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext);
+                config, connectionFactory, connectionContext, client);
 
         final String path = "/user/stor/object";
         final MantaHttpHeaders headers = new MantaHttpHeaders();
@@ -137,6 +141,7 @@ public class ServerSideMultipartManagerTest {
         headers.setDurabilityLevel(5);
         headers.setContentLength(423534L);
         headers.setContentMD5("e59ff97941044f85df5297e1c302d260");
+        headers.setContentType(ContentType.APPLICATION_OCTET_STREAM.toString());
         final Set<String> roles = new HashSet<>();
         roles.add("manta");
         roles.add("role2");
@@ -146,25 +151,33 @@ public class ServerSideMultipartManagerTest {
 
         ObjectNode jsonObject = mapper.readValue(json, ObjectNode.class);
 
-        Assert.assertEquals(jsonObject.get("objectPath").textValue(), path);
-        ObjectNode jsonHeaders = (ObjectNode) jsonObject.get("headers");
+        try {
+            Assert.assertEquals(jsonObject.get("objectPath").textValue(), path);
+            ObjectNode jsonHeaders = (ObjectNode) jsonObject.get("headers");
 
-        Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_DURABILITY_LEVEL).asInt(),
-                headers.getDurabilityLevel().intValue());
-        Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_LENGTH).asLong(),
-                headers.getContentLength().longValue());
-        Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_MD5).textValue(),
-                headers.getContentMD5());
-        Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_ROLE_TAG).textValue(),
-                headers.getFirstHeaderStringValue(MantaHttpHeaders.HTTP_ROLE_TAG));
+            Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_DURABILITY_LEVEL.toLowerCase()).asInt(),
+                    headers.getDurabilityLevel().intValue());
+            Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_LENGTH.toLowerCase()).asLong(),
+                    headers.getContentLength().longValue());
+            Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_MD5.toLowerCase()).textValue(),
+                    headers.getContentMD5());
+            Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_ROLE_TAG.toLowerCase()).textValue(),
+                    headers.getFirstHeaderStringValue(MantaHttpHeaders.HTTP_ROLE_TAG.toLowerCase()));
+            Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_TYPE.toLowerCase()).textValue(),
+                    "application/octet-stream");
+        } catch (AssertionError e) {
+            System.err.println(new String(json, "UTF-8"));
+            throw e;
+        }
     }
 
     public void canCreateMpuRequestBodyJsonWithHeadersAndMetadata() throws IOException {
         final ConfigContext config = mock(ConfigContext.class);
         final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
+        final MantaClient client = mock(MantaClient.class);
         final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext);
+                config, connectionFactory, connectionContext, client);
 
         final String path = "/user/stor/object";
         final MantaHttpHeaders headers = new MantaHttpHeaders();
@@ -172,6 +185,7 @@ public class ServerSideMultipartManagerTest {
         headers.setDurabilityLevel(5);
         headers.setContentLength(423534L);
         headers.setContentMD5("e59ff97941044f85df5297e1c302d260");
+        headers.setContentType(ContentType.APPLICATION_OCTET_STREAM.toString());
         final Set<String> roles = new HashSet<>();
         roles.add("manta");
         roles.add("role2");
@@ -186,24 +200,31 @@ public class ServerSideMultipartManagerTest {
 
         ObjectNode jsonObject = mapper.readValue(json, ObjectNode.class);
 
-        Assert.assertEquals(jsonObject.get("objectPath").textValue(), path);
-        ObjectNode jsonHeaders = (ObjectNode)jsonObject.get("headers");
+        try {
+            Assert.assertEquals(jsonObject.get("objectPath").textValue(), path);
+            ObjectNode jsonHeaders = (ObjectNode) jsonObject.get("headers");
 
-        Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_DURABILITY_LEVEL).asInt(),
-                headers.getDurabilityLevel().intValue());
-        Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_LENGTH).asLong(),
-                headers.getContentLength().longValue());
-        Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_MD5).textValue(),
-                headers.getContentMD5());
-        Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_ROLE_TAG).textValue(),
-                headers.getFirstHeaderStringValue(MantaHttpHeaders.HTTP_ROLE_TAG));
+            Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_DURABILITY_LEVEL.toLowerCase()).asInt(),
+                    headers.getDurabilityLevel().intValue());
+            Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_LENGTH.toLowerCase()).asLong(),
+                    headers.getContentLength().longValue());
+            Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_MD5.toLowerCase()).textValue(),
+                    headers.getContentMD5());
+            Assert.assertEquals(jsonHeaders.get(MantaHttpHeaders.HTTP_ROLE_TAG.toLowerCase()).textValue(),
+                    headers.getFirstHeaderStringValue(MantaHttpHeaders.HTTP_ROLE_TAG.toLowerCase()));
+            Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_TYPE.toLowerCase()).textValue(),
+                    "application/octet-stream");
 
-        Assert.assertEquals(jsonHeaders.get("m-mykey1").textValue(),
-                metadata.get("m-mykey1"));
-        Assert.assertEquals(jsonHeaders.get("m-mykey2").textValue(),
-                metadata.get("m-mykey2"));
+            Assert.assertEquals(jsonHeaders.get("m-mykey1").textValue(),
+                    metadata.get("m-mykey1"));
+            Assert.assertEquals(jsonHeaders.get("m-mykey2").textValue(),
+                    metadata.get("m-mykey2"));
 
-        Assert.assertNull(jsonHeaders.get("e-mykey"), "Encrypted headers should not be included");
+            Assert.assertNull(jsonHeaders.get("e-mykey"), "Encrypted headers should not be included");
+        } catch (AssertionError e) {
+            System.err.println(new String(json, "UTF-8"));
+            throw e;
+        }
     }
 
     private SettableConfigContext testConfigContext() {
@@ -241,8 +262,9 @@ public class ServerSideMultipartManagerTest {
         final CloseableHttpClient fakeClient = new FakeCloseableHttpClient(response);
         when(connectionContext.getHttpClient()).thenReturn(fakeClient);
 
+        final MantaClient client = mock(MantaClient.class);
         return new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext);
+                config, connectionFactory, connectionContext, client);
     }
 
     private ServerSideMultipartUpload initiateUploadWithAllParams(final String path,
@@ -254,6 +276,8 @@ public class ServerSideMultipartManagerTest {
         headers.setDurabilityLevel(5);
         headers.setContentLength(423534L);
         headers.setContentMD5("e59ff97941044f85df5297e1c302d260");
+        headers.setContentType(ContentType.APPLICATION_OCTET_STREAM.toString());
+
         final Set<String> roles = new HashSet<>();
         roles.add("manta");
         roles.add("role2");

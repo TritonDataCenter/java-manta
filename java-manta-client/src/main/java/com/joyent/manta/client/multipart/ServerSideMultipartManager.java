@@ -3,6 +3,7 @@ package com.joyent.manta.client.multipart;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.config.ConfigContext;
@@ -13,18 +14,24 @@ import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
+import com.joyent.manta.http.entity.ExposedStringEntity;
+import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +40,8 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
 /**
  * Class providing a server-side natively supported implementation
@@ -43,6 +52,16 @@ import java.util.stream.Stream;
  */
 public class ServerSideMultipartManager
         implements MantaMultipartManager<ServerSideMultipartUpload, MantaMultipartUploadPart> {
+    /**
+     * Maximum number of parts to allow in a multipart upload.
+     */
+    private static final int MAX_PARTS = 10_000;
+
+    /**
+     * Minimum size of a part in bytes.
+     */
+    private static final int MIN_PART_SIZE = 5_242_880; // 5 mebibytes
+
     /**
      * Configuration context used to get home directory.
      */
@@ -59,6 +78,11 @@ public class ServerSideMultipartManager
     private final MantaConnectionContext connectionContext;
 
     /**
+     * Reference to an open client.
+     */
+    private final MantaClient mantaClient;
+
+    /**
      * Creates a new instance of a server-side MPU manager using the specified
      * configuration and connection builder objects.
      *
@@ -68,32 +92,29 @@ public class ServerSideMultipartManager
      */
     public ServerSideMultipartManager(final ConfigContext config,
                                       final MantaConnectionFactory connectionFactory,
-                                      final MantaConnectionContext connectionContext) {
+                                      final MantaConnectionContext connectionContext,
+                                      final MantaClient mantaClient) {
+        Validate.isTrue(!mantaClient.isClosed(), "MantaClient must not be closed");
+
         this.config = config;
         this.connectionFactory = connectionFactory;
         this.connectionContext = connectionContext;
+        this.mantaClient = mantaClient;
     }
 
     @Override
     public Stream<ServerSideMultipartUpload> listInProgress() throws IOException {
-        final String getPath = String.format("%s/uploads", config.getMantaHomeDirectory());
-        final HttpGet get = connectionFactory.get(getPath);
+        final String uploadsPath = uploadsPath();
 
-        final int expectedStatusCode = HttpStatus.SC_OK;
+        return mantaClient.listObjects(uploadsPath).map(mantaObject -> {
+            final String objectName = FilenameUtils.getName(mantaObject.getPath());
+            final UUID id = UUID.fromString(objectName);
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
-            StatusLine statusLine = response.getStatusLine();
-            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
-                    "Unable to list multipart uploads in progress", get,
-                    response, null, null);
-            validateEntityIsPresent(get, response, null, null);
+            // We don't know the final object name. The server will implement
+            // this as a feature in the future.
 
-            try (InputStream in = response.getEntity().getContent()) {
-                // TODO: Figure out how to parse output
-            }
-
-            return null;
-        }
+            return new ServerSideMultipartUpload(id, null, uuidPrefixedPath(id));
+        });
     }
 
     @Override
@@ -113,7 +134,7 @@ public class ServerSideMultipartManager
                                                     final MantaMetadata mantaMetadata,
                                                     final MantaHttpHeaders httpHeaders)
             throws IOException {
-        final String postPath = String.format("%s/uploads", config.getMantaHomeDirectory());
+        final String postPath = uploadsPath();
         final HttpPost post = connectionFactory.post(postPath);
 
         final byte[] jsonRequest = createMpuRequestBody(path, mantaMetadata, httpHeaders);
@@ -162,7 +183,20 @@ public class ServerSideMultipartManager
                                                final int partNumber,
                                                final String contents)
             throws IOException {
-        return null;
+        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
+                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        Validate.notNull(contents, "String must not be null");
+
+        HttpEntity entity = new ExposedStringEntity(contents, ContentType.APPLICATION_OCTET_STREAM);
+
+        if (entity.getContentLength() < MIN_PART_SIZE) {
+            String msg = String.format("Part size [%d] for string is less "
+                            + "that the minimum part size [%d]",
+                    entity.getContentLength(), MIN_PART_SIZE);
+            throw new IllegalArgumentException(msg);
+        }
+
+        return uploadPart(upload, partNumber, entity);
     }
 
     @Override
@@ -170,14 +204,38 @@ public class ServerSideMultipartManager
                                                final int partNumber,
                                                final byte[] bytes)
             throws IOException {
-        return null;
+        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
+                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        Validate.notNull(bytes, "Byte array must not be null");
+
+        if (bytes.length < MIN_PART_SIZE) {
+            String msg = String.format("Part size [%d] for byte array is less "
+                            + "that the minimum part size [%d]",
+                    bytes.length, MIN_PART_SIZE);
+            throw new IllegalArgumentException(msg);
+        }
+
+        HttpEntity entity = new ExposedByteArrayEntity(bytes, ContentType.APPLICATION_OCTET_STREAM);
+        return uploadPart(upload, partNumber, entity);
     }
 
     @Override
     public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                final int partNumber,
                                                final File file) throws IOException {
-        return null;
+        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
+                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        Validate.notNull(file, "File must not be null");
+
+        if (file.length() < MIN_PART_SIZE) {
+            String msg = String.format("Part size [%d] for file [%s] is less "
+                    + "that the minimum part size [%d]",
+                    file.length(), file.getPath(), MIN_PART_SIZE);
+            throw new IllegalArgumentException(msg);
+        }
+
+        HttpEntity entity = new FileEntity(file, ContentType.APPLICATION_OCTET_STREAM);
+        return uploadPart(upload, partNumber, entity);
     }
 
     @Override
@@ -185,7 +243,33 @@ public class ServerSideMultipartManager
                                                final int partNumber,
                                                final InputStream inputStream)
             throws IOException {
-        return null;
+        HttpEntity entity = new MantaInputStreamEntity(inputStream, ContentType.APPLICATION_OCTET_STREAM);
+        return uploadPart(upload, partNumber, entity);
+    }
+
+    private MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
+                                                final int partNumber,
+                                                final HttpEntity entity)
+            throws IOException {
+        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
+                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+
+        final String putPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
+        HttpPut put = connectionFactory.put(putPath);
+        put.setEntity(entity);
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put)) {
+            Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
+            final String etag;
+
+            if (etagHeader != null) {
+                etag = etagHeader.getValue();
+            } else {
+                etag = null;
+            }
+
+            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etag);
+        }
     }
 
     @Override
@@ -296,6 +380,31 @@ public class ServerSideMultipartManager
             annotateException(e, request, response, objectPath, requestBody);
             throw e;
         }
+    }
+
+    /**
+     * @return path to the server-side multipart uploads directory
+     */
+    private String uploadsPath() {
+        return config.getMantaHomeDirectory() + SEPARATOR + "uploads";
+    }
+
+    /**
+     * Creates a <code>$home/uploads/directory/directory</code> path with
+     * the first letter of a uuid being the first directory and the uuid itself
+     * being the second directory.
+     *
+     * @param uuid uuid to create path from
+     * @return uuid prefixed directories
+     */
+    private String uuidPrefixedPath(final UUID uuid) {
+        Validate.notNull(uuid, "UUID must not be null");
+
+        final String uuidString = uuid.toString();
+
+        return uploadsPath() + SEPARATOR
+                + uuidString.substring(0, 1)
+                + SEPARATOR + uuidString;
     }
 
     /**
