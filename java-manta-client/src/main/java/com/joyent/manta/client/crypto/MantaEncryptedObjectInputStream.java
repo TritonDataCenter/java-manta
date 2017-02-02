@@ -603,6 +603,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
             if (read > EOF) {
                 initialBytesToSkip--;
+            } else {
+                // We hit the end of the stream, initialBytesToSkip was incorrect, set to 0 and return
+                initialBytesToSkip = 0;
+                return;
             }
         }
     }

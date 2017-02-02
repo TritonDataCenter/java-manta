@@ -382,12 +382,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             plaintextRangeLength = computedRanges.getLengthOfPlaintextIncludingSkipBytes();
         // This is the typical case like: bytes=3-44
         } else {
-            initialSkipBytes = plaintextStart;
             // calculates the ciphertext byte range
             final ByteRangeConversion computedRanges = this.cipherDetails.translateByteRange(
-                    initialSkipBytes, plaintextEnd);
+                    plaintextStart, plaintextEnd);
 
             binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
+            initialSkipBytes = computedRanges.getCiphertextStartPositionInclusive();
 
             if (computedRanges.getCiphertextEndPositionInclusive() > 0) {
                 binaryEndPositionInclusive = computedRanges.getCiphertextEndPositionInclusive();

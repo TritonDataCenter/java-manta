@@ -15,9 +15,9 @@ import java.util.Scanner;
 public class ClientEncryptionRangeDownload {
 
     public static void main(String... args) throws IOException {
-        String mantaUserName = "USERNAME";
-        String privateKeyPath = "PATH/.ssh/id_rsa";
-        String publicKeyId = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
+        String mantaUserName = "wyatt";
+        String privateKeyPath = "/Users/wyatt.lyonpreul/.ssh/id_rsa";
+        String publicKeyId = "d4:19:cc:38:44:a8:5a:aa:76:1c:65:66:ba:08:1e:cb";
 
         ConfigContext config = new ChainedConfigContext(
                 new DefaultsConfigContext(),
@@ -38,22 +38,25 @@ public class ClientEncryptionRangeDownload {
         try (MantaClient client = new MantaClient(config)) {
             String mantaPath = "/" + mantaUserName + "/stor/foo";
 
-            MantaObjectResponse response = client.put(mantaPath, "This is my secret\nthat I want encrypted.");
+            // Divided into 16 byte block chunks for testing
+            final String plaintext = "This is my secre" +
+                                     "t that I want en" +
+                                     "crypted. And her" +
+                                     "e is more text.";
+
+            MantaObjectResponse response = client.put(mantaPath, plaintext);
 
             System.out.println("HTTP Response headers:");
             System.out.println(response.getHttpHeaders().toString());
 
             MantaHttpHeaders headers = new MantaHttpHeaders();
-            headers.setByteRange(5L, null);
+            headers.setByteRange(17L, 32L);
 
             // Print out every line from file streamed real-time from Manta
-            try (InputStream is = client.getAsInputStream(mantaPath, headers);
-                 Scanner scanner = new Scanner(is)) {
-
-                while (scanner.hasNextLine()) {
-                    System.out.println(scanner.nextLine());
-                }
-            }
+            InputStream is = client.getAsInputStream(mantaPath, headers);
+            byte[] buffer = new byte[16];
+            is.read(buffer);
+            System.out.write(buffer);
         }
     }
 }
