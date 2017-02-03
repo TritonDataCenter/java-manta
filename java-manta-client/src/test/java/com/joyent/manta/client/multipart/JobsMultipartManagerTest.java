@@ -47,6 +47,7 @@ public class JobsMultipartManagerTest {
 
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
         final UUID id = new UUID(0L, 24L);
+        final MantaMultipartUpload upload =  new MantaMultipartUpload(id, "/dev/null");
 
         List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
@@ -57,13 +58,14 @@ public class JobsMultipartManagerTest {
         }
 
         JobsMultipartManager multiPart = spy(multipartInstance());
-        doReturn(partsList.stream()).when(multiPart).listParts(id);
+        doReturn(partsList.stream()).when(multiPart).listParts(upload);
 
-        multiPart.validateThatThereAreSequentialPartNumbers(id);
+        multiPart.validateThatThereAreSequentialPartNumbers(upload);
     }
 
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
         final UUID id = new UUID(0L, 36L);
+        final MantaMultipartUpload upload =  new MantaMultipartUpload(id, "/dev/null");
 
         List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
@@ -76,13 +78,14 @@ public class JobsMultipartManagerTest {
         Collections.shuffle(partsList);
 
         JobsMultipartManager multiPart = spy(multipartInstance());
-        doReturn(partsList.stream()).when(multiPart).listParts(id);
+        doReturn(partsList.stream()).when(multiPart).listParts(upload);
 
-        multiPart.validateThatThereAreSequentialPartNumbers(id);
+        multiPart.validateThatThereAreSequentialPartNumbers(upload);
     }
 
     public void errorWhenMissingPart() throws IOException {
         final UUID id = new UUID(0L, 48L);
+        final MantaMultipartUpload upload =  new MantaMultipartUpload(id, "/dev/null");
 
         ArrayList<MantaMultipartUploadPart> partsList = new ArrayList<>();
 
@@ -97,12 +100,12 @@ public class JobsMultipartManagerTest {
         Collections.shuffle(partsList);
 
         JobsMultipartManager multiPart = spy(multipartInstance());
-        doReturn(partsList.stream()).when(multiPart).listParts(id);
+        doReturn(partsList.stream()).when(multiPart).listParts(upload);
 
         boolean thrown = false;
 
         try {
-            multiPart.validateThatThereAreSequentialPartNumbers(id);
+            multiPart.validateThatThereAreSequentialPartNumbers(upload);
         } catch (MantaClientException e) {
             if ((int)e.getFirstContextValue("missing_part") == 3) {
                 thrown = true;

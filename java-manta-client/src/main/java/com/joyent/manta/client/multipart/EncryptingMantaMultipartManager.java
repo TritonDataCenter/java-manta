@@ -19,16 +19,20 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.commons.codec.binary.Hex;
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.util.HmacOutputStream;
 import com.joyent.manta.client.crypto.EncryptingPartEntity;
 import org.apache.http.entity.ContentType;
 
-import java.io.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -97,7 +101,7 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
 
             //final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers, ContentType.APPLICATION_OCTET_STREAM);
             ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
-            EncryptingPartEntity entity = new EncryptingPartEntity(eState.eContext, eState.multipartStream,
+            EncryptingPartEntity entity = new EncryptingPartEntity(eState.eContext, eState.cipherStream, eState.multipartStream,
                                                                    new InputStreamEntity(inputStream, contentType));
             final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
             eState.lastPartNumber = partNumber;
@@ -107,13 +111,28 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
         }
     }
 
+    // UGH COPY PASTA
+    public void complete(final MantaMultipartUpload upload,
+                         final Iterable<? extends MantaMultipartUploadTuple> parts)
+            throws IOException {
+        try (Stream<? extends MantaMultipartUploadTuple> stream =
+                     StreamSupport.stream(parts.spliterator(), false)) {
+            complete(upload, stream);
+        }
+    }
+
+
     public void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream) throws IOException {
         EncryptionState eState = uploadState.get(upload);
         eState.lock.lock();
         try {
+            Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            eState.multipartStream.setNext(baos);
+            eState.cipherStream.close();
             baos.write(eState.multipartStream.getRemainder());
+
             // conditionally get hmac and upload part; yeah reenterant lock
             if (eState.cipherStream instanceof HmacOutputStream) {
                 byte[] hmacBytes = ((HmacOutputStream) eState.cipherStream).getHmac().doFinal();
@@ -125,14 +144,22 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
                 }
                 baos.write(hmacBytes);
             }
-            // application/octet-stream is set because all encrypted objects use that content-type
-            ExposedByteArrayEntity entity = new ExposedByteArrayEntity(baos.toByteArray(),
-                    ContentType.APPLICATION_OCTET_STREAM);
-            final String path = multipartPath(upload.getId(), eState.lastPartNumber++);
-            final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
-            MantaMultipartUploadPart finalPart = new MantaMultipartUploadPart(response);
-            super.complete(upload,
-                           Stream.concat(partsStream, Stream.of(finalPart)));
+            if (baos.size() > 0) {
+                ByteArrayEntity entity = new ByteArrayEntity(baos.toByteArray());
+                final String path = multipartPath(upload.getId(), eState.lastPartNumber+1);
+                final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
+                MantaMultipartUploadPart finalPart = new MantaMultipartUploadPart(response);
+                finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
+            }
+            final MantaMetadata encryptionMetadata = new MantaMetadata();
+            ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionCipherHeaders(encryptionMetadata);
+            ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedEntityHeaders(encryptionMetadata, eState.eContext.getCipher());
+            //((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionPlaintextLengthHeader(metadata, eContext.getCipher());
+            //attachEncryptedMetadata(metadata);
+
+            super.complete(upload.getId(),
+                           finalPartsStream,
+                           encryptionMetadata);
         } finally {
             eState.lock.unlock();
         }
