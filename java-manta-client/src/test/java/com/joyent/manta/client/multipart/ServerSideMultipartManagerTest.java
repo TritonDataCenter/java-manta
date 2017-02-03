@@ -123,6 +123,27 @@ public class ServerSideMultipartManagerTest {
         manager.abort(upload);
     }
 
+    public void canCompleteMpu() throws IOException {
+        StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,
+                HttpStatus.SC_CREATED, "NO_CONTENT");
+        ServerSideMultipartManager manager = buildMockManager(statusLine, null);
+
+        UUID id = new UUID(0L, 0L);
+        String partsDirectory = manager.uuidPrefixedPath(id);
+        ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
+                id, "/test/stor/myobject", partsDirectory);
+
+        MantaMultipartUploadTuple[] unsortedTuples = new MantaMultipartUploadTuple[] {
+                new MantaMultipartUploadTuple(5, new UUID(0L, 5L)),
+                new MantaMultipartUploadTuple(3, new UUID(0L, 3L)),
+                new MantaMultipartUploadTuple(1, new UUID(0L, 1L)),
+                new MantaMultipartUploadTuple(2, new UUID(0L, 2L)),
+                new MantaMultipartUploadTuple(4, new UUID(0L, 4L))
+        };
+
+        manager.complete(upload, Stream.of(unsortedTuples));
+    }
+
     public void canCreateMpuRequestBodyJson() throws IOException {
         final ConfigContext config = mock(ConfigContext.class);
         final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
@@ -274,6 +295,8 @@ public class ServerSideMultipartManagerTest {
     public void willFailToCreateCommitRequestBodyWhenThereAreNoParts() {
         ServerSideMultipartManager.createCommitRequestBody(Stream.empty());
     }
+
+    // TEST UTILITY METHODS
 
     private SettableConfigContext testConfigContext() {
         StandardConfigContext settable = new StandardConfigContext();

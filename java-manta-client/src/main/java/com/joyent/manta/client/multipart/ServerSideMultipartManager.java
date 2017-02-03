@@ -529,29 +529,12 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to create multipart upload", post,
                     response, path, jsonRequest);
-            validateEntityIsPresent(post, response, path, jsonRequest);
 
-            try (InputStream in = response.getEntity().getContent()) {
-                ObjectNode mpu = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
+            Header location = response.getFirstHeader(HttpHeaders.LOCATION);
 
-                JsonNode idNode = mpu.get("id");
-                Validate.notNull(idNode, "No multipart id returned in response");
-                UUID uploadId = UUID.fromString(idNode.textValue());
-
-                JsonNode partsDirectoryNode = mpu.get("partsDirectory");
-                Validate.notNull(partsDirectoryNode, "No parts directory returned in response");
-                String partsDirectory = partsDirectoryNode.textValue();
-
-            } catch (NullPointerException | IllegalArgumentException e) {
-                String msg = "Expected response field was missing or malformed";
-                MantaMultipartException me = new MantaMultipartException(msg, e);
-                annotateException(me, post, response, path, jsonRequest);
-                throw me;
-            } catch (JsonParseException e) {
-                String msg = "Response body was not JSON";
-                MantaMultipartException me = new MantaMultipartException(msg, e);
-                annotateException(me, post, response, path, jsonRequest);
-                throw me;
+            if (location != null && LOGGER.isInfoEnabled()) {
+                LOGGER.info("Multipart upload [{}] for file [{}] has completed",
+                        upload.getId(), location.getValue());
             }
         }
     }
