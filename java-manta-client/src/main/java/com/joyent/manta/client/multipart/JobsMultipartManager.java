@@ -22,7 +22,10 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -233,11 +236,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
                                                final int partNumber,
                                                final String contents)
             throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-        final String path = multipartPath(upload.getId(), partNumber);
-
-        final MantaObjectResponse response = mantaClient.put(path, contents);
-        return new MantaMultipartUploadPart(response);
+        final InputStream is = new ByteArrayInputStream(contents.getBytes("UTF-8"));
+        return uploadPart(upload, partNumber, is);
     }
 
 
@@ -255,11 +255,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
                                                final int partNumber,
                                                final byte[] bytes)
             throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-        final String path = multipartPath(upload.getId(), partNumber);
-
-        final MantaObjectResponse response = mantaClient.put(path, bytes);
-        return new MantaMultipartUploadPart(response);
+        ByteArrayInputStream is = new ByteArrayInputStream(bytes);
+        return uploadPart(upload, partNumber, bytes);
     }
 
 
@@ -277,12 +274,20 @@ public class JobsMultipartManager extends AbstractMultipartManager
                                                final int partNumber,
                                                final File file)
             throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
+        Validate.notNull(file, "File must not be null");
 
-        final String path = multipartPath(upload.getId(), partNumber);
+        if (!file.exists()) {
+            String msg = String.format("File doesn't exist: %s",
+                    file.getPath());
+            throw new FileNotFoundException(msg);
+        }
 
-        final MantaObjectResponse response = mantaClient.put(path, file);
-        return new MantaMultipartUploadPart(response);
+        if (!file.canRead()) {
+            String msg = String.format("Can't access file for read: %s",
+                    file.getPath());
+            throw new IOException(msg);
+        }
+        return uploadPart(upload, partNumber, new FileInputStream(file));
     }
 
 
