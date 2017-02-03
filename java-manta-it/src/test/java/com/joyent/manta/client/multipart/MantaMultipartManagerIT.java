@@ -113,8 +113,8 @@ public class MantaMultipartManagerIT {
             String part = parts[i];
             int partNumber = i + 1;
             MantaMultipartUploadTuple uploaded = multipart.uploadPart(upload, partNumber,
-                                                                      new ByteArrayInputStream(part.getBytes("UTF-8")));
-                                                                      //part);
+                                                                      part);
+
             uploadedParts.add(uploaded);
         }
 
