@@ -1,7 +1,9 @@
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.entity.ByteArrayEntity;
 import org.slf4j.Logger;
 import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.LoggerFactory;
@@ -23,14 +25,10 @@ import com.joyent.manta.util.HmacOutputStream;
 import com.joyent.manta.client.crypto.EncryptingPartEntity;
 import org.apache.http.entity.ContentType;
 
+import java.io.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.io.File;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -127,7 +125,9 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
                 }
                 baos.write(hmacBytes);
             }
-            ByteArrayEntity entity = new ByteArrayEntity(baos.toByteArray());
+            // application/octet-stream is set because all encrypted objects use that content-type
+            ExposedByteArrayEntity entity = new ExposedByteArrayEntity(baos.toByteArray(),
+                    ContentType.APPLICATION_OCTET_STREAM);
             final String path = multipartPath(upload.getId(), eState.lastPartNumber++);
             final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
             MantaMultipartUploadPart finalPart = new MantaMultipartUploadPart(response);
