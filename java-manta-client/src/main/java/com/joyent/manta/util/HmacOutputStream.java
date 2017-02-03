@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * {@link OutputStream} implementation that progressively implements a
+ * {@link OutputStream} implementation that progressively updates a
  * HMAC as data is written.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
