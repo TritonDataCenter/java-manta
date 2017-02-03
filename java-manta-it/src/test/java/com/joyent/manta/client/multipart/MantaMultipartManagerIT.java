@@ -75,6 +75,7 @@ public class MantaMultipartManagerIT {
     @AfterClass
     public void afterClass() throws IOException {
         if (this.mantaClient != null) {
+            // FIXME
             //this.mantaClient.deleteRecursive(testPathPrefix);
             this.mantaClient.closeWithWarning();
             this.multipart = null;
