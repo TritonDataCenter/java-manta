@@ -47,9 +47,9 @@ public class MantaMultipartUploadTuple implements Serializable,
      * @param etag HTTP Etag value returned by Manta for the multipart upload part
      */
     public MantaMultipartUploadTuple(final int partNumber, final String etag) {
-        if (partNumber < 1) {
+        if (partNumber < 0) {
             String msg = String.format("Part number must be greater than or "
-                    + "equal to 1. Actual value: %d", partNumber);
+                    + "equal to 0. Actual value: %d", partNumber);
             throw new IllegalArgumentException(msg);
         }
 
