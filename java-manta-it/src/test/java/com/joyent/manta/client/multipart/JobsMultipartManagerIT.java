@@ -45,7 +45,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Test
-public class MantaMultipartManagerIT {
+public class JobsMultipartManagerIT {
     private MantaClient mantaClient;
     private JobsMultipartManager multipart;
 
@@ -84,7 +84,7 @@ public class MantaMultipartManagerIT {
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {
-        MantaMultipartUpload upload = new MantaMultipartUpload(new UUID(0L, -1L), "/dev/null");
+        MantaMultipartUpload upload = new JobsMultipartUpload(new UUID(0L, -1L), "/dev/null");
         assertEquals(multipart.getStatus(upload),
                      MantaMultipartStatus.UNKNOWN);
     }

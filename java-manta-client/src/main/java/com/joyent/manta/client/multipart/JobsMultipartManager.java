@@ -137,7 +137,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
                         try {
                             MultipartMetadata mantaMetadata = downloadMultipartMetadata(id);
-                            return new MantaMultipartUpload(id, mantaMetadata.getPath());
+                            MantaMultipartUpload upload = new JobsMultipartUpload(id, mantaMetadata.getPath());
+                            return upload;
                         } catch (MantaClientHttpResponseException e) {
                             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                                 return null;
@@ -216,13 +217,13 @@ public class JobsMultipartManager extends AbstractMultipartManager
         LOGGER.debug("Writing metadata to: {}", metadataPath);
         mantaClient.put(metadataPath, metadataBytes);
 
-        return new MantaMultipartUpload(uploadId, path);
+        return new JobsMultipartUpload(uploadId, path);
     }
 
     /**
      * Uploads a single part of a multipart upload.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param contents String contents to be written in UTF-8
      * @return multipart single part object
@@ -244,7 +245,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Uploads a single part of a multipart upload.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param bytes byte array containing data of the part to be uploaded
      * @return multipart single part object
@@ -266,7 +267,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Uploads a single part of a multipart upload.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param file file containing data of the part to be uploaded
      * @return multipart single part object
@@ -289,7 +290,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Uploads a single part of a multipart upload.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param inputStream stream providing data for part to be uploaded
      * @return multipart single part object
@@ -311,7 +312,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Retrieves information about a single part of a multipart upload.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
@@ -331,7 +332,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Retrieves the state of a given Manta multipart upload.
      *
-     * @param uploadId multipart upload id
+     * @param upload multipart upload object
      * @return enum representing the state / status of the multipart upload
      * @throws IOException thrown if there is a problem connecting to Manta
      */
@@ -346,7 +347,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Retrieves the state of a given Manta multipart upload.
      *
-     * @param uploadId multipart upload id
+     * @param upload multipart upload object
      * @param jobId Manta job id used to concatenate multipart parts
      * @return enum representing the state / status of the multipart upload
      * @throws IOException thrown if there is a problem connecting to Manta
@@ -429,7 +430,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Lists the parts that have already been uploaded.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
@@ -446,35 +447,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     /**
-     * Validates that there is no part missing from the sequence.
-     *
-     * @param id multipart upload id
-     * @throws IOException thrown if there is a problem connecting to Manta
-     * @throws MantaMultipartException thrown went part numbers aren't sequential
-     */
-    public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
-            throws IOException, MantaMultipartException {
-        Validate.notNull(upload, "Multipart transaction id must not be null");
-
-        listParts(upload)
-            .sorted()
-            .map(MantaMultipartUploadPart::getPartNumber)
-            .reduce(1, (memo, value) -> {
-                if (!memo.equals(value)) {
-                    MantaMultipartException e = new MantaMultipartException(
-                            "Missing part of multipart upload");
-                    e.setContextValue("missing_part", memo);
-                    throw e;
-                }
-
-                return memo + 1;
-            });
-    }
-
-    /**
      * Aborts a multipart transfer.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
@@ -515,8 +490,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
      * to block until the operation completes.
      *
-     * @param id multipart upload id
-     * @param parts iterable of multipart part objects
+     * @param upload multipart upload object
+     * @param partsStream stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
@@ -534,7 +509,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
      * to block until the operation completes.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param partsStream stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
@@ -754,7 +729,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * Waits for a multipart upload to complete. Polling for set interval.
      *
      * @param <R> Return type for executeWhenTimesToPollExceeded
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @param pingInterval interval to poll
      * @param timesToPoll number of times to poll Manta to check for completion
      * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
@@ -881,7 +856,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Returns the Manta job used to concatenate multiple file parts.
      *
-     * @param id multipart upload id
+     * @param upload multipart upload object
      * @return Manta job object or null if not found
      * @throws IOException thrown if there is a problem connecting to Manta
      */

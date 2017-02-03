@@ -11,7 +11,7 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class ServerSideMultipartUpload extends MantaMultipartUpload {
+public class ServerSideMultipartUpload extends AbstractMultipartUpload {
     private static final long serialVersionUID = -8416334176458530295L;
 
     /**
