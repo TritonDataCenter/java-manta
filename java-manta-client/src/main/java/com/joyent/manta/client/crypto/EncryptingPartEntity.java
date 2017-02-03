@@ -56,6 +56,7 @@ public class EncryptingPartEntity implements HttpEntity {
 
 
     private final EncryptionContext eContext;
+    private final OutputStream cipherStream;
 
     /**
      * Underlying entity that is being encrypted.
@@ -65,7 +66,7 @@ public class EncryptingPartEntity implements HttpEntity {
     private final MultipartOutputStream multipartStream;
 
 
-    public EncryptingPartEntity(final EncryptionContext eContext, MultipartOutputStream multipartStream,
+    public EncryptingPartEntity(final EncryptionContext eContext, final OutputStream cipherStream, MultipartOutputStream multipartStream,
                                 final HttpEntity wrapped) {
         // if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
         //     String msg = String.format("Input content length exceeded maximum "
@@ -75,8 +76,9 @@ public class EncryptingPartEntity implements HttpEntity {
         //     throw new MantaClientEncryptionException(msg);
         // }
 
-        this.multipartStream = multipartStream;
         this.eContext = eContext;
+        this.cipherStream = cipherStream;
+        this.multipartStream = multipartStream;
 
         //this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
@@ -94,11 +96,13 @@ public class EncryptingPartEntity implements HttpEntity {
 
     @Override
     public long getContentLength() {
-        if (originalLength >= 0) {
-            return eContext.getCipherDetails().ciphertextSize(originalLength);
-        } else {
-            return UNKNOWN_LENGTH;
-        }
+        // if content length is not exact, then we will hang on a socket timeout
+        return UNKNOWN_LENGTH;
+        // if (originalLength >= 0) {
+        //     return eContext.getCipherDetails().ciphertextSize(originalLength);
+        // } else {
+        //     return UNKNOWN_LENGTH;
+        // }
     }
 
     public long getOriginalLength() {
@@ -122,11 +126,12 @@ public class EncryptingPartEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        OutputStream out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
+        multipartStream.setNext(httpOut);
         try {
+            //httpOut.write("foo".getBytes("UTF-8"));
             final int bufferSize = 128;
-            long bytesCopied = IOUtils.copy(getContent(), multipartStream, bufferSize);
-            out.flush();
+            long bytesCopied = IOUtils.copy(getContent(), cipherStream, bufferSize);
+            cipherStream.flush();
             // how to close on final?            
             /* We don't close quietly because we want the operation to fail if
              * there is an error closing out the CipherOutputStream. */

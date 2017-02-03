@@ -61,4 +61,30 @@ public class MultipartOutputStreamTest {
 
     }
 
+    public void partRemainder() throws Exception {
+        ByteArrayOutputStream s1 = new ByteArrayOutputStream();
+        ByteArrayOutputStream s2 = new ByteArrayOutputStream();
+        ByteArrayOutputStream s3 = new ByteArrayOutputStream();
+        ByteArrayOutputStream s4 = new ByteArrayOutputStream();
+        ByteArrayOutputStream s5 = new ByteArrayOutputStream();
+        MultipartOutputStream mpos = new MultipartOutputStream(16);
+
+        mpos.setNext(s1);
+        mpos.write("Hello ".getBytes("UTF-8"));
+        mpos.setNext(s2);
+        mpos.write("world ".getBytes("UTF-8"));
+        mpos.setNext(s3);
+        mpos.write("Joyent".getBytes("UTF-8"));
+        mpos.setNext(s4);
+        mpos.write("!".getBytes("UTF-8"));
+        s5.write(mpos.getRemainder());
+
+        Assert.assertEquals(s1.toString("UTF-8"), "");
+        Assert.assertEquals(s2.toString("UTF-8"), "");
+        Assert.assertEquals(s3.toString("UTF-8"), "Hello world Joye");
+        Assert.assertEquals(s4.toString("UTF-8"), "");
+        Assert.assertEquals(s5.toString("UTF-8"), "nt!");
+    }
+
+
 }

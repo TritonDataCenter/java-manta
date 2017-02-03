@@ -579,6 +579,12 @@ public class JobsMultipartManager implements MantaMultipartManager {
         }
     }
 
+    public void complete(final UUID id,
+                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
+            throws IOException {
+        complete(id, partsStream, null);
+    }
+
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
      *
@@ -587,7 +593,8 @@ public class JobsMultipartManager implements MantaMultipartManager {
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     public void complete(final UUID id,
-                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
+                         final Stream<? extends MantaMultipartUploadTuple> partsStream,
+                         final MantaMetadata extraMetadata)
             throws IOException {
         Validate.notNull(id, "Upload id must not be null");
 
@@ -633,18 +640,19 @@ public class JobsMultipartManager implements MantaMultipartManager {
             }
         });
 
-        if (!missingTuples.isEmpty()) {
-            final MantaMultipartException e = new MantaMultipartException(
-                    "Multipart part(s) specified couldn't be found");
+        // FIXME
+        // if (!missingTuples.isEmpty()) {
+        //     final MantaMultipartException e = new MantaMultipartException(
+        //             "Multipart part(s) specified couldn't be found");
 
-            int missingCount = 0;
-            for (MantaMultipartUploadTuple missingPart : missingTuples) {
-                String key = String.format("missing_part_%d", ++missingCount);
-                e.setContextValue(key, missingPart.toString());
-            }
+        //     int missingCount = 0;
+        //     for (MantaMultipartUploadTuple missingPart : missingTuples) {
+        //         String key = String.format("missing_part_%d", ++missingCount);
+        //         e.setContextValue(key, missingPart.toString());
+        //     }
 
-            throw e;
-        }
+        //     throw e;
+        // }
 
         final String headerFormat = "\"%s: %s\" ";
 
@@ -661,7 +669,13 @@ public class JobsMultipartManager implements MantaMultipartManager {
                        .append("' ");
         }
 
-        final MantaMetadata objectMetadata = metadata.getObjectMetadata();
+        MantaMetadata objectMetadata = metadata.getObjectMetadata();
+        System.out.println(extraMetadata);
+        if (objectMetadata != null && extraMetadata != null) {
+            objectMetadata.putAll(extraMetadata);
+        } else if (objectMetadata == null && extraMetadata != null) {
+            objectMetadata = extraMetadata;
+        }
 
         if (objectMetadata != null) {
             Set<Map.Entry<String, String>> entries = objectMetadata.entrySet();
@@ -673,7 +687,6 @@ public class JobsMultipartManager implements MantaMultipartManager {
                            .append("' ");
             }
         }
-
         jobExecText.append(path);
 
         final MantaJobPhase concatPhase = new MantaJobPhase()
