@@ -803,6 +803,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC, checksumBase64);
 
             LOGGER.debug("Encrypted metadata HMAC: {}", checksumBase64);
+        } else {
+            metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_AEAD_TAG_LENGTH,
+                    String.valueOf(this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes()));
         }
     }
 

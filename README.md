@@ -245,6 +245,8 @@ Below is a table of each of the supported encryption algorithms and the features
 
 *Note* that any non-authenticated encryption algorithm will have an HMAC generated to
 authenticate that ciphertext was not modified.
+
+*Note* each instance of a MantaClient will only support the encryption/decryption for the algorithm configured for that instance.
  
 
 ## Subuser Difficulties

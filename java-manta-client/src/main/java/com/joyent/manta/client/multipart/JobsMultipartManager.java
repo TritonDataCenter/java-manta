@@ -48,7 +48,8 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public class JobsMultipartManager implements MantaMultipartManager {
+public class JobsMultipartManager extends AbstractMultipartManager
+        <MantaMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
@@ -108,6 +109,8 @@ public class JobsMultipartManager implements MantaMultipartManager {
      * @param mantaClient Manta client instance to use to communicate with server
      */
     public JobsMultipartManager(final MantaClient mantaClient) {
+        super();
+
         Validate.notNull(mantaClient, "Manta client object must not be null");
 
         this.mantaClient = mantaClient;
@@ -480,14 +483,6 @@ public class JobsMultipartManager implements MantaMultipartManager {
                 .map(MantaMultipartUploadPart::new);
     }
 
-    @Override
-    public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
-            throws IOException, MantaMultipartException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        validateThatThereAreSequentialPartNumbers(upload.getId());
-    }
-
     /**
      * Validates that there is no part missing from the sequence.
      *
@@ -499,20 +494,8 @@ public class JobsMultipartManager implements MantaMultipartManager {
             throws IOException, MantaMultipartException {
         Validate.notNull(id, "Multipart transaction id must not be null");
 
-        //noinspection ResultOfMethodCallIgnored
-        listParts(id)
-            .sorted()
-            .map(MantaMultipartUploadPart::getPartNumber)
-            .reduce(1, (memo, value) -> {
-                if (!memo.equals(value)) {
-                    MantaMultipartException e = new MantaMultipartException(
-                            "Missing part of multipart upload");
-                    e.setContextValue("missing_part", memo);
-                    throw e;
-                }
-
-                return memo + 1;
-            });
+        final MantaMultipartUpload upload = new MantaMultipartUpload(id, null);
+        validateThatThereAreSequentialPartNumbers(upload);
     }
 
     @Override
@@ -565,6 +548,9 @@ public class JobsMultipartManager implements MantaMultipartManager {
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
+     * This is an asynchronous operation and you will need to call
+     * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
+     * to block until the operation completes.
      *
      * @param id multipart upload id
      * @param parts iterable of multipart part objects
@@ -587,6 +573,9 @@ public class JobsMultipartManager implements MantaMultipartManager {
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
+     * This is an asynchronous operation and you will need to call
+     * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
+     * to block until the operation completes.
      *
      * @param id multipart upload id
      * @param partsStream stream of multipart part objects
@@ -785,7 +774,15 @@ public class JobsMultipartManager implements MantaMultipartManager {
         }
     }
 
-    @Override
+    /**
+     * Waits for a multipart upload to complete. Polling every 5 seconds.
+     *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
+     * @param upload multipart upload object
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
     public <R> R waitForCompletion(final MantaMultipartUpload upload,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
@@ -810,7 +807,17 @@ public class JobsMultipartManager implements MantaMultipartManager {
                 NUMBER_OF_TIMES_TO_POLL, executeWhenTimesToPollExceeded);
     }
 
-    @Override
+    /**
+     * Waits for a multipart upload to complete. Polling for set interval.
+     *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
+     * @param upload multipart upload object
+     * @param pingInterval interval to poll
+     * @param timesToPoll number of times to poll Manta to check for completion
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
     public <R> R waitForCompletion(final MantaMultipartUpload upload,
                                    final Duration pingInterval,
                                    final int timesToPoll,

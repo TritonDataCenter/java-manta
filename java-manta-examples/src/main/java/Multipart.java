@@ -78,10 +78,19 @@ public class Multipart {
             // We've uploaded all of the parts, now lets join them
             multipart.complete(upload, parts.stream());
 
-            // If we want to pause execution until it is committed
-            int timesToPoll = 10;
-            multipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll,
-                    uuid -> { throw new RuntimeException("Multipart completion timed out"); });
+            // If we are using a jobs-based implementation then we need to wait for
+            // the complete() operation to finish. Otherwise, we are have a server-side
+            // supported MPU implementation that is s
+            if (multipart instanceof JobsMultipartManager) {
+                JobsMultipartManager jobsMultipart = (JobsMultipartManager)multipart;
+
+                // If we want to pause execution until it is committed
+                int timesToPoll = 10;
+                jobsMultipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll,
+                        uuid -> {
+                            throw new RuntimeException("Multipart completion timed out");
+                        });
+            }
 
         } catch (MantaClientHttpResponseException e) {
             // This catch block is for when we actually have a response code from Manta

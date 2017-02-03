@@ -42,7 +42,7 @@ public class HmacOutputStream extends OutputStream {
     public Mac getHmac() {
         return hmac;
     }
-    
+
     @Override
     public void write(final int b) throws IOException {
         hmac.update((byte)b);

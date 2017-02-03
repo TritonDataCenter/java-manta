@@ -376,6 +376,16 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     }
 
     @Override
+    public void mark(final int readlimit) {
+        throw new UnsupportedOperationException("mark is not a supported operation on " + getClass());
+    }
+
+    @Override
+    public void reset() throws IOException {
+        throw new UnsupportedOperationException("reset is not a supported operation on " + getClass());
+    }
+
+    @Override
     public int read() throws IOException {
         if (this.closed) {
             MantaIOException e = new MantaIOException("Can't read a closed stream");

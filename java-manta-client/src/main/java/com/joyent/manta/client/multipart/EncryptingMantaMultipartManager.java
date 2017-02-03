@@ -1,7 +1,9 @@
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.entity.ByteArrayEntity;
 import org.slf4j.Logger;
 import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.LoggerFactory;
@@ -28,11 +30,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
