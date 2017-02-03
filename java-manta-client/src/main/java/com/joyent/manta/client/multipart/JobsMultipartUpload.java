@@ -7,8 +7,6 @@ import java.util.UUID;
  * @since 2.5.0
  */
 public class JobsMultipartUpload extends AbstractMultipartUpload {
-    private static final long serialVersionUID = 5964666701525492798L;
-
     /**
      * Creates a new instance associated with the specified id
      * and object path.
