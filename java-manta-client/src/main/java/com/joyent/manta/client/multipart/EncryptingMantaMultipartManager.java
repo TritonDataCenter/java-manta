@@ -124,7 +124,6 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
 
     public void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream) throws IOException {
-        System.out.println("WTF JAVA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         EncryptionState eState = uploadState.get(upload);
         eState.lock.lock();
         try {
@@ -133,7 +132,6 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
             eState.multipartStream.setNext(baos);
             eState.cipherStream.close();
             baos.write(eState.multipartStream.getRemainder());
-            System.out.format("LENNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN_ %d \n", eState.multipartStream.getRemainder().length);
 
             // conditionally get hmac and upload part; yeah reenterant lock
             if (eState.cipherStream instanceof HmacOutputStream) {
@@ -144,24 +142,18 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
                 }
-                System.out.format("LENNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN %d \n", hmacBytes.length);
                 baos.write(hmacBytes);
             }
             if (baos.size() > 0) {
-                System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@FINAL COUNTDON");
                 ByteArrayEntity entity = new ByteArrayEntity(baos.toByteArray());
                 final String path = multipartPath(upload.getId(), eState.lastPartNumber+1);
                 final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
                 MantaMultipartUploadPart finalPart = new MantaMultipartUploadPart(response);
                 finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
             }
-            //System.out.println(upload);
-            //System.exit(1);
             final MantaMetadata encryptionMetadata = new MantaMetadata();
             ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionCipherHeaders(encryptionMetadata);
             ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedEntityHeaders(encryptionMetadata, eState.eContext.getCipher());
-            System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            System.out.println(encryptionMetadata);
             //((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionPlaintextLengthHeader(metadata, eContext.getCipher());
             //attachEncryptedMetadata(metadata);
 
