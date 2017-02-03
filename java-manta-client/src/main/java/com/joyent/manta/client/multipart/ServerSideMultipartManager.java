@@ -501,11 +501,22 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
+
         final String path = upload.getPath();
         final String postPath = upload.getPartsDirectory();
         final HttpPost post = connectionFactory.post(postPath);
 
-        final byte[] jsonRequest = createCommitRequestBody(partsStream);
+        final byte[] jsonRequest;
+
+        try {
+            jsonRequest = createCommitRequestBody(partsStream);
+        } catch (NullPointerException | IllegalArgumentException e) {
+            String msg = "Expected response field was missing or malformed";
+            MantaMultipartException me = new MantaMultipartException(msg, e);
+            annotateException(me, post, null, path, null);
+            throw me;
+        }
+
         final HttpEntity entity = new ExposedByteArrayEntity(
                 jsonRequest, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
@@ -554,9 +565,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      *
      * @return byte array containing JSON data
      */
-    byte[] createMpuRequestBody(final String objectPath,
-                                final MantaMetadata mantaMetadata,
-                                final MantaHttpHeaders headers) {
+    static byte[] createMpuRequestBody(final String objectPath,
+                                       final MantaMetadata mantaMetadata,
+                                       final MantaHttpHeaders headers) {
         Validate.notNull(objectPath, "Path to Manta object must not be null");
 
         CreateMPURequestBody requestBody = new CreateMPURequestBody(
@@ -577,16 +588,19 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @param parts stream of tuples - this is a terminal operation that will close the stream
      * @return byte array containing JSON data
      */
-    byte[] createCommitRequestBody(final Stream<? extends MantaMultipartUploadTuple> parts) {
+    static byte[] createCommitRequestBody(final Stream<? extends MantaMultipartUploadTuple> parts) {
         final JsonNodeFactory nodeFactory = MantaObjectMapper.NODE_FACTORY_INSTANCE;
         final ObjectNode objectNode = new ObjectNode(nodeFactory);
 
         final ArrayNode partsArrayNode = new ArrayNode(nodeFactory);
-        objectNode.put("parts", partsArrayNode);
+        objectNode.set("parts", partsArrayNode);
 
         try (Stream<? extends MantaMultipartUploadTuple> sorted = parts.sorted()) {
             sorted.forEach(tuple -> partsArrayNode.add(tuple.getEtag()));
         }
+
+        Validate.isTrue(partsArrayNode.size() > 0,
+                "Can't commit multipart upload with no parts");
 
         try {
             return MantaObjectMapper.INSTANCE.writeValueAsBytes(objectNode);

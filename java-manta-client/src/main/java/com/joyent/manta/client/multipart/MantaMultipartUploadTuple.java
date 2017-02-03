@@ -35,6 +35,17 @@ public class MantaMultipartUploadTuple implements Serializable,
      *                   position of the part in relation to the other parts for the multipart upload.
      * @param etag HTTP Etag value returned by Manta for the multipart upload part
      */
+    public MantaMultipartUploadTuple(final int partNumber, final Object etag) {
+        this(partNumber, Objects.toString(etag));
+    }
+
+    /**
+     * Creates a new instance based on the passed parameters.
+     *
+     * @param partNumber Non-zero positive integer representing the relative
+     *                   position of the part in relation to the other parts for the multipart upload.
+     * @param etag HTTP Etag value returned by Manta for the multipart upload part
+     */
     public MantaMultipartUploadTuple(final int partNumber, final String etag) {
         if (partNumber < 1) {
             String msg = String.format("Part number must be greater than or "

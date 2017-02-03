@@ -1,6 +1,7 @@
 package com.joyent.manta.client.multipart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
@@ -14,6 +15,7 @@ import com.joyent.manta.http.FakeCloseableHttpClient;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
@@ -31,9 +33,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -132,7 +133,7 @@ public class ServerSideMultipartManagerTest {
 
         final String path = "/user/stor/object";
 
-        final byte[] json = manager.createMpuRequestBody(path, null, null);
+        final byte[] json = ServerSideMultipartManager.createMpuRequestBody(path, null, null);
 
         ObjectNode jsonObject = mapper.readValue(json, ObjectNode.class);
 
@@ -159,7 +160,7 @@ public class ServerSideMultipartManagerTest {
         roles.add("role2");
         headers.setRoles(roles);
 
-        final byte[] json = manager.createMpuRequestBody(path, null, headers);
+        final byte[] json = ServerSideMultipartManager.createMpuRequestBody(path, null, headers);
 
         ObjectNode jsonObject = mapper.readValue(json, ObjectNode.class);
 
@@ -208,7 +209,7 @@ public class ServerSideMultipartManagerTest {
         metadata.put("m-mykey2", "key value 2");
         metadata.put("e-mykey", "i should be ignored");
 
-        final byte[] json = manager.createMpuRequestBody(path, metadata, headers);
+        final byte[] json = ServerSideMultipartManager.createMpuRequestBody(path, metadata, headers);
 
         ObjectNode jsonObject = mapper.readValue(json, ObjectNode.class);
 
@@ -239,13 +240,46 @@ public class ServerSideMultipartManagerTest {
         }
     }
 
+    public void canCreateCommitRequestBody() throws IOException {
+        MantaMultipartUploadTuple[] unsortedTuples = new MantaMultipartUploadTuple[] {
+            new MantaMultipartUploadTuple(5, new UUID(0L, 5L)),
+            new MantaMultipartUploadTuple(3, new UUID(0L, 3L)),
+            new MantaMultipartUploadTuple(1, new UUID(0L, 1L)),
+            new MantaMultipartUploadTuple(2, new UUID(0L, 2L)),
+            new MantaMultipartUploadTuple(4, new UUID(0L, 4L))
+        };
+
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(unsortedTuples);
+
+        byte[] jsonRequest = ServerSideMultipartManager.createCommitRequestBody(partsStream);
+
+        ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(jsonRequest, ObjectNode.class);
+        @SuppressWarnings("unchecked")
+        ArrayNode partsNode = (ArrayNode)objectNode.get("parts");
+
+        // Verify that the parts are in the correct order
+        try {
+            Assert.assertEquals(partsNode.get(0).textValue(), unsortedTuples[2].getEtag());
+            Assert.assertEquals(partsNode.get(1).textValue(), unsortedTuples[3].getEtag());
+            Assert.assertEquals(partsNode.get(2).textValue(), unsortedTuples[1].getEtag());
+            Assert.assertEquals(partsNode.get(3).textValue(), unsortedTuples[4].getEtag());
+            Assert.assertEquals(partsNode.get(4).textValue(), unsortedTuples[0].getEtag());
+        } catch (AssertionError e) {
+            System.err.println(new String(jsonRequest, "UTF-8"));
+            throw e;
+        }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void willFailToCreateCommitRequestBodyWhenThereAreNoParts() {
+        ServerSideMultipartManager.createCommitRequestBody(Stream.empty());
+    }
+
     private SettableConfigContext testConfigContext() {
         StandardConfigContext settable = new StandardConfigContext();
         settable.setMantaUser("test");
 
-        TestConfigContext config = new TestConfigContext(settable);
-
-        return config;
+        return new TestConfigContext(settable);
     }
 
     private ServerSideMultipartManager buildMockManager(final StatusLine statusLine,
