@@ -879,24 +879,6 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     /**
-     * Validates that the given part number is specified correctly.
-     *
-     * @param partNumber integer part number value
-     * @throws IllegalArgumentException if partNumber is less than 1 or greater than MULTIPART_DIRECTORY
-     */
-    static void validatePartNumber(final int partNumber) {
-        if (partNumber <= 0) {
-            throw new IllegalArgumentException("Negative or zero part numbers are not valid");
-        }
-
-        if (partNumber > MAX_PARTS) {
-            final String msg = String.format("Part number of [%d] exceeds maximum parts (%d)",
-                    partNumber, MAX_PARTS);
-            throw new IllegalArgumentException(msg);
-        }
-    }
-
-    /**
      * Returns the Manta job used to concatenate multiple file parts.
      *
      * @param id multipart upload id

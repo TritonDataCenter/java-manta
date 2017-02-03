@@ -157,7 +157,7 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
             //((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionPlaintextLengthHeader(metadata, eContext.getCipher());
             //attachEncryptedMetadata(metadata);
 
-            super.complete(upload.getId(),
+            super.complete(upload,
                            finalPartsStream,
                            encryptionMetadata);
         } finally {

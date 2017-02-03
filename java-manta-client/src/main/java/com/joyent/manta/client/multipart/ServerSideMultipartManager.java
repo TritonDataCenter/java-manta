@@ -66,11 +66,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerSideMultipartManager.class);
 
     /**
-     * Maximum number of parts to allow in a multipart upload.
-     */
-    private static final int MAX_PARTS = 10_000;
-
-    /**
      * Minimum size of a part in bytes.
      */
     private static final int MIN_PART_SIZE = 5_242_880; // 5 mebibytes
@@ -198,8 +193,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                                final int partNumber,
                                                final String contents)
             throws IOException {
-        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
-                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        validatePartNumber(partNumber);
         Validate.notNull(contents, "String must not be null");
 
         HttpEntity entity = new ExposedStringEntity(contents, ContentType.APPLICATION_OCTET_STREAM);
@@ -219,8 +213,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                                final int partNumber,
                                                final byte[] bytes)
             throws IOException {
-        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
-                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        validatePartNumber(partNumber);
         Validate.notNull(bytes, "Byte array must not be null");
 
         if (bytes.length < MIN_PART_SIZE) {
@@ -238,8 +231,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                final int partNumber,
                                                final File file) throws IOException {
-        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
-                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        validatePartNumber(partNumber);
         Validate.notNull(file, "File must not be null");
 
         if (file.length() < MIN_PART_SIZE) {
@@ -276,8 +268,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                                 final HttpEntity entity)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
-        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
-                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        validatePartNumber(partNumber);
 
         final String putPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
         final HttpPut put = connectionFactory.put(putPath);
@@ -308,8 +299,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     public MantaMultipartUploadPart getPart(final ServerSideMultipartUpload upload,
                                             final int partNumber) throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
-        Validate.inclusiveBetween(partNumber, 1, MAX_PARTS,
-                "Part numbers must be inclusively between [1-{}]", MAX_PARTS);
+        validatePartNumber(partNumber);
 
         final int adjustedPartNumber = partNumber - 1;
 

@@ -30,7 +30,7 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
      * This value will be increased to 10,000 when multipart is implemented on
      * the server.
      */
-    int MAX_PARTS = 1_000;
+    int MAX_PARTS = 10_000;
 
     /**
      * Lists multipart uploads that are currently in progress.
