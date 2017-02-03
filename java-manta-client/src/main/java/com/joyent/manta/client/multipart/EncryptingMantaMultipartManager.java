@@ -74,10 +74,10 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
-        MantaMultipartUpload upload = super.initiateUpload(path, mantaMetadata, httpHeaders);
+        MantaMultipartUpload upload = super.initiateUpload(path, null, httpHeaders);
         EncryptionContext eContext = this.httpHelper.newEncryptionContext();
         // last init wins?
-        uploadState.put(upload, new EncryptionState(eContext));
+        uploadState.put(upload, new EncryptionState(eContext, mantaMetadata));
         return upload;
     }
 
@@ -111,7 +111,7 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
         }
     }
 
-    // UGH COPY PASTA
+    // TODO: why is this necessary?
     public void complete(final MantaMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
@@ -155,11 +155,14 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
             ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionCipherHeaders(encryptionMetadata);
             ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedEntityHeaders(encryptionMetadata, eState.eContext.getCipher());
             //((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionPlaintextLengthHeader(metadata, eContext.getCipher());
-            //attachEncryptedMetadata(metadata);
 
-            super.complete(upload.getId(),
-                           finalPartsStream,
-                           encryptionMetadata);
+            if (eState.mantaMetadata != null) {
+                MantaMetadata encryptedMetadata = new MantaMetadata(eState.mantaMetadata);
+                ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedMetadata(encryptedMetadata);
+                encryptionMetadata.putAll(encryptedMetadata);
+            }
+
+            super.complete(upload, finalPartsStream, encryptionMetadata);
         } finally {
             eState.lock.unlock();
         }
@@ -174,12 +177,15 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
         public int lastPartNumber = -1;
         public MultipartOutputStream multipartStream = null;
         public OutputStream cipherStream = null;
+        // If we are going to state, it is easy enough to keep metadata, and this helps us encrypt in the right place
+        public MantaMetadata mantaMetadata = null;
         //cipher or entity junk? Context?
         // iostream
         // lock!?!
-        public EncryptionState(EncryptionContext eContext) {
+        public EncryptionState(EncryptionContext eContext, MantaMetadata mantaMetadata) {
             this.eContext = eContext;
             this.lock = new ReentrantLock();
+            this.mantaMetadata = mantaMetadata;
         }
 
     }

@@ -48,6 +48,7 @@ import static org.testng.Assert.fail;
 public class MantaMultipartManagerIT {
     private MantaClient mantaClient;
     private JobsMultipartManager multipart;
+    private boolean usingEncryption;
 
     private String testPathPrefix;
 
@@ -56,6 +57,7 @@ public class MantaMultipartManagerIT {
     @BeforeClass()
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+        this.usingEncryption = usingEncryption;
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
@@ -225,6 +227,10 @@ public class MantaMultipartManagerIT {
         final MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-hello", "world");
         metadata.put("m-foo", "bar");
+        if (usingEncryption) {
+            metadata.put("e-hello", "world");
+            metadata.put("e-foo", "bar");
+        }
 
         final MantaMultipartUpload upload = multipart.initiateUpload(path, metadata);
 
@@ -247,11 +253,17 @@ public class MantaMultipartManagerIT {
 
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
 
-        assertEquals(remoteMetadata.size(), 4, "Unexpected metadata size");
+
+        assertEquals(remoteMetadata.keySet().stream().filter(key -> !key.startsWith("m-encrypt") && !key.startsWith("e-")).count(),
+                     4, "Unexpected metadata size");
         assertTrue(remoteMetadata.containsKey(JobsMultipartManager.JOB_ID_METADATA_KEY));
         assertTrue(remoteMetadata.containsKey(JobsMultipartManager.UPLOAD_ID_METADATA_KEY));
         assertEquals(remoteMetadata.get("m-hello"), "world");
         assertEquals(remoteMetadata.get("m-foo"), "bar");
+        if (usingEncryption) {
+            assertEquals(remoteMetadata.get("e-hello"), "world");
+            assertEquals(remoteMetadata.get("e-foo"), "bar");
+        }
     }
 
     public void canUpload5MbX10MultipartBinary() throws IOException {
