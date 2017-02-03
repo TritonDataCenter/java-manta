@@ -60,7 +60,6 @@ public class MantaMultipartUploadTuple implements Serializable,
         return this.etag;
     }
 
-
     @Override
     public int compareTo(final MantaMultipartUploadTuple that) {
         return Integer.compare(this.getPartNumber(), that.getPartNumber());

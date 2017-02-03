@@ -48,7 +48,8 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public class JobsMultipartManager extends AbstractMultipartManager<MantaMultipartUpload, MantaMultipartUploadPart> {
+public class JobsMultipartManager extends AbstractMultipartManager
+        <MantaMultipartUpload, MantaMultipartUploadPart, Void> {
     /**
      * Logger instance.
      */
@@ -528,21 +529,25 @@ public class JobsMultipartManager extends AbstractMultipartManager<MantaMultipar
     }
 
     @Override
-    public void complete(final MantaMultipartUpload upload,
+    public Void complete(final MantaMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
         complete(upload.getId(), parts);
+
+        return null;
     }
 
     @Override
-    public void complete(final MantaMultipartUpload upload,
+    public Void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
         complete(upload.getId(), partsStream);
+
+        return null;
     }
 
     /**
@@ -552,13 +557,15 @@ public class JobsMultipartManager extends AbstractMultipartManager<MantaMultipar
      * @param parts iterable of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void complete(final UUID id,
+    public Void complete(final UUID id,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         try (Stream<? extends MantaMultipartUploadTuple> stream =
                      StreamSupport.stream(parts.spliterator(), false)) {
             complete(id, stream);
         }
+
+        return null;
     }
 
     /**
@@ -754,7 +761,15 @@ public class JobsMultipartManager extends AbstractMultipartManager<MantaMultipar
         }
     }
 
-    @Override
+    /**
+     * Waits for a multipart upload to complete. Polling every 5 seconds.
+     *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
+     * @param upload multipart upload object
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
     public <R> R waitForCompletion(final MantaMultipartUpload upload,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
@@ -779,7 +794,17 @@ public class JobsMultipartManager extends AbstractMultipartManager<MantaMultipar
                 NUMBER_OF_TIMES_TO_POLL, executeWhenTimesToPollExceeded);
     }
 
-    @Override
+    /**
+     * Waits for a multipart upload to complete. Polling for set interval.
+     *
+     * @param <R> Return type for executeWhenTimesToPollExceeded
+     * @param upload multipart upload object
+     * @param pingInterval interval to poll
+     * @param timesToPoll number of times to poll Manta to check for completion
+     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
+     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
     public <R> R waitForCompletion(final MantaMultipartUpload upload,
                                    final Duration pingInterval,
                                    final int timesToPoll,

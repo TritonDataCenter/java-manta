@@ -5,6 +5,8 @@ package com.joyent.manta.client.multipart;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
@@ -39,10 +41,15 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
@@ -53,12 +60,59 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class ServerSideMultipartManager
-        extends AbstractMultipartManager<ServerSideMultipartUpload, MantaMultipartUploadPart> {
+public class ServerSideMultipartManager extends AbstractMultipartManager
+        <ServerSideMultipartUpload, MantaMultipartUploadPart, Future<Void>> {
     /**
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerSideMultipartManager.class);
+
+    /**
+     * Thread group for all Manta mpu threads.
+     */
+    private static final ThreadGroup THREAD_GROUP = new ThreadGroup("manta-mpu");
+
+    /* Note: Do not turn this into a lambda expression - as of now it causes
+     * a compilation error. */
+    /**
+     * Unhandled exception handler that logs errors that happened when committing
+     * an MPU.
+     */
+    private static final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER =
+            new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(final Thread t, final Throwable e) {
+                    String msg = String.format("An error occurred when committing"
+                            + "a multipart upload in the thread [%s].",
+                            t.getName());
+                    LOGGER.error(msg, e);
+                }
+            };
+
+    /**
+     * Custom thread factory that makes sensibly named daemon threads.
+     */
+    private static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
+        private final AtomicInteger count = new AtomicInteger(1);
+
+        @Override
+        public Thread newThread(final Runnable runnable) {
+            final String name = String.format("mpu-%d", count.getAndIncrement());
+            Thread thread = new Thread(THREAD_GROUP, runnable, name);
+            thread.setDaemon(true);
+            thread.setUncaughtExceptionHandler(EXCEPTION_HANDLER);
+
+            return thread;
+        }
+    };
+
+    /**
+     * Global executor service used for scheduling Manta OutputStream threads.
+     * You shouldn't need to call shutdown on this because all of the threads scheduled
+     * are daemon threads, but it is exposed so that you can manage its lifecycle
+     * if needed.
+     */
+    public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
 
     /**
      * Maximum number of parts to allow in a multipart upload.
@@ -459,35 +513,85 @@ public class ServerSideMultipartManager
     }
 
     @Override
-    public void complete(final ServerSideMultipartUpload upload,
+    public Future<Void> complete(final ServerSideMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
+
+        final Stream<? extends MantaMultipartUploadTuple> partsStream =
+                StreamSupport.stream(parts.spliterator(), false);
+
+        return complete(upload, partsStream);
     }
 
     @Override
-    public void complete(final ServerSideMultipartUpload upload,
-                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
+    public Future<Void> complete(final ServerSideMultipartUpload upload,
+                                 final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
-        Validate.notNull(upload, "Upload state object must not be null");
+
+        return EXECUTOR.submit(() -> {
+            synchronousComplete(upload, partsStream);
+            return null;
+        });
     }
 
-    @Override
-    public <R> R waitForCompletion(final ServerSideMultipartUpload upload,
-                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
+    /**
+     * <p>Completes a multipart transfer by assembling the parts on Manta as an
+     * synchronous operation.</p>
+     *
+     * <p>Note: this performs a terminal operation on the partsStream and
+     * thereby will close the stream.</p>
+     *
+     * @param upload multipart upload object
+     * @param partsStream stream of multipart part objects
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    public void synchronousComplete(final ServerSideMultipartUpload upload,
+                                    final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
-        return null;
-    }
+        final String path = upload.getPath();
+        final String postPath = upload.getPartsDirectory();
+        final HttpPost post = connectionFactory.post(postPath);
 
-    @Override
-    public <R> R waitForCompletion(final ServerSideMultipartUpload upload,
-                                   final Duration pingInterval,
-                                   final int timesToPoll,
-                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
-            throws IOException {
-        Validate.notNull(upload, "Upload state object must not be null");
-        return null;
+        final byte[] jsonRequest = createCommitRequestBody(partsStream);
+        final HttpEntity entity = new ExposedByteArrayEntity(
+                jsonRequest, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+
+        final int expectedStatusCode = HttpStatus.SC_CREATED;
+
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
+            StatusLine statusLine = response.getStatusLine();
+
+            validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
+                    "Unable to create multipart upload", post,
+                    response, path, jsonRequest);
+            validateEntityIsPresent(post, response, path, jsonRequest);
+
+            try (InputStream in = response.getEntity().getContent()) {
+                ObjectNode mpu = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
+
+                JsonNode idNode = mpu.get("id");
+                Validate.notNull(idNode, "No multipart id returned in response");
+                UUID uploadId = UUID.fromString(idNode.textValue());
+
+                JsonNode partsDirectoryNode = mpu.get("partsDirectory");
+                Validate.notNull(partsDirectoryNode, "No parts directory returned in response");
+                String partsDirectory = partsDirectoryNode.textValue();
+
+            } catch (NullPointerException | IllegalArgumentException e) {
+                String msg = "Expected response field was missing or malformed";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, post, response, path, jsonRequest);
+                throw me;
+            } catch (JsonParseException e) {
+                String msg = "Response body was not JSON";
+                MantaMultipartException me = new MantaMultipartException(msg, e);
+                annotateException(me, post, response, path, jsonRequest);
+                throw me;
+            }
+        }
     }
 
     /**
@@ -510,7 +614,33 @@ public class ServerSideMultipartManager
         try {
             return MantaObjectMapper.INSTANCE.writeValueAsBytes(requestBody);
         } catch (IOException e) {
-            String msg = "Error serializing JSON for MPU request body";
+            String msg = "Error serializing JSON for create MPU request body";
+            throw new MantaMultipartException(msg, e);
+        }
+    }
+
+    /**
+     * Creates the JSON request body used to commit all of the parts of a multipart
+     * upload request.
+     *
+     * @param parts stream of tuples - this is a terminal operation that will close the stream
+     * @return byte array containing JSON data
+     */
+    byte[] createCommitRequestBody(final Stream<? extends MantaMultipartUploadTuple> parts) {
+        final JsonNodeFactory nodeFactory = MantaObjectMapper.NODE_FACTORY_INSTANCE;
+        final ObjectNode objectNode = new ObjectNode(nodeFactory);
+
+        final ArrayNode partsArrayNode = new ArrayNode(nodeFactory);
+        objectNode.put("parts", partsArrayNode);
+
+        try (Stream<? extends MantaMultipartUploadTuple> sorted = parts.sorted()) {
+            sorted.forEach(tuple -> partsArrayNode.add(tuple.getEtag()));
+        }
+
+        try {
+            return MantaObjectMapper.INSTANCE.writeValueAsBytes(objectNode);
+        } catch (IOException e) {
+            String msg = "Error serializing JSON for commit MPU request body";
             throw new MantaMultipartException(msg, e);
         }
     }

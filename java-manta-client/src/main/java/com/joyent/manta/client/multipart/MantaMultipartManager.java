@@ -10,9 +10,6 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
-import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -25,8 +22,10 @@ import java.util.stream.Stream;
  *
  * @param <UPLOAD> Manta multipart upload object used to manage MPU state
  * @param <PART> Manta multipart upload part object used to manage MPU part state
+ * @param <COMPLETE> Return type for the <code>complete()</code> methods
  */
-public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload, PART extends MantaMultipartUploadPart> {
+public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
+        PART extends MantaMultipartUploadPart, COMPLETE> {
     /**
      * Maximum number of parts for a single Manta object.
      * This value will be increased to 10,000 when multipart is implemented on
@@ -50,7 +49,6 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload, PART
      * @throws IOException thrown when there are network issues
      */
     UPLOAD initiateUpload(String path) throws IOException;
-
 
     /**
      * Initializes a new multipart upload for an object.
@@ -165,51 +163,27 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload, PART
     void abort(UPLOAD upload) throws IOException;
 
     /**
-     * Completes a multipart transfer by assembling the parts on Manta.
+     * Completes a multipart transfer by assembling the parts on Manta as an
+     * asynchronous operation.
      *
      * @param upload multipart upload object
      * @param parts iterable of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    void complete(UPLOAD upload, Iterable<? extends MantaMultipartUploadTuple> parts)
+    COMPLETE complete(UPLOAD upload, Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException;
 
     /**
-     * Completes a multipart transfer by assembling the parts on Manta.
+     * <p>Completes a multipart transfer by assembling the parts on Manta as an
+     * asynchronous operation.</p>
+     *
+     * <p>Note: this performs a terminal operation on the partsStream and
+     * thereby will close the stream.</p>
      *
      * @param upload multipart upload object
      * @param partsStream stream of multipart part objects
      * @throws java.io.IOException thrown if there is a problem connecting to Manta
      */
-    void complete(UPLOAD upload, Stream<? extends MantaMultipartUploadTuple> partsStream)
-            throws IOException;
-
-    /**
-     * Waits for a multipart upload to complete. Polling every 5 seconds.
-     *
-     * @param <R> Return type for executeWhenTimesToPollExceeded
-     * @param upload multipart upload object
-     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
-     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    <R> R waitForCompletion(UPLOAD upload, Function<UUID, R> executeWhenTimesToPollExceeded)
-            throws IOException;
-
-    /**
-     * Waits for a multipart upload to complete. Polling for set interval.
-     *
-     * @param <R> Return type for executeWhenTimesToPollExceeded
-     * @param upload multipart upload object
-     * @param pingInterval interval to poll
-     * @param timesToPoll number of times to poll Manta to check for completion
-     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
-     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    <R> R waitForCompletion(UPLOAD upload,
-                            Duration pingInterval,
-                            int timesToPoll,
-                            Function<UUID, R> executeWhenTimesToPollExceeded)
+    COMPLETE complete(UPLOAD upload, Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException;
 }
