@@ -621,7 +621,6 @@ public class JobsMultipartManager extends AbstractMultipartManager
         }
 
         MantaMetadata objectMetadata = metadata.getObjectMetadata();
-        System.out.println(extraMetadata);
         if (objectMetadata != null && extraMetadata != null) {
             objectMetadata.putAll(extraMetadata);
         } else if (objectMetadata == null && extraMetadata != null) {
