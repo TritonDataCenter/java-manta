@@ -1,7 +1,6 @@
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.crypto.SecretKeyUtils;
-import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.*;
 import org.apache.commons.lang3.BooleanUtils;
 
 import javax.crypto.SecretKey;
@@ -20,7 +19,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * properties and an addition context passed in.
      */
     public IntegrationTestConfigContext() {
-        super(enableTestEncryption(new StandardConfigContext(), encryptionEnabled()));
+        super(enableTestEncryption(new StandardConfigContext(), encryptionEnabled(), encryptionCipher()));
     }
 
     /**
@@ -31,17 +30,31 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
     public IntegrationTestConfigContext(Boolean usingEncryption) {
         super(enableTestEncryption(new StandardConfigContext(),
                 (encryptionEnabled() && usingEncryption == null) ||
-                        BooleanUtils.isTrue(usingEncryption)));
+                        BooleanUtils.isTrue(usingEncryption), encryptionCipher()));
+    }
+
+    /**
+     * Populate configuration from defaults, environment variables, system
+     * properties and an addition context passed in. Assigns hard-coded
+     * client-side encryption configuration settings.
+     */
+    public IntegrationTestConfigContext(Boolean usingEncryption, String encryptionCipher) {
+        super(enableTestEncryption(new StandardConfigContext(),
+                (encryptionEnabled() && usingEncryption == null) ||
+                        BooleanUtils.isTrue(usingEncryption), encryptionCipher));
     }
 
     private static <T> SettableConfigContext<T> enableTestEncryption(
             final SettableConfigContext<T> context,
-            final boolean usingEncryption) {
+            final boolean usingEncryption,
+            final String encryptionCipher) {
         if (usingEncryption) {
             context.setClientEncryptionEnabled(true);
             context.setEncryptionKeyId("integration-test-key");
 
-            SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
+            SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher,
+                    DefaultsConfigContext.DEFAULT_CIPHER);
+
             context.setEncryptionAlgorithm(cipherDetails.getCipherId());
             SecretKey key = SecretKeyUtils.generate(cipherDetails);
             context.setEncryptionPrivateKeyBytes(key.getEncoded());
@@ -58,5 +71,12 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         String envVar = System.getenv(EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY);
 
         return BooleanUtils.toBoolean(sysProp) || BooleanUtils.toBoolean(envVar);
+    }
+
+    public static String encryptionCipher() {
+        String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
+        String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
+
+        return sysProp != null ? sysProp : envVar;
     }
 }
