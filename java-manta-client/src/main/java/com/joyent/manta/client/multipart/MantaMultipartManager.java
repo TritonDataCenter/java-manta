@@ -22,10 +22,9 @@ import java.util.stream.Stream;
  *
  * @param <UPLOAD> Manta multipart upload object used to manage MPU state
  * @param <PART> Manta multipart upload part object used to manage MPU part state
- * @param <COMPLETE> Return type for the <code>complete()</code> methods
  */
 public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
-        PART extends MantaMultipartUploadPart, COMPLETE> {
+        PART extends MantaMultipartUploadPart> {
     /**
      * Maximum number of parts for a single Manta object.
      * This value will be increased to 10,000 when multipart is implemented on
@@ -163,27 +162,27 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
     void abort(UPLOAD upload) throws IOException;
 
     /**
-     * Completes a multipart transfer by assembling the parts on Manta as an
-     * asynchronous operation.
+     * Completes a multipart transfer by assembling the parts on Manta.
+     * This could be a synchronous or an asynchronous operation.
      *
      * @param upload multipart upload object
      * @param parts iterable of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    COMPLETE complete(UPLOAD upload, Iterable<? extends MantaMultipartUploadTuple> parts)
+    void complete(UPLOAD upload, Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException;
 
     /**
-     * <p>Completes a multipart transfer by assembling the parts on Manta as an
-     * asynchronous operation.</p>
+     * <p>Completes a multipart transfer by assembling the parts on Manta.
+     * This could be a synchronous or an asynchronous operation.</p>
      *
      * <p>Note: this performs a terminal operation on the partsStream and
      * thereby will close the stream.</p>
      *
      * @param upload multipart upload object
      * @param partsStream stream of multipart part objects
-     * @throws java.io.IOException thrown if there is a problem connecting to Manta
+     * @throws IOException thrown if there is a problem connecting to Manta
      */
-    COMPLETE complete(UPLOAD upload, Stream<? extends MantaMultipartUploadTuple> partsStream)
+    void complete(UPLOAD upload, Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException;
 }

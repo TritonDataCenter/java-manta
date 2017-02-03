@@ -49,7 +49,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @since 2.5.0
  */
 public class JobsMultipartManager extends AbstractMultipartManager
-        <MantaMultipartUpload, MantaMultipartUploadPart, Void> {
+        <MantaMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
@@ -529,47 +529,47 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     @Override
-    public Void complete(final MantaMultipartUpload upload,
+    public void complete(final MantaMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
         complete(upload.getId(), parts);
-
-        return null;
     }
 
     @Override
-    public Void complete(final MantaMultipartUpload upload,
+    public void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
         complete(upload.getId(), partsStream);
-
-        return null;
     }
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
+     * This is an asynchronous operation and you will need to call
+     * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
+     * to block until the operation completes.
      *
      * @param id multipart upload id
      * @param parts iterable of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public Void complete(final UUID id,
+    public void complete(final UUID id,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         try (Stream<? extends MantaMultipartUploadTuple> stream =
                      StreamSupport.stream(parts.spliterator(), false)) {
             complete(id, stream);
         }
-
-        return null;
     }
 
     /**
      * Completes a multipart transfer by assembling the parts on Manta.
+     * This is an asynchronous operation and you will need to call
+     * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
+     * to block until the operation completes.
      *
      * @param id multipart upload id
      * @param partsStream stream of multipart part objects

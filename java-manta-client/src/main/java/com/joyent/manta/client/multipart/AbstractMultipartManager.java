@@ -17,10 +17,9 @@ import java.io.IOException;
  *
  * @param <UPLOAD> Manta multipart upload object used to manage MPU state
  * @param <PART> Manta multipart upload part object used to manage MPU part state
- * @param <COMPLETE> Return type for the <code>complete()</code> methods
  */
-abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PART extends MantaMultipartUploadPart, COMPLETE>
-        implements MantaMultipartManager<UPLOAD, PART, COMPLETE> {
+abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PART extends MantaMultipartUploadPart>
+        implements MantaMultipartManager<UPLOAD, PART> {
     @Override
     public void validateThatThereAreSequentialPartNumbers(final UPLOAD upload)
             throws IOException, MantaMultipartException {

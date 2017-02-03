@@ -61,58 +61,11 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @since 3.0.0
  */
 public class ServerSideMultipartManager extends AbstractMultipartManager
-        <ServerSideMultipartUpload, MantaMultipartUploadPart, Future<Void>> {
+        <ServerSideMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerSideMultipartManager.class);
-
-    /**
-     * Thread group for all Manta mpu threads.
-     */
-    private static final ThreadGroup THREAD_GROUP = new ThreadGroup("manta-mpu");
-
-    /* Note: Do not turn this into a lambda expression - as of now it causes
-     * a compilation error. */
-    /**
-     * Unhandled exception handler that logs errors that happened when committing
-     * an MPU.
-     */
-    private static final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER =
-            new Thread.UncaughtExceptionHandler() {
-                @Override
-                public void uncaughtException(final Thread t, final Throwable e) {
-                    String msg = String.format("An error occurred when committing"
-                            + "a multipart upload in the thread [%s].",
-                            t.getName());
-                    LOGGER.error(msg, e);
-                }
-            };
-
-    /**
-     * Custom thread factory that makes sensibly named daemon threads.
-     */
-    private static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
-        private final AtomicInteger count = new AtomicInteger(1);
-
-        @Override
-        public Thread newThread(final Runnable runnable) {
-            final String name = String.format("mpu-%d", count.getAndIncrement());
-            Thread thread = new Thread(THREAD_GROUP, runnable, name);
-            thread.setDaemon(true);
-            thread.setUncaughtExceptionHandler(EXCEPTION_HANDLER);
-
-            return thread;
-        }
-    };
-
-    /**
-     * Global executor service used for scheduling Manta OutputStream threads.
-     * You shouldn't need to call shutdown on this because all of the threads scheduled
-     * are daemon threads, but it is exposed so that you can manage its lifecycle
-     * if needed.
-     */
-    public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
 
     /**
      * Maximum number of parts to allow in a multipart upload.
@@ -512,8 +465,16 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
     }
 
+    /**
+     * Completes a multipart transfer by assembling the parts on Manta.
+     * This is a synchronous operation.
+     *
+     * @param upload multipart upload object
+     * @param parts iterable of multipart part objects
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
     @Override
-    public Future<Void> complete(final ServerSideMultipartUpload upload,
+    public void complete(final ServerSideMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
@@ -521,18 +482,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final Stream<? extends MantaMultipartUploadTuple> partsStream =
                 StreamSupport.stream(parts.spliterator(), false);
 
-        return complete(upload, partsStream);
-    }
-
-    @Override
-    public Future<Void> complete(final ServerSideMultipartUpload upload,
-                                 final Stream<? extends MantaMultipartUploadTuple> partsStream)
-            throws IOException {
-
-        return EXECUTOR.submit(() -> {
-            synchronousComplete(upload, partsStream);
-            return null;
-        });
+        complete(upload, partsStream);
     }
 
     /**
@@ -546,8 +496,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @param partsStream stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void synchronousComplete(final ServerSideMultipartUpload upload,
-                                    final Stream<? extends MantaMultipartUploadTuple> partsStream)
+    @Override
+    public void complete(final ServerSideMultipartUpload upload,
+                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
         final String path = upload.getPath();
