@@ -38,22 +38,25 @@ public class ClientEncryptionRangeDownload {
         try (MantaClient client = new MantaClient(config)) {
             String mantaPath = "/" + mantaUserName + "/stor/foo";
 
-            MantaObjectResponse response = client.put(mantaPath, "This is my secret\nthat I want encrypted.");
+            // Divided into 16 byte block chunks for testing
+            final String plaintext = "This is my secre" +
+                                     "t that I want en" +
+                                     "crypted. And her" +
+                                     "e is more text.";
+
+            MantaObjectResponse response = client.put(mantaPath, plaintext);
 
             System.out.println("HTTP Response headers:");
             System.out.println(response.getHttpHeaders().toString());
 
             MantaHttpHeaders headers = new MantaHttpHeaders();
-            headers.setByteRange(5L, null);
+            headers.setByteRange(17L, 32L);
 
             // Print out every line from file streamed real-time from Manta
-            try (InputStream is = client.getAsInputStream(mantaPath, headers);
-                 Scanner scanner = new Scanner(is)) {
-
-                while (scanner.hasNextLine()) {
-                    System.out.println(scanner.nextLine());
-                }
-            }
+            InputStream is = client.getAsInputStream(mantaPath, headers);
+            byte[] buffer = new byte[16];
+            is.read(buffer);
+            System.out.write(buffer);
         }
     }
 }

@@ -91,27 +91,31 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
 
         final int blockSize = getBlockSizeInBytes();
         final long adjustedStart;
-
         final long adjustedEnd;
         final long plaintextEndLength;
-        final long plaintextStartAdjustment = startInclusive % blockSize;
 
-        final long blockNumber = (startInclusive / blockSize);
-        adjustedStart = blockNumber * blockSize;
-
-        /* Zero is a weird case. Having an inclusive start and inclusive end of
-         * zero is valid. When we modules zero, it results in an invalid
-         * calculation. */
-        if (endInclusive != 0 && endInclusive % blockSize == 0) {
-            adjustedEnd = endInclusive + 1;
-        } else {
-            adjustedEnd = (endInclusive / blockSize) * blockSize + blockSize + 1;
+        // How many bytes do we offset in the first block
+        long plaintextStartAdjustment = startInclusive % blockSize;
+        // Since this is inclusive, go back a byte
+        if (plaintextStartAdjustment > 0) {
+            plaintextStartAdjustment--;
         }
 
-        plaintextEndLength = endInclusive - startInclusive + 1;
+        // The first block is considered block 0
+        double startBlockNumber = Math.floor(startInclusive / blockSize);
+
+        // Content-Range: bytes=adjustedStart-adjustedEnd
+        adjustedStart = ((long) startBlockNumber) * blockSize;
+
+        // Get the full block for the end range, plus an additional block
+        final double endBlockNumber = Math.ceil(endInclusive / blockSize) + 1;
+
+        adjustedEnd = (((long) endBlockNumber) * blockSize);
+
+        plaintextEndLength = (endInclusive - startInclusive) + 1;
 
         return new ByteRangeConversion(adjustedStart, plaintextStartAdjustment,
-                adjustedEnd, plaintextEndLength, blockNumber);
+                adjustedEnd, plaintextEndLength, (long)startBlockNumber);
     }
 
     @Override
