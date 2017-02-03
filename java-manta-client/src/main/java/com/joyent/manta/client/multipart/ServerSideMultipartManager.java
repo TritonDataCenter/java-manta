@@ -113,7 +113,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     }
 
     @Override
-    public Stream<ServerSideMultipartUpload> listInProgress() throws IOException {
+    public Stream<MantaMultipartUpload> listInProgress() throws IOException {
         final String uploadsPath = uploadsPath();
 
         return mantaClient.listObjects(uploadsPath).map(mantaObject -> {

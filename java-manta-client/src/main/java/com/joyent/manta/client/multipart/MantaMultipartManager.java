@@ -38,7 +38,7 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
      * @return stream of objects representing files being uploaded via multipart
      * @throws IOException thrown when there are network issues
      */
-    Stream<UPLOAD> listInProgress() throws IOException;
+    Stream<MantaMultipartUpload> listInProgress() throws IOException;
 
     /**
      * Initializes a new multipart upload for an object.

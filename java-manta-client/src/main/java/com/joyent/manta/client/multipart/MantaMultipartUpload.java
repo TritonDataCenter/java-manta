@@ -10,7 +10,7 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
-public interface MantaMultipartUpload extends Comparator<MantaMultipartUpload>, Serializable {
+public interface MantaMultipartUpload extends Comparator<MantaMultipartUpload> {
     /**
      * @return upload id for the entire multipart upload operation
      */

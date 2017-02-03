@@ -809,6 +809,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
+    public SupportedCipherDetails getCipherDetails() {
+        return this.cipherDetails;
+    }
+
+    // UTILITY METHODS
+
     /**
      * Looks up the content-type used in the entity being encrypted.
      *
@@ -884,7 +890,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             throw e;
         }
     }
-
 
     /**
      * Encrypts a plaintext object metadata string.

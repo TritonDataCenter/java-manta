@@ -23,7 +23,7 @@ public class EncryptionContext {
     /**
      * Cipher implementation used to encrypt as a stream.
      */
-    private final Cipher cipher;
+    private final transient Cipher cipher;
 
 
     public EncryptionContext(final SecretKey key,

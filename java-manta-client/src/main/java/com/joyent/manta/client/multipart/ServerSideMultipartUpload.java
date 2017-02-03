@@ -12,8 +12,6 @@ import java.util.UUID;
  * @since 3.0.0
  */
 public class ServerSideMultipartUpload extends AbstractMultipartUpload {
-    private static final long serialVersionUID = -8416334176458530295L;
-
     /**
      * Directory containing the multipart upload parts.
      */
