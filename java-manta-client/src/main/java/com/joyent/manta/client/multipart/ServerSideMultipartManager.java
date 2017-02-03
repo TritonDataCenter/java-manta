@@ -32,7 +32,11 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.methods.*;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.slf4j.Logger;
@@ -41,13 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.time.Duration;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -264,6 +262,15 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         return uploadPart(upload, partNumber, entity);
     }
 
+    /**
+     * Uploads a single part of a multipart upload.
+     *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @param entity Apache HTTP Client entity instance
+     * @return multipart single part object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
     private MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                                 final int partNumber,
                                                 final HttpEntity entity)
