@@ -219,16 +219,6 @@ public class JobsMultipartManager extends AbstractMultipartManager
         return new MantaMultipartUpload(uploadId, path);
     }
 
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final String contents)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return uploadPart(upload.getId(), partNumber, contents);
-    }
-
     /**
      * Uploads a single part of a multipart upload.
      *
@@ -238,25 +228,18 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
+    @Override
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+                                               final int partNumber,
                                                final String contents)
             throws IOException {
-
-        final String path = multipartPath(id, partNumber);
+        Validate.notNull(upload, "Multipart upload object must not be null");
+        final String path = multipartPath(upload.getId(), partNumber);
 
         final MantaObjectResponse response = mantaClient.put(path, contents);
         return new MantaMultipartUploadPart(response);
     }
 
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final byte[] bytes)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return uploadPart(upload.getId(), partNumber, bytes);
-    }
 
     /**
      * Uploads a single part of a multipart upload.
@@ -267,24 +250,18 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
+    @Override
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+                                               final int partNumber,
                                                final byte[] bytes)
             throws IOException {
-        final String path = multipartPath(id, partNumber);
+        Validate.notNull(upload, "Multipart upload object must not be null");
+        final String path = multipartPath(upload.getId(), partNumber);
 
         final MantaObjectResponse response = mantaClient.put(path, bytes);
         return new MantaMultipartUploadPart(response);
     }
 
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final File file)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return uploadPart(upload.getId(), partNumber, file);
-    }
 
     /**
      * Uploads a single part of a multipart upload.
@@ -295,24 +272,19 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
+    @Override
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+                                               final int partNumber,
                                                final File file)
             throws IOException {
-        final String path = multipartPath(id, partNumber);
+        Validate.notNull(upload, "Multipart upload object must not be null");
+
+        final String path = multipartPath(upload.getId(), partNumber);
 
         final MantaObjectResponse response = mantaClient.put(path, file);
         return new MantaMultipartUploadPart(response);
     }
 
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final InputStream inputStream)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return uploadPart(upload.getId(), partNumber, inputStream);
-    }
 
     /**
      * Uploads a single part of a multipart upload.
@@ -323,23 +295,18 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUploadPart uploadPart(final UUID id, final int partNumber,
+    @Override
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+                                               final int partNumber,
                                                final InputStream inputStream)
             throws IOException {
-        final String path = multipartPath(id, partNumber);
+        Validate.notNull(upload, "Multipart upload object must not be null");
+        final String path = multipartPath(upload.getId(), partNumber);
         final MantaObjectResponse response = mantaClient.put(path, inputStream);
 
         return new MantaMultipartUploadPart(response);
     }
 
-    @Override
-    public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
-                                            final int partNumber)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return getPart(upload.getId(), partNumber);
-    }
 
     /**
      * Retrieves information about a single part of a multipart upload.
@@ -349,20 +316,16 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartUploadPart getPart(final UUID id, final int partNumber)
+    @Override
+    public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
+                                            final int partNumber)
             throws IOException {
-        final String path = multipartPath(id, partNumber);
+        Validate.notNull(upload, "Multipart upload object must not be null");
+        final String path = multipartPath(upload.getId(), partNumber);
         final MantaObjectResponse response = mantaClient.head(path);
 
         return new MantaMultipartUploadPart(response);
-    }
 
-    @Override
-    public MantaMultipartStatus getStatus(final MantaMultipartUpload upload)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return getStatus(upload.getId());
     }
 
     /**
@@ -372,8 +335,12 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return enum representing the state / status of the multipart upload
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public MantaMultipartStatus getStatus(final UUID uploadId) throws IOException {
-        return getStatus(uploadId, null);
+    @Override
+    public MantaMultipartStatus getStatus(final MantaMultipartUpload upload)
+            throws IOException {
+        Validate.notNull(upload, "Multipart upload object must not be null");
+
+        return getStatus(upload, null);
     }
 
     /**
@@ -384,11 +351,11 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return enum representing the state / status of the multipart upload
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    private MantaMultipartStatus getStatus(final UUID uploadId,
+    private MantaMultipartStatus getStatus(final MantaMultipartUpload upload,
                                            final UUID jobId) throws IOException {
-        Validate.notNull(uploadId, "Multipart upload id must not be null");
+        Validate.notNull(upload, "Multipart upload id must not be null");
 
-        final String dir = multipartUploadDir(uploadId);
+        final String dir = multipartUploadDir(upload.getId());
         final MantaObjectResponse response;
         final MantaJob job;
 
@@ -397,7 +364,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
         } catch (MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 if (jobId == null) {
-                    job = findJob(uploadId);
+                    job = findJob(upload);
                 } else {
                     job = mantaClient.getJob(jobId);
                 }
@@ -414,7 +381,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
                     MantaException mioe = new MantaException("Unexpected job state");
                     mioe.setContextValue("job_state", job.getState());
                     mioe.setContextValue("job_id", job.getId().toString());
-                    mioe.setContextValue("multipart_id", uploadId);
+                    mioe.setContextValue("multipart_id", upload.getId());
                     mioe.setContextValue("multipart_upload_dir", dir);
 
                     throw mioe;
@@ -432,7 +399,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
         }
 
         if (jobId == null) {
-            job = findJob(uploadId);
+            job = findJob(upload);
         } else {
             job = mantaClient.getJob(jobId);
         }
@@ -459,14 +426,6 @@ public class JobsMultipartManager extends AbstractMultipartManager
         }
     }
 
-    @Override
-    public Stream<MantaMultipartUploadPart> listParts(final MantaMultipartUpload upload)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return listParts(upload.getId());
-    }
-
     /**
      * Lists the parts that have already been uploaded.
      *
@@ -474,8 +433,11 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return stream of parts identified by integer part number
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public Stream<MantaMultipartUploadPart> listParts(final UUID id) throws IOException {
-        final String dir = multipartUploadDir(id);
+    @Override
+    public Stream<MantaMultipartUploadPart> listParts(final MantaMultipartUpload upload)
+            throws IOException {
+        Validate.notNull(upload, "Multipart upload object must not be null");
+        final String dir = multipartUploadDir(upload.getId());
 
         return mantaClient.listObjects(dir)
                 .filter(value -> !Paths.get(value.getPath())
@@ -490,19 +452,23 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @throws IOException thrown if there is a problem connecting to Manta
      * @throws MantaMultipartException thrown went part numbers aren't sequential
      */
-    public void validateThatThereAreSequentialPartNumbers(final UUID id)
+    public void validateThatThereAreSequentialPartNumbers(final MantaMultipartUpload upload)
             throws IOException, MantaMultipartException {
-        Validate.notNull(id, "Multipart transaction id must not be null");
+        Validate.notNull(upload, "Multipart transaction id must not be null");
 
-        final MantaMultipartUpload upload = new MantaMultipartUpload(id, null);
-        validateThatThereAreSequentialPartNumbers(upload);
-    }
+        listParts(upload)
+            .sorted()
+            .map(MantaMultipartUploadPart::getPartNumber)
+            .reduce(1, (memo, value) -> {
+                if (!memo.equals(value)) {
+                    MantaMultipartException e = new MantaMultipartException(
+                            "Missing part of multipart upload");
+                    e.setContextValue("missing_part", memo);
+                    throw e;
+                }
 
-    @Override
-    public void abort(final MantaMultipartUpload upload) throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        abort(upload.getId());
+                return memo + 1;
+            });
     }
 
     /**
@@ -511,16 +477,19 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @param id multipart upload id
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void abort(final UUID id) throws IOException {
-        final String dir = multipartUploadDir(id);
+    @Override
+    public void abort(final MantaMultipartUpload upload) throws IOException {
+        Validate.notNull(upload, "Multipart upload object must not be null");
 
-        final MantaJob job = findJob(id);
+        final String dir = multipartUploadDir(upload.getId());
 
-        LOGGER.debug("Aborting multipart upload [{}]", id);
+        final MantaJob job = findJob(upload);
+
+        LOGGER.debug("Aborting multipart upload [{}]", upload.getId());
 
         if (job != null && (job.getState().equals("running")
                 || job.getState().equals("queued"))) {
-            LOGGER.debug("Aborting multipart upload [{}] backing job [{}]", id, job);
+            LOGGER.debug("Aborting multipart upload [{}] backing job [{}]", upload.getId(), job);
             mantaClient.cancelJob(job.getId());
         }
 
@@ -534,16 +503,10 @@ public class JobsMultipartManager extends AbstractMultipartManager
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
-        complete(upload.getId(), parts);
-    }
-
-    @Override
-    public void complete(final MantaMultipartUpload upload,
-                         final Stream<? extends MantaMultipartUploadTuple> partsStream)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        complete(upload.getId(), partsStream);
+        try (Stream<? extends MantaMultipartUploadTuple> stream =
+                     StreamSupport.stream(parts.spliterator(), false)) {
+            complete(upload, stream, null);
+        }
     }
 
     /**
@@ -556,19 +519,13 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @param parts iterable of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void complete(final UUID id,
-                         final Iterable<? extends MantaMultipartUploadTuple> parts)
-            throws IOException {
-        try (Stream<? extends MantaMultipartUploadTuple> stream =
-                     StreamSupport.stream(parts.spliterator(), false)) {
-            complete(id, stream);
-        }
-    }
-
-    public void complete(final UUID id,
+    @Override
+    public void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
-        complete(id, partsStream, null);
+        Validate.notNull(upload, "Multipart upload object must not be null");
+
+        complete(upload, partsStream, null);
     }
 
     /**
@@ -581,19 +538,19 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @param partsStream stream of multipart part objects
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public void complete(final UUID id,
+    public void complete(final MantaMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream,
                          final MantaMetadata extraMetadata)
             throws IOException {
-        Validate.notNull(id, "Upload id must not be null");
+        Validate.notNull(upload, "Upload  must not be null");
 
-        LOGGER.debug("Completing multipart upload [{}]", id);
+        LOGGER.debug("Completing multipart upload [{}]", upload.getId());
 
-        final String uploadDir = multipartUploadDir(id);
-        final MultipartMetadata metadata = downloadMultipartMetadata(id);
+        final String uploadDir = multipartUploadDir(upload.getId());
+        final MultipartMetadata metadata = downloadMultipartMetadata(upload.getId());
 
         final Map<String, MantaMultipartUploadPart> listing = new HashMap<>();
-        try (Stream<MantaMultipartUploadPart> listStream = listParts(id)
+        try (Stream<MantaMultipartUploadPart> listStream = listParts(upload)
                 .limit(MAX_PARTS)) {
             listStream.forEach(p -> listing.put(p.getEtag(), p));
         }
@@ -647,7 +604,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         jobExecText.append("| mput ")
                    .append("-H ")
-                   .append(String.format(headerFormat, UPLOAD_ID_METADATA_KEY, id))
+                   .append(String.format(headerFormat, UPLOAD_ID_METADATA_KEY, upload.getId()))
                    .append("-H ")
                    .append(String.format(headerFormat, JOB_ID_METADATA_KEY, "$MANTA_JOB_ID"))
                    .append("-q ");
@@ -687,13 +644,13 @@ public class JobsMultipartManager extends AbstractMultipartManager
                 .setExec("mrm -r " + uploadDir);
 
         MantaJobBuilder.Run run = mantaClient.jobBuilder()
-                .newJob(String.format(JOB_NAME_FORMAT, id))
+                .newJob(String.format(JOB_NAME_FORMAT, upload.getId()))
                 .addPhase(concatPhase)
                 .addPhase(cleanupPhase)
                 .run();
 
         // We write the job id to Metadata object so that we can query it easily
-        writeJobIdToMetadata(id, run.getId());
+        writeJobIdToMetadata(upload.getId(), run.getId());
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Created job for concatenating parts: {}",
@@ -788,44 +745,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
-        return waitForCompletion(upload.getId(), executeWhenTimesToPollExceeded);
-    }
-
-    /**
-     * Waits for a multipart upload to complete. Polling every 5 seconds.
-     *
-     * @param <R> Return type for executeWhenTimesToPollExceeded
-     * @param id multipart upload id
-     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
-     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public <R> R waitForCompletion(final UUID id,
-                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
-            throws IOException {
-        return waitForCompletion(id, Duration.ofSeconds(DEFAULT_SECONDS_TO_POLL),
+        return waitForCompletion(upload, Duration.ofSeconds(DEFAULT_SECONDS_TO_POLL),
                 NUMBER_OF_TIMES_TO_POLL, executeWhenTimesToPollExceeded);
-    }
 
-    /**
-     * Waits for a multipart upload to complete. Polling for set interval.
-     *
-     * @param <R> Return type for executeWhenTimesToPollExceeded
-     * @param upload multipart upload object
-     * @param pingInterval interval to poll
-     * @param timesToPoll number of times to poll Manta to check for completion
-     * @param executeWhenTimesToPollExceeded lambda executed when timesToPoll has been exceeded
-     * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public <R> R waitForCompletion(final MantaMultipartUpload upload,
-                                   final Duration pingInterval,
-                                   final int timesToPoll,
-                                   final Function<UUID, R> executeWhenTimesToPollExceeded)
-            throws IOException {
-        Validate.notNull(upload, "Multipart upload object must not be null");
-
-        return waitForCompletion(upload.getId(), pingInterval, timesToPoll, executeWhenTimesToPollExceeded);
     }
 
     /**
@@ -839,7 +761,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return null when under poll timeout, otherwise returns return value of executeWhenTimesToPollExceeded
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    public <R> R waitForCompletion(final UUID id, final Duration pingInterval,
+    public <R> R waitForCompletion(final MantaMultipartUpload upload, final Duration pingInterval,
                                    final int timesToPoll,
                                    final Function<UUID, R> executeWhenTimesToPollExceeded)
             throws IOException {
@@ -849,17 +771,17 @@ public class JobsMultipartManager extends AbstractMultipartManager
             throw new IllegalArgumentException(msg);
         }
 
-        final String dir = multipartUploadDir(id);
-        final MantaJob job = findJob(id);
+        final String dir = multipartUploadDir(upload.getId());
+        final MantaJob job = findJob(upload);
 
         if (job == null) {
             String msg = "Unable for find job associated with multipart upload. "
                     + "Was complete() run for upload or was it run so long ago "
                     + "that we no longer have a record for it?";
             MantaMultipartException e = new MantaMultipartException(msg);
-            e.setContextValue("upload_id", id.toString());
+            e.setContextValue("upload_id", upload.getId().toString());
             e.setContextValue("upload_directory", dir);
-            e.setContextValue("job_id", id.toString());
+            e.setContextValue("job_id", job.getId().toString());
 
             throw e;
         }
@@ -873,7 +795,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
          * delete the upload directory, but isn't finished. */
         for (timesPolled = 0; timesPolled < timesToPoll; timesPolled++) {
             try {
-                final MantaMultipartStatus status = getStatus(id, job.getId());
+                final MantaMultipartStatus status = getStatus(upload, job.getId());
 
                 // We do a check preemptively because we shouldn't sleep unless we need to
                 if (status.equals(MantaMultipartStatus.COMPLETED)) {
@@ -884,9 +806,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
                     String msg = "Manta job backing multipart upload was aborted. "
                             + "This upload was unable to be completed.";
                     MantaMultipartException e = new MantaMultipartException(msg);
-                    e.setContextValue("upload_id", id.toString());
+                    e.setContextValue("upload_id", upload.getId().toString());
                     e.setContextValue("upload_directory", dir);
-                    e.setContextValue("job_id", id.toString());
+                    e.setContextValue("job_id", job.getId().toString());
 
                     throw e;
                 }
@@ -897,9 +819,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
                             + "are unable to get the status of the job backing "
                             + "the multipart upload.";
                     MantaMultipartException e = new MantaMultipartException(msg);
-                    e.setContextValue("upload_id", id.toString());
+                    e.setContextValue("upload_id", upload.getId().toString());
                     e.setContextValue("upload_directory", dir);
-                    e.setContextValue("job_id", id.toString());
+                    e.setContextValue("job_id", job.getId().toString());
 
                     throw e;
                 }
@@ -908,7 +830,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
                 if (timesPolled < timesToPoll + 1) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Waiting for [{}] ms for upload [{}] to complete "
-                                + "(try {} of {})", waitMillis, id, timesPolled + 1,
+                                     + "(try {} of {})", waitMillis, upload.getId(), timesPolled + 1,
                                 timesToPoll);
                     }
 
@@ -919,12 +841,12 @@ public class JobsMultipartManager extends AbstractMultipartManager
                  * doesn't complete within the time period as expected and we also make
                  * the assumption that that behavior would be acceptable when the thread
                  * has been interrupted. */
-                return executeWhenTimesToPollExceeded.apply(id);
+                return executeWhenTimesToPollExceeded.apply(upload.getId());
             }
         }
 
         if (timesPolled >= timesToPoll) {
-            return executeWhenTimesToPollExceeded.apply(id);
+            return executeWhenTimesToPollExceeded.apply(upload.getId());
         }
 
         return null;
@@ -981,12 +903,12 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @return Manta job object or null if not found
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    MantaJob findJob(final UUID id) throws IOException {
-        final UUID jobId = getJobIdFromMetadata(id);
+    MantaJob findJob(final MantaMultipartUpload upload) throws IOException {
+        final UUID jobId = getJobIdFromMetadata(upload.getId());
 
         if (jobId == null) {
             LOGGER.debug("Unable to get job id from metadata directory. Now trying job listing.");
-            try (Stream<MantaJob> jobs = mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, id))) {
+            try (Stream<MantaJob> jobs = mantaClient.getJobsByName(String.format(JOB_NAME_FORMAT, upload.getId()))) {
                 return jobs.findFirst().orElse(null);
             }
         }
