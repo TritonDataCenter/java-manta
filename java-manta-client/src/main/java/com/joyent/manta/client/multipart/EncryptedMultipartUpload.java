@@ -1,5 +1,6 @@
 package com.joyent.manta.client.multipart;
 
+import javax.crypto.Cipher;
 import java.util.UUID;
 
 /**
@@ -7,6 +8,8 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
+ *
+ * @param <WRAPPED> Multipart upload class type to wrap with encryption
  */
 public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
         implements MantaMultipartUpload {
@@ -18,11 +21,24 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     private final WRAPPED wrapped;
 
     /**
+     * Cipher containing the current encryption state of all of the parts.
+     */
+    private final Cipher cipher;
+
+    /**
+     * The counter for the parts processed. This is used to guarantee sequential
+     * processing of parts.
+     */
+    private int currentPartNumber = 0;
+
+    /**
      * Creates a new encrypted instance based on an existing instance.
      * @param wrapped instance to wrap
+     * @param cipher cipher instance used to encrypt the parts
      */
-    public EncryptedMultipartUpload(final WRAPPED wrapped) {
+    public EncryptedMultipartUpload(final WRAPPED wrapped, final Cipher cipher) {
         this.wrapped = wrapped;
+        this.cipher = cipher;
     }
 
     @Override
@@ -40,6 +56,10 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
      */
     public WRAPPED getWrapped() {
         return wrapped;
+    }
+
+    public Cipher getCipher() {
+        return cipher;
     }
 
     @Override
