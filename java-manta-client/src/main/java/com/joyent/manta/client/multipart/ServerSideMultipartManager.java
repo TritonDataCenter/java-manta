@@ -216,13 +216,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         validatePartNumber(partNumber);
         Validate.notNull(bytes, "Byte array must not be null");
 
-        if (bytes.length < MIN_PART_SIZE) {
-            String msg = String.format("Part size [%d] for byte array is less "
-                            + "that the minimum part size [%d]",
-                    bytes.length, MIN_PART_SIZE);
-            throw new IllegalArgumentException(msg);
-        }
-
         HttpEntity entity = new ExposedByteArrayEntity(bytes, ContentType.APPLICATION_OCTET_STREAM);
         return uploadPart(upload, partNumber, entity);
     }
