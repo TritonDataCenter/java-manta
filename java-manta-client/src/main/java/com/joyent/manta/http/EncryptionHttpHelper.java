@@ -244,6 +244,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         return response;
     }
 
+    public MantaObjectResponse rawHttpPut(final String path,
+                                       final MantaHttpHeaders headers,
+                                       final HttpEntity originalEntity,
+                                       final MantaMetadata originalMetadata) throws IOException {
+        return super.httpPut(path, headers, originalEntity, originalMetadata);
+    }
+
+
     @Override
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)

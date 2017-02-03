@@ -39,9 +39,9 @@
         </classes>
     </test>
     <test name="Multipart Tests">
-        <classes>
-            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerTest" />
-        </classes>
+        <packages>
+            <package name="com.joyent.manta.client.multipart.*" />
+        </packages>
     </test>
     <test name="Encryption Tests">
         <packages>
