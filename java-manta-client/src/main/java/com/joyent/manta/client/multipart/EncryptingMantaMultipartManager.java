@@ -167,6 +167,7 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
         } finally {
             eState.lock.unlock();
         }
+        uploadState.remove(upload);
     }
 
 
