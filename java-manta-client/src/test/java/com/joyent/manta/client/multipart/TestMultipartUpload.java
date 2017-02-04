@@ -9,13 +9,17 @@ public class TestMultipartUpload extends AbstractMultipartUpload {
     private final File metadata;
     private final File headers;
     private final File contents;
+    private final Long contentLength;
 
-    public TestMultipartUpload(UUID uploadId, String path,
+    public TestMultipartUpload(UUID uploadId,
+                               String path,
+                               Long contentLength,
                                File partsDirectory,
                                File destinationDirectory,
                                File metadata, File headers,
                                File contents) {
         super(uploadId, path);
+        this.contentLength = contentLength;
         this.partsDirectory = partsDirectory;
         this.destinationDirectory = destinationDirectory;
         this.metadata = metadata;
@@ -33,6 +37,10 @@ public class TestMultipartUpload extends AbstractMultipartUpload {
 
     public File getContents() {
         return contents;
+    }
+
+    public Long getContentLength() {
+        return contentLength;
     }
 
     public File getPartsPath() {

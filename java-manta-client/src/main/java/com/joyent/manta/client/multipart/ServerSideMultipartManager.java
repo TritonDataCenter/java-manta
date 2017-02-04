@@ -141,14 +141,14 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
     @Override
     public ServerSideMultipartUpload initiateUpload(final String path) throws IOException {
-        return initiateUpload(path, null, null);
+        return initiateUpload(path, new MantaMetadata());
     }
 
     @Override
     public ServerSideMultipartUpload initiateUpload(final String path,
                                                     final MantaMetadata mantaMetadata)
             throws IOException {
-        return initiateUpload(path, mantaMetadata, null);
+        return initiateUpload(path, mantaMetadata, new MantaHttpHeaders());
     }
 
     @Override
@@ -156,6 +156,26 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                                     final MantaMetadata mantaMetadata,
                                                     final MantaHttpHeaders httpHeaders)
             throws IOException {
+        return initiateUpload(path, null, mantaMetadata, httpHeaders);
+    }
+
+    @Override
+    public ServerSideMultipartUpload initiateUpload(final String path,
+                                                    final Long contentLength,
+                                                    final MantaMetadata mantaMetadata,
+                                                    final MantaHttpHeaders httpHeaders)
+            throws IOException {
+        Validate.notNull(path, "Path to object must not be null");
+        Validate.notBlank(path, "Path to object must not be blank");
+        Validate.notNull(mantaMetadata, "Metadata object must not be null");
+        Validate.notNull(httpHeaders, "HTTP headers object must not be null");
+
+        /* We explicitly set the content-length header if it is passed as a method parameter
+         * so that the server will validate the size of the upload when it is committed. */
+        if (contentLength != null && httpHeaders.getContentLength() == null) {
+            httpHeaders.setContentLength(contentLength);
+        }
+
         final String postPath = uploadsPath();
         final HttpPost post = connectionFactory.post(postPath);
 

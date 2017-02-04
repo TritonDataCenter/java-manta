@@ -731,7 +731,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         exception.setContextValue("cipherInputStream", this.cipherInputStream);
         exception.setContextValue("authenticationEnabled", this.authenticateCiphertext);
         exception.setContextValue("threadName", Thread.currentThread().getName());
-        exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
+
+        if (this.cipher != null && this.cipher.getIV() != null) {
+            exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
+        }
 
         if (this.hmac != null) {
             exception.setContextValue("hmacAlgorithm", this.hmac.getAlgorithm());
@@ -771,6 +774,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             LOGGER.info("Plaintext size reported may be inaccurate for object: {}", getPath());
         }
 
-        return this.cipherDetails.plaintextSize(super.getContentLength());
+        Long plaintextSize = super.getContentLength();
+        Validate.notNull("Content-length header wasn't set by server");
+        return this.cipherDetails.plaintextSize(plaintextSize);
     }
 }

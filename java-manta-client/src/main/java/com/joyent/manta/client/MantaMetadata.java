@@ -9,10 +9,7 @@ import org.apache.commons.collections4.map.PredicatedMap;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -167,6 +164,16 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
             return intVal < ASCIICODE_32_SPACE;
         }
 
+    }
+
+    /**
+     * Removes all metadata with keys prefixed by <code>e-</code>.
+     */
+    public void removeAllEncrypted() {
+        final Set<Map.Entry<String, String>> set = entrySet();
+
+        set.removeIf(entry -> entry.getKey()
+           .startsWith(ENCRYPTED_METADATA_PREFIX));
     }
 
     /**

@@ -149,7 +149,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             secretKey = SecretKeyUtils.loadKey(config.getEncryptionPrivateKeyBytes(),
                     cipherDetails);
         } else {
-            throw new IllegalStateException("Either private key path or bytes must be specified");
+            throw new MantaClientEncryptionException(
+                    "Either private encryption key path or bytes must be specified");
         }
     }
 
@@ -709,15 +710,19 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Adds headers related directly to the encrypted object being stored.
      *
      * @param metadata Manta metadata object
-     * @param encryptingEntity HTTP Entity object that encrypts the Manta object data
      * @throws IOException thrown when unable to append metadata
      */
     public void attachEncryptedEntityHeaders(final MantaMetadata metadata,
-                                                final Cipher cipher)
+                                             final Cipher cipher)
             throws IOException {
+        Validate.notNull(metadata, "Metadata object must not be null");
+        Validate.notNull(cipher, "Cipher object must not be null");
+
         // IV Used to Encrypt
-        String ivBase64 = Base64.getEncoder().encodeToString(
-                cipher.getIV());
+        byte[] iv = cipher.getIV();
+        Validate.notNull(iv, "Cipher IV must not be null");
+
+        String ivBase64 = Base64.getEncoder().encodeToString(iv);
         metadata.put(MantaHttpHeaders.ENCRYPTION_IV, ivBase64);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("IV: {}", Hex.encodeHexString(cipher.getIV()));

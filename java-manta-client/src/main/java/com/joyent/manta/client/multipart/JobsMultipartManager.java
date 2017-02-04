@@ -195,6 +195,16 @@ public class JobsMultipartManager extends AbstractMultipartManager
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
+        return initiateUpload(path, null, mantaMetadata, httpHeaders);
+    }
+
+    @Override
+    public MantaMultipartUpload initiateUpload(final String path,
+                                               final Long contentLength,
+                                               final MantaMetadata mantaMetadata,
+                                               final MantaHttpHeaders httpHeaders) throws IOException {
+        // contentLength parameter is entirely ignored
+
         final UUID uploadId = Generators.timeBasedGenerator().generate();
 
         if (LOGGER.isDebugEnabled()) {

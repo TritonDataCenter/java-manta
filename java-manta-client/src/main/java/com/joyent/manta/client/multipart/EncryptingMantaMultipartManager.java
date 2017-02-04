@@ -10,6 +10,7 @@ import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ByteArrayEntity;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
@@ -55,35 +56,42 @@ public class EncryptingMantaMultipartManager
 
     private final EncryptionContext encryptionContext;
     private final EncryptionHttpHelper httpHelper;
-    private final MantaClient mantaClient;
     private final WRAPPED_MANAGER wrapped;
 
     public EncryptingMantaMultipartManager(final EncryptionContext encryptionContext,
-                                           final MantaClient mantaClient,
+                                           final EncryptionHttpHelper httpHelper,
                                            final WRAPPED_MANAGER wrapped) {
-        Validate.isTrue(mantaClient.getContext().isClientEncryptionEnabled(),
-                        "MantaClient for encrypted multipart upload has have encryption enabled");
         this.encryptionContext = encryptionContext;
-        this.mantaClient = mantaClient;
         this.wrapped = wrapped;
-        this.httpHelper = (EncryptionHttpHelper)this.mantaClient.httpHelper;
+        this.httpHelper = httpHelper;
     }
 
     @Override
     public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(String path) throws IOException {
-        return initiateUpload(path, null);
+        return initiateUpload(path, new MantaMetadata());
     }
 
     @Override
     public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(String path, MantaMetadata mantaMetadata) throws IOException {
-        return initiateUpload(path, mantaMetadata, null);
+        return initiateUpload(path, mantaMetadata, new MantaHttpHeaders());
     }
 
     @Override
     public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(final String path,
                                                                    final MantaMetadata mantaMetadata,
                                                                    final MantaHttpHeaders httpHeaders) throws IOException {
-        MantaMultipartUpload upload = wrapped.initiateUpload(path, mantaMetadata, httpHeaders);
+        return initiateUpload(path, null, mantaMetadata, httpHeaders);
+    }
+
+    @Override
+    public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(final String path,
+                                                                   final Long contentLength,
+                                                                   final MantaMetadata mantaMetadata,
+                                                                   final MantaHttpHeaders httpHeaders) throws IOException {
+        Validate.notNull(path, "Path to object must not be null");
+        Validate.notBlank(path, "Path to object must not be blank");
+        Validate.notNull(mantaMetadata, "Metadata object must not be null");
+        Validate.notNull(httpHeaders, "HTTP headers object must not be null");
 
         final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
         final Cipher cipher = cipherDetails.getCipher();
@@ -119,11 +127,40 @@ public class EncryptingMantaMultipartManager
             hmac.update(iv);
         }
 
+        httpHelper.attachEncryptionCipherHeaders(mantaMetadata);
+        httpHelper.attachEncryptedMetadata(mantaMetadata);
+        httpHelper.attachEncryptedEntityHeaders(mantaMetadata, cipher);
+        /* We remove the e- prefixed metadata because we have already
+         * encrypted it and stored it in m-encrypt-metadata. */
+        mantaMetadata.removeAllEncrypted();
+
+        /* If content-length is specified, we store the content length as
+         * the plaintext content length on the object's metadata and then
+         * remove the header because server-side MPU will attempt to verify
+         * that the content-length in the header is the same as the ciphertext's
+         * length. This won't work because the ciphertext length will always
+         * be different than the plaintext content length. */
+        if (httpHeaders.getContentLength() != null) {
+            mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    httpHeaders.getContentLength().toString());
+            httpHeaders.remove(HttpHeaders.CONTENT_LENGTH);
+        } else if (contentLength != null) {
+            mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    contentLength.toString());
+        }
+
+        /* If the Content-MD5 header is set, it will always be inaccurate because
+         * the ciphertext will have a different checksum and it will cause the
+         * server-side checksum verification to fail. */
+        if (httpHeaders.getContentMD5() != null) {
+            httpHeaders.remove(HttpHeaders.CONTENT_MD5);
+        }
+
+        MantaMultipartUpload upload = wrapped.initiateUpload(path, mantaMetadata, httpHeaders);
+
         @SuppressWarnings("unchecked")
         EncryptedMultipartUpload<WRAPPED_UPLOAD> encryptedUpload =
                 new EncryptedMultipartUpload(upload, cipher, hmac);
-
-        // TODO: Figure out how to embed metadata / headers
 
         return encryptedUpload;
     }

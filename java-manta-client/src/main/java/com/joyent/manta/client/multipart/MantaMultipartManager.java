@@ -73,6 +73,21 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
                           MantaHttpHeaders httpHeaders) throws IOException;
 
     /**
+     * Initializes a new multipart upload for an object.
+     *
+     * @param path remote path of Manta object to be uploaded
+     * @param contentLength length of final object (can be null to indicate it is unknown)
+     * @param mantaMetadata metadata to write to final Manta object
+     * @param httpHeaders HTTP headers to read from to write to final Manta object
+     * @return object representing the multipart upload state as initiated
+     * @throws IOException thrown when there are network issues
+     */
+    UPLOAD initiateUpload(String path,
+                          Long contentLength,
+                          MantaMetadata mantaMetadata,
+                          MantaHttpHeaders httpHeaders) throws IOException;
+
+    /**
      * Uploads a single part of a multipart upload.
      *
      * @param upload multipart upload object

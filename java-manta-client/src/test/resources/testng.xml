@@ -39,9 +39,13 @@
         </classes>
     </test>
     <test name="Multipart Tests">
-        <packages>
-            <package name="com.joyent.manta.client.multipart.*" />
-        </packages>
+        <classes>
+            <class name="com.joyent.manta.client.multipart.EncryptingMantaMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.MultipartOutputStreamTest" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.TestMultipartManagerTest" />
+        </classes>
     </test>
     <test name="Encryption Tests">
         <packages>

@@ -48,7 +48,18 @@ public class TestMultipartManager
     }
 
     @Override
-    public TestMultipartUpload initiateUpload(String path, MantaMetadata mantaMetadata, MantaHttpHeaders httpHeaders) throws IOException {
+    public TestMultipartUpload initiateUpload(String path,
+                                              MantaMetadata mantaMetadata,
+                                              MantaHttpHeaders httpHeaders)
+            throws IOException {
+        return initiateUpload(path, null, mantaMetadata, httpHeaders);
+    }
+
+    @Override
+    public TestMultipartUpload initiateUpload(String path,
+                                              Long contentLength,
+                                              MantaMetadata mantaMetadata,
+                                              MantaHttpHeaders httpHeaders) throws IOException {
         File file = new File(destinationDirectory + path);
         file.mkdirs();
 
@@ -67,7 +78,8 @@ public class TestMultipartManager
         }
 
         UUID id = UUID.randomUUID();
-        return new TestMultipartUpload(id, path, this.partsDirectory, this.destinationDirectory,
+        return new TestMultipartUpload(id, path, contentLength,
+                this.partsDirectory, this.destinationDirectory,
                 metadata, headers, contents);
     }
 
@@ -167,8 +179,10 @@ public class TestMultipartManager
     public void complete(TestMultipartUpload upload, Stream<? extends MantaMultipartUploadTuple> partsStream) throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
 
+        File objectContents = upload.getContents();
+
         try (Stream<? extends MantaMultipartUploadTuple> sorted = partsStream.sorted();
-             FileOutputStream fout = new FileOutputStream(upload.getContents())) {
+             FileOutputStream fout = new FileOutputStream(objectContents)) {
             sorted.forEach(tuple -> {
                 final int partNumber = tuple.getPartNumber();
                 File part = new File(upload.getPartsPath() + File.separator + partNumber);
@@ -179,6 +193,12 @@ public class TestMultipartManager
                     throw new UncheckedIOException(e);
                 }
             });
+        }
+
+        if (upload.getContentLength() != null) {
+            Validate.isTrue(upload.getContentLength().equals(objectContents.length()),
+                    "Completed object's content length [%d] didn't equal expected length [%d]",
+                    objectContents.length(), upload.getContentLength());
         }
     }
 
