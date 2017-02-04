@@ -94,6 +94,26 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(1, -1);
     }
 
+    public void translateByteRangeReturnsCorrectRange() throws Exception {
+        ByteRangeConversion byteRange1 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 10);
+        Assert.assertEquals(byteRange1.getCiphertextStartPositionInclusive(), 0);
+        Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 16);
+        Assert.assertEquals(byteRange1.getPlaintextBytesToSkipInitially(), 4);
+        Assert.assertEquals(byteRange1.getLengthOfPlaintextIncludingSkipBytes(), 6);
+
+        ByteRangeConversion byteRange2 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 22);
+        Assert.assertEquals(byteRange2.getCiphertextStartPositionInclusive(), 0);
+        Assert.assertEquals(byteRange2.getCiphertextEndPositionInclusive(), 32);
+        Assert.assertEquals(byteRange2.getPlaintextBytesToSkipInitially(), 4);
+        Assert.assertEquals(byteRange2.getLengthOfPlaintextIncludingSkipBytes(), 18);
+
+        ByteRangeConversion byteRange3 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(32, 35);
+        Assert.assertEquals(byteRange3.getCiphertextStartPositionInclusive(), 32);
+        Assert.assertEquals(byteRange3.getCiphertextEndPositionInclusive(), 48);
+        Assert.assertEquals(byteRange3.getPlaintextBytesToSkipInitially(), 0);
+        Assert.assertEquals(byteRange3.getLengthOfPlaintextIncludingSkipBytes(), 4);
+    }
+
     protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
                                                                   final SupportedCipherDetails cipherDetails)
             throws IOException, GeneralSecurityException {
@@ -134,32 +154,34 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
             ciphertext = Arrays.copyOf(out.toByteArray(), out.toByteArray().length - cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
         }
 
-        long startPlaintextRange = 22;
-        long endPlaintextRange = 129;
+        for (long startPlaintextRange = 1; startPlaintextRange < plaintext.length - 1; startPlaintextRange++) {
+            for (long endPlaintextRange = startPlaintextRange + 1; endPlaintextRange < plaintext.length; endPlaintextRange++) {
 
-        byte[] adjustedPlaintext = Arrays.copyOfRange(plaintext,
-                (int)startPlaintextRange, (int)endPlaintextRange + 1);
+                byte[] adjustedPlaintext = Arrays.copyOfRange(plaintext,
+                        (int) startPlaintextRange, (int) endPlaintextRange + 1);
 
-        ByteRangeConversion ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
-        long startCipherTextRange = ranges.getCiphertextStartPositionInclusive();
-        long endCipherTextRange = ranges.getCiphertextEndPositionInclusive();
-        long adjustedPlaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
+                ByteRangeConversion ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
+                long startCipherTextRange = ranges.getCiphertextStartPositionInclusive();
+                long endCipherTextRange = ranges.getCiphertextEndPositionInclusive();
+                long adjustedPlaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
 
-        Cipher decryptor = cipherDetails.getCipher();
+                Cipher decryptor = cipherDetails.getCipher();
 
-        decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
-        long adjustedPlaintextRange = cipherDetails.updateCipherToPosition(decryptor, startPlaintextRange);
+                decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
+                long adjustedPlaintextRange = cipherDetails.updateCipherToPosition(decryptor, startPlaintextRange);
 
-        byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int)startCipherTextRange, (int)endCipherTextRange);
-        byte[] out = decryptor.doFinal(adjustedCipherText);
-        byte[] decrypted = Arrays.copyOfRange(out, (int)adjustedPlaintextRange,
-                (int)adjustedPlaintextLength + (int)adjustedPlaintextRange);
+                byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int) startCipherTextRange, (int) endCipherTextRange);
+                byte[] out = decryptor.doFinal(adjustedCipherText);
+                byte[] decrypted = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
+                        (int) adjustedPlaintextLength + (int) adjustedPlaintextRange);
 
-        String decryptedText = new String(decrypted);
-        String adjustedText = new String(adjustedPlaintext);
+                String decryptedText = new String(decrypted);
+                String adjustedText = new String(adjustedPlaintext);
 
-        Assert.assertEquals(decryptedText, adjustedText,
-                "Random read output from ciphertext doesn't match expectation " +
-                        "[cipher=" + cipherDetails.getCipherId() + "]");
+                Assert.assertEquals(decryptedText, adjustedText,
+                        "Random read output from ciphertext doesn't match expectation " +
+                                "[cipher=" + cipherDetails.getCipherId() + "]");
+            }
+        }
     }
 }
