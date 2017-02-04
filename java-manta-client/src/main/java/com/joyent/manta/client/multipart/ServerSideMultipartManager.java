@@ -216,13 +216,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         validatePartNumber(partNumber);
         Validate.notNull(bytes, "Byte array must not be null");
 
-        if (bytes.length < MIN_PART_SIZE) {
-            String msg = String.format("Part size [%d] for byte array is less "
-                            + "that the minimum part size [%d]",
-                    bytes.length, MIN_PART_SIZE);
-            throw new IllegalArgumentException(msg);
-        }
-
         HttpEntity entity = new ExposedByteArrayEntity(bytes, ContentType.APPLICATION_OCTET_STREAM);
         return uploadPart(upload, partNumber, entity);
     }
@@ -233,13 +226,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                                final File file) throws IOException {
         validatePartNumber(partNumber);
         Validate.notNull(file, "File must not be null");
-
-        if (file.length() < MIN_PART_SIZE) {
-            String msg = String.format("Part size [%d] for file [%s] is less "
-                    + "that the minimum part size [%d]",
-                    file.length(), file.getPath(), MIN_PART_SIZE);
-            throw new IllegalArgumentException(msg);
-        }
 
         HttpEntity entity = new FileEntity(file, ContentType.APPLICATION_OCTET_STREAM);
         return uploadPart(upload, partNumber, entity);
@@ -270,7 +256,14 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         Validate.notNull(upload, "Upload state object must not be null");
         validatePartNumber(partNumber);
 
-        final String putPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
+        /* Manta starts counting parts at 0 - the SDK starts counting at 1.
+         * This is for two reasons. 1) It provides better compatibility with libraries
+         * that also have to interact with S3. 2) It provides backwards compatibility
+         * with the jobs based multipart implementation.
+         */
+        final int adjustedPartNumber = partNumber - 1;
+
+        final String putPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
         final HttpPut put = connectionFactory.put(putPath);
         put.setEntity(entity);
 
@@ -283,13 +276,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             } else {
                 etag = null;
             }
-
-            /* Manta starts counting parts at 0 - the SDK starts counting at 1.
-             * This is for two reasons. 1) It provides better compatibility with libraries
-             * that also have to interact with S3. 2) It provides backwards compatibility
-             * with the jobs based multipart implementation.
-             */
-            final int adjustedPartNumber = partNumber - 1;
 
             return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
         }

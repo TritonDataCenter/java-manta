@@ -61,11 +61,11 @@ public class JobsMultipartManagerIT {
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         this.mantaClient = new MantaClient(config);
-        if (usingEncryption) {
-            this.multipart = new EncryptingMantaMultipartManager(this.mantaClient);
-        } else {
+//        if (usingEncryption) {
+//            this.multipart = new EncryptingMantaMultipartManager(this.mantaClient);
+//        } else {
                 this.multipart = new JobsMultipartManager(this.mantaClient);
-            }
+//        }
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);

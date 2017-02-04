@@ -1,6 +1,7 @@
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
@@ -9,9 +10,13 @@ import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.AssertJUnit;
+import org.testng.SkipException;
 import org.testng.annotations.*;
 
 import java.io.*;
@@ -27,6 +32,7 @@ public class ServerSideMultipartManagerIT {
     private MantaClient mantaClient;
     private ServerSideMultipartManager multipart;
 
+    private static final int FIVE_MB = 5242880;
     private static final String TEST_DATA = "EMPIRE_IS_THE_BEST_EPISODE_EVER!";
 
     private String testPathPrefix;
@@ -41,6 +47,12 @@ public class ServerSideMultipartManagerIT {
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
+
+        if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory()
+            + MantaClient.SEPARATOR + "uploads")) {
+            throw new SkipException("Server side uploads aren't supported in this Manta version");
+        }
+
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair);
@@ -63,57 +75,60 @@ public class ServerSideMultipartManagerIT {
     }
 
     @Test
-    public final void testUploadWithByteArrayAndContentType() throws IOException {
+    public final void testUploadWithSinglePartByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = TEST_DATA.getBytes(Charsets.UTF_8);
+        final byte[] content = RandomUtils.nextBytes(5242880);
 
         String contentType = "text/plain; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
         ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 0, content);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
 
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
         multipart.complete(upload, partsStream);
 
-        final String actual = mantaClient.getAsString(path, Charsets.UTF_8);
-        Assert.assertEquals(actual, TEST_DATA);
+        try (InputStream in = mantaClient.getAsInputStream(path);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
+
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+        }
     }
 
     @Test
     public final void testUploadWithByteArrayAndMultipleParts() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content1 = getByteArrayOfLength(5100 * 1024);
-        final byte[] content2 = getByteArrayOfLength(1024);
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
+        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, FIVE_MB + 1024);
 
-        String contentType = "text/plain; charset=UTF-8";
+        String contentType = "application/something-never-seen-before; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
         ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 0, content1);
-        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 1, content2);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
 
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
         multipart.complete(upload, partsStream);
 
-        final String actual = mantaClient.getAsString(path, Charsets.UTF_8);
-        Assert.assertTrue(actual.contains(TEST_DATA));
-    }
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
 
-    private final byte[] getByteArrayOfLength(int bytes) {
-        double iterations = Math.ceil(bytes / TEST_DATA.length());
-        String result = "";
-        while (iterations > 0) {
-            result.concat(TEST_DATA);
-            iterations--;
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+
+            Assert.assertEquals(in.getContentType(), contentType,
+                    "Set content-type doesn't match actual content type");
         }
-
-        return result.getBytes(Charsets.UTF_8);
     }
 }
