@@ -216,13 +216,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         validatePartNumber(partNumber);
         Validate.notNull(bytes, "Byte array must not be null");
 
-        if (bytes.length < MIN_PART_SIZE) {
-            String msg = String.format("Part size [%d] for byte array is less "
-                            + "that the minimum part size [%d]",
-                    bytes.length, MIN_PART_SIZE);
-            throw new IllegalArgumentException(msg);
-        }
-
         HttpEntity entity = new ExposedByteArrayEntity(bytes, ContentType.APPLICATION_OCTET_STREAM);
         return uploadPart(upload, partNumber, entity);
     }
@@ -289,9 +282,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
              * that also have to interact with S3. 2) It provides backwards compatibility
              * with the jobs based multipart implementation.
              */
-            final int adjustedPartNumber = partNumber - 1;
 
-            return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
+            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etag);
         }
     }
 
@@ -300,8 +292,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                             final int partNumber) throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
         validatePartNumber(partNumber);
-
-        final int adjustedPartNumber = partNumber - 1;
 
         final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
         final HttpGet get = connectionFactory.get(getPath);
@@ -337,7 +327,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             }
         }
 
-        final String headPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
+        final String headPath = upload.getPartsDirectory() + SEPARATOR + partNumber;
         final HttpHead head = connectionFactory.head(headPath);
 
         final String etag;
@@ -436,11 +426,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         return mantaClient.listObjects(partsDirectory).map(mantaObject -> {
             final String item = FilenameUtils.getName(mantaObject.getPath());
-            final int adjustedPartNumber = Integer.parseInt(item) + 1;
+            final int partNumber = Integer.parseInt(item);
 
             final String etag = mantaObject.getEtag();
 
-            return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
+            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etag);
         });
     }
 
@@ -501,7 +491,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String path = upload.getPath();
         final String postPath = upload.getPartsDirectory();
-        final HttpPost post = connectionFactory.post(postPath);
+        final HttpPost post = connectionFactory.post(postPath + "/commit");
 
         final byte[] jsonRequest;
 

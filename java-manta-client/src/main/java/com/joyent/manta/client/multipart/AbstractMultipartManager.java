@@ -48,8 +48,8 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
      * @throws IllegalArgumentException if partNumber is less than 1 or greater than MULTIPART_DIRECTORY
      */
     static void validatePartNumber(final int partNumber) {
-        if (partNumber <= 0) {
-            throw new IllegalArgumentException("Negative or zero part numbers are not valid");
+        if (partNumber < 0) {
+            throw new IllegalArgumentException("Negative numbers are not valid");
         }
 
         if (partNumber > MAX_PARTS) {
