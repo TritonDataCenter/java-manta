@@ -99,7 +99,8 @@ public class EncryptingMantaMultipartManager extends JobsMultipartManager {
             }
             final String path = multipartPath(upload.getId(), partNumber);
 
-            //final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers, ContentType.APPLICATION_OCTET_STREAM);
+            // The content type of the individual parts is unimportant
+            // to the job that produced the final result
             ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
             EncryptingPartEntity entity = new EncryptingPartEntity(eState.eContext, eState.cipherStream, eState.multipartStream,
                                                                    new InputStreamEntity(inputStream, contentType));
