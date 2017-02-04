@@ -21,8 +21,8 @@ import org.testng.annotations.*;
 
 import java.io.*;
 import java.security.KeyPair;
-import java.util.Arrays;
-import java.util.UUID;
+import java.util.*;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.*;
@@ -37,15 +37,11 @@ public class ServerSideMultipartManagerIT {
 
     private String testPathPrefix;
 
-    private Logger LOG = LoggerFactory.getLogger(getClass());
-
-    @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @BeforeClass
+    public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
-
+        ConfigContext config = new IntegrationTestConfigContext();
         mantaClient = new MantaClient(config);
 
         if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory()
@@ -58,7 +54,6 @@ public class ServerSideMultipartManagerIT {
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair);
         final MantaConnectionContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
 
-        // TODO: Add encryption manager when in use
         multipart = new ServerSideMultipartManager(config, connectionFactory, connectionContext, this.mantaClient);
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
@@ -74,8 +69,36 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test
-    public final void testUploadWithSinglePartByteArray() throws IOException {
+    public final void canAbortUpload() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        multipart.abort(upload);
+        MantaMultipartStatus status = multipart.getStatus(upload);
+
+        if (!status.equals(MantaMultipartStatus.ABORTED) || !status.equals(MantaMultipartStatus.ABORTING)) {
+            Assert.fail("MPU is not in an aborted or aborting status. Actual status: " + status);
+        }
+    }
+
+    public final void canListUploadsInProgress() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+
+        try (Stream<MantaMultipartUpload> stream = multipart.listInProgress()) {
+            Optional<MantaMultipartUpload> first = stream.filter(item ->
+                    item.getId().equals(upload.getId())).findFirst();
+
+            Assert.assertTrue(first.isPresent(), "Initiated upload wasn't present [upload=" + upload + "]");
+        } finally {
+            multipart.abort(upload);
+        }
+    }
+
+    public final void canUploadWithSinglePartByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(5242880);
@@ -100,8 +123,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test
-    public final void testUploadWithByteArrayAndMultipleParts() throws IOException {
+    public final void canUploadWithByteArrayAndMultipleParts() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);

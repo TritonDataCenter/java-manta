@@ -12,6 +12,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
@@ -45,7 +46,12 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -117,14 +123,20 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final String uploadsPath = uploadsPath();
 
         return mantaClient.listObjects(uploadsPath).map(mantaObject -> {
-            final String objectName = FilenameUtils.getName(mantaObject.getPath());
-            final UUID id = UUID.fromString(objectName);
+            try {
+                return mantaClient.listObjects(mantaObject.getPath()).map(item -> {
+                    final String objectName = FilenameUtils.getName(item.getPath());
+                    final UUID id = UUID.fromString(objectName);
 
-            // We don't know the final object name. The server will implement
-            // this as a feature in the future.
+                    // We don't know the final object name. The server will implement
+                    // this as a feature in the future.
 
-            return new ServerSideMultipartUpload(id, null, uuidPrefixedPath(id));
-        });
+                    return new ServerSideMultipartUpload(id, null, uuidPrefixedPath(id));
+                }).collect(Collectors.toSet());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }).flatMap(Collection::stream);
     }
 
     @Override
@@ -380,20 +392,20 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 String state = stateNode.textValue();
                 Validate.notBlank(state, "State field was blank in response");
 
-                if (state.equals("CREATED")) {
+                if (state.equalsIgnoreCase("created")) {
                     return MantaMultipartStatus.CREATED;
                 }
 
-                if (state.equals("FINALIZING")) {
+                if (state.equalsIgnoreCase("finalizing")) {
                     JsonNode typeNode = objectNode.get("type");
                     Validate.notNull(typeNode, "Unable to get type from response");
                     String type = typeNode.textValue();
                     Validate.notBlank(type, "Type field was blank in response");
 
-                    if (type.equals("COMMIT")) {
+                    if (type.equalsIgnoreCase("commit")) {
                         return MantaMultipartStatus.COMMITTING;
                     }
-                    if (type.equals("ABORT")) {
+                    if (type.equalsIgnoreCase("abort")) {
                         return MantaMultipartStatus.ABORTING;
                     }
                 }
@@ -596,7 +608,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                     final String objectPath,
                                     final byte[] requestBody) {
         if (actualCode != expectedCode) {
-            MantaMultipartException e = new MantaMultipartException(errorMessage);
+            // We create the exception below because it will parse the JSON error codes
+            MantaClientHttpResponseException mchre =
+                    new MantaClientHttpResponseException(request, response, objectPath);
+            // We chain it to this exception so that it obeys the contract
+            MantaMultipartException e = new MantaMultipartException(errorMessage, mchre);
             annotateException(e, request, response, objectPath, requestBody);
             throw e;
         }
