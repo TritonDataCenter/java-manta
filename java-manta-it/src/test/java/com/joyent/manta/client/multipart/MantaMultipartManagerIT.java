@@ -6,6 +6,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
@@ -320,6 +321,14 @@ public class MantaMultipartManagerIT {
 
         MantaObjectResponse head = mantaClient.head(path);
         byte[] remoteMd5 = head.getMd5Bytes();
+
+        // If we are using encryption the remote md5 is the md5 of the
+        // cipher text.  To prove we uploade the right bytes and can
+        // get them back again, we need to download and calculate.
+        if (usingEncryption) {
+            MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path);
+            remoteMd5 = DigestUtils.md5(gotObject);
+        }
 
         if (!Arrays.equals(remoteMd5, expectedMd5)) {
             StringBuilder builder = new StringBuilder();
