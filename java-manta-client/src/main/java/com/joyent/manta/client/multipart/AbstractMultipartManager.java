@@ -49,7 +49,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
      */
     static void validatePartNumber(final int partNumber) {
         if (partNumber < 0) {
-            throw new IllegalArgumentException("Negative part numbers are not valid");
+            throw new IllegalArgumentException("Negative numbers are not valid");
         }
 
         if (partNumber > MAX_PARTS) {

@@ -73,7 +73,7 @@ public class ServerSideMultipartManagerIT {
         headers.setContentType(contentType);
 
         ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 0, content);
 
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
@@ -95,8 +95,8 @@ public class ServerSideMultipartManagerIT {
         headers.setContentType(contentType);
 
         ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
-        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 0, content1);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 1, content2);
 
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
