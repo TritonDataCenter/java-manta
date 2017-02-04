@@ -289,7 +289,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 etag = null;
             }
 
-            return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
+            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etag);
         }
     }
 

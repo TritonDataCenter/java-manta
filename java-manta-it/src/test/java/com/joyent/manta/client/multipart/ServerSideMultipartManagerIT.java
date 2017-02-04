@@ -5,6 +5,7 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
+import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
@@ -23,8 +24,12 @@ import java.io.*;
 import java.security.KeyPair;
 import java.util.*;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.testng.Assert.*;
 
 @Test
@@ -33,7 +38,6 @@ public class ServerSideMultipartManagerIT {
     private ServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
-    private static final String TEST_DATA = "EMPIRE_IS_THE_BEST_EPISODE_EVER!";
 
     private String testPathPrefix;
 
@@ -77,7 +81,7 @@ public class ServerSideMultipartManagerIT {
         multipart.abort(upload);
         MantaMultipartStatus status = multipart.getStatus(upload);
 
-        if (!status.equals(MantaMultipartStatus.ABORTED) || !status.equals(MantaMultipartStatus.ABORTING)) {
+        if (!status.equals(MantaMultipartStatus.ABORTED) && !status.equals(MantaMultipartStatus.ABORTING)) {
             Assert.fail("MPU is not in an aborted or aborting status. Actual status: " + status);
         }
     }
@@ -98,12 +102,96 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+    public final void canGetStatus() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(5242880);
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        try {
+            MantaMultipartStatus newStatus = multipart.getStatus(upload);
+            Assert.assertEquals(newStatus, MantaMultipartStatus.CREATED,
+                    "Created status wasn't set. Actual status: " + newStatus);
+            MantaMultipartUploadPart part = multipart.uploadPart(upload, 1, content);
+
+            Executors.newFixedThreadPool(1).execute(() -> {
+                try {
+                    multipart.complete(upload, Stream.of(part));
+                    MantaMultipartStatus completeStatus = multipart.getStatus(upload);
+//                    Assert.assertEquals(completeStatus, MantaMultipartStatus.UNKNOWN,
+//                            "Unknown status wasn't set. Actual status: " + completeStatus);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(ServerSideMultipartManagerIT.class)
+                            .error("Error asynchronously calling commit", e);
+                }
+            });
+
+
+            try {
+                Thread.sleep(400);
+                MantaMultipartStatus committingStatus = multipart.getStatus(upload);
+                Assert.assertEquals(committingStatus, MantaMultipartStatus.COMMITTING,
+                        "Committing status wasn't set. Actual status: " + committingStatus);
+            } catch (AssertionError e) {
+                throw new SkipException("Timing based tests are prone to failure. Skip on failure.");
+            }
+        } catch (Exception e) {
+            multipart.abort(upload);
+        }
+    }
+
+    public final void canGetPart() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(5242880);
+
+        String contentType = "application/rando; charset=UTF-8";
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentType(contentType);
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        try {
+            MantaMultipartUploadPart originalPart = multipart.uploadPart(upload, 1, content);
+            MantaMultipartUploadPart pulledPart = multipart.getPart(upload, 1);
+
+            Assert.assertEquals(pulledPart, originalPart,
+                    "Part pulled from API isn't the same as the original");
+        } finally {
+            multipart.abort(upload);
+        }
+    }
+
+    public final void canListParts() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(5242880);
+
+        String contentType = "application/rando; charset=UTF-8";
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentType(contentType);
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        try {
+            MantaMultipartUploadPart originalPart = multipart.uploadPart(upload, 1, content);
+
+            try (Stream<MantaMultipartUploadPart> parts = multipart.listParts(upload)) {
+                Optional<MantaMultipartUploadPart> first = parts.findFirst();
+
+                Assert.assertTrue(first.isPresent(), "First part wasn't listed");
+                Assert.assertEquals(first.get(), originalPart,
+                        "Original part is different from returned part");
+            }
+        } finally {
+            multipart.abort(upload);
+        }
+    }
+
     public final void canUploadWithSinglePartByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(5242880);
 
-        String contentType = "text/plain; charset=UTF-8";
+        String contentType = "application/rando; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
@@ -152,5 +240,31 @@ public class ServerSideMultipartManagerIT {
             Assert.assertEquals(in.getContentType(), contentType,
                     "Set content-type doesn't match actual content type");
         }
+    }
+
+    public void errorWhenMissingPart() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
+
+        String contentType = "application/something-never-seen-before; charset=UTF-8";
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentType(contentType);
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        multipart.uploadPart(upload, 2, content1);
+
+        boolean thrown = false;
+
+        try {
+            multipart.validateThatThereAreSequentialPartNumbers(upload);
+        } catch (MantaClientException e) {
+            if ((int)e.getFirstContextValue("missing_part") == 1) {
+                thrown = true;
+            }
+        }
+
+        assertTrue(thrown, "Exception wasn't thrown");
     }
 }
