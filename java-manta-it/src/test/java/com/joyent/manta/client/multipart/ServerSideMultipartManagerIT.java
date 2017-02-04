@@ -1,6 +1,7 @@
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
@@ -194,20 +195,34 @@ public class ServerSideMultipartManagerIT {
         String contentType = "application/rando; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
+        headers.setDurabilityLevel(1);
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put("m-my-key-1", "my value 1");
+        metadata.put("m-my-key-2", "my value 2");
+
+        ServerSideMultipartUpload upload = multipart.initiateUpload(path, metadata, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
 
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
         multipart.complete(upload, partsStream);
 
-        try (InputStream in = mantaClient.getAsInputStream(path);
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             IOUtils.copy(in, out);
 
             AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
                     content, out.toByteArray());
+
+            // Headers
+            Assert.assertEquals(in.getContentType(), contentType);
+            Assert.assertEquals(in.getHeaderAsString(MantaHttpHeaders.HTTP_DURABILITY_LEVEL),
+                    headers.getDurabilityLevel().toString());
+
+            // Metadata
+            Assert.assertEquals(in.getMetadata().get("m-my-key-1"), metadata.get("m-my-key-1"));
+            Assert.assertEquals(in.getMetadata().get("m-my-key-2"), metadata.get("m-my-key-2"));
         }
     }
 
