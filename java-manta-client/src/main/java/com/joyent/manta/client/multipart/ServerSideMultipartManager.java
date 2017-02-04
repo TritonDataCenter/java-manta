@@ -501,7 +501,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String path = upload.getPath();
         final String postPath = upload.getPartsDirectory();
-        final HttpPost post = connectionFactory.post(postPath);
+        final HttpPost post = connectionFactory.post(postPath + "/commit");
 
         final byte[] jsonRequest;
 
