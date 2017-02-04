@@ -53,23 +53,20 @@ public class EncryptingMantaMultipartManager
     // need one part for hmac
     public static final int MAX_PARTS = MantaMultipartManager.MAX_PARTS - 1;
 
-    private final SupportedCipherDetails cipherDetails;
-
+    private final EncryptionContext encryptionContext;
     private final EncryptionHttpHelper httpHelper;
     private final MantaClient mantaClient;
     private final WRAPPED_MANAGER wrapped;
-    private final SecretKey secretKey;
 
-    public EncryptingMantaMultipartManager(final SecretKey secretKey,
+    public EncryptingMantaMultipartManager(final EncryptionContext encryptionContext,
                                            final MantaClient mantaClient,
                                            final WRAPPED_MANAGER wrapped) {
         Validate.isTrue(mantaClient.getContext().isClientEncryptionEnabled(),
                         "MantaClient for encrypted multipart upload has have encryption enabled");
-        this.secretKey = secretKey;
+        this.encryptionContext = encryptionContext;
         this.mantaClient = mantaClient;
         this.wrapped = wrapped;
         this.httpHelper = (EncryptionHttpHelper)this.mantaClient.httpHelper;
-        this.cipherDetails = this.httpHelper.getCipherDetails();
     }
 
     @Override
@@ -88,14 +85,13 @@ public class EncryptingMantaMultipartManager
                                                                    final MantaHttpHeaders httpHeaders) throws IOException {
         MantaMultipartUpload upload = wrapped.initiateUpload(path, mantaMetadata, httpHeaders);
 
-        EncryptionContext eContext = this.httpHelper.newEncryptionContext();
-
+        final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
         final Cipher cipher = cipherDetails.getCipher();
-        final byte[] iv = cipher.getIV();
+        final byte[] iv = cipherDetails.generateIv();
 
         try {
             AlgorithmParameterSpec spec = cipherDetails.getEncryptionParameterSpec(iv);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, spec);
+            cipher.init(Cipher.ENCRYPT_MODE, encryptionContext.getSecretKey(), spec);
         } catch (GeneralSecurityException e) {
             String msg = "Unable to initialize cipher";
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(msg, e);
@@ -114,7 +110,7 @@ public class EncryptingMantaMultipartManager
             hmac = cipherDetails.getAuthenticationHmac();
 
             try {
-                hmac.init(secretKey);
+                hmac.init(encryptionContext.getSecretKey());
             } catch (InvalidKeyException e) {
                 String msg = "Couldn't initialize HMAC with secret key";
                 throw new MantaClientEncryptionException(msg, e);
@@ -147,6 +143,8 @@ public class EncryptingMantaMultipartManager
     public void complete(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
+        final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
+
         final Stream<? extends MantaMultipartUploadTuple> finalPartsStream;
 
         if (cipherDetails.isAEADCipher()) {
@@ -158,7 +156,7 @@ public class EncryptingMantaMultipartManager
             finalPartsStream = Stream.concat(partsStream, Stream.of(hmacPart));
         }
 
-        wrapped.complete(upload, finalPartsStream);
+        wrapped.complete(upload.getWrapped(), finalPartsStream);
     }
 
     @Override
@@ -218,11 +216,13 @@ public class EncryptingMantaMultipartManager
 
         // TODO: Read in remainder
 
-        if (upload.getLastBlockOverrunBytes().length > 0) {
+        if (upload.getLastBlockOverrunBytes() != null && upload.getLastBlockOverrunBytes().length > 0) {
 
         }
 
         // TODO: Add BoundedInputStream and store remainder
+
+        final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
 
         if (cipherDetails.isAEADCipher()) {
             in = new CipherInputStream(inputStream, upload.getCipher());
@@ -232,7 +232,7 @@ public class EncryptingMantaMultipartManager
         }
 
         @SuppressWarnings("unchecked")
-        MantaMultipartUploadPart part = wrapped.uploadPart(upload, partNumber, in);
+        MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, in);
 
         upload.incrementPartNumber();
 

@@ -54,7 +54,10 @@ public class HmacInputStream extends InputStream {
     @Override
     public int read(final byte[] buffer) throws IOException {
         final int read = chained.read(buffer);
-        hmac.update(buffer, 0, read);
+
+        if (read > -1) {
+            hmac.update(buffer, 0, read);
+        }
 
         return read;
     }
