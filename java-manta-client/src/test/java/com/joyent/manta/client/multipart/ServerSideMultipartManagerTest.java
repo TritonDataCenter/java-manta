@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
+import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
@@ -15,7 +16,6 @@ import com.joyent.manta.http.FakeCloseableHttpClient;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
@@ -33,7 +33,10 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.mock;
@@ -298,7 +301,7 @@ public class ServerSideMultipartManagerTest {
 
     // TEST UTILITY METHODS
 
-    private SettableConfigContext testConfigContext() {
+    private SettableConfigContext<BaseChainedConfigContext> testConfigContext() {
         StandardConfigContext settable = new StandardConfigContext();
         settable.setMantaUser("test");
 

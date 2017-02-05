@@ -1,50 +1,38 @@
 package com.joyent.manta.client.multipart;
 
-import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaMultipartException;
-import com.joyent.manta.http.entity.MantaInputStreamEntity;
+import com.joyent.manta.http.EncryptionHttpHelper;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.HmacInputStream;
 import org.apache.commons.codec.Charsets;
-import org.apache.commons.io.input.BoundedInputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ByteArrayEntity;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
-import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.LoggerFactory;
-import com.joyent.manta.client.MantaMetadata;
-import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.http.EncryptionHttpHelper;
-import com.joyent.manta.client.crypto.EncryptionContext;
-import org.apache.commons.codec.binary.Hex;
-import com.joyent.manta.client.crypto.EncryptingEntityHelper;
-import com.joyent.manta.util.HmacOutputStream;
-import com.joyent.manta.client.crypto.EncryptingPartEntity;
-import org.apache.http.entity.ContentType;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 // SHHHH IT IS  A SECRET
 // DOC thread safety, init vs put and locking
 public class EncryptingMantaMultipartManager
-        <WRAPPED_MANAGER extends MantaMultipartManager,
+        <WRAPPED_MANAGER extends MantaMultipartManager<WRAPPED_UPLOAD, ? extends MantaMultipartUploadPart>,
          WRAPPED_UPLOAD extends MantaMultipartUpload>
         implements MantaMultipartManager<EncryptedMultipartUpload<WRAPPED_UPLOAD>,
                                          MantaMultipartUploadPart> {
@@ -156,11 +144,10 @@ public class EncryptingMantaMultipartManager
             httpHeaders.remove(HttpHeaders.CONTENT_MD5);
         }
 
-        MantaMultipartUpload upload = wrapped.initiateUpload(path, mantaMetadata, httpHeaders);
+        WRAPPED_UPLOAD upload = wrapped.initiateUpload(path, mantaMetadata, httpHeaders);
 
-        @SuppressWarnings("unchecked")
         EncryptedMultipartUpload<WRAPPED_UPLOAD> encryptedUpload =
-                new EncryptedMultipartUpload(upload, cipher, hmac);
+                new EncryptedMultipartUpload<>(upload, cipher, hmac);
 
         return encryptedUpload;
     }
@@ -176,7 +163,6 @@ public class EncryptingMantaMultipartManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void complete(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
@@ -197,13 +183,11 @@ public class EncryptingMantaMultipartManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
         return wrapped.listInProgress();
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                final int partNumber,
                                                final String contents) throws IOException {
@@ -212,7 +196,6 @@ public class EncryptingMantaMultipartManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                final int partNumber,
                                                final byte[] bytes) throws IOException {
@@ -221,7 +204,6 @@ public class EncryptingMantaMultipartManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                final int partNumber,
                                                final File file) throws IOException {
@@ -268,7 +250,6 @@ public class EncryptingMantaMultipartManager
             in = new HmacInputStream(upload.getHmac(), cipherStream);
         }
 
-        @SuppressWarnings("unchecked")
         MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, in);
 
         upload.incrementPartNumber();
@@ -277,33 +258,33 @@ public class EncryptingMantaMultipartManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public MantaMultipartUploadPart getPart(EncryptedMultipartUpload<WRAPPED_UPLOAD> upload, int partNumber) throws IOException {
-        return wrapped.getPart(upload, partNumber);
+    public MantaMultipartUploadPart getPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
+                                            final int partNumber) throws IOException {
+        return wrapped.getPart(upload.getWrapped(), partNumber);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public MantaMultipartStatus getStatus(EncryptedMultipartUpload<WRAPPED_UPLOAD> upload) throws IOException {
-        return wrapped.getStatus(upload);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Stream<MantaMultipartUploadPart> listParts(EncryptedMultipartUpload<WRAPPED_UPLOAD> upload)
+    public MantaMultipartStatus getStatus(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload)
             throws IOException {
-        return wrapped.listParts(upload);
+        return wrapped.getStatus(upload.getWrapped());
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public void validateThatThereAreSequentialPartNumbers(EncryptedMultipartUpload<WRAPPED_UPLOAD> upload) throws IOException, MantaMultipartException {
-        wrapped.validateThatThereAreSequentialPartNumbers(upload);
+    public Stream<MantaMultipartUploadPart> listParts(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload)
+            throws IOException {
+        return (Stream<MantaMultipartUploadPart>)wrapped.listParts(upload.getWrapped());
+    }
+
+    @Override
+    public void validateThatThereAreSequentialPartNumbers(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload)
+            throws IOException, MantaMultipartException {
+        wrapped.validateThatThereAreSequentialPartNumbers(upload.getWrapped());
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public void abort(EncryptedMultipartUpload<WRAPPED_UPLOAD> upload) throws IOException {
-        wrapped.abort(upload);
+    public void abort(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload) throws IOException {
+        wrapped.abort(upload.getWrapped());
     }
 }

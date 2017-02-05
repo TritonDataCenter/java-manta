@@ -4,7 +4,12 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.crypto.*;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.EncryptionContext;
+import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
@@ -111,7 +116,7 @@ public class EncryptingMantaMultipartManagerTest {
 
     // TEST UTILITY METHODS
 
-    private SettableConfigContext testConfigContext(SecretKey key) {
+    private SettableConfigContext<BaseChainedConfigContext> testConfigContext(SecretKey key) {
         StandardConfigContext settable = new StandardConfigContext();
         settable.setMantaUser("test");
 
