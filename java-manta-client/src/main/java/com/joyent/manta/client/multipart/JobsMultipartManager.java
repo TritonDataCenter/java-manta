@@ -591,19 +591,18 @@ public class JobsMultipartManager extends AbstractMultipartManager
             }
         });
 
-        // FIXME
-        // if (!missingTuples.isEmpty()) {
-        //     final MantaMultipartException e = new MantaMultipartException(
-        //             "Multipart part(s) specified couldn't be found");
+        if (!missingTuples.isEmpty()) {
+            final MantaMultipartException e = new MantaMultipartException(
+                    "Multipart part(s) specified couldn't be found");
 
-        //     int missingCount = 0;
-        //     for (MantaMultipartUploadTuple missingPart : missingTuples) {
-        //         String key = String.format("missing_part_%d", ++missingCount);
-        //         e.setContextValue(key, missingPart.toString());
-        //     }
+            int missingCount = 0;
+            for (MantaMultipartUploadTuple missingPart : missingTuples) {
+                String key = String.format("missing_part_%d", ++missingCount);
+                e.setContextValue(key, missingPart.toString());
+            }
 
-        //     throw e;
-        // }
+            throw e;
+        }
 
         final String headerFormat = "\"%s: %s\" ";
 
