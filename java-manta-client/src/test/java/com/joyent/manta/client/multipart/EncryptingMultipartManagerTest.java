@@ -34,6 +34,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.mock;
@@ -99,9 +100,17 @@ public class EncryptingMultipartManagerTest {
 
         MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
         responseHttpHeaders.setContentLength(actualUpload.getContents().length());
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
+                upload.getHmac().getAlgorithm());
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_IV,
+                Base64.getEncoder().encodeToString(upload.getCipher().getIV()));
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
+                cipherDetails.getCipherId());
 
         MantaObjectResponse response = new MantaObjectResponse(path,
                 responseHttpHeaders, metadata);
+
+
         CloseableHttpResponse httpResponse = mock(CloseableHttpResponse.class);
 
         try (InputStream fin = new FileInputStream(actualUpload.getContents());
