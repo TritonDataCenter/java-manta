@@ -307,14 +307,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         final String hmacId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE);
         final String metadataHmacBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC);
 
-        LOGGER.warn("encryptionType: {}, metadataIvBase64: {}, metadataCiphertextBase64: {}, hmacId: {}, metadataHmacBase64: {}",
-                    encryptionType, metadataIvBase64, metadataCiphertextBase64, hmacId, metadataHmacBase64);
-        // FIXME
-        // Map<String, String> encryptedMetadata = buildEncryptedMetadata(
-        //         encryptionType, metadataIvBase64, metadataCiphertextBase64,
-        //         hmacId, metadataHmacBase64, request, response);
-
-        // rawStream.getMetadata().putAll(encryptedMetadata);
+        if (metadataCiphertextBase64 != null) {
+            Map<String, String> encryptedMetadata = buildEncryptedMetadata(encryptionType, metadataIvBase64, metadataCiphertextBase64,
+                                                                           hmacId, metadataHmacBase64, request, response);
+            rawStream.getMetadata().putAll(encryptedMetadata);
+        }
 
         if (hasRangeRequest) {
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
@@ -588,7 +585,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             }
         }
 
-        if (cipherId == null) {
+
+        // If there is no cipher text, then there is nothing to decrypt
+        if (metadataCiphertextBase64 == null) {
             return null;
         }
 

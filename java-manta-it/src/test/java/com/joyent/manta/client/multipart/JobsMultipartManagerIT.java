@@ -6,6 +6,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
@@ -48,6 +49,7 @@ import static org.testng.Assert.fail;
 public class JobsMultipartManagerIT {
     private MantaClient mantaClient;
     private JobsMultipartManager multipart;
+    private boolean usingEncryption;
 
     private String testPathPrefix;
 
@@ -56,6 +58,7 @@ public class JobsMultipartManagerIT {
     @BeforeClass()
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+        this.usingEncryption = usingEncryption;
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
@@ -113,8 +116,8 @@ public class JobsMultipartManagerIT {
             String part = parts[i];
             int partNumber = i + 1;
             MantaMultipartUploadTuple uploaded = multipart.uploadPart(upload, partNumber,
-                                                                      new ByteArrayInputStream(part.getBytes("UTF-8")));
-                                                                      //part);
+                                                                      part);
+
             uploadedParts.add(uploaded);
         }
 
@@ -225,6 +228,10 @@ public class JobsMultipartManagerIT {
         final MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-hello", "world");
         metadata.put("m-foo", "bar");
+        if (usingEncryption) {
+            metadata.put("e-hello", "world");
+            metadata.put("e-foo", "bar");
+        }
 
         final MantaMultipartUpload upload = multipart.initiateUpload(path, metadata);
 
@@ -247,11 +254,17 @@ public class JobsMultipartManagerIT {
 
         MantaMetadata remoteMetadata = mantaClient.head(path).getMetadata();
 
-        assertEquals(remoteMetadata.size(), 4, "Unexpected metadata size");
+
+        assertEquals(remoteMetadata.keySet().stream().filter(key -> !key.startsWith("m-encrypt") && !key.startsWith("e-")).count(),
+                     4, "Unexpected metadata size");
         assertTrue(remoteMetadata.containsKey(JobsMultipartManager.JOB_ID_METADATA_KEY));
         assertTrue(remoteMetadata.containsKey(JobsMultipartManager.UPLOAD_ID_METADATA_KEY));
         assertEquals(remoteMetadata.get("m-hello"), "world");
         assertEquals(remoteMetadata.get("m-foo"), "bar");
+        if (usingEncryption) {
+            assertEquals(remoteMetadata.get("e-hello"), "world");
+            assertEquals(remoteMetadata.get("e-foo"), "bar");
+        }
     }
 
     public void canUpload5MbX10MultipartBinary() throws IOException {
@@ -308,6 +321,14 @@ public class JobsMultipartManagerIT {
 
         MantaObjectResponse head = mantaClient.head(path);
         byte[] remoteMd5 = head.getMd5Bytes();
+
+        // If we are using encryption the remote md5 is the md5 of the
+        // cipher text.  To prove we uploade the right bytes and can
+        // get them back again, we need to download and calculate.
+        if (usingEncryption) {
+            MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path);
+            remoteMd5 = DigestUtils.md5(gotObject);
+        }
 
         if (!Arrays.equals(remoteMd5, expectedMd5)) {
             StringBuilder builder = new StringBuilder();
