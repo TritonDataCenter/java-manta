@@ -59,6 +59,12 @@ public class JobsMultipartManager extends AbstractMultipartManager
     private static final Logger LOGGER = LoggerFactory.getLogger(JobsMultipartManager.class);
 
     /**
+     * We only allow 1k parts for jobs based uploads because it is rather
+     * expensive to do multipart with jobs.
+     */
+    private static final int MAX_PARTS = 1_000;
+
+    /**
      * Temporary storage directory on Manta for multipart data. This is a
      * randomly chosen UUID used so that we don't have directory naming
      * conflicts.
@@ -121,6 +127,11 @@ public class JobsMultipartManager extends AbstractMultipartManager
         this.resolvedMultipartUploadDirectory =
                 mantaClient.getContext().getMantaHomeDirectory()
                 + SEPARATOR + MULTIPART_DIRECTORY;
+    }
+
+    @Override
+    public int getMaxParts() {
+        return MAX_PARTS;
     }
 
     @Override
@@ -541,7 +552,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         final Map<String, MantaMultipartUploadPart> listing = new HashMap<>();
         try (Stream<MantaMultipartUploadPart> listStream = listParts(upload)
-                .limit(MAX_PARTS)) {
+                .limit(getMaxParts())) {
             listStream.forEach(p -> listing.put(p.getEtag(), p));
         }
 
@@ -556,9 +567,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
         partsStream.sorted().distinct().forEach(part -> {
             final int i = count.incrementAndGet();
 
-            if (i > MAX_PARTS) {
+            if (i > getMaxParts()) {
                 String msg = String.format("Too many multipart parts specified [%d]. "
-                        + "The maximum number of parts is %d", MAX_PARTS, count.get());
+                        + "The maximum number of parts is %d", getMaxParts(), count.get());
                 throw new IllegalArgumentException(msg);
             }
 

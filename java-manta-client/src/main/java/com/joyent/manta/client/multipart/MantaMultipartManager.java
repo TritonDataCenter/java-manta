@@ -27,10 +27,8 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
         PART extends MantaMultipartUploadPart> {
     /**
      * Maximum number of parts for a single Manta object.
-     * This value will be increased to 10,000 when multipart is implemented on
-     * the server.
      */
-    int MAX_PARTS = 10_000;
+    int getMaxParts();
 
     /**
      * Lists multipart uploads that are currently in progress.

@@ -33,7 +33,7 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingMultipartManager.class);
 
     // need one part for hmac
-    public static final int MAX_PARTS = MantaMultipartManager.MAX_PARTS - 1;
+    public static final int MAX_PARTS = 10_000 - 1;
 
 
     private final EncryptionHttpHelper httpHelper;

@@ -48,9 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -70,6 +68,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerSideMultipartManager.class);
+
+    /**
+     * Server-side MPU only supports 10k parts.
+     */
+    private static final int MAX_PARTS = 10_000;
 
     /**
      * Minimum size of a part in bytes.
@@ -116,6 +119,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         this.connectionFactory = connectionFactory;
         this.connectionContext = connectionContext;
         this.mantaClient = mantaClient;
+    }
+
+    @Override
+    public int getMaxParts() {
+        return MAX_PARTS;
     }
 
     @Override

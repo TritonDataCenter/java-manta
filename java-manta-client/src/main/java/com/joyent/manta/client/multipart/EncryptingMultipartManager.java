@@ -45,16 +45,13 @@ import java.util.stream.StreamSupport;
 public class EncryptingMultipartManager
         <WRAPPED_MANAGER extends MantaMultipartManager<WRAPPED_UPLOAD, ? extends MantaMultipartUploadPart>,
          WRAPPED_UPLOAD extends MantaMultipartUpload>
-        implements MantaMultipartManager<EncryptedMultipartUpload<WRAPPED_UPLOAD>,
+        extends AbstractMultipartManager<EncryptedMultipartUpload<WRAPPED_UPLOAD>,
                                          MantaMultipartUploadPart> {
 
     /**
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingMultipartManager.class);
-
-    // need one part for hmac
-    public static final int MAX_PARTS = MantaMultipartManager.MAX_PARTS - 1;
 
     private final EncryptionContext encryptionContext;
     private final EncryptionHttpHelper httpHelper;
@@ -66,6 +63,12 @@ public class EncryptingMultipartManager
         this.encryptionContext = encryptionContext;
         this.wrapped = wrapped;
         this.httpHelper = httpHelper;
+    }
+
+    @Override
+    public int getMaxParts() {
+        // We need one part for the HMAC, so the maximum will always be one less
+        return this.wrapped.getMaxParts() - 1;
     }
 
     @Override
@@ -233,6 +236,7 @@ public class EncryptingMultipartManager
                                                             final InputStream inputStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
+        validatePartNumber(partNumber);
 
         if (!upload.canUpload()) {
             String msg = "The upload object specified can't be used for uploading parts "

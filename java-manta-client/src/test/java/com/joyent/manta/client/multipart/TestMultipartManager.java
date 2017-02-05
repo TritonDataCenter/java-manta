@@ -33,6 +33,11 @@ public class TestMultipartManager
     }
 
     @Override
+    public int getMaxParts() {
+        return 500;
+    }
+
+    @Override
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
         return null;
     }

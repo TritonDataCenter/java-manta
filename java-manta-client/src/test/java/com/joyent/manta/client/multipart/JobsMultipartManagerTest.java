@@ -23,17 +23,20 @@ import static org.testng.AssertJUnit.assertEquals;
 public class JobsMultipartManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativePartNumbersAreRejected() {
-        JobsMultipartManager.validatePartNumber(-1);
+        JobsMultipartManager multipart = multipartInstance("user.name");
+        multipart.validatePartNumber(-1);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void zeroPartNumbersAreRejected() {
-        JobsMultipartManager.validatePartNumber(0);
+        JobsMultipartManager multipart = multipartInstance("user.name");
+        multipart.validatePartNumber(0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void partNumbersAboveMaxAreRejected() {
-        JobsMultipartManager.validatePartNumber(MantaMultipartManager.MAX_PARTS + 1);
+        JobsMultipartManager multipart = multipartInstance("user.name");
+        multipart.validatePartNumber(multipart.getMaxParts() + 1);
     }
 
     public void canBuildMultiPartUploadPath() {
