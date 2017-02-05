@@ -158,6 +158,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                                            final Long plaintextRangeLength) {
         super(backingStream);
 
+        this.authenticateCiphertext = authenticateCiphertext;
         this.startPosition = startPositionInclusive;
         this.cipherDetails = cipherDetails;
 
@@ -171,7 +172,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         this.cipher = cipherDetails.getCipher();
         this.secretKey = secretKey;
         this.hmac = findHmac();
-        this.authenticateCiphertext = authenticateCiphertext;
 
         this.initialBytesToSkip = initializeCipher();
         this.plaintextRangeLength = verifyAndConditionallyRecalculatePlaintextLength(
@@ -294,6 +294,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
          * the closing of the underlying stream - it allows us to read the final
          * HMAC bytes upon close(). */
         } else {
+            Validate.notNull(hmac, "HMAC must not be null in order to derive length");
+
             final long adjustedContentLength;
             final long hmacSize = this.hmac.getMacLength();
             adjustedContentLength = super.getContentLength() - hmacSize;
@@ -330,7 +332,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * @return HMAC instance or null when encrypted by a AEAD cipher
      */
     private Mac findHmac() {
-        if (this.cipherDetails.isAEADCipher()) {
+        if (this.cipherDetails.isAEADCipher() || !this.authenticateCiphertext) {
             return null;
         }
 
