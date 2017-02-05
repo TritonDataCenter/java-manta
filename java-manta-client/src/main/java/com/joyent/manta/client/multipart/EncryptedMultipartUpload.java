@@ -1,7 +1,10 @@
 package com.joyent.manta.client.multipart;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -119,5 +122,29 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     @Override
     public int compare(final MantaMultipartUpload o1, final MantaMultipartUpload o2) {
         return this.wrapped.compare(o1, o2);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EncryptedMultipartUpload<?> that = (EncryptedMultipartUpload<?>) o;
+        return Objects.equals(wrapped, that.wrapped);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(wrapped);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("wrapped", wrapped)
+                .append("cipher", cipher)
+                .append("hmac", hmac)
+                .append("currentPartNumber", currentPartNumber)
+                .append("lastBlockOverrunBytes", lastBlockOverrunBytes)
+                .toString();
     }
 }

@@ -163,6 +163,8 @@ public class EncryptingMultipartManager
         EncryptedMultipartUpload<WRAPPED_UPLOAD> encryptedUpload =
                 new EncryptedMultipartUpload<>(upload, cipher, hmac);
 
+        LOGGER.debug("Created new encrypted multipart upload: {}", upload);
+
         return encryptedUpload;
     }
 
