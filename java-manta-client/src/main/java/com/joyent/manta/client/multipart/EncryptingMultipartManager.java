@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.spec.AlgorithmParameterSpec;
@@ -243,7 +244,7 @@ public class EncryptingMultipartManager
     public synchronized MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                             final int partNumber,
                                                             final long contentLength,
-                                                            final InputStream inputStream)
+                                                            final InputStream partsStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
         validatePartNumber(partNumber);
@@ -262,11 +263,13 @@ public class EncryptingMultipartManager
         }
 
         final InputStream in;
-
-        // TODO: Read in remainder
+        final InputStream sourceStream;
 
         if (upload.getLastBlockOverrunBytes() != null && upload.getLastBlockOverrunBytes().length > 0) {
-
+            ByteArrayInputStream overrunStream = new ByteArrayInputStream(upload.getLastBlockOverrunBytes());
+            sourceStream = new SequenceInputStream(overrunStream, partsStream);
+        } else {
+            sourceStream = partsStream;
         }
 
         // TODO: Add BoundedInputStream and store remainder
@@ -274,9 +277,9 @@ public class EncryptingMultipartManager
         final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
 
         if (cipherDetails.isAEADCipher()) {
-            in = new CipherInputStream(inputStream, upload.getCipher());
+            in = new CipherInputStream(sourceStream, upload.getCipher());
         } else {
-            CipherInputStream cipherStream = new CipherInputStream(inputStream, upload.getCipher());
+            CipherInputStream cipherStream = new CipherInputStream(sourceStream, upload.getCipher());
             in = new HmacInputStream(upload.getHmac(), cipherStream);
         }
 
