@@ -2302,6 +2302,14 @@ public class MantaClient implements AutoCloseable {
         return stream;
     }
 
+    public MantaConnectionContext getConnectionContext() {
+        return connectionContext;
+    }
+
+    public MantaConnectionFactory getConnectionFactory() {
+        return connectionFactory;
+    }
+
     /**
      * Flag indicating if the client is closed or is in the process of being
      * closed.

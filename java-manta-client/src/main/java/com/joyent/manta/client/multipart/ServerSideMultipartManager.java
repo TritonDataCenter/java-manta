@@ -103,17 +103,34 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * Creates a new instance of a server-side MPU manager using the specified
      * configuration and connection builder objects.
      *
+     * @param mantaClient open Manta client instance
+     */
+    public ServerSideMultipartManager(final MantaClient mantaClient) {
+        super();
+        Validate.isTrue(!mantaClient.isClosed(),
+                "Manta client must not be closed");
+        this.config = mantaClient.getContext();
+        this.mantaClient = mantaClient;
+        this.connectionFactory = mantaClient.getConnectionFactory();
+        this.connectionContext = mantaClient.getConnectionContext();
+    }
+
+    /**
+     * Creates a new instance of a server-side MPU manager using the specified
+     * configuration and connection builder objects.
+     *
      * @param config configuration context
      * @param connectionFactory connection configuration and setup object
      * @param connectionContext connection execution object
      */
-    public ServerSideMultipartManager(final ConfigContext config,
-                                      final MantaConnectionFactory connectionFactory,
-                                      final MantaConnectionContext connectionContext,
-                                      final MantaClient mantaClient) {
+    ServerSideMultipartManager(final ConfigContext config,
+                               final MantaConnectionFactory connectionFactory,
+                               final MantaConnectionContext connectionContext,
+                               final MantaClient mantaClient) {
         super();
 
-        Validate.isTrue(!mantaClient.isClosed(), "MantaClient must not be closed");
+        Validate.isTrue(!mantaClient.isClosed(),
+                "MantaClient must not be closed");
 
         this.config = config;
         this.connectionFactory = connectionFactory;
