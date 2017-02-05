@@ -249,6 +249,22 @@ authenticate that ciphertext was not modified.
 *Note* each instance of a MantaClient will only support the encryption/decryption for the algorithm configured for that instance.
  
 
+## Server-side Multipart Upload
+
+Manta supports multipart upload for dividing large files into many smaller parts and uploading them to Manta, where they can be assembled.
+The design for the server-side multipart upload is specified in [RFD 65](https://github.com/joyent/rfd/tree/master/rfd/0065). The Java SDK
+implements an interface to make using server-side multipart uploading straightforward. The strategy to use for multipart upload is listed below.
+
+1. Create a MantaClient instance
+1. Create an instance of ServerSideMultipartManager passing in the instance of MantaClient to the constructor
+1. initiate an upload to the full path where the final object should be stored
+1. Upload each part using the ServerSideMultipartUpload object created in the previous step. The order that parts are uploaded doesn't matter,
+ what does matter is that each part has the appropriate part number specified.
+1. Execute `complete` to commit the parts to the object on the server. At this point the server will assembly the final object.
+
+An example application is provided in the java-manta-examples module, named ServerMultipart, to help illustrate the workflow.
+
+
 ## Subuser Difficulties
 
 If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
