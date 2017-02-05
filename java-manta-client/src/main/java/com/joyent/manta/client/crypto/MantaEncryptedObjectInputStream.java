@@ -294,10 +294,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
          * the closing of the underlying stream - it allows us to read the final
          * HMAC bytes upon close(). */
         } else {
-            Validate.notNull(hmac, "HMAC must not be null in order to derive length");
-
             final long adjustedContentLength;
-            final long hmacSize = this.hmac.getMacLength();
+            final long hmacSize;
+
+            if (this.hmac == null) {
+                hmacSize = this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+            } else {
+                hmacSize = this.hmac.getMacLength();
+            }
+
             adjustedContentLength = super.getContentLength() - hmacSize;
 
             BoundedInputStream bin = new BoundedInputStream(super.getBackingStream(),
