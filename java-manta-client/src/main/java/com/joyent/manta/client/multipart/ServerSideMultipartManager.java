@@ -280,6 +280,21 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         return uploadPart(upload, partNumber, entity);
     }
 
+    @Override
+    public MantaMultipartUploadPart uploadPart(ServerSideMultipartUpload upload, int partNumber, long contentLength, InputStream inputStream) throws IOException {
+        HttpEntity entity;
+
+        if (contentLength > -1) {
+            entity = new MantaInputStreamEntity(inputStream, contentLength,
+                    ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            entity = new MantaInputStreamEntity(inputStream,
+                    ContentType.APPLICATION_OCTET_STREAM);
+        }
+
+        return uploadPart(upload, partNumber, entity);
+    }
+
     /**
      * Uploads a single part of a multipart upload.
      *

@@ -122,7 +122,10 @@ public class TestMultipartManager
     }
 
     @Override
-    public MantaMultipartUploadPart uploadPart(TestMultipartUpload upload, int partNumber, InputStream inputStream) throws IOException {
+    public MantaMultipartUploadPart uploadPart(TestMultipartUpload upload,
+                                               int partNumber,
+                                               InputStream inputStream)
+            throws IOException {
         UUID partId = UUID.randomUUID();
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");
@@ -135,6 +138,15 @@ public class TestMultipartManager
         }
 
         return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId.toString());
+    }
+
+    @Override
+    public MantaMultipartUploadPart uploadPart(TestMultipartUpload upload,
+                                               int partNumber,
+                                               long contentLength,
+                                               InputStream inputStream)
+            throws IOException {
+        return uploadPart(upload, partNumber, inputStream);
     }
 
     @Override

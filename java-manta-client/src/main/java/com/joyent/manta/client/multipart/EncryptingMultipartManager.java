@@ -210,8 +210,9 @@ public class EncryptingMultipartManager
     public MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                final int partNumber,
                                                final String contents) throws IOException {
-        InputStream in = new ByteArrayInputStream(contents.getBytes(Charsets.UTF_8));
-        return uploadPart(upload, partNumber, in);
+        byte[] stringBytes = contents.getBytes(Charsets.UTF_8);
+        InputStream in = new ByteArrayInputStream(stringBytes);
+        return uploadPart(upload, partNumber, stringBytes.length, in);
     }
 
     @Override
@@ -219,7 +220,7 @@ public class EncryptingMultipartManager
                                                final int partNumber,
                                                final byte[] bytes) throws IOException {
         InputStream in = new ByteArrayInputStream(bytes);
-        return uploadPart(upload, partNumber, in);
+        return uploadPart(upload, partNumber, bytes.length, in);
     }
 
     @Override
@@ -227,12 +228,21 @@ public class EncryptingMultipartManager
                                                final int partNumber,
                                                final File file) throws IOException {
         InputStream in = new FileInputStream(file);
-        return uploadPart(upload, partNumber, in);
+        return uploadPart(upload, partNumber, file.length(), in);
     }
 
     @Override
     public synchronized MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                             final int partNumber,
+                                                            final InputStream inputStream)
+            throws IOException {
+        throw new UnsupportedOperationException("Encrypted uploads without a content length aren't supported yet");
+    }
+
+    @Override
+    public synchronized MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
+                                                            final int partNumber,
+                                                            final long contentLength,
                                                             final InputStream inputStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");

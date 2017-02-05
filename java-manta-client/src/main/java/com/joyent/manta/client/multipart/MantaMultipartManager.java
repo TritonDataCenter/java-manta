@@ -130,6 +130,19 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
     PART uploadPart(UPLOAD upload, int partNumber, InputStream inputStream) throws IOException;
 
     /**
+     * Uploads a single part of a multipart upload.
+     *
+     * @param upload multipart upload object
+     * @param partNumber part number to identify relative location in final file
+     * @param contentLength the size of the InputStream being uploaded (-1 if unknown)
+     * @param inputStream stream providing data for part to be uploaded
+     * @return multipart single part object
+     * @throws IOException thrown if there is a problem connecting to Manta
+     */
+    PART uploadPart(UPLOAD upload, int partNumber, long contentLength,
+                    InputStream inputStream) throws IOException;
+
+    /**
      * Retrieves information about a single part of a multipart upload.
      *
      * @param upload multipart upload object

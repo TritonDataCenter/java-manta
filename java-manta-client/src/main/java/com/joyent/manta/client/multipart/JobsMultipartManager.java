@@ -334,6 +334,13 @@ public class JobsMultipartManager extends AbstractMultipartManager
         return new MantaMultipartUploadPart(response);
     }
 
+    @Override
+    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+                                               final int partNumber,
+                                               final long contentLength,
+                                               final InputStream inputStream) throws IOException {
+        return uploadPart(upload, partNumber, inputStream);
+    }
 
     /**
      * Retrieves information about a single part of a multipart upload.
