@@ -36,40 +36,20 @@ public class EncryptedHttpHelperTest {
      * Verifies that encrypted HEAD requests made with a different cipher/mode
      * configured from the cipher/mode on the object will result in an error.
      */
-    public void doesntAllowDifferentCipherForObjectAndConfigHead() throws Exception {
+    public void doesntAllowDifferentCipherForObjectAndConfigHeadIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
-
-        boolean caught = false;
-        try {
-            httpHelper.httpHead(path);
-        } catch (MantaClientEncryptionException e) {
-            caught = e.getMessage().startsWith("Cipher used to encrypt object"
-                    + " is not the same as the cipher configured");
-        }
-
-        Assert.assertTrue(caught, "No exception thrown when "
-                + "configured cipher and object cipher differ");
+        httpHelper.httpHead(path);
     }
 
     /**
      * Verifies that encrypted GET requests made with a different cipher/mode
      * configured from the cipher/mode on the object will result in an error.
      */
-    public void doesntAllowDifferentCipherForObjectAndConfigGet() throws Exception {
+    public void allowDifferentCipherForObjectAndConfigGetIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
-
-        boolean caught = false;
-        try {
-            httpHelper.httpGet(path);
-        } catch (MantaClientEncryptionException e) {
-            caught = e.getMessage().startsWith("Cipher used to encrypt object"
-                    + " is not the same as the cipher configured");
-        }
-
-        Assert.assertTrue(caught, "No exception thrown when "
-                + "configured cipher and object cipher differ");
+        httpHelper.httpGet(path);
     }
 
     /**
