@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaMetadata;
@@ -29,15 +32,26 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-// SHHHH IT IS  A SECRET
-// DOC thread safety, init vs put and locking
-public class EncryptingMantaMultipartManager
+/**
+ * Multipart upload manager class that wraps another {@link MantaMultipartManager}
+ * instance and transparently encrypts the contents of all files uploaded.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 3.0.0
+ *
+ * @param <WRAPPED_MANAGER> Manager class to wrap
+ * @param <WRAPPED_UPLOAD> Upload class to wrap
+ */
+public class EncryptingMultipartManager
         <WRAPPED_MANAGER extends MantaMultipartManager<WRAPPED_UPLOAD, ? extends MantaMultipartUploadPart>,
          WRAPPED_UPLOAD extends MantaMultipartUpload>
         implements MantaMultipartManager<EncryptedMultipartUpload<WRAPPED_UPLOAD>,
                                          MantaMultipartUploadPart> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingMantaMultipartManager.class);
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingMultipartManager.class);
 
     // need one part for hmac
     public static final int MAX_PARTS = MantaMultipartManager.MAX_PARTS - 1;
@@ -46,9 +60,9 @@ public class EncryptingMantaMultipartManager
     private final EncryptionHttpHelper httpHelper;
     private final WRAPPED_MANAGER wrapped;
 
-    public EncryptingMantaMultipartManager(final EncryptionContext encryptionContext,
-                                           final EncryptionHttpHelper httpHelper,
-                                           final WRAPPED_MANAGER wrapped) {
+    public EncryptingMultipartManager(final EncryptionContext encryptionContext,
+                                      final EncryptionHttpHelper httpHelper,
+                                      final WRAPPED_MANAGER wrapped) {
         this.encryptionContext = encryptionContext;
         this.wrapped = wrapped;
         this.httpHelper = httpHelper;

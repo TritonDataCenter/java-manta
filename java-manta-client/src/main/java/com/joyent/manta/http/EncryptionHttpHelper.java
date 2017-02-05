@@ -158,7 +158,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public EncryptionContext newEncryptionContext() {
         return new EncryptionContext(this.secretKey, this.cipherDetails);
     }
-        
+
     @Override
     public HttpResponse httpHead(final String path) throws IOException {
         HttpResponse response = super.httpHead(path);
@@ -588,6 +588,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         // If there is no cipher text, then there is nothing to decrypt
         if (metadataCiphertextBase64 == null) {
+            return null;
+        }
+
+        // If there is no cipher specified, we can't decrypt
+        if (cipherId == null) {
             return null;
         }
 

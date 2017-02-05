@@ -3,14 +3,14 @@ package com.joyent.manta.client.multipart;
 import com.fasterxml.uuid.Generators;
 import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaMultipartException;
+import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -23,7 +23,6 @@ import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -323,7 +322,7 @@ public class JobsMultipartManagerIT {
         byte[] remoteMd5 = head.getMd5Bytes();
 
         // If we are using encryption the remote md5 is the md5 of the
-        // cipher text.  To prove we uploade the right bytes and can
+        // cipher text.  To prove we uploaded the right bytes and can
         // get them back again, we need to download and calculate.
         if (usingEncryption) {
             MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path);

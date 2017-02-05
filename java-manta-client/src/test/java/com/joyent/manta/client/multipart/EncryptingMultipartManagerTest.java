@@ -39,12 +39,12 @@ import java.util.stream.Stream;
 import static org.mockito.Mockito.mock;
 
 @Test
-public class EncryptingMantaMultipartManagerTest {
+public class EncryptingMultipartManagerTest {
     SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
     SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
     EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
     TestMultipartManager testManager = new TestMultipartManager();
-    EncryptingMantaMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
+    EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
 
     @BeforeClass
     public void setup() {
@@ -157,7 +157,7 @@ public class EncryptingMantaMultipartManagerTest {
         return new TestConfigContext(settable);
     }
 
-    private EncryptingMantaMultipartManager<TestMultipartManager, TestMultipartUpload> buildManager() {
+    private EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> buildManager() {
         ConfigContext config = testConfigContext(secretKey);
         final KeyPair keyPair;
         try {
@@ -171,6 +171,6 @@ public class EncryptingMantaMultipartManagerTest {
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory, config);
 
-        return new EncryptingMantaMultipartManager<>(encryptionContext, httpHelper, testManager);
+        return new EncryptingMultipartManager<>(encryptionContext, httpHelper, testManager);
     }
 }
