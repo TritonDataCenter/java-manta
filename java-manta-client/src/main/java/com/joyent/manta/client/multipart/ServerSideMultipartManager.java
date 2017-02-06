@@ -20,8 +20,6 @@ import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
-import com.joyent.manta.http.entity.ExposedStringEntity;
-import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
@@ -39,11 +37,9 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.FileEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -245,73 +241,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
     }
 
-    @Override
-    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
-                                               final int partNumber,
-                                               final String contents)
-            throws IOException {
-        validatePartNumber(partNumber);
-        Validate.notNull(contents, "String must not be null");
-
-        HttpEntity entity = new ExposedStringEntity(contents, ContentType.APPLICATION_OCTET_STREAM);
-
-        if (entity.getContentLength() < MIN_PART_SIZE) {
-            String msg = String.format("Part size [%d] for string is less "
-                            + "that the minimum part size [%d]",
-                    entity.getContentLength(), MIN_PART_SIZE);
-            throw new IllegalArgumentException(msg);
-        }
-
-        return uploadPart(upload, partNumber, entity);
-    }
-
-    @Override
-    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
-                                               final int partNumber,
-                                               final byte[] bytes)
-            throws IOException {
-        validatePartNumber(partNumber);
-        Validate.notNull(bytes, "Byte array must not be null");
-
-        HttpEntity entity = new ExposedByteArrayEntity(bytes, ContentType.APPLICATION_OCTET_STREAM);
-        return uploadPart(upload, partNumber, entity);
-    }
-
-    @Override
-    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
-                                               final int partNumber,
-                                               final File file) throws IOException {
-        validatePartNumber(partNumber);
-        Validate.notNull(file, "File must not be null");
-
-        HttpEntity entity = new FileEntity(file, ContentType.APPLICATION_OCTET_STREAM);
-        return uploadPart(upload, partNumber, entity);
-    }
-
-    @Override
-    public MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
-                                               final int partNumber,
-                                               final InputStream inputStream)
-            throws IOException {
-        HttpEntity entity = new MantaInputStreamEntity(inputStream, ContentType.APPLICATION_OCTET_STREAM);
-        return uploadPart(upload, partNumber, entity);
-    }
-
-    @Override
-    public MantaMultipartUploadPart uploadPart(ServerSideMultipartUpload upload, int partNumber, long contentLength, InputStream inputStream) throws IOException {
-        HttpEntity entity;
-
-        if (contentLength > -1) {
-            entity = new MantaInputStreamEntity(inputStream, contentLength,
-                    ContentType.APPLICATION_OCTET_STREAM);
-        } else {
-            entity = new MantaInputStreamEntity(inputStream,
-                    ContentType.APPLICATION_OCTET_STREAM);
-        }
-
-        return uploadPart(upload, partNumber, entity);
-    }
-
     /**
      * Uploads a single part of a multipart upload.
      *
@@ -321,9 +250,10 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    private MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
-                                                final int partNumber,
-                                                final HttpEntity entity)
+    @Override
+    MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
+                                        final int partNumber,
+                                        final HttpEntity entity)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
         validatePartNumber(partNumber);

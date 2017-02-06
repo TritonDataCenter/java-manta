@@ -66,11 +66,11 @@ public class EncryptingMultipartManagerTest {
                 manager.initiateUpload(path, 35L, metadata, headers);
 
         ArrayList<String> lines = new ArrayList<>();
-        lines.add("Line 1\n");
-        lines.add("Line 2\n");
-        lines.add("Line 3\n");
-        lines.add("Line 4\n");
-        lines.add("Line 5");
+        lines.add("01234567890ABCDEF|}{");
+        lines.add("ZYXWVUTSRQPONMLKJIHG");
+        lines.add("!@#$%^&*()_+-=[]/,.<");
+        lines.add(">~`?abcdefghijklmnop");
+        lines.add("qrstuvxyz");
 
         String expected = StringUtils.join(lines, "");
 
@@ -101,9 +101,9 @@ public class EncryptingMultipartManagerTest {
         MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
         responseHttpHeaders.setContentLength(actualUpload.getContents().length());
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
-                upload.getHmac().getAlgorithm());
+                upload.getEncryptionState().eContext.getCipherDetails().getAuthenticationHmac().getAlgorithm());
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_IV,
-                Base64.getEncoder().encodeToString(upload.getCipher().getIV()));
+                Base64.getEncoder().encodeToString(upload.getEncryptionState().eContext.getCipher().getIV()));
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 cipherDetails.getCipherId());
 
@@ -116,7 +116,7 @@ public class EncryptingMultipartManagerTest {
         try (InputStream fin = new FileInputStream(actualUpload.getContents());
              EofSensorInputStream eofIn = new EofSensorInputStream(fin, null);
              MantaObjectInputStream objIn = new MantaObjectInputStream(response, httpResponse, eofIn);
-             InputStream in = new MantaEncryptedObjectInputStream(objIn, cipherDetails, secretKey, true)) {
+             InputStream in = new MantaEncryptedObjectInputStream(objIn, cipherDetails, secretKey, false)) {
             String actual = IOUtils.toString(in, "UTF-8");
 
             Assert.assertEquals(actual, expected);
@@ -180,6 +180,7 @@ public class EncryptingMultipartManagerTest {
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory, config);
 
-        return new EncryptingMultipartManager<>(encryptionContext, httpHelper, testManager);
+        return new EncryptingMultipartManager<>(secretKey, cipherDetails,
+                httpHelper, testManager);
     }
 }

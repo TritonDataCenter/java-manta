@@ -4,28 +4,29 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.uuid.Generators;
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.client.jobs.MantaJob;
-import com.joyent.manta.client.jobs.MantaJobBuilder;
-import com.joyent.manta.client.jobs.MantaJobPhase;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.util.MantaUtils;
+import com.joyent.manta.client.jobs.MantaJob;
+import com.joyent.manta.client.jobs.MantaJobBuilder;
+import com.joyent.manta.client.jobs.MantaJobPhase;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
+import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -193,20 +194,20 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
     @Override
     public MantaMultipartUpload initiateUpload(final String path) throws IOException {
-        return initiateUpload(path, null, null);
+        return initiateUpload(path, new MantaMetadata(), new MantaHttpHeaders());
     }
 
     @Override
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata) throws IOException {
-        return initiateUpload(path, mantaMetadata, null);
+        return initiateUpload(path, mantaMetadata, new MantaHttpHeaders());
     }
 
     @Override
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
-        return initiateUpload(path, null, mantaMetadata, httpHeaders);
+        return initiateUpload(path, -1L, mantaMetadata, httpHeaders);
     }
 
     @Override
@@ -244,102 +245,38 @@ public class JobsMultipartManager extends AbstractMultipartManager
         return new JobsMultipartUpload(uploadId, path);
     }
 
-    /**
-     * Uploads a single part of a multipart upload.
-     *
-     * @param upload multipart upload object
-     * @param partNumber part number to identify relative location in final file
-     * @param contents String contents to be written in UTF-8
-     * @return multipart single part object
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
     @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final String contents)
-            throws IOException {
-        final InputStream is = new ByteArrayInputStream(contents.getBytes("UTF-8"));
-        return uploadPart(upload, partNumber, is);
-    }
-
-
-    /**
-     * Uploads a single part of a multipart upload.
-     *
-     * @param upload multipart upload object
-     * @param partNumber part number to identify relative location in final file
-     * @param bytes byte array containing data of the part to be uploaded
-     * @return multipart single part object
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final byte[] bytes)
-            throws IOException {
-        ByteArrayInputStream is = new ByteArrayInputStream(bytes);
-        return uploadPart(upload, partNumber, bytes);
-    }
-
-
-    /**
-     * Uploads a single part of a multipart upload.
-     *
-     * @param upload multipart upload object
-     * @param partNumber part number to identify relative location in final file
-     * @param file file containing data of the part to be uploaded
-     * @return multipart single part object
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final File file)
-            throws IOException {
-        Validate.notNull(file, "File must not be null");
-
-        if (!file.exists()) {
-            String msg = String.format("File doesn't exist: %s",
-                    file.getPath());
-            throw new FileNotFoundException(msg);
-        }
-
-        if (!file.canRead()) {
-            String msg = String.format("Can't access file for read: %s",
-                    file.getPath());
-            throw new IOException(msg);
-        }
-        return uploadPart(upload, partNumber, new FileInputStream(file));
-    }
-
-
-    /**
-     * Uploads a single part of a multipart upload.
-     *
-     * @param upload multipart upload object
-     * @param partNumber part number to identify relative location in final file
-     * @param inputStream stream providing data for part to be uploaded
-     * @return multipart single part object
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final InputStream inputStream)
-            throws IOException {
+    MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+                                        final int partNumber,
+                                        final HttpEntity entity) throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
+        Validate.notNull(entity, "Upload entity must not be null");
+
         final String path = multipartPath(upload.getId(), partNumber);
-        final MantaObjectResponse response = mantaClient.put(path, inputStream);
+        final HttpPut put = mantaClient.getConnectionFactory().put(path);
+        put.setEntity(entity);
 
-        return new MantaMultipartUploadPart(response);
-    }
+        final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
-    @Override
-    public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
-                                               final int partNumber,
-                                               final long contentLength,
-                                               final InputStream inputStream) throws IOException {
-        return uploadPart(upload, partNumber, inputStream);
+        try (CloseableHttpResponse response = mantaClient.getConnectionContext().getHttpClient().execute(put)) {
+            StatusLine statusLine = response.getStatusLine();
+
+            final MantaObjectResponse objectResponse = new MantaObjectResponse(path,
+                    new MantaHttpHeaders(response.getAllHeaders()));
+
+            if (statusLine.getStatusCode() != expectedStatusCode) {
+                String errorMessage = "Manta server responded with an unexpected response code";
+                // We create the exception below because it will parse the JSON error codes
+                MantaClientHttpResponseException mchre =
+                        new MantaClientHttpResponseException(put, response, path);
+                // We chain it to this exception so that it obeys the contract
+                MantaMultipartException e = new MantaMultipartException(errorMessage, mchre);
+                HttpHelper.annotateContextedException(e, put, response);
+                throw e;
+            }
+
+            return new MantaMultipartUploadPart(objectResponse);
+        }
     }
 
     /**
@@ -513,7 +450,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         try (Stream<? extends MantaMultipartUploadTuple> stream =
                      StreamSupport.stream(parts.spliterator(), false)) {
-            complete(upload, stream, null);
+            complete(upload, stream);
         }
     }
 
@@ -532,26 +469,6 @@ public class JobsMultipartManager extends AbstractMultipartManager
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
-
-        complete(upload, partsStream, null);
-    }
-
-    /**
-     * Completes a multipart transfer by assembling the parts on Manta.
-     * This is an asynchronous operation and you will need to call
-     * {@link #waitForCompletion(MantaMultipartUpload, Duration, int, Function)}
-     * to block until the operation completes.
-     *
-     * @param upload multipart upload object
-     * @param partsStream stream of multipart part objects
-     * @throws IOException thrown if there is a problem connecting to Manta
-     */
-    public void complete(final MantaMultipartUpload upload,
-                         final Stream<? extends MantaMultipartUploadTuple> partsStream,
-                         final MantaMetadata extraMetadata)
-            throws IOException {
-        Validate.notNull(upload, "Upload  must not be null");
-
         LOGGER.debug("Completing multipart upload [{}]", upload.getId());
 
         final String uploadDir = multipartUploadDir(upload.getId());
@@ -623,11 +540,6 @@ public class JobsMultipartManager extends AbstractMultipartManager
         }
 
         MantaMetadata objectMetadata = metadata.getObjectMetadata();
-        if (objectMetadata != null && extraMetadata != null) {
-            objectMetadata.putAll(extraMetadata);
-        } else if (objectMetadata == null && extraMetadata != null) {
-            objectMetadata = extraMetadata;
-        }
 
         if (objectMetadata != null) {
             Set<Map.Entry<String, String>> entries = objectMetadata.entrySet();

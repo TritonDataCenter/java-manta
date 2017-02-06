@@ -20,9 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -55,7 +53,7 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
         MantaMultipartUpload upload = super.initiateUpload(path, null, httpHeaders);
         EncryptionContext eContext = this.httpHelper.newEncryptionContext();
         // last init wins?
-        uploadState.put(upload, new EncryptionState(eContext, mantaMetadata));
+        uploadState.put(upload, new EncryptionState(eContext));
         return upload;
     }
 
@@ -135,38 +133,16 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
             ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedEntityHeaders(encryptionMetadata, eState.eContext.getCipher());
             //((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptionPlaintextLengthHeader(metadata, eContext.getCipher());
 
-            if (eState.mantaMetadata != null) {
-                MantaMetadata encryptedMetadata = new MantaMetadata(eState.mantaMetadata);
-                ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedMetadata(encryptedMetadata);
-                encryptionMetadata.putAll(encryptedMetadata);
-            }
+//            if (eState.mantaMetadata != null) {
+//                MantaMetadata encryptedMetadata = new MantaMetadata(eState.mantaMetadata);
+//                ((EncryptionHttpHelper) mantaClient.httpHelper).attachEncryptedMetadata(encryptedMetadata);
+//                encryptionMetadata.putAll(encryptedMetadata);
+//            }
 
-            super.complete(upload, finalPartsStream, encryptionMetadata);
+            super.complete(upload, finalPartsStream);
         } finally {
             eState.lock.unlock();
         }
         uploadState.remove(upload);
-    }
-
-
-
-    private static class EncryptionState {
-        // FIXME with public stuff
-        public final EncryptionContext eContext;
-        public final ReentrantLock lock;
-        public int lastPartNumber = -1;
-        public MultipartOutputStream multipartStream = null;
-        public OutputStream cipherStream = null;
-        // If we are going to state, it is easy enough to keep metadata, and this helps us encrypt in the right place
-        public MantaMetadata mantaMetadata = null;
-        //cipher or entity junk? Context?
-        // iostream
-        // lock!?!
-        public EncryptionState(EncryptionContext eContext, MantaMetadata mantaMetadata) {
-            this.eContext = eContext;
-            this.lock = new ReentrantLock();
-            this.mantaMetadata = mantaMetadata;
-        }
-
     }
 }

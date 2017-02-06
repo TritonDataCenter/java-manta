@@ -14,6 +14,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
@@ -57,7 +58,7 @@ public class JobsMultipartManagerIT {
     @BeforeClass()
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-        this.usingEncryption = usingEncryption;
+        this.usingEncryption = BooleanUtils.toBoolean(usingEncryption);
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);

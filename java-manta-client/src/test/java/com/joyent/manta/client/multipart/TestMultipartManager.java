@@ -3,9 +3,12 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -126,18 +129,10 @@ public class TestMultipartManager
                                                int partNumber,
                                                InputStream inputStream)
             throws IOException {
-        UUID partId = UUID.randomUUID();
-        File part = new File(upload.getPartsPath() + File.separator + partNumber);
-        File partIdFile = new File(part.getPath() + ".id");
-        FileUtils.write(partIdFile, partId.toString(), "UTF-8");
+        HttpEntity entity = new MantaInputStreamEntity(inputStream,
+                ContentType.APPLICATION_OCTET_STREAM);
 
-        try (FileOutputStream fout = new FileOutputStream(part)) {
-            IOUtils.copy(inputStream, fout);
-        } finally {
-            IOUtils.closeQuietly(inputStream);
-        }
-
-        return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId.toString());
+        return uploadPart(upload, partNumber, entity);
     }
 
     @Override
@@ -147,6 +142,22 @@ public class TestMultipartManager
                                                InputStream inputStream)
             throws IOException {
         return uploadPart(upload, partNumber, inputStream);
+    }
+
+    @Override
+    protected MantaMultipartUploadPart uploadPart(TestMultipartUpload upload,
+                                                  int partNumber,
+                                                  HttpEntity entity) throws IOException {
+        UUID partId = UUID.randomUUID();
+        File part = new File(upload.getPartsPath() + File.separator + partNumber);
+        File partIdFile = new File(part.getPath() + ".id");
+        FileUtils.write(partIdFile, partId.toString(), "UTF-8");
+
+        try (FileOutputStream fout = new FileOutputStream(part)) {
+            entity.writeTo(fout);
+        }
+
+        return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId.toString());
     }
 
     @Override

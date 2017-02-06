@@ -1,14 +1,10 @@
 package com.joyent.manta.client.crypto;
 
-import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
-import com.joyent.manta.util.HmacOutputStream;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
-import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -16,17 +12,11 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.joyent.manta.client.multipart.MultipartOutputStream;
 
 import javax.crypto.Cipher;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 
 // FIXME: much dupe
 public class EncryptingPartEntity implements HttpEntity {
@@ -66,7 +56,9 @@ public class EncryptingPartEntity implements HttpEntity {
     private final MultipartOutputStream multipartStream;
 
 
-    public EncryptingPartEntity(final EncryptionContext eContext, final OutputStream cipherStream, MultipartOutputStream multipartStream,
+    public EncryptingPartEntity(final EncryptionContext eContext,
+                                final OutputStream cipherStream,
+                                MultipartOutputStream multipartStream,
                                 final HttpEntity wrapped) {
         // if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
         //     String msg = String.format("Input content length exceeded maximum "
@@ -132,7 +124,7 @@ public class EncryptingPartEntity implements HttpEntity {
             final int bufferSize = 128;
             long bytesCopied = IOUtils.copy(getContent(), cipherStream, bufferSize);
             cipherStream.flush();
-            // how to close on final?            
+            // how to close on final?
             /* We don't close quietly because we want the operation to fail if
              * there is an error closing out the CipherOutputStream. */
             //out.close();

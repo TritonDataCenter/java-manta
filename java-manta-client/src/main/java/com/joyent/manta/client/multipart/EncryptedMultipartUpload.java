@@ -1,9 +1,5 @@
 package com.joyent.manta.client.multipart;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -22,48 +18,25 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
      */
     private final WRAPPED wrapped;
 
-    /**
-     * Cipher containing the current encryption state of all of the parts.
-     */
-    private final transient Cipher cipher;
-
-    /**
-     * HMAC instance that checksums non-AEAD ciphertext.
-     */
-    private final transient Mac hmac;
-
-    /**
-     * The counter for the parts processed. This is used to guarantee sequential
-     * processing of parts.
-     */
-    private int currentPartNumber = 0;
-
-    /**
-     * Bytes from the last part that didn't properly fit into the cipher's
-     * block size.
-     */
-    private byte[] lastBlockOverrunBytes;
+    private final EncryptionState encryptionState;
 
     /**
      * Creates a new encrypted instance based on an existing instance.
      * @param wrapped instance to wrap
      */
     public EncryptedMultipartUpload(final WRAPPED wrapped) {
-        this(wrapped, null, null);
+        this(wrapped, null);
     }
 
     /**
      * Creates a new encrypted instance based on an existing instance.
      * @param wrapped instance to wrap
-     * @param cipher cipher instance used to encrypt the parts
-     * @param hmac HMAC instance that checksums non-AEAD ciphertext
      */
     public EncryptedMultipartUpload(final WRAPPED wrapped,
-                                    final Cipher cipher,
-                                    final Mac hmac) {
+                                    final EncryptionState encryptionState) {
         this.wrapped = wrapped;
-        this.cipher = cipher;
-        this.hmac = hmac;
+        this.encryptionState = encryptionState;
+
     }
 
     @Override
@@ -83,28 +56,8 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
         return wrapped;
     }
 
-    Cipher getCipher() {
-        return cipher;
-    }
-
-    Mac getHmac() {
-        return hmac;
-    }
-
-    void incrementPartNumber() {
-        this.currentPartNumber++;
-    }
-
-    int getCurrentPartNumber() {
-        return this.currentPartNumber;
-    }
-
-    byte[] getLastBlockOverrunBytes() {
-        return this.lastBlockOverrunBytes;
-    }
-
-    void setLastBlockOverrunBytes(final byte[] lastBlockOverrunBytes) {
-        this.lastBlockOverrunBytes = lastBlockOverrunBytes;
+    EncryptionState getEncryptionState() {
+        return encryptionState;
     }
 
     /**
@@ -116,7 +69,7 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
      * @return true when this object can track the state of uplaoded parts
      */
     boolean canUpload() {
-        return this.cipher != null;
+        return this.encryptionState != null;
     }
 
     @Override
@@ -135,16 +88,5 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     @Override
     public int hashCode() {
         return Objects.hash(wrapped);
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("wrapped", wrapped)
-                .append("cipher", cipher)
-                .append("hmac", hmac)
-                .append("currentPartNumber", currentPartNumber)
-                .append("lastBlockOverrunBytes", lastBlockOverrunBytes)
-                .toString();
     }
 }
