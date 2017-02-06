@@ -18,6 +18,7 @@ import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -97,6 +98,28 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
         MantaMultipartUpload upload = super.initiateUpload(path, contentLength, mantaMetadata, httpHeaders);
         uploadState.put(upload, new EncryptionState(eContext));
         return upload;
+    }
+
+    @Override
+    public MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload,
+                                               int partNumber,
+                                               String contents) throws IOException {
+        byte[] stringContents = contents.getBytes("UTF-8");
+        try (ByteArrayInputStream bin = new ByteArrayInputStream(stringContents)) {
+            return uploadPart(upload, partNumber, bin);
+        }
+    }
+
+    @Override
+    public MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload, int partNumber, byte[] bytes) throws IOException {
+        try (ByteArrayInputStream bin = new ByteArrayInputStream(bytes)) {
+            return uploadPart(upload, partNumber, bin);
+        }
+    }
+
+    @Override
+    public MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload, int partNumber, long contentLength, InputStream inputStream) throws IOException {
+        return super.uploadPart(upload, partNumber, inputStream);
     }
 
     @Override
