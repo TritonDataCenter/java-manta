@@ -29,12 +29,17 @@
             <email>elijah@zupancic.name</email>
             <organization>Joyent</organization>
             <organizationUrl>joyent.com</organizationUrl>
+            <timezone>US/Pacific</timezone>
         </developer>
         <developer>
-            <name>Phillip Ross</name>
-            <email>phillip.w.g.ross at gmail.com</email>
-            <organization>Luminosity Labs LLC</organization>
-            <timezone>US/Eastern</timezone>
+            <name>Wyatt Lyon Preul</name>
+            <organization>Joyent</organization>
+            <organizationUrl>joyent.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Chris Borroughs</name>
+            <organization>Joyent</organization>
+            <organizationUrl>joyent.com</organizationUrl>
         </developer>
     </developers>
     <contributors>
@@ -42,6 +47,12 @@
             <name>Yunong Xiao</name>
             <email>yjxiao@gmail.com</email>
             <url>yunong.ca</url>
+        </contributor>
+        <contributor>
+            <name>Phillip Ross</name>
+            <email>phillip.w.g.ross at gmail.com</email>
+            <organization>Luminosity Labs LLC</organization>
+            <timezone>US/Eastern</timezone>
         </contributor>
     </contributors>
 
