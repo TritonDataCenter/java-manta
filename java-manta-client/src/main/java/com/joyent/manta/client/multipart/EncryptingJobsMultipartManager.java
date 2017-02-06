@@ -11,6 +11,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -18,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,15 +49,61 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
         uploadState = new ConcurrentHashMap<>();
     }
 
-
+    @Override
     public MantaMultipartUpload initiateUpload(final String path,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
-        MantaMultipartUpload upload = super.initiateUpload(path, null, httpHeaders);
+        return initiateUpload(path, null, mantaMetadata, httpHeaders);
+    }
+
+
+    @Override
+    public MantaMultipartUpload initiateUpload(final String path,
+                                               final Long contentLength,
+                                               final MantaMetadata mantaMetadata,
+                                               final MantaHttpHeaders httpHeaders) throws IOException {
         EncryptionContext eContext = this.httpHelper.newEncryptionContext();
         // last init wins?
+
+        httpHelper.attachEncryptionCipherHeaders(mantaMetadata);
+        httpHelper.attachEncryptedMetadata(mantaMetadata);
+        httpHelper.attachEncryptedEntityHeaders(mantaMetadata, eContext.getCipher());
+        /* We remove the e- prefixed metadata because we have already
+         * encrypted it and stored it in m-encrypt-metadata. */
+        mantaMetadata.removeAllEncrypted();
+
+        /* If content-length is specified, we store the content length as
+         * the plaintext content length on the object's metadata and then
+         * remove the header because server-side MPU will attempt to verify
+         * that the content-length in the header is the same as the ciphertext's
+         * length. This won't work because the ciphertext length will always
+         * be different than the plaintext content length. */
+        if (httpHeaders.getContentLength() != null && httpHeaders.getContentLength() > -1) {
+            mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    httpHeaders.getContentLength().toString());
+            httpHeaders.remove(HttpHeaders.CONTENT_LENGTH);
+        } else if (contentLength != null && contentLength > -1) {
+            mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+                    contentLength.toString());
+        }
+
+        /* If the Content-MD5 header is set, it will always be inaccurate because
+         * the ciphertext will have a different checksum and it will cause the
+         * server-side checksum verification to fail. */
+        if (httpHeaders.getContentMD5() != null) {
+            httpHeaders.remove(HttpHeaders.CONTENT_MD5);
+        }
+
+        MantaMultipartUpload upload = super.initiateUpload(path, contentLength, mantaMetadata, httpHeaders);
         uploadState.put(upload, new EncryptionState(eContext));
         return upload;
+    }
+
+    @Override
+    public MantaMultipartUploadPart uploadPart(MantaMultipartUpload upload, int partNumber, File file) throws IOException {
+        try (FileInputStream fin = new FileInputStream(file)) {
+            return uploadPart(upload, partNumber, fin);
+        }
     }
 
     public MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
