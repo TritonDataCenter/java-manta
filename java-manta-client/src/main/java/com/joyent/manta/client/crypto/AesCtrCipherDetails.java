@@ -104,7 +104,7 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         adjustedStart = ((long) startBlockNumber) * blockSize;
 
         // Get the full block for the end range, plus an additional block
-        final double endBlockNumber = Math.ceil(endInclusive / blockSize) + 1;
+        double endBlockNumber = Math.ceil(endInclusive / blockSize) + 1;
 
         adjustedEnd = (((long) endBlockNumber) * blockSize) + 1;
 
