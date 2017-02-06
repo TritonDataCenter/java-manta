@@ -488,28 +488,32 @@ public class JobsMultipartManager extends AbstractMultipartManager
         List<MantaMultipartUploadTuple> missingTuples = new ArrayList<>();
 
         final AtomicInteger count = new AtomicInteger(0);
-        partsStream.sorted().distinct().forEach(part -> {
-            final int i = count.incrementAndGet();
 
-            if (i > getMaxParts()) {
-                String msg = String.format("Too many multipart parts specified [%d]. "
-                        + "The maximum number of parts is %d", getMaxParts(), count.get());
-                throw new IllegalArgumentException(msg);
-            }
+        try (Stream<? extends MantaMultipartUploadTuple> distinct =
+                     partsStream.sorted().distinct()) {
+            distinct.forEach(part -> {
+                final int i = count.incrementAndGet();
 
-            // Catch and log any gaps in part numbers
-            if (i != part.getPartNumber()) {
-                missingTuples.add(new MantaMultipartUploadTuple(i, "N/A"));
-            } else {
-                final MantaMultipartUploadPart o = listing.get(part.getEtag());
-
-                if (o != null) {
-                    jobExecText.append(o.getObjectPath()).append(" ");
-                } else {
-                    missingTuples.add(part);
+                if (i > getMaxParts()) {
+                    String msg = String.format("Too many multipart parts specified [%d]. "
+                            + "The maximum number of parts is %d", getMaxParts(), count.get());
+                    throw new IllegalArgumentException(msg);
                 }
-            }
-        });
+
+                // Catch and log any gaps in part numbers
+                if (i != part.getPartNumber()) {
+                    missingTuples.add(new MantaMultipartUploadTuple(i, "N/A"));
+                } else {
+                    final MantaMultipartUploadPart o = listing.get(part.getEtag());
+
+                    if (o != null) {
+                        jobExecText.append(o.getObjectPath()).append(" ");
+                    } else {
+                        missingTuples.add(part);
+                    }
+                }
+            });
+        }
 
         if (!missingTuples.isEmpty()) {
             final MantaMultipartException e = new MantaMultipartException(

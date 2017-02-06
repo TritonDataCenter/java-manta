@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -409,13 +410,18 @@ public class JobsMultipartManagerIT {
     }
 
     public void canReturnEmptyMultipartList() throws IOException {
-        List<MantaMultipartUpload> list = multipart.listInProgress().collect(Collectors.toList());
+        final List<MantaMultipartUpload> list;
+
+        try (Stream<MantaMultipartUpload> inProgress = multipart.listInProgress()) {
+            list = inProgress.collect(Collectors.toList());
+        }
+
         if (!list.isEmpty()) {
             System.err.println("List should be empty. Actually had " + list.size() + " elements");
             list.forEach(element -> {
                 System.err.println(element.getPath());
-                try {
-                    multipart.listParts(element).forEach(part -> {
+                try (Stream<MantaMultipartUploadPart> innerStream = multipart.listParts(element)) {
+                    innerStream.forEach(part -> {
                         System.err.println("   " + part.getObjectPath());
                     });
                 } catch (IOException e) {
@@ -441,10 +447,13 @@ public class JobsMultipartManagerIT {
             uploads.add(multipart.initiateUpload(object));
         }
 
-        try {
-            List<MantaMultipartUpload> list = multipart.listInProgress()
-                    .collect(Collectors.toCollection(ArrayList::new));
+        final List<MantaMultipartUpload> list;
 
+        try (Stream<MantaMultipartUpload> inProgress = multipart.listInProgress()) {
+             list = inProgress.collect(Collectors.toCollection(ArrayList::new));
+        }
+
+        try {
             assertFalse(list.isEmpty(), "List shouldn't be empty");
 
             for (MantaMultipartUpload upload : uploads) {
