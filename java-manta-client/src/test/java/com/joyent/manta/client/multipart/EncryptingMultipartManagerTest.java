@@ -5,7 +5,6 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
-import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -43,7 +42,6 @@ import static org.mockito.Mockito.mock;
 public class EncryptingMultipartManagerTest {
     SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
     SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-    EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
     TestMultipartManager testManager = new TestMultipartManager();
     EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
 
@@ -116,7 +114,7 @@ public class EncryptingMultipartManagerTest {
         try (InputStream fin = new FileInputStream(actualUpload.getContents());
              EofSensorInputStream eofIn = new EofSensorInputStream(fin, null);
              MantaObjectInputStream objIn = new MantaObjectInputStream(response, httpResponse, eofIn);
-             InputStream in = new MantaEncryptedObjectInputStream(objIn, cipherDetails, secretKey, false)) {
+             InputStream in = new MantaEncryptedObjectInputStream(objIn, cipherDetails, secretKey, true)) {
             String actual = IOUtils.toString(in, "UTF-8");
 
             Assert.assertEquals(actual, expected);
