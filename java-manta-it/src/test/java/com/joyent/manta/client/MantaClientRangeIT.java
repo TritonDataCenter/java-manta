@@ -102,8 +102,7 @@ public class MantaClientRangeIT {
     public final void canGetWithUnboundedEndRange() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        // The 50th byte will be located at 49 in the string
-        final String expected = StringUtils.substring(TEST_DATA, 49);
+        final String expected = StringUtils.substring(TEST_DATA, 50);
 
         mantaClient.put(path, TEST_DATA);
 

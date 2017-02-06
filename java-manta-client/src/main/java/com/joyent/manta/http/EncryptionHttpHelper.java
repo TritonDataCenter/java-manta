@@ -387,7 +387,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     plaintextStart, plaintextEnd);
 
             binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
-            initialSkipBytes = computedRanges.getCiphertextStartPositionInclusive();
+            initialSkipBytes = computedRanges.getPlaintextBytesToSkipInitially() + computedRanges.getCiphertextStartPositionInclusive();
 
             if (computedRanges.getCiphertextEndPositionInclusive() > 0) {
                 binaryEndPositionInclusive = computedRanges.getCiphertextEndPositionInclusive();
