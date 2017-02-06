@@ -63,15 +63,23 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
                                                final Long contentLength,
                                                final MantaMetadata mantaMetadata,
                                                final MantaHttpHeaders httpHeaders) throws IOException {
+        final MantaMetadata metadata;
+
+        if (mantaMetadata == null) {
+            metadata = new MantaMetadata();
+        } else {
+            metadata = mantaMetadata;
+        }
+
         EncryptionContext eContext = this.httpHelper.newEncryptionContext();
         // last init wins?
 
-        httpHelper.attachEncryptionCipherHeaders(mantaMetadata);
-        httpHelper.attachEncryptedMetadata(mantaMetadata);
-        httpHelper.attachEncryptedEntityHeaders(mantaMetadata, eContext.getCipher());
+        httpHelper.attachEncryptionCipherHeaders(metadata);
+        httpHelper.attachEncryptedMetadata(metadata);
+        httpHelper.attachEncryptedEntityHeaders(metadata, eContext.getCipher());
         /* We remove the e- prefixed metadata because we have already
          * encrypted it and stored it in m-encrypt-metadata. */
-        mantaMetadata.removeAllEncrypted();
+        metadata.removeAllEncrypted();
 
         /* If content-length is specified, we store the content length as
          * the plaintext content length on the object's metadata and then
@@ -80,11 +88,11 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
          * length. This won't work because the ciphertext length will always
          * be different than the plaintext content length. */
         if (httpHeaders.getContentLength() != null && httpHeaders.getContentLength() > -1) {
-            mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                     httpHeaders.getContentLength().toString());
             httpHeaders.remove(HttpHeaders.CONTENT_LENGTH);
         } else if (contentLength != null && contentLength > -1) {
-            mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
+            metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                     contentLength.toString());
         }
 
@@ -95,7 +103,8 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
             httpHeaders.remove(HttpHeaders.CONTENT_MD5);
         }
 
-        MantaMultipartUpload upload = super.initiateUpload(path, contentLength, mantaMetadata, httpHeaders);
+        MantaMultipartUpload upload = super.initiateUpload(path, contentLength,
+                metadata, httpHeaders);
         uploadState.put(upload, new EncryptionState(eContext));
         return upload;
     }

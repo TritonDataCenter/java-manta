@@ -217,6 +217,14 @@ public class JobsMultipartManager extends AbstractMultipartManager
                                                final MantaHttpHeaders httpHeaders) throws IOException {
         // contentLength parameter is entirely ignored
 
+        final MantaMetadata metadata;
+
+        if (mantaMetadata == null) {
+            metadata = new MantaMetadata();
+        } else {
+            metadata = mantaMetadata;
+        }
+
         final UUID uploadId = Generators.timeBasedGenerator().generate();
 
         if (LOGGER.isDebugEnabled()) {
@@ -229,15 +237,15 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         final String metadataPath = uploadDir + METADATA_FILE;
 
-        final MultipartMetadata metadata = new MultipartMetadata()
+        final MultipartMetadata multipartMetadata = new MultipartMetadata()
                 .setPath(path)
-                .setObjectMetadata(mantaMetadata);
+                .setObjectMetadata(metadata);
 
         if (httpHeaders != null) {
-            metadata.setContentType(httpHeaders.getContentType());
+            multipartMetadata.setContentType(httpHeaders.getContentType());
         }
 
-        final byte[] metadataBytes = MantaObjectMapper.INSTANCE.writeValueAsBytes(metadata);
+        final byte[] metadataBytes = MantaObjectMapper.INSTANCE.writeValueAsBytes(multipartMetadata);
 
         LOGGER.debug("Writing metadata to: {}", metadataPath);
         mantaClient.put(metadataPath, metadataBytes);
