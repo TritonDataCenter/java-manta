@@ -398,8 +398,15 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             plaintextRangeLength = computedRanges.getLengthOfPlaintextIncludingSkipBytes();
         }
 
-        requestHeaders.setRange(String.format("bytes=%d-%d",
-                binaryStartPositionInclusive, binaryEndPositionInclusive));
+        // We don't know the ending position
+        if (binaryEndPositionInclusive == 0) {
+            requestHeaders.setRange(String.format("bytes=%d-",
+                    binaryStartPositionInclusive));
+        } else {
+            requestHeaders.setRange(String.format("bytes=%d-%d",
+                    binaryStartPositionInclusive, binaryEndPositionInclusive));
+        }
+
 
         return new Long[] {initialSkipBytes, plaintextRangeLength};
     }

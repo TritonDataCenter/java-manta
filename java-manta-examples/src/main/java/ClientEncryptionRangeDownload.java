@@ -50,13 +50,15 @@ public class ClientEncryptionRangeDownload {
             System.out.println(response.getHttpHeaders().toString());
 
             MantaHttpHeaders headers = new MantaHttpHeaders();
-            headers.setByteRange(32L, 63L);
+            headers.setByteRange(33L, null);
 
-            // Print out every line from file streamed real-time from Manta
-            InputStream is = client.getAsInputStream(mantaPath, headers);
-            byte[] buffer = new byte[32];
-            is.read(buffer);
-            System.out.write(buffer);
+            try (InputStream is = client.getAsInputStream(mantaPath, headers);
+                 Scanner scanner = new Scanner(is)) {
+
+                while (scanner.hasNextLine()) {
+                    System.out.println(scanner.nextLine());
+                }
+            }
         }
     }
 }
