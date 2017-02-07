@@ -103,6 +103,7 @@ class CreateMPURequestBody {
         }
     }
 
+    @SuppressWarnings("unused")
     public String getObjectPath() {
         return objectPath;
     }

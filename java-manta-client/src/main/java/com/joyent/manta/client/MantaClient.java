@@ -209,9 +209,6 @@ public class MantaClient implements AutoCloseable {
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
 
-        final boolean verifyUploads = BooleanUtils.toBooleanDefaultIfNull(config.verifyUploads(),
-                true);
-
         this.connectionFactory = new MantaConnectionFactory(config, keyPair);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
 

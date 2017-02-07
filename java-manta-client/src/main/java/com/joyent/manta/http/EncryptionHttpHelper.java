@@ -15,7 +15,6 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
-import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
@@ -99,8 +98,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     /**
      * Secret key used to encrypt and decrypt data.
      */
-    // FIXME
-    public final SecretKey secretKey;
+    private final SecretKey secretKey;
 
     /**
      * Cipher implementation used to encrypt and decrypt data.
@@ -152,11 +150,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             throw new MantaClientEncryptionException(
                     "Either private encryption key path or bytes must be specified");
         }
-    }
-
-
-    public EncryptionContext newEncryptionContext() {
-        return new EncryptionContext(this.secretKey, this.cipherDetails);
     }
 
     @Override
@@ -244,14 +237,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         return response;
     }
-
-    public MantaObjectResponse rawHttpPut(final String path,
-                                       final MantaHttpHeaders headers,
-                                       final HttpEntity originalEntity,
-                                       final MantaMetadata originalMetadata) throws IOException {
-        return super.httpPut(path, headers, originalEntity, originalMetadata);
-    }
-
 
     @Override
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
@@ -1062,5 +1047,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             mcee.setContextValue("key_details", details);
             throw mcee;
         }
+    }
+
+    public SecretKey getSecretKey() {
+        return secretKey;
     }
 }

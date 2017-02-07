@@ -11,12 +11,37 @@ import javax.crypto.Mac;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
 
-
-public class EncryptingEntityHelper {
+/**
+ * Utility class that provides methods for cross-cutting encryption operations.
+ *
+ * @author <a href="https://github.com/cburroughs/">Chris Burroughs</a>
+ * @since 3.0.0
+ */
+public final class EncryptingEntityHelper {
+    /**
+     * Logger instance.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingEntityHelper.class);
 
+    /**
+     * Private constructor for utility class.
+     */
+    private EncryptingEntityHelper() {
+    }
 
-    public static OutputStream makeCipherOutputforStream(final OutputStream httpOut, final EncryptionContext eContext) {
+    /**
+     * Creates a new {@link OutputStream} implementation that is backed directly
+     * by a {@link CipherOutputStream} or a {@link HmacOutputStream} that wraps
+     * a {@link CipherOutputStream} depending on the encryption cipher/mode being
+     * used. This allows us to support EtM authentication for ciphers/modes that
+     * do not natively support authenticating encryption.
+     *
+     * @param httpOut output stream for writing to the HTTP network socket
+     * @param encryptionContext current encryption running state
+     * @return a new stream configured based on the parameters
+     */
+    public static OutputStream makeCipherOutputForStream(
+            final OutputStream httpOut, final EncryptionContext encryptionContext) {
         /* We have to use a "close shield" here because when close() is called
          * on a CipherOutputStream() for two reasons:
          *
@@ -28,73 +53,31 @@ public class EncryptingEntityHelper {
          *    thereby corrupting the ciphertext. */
 
         final CloseShieldOutputStream noCloseOut = new CloseShieldOutputStream(httpOut);
-        final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, eContext.getCipher());
+        final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, encryptionContext.getCipher());
         final OutputStream out;
         final Mac hmac;
 
         // Things are a lot more simple if we are using AEAD
-        if (eContext.getCipherDetails().isAEADCipher()) {
+        if (encryptionContext.getCipherDetails().isAEADCipher()) {
             out = cipherOut;
         } else {
-            hmac = eContext.getCipherDetails().getAuthenticationHmac();
+            hmac = encryptionContext.getCipherDetails().getAuthenticationHmac();
             try {
-                hmac.init(eContext.getSecretKey());
+                hmac.init(encryptionContext.getSecretKey());
                 /* The first bytes of the HMAC are the IV. This is done in order to
                  * prevent IV collision or spoofing attacks. */
-                hmac.update(eContext.getCipher().getIV());
+                hmac.update(encryptionContext.getCipher().getIV());
             } catch (InvalidKeyException e) {
                 String msg = "Error initializing HMAC with secret key";
                 throw new MantaClientEncryptionException(msg, e);
             }
             out = new HmacOutputStream(hmac, cipherOut);
         }
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Creating new OutputStream for multipart [{}]", out.getClass());
+        }
+
         return out;
-
     }
-
-    // /**
-    //  * Copies the entity content to the specified output stream and validates
-    //  * that the number of bytes copied is the same as specified when in the
-    //  * original content-length.
-    //  *
-    //  * @param out stream to copy to
-    //  * @throws IOException throw when there is a problem writing to the streams
-    //  */
-    // private void copyContentToOutputStream(final OutputStream out) throws IOException {
-    //     final long bytesCopied;
-
-    //     /* Only the EmbeddedHttpContent class requires us to actually call
-    //      * write out on the wrapped object. In its particular case it is doing
-    //      * a wrapping operation between an InputStream and an OutputStream in
-    //      * order to provide an OutputStream interface to MantaClient. */
-    //     if (this.wrapped.getClass().equals(EmbeddedHttpContent.class)) {
-    //         CountingOutputStream cout = new CountingOutputStream(out);
-    //         this.wrapped.writeTo(cout);
-    //         cout.flush();
-    //         bytesCopied = cout.getByteCount();
-    //     } else {
-    //         /* We choose a small buffer because large buffer don't result in
-    //          * better performance when writing to a CipherOutputStream. You
-    //          * can try this yourself by fiddling with this value and running
-    //          * EncryptingEntityBenchmark. */
-    //         final int bufferSize = 128;
-
-    //         bytesCopied = IOUtils.copy(getContent(), out, bufferSize);
-    //         out.flush();
-    //     }
-
-    //     /* If we don't know the length of the underlying content stream, we
-    //      * count the number of bytes written, so that it is available. */
-    //     if (originalLength == UNKNOWN_LENGTH) {
-    //         originalLength = bytesCopied;
-    //     } else if (originalLength != bytesCopied) {
-    //         MantaIOException e = new MantaIOException("Bytes copied doesn't equal the "
-    //                 + "specified content length");
-    //         e.setContextValue("specifiedContentLength", originalLength);
-    //         e.setContextValue("actualContentLength", bytesCopied);
-    //         throw e;
-    //     }
-    // }
-
-
 }

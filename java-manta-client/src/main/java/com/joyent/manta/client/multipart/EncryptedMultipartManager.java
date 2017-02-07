@@ -71,7 +71,7 @@ public class EncryptedMultipartManager
         }
 
         this.wrapped = wrapped;
-        this.secretKey = this.httpHelper.secretKey;
+        this.secretKey = this.httpHelper.getSecretKey();
         this.cipherDetails = this.httpHelper.getCipherDetails();
     }
 
@@ -209,7 +209,7 @@ public class EncryptedMultipartManager
                         "Encrypted MPU parts must be serial and sequential");
             } else {
                 encryptionState.multipartStream = new MultipartOutputStream(cipherDetails.getBlockSizeInBytes());
-                encryptionState.cipherStream = EncryptingEntityHelper.makeCipherOutputforStream(
+                encryptionState.cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
                         encryptionState.multipartStream, encryptionContext);
             }
 

@@ -28,12 +28,6 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     public static final AesCtrCipherDetails INSTANCE_256_BIT = new AesCtrCipherDetails(256);
 
     /**
-     * The largest ciphertext size allowed.
-     */
-    private final long ciphertextMaxSize = (getMaximumPlaintextSizeInBytes() / getBlockSizeInBytes())
-            * getBlockSizeInBytes();
-
-    /**
      * Creates a new instance of a AES-CTR cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type

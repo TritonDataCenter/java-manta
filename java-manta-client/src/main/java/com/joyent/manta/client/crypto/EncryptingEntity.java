@@ -134,7 +134,7 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        OutputStream out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
+        OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(httpOut, eContext);
         try {
             copyContentToOutputStream(out);
             /* We don't close quietly because we want the operation to fail if

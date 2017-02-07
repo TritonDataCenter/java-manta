@@ -105,7 +105,6 @@ public class EncryptingPartEntity implements HttpEntity {
     public void writeTo(final OutputStream httpOut) throws IOException {
         multipartStream.setNext(httpOut);
         try {
-            //httpOut.write("foo".getBytes("UTF-8"));
             final int bufferSize = 128;
             long bytesCopied = IOUtils.copy(getContent(), cipherStream, bufferSize);
             cipherStream.flush();
