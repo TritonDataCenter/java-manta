@@ -1,6 +1,5 @@
 package com.joyent.manta.client.multipart;
 
-import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.crypto.EncryptionContext;
 
 import java.io.OutputStream;
@@ -20,8 +19,7 @@ class EncryptionState {
     public int lastPartNumber = -1;
     public MultipartOutputStream multipartStream = null;
     public OutputStream cipherStream = null;
-    // If we are going to state, it is easy enough to keep metadata, and this helps us encrypt in the right place
-    public MantaMetadata mantaMetadata = null;
+
     //cipher or entity junk? Context?
     // iostream
     // lock!?!
@@ -29,6 +27,4 @@ class EncryptionState {
         this.eContext = encryptionContext;
         this.lock = new ReentrantLock();
     }
-
-
 }

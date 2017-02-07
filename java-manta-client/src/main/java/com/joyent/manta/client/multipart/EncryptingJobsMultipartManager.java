@@ -159,7 +159,8 @@ public class EncryptingJobsMultipartManager extends JobsMultipartManager {
             // The content type of the individual parts is unimportant
             // to the job that produced the final result
             ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
-            EncryptingPartEntity entity = new EncryptingPartEntity(eState.eContext, eState.cipherStream, eState.multipartStream,
+            EncryptingPartEntity entity = new EncryptingPartEntity(
+                    eState.cipherStream, eState.multipartStream,
                     new InputStreamEntity(inputStream, contentType));
             final MantaObjectResponse response = ((EncryptionHttpHelper) mantaClient.httpHelper).rawHttpPut(path, null, entity, null);
             eState.lastPartNumber = partNumber;

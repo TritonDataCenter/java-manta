@@ -16,7 +16,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ByteArrayEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +89,8 @@ public class EncryptingMultipartManager
     public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(final String path,
                                                                    final Long contentLength,
                                                                    final MantaMetadata mantaMetadata,
-                                                                   final MantaHttpHeaders httpHeaders) throws IOException {
+                                                                   final MantaHttpHeaders httpHeaders)
+            throws IOException {
         Validate.notNull(path, "Path to object must not be null");
         Validate.notBlank(path, "Path to object must not be blank");
         Validate.notNull(mantaMetadata, "Metadata object must not be null");
@@ -112,11 +112,11 @@ public class EncryptingMultipartManager
          * that the content-length in the header is the same as the ciphertext's
          * length. This won't work because the ciphertext length will always
          * be different than the plaintext content length. */
-        if (httpHeaders.getContentLength() != null) {
+        if (httpHeaders.getContentLength() != null && httpHeaders.getContentLength() > -1) {
             mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                     httpHeaders.getContentLength().toString());
             httpHeaders.remove(HttpHeaders.CONTENT_LENGTH);
-        } else if (contentLength != null) {
+        } else if (contentLength != null && contentLength > -1) {
             mantaMetadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                     contentLength.toString());
         }
@@ -176,8 +176,9 @@ public class EncryptingMultipartManager
             }
 
             final EncryptingPartEntity entity = new EncryptingPartEntity(
-                    encryptionContext, encryptionState.cipherStream,
+                    encryptionState.cipherStream,
                     encryptionState.multipartStream, sourceEntity);
+            encryptionState.lastPartNumber = partNumber;
             return wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
         } finally {
             encryptionState.lock.unlock();
@@ -225,9 +226,8 @@ public class EncryptingMultipartManager
             }
 
             if (remainderStream.size() > 0) {
-                ByteArrayEntity entity = new ByteArrayEntity(remainderStream.toByteArray());
                 MantaMultipartUploadPart finalPart = wrapped.uploadPart(upload.getWrapped(),
-                        encryptionState.lastPartNumber + 1, entity);
+                        encryptionState.lastPartNumber + 1, remainderStream.toByteArray());
                 finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
             }
 

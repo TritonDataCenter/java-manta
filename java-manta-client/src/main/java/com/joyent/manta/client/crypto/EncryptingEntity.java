@@ -9,7 +9,6 @@ import com.joyent.manta.http.entity.EmbeddedHttpContent;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -21,14 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 
 /**
  * {@link HttpEntity} implementation that wraps an entity and encrypts its
@@ -66,6 +61,7 @@ public class EncryptingEntity implements HttpEntity {
     private long originalLength;
 
 
+    // TODO: Properly pass this as a parameter
     private final EncryptionContext eContext;
 
     /**

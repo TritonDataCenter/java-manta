@@ -3,9 +3,10 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
 import javax.crypto.Cipher;
-import java.security.InvalidKeyException;
-import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.SecretKey;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.util.Arrays;
 
 
 // context around a single encryption operation.  namely the secret + cipher info, with an inited IV
@@ -55,7 +56,7 @@ public class EncryptionContext {
     public SupportedCipherDetails getCipherDetails() {
         return cipherDetails;
     }
-    
+
     public Cipher getCipher() {
         return cipher;
     }
@@ -68,7 +69,9 @@ public class EncryptionContext {
      */
     private void initializeCipher() {
         try {
-            byte[] iv = cipherDetails.generateIv();
+            // TODO: Change me back
+            byte[] iv = new byte[cipherDetails.getIVLengthInBytes()];
+            Arrays.fill(iv, (byte)0);
             cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(
@@ -82,5 +85,5 @@ public class EncryptionContext {
                     "There was a problem with the passed algorithm parameters", e);
         }
     }
-    
+
 }
