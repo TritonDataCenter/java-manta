@@ -110,11 +110,10 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
 
         // We want to read a single byte, subtract 1 from adjustedEnd, which assumed 2 or more bytes are read
         if (startInclusive == endInclusive) {
-            plaintextEndLength = 1;
             adjustedEnd--;
-        } else {
-            plaintextEndLength = (endInclusive - startInclusive);
         }
+
+        plaintextEndLength = (endInclusive - startInclusive) + 1;
 
         return new ByteRangeConversion(adjustedStart, plaintextStartAdjustment,
                 adjustedEnd, plaintextEndLength, (long)startBlockNumber);
