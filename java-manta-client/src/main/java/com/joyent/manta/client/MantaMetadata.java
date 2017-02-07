@@ -6,6 +6,7 @@ package com.joyent.manta.client;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.collections4.map.PredicatedMap;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -295,15 +296,6 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      * {@inheritDoc}
      */
     @Override
-    public String toString() {
-        return innerMap.toString();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int hashCode() {
         return innerMap.hashCode();
     }
@@ -424,5 +416,22 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     @Override
     public Set<Entry<String, String>> entrySet() {
         return innerMap.entrySet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        String baseInfo = new ToStringBuilder(this)
+                .append("innerMap", innerMap).toString();
+        StringBuilder builder = new StringBuilder(baseInfo).append("\n");
+
+        for (Map.Entry<String, String> entry : innerMap.entrySet()) {
+            builder.append(" [").append(entry.getKey()).append("] = [")
+                   .append(entry.getValue()).append("]\n");
+        }
+
+        return builder.toString();
     }
 }

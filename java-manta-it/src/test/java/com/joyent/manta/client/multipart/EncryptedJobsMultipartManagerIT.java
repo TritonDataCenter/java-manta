@@ -45,7 +45,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-@Test
+@Test(groups = { "encrypted" })
 public class EncryptedJobsMultipartManagerIT {
     private MantaClient mantaClient;
     private EncryptedMultipartManager<JobsMultipartManager, JobsMultipartUpload> multipart;

@@ -19,6 +19,7 @@ import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -33,29 +34,35 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-@Test
+@Test(groups = { "encrypted" })
 @SuppressWarnings("Duplicates")
-public class ServerSideMultipartManagerIT {
+public class EncryptedServerSideMultipartManagerIT {
     private MantaClient mantaClient;
-    private ServerSideMultipartManager multipart;
+    private EncryptedMultipartManager<ServerSideMultipartManager, ServerSideMultipartUpload> multipart;
 
     private static final int FIVE_MB = 5242880;
 
     private String testPathPrefix;
 
-    @BeforeClass
-    public void beforeClass() throws IOException {
-
+    @BeforeClass()
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@org.testng.annotations.Optional Boolean usingEncryption) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext();
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+
+        if (!config.isClientEncryptionEnabled()) {
+            throw new SkipException("Skipping tests if encryption is disabled");
+        }
         mantaClient = new MantaClient(config);
 
         if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory()
-            + MantaClient.SEPARATOR + "uploads")) {
+                + MantaClient.SEPARATOR + "uploads")) {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
-        multipart = new ServerSideMultipartManager(this.mantaClient);
+        ServerSideMultipartManager wrapped = new ServerSideMultipartManager(this.mantaClient);
+
+        multipart = new EncryptedMultipartManager<>(this.mantaClient, wrapped);
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
@@ -70,11 +77,16 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+
     public void nonExistentFileHasNotStarted() throws IOException {
         String path = testPathPrefix + UUID.randomUUID().toString();
         UUID unknownId = new UUID(0L, -1L);
-        ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
+
+        ServerSideMultipartUpload wrapped = new ServerSideMultipartUpload(
                 unknownId, path, null);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload =
+                new EncryptedMultipartUpload<>(wrapped, null);
         assertEquals(multipart.getStatus(upload),
                 MantaMultipartStatus.UNKNOWN);
     }
@@ -83,7 +95,7 @@ public class ServerSideMultipartManagerIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
         multipart.abort(upload);
         MantaMultipartStatus status = multipart.getStatus(upload);
 
@@ -96,7 +108,7 @@ public class ServerSideMultipartManagerIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
 
         try (Stream<MantaMultipartUpload> stream = multipart.listInProgress()) {
             Optional<MantaMultipartUpload> first = stream.filter(item ->
@@ -113,7 +125,7 @@ public class ServerSideMultipartManagerIT {
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(5242880);
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
         try {
             MantaMultipartStatus newStatus = multipart.getStatus(upload);
             Assert.assertEquals(newStatus, MantaMultipartStatus.CREATED,
@@ -155,7 +167,7 @@ public class ServerSideMultipartManagerIT {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         try {
             MantaMultipartUploadPart originalPart = multipart.uploadPart(upload, 1, content);
             MantaMultipartUploadPart pulledPart = multipart.getPart(upload, 1);
@@ -176,7 +188,7 @@ public class ServerSideMultipartManagerIT {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         try {
             MantaMultipartUploadPart originalPart = multipart.uploadPart(upload, 1, content);
 
@@ -206,7 +218,11 @@ public class ServerSideMultipartManagerIT {
         metadata.put("m-my-key-1", "my value 1");
         metadata.put("m-my-key-2", "my value 2");
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path, metadata, headers);
+        // Add encrypted metadata
+        metadata.put("e-my-key-3", "my value 3");
+        metadata.put("e-my-key-4", "my value 4");
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, metadata, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
 
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
@@ -225,9 +241,18 @@ public class ServerSideMultipartManagerIT {
             Assert.assertEquals(in.getHeaderAsString(MantaHttpHeaders.HTTP_DURABILITY_LEVEL),
                     headers.getDurabilityLevel().toString());
 
-            // Metadata
-            Assert.assertEquals(in.getMetadata().get("m-my-key-1"), metadata.get("m-my-key-1"));
-            Assert.assertEquals(in.getMetadata().get("m-my-key-2"), metadata.get("m-my-key-2"));
+            try {
+                // Metadata
+                Assert.assertEquals(in.getMetadata().get("m-my-key-1"), metadata.get("m-my-key-1"));
+                Assert.assertEquals(in.getMetadata().get("m-my-key-2"), metadata.get("m-my-key-2"));
+
+                // Encrypted metadata
+                Assert.assertEquals(in.getMetadata().get("e-my-key-3"), "my value 3");
+                Assert.assertEquals(in.getMetadata().get("e-my-key-4"), "my value 4");
+            } catch (AssertionError e) {
+                System.err.println("Metadata contents:\n" + in.getMetadata());
+                throw e;
+            }
         }
     }
 
@@ -242,7 +267,7 @@ public class ServerSideMultipartManagerIT {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
         MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
 
@@ -272,7 +297,7 @@ public class ServerSideMultipartManagerIT {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
-        ServerSideMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         multipart.uploadPart(upload, 2, content1);
 
         boolean thrown = false;
@@ -304,7 +329,7 @@ public class ServerSideMultipartManagerIT {
         final String name = "cant-upload-small-multipart-string-" + UUID.randomUUID();
         final String path = testPathPrefix + name;
 
-        final ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
 
