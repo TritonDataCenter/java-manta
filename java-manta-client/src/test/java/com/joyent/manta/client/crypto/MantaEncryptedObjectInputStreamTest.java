@@ -324,63 +324,70 @@ public class MantaEncryptedObjectInputStreamTest {
         willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
 
-
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr128() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() / 2;
         canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr192() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() / 2;
         canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr256() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() / 2;
         canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
     }
 
-
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtZeroEndingInThirdBlockAesCtr128() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() * 2 + (cipherDetails.getBlockSizeInBytes() / 2);
         canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtZeroEndingInThirdBlockAesCtr192() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() * 2 + (cipherDetails.getBlockSizeInBytes() / 2);
         canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtZeroEndingInThirdBlockAesCtr256() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() * 2 + (cipherDetails.getBlockSizeInBytes() / 2);
         canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
     }
 
-
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtThreeEndingInFirstBlockAesCtr128() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() / 2;
         canReadByteRangeAllReadModes(cipherDetails, 3, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtThreeEndingInFirstBlockAesCtr192() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() / 2;
         canReadByteRangeAllReadModes(cipherDetails, 3, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtThreeEndingInFirstBlockAesCtr256() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
         int endPos = cipherDetails.getBlockSizeInBytes() / 2;
         canReadByteRangeAllReadModes(cipherDetails, 3, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtThirdBlockEndingInFifthBlockAesCtr128() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
         int startPos = cipherDetails.getBlockSizeInBytes() * 3 + (cipherDetails.getBlockSizeInBytes() / 2);
@@ -388,6 +395,7 @@ public class MantaEncryptedObjectInputStreamTest {
         canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtThirdBlockEndingInFifthBlockAesCtr192() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
         int startPos = cipherDetails.getBlockSizeInBytes() * 3 + (cipherDetails.getBlockSizeInBytes() / 2);
@@ -395,6 +403,7 @@ public class MantaEncryptedObjectInputStreamTest {
         canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
     }
 
+    @Test(enabled=false)
     public void canReadByteRangeStartingAtThirdBlockEndingInFifthBlockAesCtr256() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
         int startPos = cipherDetails.getBlockSizeInBytes() * 3 + (cipherDetails.getBlockSizeInBytes() / 2);
