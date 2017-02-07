@@ -143,6 +143,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             String uri = url + formatPath(path) + query;
             HttpGet get = new HttpGet(uri);
 
+            IOUtils.closeQuietly(currentResponse);
             currentResponse = httpHelper.executeRequest(get, null);
             HttpEntity entity = currentResponse.getEntity();
             String contentType = entity.getContentType().getValue();
