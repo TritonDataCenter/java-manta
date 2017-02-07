@@ -50,11 +50,33 @@ public class EncryptedMultipartManager
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartManager.class);
 
+    /**
+     * Secret key used for encryption.
+     */
     private final SecretKey secretKey;
+
+    /**
+     * Cipher/mode properties object.
+     */
     private final SupportedCipherDetails cipherDetails;
+
+    /**
+     * Encryption operations for HTTP connections helper class.
+     */
     private final EncryptionHttpHelper httpHelper;
+
+    /**
+     * Backing multipart instance.
+     */
     private final WRAPPED_MANAGER wrapped;
 
+    /**
+     * Creates a new encrypting multipart manager class backed by the specified
+     * Manta client and wrapping the underlying manager.
+     *
+     * @param mantaClient manta client instance
+     * @param wrapped instance of underlying wrapper
+     */
     public EncryptedMultipartManager(final MantaClient mantaClient,
                                      final WRAPPED_MANAGER wrapped) {
         Validate.notNull(mantaClient, "Manta client must not be null");
@@ -75,10 +97,19 @@ public class EncryptedMultipartManager
         this.cipherDetails = this.httpHelper.getCipherDetails();
     }
 
-    public EncryptedMultipartManager(final SecretKey secretKey,
-                                     final SupportedCipherDetails cipherDetails,
-                                     final EncryptionHttpHelper httpHelper,
-                                     final WRAPPED_MANAGER wrapped) {
+    /**
+     * Creates a new encrypting multipart manager class back by the specified
+     * classes.
+     *
+     * @param secretKey secret key used to encrypt
+     * @param cipherDetails cipher/mode properties object
+     * @param httpHelper encryption operations for HTTP connections helper class
+     * @param wrapped backing multipart class
+     */
+    EncryptedMultipartManager(final SecretKey secretKey,
+                              final SupportedCipherDetails cipherDetails,
+                              final EncryptionHttpHelper httpHelper,
+                              final WRAPPED_MANAGER wrapped) {
         this.secretKey = secretKey;
         this.cipherDetails = cipherDetails;
         this.wrapped = wrapped;
@@ -92,19 +123,23 @@ public class EncryptedMultipartManager
     }
 
     @Override
-    public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(String path) throws IOException {
+    public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(final String path)
+            throws IOException {
         return initiateUpload(path, new MantaMetadata());
     }
 
     @Override
-    public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(String path, MantaMetadata mantaMetadata) throws IOException {
+    public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(final String path,
+                                                                   final MantaMetadata mantaMetadata)
+            throws IOException {
         return initiateUpload(path, mantaMetadata, new MantaHttpHeaders());
     }
 
     @Override
     public EncryptedMultipartUpload<WRAPPED_UPLOAD> initiateUpload(final String path,
                                                                    final MantaMetadata mantaMetadata,
-                                                                   final MantaHttpHeaders httpHeaders) throws IOException {
+                                                                   final MantaHttpHeaders httpHeaders)
+            throws IOException {
         return initiateUpload(path, null, mantaMetadata, httpHeaders);
     }
 
@@ -200,7 +235,6 @@ public class EncryptedMultipartManager
         encryptionState.lock.lock();
 
         final EncryptionContext encryptionContext = encryptionState.eContext;
-        final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
 
         try {
             validatePartNumber(partNumber);
@@ -208,7 +242,8 @@ public class EncryptedMultipartManager
                 Validate.isTrue(encryptionState.lastPartNumber + 1 == partNumber,
                         "Encrypted MPU parts must be serial and sequential");
             } else {
-                encryptionState.multipartStream = new MultipartOutputStream(cipherDetails.getBlockSizeInBytes());
+                encryptionState.multipartStream = new MultipartOutputStream(
+                        encryptionContext.getCipherDetails().getBlockSizeInBytes());
                 encryptionState.cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
                         encryptionState.multipartStream, encryptionContext);
             }
@@ -242,7 +277,6 @@ public class EncryptedMultipartManager
         encryptionState.lock.lock();
 
         final EncryptionContext encryptionContext = encryptionState.eContext;
-        final SupportedCipherDetails cipherDetails = encryptionContext.getCipherDetails();
 
         try {
             Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
@@ -254,7 +288,11 @@ public class EncryptedMultipartManager
             // conditionally get hmac and upload part; yeah reenterant lock
             if (encryptionState.cipherStream.getClass().equals(HmacOutputStream.class)) {
                 byte[] hmacBytes = ((HmacOutputStream) encryptionState.cipherStream).getHmac().doFinal();
-                Validate.isTrue(hmacBytes.length == cipherDetails.getAuthenticationTagOrHmacLengthInBytes(),
+
+                final int hmacSize = encryptionContext.getCipherDetails()
+                        .getAuthenticationTagOrHmacLengthInBytes();
+
+                Validate.isTrue(hmacBytes.length == hmacSize,
                         "HMAC actual bytes doesn't equal the number of bytes expected");
 
                 if (LOGGER.isDebugEnabled()) {
@@ -306,8 +344,14 @@ public class EncryptedMultipartManager
         wrapped.abort(upload.getWrapped());
     }
 
+    /**
+     * Builds a new instance of an encryption context based on the state
+     * of the current {@link EncryptedMultipartManager} instance.
+     *
+     * @return configured encryption context object
+     */
     private EncryptionContext buildEncryptionContext() {
-        return new EncryptionContext(secretKey, cipherDetails);
+        return new EncryptionContext(this.secretKey, this.cipherDetails);
     }
 
     public WRAPPED_MANAGER getWrapped() {

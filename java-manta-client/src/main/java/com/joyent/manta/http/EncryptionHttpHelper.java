@@ -293,8 +293,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         final String metadataHmacBase64 = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC);
 
         if (metadataCiphertextBase64 != null) {
-            Map<String, String> encryptedMetadata = buildEncryptedMetadata(encryptionType, metadataIvBase64, metadataCiphertextBase64,
-                                                                           hmacId, metadataHmacBase64, request, response);
+            Map<String, String> encryptedMetadata = buildEncryptedMetadata(
+                    encryptionType, metadataIvBase64, metadataCiphertextBase64,
+                    hmacId, metadataHmacBase64, request, response);
             rawStream.getMetadata().putAll(encryptedMetadata);
         }
 
@@ -699,6 +700,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Adds headers related directly to the encrypted object being stored.
      *
      * @param metadata Manta metadata object
+     * @param cipher cipher used to encrypt the object and metadata
      * @throws IOException thrown when unable to append metadata
      */
     public void attachEncryptedEntityHeaders(final MantaMetadata metadata,
@@ -731,8 +733,15 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
+    /**
+     * Attaches a HTTP metadata header indicating the size in bytes of the
+     * encrypted plaintext.
+     *
+     * @param metadata metadata object to append header to
+     * @param length size of plaintext in bytes
+     */
     public void attachEncryptionPlaintextLengthHeader(final MantaMetadata metadata,
-                                                          long length) {
+                                                      final long length) {
         // Plaintext content-length if available
         if (length > EncryptingEntity.UNKNOWN_LENGTH) {
             String originalLength = String.valueOf(length);
@@ -742,8 +751,15 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
     }
 
-    public void attachEncryptionPlaintextLengthHeader(final MantaMetadata metadata,
-                                                         final EncryptingEntity encryptingEntity) {
+    /**
+     * Attaches a HTTP metadata header indicating the size in bytes of the
+     * encrypted plaintext.
+     *
+     * @param metadata metadata object to append header to
+     * @param encryptingEntity encrypting entity to read original length from
+     */
+    public void attachEncryptionPlaintextLengthHeader(
+            final MantaMetadata metadata, final EncryptingEntity encryptingEntity) {
         attachEncryptionPlaintextLengthHeader(metadata, encryptingEntity.getOriginalLength());
     }
 

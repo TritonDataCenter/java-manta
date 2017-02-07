@@ -92,7 +92,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * Reference to {@link MantaClient} Manta client object providing access to
      * Manta.
      */
-    protected final MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
     /**
      * Full path on Manta to the upload directory.

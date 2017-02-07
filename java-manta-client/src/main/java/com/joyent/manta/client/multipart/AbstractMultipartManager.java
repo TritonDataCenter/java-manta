@@ -165,7 +165,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
-    abstract PART uploadPart(final UPLOAD upload,
-                             final int partNumber,
-                             final HttpEntity entity) throws IOException;
+    abstract PART uploadPart(UPLOAD upload,
+                             int partNumber,
+                             HttpEntity entity) throws IOException;
 }

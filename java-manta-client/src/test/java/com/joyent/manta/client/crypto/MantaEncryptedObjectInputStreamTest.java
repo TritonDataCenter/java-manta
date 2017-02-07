@@ -992,8 +992,6 @@ public class MantaEncryptedObjectInputStreamTest {
         headers.put(MantaHttpHeaders.ENCRYPTION_IV,
                 Base64.getEncoder().encodeToString(iv));
 
-        final long contentLength;
-
         headers.setContentLength(ciphertextSize);
 
         MantaMetadata metadata = new MantaMetadata();

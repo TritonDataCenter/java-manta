@@ -138,8 +138,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * The instance of the http helper class used to simplify creating requests.
      */
-    // FIXME
-    public final HttpHelper httpHelper;
+    private final HttpHelper httpHelper;
 
     /**
      * The home directory of the account.
@@ -248,9 +247,6 @@ public class MantaClient implements AutoCloseable {
 
         this.connectionFactory = connectionFactory;
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-
-        final boolean verifyUploads = BooleanUtils.toBooleanDefaultIfNull(config.verifyUploads(),
-                true);
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory,
@@ -1796,7 +1792,7 @@ public class MantaClient implements AutoCloseable {
 
         CloseableHttpResponse lastResponse = null;
 
-        try (final CloseableHttpResponse initialResponse = client.execute(initialRequest)){
+        try (CloseableHttpResponse initialResponse = client.execute(initialRequest)) {
             lastResponse = initialResponse;
             StatusLine statusLine = initialResponse.getStatusLine();
 

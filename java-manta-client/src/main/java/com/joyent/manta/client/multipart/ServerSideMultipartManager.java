@@ -73,7 +73,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     /**
      * Minimum size of a part in bytes.
      */
-    private static final int MIN_PART_SIZE = 5_242_880; // 5 mebibytes
+    public static final int MIN_PART_SIZE = 5_242_880; // 5 mebibytes
 
     /**
      * Configuration context used to get home directory.
@@ -118,6 +118,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @param config configuration context
      * @param connectionFactory connection configuration and setup object
      * @param connectionContext connection execution object
+     * @param mantaClient open Manta client instance
      */
     ServerSideMultipartManager(final ConfigContext config,
                                final MantaConnectionFactory connectionFactory,

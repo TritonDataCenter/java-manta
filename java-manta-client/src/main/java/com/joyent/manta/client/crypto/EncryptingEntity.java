@@ -62,7 +62,7 @@ public class EncryptingEntity implements HttpEntity {
 
 
     // TODO: Properly pass this as a parameter
-    private final EncryptionContext eContext;
+    private final EncryptionContext encryptionContext;
 
     /**
      * Underlying entity that is being encrypted.
@@ -88,7 +88,7 @@ public class EncryptingEntity implements HttpEntity {
             throw new MantaClientEncryptionException(msg);
         }
 
-        this.eContext = new EncryptionContext(key, cipherDetails);
+        this.encryptionContext = new EncryptionContext(key, cipherDetails);
 
         this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
@@ -107,7 +107,7 @@ public class EncryptingEntity implements HttpEntity {
     @Override
     public long getContentLength() {
         if (originalLength >= 0) {
-            return eContext.getCipherDetails().ciphertextSize(originalLength);
+            return encryptionContext.getCipherDetails().ciphertextSize(originalLength);
         } else {
             return UNKNOWN_LENGTH;
         }
@@ -134,7 +134,8 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(httpOut, eContext);
+        OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(
+                httpOut, encryptionContext);
         try {
             copyContentToOutputStream(out);
             /* We don't close quietly because we want the operation to fail if
@@ -142,8 +143,11 @@ public class EncryptingEntity implements HttpEntity {
             out.close();
 
             if (out instanceof HmacOutputStream) {
-                byte[] hmacBytes = ((HmacOutputStream) out).getHmac().doFinal();
-                Validate.isTrue(hmacBytes.length == eContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes(),
+                final byte[] hmacBytes = ((HmacOutputStream) out).getHmac().doFinal();
+                final int hmacSize = encryptionContext.getCipherDetails()
+                        .getAuthenticationTagOrHmacLengthInBytes();
+
+                Validate.isTrue(hmacBytes.length == hmacSize,
                         "HMAC actual bytes doesn't equal the number of bytes expected");
 
                 if (LOGGER.isDebugEnabled()) {
@@ -213,7 +217,7 @@ public class EncryptingEntity implements HttpEntity {
     }
 
     public Cipher getCipher() {
-        return eContext.getCipher();
+        return encryptionContext.getCipher();
     }
 
 }

@@ -1,7 +1,6 @@
 package com.joyent.manta.client.multipart;
 
 import java.io.OutputStream;
-import java.lang.UnsupportedOperationException;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
@@ -50,15 +49,15 @@ public class MultipartOutputStream extends OutputStream {
     }
 
     @Override
-    public void	write(byte[] b) throws IOException {
-        int outstanding = buf.size() + b.length;
+    public void	write(final byte[] buffer) throws IOException {
+        int outstanding = buf.size() + buffer.length;
         if (outstanding < blockSize) {
-            buf.write(b);
+            buf.write(buffer);
         } else {
             int remainder = outstanding % blockSize;
             flushBuffer();
-            wrapped.write(b, 0, b.length-remainder);
-            buf.write(b, b.length-remainder, remainder);
+            wrapped.write(buffer, 0, buffer.length - remainder);
+            buf.write(buffer, buffer.length - remainder, remainder);
         }
     }
 
@@ -67,19 +66,13 @@ public class MultipartOutputStream extends OutputStream {
         buf.reset();
     }
 
-    // how to write reminader...
-    public void unbufferedWrite(byte[] b) throws IOException {
-        wrapped.write(b);
+    @Override
+    public void write(final byte[] buffer, final int offset, final int length) throws IOException {
+        write(Arrays.copyOfRange(buffer, offset, offset + length));
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
-        write(Arrays.copyOfRange(b, off, off+len));
+    public void write(final int value) throws IOException {
+        wrapped.write(value);
     }
-
-    @Override
-    public void write(int b) throws IOException {
-        wrapped.write(new byte[] {(byte)b});
-    }
-
 }

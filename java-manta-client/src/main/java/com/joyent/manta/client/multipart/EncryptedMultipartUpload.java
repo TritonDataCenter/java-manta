@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client.multipart;
 
 import java.util.Objects;
@@ -14,10 +17,14 @@ import java.util.UUID;
 public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
         implements MantaMultipartUpload {
     /**
-     * Wrapped inner implementation.
+     * Backing implementation used by the underlying multipart implementation.
      */
     private final WRAPPED wrapped;
 
+    /**
+     * Object containing the state of encryption operations for the
+     * current multipart upload.
+     */
     private final EncryptionState encryptionState;
 
     /**
@@ -31,6 +38,7 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     /**
      * Creates a new encrypted instance based on an existing instance.
      * @param wrapped instance to wrap
+     * @param encryptionState state of encryption operations for the MPU
      */
     public EncryptedMultipartUpload(final WRAPPED wrapped,
                                     final EncryptionState encryptionState) {
@@ -78,10 +86,17 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EncryptedMultipartUpload<?> that = (EncryptedMultipartUpload<?>) o;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final EncryptedMultipartUpload<?> that = (EncryptedMultipartUpload<?>) o;
+
         return Objects.equals(wrapped, that.wrapped);
     }
 

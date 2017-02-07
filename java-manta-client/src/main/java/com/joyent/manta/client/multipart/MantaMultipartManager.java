@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
         PART extends MantaMultipartUploadPart> {
     /**
-     * Maximum number of parts for a single Manta object.
+     * @return maximum number of parts for a single Manta object.
      */
     int getMaxParts();
 
