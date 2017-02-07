@@ -39,7 +39,7 @@ import java.util.stream.StreamSupport;
  * @param <WRAPPED_MANAGER> Manager class to wrap
  * @param <WRAPPED_UPLOAD> Upload class to wrap
  */
-public class EncryptingMultipartManager
+public class EncryptedMultipartManager
         <WRAPPED_MANAGER extends AbstractMultipartManager<WRAPPED_UPLOAD, ? extends MantaMultipartUploadPart>,
          WRAPPED_UPLOAD extends MantaMultipartUpload>
         extends AbstractMultipartManager<EncryptedMultipartUpload<WRAPPED_UPLOAD>,
@@ -48,15 +48,15 @@ public class EncryptingMultipartManager
     /**
      * Logger instance.
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingMultipartManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartManager.class);
 
     private final SecretKey secretKey;
     private final SupportedCipherDetails cipherDetails;
     private final EncryptionHttpHelper httpHelper;
     private final WRAPPED_MANAGER wrapped;
 
-    public EncryptingMultipartManager(final MantaClient mantaClient,
-                                      final WRAPPED_MANAGER wrapped) {
+    public EncryptedMultipartManager(final MantaClient mantaClient,
+                                     final WRAPPED_MANAGER wrapped) {
         Validate.notNull(mantaClient, "Manta client must not be null");
         Validate.notNull(wrapped, "Wrapped manager must not be null");
 
@@ -75,10 +75,10 @@ public class EncryptingMultipartManager
         this.cipherDetails = this.httpHelper.getCipherDetails();
     }
 
-    public EncryptingMultipartManager(final SecretKey secretKey,
-                                      final SupportedCipherDetails cipherDetails,
-                                      final EncryptionHttpHelper httpHelper,
-                                      final WRAPPED_MANAGER wrapped) {
+    public EncryptedMultipartManager(final SecretKey secretKey,
+                                     final SupportedCipherDetails cipherDetails,
+                                     final EncryptionHttpHelper httpHelper,
+                                     final WRAPPED_MANAGER wrapped) {
         this.secretKey = secretKey;
         this.cipherDetails = cipherDetails;
         this.wrapped = wrapped;

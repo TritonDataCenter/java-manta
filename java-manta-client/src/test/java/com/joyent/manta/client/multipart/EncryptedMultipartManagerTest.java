@@ -43,13 +43,13 @@ import java.util.stream.Stream;
 import static org.mockito.Mockito.mock;
 
 @Test
-public class EncryptingMultipartManagerTest {
+public class EncryptedMultipartManagerTest {
     private SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
     private SecretKey secretKey = SecretKeyUtils.loadKey(
             Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q=="), cipherDetails);
 
     private TestMultipartManager testManager = new TestMultipartManager();
-    private EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
+    private EncryptedMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
 
     @BeforeClass
     public void setup() {
@@ -189,7 +189,7 @@ public class EncryptingMultipartManagerTest {
         return new TestConfigContext(settable);
     }
 
-    private EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> buildManager() {
+    private EncryptedMultipartManager<TestMultipartManager, TestMultipartUpload> buildManager() {
         ConfigContext config = testConfigContext(secretKey);
         final KeyPair keyPair;
         try {
@@ -203,7 +203,7 @@ public class EncryptingMultipartManagerTest {
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory, config);
 
-        return new EncryptingMultipartManager<>(secretKey, cipherDetails,
+        return new EncryptedMultipartManager<>(secretKey, cipherDetails,
                 httpHelper, testManager);
     }
 }
