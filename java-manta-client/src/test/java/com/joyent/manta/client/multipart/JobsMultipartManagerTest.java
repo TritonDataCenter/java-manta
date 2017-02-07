@@ -50,7 +50,7 @@ public class JobsMultipartManagerTest {
 
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
         final UUID id = new UUID(0L, 24L);
-        final MantaMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
+        final JobsMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
         List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
@@ -68,7 +68,7 @@ public class JobsMultipartManagerTest {
 
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
         final UUID id = new UUID(0L, 36L);
-        final MantaMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
+        final JobsMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
         List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
@@ -88,7 +88,7 @@ public class JobsMultipartManagerTest {
 
     public void errorWhenMissingPart() throws IOException {
         final UUID id = new UUID(0L, 48L);
-        final MantaMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
+        final JobsMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
         ArrayList<MantaMultipartUploadPart> partsList = new ArrayList<>();
 

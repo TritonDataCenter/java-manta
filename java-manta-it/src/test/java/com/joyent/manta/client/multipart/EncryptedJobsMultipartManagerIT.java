@@ -4,6 +4,7 @@ import com.fasterxml.uuid.Generators;
 import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.config.ConfigContext;
@@ -18,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -43,22 +46,27 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Test
-public class JobsMultipartManagerIT {
+public class EncryptedJobsMultipartManagerIT {
     private MantaClient mantaClient;
-    private JobsMultipartManager multipart;
-
+    private EncryptingMultipartManager<JobsMultipartManager, JobsMultipartUpload> multipart;
     private String testPathPrefix;
 
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
-    @BeforeClass
-    public void beforeClass() throws IOException {
+    @BeforeClass()
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext();
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+
+        if (!config.isClientEncryptionEnabled()) {
+            throw new SkipException("Skipping tests if encryption is disabled");
+        }
 
         this.mantaClient = new MantaClient(config);
 
-        this.multipart = new JobsMultipartManager(this.mantaClient);
+        JobsMultipartManager wrapped = new JobsMultipartManager(this.mantaClient);
+        this.multipart = new EncryptingMultipartManager<>(this.mantaClient, wrapped);
 
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
@@ -77,12 +85,6 @@ public class JobsMultipartManagerIT {
         }
     }
 
-    public void nonExistentFileHasNotStarted() throws IOException {
-        JobsMultipartUpload upload = new JobsMultipartUpload(new UUID(0L, -1L), "/dev/null");
-        assertEquals(multipart.getStatus(upload),
-                     MantaMultipartStatus.UNKNOWN);
-    }
-
     public void canUploadSmallMultipartString() throws IOException {
         String[] parts = new String[] {
                 "Hello ",
@@ -99,7 +101,7 @@ public class JobsMultipartManagerIT {
         final String name = uploadName("can-upload-small-multipart-string");
         final String path = testPathPrefix + name;
 
-        final JobsMultipartUpload upload = multipart.initiateUpload(path);
+        final EncryptedMultipartUpload<JobsMultipartUpload> upload = multipart.initiateUpload(path);
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
 
@@ -107,7 +109,7 @@ public class JobsMultipartManagerIT {
             String part = parts[i];
             int partNumber = i + 1;
             MantaMultipartUploadTuple uploaded = multipart.uploadPart(upload, partNumber,
-                                                                      part);
+                    part);
 
             uploadedParts.add(uploaded);
         }
@@ -116,7 +118,7 @@ public class JobsMultipartManagerIT {
         Instant start = Instant.now();
         multipart.complete(upload, uploadedParts);
 
-        multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
+        multipart.getWrapped().waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
             return null;
         });
@@ -129,7 +131,7 @@ public class JobsMultipartManagerIT {
         assertEquals(mantaClient.getAsString(path),
                 combined.toString(),
                 "Manta combined string doesn't match expectation: "
-                     + multipart.findJob(upload));
+                        + multipart.getWrapped().findJob(upload));
 
         Duration totalCompletionTime = Duration.between(start, end);
 
@@ -148,7 +150,7 @@ public class JobsMultipartManagerIT {
         final String name = uploadName("will-run-function-when-waiting-too-long");
         final String path = testPathPrefix + name;
 
-        final JobsMultipartUpload upload = multipart.initiateUpload(path);
+        final EncryptedMultipartUpload<JobsMultipartUpload> upload = multipart.initiateUpload(path);
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
 
@@ -162,7 +164,7 @@ public class JobsMultipartManagerIT {
         multipart.validateThatThereAreSequentialPartNumbers(upload);
         multipart.complete(upload, uploadedParts);
 
-        Boolean flagChanged = multipart.waitForCompletion(upload,
+        Boolean flagChanged = multipart.getWrapped().waitForCompletion(upload,
                 Duration.ofNanos(0L), 1, uuid -> true);
 
         assertTrue(flagChanged, "wait timeout exceeded function was never run");
@@ -181,7 +183,8 @@ public class JobsMultipartManagerIT {
 
         final MantaHttpHeaders headers = new MantaHttpHeaders()
                 .setContentType("text/plain");
-        final JobsMultipartUpload upload = multipart.initiateUpload(path, null, headers);
+        final EncryptedMultipartUpload<JobsMultipartUpload> upload = multipart.initiateUpload(path,
+                new MantaMetadata(), headers);
 
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
@@ -195,7 +198,7 @@ public class JobsMultipartManagerIT {
 
         multipart.validateThatThereAreSequentialPartNumbers(upload);
         multipart.complete(upload, uploadedParts);
-        multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
+        multipart.getWrapped().waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
             return null;
         });
@@ -219,8 +222,10 @@ public class JobsMultipartManagerIT {
         final MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-hello", "world");
         metadata.put("m-foo", "bar");
+        metadata.put("e-hello", "world");
+        metadata.put("e-foo", "bar");
 
-        final JobsMultipartUpload upload = multipart.initiateUpload(path, metadata);
+        final EncryptedMultipartUpload<JobsMultipartUpload> upload = multipart.initiateUpload(path, metadata);
 
         final ArrayList<MantaMultipartUploadPart> uploadedParts =
                 new ArrayList<>();
@@ -234,7 +239,7 @@ public class JobsMultipartManagerIT {
 
         multipart.validateThatThereAreSequentialPartNumbers(upload);
         multipart.complete(upload, uploadedParts);
-        multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
+        multipart.getWrapped().waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
             return null;
         });
@@ -243,11 +248,13 @@ public class JobsMultipartManagerIT {
 
 
         assertEquals(remoteMetadata.keySet().stream().filter(key -> !key.startsWith("m-encrypt") && !key.startsWith("e-")).count(),
-                     4, "Unexpected metadata size");
+                4, "Unexpected metadata size");
         assertTrue(remoteMetadata.containsKey(JobsMultipartManager.JOB_ID_METADATA_KEY));
         assertTrue(remoteMetadata.containsKey(JobsMultipartManager.UPLOAD_ID_METADATA_KEY));
         assertEquals(remoteMetadata.get("m-hello"), "world");
         assertEquals(remoteMetadata.get("m-foo"), "bar");
+        assertEquals(remoteMetadata.get("e-hello"), "world");
+        assertEquals(remoteMetadata.get("e-foo"), "bar");
     }
 
     public void canUpload5MbX10MultipartBinary() throws IOException {
@@ -278,7 +285,7 @@ public class JobsMultipartManagerIT {
         final String name = uploadName("can-upload-5mb-multipart-binary");
         final String path = testPathPrefix + name;
 
-        final JobsMultipartUpload upload = multipart.initiateUpload(path);
+        final EncryptedMultipartUpload<JobsMultipartUpload> upload = multipart.initiateUpload(path);
 
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
@@ -293,7 +300,7 @@ public class JobsMultipartManagerIT {
         multipart.validateThatThereAreSequentialPartNumbers(upload);
         Instant start = Instant.now();
         multipart.complete(upload, uploadedParts.stream());
-        multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
+        multipart.getWrapped().waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
             fail("Completion operation didn't succeed within timeout");
             return null;
         });
@@ -305,10 +312,16 @@ public class JobsMultipartManagerIT {
         MantaObjectResponse head = mantaClient.head(path);
         byte[] remoteMd5 = head.getMd5Bytes();
 
+        // If we are using encryption the remote md5 is the md5 of the
+        // cipher text.  To prove we uploaded the right bytes and can
+        // get them back again, we need to download and calculate.
+        MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path);
+        remoteMd5 = DigestUtils.md5(gotObject);
+
         if (!Arrays.equals(remoteMd5, expectedMd5)) {
             StringBuilder builder = new StringBuilder();
             builder.append("MD5 values do not match - job id: ")
-                   .append(multipart.findJob(upload));
+                    .append(multipart.getWrapped().findJob(upload));
             fail(builder.toString());
         }
 
@@ -330,7 +343,7 @@ public class JobsMultipartManagerIT {
         final String name = uploadName("can-abort-multipart-binary");
         final String path = testPathPrefix + name;
 
-        final JobsMultipartUpload upload = multipart.initiateUpload(path);
+        final EncryptedMultipartUpload<JobsMultipartUpload> upload = multipart.initiateUpload(path);
 
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
@@ -351,7 +364,7 @@ public class JobsMultipartManagerIT {
         boolean caught = false;
 
         try {
-            multipart.waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
+            multipart.getWrapped().waitForCompletion(upload, (Function<UUID, Void>) uuid -> {
                 fail("Completion operation didn't succeed within timeout");
                 return null;
             });
@@ -368,7 +381,7 @@ public class JobsMultipartManagerIT {
         MantaMultipartStatus status = multipart.getStatus(upload);
         assertEquals(status, MantaMultipartStatus.ABORTED);
 
-        MantaJob job = multipart.findJob(upload);
+        MantaJob job = multipart.getWrapped().findJob(upload);
 
         Duration totalCompletionTime = Duration.between(start, end);
 
@@ -379,7 +392,8 @@ public class JobsMultipartManagerIT {
             fail("Job wasn't cancelled:" + job.toString());
         }
 
-        assertFalse(mantaClient.existsAndIsAccessible(multipart.multipartUploadDir(upload.getId())),
+        assertFalse(mantaClient.existsAndIsAccessible(multipart.getWrapped()
+                        .multipartUploadDir(upload.getId())),
                 "Upload directory shouldn't be present after abort");
     }
 
@@ -395,8 +409,9 @@ public class JobsMultipartManagerIT {
             list.forEach(element -> {
                 System.err.println(element.getPath());
 
-                if (element instanceof JobsMultipartUpload) {
-                    JobsMultipartUpload jobsUpload = (JobsMultipartUpload)element;
+                if (element instanceof EncryptedMultipartUpload) {
+                    @SuppressWarnings("unchecked")
+                    EncryptedMultipartUpload<JobsMultipartUpload> jobsUpload = (EncryptedMultipartUpload<JobsMultipartUpload>)element;
                     try (Stream<MantaMultipartUploadPart> innerStream = multipart.listParts(jobsUpload)) {
                         innerStream.forEach(part -> {
                             System.err.println("   " + part.getObjectPath());
@@ -428,7 +443,7 @@ public class JobsMultipartManagerIT {
         final List<MantaMultipartUpload> list;
 
         try (Stream<MantaMultipartUpload> inProgress = multipart.listInProgress()) {
-             list = inProgress.collect(Collectors.toCollection(ArrayList::new));
+            list = inProgress.collect(Collectors.toCollection(ArrayList::new));
         }
 
         try {
@@ -440,8 +455,11 @@ public class JobsMultipartManagerIT {
             }
         } finally {
             for (MantaMultipartUpload upload : uploads) {
-                if (upload instanceof JobsMultipartUpload) {
-                    multipart.abort((JobsMultipartUpload)upload);
+                if (upload instanceof EncryptedMultipartUpload) {
+                    @SuppressWarnings("unchecked")
+                    EncryptedMultipartUpload<JobsMultipartUpload> encryptedUpload =
+                            (EncryptedMultipartUpload<JobsMultipartUpload>)upload;
+                    multipart.abort(encryptedUpload);
                 }
             }
         }

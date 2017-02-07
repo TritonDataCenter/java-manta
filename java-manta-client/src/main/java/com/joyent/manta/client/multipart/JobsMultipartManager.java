@@ -53,7 +53,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @since 2.5.0
  */
 public class JobsMultipartManager extends AbstractMultipartManager
-        <MantaMultipartUpload, MantaMultipartUploadPart> {
+        <JobsMultipartUpload, MantaMultipartUploadPart> {
     /**
      * Logger instance.
      */
@@ -193,28 +193,28 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path) throws IOException {
+    public JobsMultipartUpload initiateUpload(final String path) throws IOException {
         return initiateUpload(path, new MantaMetadata(), new MantaHttpHeaders());
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path,
-                                               final MantaMetadata mantaMetadata) throws IOException {
+    public JobsMultipartUpload initiateUpload(final String path,
+                                              final MantaMetadata mantaMetadata) throws IOException {
         return initiateUpload(path, mantaMetadata, new MantaHttpHeaders());
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path,
-                                               final MantaMetadata mantaMetadata,
-                                               final MantaHttpHeaders httpHeaders) throws IOException {
+    public JobsMultipartUpload initiateUpload(final String path,
+                                              final MantaMetadata mantaMetadata,
+                                              final MantaHttpHeaders httpHeaders) throws IOException {
         return initiateUpload(path, -1L, mantaMetadata, httpHeaders);
     }
 
     @Override
-    public MantaMultipartUpload initiateUpload(final String path,
-                                               final Long contentLength,
-                                               final MantaMetadata mantaMetadata,
-                                               final MantaHttpHeaders httpHeaders) throws IOException {
+    public JobsMultipartUpload initiateUpload(final String path,
+                                              final Long contentLength,
+                                              final MantaMetadata mantaMetadata,
+                                              final MantaHttpHeaders httpHeaders) throws IOException {
         // contentLength parameter is entirely ignored
 
         final MantaMetadata metadata;
@@ -254,7 +254,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     @Override
-    MantaMultipartUploadPart uploadPart(final MantaMultipartUpload upload,
+    MantaMultipartUploadPart uploadPart(final JobsMultipartUpload upload,
                                         final int partNumber,
                                         final HttpEntity entity) throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
@@ -296,7 +296,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
-    public MantaMultipartUploadPart getPart(final MantaMultipartUpload upload,
+    public MantaMultipartUploadPart getPart(final JobsMultipartUpload upload,
                                             final int partNumber)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
@@ -315,7 +315,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
-    public MantaMultipartStatus getStatus(final MantaMultipartUpload upload)
+    public MantaMultipartStatus getStatus(final JobsMultipartUpload upload)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
@@ -413,7 +413,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
-    public Stream<MantaMultipartUploadPart> listParts(final MantaMultipartUpload upload)
+    public Stream<MantaMultipartUploadPart> listParts(final JobsMultipartUpload upload)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
         final String dir = multipartUploadDir(upload.getId());
@@ -431,7 +431,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
-    public void abort(final MantaMultipartUpload upload) throws IOException {
+    public void abort(final JobsMultipartUpload upload) throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
         final String dir = multipartUploadDir(upload.getId());
@@ -451,7 +451,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     @Override
-    public void complete(final MantaMultipartUpload upload,
+    public void complete(final JobsMultipartUpload upload,
                          final Iterable<? extends MantaMultipartUploadTuple> parts)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
@@ -473,7 +473,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     @Override
-    public void complete(final MantaMultipartUpload upload,
+    public void complete(final JobsMultipartUpload upload,
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");

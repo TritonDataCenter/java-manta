@@ -3,6 +3,7 @@
  */
 package com.joyent.manta.client.multipart;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptingPartEntity;
@@ -14,6 +15,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
@@ -23,6 +25,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -51,6 +54,26 @@ public class EncryptingMultipartManager
     private final SupportedCipherDetails cipherDetails;
     private final EncryptionHttpHelper httpHelper;
     private final WRAPPED_MANAGER wrapped;
+
+    public EncryptingMultipartManager(final MantaClient mantaClient,
+                                      final WRAPPED_MANAGER wrapped) {
+        Validate.notNull(mantaClient, "Manta client must not be null");
+        Validate.notNull(wrapped, "Wrapped manager must not be null");
+
+        final Field httpHelperField = FieldUtils.getField(MantaClient.class,
+                "httpHelper", true);
+        try {
+            Object httpHelperObject = FieldUtils.readField(httpHelperField, mantaClient);
+            this.httpHelper = (EncryptionHttpHelper)httpHelperObject;
+        } catch (IllegalAccessException e) {
+            throw new MantaMultipartException("Unabled to access httpHelper "
+                    + "field on MantaClient");
+        }
+
+        this.wrapped = wrapped;
+        this.secretKey = this.httpHelper.secretKey;
+        this.cipherDetails = this.httpHelper.getCipherDetails();
+    }
 
     public EncryptingMultipartManager(final SecretKey secretKey,
                                       final SupportedCipherDetails cipherDetails,
@@ -270,5 +293,9 @@ public class EncryptingMultipartManager
 
     private EncryptionContext buildEncryptionContext() {
         return new EncryptionContext(secretKey, cipherDetails);
+    }
+
+    public WRAPPED_MANAGER getWrapped() {
+        return wrapped;
     }
 }
