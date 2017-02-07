@@ -200,19 +200,9 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         Validate.notNull(contentLength,
                 "Manta should always return a content-length");
 
-        /* If content-length is available we want to verify that the plaintext length
-         * calculated to ciphertext length isn't bigger than the content-length. */
-
-        long ciphertextSizeCalculation = cipherDetails.ciphertextSize(
-                aPlaintextRangeLength + initialBytesToSkip);
-
-        // Someone specified an inaccurate range and it brought us here
-        if (ciphertextSizeCalculation > contentLength) {
-            return HttpHelper.attemptToFindPlaintextSize(
-                    getResponse(), contentLength, cipherDetails);
-        }
-
-        return aPlaintextRangeLength;
+        // This is a range request, we can't know if this includes the hmac portion of the stored object
+        // Assume that the contentLength is plaintextLength
+        return contentLength;
     }
 
     /**

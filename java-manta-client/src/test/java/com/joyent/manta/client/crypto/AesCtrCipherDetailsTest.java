@@ -97,7 +97,7 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
     public void translateByteRangeReturnsCorrectRange() throws Exception {
         ByteRangeConversion byteRange1 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 10);
         Assert.assertEquals(byteRange1.getCiphertextStartPositionInclusive(), 0);
-        Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 16);
+        Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 32);
         Assert.assertEquals(byteRange1.getPlaintextBytesToSkipInitially(), 4);
         Assert.assertEquals(byteRange1.getLengthOfPlaintextIncludingSkipBytes(), 6);
 
