@@ -7,31 +7,36 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.exception.MantaClientException;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
+import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.slf4j.Logger;
+import org.apache.http.HttpStatus;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.SkipException;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.KeyPair;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.Executor;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 @Test
 public class ServerSideMultipartManagerIT {
@@ -72,6 +77,15 @@ public class ServerSideMultipartManagerIT {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
         }
+    }
+
+    public void nonExistentFileHasNotStarted() throws IOException {
+        String path = testPathPrefix + UUID.randomUUID().toString();
+        UUID unknownId = new UUID(0L, -1L);
+        ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
+                unknownId, path, null);
+        assertEquals(multipart.getStatus(upload),
+                MantaMultipartStatus.UNKNOWN);
     }
 
     public final void canAbortUpload() throws IOException {
@@ -281,5 +295,59 @@ public class ServerSideMultipartManagerIT {
         }
 
         assertTrue(thrown, "Exception wasn't thrown");
+    }
+
+    public void cantUploadSmallMultipartString() throws IOException {
+        String[] parts = new String[] {
+                "Hello ",
+                "world ",
+                "Joyent",
+                "!"
+        };
+
+        StringBuilder combined = new StringBuilder();
+        for (String p : parts) {
+            combined.append(p);
+        }
+
+        final String name = "cant-upload-small-multipart-string-" + UUID.randomUUID();
+        final String path = testPathPrefix + name;
+
+        final ServerSideMultipartUpload upload = multipart.initiateUpload(path);
+        final ArrayList<MantaMultipartUploadTuple> uploadedParts =
+                new ArrayList<>();
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            int partNumber = i + 1;
+            MantaMultipartUploadTuple uploaded = multipart.uploadPart(
+                    upload, partNumber, part);
+
+            uploadedParts.add(uploaded);
+        }
+
+        multipart.validateThatThereAreSequentialPartNumbers(upload);
+
+        boolean caught = false;
+        try {
+            multipart.complete(upload, uploadedParts);
+        } catch (MantaMultipartException e) {
+            Throwable cause = e.getCause();
+
+            if (cause instanceof MantaClientHttpResponseException) {
+                MantaClientHttpResponseException responseException =
+                        (MantaClientHttpResponseException)cause;
+
+                Assert.assertEquals(responseException.getStatusCode(),
+                        HttpStatus.SC_BAD_REQUEST,
+                        "Unexpected response code");
+                Assert.assertEquals(responseException.getServerCode(),
+                        MantaErrorCode.MULTIPART_UPLOAD_PART_SIZE,
+                        "Unexpected error code");
+                caught = true;
+            }
+        }
+
+        Assert.assertTrue(caught, "Expected exception was not caught");
     }
 }

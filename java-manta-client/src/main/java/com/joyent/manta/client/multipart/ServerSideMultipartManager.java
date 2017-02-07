@@ -188,19 +188,33 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             throws IOException {
         Validate.notNull(path, "Path to object must not be null");
         Validate.notBlank(path, "Path to object must not be blank");
-        Validate.notNull(mantaMetadata, "Metadata object must not be null");
-        Validate.notNull(httpHeaders, "HTTP headers object must not be null");
+
+        final MantaMetadata metadata;
+
+        if (mantaMetadata == null) {
+            metadata = new MantaMetadata();
+        } else {
+            metadata = mantaMetadata;
+        }
+
+        final MantaHttpHeaders headers;
+
+        if (httpHeaders == null) {
+            headers = new MantaHttpHeaders();
+        } else {
+            headers = httpHeaders;
+        }
 
         /* We explicitly set the content-length header if it is passed as a method parameter
          * so that the server will validate the size of the upload when it is committed. */
-        if (contentLength != null && httpHeaders.getContentLength() == null) {
-            httpHeaders.setContentLength(contentLength);
+        if (contentLength != null && headers.getContentLength() == null) {
+            headers.setContentLength(contentLength);
         }
 
         final String postPath = uploadsPath();
         final HttpPost post = connectionFactory.post(postPath);
 
-        final byte[] jsonRequest = createMpuRequestBody(path, mantaMetadata, httpHeaders);
+        final byte[] jsonRequest = createMpuRequestBody(path, metadata, headers);
         final HttpEntity entity = new ExposedByteArrayEntity(
                 jsonRequest, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
@@ -362,13 +376,26 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
 
-        final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
+        final String partsDirectory;
+
+        if (upload.getPartsDirectory() == null) {
+            partsDirectory = uuidPrefixedPath(upload.getId());
+        } else {
+            partsDirectory = upload.getPartsDirectory();
+        }
+
+        final String getPath = partsDirectory + SEPARATOR + "state";
         final HttpGet get = connectionFactory.get(getPath);
 
         final int expectedStatusCode = HttpStatus.SC_OK;
 
         try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
             StatusLine statusLine = response.getStatusLine();
+
+            if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                return MantaMultipartStatus.UNKNOWN;
+            }
+
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to get status for multipart upload", get,
                     response, null, null);
@@ -598,9 +625,16 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                     final String objectPath,
                                     final byte[] requestBody) {
         if (actualCode != expectedCode) {
+            final String path;
+
+            if (objectPath == null && request != null) {
+                path = request.getRequestLine().getUri();
+            } else {
+                path = objectPath;
+            }
             // We create the exception below because it will parse the JSON error codes
             MantaClientHttpResponseException mchre =
-                    new MantaClientHttpResponseException(request, response, objectPath);
+                    new MantaClientHttpResponseException(request, response, path);
             // We chain it to this exception so that it obeys the contract
             MantaMultipartException e = new MantaMultipartException(errorMessage, mchre);
             annotateException(e, request, response, objectPath, requestBody);

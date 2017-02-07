@@ -69,6 +69,7 @@ public enum MantaErrorCode {
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     METHOD_NOT_ALLOWED("MethodNotAllowedError"),
     MISSING_PERMISSION_ERROR("MissingPermission"),
+    MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"),
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     NOT_ACCEPTABLE_ERROR("NotAcceptable"),
     NOT_ENOUGH_SPACE_ERROR("NotEnoughSpace"),
