@@ -17,22 +17,26 @@ import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
 import org.testng.Assert;
+import org.testng.AssertJUnit;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.stream.Stream;
 
@@ -40,17 +44,19 @@ import static org.mockito.Mockito.mock;
 
 @Test
 public class EncryptingMultipartManagerTest {
-    SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
-    SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-    TestMultipartManager testManager = new TestMultipartManager();
-    EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
+    private SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+    private SecretKey secretKey = SecretKeyUtils.loadKey(
+            Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q=="), cipherDetails);
+
+    private TestMultipartManager testManager = new TestMultipartManager();
+    private EncryptingMultipartManager<TestMultipartManager, TestMultipartUpload> manager;
 
     @BeforeClass
     public void setup() {
         this.manager = buildManager();
     }
 
-    public void canDoMultipartUpload() throws IOException {
+    public void canDoMultipartUpload() throws Exception {
         MantaMetadata metadata = new MantaMetadata();
         metadata.put("m-my-key", "my value");
         metadata.put("e-my-key-1", "my value 1");
@@ -95,6 +101,25 @@ public class EncryptingMultipartManagerTest {
 
         Assert.assertEquals(actualHeaders, headers,
                 "Headers were stored correctly");
+
+        {
+            Cipher cipher = cipherDetails.getCipher();
+            byte[] iv = upload.getEncryptionState().eContext.getCipher().getIV();
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
+
+            byte[] assumedCiphertext = cipher.doFinal(expected.getBytes("US-ASCII"));
+            byte[] contents = FileUtils.readFileToByteArray(upload.getWrapped().getContents());
+            byte[] actualCiphertext = Arrays.copyOf(contents,
+                    contents.length - cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
+
+            try {
+                AssertJUnit.assertEquals(assumedCiphertext, actualCiphertext);
+            } catch (AssertionError e) {
+                System.err.println("expected: " + Hex.encodeHexString(assumedCiphertext));
+                System.err.println("actual  : " + Hex.encodeHexString(actualCiphertext));
+                throw e;
+            }
+        }
 
         MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
         responseHttpHeaders.setContentLength(actualUpload.getContents().length());
