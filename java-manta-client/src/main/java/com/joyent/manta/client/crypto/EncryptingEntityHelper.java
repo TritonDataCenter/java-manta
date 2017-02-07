@@ -35,7 +35,6 @@ public class EncryptingEntityHelper {
         // Things are a lot more simple if we are using AEAD
         if (eContext.getCipherDetails().isAEADCipher()) {
             out = cipherOut;
-            hmac = null;
         } else {
             hmac = eContext.getCipherDetails().getAuthenticationHmac();
             try {

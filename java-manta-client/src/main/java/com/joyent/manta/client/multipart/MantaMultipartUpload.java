@@ -1,6 +1,5 @@
 package com.joyent.manta.client.multipart;
 
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.UUID;
 

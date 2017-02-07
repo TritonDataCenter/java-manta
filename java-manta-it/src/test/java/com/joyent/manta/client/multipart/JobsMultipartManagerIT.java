@@ -398,9 +398,7 @@ public class JobsMultipartManagerIT {
                 if (element instanceof JobsMultipartUpload) {
                     JobsMultipartUpload jobsUpload = (JobsMultipartUpload)element;
                     try (Stream<MantaMultipartUploadPart> innerStream = multipart.listParts(jobsUpload)) {
-                        innerStream.forEach(part -> {
-                            System.err.println("   " + part.getObjectPath());
-                        });
+                        innerStream.forEach(part -> System.err.println("   " + part.getObjectPath()));
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }

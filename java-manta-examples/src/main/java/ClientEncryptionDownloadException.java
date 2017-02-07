@@ -2,9 +2,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
 import com.joyent.manta.exception.MantaClientEncryptionException;
-import com.joyent.manta.http.MantaHttpHeaders;
 
-import javax.naming.AuthenticationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;

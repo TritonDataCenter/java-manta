@@ -1,8 +1,7 @@
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.multipart.JobsMultipartManager;
-import com.joyent.manta.client.multipart.MantaMultipartManager;
-import com.joyent.manta.client.multipart.MantaMultipartUpload;
+import com.joyent.manta.client.multipart.JobsMultipartUpload;
 import com.joyent.manta.client.multipart.MantaMultipartUploadPart;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
@@ -17,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class Multipart {
+public class JobsBasedMultipart {
     public static void main(String... args) {
         ConfigContext config = new SystemSettingsConfigContext();
 
@@ -28,7 +27,7 @@ public class Multipart {
 
     private static void multipartUpload(MantaClient mantaClient) {
         // instantiated with a reference to the class the actually connects to Manta
-        MantaMultipartManager multipart = new JobsMultipartManager(mantaClient);
+        JobsMultipartManager multipart = new JobsMultipartManager(mantaClient);
 
         String uploadObject = "/username/stor/test/file";
 
@@ -49,7 +48,7 @@ public class Multipart {
         // We catch network errors and handle them here
         try {
             // We get a response object
-            MantaMultipartUpload upload = multipart.initiateUpload(uploadObject);
+            JobsMultipartUpload upload = multipart.initiateUpload(uploadObject);
 
             // It contains a UUID transaction id
             UUID id = upload.getId();
@@ -78,19 +77,12 @@ public class Multipart {
             // We've uploaded all of the parts, now lets join them
             multipart.complete(upload, parts.stream());
 
-            // If we are using a jobs-based implementation then we need to wait for
-            // the complete() operation to finish. Otherwise, we are have a server-side
-            // supported MPU implementation that is s
-            if (multipart instanceof JobsMultipartManager) {
-                JobsMultipartManager jobsMultipart = (JobsMultipartManager)multipart;
-
-                // If we want to pause execution until it is committed
-                int timesToPoll = 10;
-                jobsMultipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll,
-                        uuid -> {
-                            throw new RuntimeException("Multipart completion timed out");
-                        });
-            }
+            // If we want to pause execution until it is committed
+            int timesToPoll = 10;
+            multipart.waitForCompletion(upload, Duration.ofSeconds(5), timesToPoll,
+                    uuid -> {
+                        throw new RuntimeException("Multipart completion timed out");
+                    });
 
         } catch (MantaClientHttpResponseException e) {
             // This catch block is for when we actually have a response code from Manta

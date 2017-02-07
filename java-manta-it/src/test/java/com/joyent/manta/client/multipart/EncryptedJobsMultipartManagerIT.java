@@ -309,14 +309,11 @@ public class EncryptedJobsMultipartManagerIT {
         MantaMultipartStatus status = multipart.getStatus(upload);
         assertEquals(status, MantaMultipartStatus.COMPLETED);
 
-        MantaObjectResponse head = mantaClient.head(path);
-        byte[] remoteMd5 = head.getMd5Bytes();
-
         // If we are using encryption the remote md5 is the md5 of the
         // cipher text.  To prove we uploaded the right bytes and can
         // get them back again, we need to download and calculate.
         MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path);
-        remoteMd5 = DigestUtils.md5(gotObject);
+        byte[] remoteMd5 = DigestUtils.md5(gotObject);
 
         if (!Arrays.equals(remoteMd5, expectedMd5)) {
             StringBuilder builder = new StringBuilder();
@@ -413,9 +410,7 @@ public class EncryptedJobsMultipartManagerIT {
                     @SuppressWarnings("unchecked")
                     EncryptedMultipartUpload<JobsMultipartUpload> jobsUpload = (EncryptedMultipartUpload<JobsMultipartUpload>)element;
                     try (Stream<MantaMultipartUploadPart> innerStream = multipart.listParts(jobsUpload)) {
-                        innerStream.forEach(part -> {
-                            System.err.println("   " + part.getObjectPath());
-                        });
+                        innerStream.forEach(part -> System.err.println("   " + part.getObjectPath()));
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -434,7 +429,7 @@ public class EncryptedJobsMultipartManagerIT {
                 testPathPrefix + uploadName("can-list-multipart-uploads-in-progress-3")
         };
 
-        final List<MantaMultipartUpload> uploads = new ArrayList<>(objects.length);
+        final List<EncryptedMultipartUpload<JobsMultipartUpload>> uploads = new ArrayList<>(objects.length);
 
         for (String object: objects) {
             uploads.add(multipart.initiateUpload(object));
@@ -449,8 +444,8 @@ public class EncryptedJobsMultipartManagerIT {
         try {
             assertFalse(list.isEmpty(), "List shouldn't be empty");
 
-            for (MantaMultipartUpload upload : uploads) {
-                assertTrue(list.contains(upload),
+            for (EncryptedMultipartUpload<JobsMultipartUpload> upload : uploads) {
+                assertTrue(list.contains(upload.getWrapped()),
                         "Upload wasn't present in results: " + upload);
             }
         } finally {

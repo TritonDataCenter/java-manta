@@ -684,7 +684,7 @@ public class MantaEncryptedObjectInputStreamTest {
 
         try {
             // Don't change me - I'm imitating COSBench
-            for (int n = 0; -1 != (n = in.read(buffer));) {
+            for (int n; -1 != (n = in.read(buffer));) {
                 out.write(buffer, 0, n);
             }
         } finally {

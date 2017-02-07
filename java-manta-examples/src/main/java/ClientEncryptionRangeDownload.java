@@ -6,7 +6,6 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import java.util.Base64;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Scanner;
 
 
 /*
