@@ -1,7 +1,7 @@
 Until version 2.3.0, Java Manta has been licensed under the MIT license.
 As of 2.3.0, it is licensed under the MPL v2 license.
 
-For public record, non-Joyent contributers have agreed to change the license to the
+For public record, non-Joyent contributors have agreed to change the license to the
 MPL v2.
 
 ================================================================================

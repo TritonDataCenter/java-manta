@@ -8,25 +8,19 @@ import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
 import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.entity.BasicHttpEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
-import org.apache.http.protocol.HttpContext;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
@@ -38,76 +32,24 @@ import static org.mockito.Mockito.when;
 
 @Test
 public class EncryptedHttpHelperTest {
-    private static class FakeCloseableHttpClient extends CloseableHttpClient {
-        final CloseableHttpResponse response;
-
-        public FakeCloseableHttpClient(final CloseableHttpResponse response) {
-            this.response = response;
-        }
-
-        @Override
-        protected CloseableHttpResponse doExecute(HttpHost target,
-                                                  HttpRequest request,
-                                                  HttpContext context)
-                throws IOException {
-            return response;
-        }
-
-        @Override
-        public void close() throws IOException {
-        }
-
-        @Deprecated
-        @Override
-        public org.apache.http.params.HttpParams getParams() {
-            return null;
-        }
-
-        @Deprecated
-        @Override
-        public org.apache.http.conn.ClientConnectionManager getConnectionManager() {
-            return null;
-        }
-    }
-
     /**
      * Verifies that encrypted HEAD requests made with a different cipher/mode
      * configured from the cipher/mode on the object will result in an error.
      */
-    public void doesntAllowDifferentCipherForObjectAndConfigHead() throws Exception {
+    public void doesntAllowDifferentCipherForObjectAndConfigHeadIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
-
-        boolean caught = false;
-        try {
-            httpHelper.httpHead(path);
-        } catch (MantaClientEncryptionException e) {
-            caught = e.getMessage().startsWith("Cipher used to encrypt object"
-                    + " is not the same as the cipher configured");
-        }
-
-        Assert.assertTrue(caught, "No exception thrown when "
-                + "configured cipher and object cipher differ");
+        httpHelper.httpHead(path);
     }
 
     /**
      * Verifies that encrypted GET requests made with a different cipher/mode
      * configured from the cipher/mode on the object will result in an error.
      */
-    public void doesntAllowDifferentCipherForObjectAndConfigGet() throws Exception {
+    public void allowDifferentCipherForObjectAndConfigGetIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
-
-        boolean caught = false;
-        try {
-            httpHelper.httpGet(path);
-        } catch (MantaClientEncryptionException e) {
-            caught = e.getMessage().startsWith("Cipher used to encrypt object"
-                    + " is not the same as the cipher configured");
-        }
-
-        Assert.assertTrue(caught, "No exception thrown when "
-                + "configured cipher and object cipher differ");
+        httpHelper.httpGet(path);
     }
 
     /**

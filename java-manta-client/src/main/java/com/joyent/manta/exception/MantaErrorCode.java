@@ -67,6 +67,7 @@ public enum MantaErrorCode {
     LINK_REQUIRED_ERROR("LinkRequired"),
     LOCATION_REQUIRED_ERROR("LocationRequired"),
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
+    METHOD_NOT_ALLOWED("MethodNotAllowedError"),
     MISSING_PERMISSION_ERROR("MissingPermission"),
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     NOT_ACCEPTABLE_ERROR("NotAcceptable"),

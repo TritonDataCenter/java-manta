@@ -1,17 +1,10 @@
-/*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
- */
 package com.joyent.manta.client.crypto;
 
-import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
-import com.joyent.manta.util.HmacOutputStream;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
-import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -21,27 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 
-/**
- * {@link HttpEntity} implementation that wraps an entity and encrypts its
- * output.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @since 3.0.0
- */
-public class EncryptingEntity implements HttpEntity {
-    /**
-     * Logger instance.
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingEntity.class);
+// FIXME: much dupe
+public class EncryptingPartEntity implements HttpEntity {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingPartEntity.class);
 
     /**
      * Value for an unknown stream length.
@@ -67,34 +46,33 @@ public class EncryptingEntity implements HttpEntity {
 
 
     private final EncryptionContext eContext;
+    private final OutputStream cipherStream;
 
     /**
      * Underlying entity that is being encrypted.
      */
     private final HttpEntity wrapped;
 
+    private final MultipartOutputStream multipartStream;
 
-    /**
-     * Creates a new instance with an known stream size.
-     *
-     * @param key key to encrypt stream with
-     * @param cipherDetails cipher to encrypt stream with
-     * @param wrapped underlying stream to encrypt
-     */
-    public EncryptingEntity(final SecretKey key,
-                            final SupportedCipherDetails cipherDetails,
-                            final HttpEntity wrapped) {
-        if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
-            String msg = String.format("Input content length exceeded maximum "
-            + "[%d] number of bytes supported by cipher [%s]",
-                    cipherDetails.getMaximumPlaintextSizeInBytes(),
-                    cipherDetails.getCipherAlgorithm());
-            throw new MantaClientEncryptionException(msg);
-        }
 
-        this.eContext = new EncryptionContext(key, cipherDetails);
+    public EncryptingPartEntity(final EncryptionContext eContext,
+                                final OutputStream cipherStream,
+                                MultipartOutputStream multipartStream,
+                                final HttpEntity wrapped) {
+        // if (originalLength > cipherDetails.getMaximumPlaintextSizeInBytes()) {
+        //     String msg = String.format("Input content length exceeded maximum "
+        //     + "[%d] number of bytes supported by cipher [%s]",
+        //             cipherDetails.getMaximumPlaintextSizeInBytes(),
+        //             cipherDetails.getCipherAlgorithm());
+        //     throw new MantaClientEncryptionException(msg);
+        // }
 
-        this.originalLength = wrapped.getContentLength();
+        this.eContext = eContext;
+        this.cipherStream = cipherStream;
+        this.multipartStream = multipartStream;
+
+        //this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
     }
 
@@ -110,11 +88,13 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public long getContentLength() {
-        if (originalLength >= 0) {
-            return eContext.getCipherDetails().ciphertextSize(originalLength);
-        } else {
-            return UNKNOWN_LENGTH;
-        }
+        // if content length is not exact, then we will hang on a socket timeout
+        return UNKNOWN_LENGTH;
+        // if (originalLength >= 0) {
+        //     return eContext.getCipherDetails().ciphertextSize(originalLength);
+        // } else {
+        //     return UNKNOWN_LENGTH;
+        // }
     }
 
     public long getOriginalLength() {
@@ -138,24 +118,28 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
-        OutputStream out = EncryptingEntityHelper.makeCipherOutputforStream(httpOut, eContext);
+        multipartStream.setNext(httpOut);
         try {
-            copyContentToOutputStream(out);
+            //httpOut.write("foo".getBytes("UTF-8"));
+            final int bufferSize = 128;
+            long bytesCopied = IOUtils.copy(getContent(), cipherStream, bufferSize);
+            cipherStream.flush();
+            // how to close on final?
             /* We don't close quietly because we want the operation to fail if
              * there is an error closing out the CipherOutputStream. */
-            out.close();
+            //out.close();
 
-            if (out instanceof HmacOutputStream) {
-                byte[] hmacBytes = ((HmacOutputStream) out).getHmac().doFinal();
-                Validate.isTrue(hmacBytes.length == eContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes(),
-                        "HMAC actual bytes doesn't equal the number of bytes expected");
+            // if (out instanceof HmacOutputStream) {
+            //     byte[] hmacBytes = out.getHmac().doFinal();
+            //     Validate.isTrue(hmacBytes.length == eContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes(),
+            //             "HMAC actual bytes doesn't equal the number of bytes expected");
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
-                }
+            //     if (LOGGER.isDebugEnabled()) {
+            //         LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
+            //     }
 
-                httpOut.write(hmacBytes);
-            }
+            //     httpOut.write(hmacBytes);
+            // }
         } finally {
             IOUtils.closeQuietly(httpOut);
         }

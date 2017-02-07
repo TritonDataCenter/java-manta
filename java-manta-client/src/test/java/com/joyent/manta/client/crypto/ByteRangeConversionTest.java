@@ -1,6 +1,5 @@
 package com.joyent.manta.client.crypto;
 
-import com.joyent.manta.client.crypto.ByteRangeConversion;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

@@ -72,17 +72,6 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
     }
 
-    public void canQueryCiphertextByteRangeAes128() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
-    }
-
-    public void canQueryCiphertextByteRangeAes192() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
-    }
 
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;

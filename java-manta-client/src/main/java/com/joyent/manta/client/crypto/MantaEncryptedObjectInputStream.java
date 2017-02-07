@@ -158,6 +158,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                                            final Long plaintextRangeLength) {
         super(backingStream);
 
+        this.authenticateCiphertext = authenticateCiphertext;
         this.startPosition = startPositionInclusive;
         this.cipherDetails = cipherDetails;
 
@@ -171,7 +172,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         this.cipher = cipherDetails.getCipher();
         this.secretKey = secretKey;
         this.hmac = findHmac();
-        this.authenticateCiphertext = authenticateCiphertext;
 
         this.initialBytesToSkip = initializeCipher();
         this.plaintextRangeLength = verifyAndConditionallyRecalculatePlaintextLength(
@@ -285,7 +285,14 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
          * HMAC bytes upon close(). */
         } else {
             final long adjustedContentLength;
-            final long hmacSize = this.hmac.getMacLength();
+            final long hmacSize;
+
+            if (this.hmac == null) {
+                hmacSize = this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+            } else {
+                hmacSize = this.hmac.getMacLength();
+            }
+
             adjustedContentLength = super.getContentLength() - hmacSize;
 
             BoundedInputStream bin = new BoundedInputStream(super.getBackingStream(),
@@ -320,7 +327,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      * @return HMAC instance or null when encrypted by a AEAD cipher
      */
     private Mac findHmac() {
-        if (this.cipherDetails.isAEADCipher()) {
+        if (this.cipherDetails.isAEADCipher() || !this.authenticateCiphertext) {
             return null;
         }
 
@@ -725,7 +732,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         exception.setContextValue("cipherInputStream", this.cipherInputStream);
         exception.setContextValue("authenticationEnabled", this.authenticateCiphertext);
         exception.setContextValue("threadName", Thread.currentThread().getName());
-        exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
+
+        if (this.cipher != null && this.cipher.getIV() != null) {
+            exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
+        }
 
         if (this.hmac != null) {
             exception.setContextValue("hmacAlgorithm", this.hmac.getAlgorithm());
@@ -765,6 +775,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             LOGGER.info("Plaintext size reported may be inaccurate for object: {}", getPath());
         }
 
-        return this.cipherDetails.plaintextSize(super.getContentLength());
+        Long plaintextSize = super.getContentLength();
+        Validate.notNull("Content-length header wasn't set by server");
+        return this.cipherDetails.plaintextSize(plaintextSize);
     }
 }

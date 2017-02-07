@@ -20,33 +20,37 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
 @Test
-public class MantaMultipartUploadManagerTest {
+public class JobsMultipartManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativePartNumbersAreRejected() {
-        MantaMultipartManager.validatePartNumber(-1);
+        JobsMultipartManager multipart = multipartInstance("user.name");
+        multipart.validatePartNumber(-1);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void zeroPartNumbersAreRejected() {
-        MantaMultipartManager.validatePartNumber(0);
+        JobsMultipartManager multipart = multipartInstance("user.name");
+        multipart.validatePartNumber(0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void partNumbersAboveMaxAreRejected() {
-        MantaMultipartManager.validatePartNumber(MantaMultipartManager.MAX_PARTS + 1);
+        JobsMultipartManager multipart = multipartInstance("user.name");
+        multipart.validatePartNumber(multipart.getMaxParts() + 1);
     }
 
     public void canBuildMultiPartUploadPath() {
         final UUID id = new UUID(0L, 12L);
-        MantaMultipartManager multipart = multipartInstance("user.name");
+        JobsMultipartManager multipart = multipartInstance("user.name");
         String expected = String.format("/user.name/%s/%s/",
-                MantaMultipartManager.MULTIPART_DIRECTORY, id);
+                JobsMultipartManager.MULTIPART_DIRECTORY, id);
         String actual = multipart.multipartUploadDir(id);
         assertEquals(expected, actual);
     }
 
     public void noErrorWhenAllPartsArePresentOrdered() throws IOException {
         final UUID id = new UUID(0L, 24L);
+        final MantaMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
         List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
@@ -56,14 +60,15 @@ public class MantaMultipartUploadManagerTest {
             partsList.add(part);
         }
 
-        MantaMultipartManager multiPart = spy(multipartInstance());
-        doReturn(partsList.stream()).when(multiPart).listParts(id);
+        JobsMultipartManager multiPart = spy(multipartInstance());
+        doReturn(partsList.stream()).when(multiPart).listParts(upload);
 
-        multiPart.validateThatThereAreSequentialPartNumbers(id);
+        multiPart.validateThatThereAreSequentialPartNumbers(upload);
     }
 
     public void noErrorWhenAllPartsArePresentUnordered() throws IOException {
         final UUID id = new UUID(0L, 36L);
+        final MantaMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
         List<MantaMultipartUploadPart> partsList = new LinkedList<>();
 
@@ -75,14 +80,15 @@ public class MantaMultipartUploadManagerTest {
 
         Collections.shuffle(partsList);
 
-        MantaMultipartManager multiPart = spy(multipartInstance());
-        doReturn(partsList.stream()).when(multiPart).listParts(id);
+        JobsMultipartManager multiPart = spy(multipartInstance());
+        doReturn(partsList.stream()).when(multiPart).listParts(upload);
 
-        multiPart.validateThatThereAreSequentialPartNumbers(id);
+        multiPart.validateThatThereAreSequentialPartNumbers(upload);
     }
 
     public void errorWhenMissingPart() throws IOException {
         final UUID id = new UUID(0L, 48L);
+        final MantaMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
         ArrayList<MantaMultipartUploadPart> partsList = new ArrayList<>();
 
@@ -96,13 +102,13 @@ public class MantaMultipartUploadManagerTest {
 
         Collections.shuffle(partsList);
 
-        MantaMultipartManager multiPart = spy(multipartInstance());
-        doReturn(partsList.stream()).when(multiPart).listParts(id);
+        JobsMultipartManager multiPart = spy(multipartInstance());
+        doReturn(partsList.stream()).when(multiPart).listParts(upload);
 
         boolean thrown = false;
 
         try {
-            multiPart.validateThatThereAreSequentialPartNumbers(id);
+            multiPart.validateThatThereAreSequentialPartNumbers(upload);
         } catch (MantaClientException e) {
             if ((int)e.getFirstContextValue("missing_part") == 3) {
                 thrown = true;
@@ -112,11 +118,11 @@ public class MantaMultipartUploadManagerTest {
         assertTrue(thrown, "Exception wasn't thrown");
     }
 
-    private MantaMultipartManager multipartInstance() {
+    private JobsMultipartManager multipartInstance() {
         return multipartInstance("user.name");
     }
 
-    private MantaMultipartManager multipartInstance(final String user) {
+    private JobsMultipartManager multipartInstance(final String user) {
         final String privateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
                 "MIIEpQIBAAKCAQEA1lPONrT34W2VPlltA76E2JUX/8+Et7PiMiRNWAyrATLG7aRA\n" +
                 "8iZ5A8o/aQMyexp+xgXoJIh18LmJ1iV8zqnr4TPXD2iPO92fyHWPu6P+qn0uw2Hu\n" +
@@ -157,7 +163,7 @@ public class MantaMultipartUploadManagerTest {
         try {
             System.setProperty("manta.dontValidateConfig", "true");
             final MantaClient client = new MantaClient(config);
-            return new MantaMultipartManager(client);
+            return new JobsMultipartManager(client);
         } finally {
             System.setProperty("manta.dontValidateConfig", "false");
         }

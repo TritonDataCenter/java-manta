@@ -138,7 +138,8 @@ public class MantaClient implements AutoCloseable {
     /**
      * The instance of the http helper class used to simplify creating requests.
      */
-    private final HttpHelper httpHelper;
+    // FIXME
+    public final HttpHelper httpHelper;
 
     /**
      * The home directory of the account.
@@ -1791,16 +1792,16 @@ public class MantaClient implements AutoCloseable {
         final String livePath = String.format("%s/jobs/%s/live/status",
                 home, jobId);
 
+        final CloseableHttpClient client = connectionContext.getHttpClient();
+        final HttpUriRequest initialRequest = connectionFactory.get(livePath);
         MantaJob job;
-        HttpUriRequest request = null;
-        CloseableHttpResponse response = null;
         HttpEntity entity;
-        CloseableHttpClient client = connectionContext.getHttpClient();
 
-        try {
-            request = connectionFactory.get(livePath);
-            response = client.execute(request);
-            StatusLine statusLine = response.getStatusLine();
+        CloseableHttpResponse lastResponse = null;
+
+        try (final CloseableHttpResponse initialResponse = client.execute(initialRequest)){
+            lastResponse = initialResponse;
+            StatusLine statusLine = initialResponse.getStatusLine();
 
             // If we can't get the live status of the job, we try to get the archived
             // status of the job just like the CLI mjob utility.
@@ -1808,41 +1809,44 @@ public class MantaClient implements AutoCloseable {
                 final String archivePath = String.format("%s/jobs/%s/job.json",
                         home, jobId);
 
-                request = connectionFactory.get(archivePath);
+                final HttpUriRequest archiveRequest = connectionFactory.get(archivePath);
 
                 // We close the request that was previously opened, because it
                 // didn't have what we need.
-                IOUtils.closeQuietly(response);
-                response = client.execute(request);
-                statusLine = response.getStatusLine();
+                IOUtils.closeQuietly(initialResponse);
 
-                // Job wasn't available via live status nor archive
-                if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                    String msg = "No record for job in Manta";
-                    MantaJobException e = new MantaJobException(jobId, msg);
-                    HttpHelper.annotateContextedException(e, request, response);
-                    throw e;
-                // There was an undefined problem with pulling the job from the archive
-                } else if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-                    String msg = "Unable to get job data from archive";
-                    MantaIOException ioe = new MantaIOException(msg);
-                    HttpHelper.annotateContextedException(ioe, request, response);
-                    ioe.setContextValue("jobId", Objects.toString(jobId));
-                    throw ioe;
-                // The job was pulled without problems from the archive
-                } else {
-                    entity = response.getEntity();
+                try (CloseableHttpResponse archiveResponse = client.execute(archiveRequest)) {
+                    lastResponse = archiveResponse;
+                    statusLine = initialResponse.getStatusLine();
+
+                    // Job wasn't available via live status nor archive
+                    if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                        String msg = "No record for job in Manta";
+                        MantaJobException e = new MantaJobException(jobId, msg);
+                        HttpHelper.annotateContextedException(e, archiveRequest, archiveResponse);
+                        throw e;
+                        // There was an undefined problem with pulling the job from the archive
+                    } else if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+                        String msg = "Unable to get job data from archive";
+                        MantaIOException ioe = new MantaIOException(msg);
+                        HttpHelper.annotateContextedException(ioe, archiveRequest, archiveResponse);
+                        ioe.setContextValue("jobId", Objects.toString(jobId));
+                        throw ioe;
+                        // The job was pulled without problems from the archive
+                    } else {
+                        entity = archiveResponse.getEntity();
+                    }
                 }
             // There was an undefined problem with pulling the job from the live status
             } else if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
                 String msg = "Unable to get job data from live status";
                 MantaIOException ioe = new MantaIOException(msg);
-                HttpHelper.annotateContextedException(ioe, request, response);
+                HttpHelper.annotateContextedException(ioe, initialRequest, initialResponse);
                 ioe.setContextValue("jobId", Objects.toString(jobId));
                 throw ioe;
             // The job was pulled without problems from the live status
             } else {
-                entity = response.getEntity();
+                entity = initialResponse.getEntity();
             }
 
             try (InputStream in = entity.getContent()) {
@@ -1850,7 +1854,7 @@ public class MantaClient implements AutoCloseable {
             } catch (IOException e) {
                 String msg = "Unable to deserialize job data";
                 MantaIOException ioe = new MantaIOException(msg, e);
-                HttpHelper.annotateContextedException(ioe, request, response);
+                HttpHelper.annotateContextedException(ioe, initialRequest, initialResponse);
                 ioe.setContextValue("jobId", Objects.toString(jobId));
                 throw ioe;
             }
@@ -1862,7 +1866,7 @@ public class MantaClient implements AutoCloseable {
 
             String msg = "Unable to get job data";
             MantaIOException ioe = new MantaIOException(msg, e);
-            HttpHelper.annotateContextedException(ioe, request, response);
+            HttpHelper.annotateContextedException(ioe, initialRequest, lastResponse);
             ioe.setContextValue("jobId", Objects.toString(jobId));
             throw ioe;
         // Likewise we sweep up any uncaught runtime exceptions and wrap them
@@ -1873,11 +1877,11 @@ public class MantaClient implements AutoCloseable {
 
             String msg = "Unexpected error when getting job data";
             MantaJobException je = new MantaJobException(jobId, msg, e);
-            HttpHelper.annotateContextedException(je, request, response);
+            HttpHelper.annotateContextedException(je, initialRequest, lastResponse);
             throw je;
         } finally {
-            if (response != null) {
-                IOUtils.closeQuietly(response);
+            if (lastResponse != null) {
+                IOUtils.closeQuietly(lastResponse);
             }
         }
 
@@ -2299,6 +2303,14 @@ public class MantaClient implements AutoCloseable {
 
         danglingStreams.add(new WeakReference<AutoCloseable>(stream));
         return stream;
+    }
+
+    public MantaConnectionContext getConnectionContext() {
+        return connectionContext;
+    }
+
+    public MantaConnectionFactory getConnectionFactory() {
+        return connectionFactory;
     }
 
     /**
