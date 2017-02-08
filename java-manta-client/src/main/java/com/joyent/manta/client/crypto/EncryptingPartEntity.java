@@ -34,6 +34,11 @@ public class EncryptingPartEntity implements HttpEntity {
             HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString());
 
     /**
+     * Buffer size when copying from input to output (cipher) stream.
+     */
+    private static final int BUFFER_SIZE = 128;
+
+    /**
      * Encrypting stream.
      */
     private final OutputStream cipherStream;
@@ -98,8 +103,7 @@ public class EncryptingPartEntity implements HttpEntity {
     public void writeTo(final OutputStream httpOut) throws IOException {
         multipartStream.setNext(httpOut);
         try {
-            final int bufferSize = 128;
-            IOUtils.copy(getContent(), cipherStream, bufferSize);
+            IOUtils.copy(getContent(), cipherStream, BUFFER_SIZE);
             cipherStream.flush();
         } finally {
             IOUtils.closeQuietly(httpOut);
