@@ -43,6 +43,12 @@ class EncryptionState {
 
     /**
      * Creates a new multipart encryption state object.
+     *
+     * NOTE: This class is tightly bound to the lifestyle of the
+     * encrypted MPU manager.  In particular the streams are now
+     * instantiated as part of the constructor and must be set before
+     * use.
+     *
      * @param encryptionContext encryption cipher state object
      */
     EncryptionState(final EncryptionContext encryptionContext) {
