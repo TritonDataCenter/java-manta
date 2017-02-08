@@ -38,7 +38,6 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
             throws IOException, MantaMultipartException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
-        //noinspection ResultOfMethodCallIgnored
         listParts(upload)
                 .sorted()
                 .map(MantaMultipartUploadPart::getPartNumber)
