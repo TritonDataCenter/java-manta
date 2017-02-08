@@ -35,7 +35,7 @@ public class DigestedEntity implements HttpEntity {
     private final HttpEntity wrapped;
 
     /**
-     * Creates a entity that wraps another entity and calcuates a running
+     * Creates a entity that wraps another entity and calculates a running
      * digest.
      *
      * @param wrapped entity to wrap

@@ -14,7 +14,7 @@ import java.nio.charset.Charset;
 public class ConfigContextTest {
     private final byte[] keyBytes;
 
-    private static final String MANTA_AUTH_PRIVATE_KEY = "-----BEGIN RSA PRIVATE KEY-----\n" +
+    public static final String MANTA_AUTH_PRIVATE_KEY = "-----BEGIN RSA PRIVATE KEY-----\n" +
             "MIIEpQIBAAKCAQEA1lPONrT34W2VPlltA76E2JUX/8+Et7PiMiRNWAyrATLG7aRA\n" +
             "8iZ5A8o/aQMyexp+xgXoJIh18LmJ1iV8zqnr4TPXD2iPO92fyHWPu6P+qn0uw2Hu\n" +
             "ZZ0IvHHYED+fqxm7jz2ZjnfZl5Bz73ctjRF+77rPgOhhfv4KAc1d9CDsC+lHTqbp\n" +

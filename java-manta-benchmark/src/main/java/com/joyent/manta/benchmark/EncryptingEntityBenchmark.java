@@ -28,11 +28,10 @@ public final class EncryptingEntityBenchmark {
      * Method that runs the benchmark.
      *
      * @param tries number of times to execute
-     * @param random source of entropy for the encryption algorithm
      * @param cipherDetails cipher implementation to benchmark
      * @throws IOException thrown when there is a problem streaming
      */
-    private static void throughputTest(final int tries, final SecureRandom random,
+    private static void throughputTest(final int tries,
                                        final SupportedCipherDetails cipherDetails)
             throws IOException {
         final long oneMb = 1_048_576L;
@@ -98,27 +97,11 @@ public final class EncryptingEntityBenchmark {
             tries = Integer.parseInt(argv[0].trim());
         }
 
-        String randomName;
-
-        if (argv.length < 2) {
-            random = new SecureRandom();
-            randomName = "default";
-        } else {
-            if (argv[1].trim().equalsIgnoreCase("strong")) {
-                random = SecureRandom.getInstanceStrong();
-                randomName = "strong";
-            } else {
-                random = new SecureRandom();
-                randomName = "default";
-            }
-        }
-
         for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
             System.out.println("===================================================");
-            System.out.printf(" %s Timings [random: %s]:\n", cipherDetails.getCipherId(),
-                    randomName);
+            System.out.printf(" %s Timings:\n", cipherDetails.getCipherId());
             System.out.println("===================================================");
-            throughputTest(tries, random, cipherDetails);
+            throughputTest(tries, cipherDetails);
         }
     }
 }

@@ -21,7 +21,8 @@ import java.util.Date;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class MantaObjectInputStream extends InputStream implements MantaObject {
+public class MantaObjectInputStream extends InputStream implements MantaObject,
+        AutoCloseable {
     private static final long serialVersionUID = -4692104903008485259L;
 
     /**

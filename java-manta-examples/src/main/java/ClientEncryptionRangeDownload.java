@@ -1,11 +1,16 @@
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.config.*;
+import com.joyent.manta.config.ChainedConfigContext;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
+import com.joyent.manta.config.EnvVarConfigContext;
+import com.joyent.manta.config.MapConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 
-import java.util.Base64;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Scanner;
 
 
@@ -50,13 +55,15 @@ public class ClientEncryptionRangeDownload {
             System.out.println(response.getHttpHeaders().toString());
 
             MantaHttpHeaders headers = new MantaHttpHeaders();
-            headers.setByteRange(17L, 32L);
+            headers.setByteRange(0L, 15L);
 
-            // Print out every line from file streamed real-time from Manta
-            InputStream is = client.getAsInputStream(mantaPath, headers);
-            byte[] buffer = new byte[16];
-            is.read(buffer);
-            System.out.write(buffer);
+            try (InputStream is = client.getAsInputStream(mantaPath, headers);
+                 Scanner scanner = new Scanner(is)) {
+
+                while (scanner.hasNextLine()) {
+                    System.out.println(scanner.nextLine());
+                }
+            }
         }
     }
 }

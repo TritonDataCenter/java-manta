@@ -249,6 +249,57 @@ authenticate that ciphertext was not modified.
 *Note* each instance of a MantaClient will only support the encryption/decryption for the algorithm configured for that instance.
  
 
+## Server-side Multipart Upload
+
+Manta supports multipart upload for dividing large files into many smaller parts 
+and uploading them to Manta, where they can be assembled. The design for the 
+server-side multipart upload is specified in 
+[RFD 65](https://github.com/joyent/rfd/tree/master/rfd/0065). The Java SDK
+implements an interface to make using server-side multipart uploading 
+straightforward. The strategy to use for multipart upload is listed below.
+
+1. Create a MantaClient instance.
+2. Create an instance of ServerSideMultipartManager passing in the instance of 
+   MantaClient to the constructor.
+3. Initiate an upload to the full path where the final object should be stored.
+4. Upload each part using the ServerSideMultipartUpload object created in the 
+   previous step. The order that parts are uploaded does not matter,
+   what does matter is that each part has the appropriate part number specified.
+5. Execute `complete` to commit the parts to the object on the server. At this 
+   point the server will assembly the final object.
+
+An example application is provided in the java-manta-examples module, named 
+ServerMultipart, to help illustrate the workflow.
+
+## Encrypted Multipart Upload
+
+When using client-side encryption with multipart upload there are some 
+additional restrictions imposed on the implementor of the SDK:
+
+* Uploaded parts must be uploaded in sequential order (e.g. part 1, 
+  part 2, ...).
+* Different parts can not be uploaded between different JVMs.
+* At this time only the cipher / mode AES/CTR is supported.
+
+
+## Client-side Encryption with Server-side Multipart Upload
+
+The workflow for using client-side encryption with server-side
+multipart upload is similar to the server-side multipart upload
+without client-side encryption.  As an additional constraint, you
+parts must be uploaded serially and sequentially. This is required by
+the underlying cipher implementations.
+
+You will need to configure an instance of MantaClient using the
+settings you would for client-side encryption, namely setting
+`manta.client_encryption` to `true` and configuring the cipher and
+encryption key.  Additionally, you need to create an instance of
+`EncryptedServerSideMultipartManager`, which should be reused, for
+uploading the various file parts and assembling the final file.
+
+An example application is provided in the java-manta-examples module, named ClientEncryptionServerMultipart, to help illustrate the workflow.
+
+
 ## Subuser Difficulties
 
 If you are using subusers, be sure to specify the Manta account name as `user/subuser`.

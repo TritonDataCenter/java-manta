@@ -14,6 +14,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.slf4j.MDC;
@@ -343,6 +344,13 @@ public interface HttpHelper extends AutoCloseable {
             exception.setContextValue("response", responseDump);
             final String responseHeaders = asString(response.getAllHeaders());
             exception.setContextValue("responseHeaders", responseHeaders);
+
+            final StatusLine statusLine = response.getStatusLine();
+
+            if (statusLine != null) {
+                exception.setContextValue("responseStatusCode", statusLine.getStatusCode());
+                exception.setContextValue("responseStatusReason", statusLine.getReasonPhrase());
+            }
         }
     }
 

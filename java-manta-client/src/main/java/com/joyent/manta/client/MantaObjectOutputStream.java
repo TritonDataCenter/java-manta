@@ -7,6 +7,7 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
+import org.apache.commons.io.output.ClosedOutputStream;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -95,11 +96,6 @@ public class MantaObjectOutputStream extends OutputStream {
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
 
     /**
-     * Content type value for the file being uploaded.
-     */
-    private final ContentType contentType;
-
-    /**
      * Http content object that is proxied by this stream.
      */
     private final EmbeddedHttpContent httpContent;
@@ -135,18 +131,29 @@ public class MantaObjectOutputStream extends OutputStream {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param httpHelper reference to HTTP operations helper class
-     * @param headers optional HTTP headers to include when copying the object
+     * @param mantaHttpHeaders optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @param contentType HTTP Content-Type header value
      */
     MantaObjectOutputStream(final String path, final HttpHelper httpHelper,
-                            final MantaHttpHeaders headers,
+                            final MantaHttpHeaders mantaHttpHeaders,
                             final MantaMetadata metadata,
                             final ContentType contentType) {
-        this.contentType = contentType;
         this.httpContent = new EmbeddedHttpContent(contentType.toString(),
                 closed);
         this.path = path;
+
+        final MantaHttpHeaders headers;
+
+        if (mantaHttpHeaders == null) {
+            headers = new MantaHttpHeaders();
+        } else {
+            headers = mantaHttpHeaders;
+        }
+
+        if (contentType != null) {
+            headers.setContentType(contentType.toString());
+        }
 
         /*
          * Thread execution definition that runs the HTTP PUT operation.
@@ -222,6 +229,12 @@ public class MantaObjectOutputStream extends OutputStream {
      */
     protected static Boolean isInnerStreamClosed(final OutputStream stream) {
         OutputStream inner = findMostInnerOutputStream(stream);
+
+        // If the inner most stream is a closed instance, then we can assume
+        // the stream is close.
+        if (inner.getClass().equals(ClosedOutputStream.class)) {
+            return true;
+        }
 
         try {
             Field f = FieldUtils.getField(inner.getClass(), "closed", true);

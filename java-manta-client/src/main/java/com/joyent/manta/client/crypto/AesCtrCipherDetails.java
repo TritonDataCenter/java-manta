@@ -28,12 +28,6 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     public static final AesCtrCipherDetails INSTANCE_256_BIT = new AesCtrCipherDetails(256);
 
     /**
-     * The largest ciphertext size allowed.
-     */
-    private final long ciphertextMaxSize = (getMaximumPlaintextSizeInBytes() / getBlockSizeInBytes())
-            * getBlockSizeInBytes();
-
-    /**
      * Creates a new instance of a AES-CTR cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
@@ -90,16 +84,12 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         }
 
         final int blockSize = getBlockSizeInBytes();
-        final long adjustedStart;
-        final long adjustedEnd;
-        final long plaintextEndLength;
+        long adjustedStart;
+        long adjustedEnd;
+        long plaintextEndLength;
 
         // How many bytes do we offset in the first block
         long plaintextStartAdjustment = startInclusive % blockSize;
-        // Since this is inclusive, go back a byte
-        if (plaintextStartAdjustment > 0) {
-            plaintextStartAdjustment--;
-        }
 
         // The first block is considered block 0
         double startBlockNumber = Math.floor(startInclusive / blockSize);
@@ -108,9 +98,14 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         adjustedStart = ((long) startBlockNumber) * blockSize;
 
         // Get the full block for the end range, plus an additional block
-        final double endBlockNumber = Math.ceil(endInclusive / blockSize) + 1;
+        double endBlockNumber = Math.ceil(endInclusive / blockSize) + 1;
 
-        adjustedEnd = (((long) endBlockNumber) * blockSize);
+        adjustedEnd = (((long) endBlockNumber) * blockSize) + 1;
+
+        // We want to read a single byte, subtract 1 from adjustedEnd, which assumed 2 or more bytes are read
+        if (startInclusive == endInclusive) {
+            adjustedEnd--;
+        }
 
         plaintextEndLength = (endInclusive - startInclusive) + 1;
 

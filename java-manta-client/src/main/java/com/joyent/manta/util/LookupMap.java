@@ -146,6 +146,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     public boolean equals(final Object o) {
         return wrapped.equals(o);
     }

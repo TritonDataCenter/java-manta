@@ -45,7 +45,7 @@ public class JobsWithMantaJobBuilder {
         // You will always need to close streams because we do everything online
         try (Stream<String> outputs = finishedJob.outputs()) {
             // Print each output
-            outputs.forEach(o -> System.out.println(o));
+            outputs.forEach(System.out::println);
         }
     }
 }

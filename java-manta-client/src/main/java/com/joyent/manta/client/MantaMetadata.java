@@ -3,9 +3,11 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.collections4.map.PredicatedMap;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -30,6 +32,7 @@ import java.util.function.Function;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
     private static final long serialVersionUID = -5828336629480323042L;
 
@@ -170,6 +173,16 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     /**
+     * Removes all metadata with keys prefixed by <code>e-</code>.
+     */
+    public void removeAllEncrypted() {
+        final Set<Map.Entry<String, String>> set = entrySet();
+
+        set.removeIf(entry -> entry.getKey()
+           .startsWith(ENCRYPTED_METADATA_PREFIX));
+    }
+
+    /**
      * Deletes user-supplied metadata associated with a Manta object.
      * @param key key to delete
      */
@@ -281,15 +294,6 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     @Override
     public String getOrDefault(final Object key, final String defaultValue) {
         return innerMap.getOrDefault(key, defaultValue);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        return innerMap.toString();
     }
 
 
@@ -417,5 +421,22 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     @Override
     public Set<Entry<String, String>> entrySet() {
         return innerMap.entrySet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        String baseInfo = new ToStringBuilder(this)
+                .append("innerMap", innerMap).toString();
+        StringBuilder builder = new StringBuilder(baseInfo).append("\n");
+
+        for (Map.Entry<String, String> entry : innerMap.entrySet()) {
+            builder.append(" [").append(entry.getKey()).append("] = [")
+                   .append(entry.getValue()).append("]\n");
+        }
+
+        return builder.toString();
     }
 }

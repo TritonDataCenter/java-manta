@@ -129,7 +129,7 @@ public class MantaObjectResponse implements MantaObject {
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
     public MantaObjectResponse(final String path, final MantaHttpHeaders headers) {
-        this(path, headers, null);
+        this(path, headers, new MantaMetadata(headers.metadataAsStrings()));
     }
 
 

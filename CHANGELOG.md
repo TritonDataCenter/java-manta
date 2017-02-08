@@ -24,6 +24,10 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Added verify upload checksum configuration parameter.
  - Added upload buffer size configuration parameter.
  - Added getInputStream method that accepts byte range parameter.
+ - Added support for client-side encryption.
+ - Added support for server supported multipart.
+ - Added support for client-side encrypted multipart upload.
+ - Added support for client-side encrypted HTTP range download. 
 ### Removed
  - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Removed MantaCryptoException.

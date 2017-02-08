@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
@@ -22,6 +23,12 @@ public class MantaObjectMapper extends ObjectMapper {
      * Jackson data binding mapper instance.
      */
     public static final ObjectMapper INSTANCE = new MantaObjectMapper();
+
+    /**
+     * JSON node factory instance.
+     */
+    public static final JsonNodeFactory NODE_FACTORY_INSTANCE =
+            new JsonNodeFactory(false);
 
     /**
      * Creates a configured instance of {@link ObjectMapper}.

@@ -6,7 +6,6 @@ package com.joyent.manta.http.entity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
@@ -56,18 +55,6 @@ public class ExposedStringEntity extends StringEntity implements MemoryBackedEnt
      */
     public ExposedStringEntity(final String string, final Charset charset) {
         super(string, charset);
-    }
-
-    /**
-     * Creates a StringEntity with the specified content. The content type defaults to
-     * {@link ContentType#TEXT_PLAIN}.
-     *
-     * @param string content to be used. Not {@code null}.
-     * @throws IllegalArgumentException     if the string parameter is null
-     * @throws UnsupportedEncodingException if the default HTTP charset is not supported.
-     */
-    public ExposedStringEntity(final String string) throws UnsupportedEncodingException {
-        super(string);
     }
 
     @Override

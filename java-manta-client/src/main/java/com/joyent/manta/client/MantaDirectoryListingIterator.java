@@ -143,6 +143,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             String uri = url + formatPath(path) + query;
             HttpGet get = new HttpGet(uri);
 
+            IOUtils.closeQuietly(currentResponse);
             currentResponse = httpHelper.executeRequest(get, null);
             HttpEntity entity = currentResponse.getEntity();
             String contentType = entity.getContentType().getValue();
@@ -221,7 +222,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                     new TypeReference<Map<String, Object>>() { });
             final String name = Objects.toString(lookup.get("name"));
 
-            Validate.notNull(name, "Name must not be nullin JSON input");
+            Validate.notNull(name, "Name must not be null in JSON input");
 
             this.lastMarker = name;
 
