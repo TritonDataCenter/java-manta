@@ -60,10 +60,11 @@
 
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
-    <!-- <module name="Header"> -->
-    <!--   <property name="headerFile" value="${checkstyle.header.file}"/> -->
-    <!--   <property name="fileExtensions" value="java"/> -->
-    <!-- </module> -->
+    <module name="Header">
+        <property name="header" value="/*\n * Copyright (c) 2017, Joyent, Inc. All rights reserved.\n *\n * This Source Code Form is subject to the terms of the Mozilla Public\n * License, v. 2.0. If a copy of the MPL was not distributed with this\n * file, You can obtain one at http://mozilla.org/MPL/2.0/.\n */" />
+        <property name="ignoreLines" value="2" />
+        <property name="fileExtensions" value="java" />
+    </module>
 
     <module name="TreeWalker">
         <!-- Make annotations available for filtering via SuppressWarningsFilter -->
@@ -182,5 +183,4 @@
         </module>
         <module name="UpperEll" />
     </module>
-
 </module>
