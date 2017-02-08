@@ -22,8 +22,17 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 
 /**
- * Base class providing generic methods useful for {@link MantaMultipartManager}
- * implementations.
+ * </p>Base class providing generic methods useful for {@link MantaMultipartManager}
+ * implementations.</p>
+ *
+ * <p>This class provides a coherent structure for multipart implementations
+ * that communicate over the network using the Apache HTTP Client library by
+ * providing default mappings for part upload methods to a {@link HttpEntity}
+ * upload method.</p>
+ *
+ * <p>By allowing for UPLOAD and PART to be generic, we can easily create
+ * wrapping implementations like {@link EncryptedMultipartManager} that
+ * will wrap any base implementation.</p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
@@ -31,7 +40,8 @@ import java.lang.reflect.Field;
  * @param <UPLOAD> Manta multipart upload object used to manage MPU state
  * @param <PART> Manta multipart upload part object used to manage MPU part state
  */
-abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PART extends MantaMultipartUploadPart>
+abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
+                                        PART extends MantaMultipartUploadPart>
         implements MantaMultipartManager<UPLOAD, PART> {
     @Override
     public void validateThatThereAreSequentialPartNumbers(final UPLOAD upload)
@@ -61,18 +71,20 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
      */
     void validatePartNumber(final int partNumber) {
         if (partNumber <= 0) {
-            throw new IllegalArgumentException("Negative or zero part numbers are not valid");
+            throw new IllegalArgumentException("Negative or zero part numbers "
+                    + "are not valid");
         }
 
         if (partNumber > getMaxParts()) {
-            final String msg = String.format("Part number of [%d] exceeds maximum parts (%d)",
-                    partNumber, getMaxParts());
+            final String msg = String.format("Part number of [%d] exceeds "
+                            + "maximum parts (%d)", partNumber, getMaxParts());
             throw new IllegalArgumentException(msg);
         }
     }
 
     @Override
-    public PART uploadPart(final UPLOAD upload, final int partNumber, final String contents)
+    public PART uploadPart(final UPLOAD upload, final int partNumber,
+                           final String contents)
             throws IOException {
         validatePartNumber(partNumber);
         Validate.notNull(contents, "String must not be null");
@@ -159,7 +171,16 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
     }
 
     /**
-     * Uploads a single part of a multipart upload.
+     * <p>Uploads a single part of a multipart upload using an implementation
+     * of the Apache HTTP Client's {@link HttpEntity} interface.</p>
+     *
+     * <p>Even though all implementations of this class take a reference to
+     * {@link MantaClient} as a constructor parameter, the {@link MantaClient}
+     * class isn't always the best interface to interact with to specify
+     * how a multipart upload part is sent to Manta. The abstraction of
+     * {@link MantaClient} is intended for users of the SDK and not necessarily
+     * internal consumers, so additional customization of HTTP calls needs to
+     * be done by and its API is insufficient.</p>
      *
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
@@ -172,8 +193,21 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
                              HttpEntity entity) throws IOException;
 
     /**
-     * Uses reflection to read a field from a MantaClient instance. This method
-     * is used to access fields
+     * <p>Uses reflection to read a private field from a {@link MantaClient}
+     * instance.</p>
+     *
+     * <p>We use reflection to read private fields from {@link MantaClient} as
+     * part of a compromise between package level separation and private/default
+     * scoping. Essentially, it makes sense to put multipart related classes
+     * in their own package because the package in which {@link MantaClient} is
+     * contained is already crowded. However, by making that decision there is
+     * no scoping mechanism available in Java to allow us to share
+     * methods/fields between packages without giving other packages access.
+     * Thus, we scope the methods/fields that shouldn't be available to a user
+     * of the SDK as private/protected/default and use reflection
+     * <em>sparingly</em> to access the values from another package. Particular
+     * care has been paid to making this reflection-based reads outside of
+     * performance sensitive code paths.</p>
      *
      * @param fieldName field name to read
      * @param mantaClient Manta client instance to read fields from

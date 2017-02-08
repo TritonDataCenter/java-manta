@@ -13,7 +13,16 @@ import java.io.InputStream;
 import java.util.stream.Stream;
 
 /**
- * Interface representing a multipart upload API to Manta.
+ * <p>Interface representing a multipart upload API to Manta.</p>
+ *
+ * <p>Multipart manager implementations will typically be stateless and store
+ * the state for a given upload in a class that implements the
+ * {@link MantaMultipartUpload} interface. This allows for a design where the
+ * manager can be reused for multiple uploads.</p>
+ *
+ * <p>The use of generics in this interface give us flexibility in the
+ * return values allowing quite divergent implementations to fit within
+ * the same interface.</p>
  *
  * <p>Note: In version 3.0, this class was refactored to an interface.</p>
  *
