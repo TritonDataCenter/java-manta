@@ -27,9 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * {@link Map} implementation allowing for optimistic concurrency with
+ * <p>{@link Map} implementation allowing for optimistic concurrency with
  * {@link WeakReference}s. Furthermore, keys are verified based on object
- * identity and not on equals() and hashCode().
+ * identity and not on equals() and hashCode().</p>
+ *
+ * <p>The only modifications to this file are this comment block and the
+ * package name.</p>
  *
  * @see <a href="https://github.com/ehcache/ehcache3/blob/351a49a45afbf18c48df665210b5cf07f5e7b221/core/src/main/java/org/ehcache/core/internal/util/ConcurrentWeakIdentityHashMap.java">github page of source</a>
  * @author Alex Snaps
