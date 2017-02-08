@@ -8,7 +8,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.joyent" level="warn" />
+    <logger name="com.joyent" level="debug" />
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
