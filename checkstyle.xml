@@ -178,7 +178,7 @@
         <module name="ArrayTypeStyle" />
         <module name="FinalParameters" />
         <module name="TodoComment">
-            <property name="format" value="(TODO)|(FIXME)"/>
+            <property name="format" value="(TODO)|(FIXME)|(XXX)"/>
         </module>
         <module name="UpperEll" />
     </module>
