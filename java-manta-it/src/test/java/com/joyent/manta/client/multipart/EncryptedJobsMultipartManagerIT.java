@@ -262,10 +262,6 @@ public class EncryptedJobsMultipartManagerIT {
         canUploadMultipartBinary(5, 200);
     }
 
-    public void canUpload25MbX20MultipartBinary() throws IOException {
-        canUploadMultipartBinary(5, 10);
-    }
-
     private void canUploadMultipartBinary(final long sizeInMb,
                                           final int noOfParts) throws IOException {
         final long size = sizeInMb * 1024L * 1024L;
