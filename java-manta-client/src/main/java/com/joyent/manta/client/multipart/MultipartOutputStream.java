@@ -62,7 +62,7 @@ public class MultipartOutputStream extends OutputStream {
 
     // DOES NOT CLOSE UNDERLYING STREAM
     // It might look reasonable to flush the buffer here.  But that
-    // would complicate HMAC where we need to writ the final "normal
+    // would complicate HMAC where we need to write the final "normal
     // bytes", flush the buffer, then write the HMAC, and finally
     // close the underlying buffers up.
     @Override
