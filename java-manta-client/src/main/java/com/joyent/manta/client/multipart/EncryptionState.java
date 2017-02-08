@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.crypto.EncryptionContext;

@@ -16,6 +16,8 @@ import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaConnectionContext;
+import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.Validate;
@@ -94,6 +96,10 @@ public class JobsMultipartManager extends AbstractMultipartManager
      */
     private final MantaClient mantaClient;
 
+    private final MantaConnectionContext connectionContext;
+
+    private final MantaConnectionFactory connectionFactory;
+
     /**
      * Full path on Manta to the upload directory.
      */
@@ -124,7 +130,10 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(mantaClient, "Manta client object must not be null");
 
         this.mantaClient = mantaClient;
-
+        this.connectionContext = readFieldFromMantaClient(
+                "connectionContext", mantaClient, MantaConnectionContext.class);
+        this.connectionFactory = readFieldFromMantaClient(
+                "connectionFactory", mantaClient, MantaConnectionFactory.class);
         this.resolvedMultipartUploadDirectory =
                 mantaClient.getContext().getMantaHomeDirectory()
                 + SEPARATOR + MULTIPART_DIRECTORY;
@@ -261,12 +270,12 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(entity, "Upload entity must not be null");
 
         final String path = multipartPath(upload.getId(), partNumber);
-        final HttpPut put = mantaClient.getConnectionFactory().put(path);
+        final HttpPut put = connectionFactory.put(path);
         put.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
-        try (CloseableHttpResponse response = mantaClient.getConnectionContext().getHttpClient().execute(put)) {
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put)) {
             StatusLine statusLine = response.getStatusLine();
 
             final MantaObjectResponse objectResponse = new MantaObjectResponse(path,

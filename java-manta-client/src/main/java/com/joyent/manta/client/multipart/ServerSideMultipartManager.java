@@ -107,8 +107,16 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 "Manta client must not be closed");
         this.config = mantaClient.getContext();
         this.mantaClient = mantaClient;
-        this.connectionFactory = mantaClient.getConnectionFactory();
-        this.connectionContext = mantaClient.getConnectionContext();
+
+        /* These fields are not exposed in the MantaClient because they expose
+         * implementation details about the HTTP Client library that is shaded.
+         * Using reflection here, shouldn't be a big performance hit because
+         * you would typically create one manager instance and reuse it for
+         * multiple uploads. */
+        this.connectionContext = readFieldFromMantaClient(
+                "connectionContext", mantaClient, MantaConnectionContext.class);
+        this.connectionFactory = readFieldFromMantaClient(
+                "connectionFactory", mantaClient, MantaConnectionFactory.class);
     }
 
     /**

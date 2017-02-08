@@ -3,11 +3,13 @@
  */
 package com.joyent.manta.client.multipart;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
@@ -17,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 
 /**
  * Base class providing generic methods useful for {@link MantaMultipartManager}
@@ -168,4 +171,29 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
     abstract PART uploadPart(UPLOAD upload,
                              int partNumber,
                              HttpEntity entity) throws IOException;
+
+    /**
+     * Uses reflection to read a field from a MantaClient instance. This method
+     * is used to access fields
+     *
+     * @param fieldName field name to read
+     * @param mantaClient
+     * @param returnType
+     * @param <T>
+     * @return
+     */
+    protected static <T> T readFieldFromMantaClient(final String fieldName,
+                                                    final MantaClient mantaClient,
+                                                    final Class<T> returnType) {
+        final Field field = FieldUtils.getField(MantaClient.class,
+                fieldName, true);
+
+        try {
+            Object object = FieldUtils.readField(field, mantaClient, true);
+            return returnType.cast(object);
+        } catch (IllegalAccessException e) {
+            throw new MantaMultipartException("Unabled to access httpHelper "
+                    + "field on MantaClient");
+        }
+    }
 }

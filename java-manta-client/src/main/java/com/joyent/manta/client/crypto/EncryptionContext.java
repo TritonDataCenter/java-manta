@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ */
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
@@ -7,8 +10,15 @@ import javax.crypto.SecretKey;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 
-
-// context around a single encryption operation.  namely the secret + cipher info, with an inited IV
+/**
+ * Context class that contains a secret key, cipher/mode properties objects
+ * and a cipher that is initialized in encryption mode. The {@link Cipher}
+ * object contains the current state of encryption, so it can be passed
+ * between streams to resume encrypting even if it is given different inputs.
+ *
+ * @author <a href="https://github.com/cburroughs/">Chris Burroughs</a>
+ * @since 3.0.0
+ */
 public class EncryptionContext {
     /**
      * Secret key to encrypt stream with.
@@ -59,8 +69,6 @@ public class EncryptionContext {
     public Cipher getCipher() {
         return cipher;
     }
-
-
 
     /**
      * Initializes the cipher with an IV (initialization vector), so that
