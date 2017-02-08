@@ -282,6 +282,17 @@ additional restrictions imposed on the implementor of the SDK:
 * At this time only the cipher / mode AES/CTR is supported.
 
 
+## Client-side Encryption with Server-side Multipart Upload
+
+The workflow for using client-side encryption with server-side multipart upload is the same as server-side multipart upload 
+without client-side encryption. However, you will need to configure an instance of MantaClient using the settings you would
+for client-side encryption, namely setting `manta.client_encryption` to `true` and configuring the cipher and encryption key.
+Additionally, you need to create an instance of `EncryptedServerSideMultipartManager`, which should be reused, for uploading
+the various file parts and assembling the final file.
+
+An example application is provided in the java-manta-examples module, named ClientEncryptionServerMultipart, to help illustrate the workflow.
+
+
 ## Subuser Difficulties
 
 If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
