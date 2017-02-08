@@ -7,10 +7,10 @@
         </encoder>
     </appender>
 
-    <logger name="com.joyent" level="debug" />
+    <logger name="com.joyent" level="info" />
     <!-- lower these to debug in order to enable most logs -->
     <logger name="com.joyent.manta.org.apache" level="error" />
-    <logger name="org.apache.http" level="debug" />
+    <logger name="org.apache.http" level="info" />
     <logger name="org.apache.http.wire" level="error" />
 
     <logger name="sun.net.www.protocol.http" level="error" />
