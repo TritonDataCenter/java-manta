@@ -12,7 +12,6 @@ import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.http.HttpStatus;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
@@ -330,7 +329,7 @@ public class ServerSideMultipartManagerIT {
                         (MantaClientHttpResponseException)cause;
 
                 Assert.assertEquals(responseException.getStatusCode(),
-                        HttpStatus.SC_BAD_REQUEST,
+                        400,
                         "Unexpected response code");
                 Assert.assertEquals(responseException.getServerCode(),
                         MantaErrorCode.MULTIPART_UPLOAD_PART_SIZE,
