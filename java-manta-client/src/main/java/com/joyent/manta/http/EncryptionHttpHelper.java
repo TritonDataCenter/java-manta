@@ -239,6 +239,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     }
 
     @Override
+    @SuppressWarnings("MagicNumber")
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
@@ -308,7 +309,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         if (hasRangeRequest) {
             boolean unboundedEnd = (plaintextEnd >= cipherDetails.getMaximumPlaintextSizeInBytes() || plaintextEnd < 0);
             // Try to calculate from original-plaintext header
-            final String originalPlaintextLengthS = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
+            final String originalPlaintextLengthS = rawStream.getHeaderAsString(
+                    MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
             if (originalPlaintextLengthS.length() > 0) {
                 final Long originalPlaintextLength = Long.parseLong(originalPlaintextLengthS);
                 if (plaintextRangeLength == 0L) {
@@ -404,7 +406,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     plaintextStart, plaintextEnd);
 
             binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
-            initialSkipBytes = computedRanges.getPlaintextBytesToSkipInitially() + computedRanges.getCiphertextStartPositionInclusive();
+            initialSkipBytes = computedRanges.getPlaintextBytesToSkipInitially()
+                    + computedRanges.getCiphertextStartPositionInclusive();
 
             if (computedRanges.getCiphertextEndPositionInclusive() > 0) {
                 binaryEndPositionInclusive = computedRanges.getCiphertextEndPositionInclusive();

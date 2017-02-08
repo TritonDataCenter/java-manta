@@ -19,5 +19,5 @@
     <suppress checks="EmptyBlock" files="Benchmark.java" />
 
     <suppress checks="[a-zA-Z0-9]*" files="BlockSizeBench.java" />
-    <suppress files="ConcurrentWeakIdentityHashMap.java" />
+    <suppress checks="[a-zA-Z0-9]*" files="ConcurrentWeakIdentityHashMap.java" />
 </suppressions>

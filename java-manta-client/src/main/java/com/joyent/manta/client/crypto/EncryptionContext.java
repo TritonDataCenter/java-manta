@@ -36,6 +36,12 @@ public class EncryptionContext {
     private final transient Cipher cipher;
 
 
+    /**
+     * Creates a new instance of an encryption context.
+     *
+     * @param key secret key to initialize cipher with
+     * @param cipherDetails cipher/mode properties object to create cipher object from
+     */
     public EncryptionContext(final SecretKey key,
                              final SupportedCipherDetails cipherDetails) {
         @SuppressWarnings("MagicNumber")

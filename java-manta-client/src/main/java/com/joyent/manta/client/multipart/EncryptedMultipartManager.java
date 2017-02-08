@@ -80,7 +80,7 @@ public class EncryptedMultipartManager
         Validate.notNull(mantaClient, "Manta client must not be null");
         Validate.notNull(wrapped, "Wrapped manager must not be null");
 
-        this.httpHelper = readFieldFromMantaClient ("httpHelper",
+        this.httpHelper = readFieldFromMantaClient("httpHelper",
                 mantaClient, EncryptionHttpHelper.class);
         this.wrapped = wrapped;
         this.secretKey = this.httpHelper.getSecretKey();

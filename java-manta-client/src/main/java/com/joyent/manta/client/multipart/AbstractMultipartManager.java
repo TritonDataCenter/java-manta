@@ -177,10 +177,10 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload, PAR
      * is used to access fields
      *
      * @param fieldName field name to read
-     * @param mantaClient
-     * @param returnType
-     * @param <T>
-     * @return
+     * @param mantaClient Manta client instance to read fields from
+     * @param returnType type of field
+     * @param <T> field type
+     * @return value of the field
      */
     protected static <T> T readFieldFromMantaClient(final String fieldName,
                                                     final MantaClient mantaClient,
