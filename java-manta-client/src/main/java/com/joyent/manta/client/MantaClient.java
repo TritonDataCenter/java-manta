@@ -27,6 +27,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.StandardHttpHelper;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
+import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
@@ -67,7 +68,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
-import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -87,7 +87,6 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -154,8 +153,8 @@ public class MantaClient implements AutoCloseable {
      * Collection of all of the {@link AutoCloseable} objects that will need to be
      * closed when MantaClient is closed.
      */
-    private final Set<WeakReference<? extends AutoCloseable>> danglingStreams
-            = ConcurrentHashMap.newKeySet();
+    private final Set<AutoCloseable> danglingStreams
+            = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
 
     /**
      * Instance used to generate Manta signed URIs.
@@ -285,7 +284,7 @@ public class MantaClient implements AutoCloseable {
      * Deletes an object from Manta.
      *
      * @param rawPath The fully qualified path of the Manta object.
-     * @throws IOException                                     If an IO exception has occurred.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaClientHttpResponseException                If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String rawPath) throws IOException {
@@ -300,8 +299,8 @@ public class MantaClient implements AutoCloseable {
      * Recursively deletes an object in Manta.
      *
      * @param path The fully qualified path of the Manta object.
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void deleteRecursive(final String path) throws IOException {
         LOG.debug("DELETE {} [recursive]", path);
@@ -407,7 +406,7 @@ public class MantaClient implements AutoCloseable {
         MantaObjectInputStream stream = httpHelper.httpRequestAsInputStream(get,
                 requestHeaders);
 
-        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+        danglingStreams.add(stream);
 
         return stream;
     }
@@ -676,7 +675,7 @@ public class MantaClient implements AutoCloseable {
     public MantaDirectoryListingIterator streamingIterator(final String path) {
         MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
                 this.url, path, httpHelper, MAX_RESULTS);
-        danglingStreams.add(new WeakReference<AutoCloseable>(itr));
+        danglingStreams.add(itr);
         return itr;
     }
 
@@ -755,7 +754,7 @@ public class MantaClient implements AutoCloseable {
             return new MantaObjectResponse(objPath, headers);
         });
 
-        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+        danglingStreams.add(stream);
 
         return stream;
     }
@@ -1045,7 +1044,7 @@ public class MantaClient implements AutoCloseable {
         MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
                 this.httpHelper, headers, metadata, contentType);
 
-        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+        danglingStreams.add(stream);
 
         return stream;
     }
@@ -2000,7 +1999,7 @@ public class MantaClient implements AutoCloseable {
         final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
                 path, httpHelper, MAX_RESULTS);
 
-        danglingStreams.add(new WeakReference<AutoCloseable>(itr));
+        danglingStreams.add(itr);
 
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
@@ -2072,8 +2071,6 @@ public class MantaClient implements AutoCloseable {
     private Stream<UUID> getAllJobIds(final String filterName,
                                       final String filter) throws IOException {
         final List<NameValuePair> params;
-
-        StringBuilder query = new StringBuilder("?");
 
         if (filterName != null && filter != null) {
             NameValuePair pair = new BasicNameValuePair(filterName, filter);
@@ -2294,7 +2291,7 @@ public class MantaClient implements AutoCloseable {
             }
         });
 
-        danglingStreams.add(new WeakReference<AutoCloseable>(stream));
+        danglingStreams.add(stream);
         return stream;
     }
 
@@ -2323,10 +2320,8 @@ public class MantaClient implements AutoCloseable {
          * where resources haven't been closed properly. In particular, this
          * is useful for the streamingIterator() method that returns an
          * iterator that must be closed after consumption. */
-        for (WeakReference<? extends AutoCloseable> wr : danglingStreams) {
+        for (AutoCloseable closeable : danglingStreams) {
             try {
-                AutoCloseable closeable = wr.get();
-
                 if (closeable == null) {
                     continue;
                 }

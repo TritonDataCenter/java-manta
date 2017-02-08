@@ -329,7 +329,6 @@ public class EncryptedMultipartManager
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void abort(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload) throws IOException {
         wrapped.abort(upload.getWrapped());
     }
@@ -344,6 +343,9 @@ public class EncryptedMultipartManager
         return new EncryptionContext(this.secretKey, this.cipherDetails);
     }
 
+    /**
+     * @return a reference to the underlying backing MPU implementation
+     */
     public WRAPPED_MANAGER getWrapped() {
         return wrapped;
     }

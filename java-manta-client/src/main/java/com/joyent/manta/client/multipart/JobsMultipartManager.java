@@ -96,9 +96,22 @@ public class JobsMultipartManager extends AbstractMultipartManager
      */
     private final MantaClient mantaClient;
 
-    private final MantaConnectionContext connectionContext;
+    /**
+     * Reference to the collection of all of the {@link AutoCloseable} objects
+     * that will need to be closed when MantaClient is closed. This reference
+     * should point to the value set on the MantaClient field.
+     */
+    private final Set<AutoCloseable> danglingStreams;
 
+    /**
+     * Reference to the Apache HTTP Client HTTP request creation class.
+     */
     private final MantaConnectionFactory connectionFactory;
+
+    /**
+     * Current connection context used for maintaining state between requests.
+     */
+    private final MantaConnectionContext connectionContext;
 
     /**
      * Full path on Manta to the upload directory.
@@ -137,6 +150,10 @@ public class JobsMultipartManager extends AbstractMultipartManager
         this.resolvedMultipartUploadDirectory =
                 mantaClient.getContext().getMantaHomeDirectory()
                 + SEPARATOR + MULTIPART_DIRECTORY;
+        @SuppressWarnings("unchecked")
+        Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
+                        "danglingStreams", mantaClient, Set.class);
+        this.danglingStreams = dangling;
     }
 
     @Override
@@ -181,6 +198,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
                     .filter(Objects::nonNull);
 
             if (exceptions.isEmpty()) {
+                danglingStreams.add(stream);
+
                 return stream;
             }
         // This catches an exception on the initial listObjects call
@@ -427,10 +446,14 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(upload, "Multipart upload object must not be null");
         final String dir = multipartUploadDir(upload.getId());
 
-        return mantaClient.listObjects(dir)
+        Stream<MantaMultipartUploadPart> stream = mantaClient.listObjects(dir)
                 .filter(value -> !Paths.get(value.getPath())
                         .getFileName().toString().equals(METADATA_FILE))
                 .map(MantaMultipartUploadPart::new);
+
+        danglingStreams.add(stream);
+
+        return stream;
     }
 
     /**

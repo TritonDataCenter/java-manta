@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,6 +97,13 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     private final MantaClient mantaClient;
 
     /**
+     * Reference to the collection of all of the {@link AutoCloseable} objects
+     * that will need to be closed when MantaClient is closed. This reference
+     * should point to the value set on the MantaClient field.
+     */
+    private final Set<AutoCloseable> danglingStreams;
+
+    /**
      * Creates a new instance of a server-side MPU manager using the specified
      * configuration and connection builder objects.
      *
@@ -117,6 +125,10 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 "connectionContext", mantaClient, MantaConnectionContext.class);
         this.connectionFactory = readFieldFromMantaClient(
                 "connectionFactory", mantaClient, MantaConnectionFactory.class);
+        @SuppressWarnings("unchecked")
+        Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
+                        "danglingStreams", mantaClient, Set.class);
+        this.danglingStreams = dangling;
     }
 
     /**
@@ -141,6 +153,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         this.connectionFactory = connectionFactory;
         this.connectionContext = connectionContext;
         this.mantaClient = mantaClient;
+
+        @SuppressWarnings("unchecked")
+        Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
+                "danglingStreams", mantaClient, Set.class);
+        this.danglingStreams = dangling;
     }
 
     @Override
@@ -152,7 +169,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
         final String uploadsPath = uploadsPath();
 
-        return mantaClient.listObjects(uploadsPath).map(mantaObject -> {
+        Stream<MantaMultipartUpload> stream = mantaClient.listObjects(uploadsPath)
+                .map(mantaObject -> {
             try {
                 return mantaClient.listObjects(mantaObject.getPath()).map(item -> {
                     final String objectName = FilenameUtils.getName(item.getPath());
@@ -167,6 +185,10 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 throw new UncheckedIOException(e);
             }
         }).flatMap(Collection::stream);
+
+        danglingStreams.add(stream);
+
+        return stream;
     }
 
     @Override
@@ -458,7 +480,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String partsDirectory = upload.getPartsDirectory();
 
-        return mantaClient.listObjects(partsDirectory).map(mantaObject -> {
+        Stream<MantaMultipartUploadPart> stream = mantaClient.listObjects(partsDirectory)
+                .map(mantaObject -> {
             final String item = FilenameUtils.getName(mantaObject.getPath());
             final int adjustedPartNumber = Integer.parseInt(item) + 1;
 
@@ -466,6 +489,10 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
             return new MantaMultipartUploadPart(adjustedPartNumber, upload.getPath(), etag);
         });
+
+        danglingStreams.add(stream);
+
+        return stream;
     }
 
     @Override
