@@ -19,7 +19,7 @@ public class BlockSizeBench {
     private static void readWrite(int blockSize) throws IOException {
         ByteBuffer bb = ByteBuffer.allocateDirect(blockSize);
         long start = System.nanoTime();
-        FileChannel out = new FileOutputStream("deleteme.dat").getChannel();
+        FileChannel out = new FileOutputStream("delete-me.dat").getChannel();
         for (int i = 0; i < (1024 << 20); i += blockSize) {
             bb.clear();
             while (bb.remaining() > 0)
@@ -27,7 +27,7 @@ public class BlockSizeBench {
         }
         out.close();
         long mid = System.nanoTime();
-        FileChannel in = new FileInputStream("deleteme.dat").getChannel();
+        FileChannel in = new FileInputStream("delete-me.dat").getChannel();
         for (int i = 0; i < (1024 << 20); i += blockSize) {
             bb.clear();
             while (bb.remaining() > 0)

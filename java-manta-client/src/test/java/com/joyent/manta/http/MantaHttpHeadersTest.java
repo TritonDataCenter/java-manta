@@ -70,8 +70,8 @@ public class MantaHttpHeadersTest {
         Assert.assertEquals(headers.getContentType(), contentType.getValue());
 
         @SuppressWarnings("unchecked")
-        Collection<String> muliHeaderValues = (Collection<String>)headers.get("x-multi-header");
-        Assert.assertEquals(StringUtils.join(muliHeaderValues, ", "), multiHeader.getValue());
+        Collection<String> multiHeaderValues = (Collection<String>)headers.get("x-multi-header");
+        Assert.assertEquals(StringUtils.join(multiHeaderValues, ", "), multiHeader.getValue());
     }
 
     public void canSetRoleTags() {

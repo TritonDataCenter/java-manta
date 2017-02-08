@@ -176,7 +176,7 @@ public class JobsMultipartManagerIT {
                 "!"
         };
 
-        final String name = uploadName("can-store-conten-type");
+        final String name = uploadName("can-store-content-type");
         final String path = testPathPrefix + name;
 
         final MantaHttpHeaders headers = new MantaHttpHeaders()

@@ -42,12 +42,12 @@ class EncryptionState {
     private OutputStream cipherStream = null;
 
     /**
-     * Creates a new multipart encryption state object.
+     * <p>Creates a new multipart encryption state object.</p>
      *
-     * NOTE: This class is tightly bound to the lifestyle of the
+     * <p>NOTE: This class is tightly bound to the lifecycle of the
      * encrypted MPU manager.  In particular the streams are now
      * instantiated as part of the constructor and must be set before
-     * use.
+     * use.</p>
      *
      * @param encryptionContext encryption cipher state object
      */

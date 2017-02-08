@@ -263,7 +263,7 @@ straightforward. The strategy to use for multipart upload is listed below.
    MantaClient to the constructor.
 3. Initiate an upload to the full path where the final object should be stored.
 4. Upload each part using the ServerSideMultipartUpload object created in the 
-   previous step. The order that parts are uploaded doesn't matter,
+   previous step. The order that parts are uploaded does not matter,
    what does matter is that each part has the appropriate part number specified.
 5. Execute `complete` to commit the parts to the object on the server. At this 
    point the server will assembly the final object.

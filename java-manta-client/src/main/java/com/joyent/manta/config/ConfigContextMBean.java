@@ -156,7 +156,7 @@ public class ConfigContextMBean implements DynamicMBean {
      * to JMX.
      *
      * @param attributeInfo array of attributes to populate metadata object with
-     * @return fully build metadta object
+     * @return fully build metadata object
      */
     private MBeanInfo beanInfoBuilder(final MBeanAttributeInfo[] attributeInfo) {
         MBeanConstructorInfo[] constructorInfo = new MBeanConstructorInfo[] {

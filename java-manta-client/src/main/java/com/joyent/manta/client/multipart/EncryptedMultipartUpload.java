@@ -74,7 +74,7 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
      * object is used as an informational only object for the SDK
      * consumer.
      *
-     * @return true when this object can track the state of uplaoded parts
+     * @return true when this object can track the state of uploaded parts
      */
     boolean canUpload() {
         return this.encryptionState != null;

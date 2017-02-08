@@ -225,7 +225,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
             Object object = FieldUtils.readField(field, mantaClient, true);
             return returnType.cast(object);
         } catch (IllegalAccessException e) {
-            throw new MantaMultipartException("Unabled to access httpHelper "
+            throw new MantaMultipartException("Unable to access httpHelper "
                     + "field on MantaClient");
         }
     }
