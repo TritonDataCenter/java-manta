@@ -1,5 +1,5 @@
 /**
- * <p></p>Package containing all of the classes used as part of the Manta Multipart
+ * <p>Package containing all of the classes used as part of the Manta Multipart
  * upload API.</p>
  *
  * <p>This package contains two very different implementations for doing

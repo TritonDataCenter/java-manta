@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 
 /**
- * </p>Base class providing generic methods useful for {@link MantaMultipartManager}
+ * <p>Base class providing generic methods useful for {@link MantaMultipartManager}
  * implementations.</p>
  *
  * <p>This class provides a coherent structure for multipart implementations
