@@ -253,15 +253,21 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
 
         final Long initialSkipBytes;
-        final Long plaintextRangeLength;
+        Long plaintextRangeLength;
+        final Long plaintextStart;
+        final Long plaintextEnd;
 
         if (hasRangeRequest) {
             Long[] rangeProperties = calculateSkipBytesAndPlaintextLength(request, requestHeaders);
             initialSkipBytes = rangeProperties[0];
             plaintextRangeLength = rangeProperties[1];
+            plaintextStart = rangeProperties[2];
+            plaintextEnd = rangeProperties[3];
         } else {
             initialSkipBytes = null;
             plaintextRangeLength = null;
+            plaintextStart = null;
+            plaintextEnd = null;
         }
 
         final MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
@@ -300,9 +306,19 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         }
 
         if (hasRangeRequest) {
+            boolean unboundedEnd = (plaintextEnd >= cipherDetails.getMaximumPlaintextSizeInBytes() || plaintextEnd < 0);
+            // Try to calculate from original-plaintext header
+            final String originalPlaintextLengthS = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
+            if (originalPlaintextLengthS.length() > 0) {
+                final Long originalPlaintextLength = Long.parseLong(originalPlaintextLengthS);
+                if (plaintextRangeLength == 0L) {
+                    plaintextRangeLength = originalPlaintextLength - plaintextStart;
+                }
+                unboundedEnd = (plaintextEnd >= originalPlaintextLength || plaintextEnd < 0);
+            }
+
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
-                    secretKey, false, initialSkipBytes,
-                    plaintextRangeLength);
+                    secretKey, false, initialSkipBytes, plaintextRangeLength, unboundedEnd);
         } else {
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
                     secretKey, true);
@@ -323,7 +339,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                                                         final MantaHttpHeaders requestHeaders)
             throws IOException {
         final Long initialSkipBytes;
-        final Long plaintextRangeLength;
+        Long plaintextRangeLength = 0L;
 
         final long[] plaintextRanges = byteRangeAsNullSafe(requestHeaders.getByteRange(),
                 this.cipherDetails);
@@ -381,8 +397,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             // have the position of the end of the ciphertext (eg content-length)
             binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
             binaryEndPositionInclusive = ciphertextSize;
-
-            plaintextRangeLength = computedRanges.getLengthOfPlaintextIncludingSkipBytes();
         // This is the typical case like: bytes=3-44
         } else {
             // calculates the ciphertext byte range
@@ -390,7 +404,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     plaintextStart, plaintextEnd);
 
             binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
-            initialSkipBytes = computedRanges.getCiphertextStartPositionInclusive();
+            initialSkipBytes = computedRanges.getPlaintextBytesToSkipInitially() + computedRanges.getCiphertextStartPositionInclusive();
 
             if (computedRanges.getCiphertextEndPositionInclusive() > 0) {
                 binaryEndPositionInclusive = computedRanges.getCiphertextEndPositionInclusive();
@@ -398,13 +412,24 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 binaryEndPositionInclusive = 0;
             }
 
-            plaintextRangeLength = computedRanges.getLengthOfPlaintextIncludingSkipBytes();
+            plaintextRangeLength = (plaintextEnd - plaintextStart) + 1;
         }
 
-        requestHeaders.setRange(String.format("bytes=%d-%d",
-                binaryStartPositionInclusive, binaryEndPositionInclusive));
+        // We don't know the ending position
+        if (binaryEndPositionInclusive == 0) {
+            requestHeaders.setRange(String.format("bytes=%d-",
+                    binaryStartPositionInclusive));
+        } else {
+            requestHeaders.setRange(String.format("bytes=%d-%d",
+                    binaryStartPositionInclusive, binaryEndPositionInclusive));
+        }
 
-        return new Long[] {initialSkipBytes, plaintextRangeLength};
+        // Range in the form of 50-, so we don't know the actual plaintext length
+        if (plaintextEnd >= cipherDetails.getMaximumPlaintextSizeInBytes()) {
+            plaintextRangeLength = 0L;
+        }
+
+        return new Long[] {initialSkipBytes, plaintextRangeLength, plaintextStart, plaintextEnd};
     }
 
 
