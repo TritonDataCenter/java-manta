@@ -304,6 +304,7 @@
                     <forkCount>${failsafe.forkCount}</forkCount>
                     <systemPropertyVariables>
                     </systemPropertyVariables>
+                    <trimStackTrace>false</trimStackTrace>
                     <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
             </plugin>
@@ -367,6 +368,7 @@
                     <systemPropertyVariables>
                     </systemPropertyVariables>
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
+                    <trimStackTrace>false</trimStackTrace>
                 </configuration>
             </plugin>
             <plugin>
