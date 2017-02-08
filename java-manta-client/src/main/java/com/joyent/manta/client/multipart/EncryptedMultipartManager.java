@@ -5,6 +5,7 @@ package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptingPartEntity;
 import com.joyent.manta.client.crypto.EncryptionContext;
@@ -85,6 +86,11 @@ public class EncryptedMultipartManager
         this.wrapped = wrapped;
         this.secretKey = this.httpHelper.getSecretKey();
         this.cipherDetails = this.httpHelper.getCipherDetails();
+
+        if (!(this.cipherDetails instanceof AesCtrCipherDetails)) {
+            throw new UnsupportedOperationException("Currently only AES/CTR "
+                    + "cipher/modes are supported for encrypted multipart uploads");
+        }
     }
 
     /**
@@ -104,6 +110,11 @@ public class EncryptedMultipartManager
         this.cipherDetails = cipherDetails;
         this.wrapped = wrapped;
         this.httpHelper = httpHelper;
+
+        if (!(this.cipherDetails instanceof AesCtrCipherDetails)) {
+            throw new UnsupportedOperationException("Currently only AES/CTR "
+                    + "cipher/modes are supported for encrypted multipart uploads");
+        }
     }
 
     @Override
