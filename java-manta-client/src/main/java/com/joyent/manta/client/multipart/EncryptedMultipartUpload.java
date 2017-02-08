@@ -85,6 +85,10 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
         return this.wrapped.compare(o1, o2);
     }
 
+    /**
+     * NOTE: Upload object equality is based on the underlying wrapped
+     * object and not the state of any ciphers, streams, or locks.
+     */
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
