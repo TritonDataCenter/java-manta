@@ -233,10 +233,9 @@ public class EncryptedMultipartManager
         }
 
         final EncryptionState encryptionState = upload.getEncryptionState();
-        encryptionState.getLock().lock();
-
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
 
+        encryptionState.getLock().lock();
         try {
             validatePartNumber(partNumber);
             if (encryptionState.getLastPartNumber() != -1) {
@@ -274,11 +273,9 @@ public class EncryptedMultipartManager
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         final EncryptionState encryptionState = upload.getEncryptionState();
-
-        encryptionState.getLock().lock();
-
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
 
+        encryptionState.getLock().lock();
         try {
             Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
             ByteArrayOutputStream remainderStream = new ByteArrayOutputStream();
