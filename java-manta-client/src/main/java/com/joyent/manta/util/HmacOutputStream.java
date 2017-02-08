@@ -22,7 +22,7 @@ public class HmacOutputStream extends OutputStream {
     /**
      * Underlying stream being wrapped.
      */
-    private final OutputStream chained;
+    private final OutputStream out;
 
     /**
      * Creates a new instance using the specified HMAC instance and wrapping
@@ -36,7 +36,7 @@ public class HmacOutputStream extends OutputStream {
         Validate.notNull(chained, "OutputStream must not be null");
 
         this.hmac = hmac;
-        this.chained = chained;
+        this.out = chained;
     }
 
     public Mac getHmac() {
@@ -46,28 +46,28 @@ public class HmacOutputStream extends OutputStream {
     @Override
     public void write(final int b) throws IOException {
         hmac.update((byte)b);
-        chained.write(b);
+        out.write(b);
     }
 
     @Override
     public void write(final byte[] b) throws IOException {
         hmac.update(b);
-        chained.write(b);
+        out.write(b);
     }
 
     @Override
     public void write(final byte[] b, final int off, final int len) throws IOException {
         hmac.update(b, off, len);
-        chained.write(b, off, len);
+        out.write(b, off, len);
     }
 
     @Override
     public void flush() throws IOException {
-        chained.flush();
+        out.flush();
     }
 
     @Override
     public void close() throws IOException {
-        chained.close();
+        out.close();
     }
 }

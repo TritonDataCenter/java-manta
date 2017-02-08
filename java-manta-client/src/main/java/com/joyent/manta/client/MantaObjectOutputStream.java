@@ -7,6 +7,7 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
+import org.apache.commons.io.output.ClosedOutputStream;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -228,6 +229,12 @@ public class MantaObjectOutputStream extends OutputStream {
      */
     protected static Boolean isInnerStreamClosed(final OutputStream stream) {
         OutputStream inner = findMostInnerOutputStream(stream);
+
+        // If the inner most stream is a closed instance, then we can assume
+        // the stream is close.
+        if (inner.getClass().equals(ClosedOutputStream.class)) {
+            return true;
+        }
 
         try {
             Field f = FieldUtils.getField(inner.getClass(), "closed", true);
