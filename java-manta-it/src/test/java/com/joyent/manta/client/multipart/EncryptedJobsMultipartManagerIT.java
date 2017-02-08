@@ -48,7 +48,7 @@ import static org.testng.Assert.fail;
 @Test(groups = { "encrypted" })
 public class EncryptedJobsMultipartManagerIT {
     private MantaClient mantaClient;
-    private EncryptedMultipartManager<JobsMultipartManager, JobsMultipartUpload> multipart;
+    private EncryptedJobsMultipartManager multipart;
     private String testPathPrefix;
 
     private Logger LOG = LoggerFactory.getLogger(getClass());
@@ -64,9 +64,7 @@ public class EncryptedJobsMultipartManagerIT {
         }
 
         this.mantaClient = new MantaClient(config);
-
-        JobsMultipartManager wrapped = new JobsMultipartManager(this.mantaClient);
-        this.multipart = new EncryptedMultipartManager<>(this.mantaClient, wrapped);
+        this.multipart = new EncryptedJobsMultipartManager(this.mantaClient);
 
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
@@ -77,8 +75,7 @@ public class EncryptedJobsMultipartManagerIT {
     @AfterClass
     public void afterClass() throws IOException {
         if (this.mantaClient != null) {
-            // FIXME
-            //this.mantaClient.deleteRecursive(testPathPrefix);
+            this.mantaClient.deleteRecursive(testPathPrefix);
             this.mantaClient.closeWithWarning();
             this.multipart = null;
             this.mantaClient = null;

@@ -38,7 +38,7 @@ import static org.testng.Assert.assertTrue;
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerIT {
     private MantaClient mantaClient;
-    private EncryptedMultipartManager<ServerSideMultipartManager, ServerSideMultipartUpload> multipart;
+    private EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
 
@@ -60,9 +60,7 @@ public class EncryptedServerSideMultipartManagerIT {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
-        ServerSideMultipartManager wrapped = new ServerSideMultipartManager(this.mantaClient);
-
-        multipart = new EncryptedMultipartManager<>(this.mantaClient, wrapped);
+        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
