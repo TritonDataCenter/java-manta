@@ -54,14 +54,14 @@ public class EncryptingEntity implements HttpEntity {
     private static final Header CRYPTO_CONTENT_TYPE = new BasicHeader(
             HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString());
 
-
     /**
      * Total length of the stream in bytes.
      */
     private long originalLength;
 
-
-    // TODO: Properly pass this as a parameter
+    /**
+     * Running state of the cipher used for encrypting the plaintext input.
+     */
     private final EncryptionContext encryptionContext;
 
     /**

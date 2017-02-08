@@ -16,18 +16,69 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 3.0.0
  */
 class EncryptionState {
-    // FIXME with public stuff
-    public final EncryptionContext eContext;
-    public final ReentrantLock lock;
-    public int lastPartNumber = -1;
-    public MultipartOutputStream multipartStream = null;
-    public OutputStream cipherStream = null;
+    /**
+     * Encryption cipher state object.
+     */
+    private final EncryptionContext encryptionContext;
 
-    //cipher or entity junk? Context?
-    // iostream
-    // lock!?!
-    public EncryptionState(final EncryptionContext encryptionContext) {
-        this.eContext = encryptionContext;
+    /**
+     * Lock used coordinate concurrent operations.
+     */
+    private final ReentrantLock lock;
+
+    /**
+     * The number of the last part processed.
+     */
+    private int lastPartNumber = -1;
+
+    /**
+     * The multipart stream that allows for attaching and detaching streams.
+     */
+    private MultipartOutputStream multipartStream = null;
+
+    /**
+     * The encrypting stream.
+     */
+    private OutputStream cipherStream = null;
+
+    /**
+     * Creates a new multipart encryption state object.
+     * @param encryptionContext encryption cipher state object
+     */
+    EncryptionState(final EncryptionContext encryptionContext) {
+        this.encryptionContext = encryptionContext;
         this.lock = new ReentrantLock();
+    }
+
+    EncryptionContext getEncryptionContext() {
+        return encryptionContext;
+    }
+
+    ReentrantLock getLock() {
+        return lock;
+    }
+
+    int getLastPartNumber() {
+        return lastPartNumber;
+    }
+
+    MultipartOutputStream getMultipartStream() {
+        return multipartStream;
+    }
+
+    OutputStream getCipherStream() {
+        return cipherStream;
+    }
+
+    void setLastPartNumber(final int lastPartNumber) {
+        this.lastPartNumber = lastPartNumber;
+    }
+
+    void setMultipartStream(final MultipartOutputStream multipartStream) {
+        this.multipartStream = multipartStream;
+    }
+
+    void setCipherStream(final OutputStream cipherStream) {
+        this.cipherStream = cipherStream;
     }
 }

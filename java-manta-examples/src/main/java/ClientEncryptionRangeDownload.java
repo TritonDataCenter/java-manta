@@ -1,11 +1,17 @@
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.config.*;
+import com.joyent.manta.config.ChainedConfigContext;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
+import com.joyent.manta.config.EnvVarConfigContext;
+import com.joyent.manta.config.MapConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 
-import java.util.Base64;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
+import java.util.Scanner;
 
 
 /*

@@ -222,29 +222,29 @@ public class EncryptedMultipartManager
         }
 
         final EncryptionState encryptionState = upload.getEncryptionState();
-        encryptionState.lock.lock();
+        encryptionState.getLock().lock();
 
-        final EncryptionContext encryptionContext = encryptionState.eContext;
+        final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
 
         try {
             validatePartNumber(partNumber);
-            if (encryptionState.lastPartNumber != -1) {
-                Validate.isTrue(encryptionState.lastPartNumber + 1 == partNumber,
+            if (encryptionState.getLastPartNumber() != -1) {
+                Validate.isTrue(encryptionState.getLastPartNumber() + 1 == partNumber,
                         "Encrypted MPU parts must be serial and sequential");
             } else {
-                encryptionState.multipartStream = new MultipartOutputStream(
-                        encryptionContext.getCipherDetails().getBlockSizeInBytes());
-                encryptionState.cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
-                        encryptionState.multipartStream, encryptionContext);
+                encryptionState.setMultipartStream(new MultipartOutputStream(
+                        encryptionContext.getCipherDetails().getBlockSizeInBytes()));
+                encryptionState.setCipherStream(EncryptingEntityHelper.makeCipherOutputForStream(
+                        encryptionState.getMultipartStream(), encryptionContext));
             }
 
             final EncryptingPartEntity entity = new EncryptingPartEntity(
-                    encryptionState.cipherStream,
-                    encryptionState.multipartStream, sourceEntity);
-            encryptionState.lastPartNumber = partNumber;
+                    encryptionState.getCipherStream(),
+                    encryptionState.getMultipartStream(), sourceEntity);
+            encryptionState.setLastPartNumber(partNumber);
             return wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
         } finally {
-            encryptionState.lock.unlock();
+            encryptionState.getLock().unlock();
         }
     }
 
@@ -264,20 +264,20 @@ public class EncryptedMultipartManager
             throws IOException {
         final EncryptionState encryptionState = upload.getEncryptionState();
 
-        encryptionState.lock.lock();
+        encryptionState.getLock().lock();
 
-        final EncryptionContext encryptionContext = encryptionState.eContext;
+        final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
 
         try {
             Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
             ByteArrayOutputStream remainderStream = new ByteArrayOutputStream();
-            encryptionState.multipartStream.setNext(remainderStream);
-            encryptionState.cipherStream.close();
-            remainderStream.write(encryptionState.multipartStream.getRemainder());
+            encryptionState.getMultipartStream().setNext(remainderStream);
+            encryptionState.getCipherStream().close();
+            remainderStream.write(encryptionState.getMultipartStream().getRemainder());
 
             // conditionally get hmac and upload part; yeah reenterant lock
-            if (encryptionState.cipherStream.getClass().equals(HmacOutputStream.class)) {
-                byte[] hmacBytes = ((HmacOutputStream) encryptionState.cipherStream).getHmac().doFinal();
+            if (encryptionState.getCipherStream().getClass().equals(HmacOutputStream.class)) {
+                byte[] hmacBytes = ((HmacOutputStream) encryptionState.getCipherStream()).getHmac().doFinal();
 
                 final int hmacSize = encryptionContext.getCipherDetails()
                         .getAuthenticationTagOrHmacLengthInBytes();
@@ -293,13 +293,13 @@ public class EncryptedMultipartManager
 
             if (remainderStream.size() > 0) {
                 MantaMultipartUploadPart finalPart = wrapped.uploadPart(upload.getWrapped(),
-                        encryptionState.lastPartNumber + 1, remainderStream.toByteArray());
+                        encryptionState.getLastPartNumber() + 1, remainderStream.toByteArray());
                 finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
             }
 
             wrapped.complete(upload.getWrapped(), finalPartsStream);
         } finally {
-            encryptionState.lock.unlock();
+            encryptionState.getLock().unlock();
         }
     }
 

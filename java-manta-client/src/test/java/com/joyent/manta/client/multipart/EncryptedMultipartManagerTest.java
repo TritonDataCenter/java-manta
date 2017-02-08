@@ -5,6 +5,7 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -104,7 +105,7 @@ public class EncryptedMultipartManagerTest {
 
         {
             Cipher cipher = cipherDetails.getCipher();
-            byte[] iv = upload.getEncryptionState().eContext.getCipher().getIV();
+            byte[] iv = upload.getEncryptionState().getEncryptionContext().getCipher().getIV();
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
             byte[] assumedCiphertext = cipher.doFinal(expected.getBytes("US-ASCII"));
@@ -121,12 +122,14 @@ public class EncryptedMultipartManagerTest {
             }
         }
 
+        EncryptionContext encryptionContext = upload.getEncryptionState().getEncryptionContext();
+
         MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
         responseHttpHeaders.setContentLength(actualUpload.getContents().length());
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
-                upload.getEncryptionState().eContext.getCipherDetails().getAuthenticationHmac().getAlgorithm());
+                encryptionContext.getCipherDetails().getAuthenticationHmac().getAlgorithm());
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_IV,
-                Base64.getEncoder().encodeToString(upload.getEncryptionState().eContext.getCipher().getIV()));
+                Base64.getEncoder().encodeToString(encryptionContext.getCipher().getIV()));
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
                 cipherDetails.getCipherId());
 

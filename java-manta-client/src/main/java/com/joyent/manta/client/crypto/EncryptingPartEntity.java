@@ -7,17 +7,16 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-// FIXME: much dupe
+/**
+ * Class that provides an interface for writing multipart parts to a
+ * HTTP socket represented as a {@link OutputStream}.
+ */
 public class EncryptingPartEntity implements HttpEntity {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptingPartEntity.class);
-
     /**
      * Value for an unknown stream length.
      */
@@ -34,13 +33,9 @@ public class EncryptingPartEntity implements HttpEntity {
     private static final Header CRYPTO_CONTENT_TYPE = new BasicHeader(
             HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString());
 
-
     /**
-     * Total length of the stream in bytes.
+     * Encrypting stream.
      */
-    private long originalLength;
-
-
     private final OutputStream cipherStream;
 
     /**
@@ -48,16 +43,23 @@ public class EncryptingPartEntity implements HttpEntity {
      */
     private final HttpEntity wrapped;
 
+    /**
+     * Multipart stream that allows to attaching / detaching streams.
+     */
     private final MultipartOutputStream multipartStream;
 
-
+    /**
+     * Creates a new instance based on the specified parameters.
+     *
+     * @param cipherStream encrypting stream
+     * @param multipartStream multipart stream that allows to attaching / detaching streams
+     * @param wrapped wrapped entity to encrypt and send
+     */
     public EncryptingPartEntity(final OutputStream cipherStream,
                                 final MultipartOutputStream multipartStream,
                                 final HttpEntity wrapped) {
         this.cipherStream = cipherStream;
         this.multipartStream = multipartStream;
-
-        //this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
     }
 
@@ -68,22 +70,13 @@ public class EncryptingPartEntity implements HttpEntity {
 
     @Override
     public boolean isChunked() {
-        return originalLength < 0;
+        return true;
     }
 
     @Override
     public long getContentLength() {
         // if content length is not exact, then we will hang on a socket timeout
         return UNKNOWN_LENGTH;
-        // if (originalLength >= 0) {
-        //     return eContext.getCipherDetails().ciphertextSize(originalLength);
-        // } else {
-        //     return UNKNOWN_LENGTH;
-        // }
-    }
-
-    public long getOriginalLength() {
-        return originalLength;
     }
 
     @Override
@@ -106,24 +99,8 @@ public class EncryptingPartEntity implements HttpEntity {
         multipartStream.setNext(httpOut);
         try {
             final int bufferSize = 128;
-            long bytesCopied = IOUtils.copy(getContent(), cipherStream, bufferSize);
+            IOUtils.copy(getContent(), cipherStream, bufferSize);
             cipherStream.flush();
-            // how to close on final?
-            /* We don't close quietly because we want the operation to fail if
-             * there is an error closing out the CipherOutputStream. */
-            //out.close();
-
-            // if (out instanceof HmacOutputStream) {
-            //     byte[] hmacBytes = out.getHmac().doFinal();
-            //     Validate.isTrue(hmacBytes.length == eContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes(),
-            //             "HMAC actual bytes doesn't equal the number of bytes expected");
-
-            //     if (LOGGER.isDebugEnabled()) {
-            //         LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
-            //     }
-
-            //     httpOut.write(hmacBytes);
-            // }
         } finally {
             IOUtils.closeQuietly(httpOut);
         }

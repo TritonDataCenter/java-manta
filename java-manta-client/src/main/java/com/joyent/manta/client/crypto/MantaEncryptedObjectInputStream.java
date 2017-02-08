@@ -7,8 +7,8 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.exception.MantaClientEncryptionCiphertextAuthenticationException;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
-import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
@@ -43,6 +43,7 @@ import java.util.function.Supplier;
  * @since 3.0.0
  */
 @SuppressWarnings("Duplicates")
+@NotThreadSafe
 public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private static final long serialVersionUID = 8536248985759134599L;
 
@@ -119,9 +120,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      */
     private final Long plaintextRangeLength;
 
-
+    /**
+     * Length of ciphertext and possible HMAC signature in bytes.
+     */
     private final Long contentLength;
 
+    /**
+     * Flag indicating that we read to the actual end of the file and not
+     * the end of the ciphertext.
+     */
     private final boolean unboundedEnd;
 
     /**
