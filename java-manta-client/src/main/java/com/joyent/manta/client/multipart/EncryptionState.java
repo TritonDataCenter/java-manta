@@ -22,7 +22,7 @@ class EncryptionState {
     private final EncryptionContext encryptionContext;
 
     /**
-     * Lock used coordinate concurrent operations.
+     * Lock used to coordinate concurrent operations.
      */
     private final ReentrantLock lock;
 
