@@ -7,6 +7,8 @@
  */
 package com.joyent.manta.http;
 
+import org.apache.http.entity.ContentType;
+
 /**
  * Enum defining custom content-types used only by Manta.
  *
@@ -22,7 +24,12 @@ public enum MantaContentTypes {
     /**
      * The content-type used to represent Manta link resources.
      */
-    SNAPLINK("application/json; type=link");
+    SNAPLINK("application/json; type=link"),
+
+    /**
+     * The content-type used to represent encrypted objects.
+     */
+    ENCRYPTED_OBJECT(ContentType.APPLICATION_OCTET_STREAM.toString());
 
     /**
      * Plain-text representation of the enum's content-type.

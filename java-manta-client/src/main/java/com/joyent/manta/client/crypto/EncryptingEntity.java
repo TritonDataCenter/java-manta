@@ -9,6 +9,7 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.codec.binary.Hex;
@@ -18,7 +19,6 @@ import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ public class EncryptingEntity implements HttpEntity {
      * Content type to store encrypted content as.
      */
     private static final Header CRYPTO_CONTENT_TYPE = new BasicHeader(
-            HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString());
+            HttpHeaders.CONTENT_TYPE, MantaContentTypes.ENCRYPTED_OBJECT.toString());
 
     /**
      * Total length of the stream in bytes.

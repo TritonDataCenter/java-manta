@@ -8,11 +8,11 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.client.multipart.MultipartOutputStream;
+import com.joyent.manta.http.MantaContentTypes;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class EncryptingPartEntity implements HttpEntity {
      * Content type to store encrypted content as.
      */
     private static final Header CRYPTO_CONTENT_TYPE = new BasicHeader(
-            HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString());
+            HttpHeaders.CONTENT_TYPE, MantaContentTypes.ENCRYPTED_OBJECT.toString());
 
     /**
      * Buffer size when copying from input to output (cipher) stream.
