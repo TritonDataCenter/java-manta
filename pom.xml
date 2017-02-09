@@ -127,6 +127,7 @@
         <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
         <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
         <maven-jacoco-plugin.version>0.7.8</maven-jacoco-plugin.version>
+        <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>3.0.1</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.2</dependency.apache-http-client.version>
@@ -416,6 +417,11 @@
                         </reports>
                     </reportSet>
                 </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>${maven-project-info-reports-plugin.version}</version>
             </plugin>
         </plugins>
     </reporting>
