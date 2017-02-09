@@ -1362,10 +1362,8 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     }
 
     /**
-     * {@inheritDoc}
-     * {@link java.util.AbstractMap#get}
-     *
-     * @return the value serialized to a {@code java.lang.String}
+     * @param name name of key to retrieve string value
+     * @return the value represented as a string using {@link MantaUtils#asString(Object)}
      */
     public String getAsString(final Object name) {
         return MantaUtils.asString(get(name));
