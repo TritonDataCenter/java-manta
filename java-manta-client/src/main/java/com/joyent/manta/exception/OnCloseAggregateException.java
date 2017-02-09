@@ -11,6 +11,8 @@ import org.apache.commons.lang3.exception.ContextedRuntimeException;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Exception class that provides an aggregated view of all the exceptions
  * that happened during a close() operation.
@@ -24,7 +26,7 @@ public class OnCloseAggregateException extends ContextedRuntimeException {
     /**
      * Count of the number of exceptions that have been aggregated.
      */
-    private volatile int count = 0;
+    private AtomicInteger count = new AtomicInteger(0);
 
     /**
      * Instantiates ContextedRuntimeException without message or cause.
@@ -85,7 +87,7 @@ public class OnCloseAggregateException extends ContextedRuntimeException {
      * @param e exception to add
      */
     public void aggregateException(final Exception e) {
-        String label = String.format("%03d_exception", ++count);
+        String label = String.format("%03d_exception", count.incrementAndGet());
         setContextValue(label, ExceptionUtils.getStackTrace(e));
     }
 }
