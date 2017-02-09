@@ -59,7 +59,8 @@ public class ClientEncryptionServerMultipart {
         try {
             MantaMetadata metadata = new MantaMetadata();
             metadata.put("e-secretkey", "My Secret Value");
-            EncryptedMultipartUpload upload = multipart.initiateUpload(uploadObject, metadata);
+            EncryptedMultipartUpload<ServerSideMultipartUpload> upload =
+                    multipart.initiateUpload(uploadObject, metadata);
             MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, RandomUtils.nextBytes(5242880));
             MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, RandomUtils.nextBytes(1000000));
 
