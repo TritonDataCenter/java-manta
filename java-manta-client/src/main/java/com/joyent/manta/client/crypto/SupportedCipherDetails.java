@@ -158,7 +158,15 @@ public interface SupportedCipherDetails {
      * @return Cipher instance
      * @throws MantaClientEncryptionException thrown if there is a problem getting the cipher
      */
+    @SuppressWarnings("InsecureCryptoUsage")
     static Cipher findCipher(final String cipherName, final Provider provider) {
+        /* We suppress the error-prone warning:
+         * Insecure usage of a crypto API: the transformation is not a compile-time constant expression.
+         *
+         * This is a false positive because the cipher name and the provider
+         * are hard-coded in each SupportedCipherDetails implementation. This
+         * method just saves us from duplicating code. */
+
         try {
             return Cipher.getInstance(cipherName, provider);
         } catch (NoSuchAlgorithmException e) {
