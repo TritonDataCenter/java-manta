@@ -38,28 +38,23 @@ import java.util.function.Function;
  */
 @NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
-    private static final long serialVersionUID = -5828336629480323042L;
-
-    /**
-     * An array of characters considered to be illegal in metadata keys.
-     */
-    static final char[] ILLEGAL_KEY_CHARS = "()<>@,;:</[]?={}\\ \n\t\r".toCharArray();
-
-    /**
-     * The character value of the ASCII code for a space character (decimal value 32).
-     */
-    private static final char ASCIICODE_32_SPACE = ' ';
-
     /**
      * Prefix required for metadata keys being stored via HTTP headers on Manta.
      */
     public static final String METADATA_PREFIX = "m-";
-
     /**
      * Prefix required for encrypted metadata keys being stored in ciphertext.
      */
     public static final String ENCRYPTED_METADATA_PREFIX = "e-";
-
+    /**
+     * An array of characters considered to be illegal in metadata keys.
+     */
+    static final char[] ILLEGAL_KEY_CHARS = "()<>@,;:</[]?={}\\ \n\t\r".toCharArray();
+    private static final long serialVersionUID = -5828336629480323042L;
+    /**
+     * The character value of the ASCII code for a space character (decimal value 32).
+     */
+    private static final char ASCIICODE_32_SPACE = ' ';
     /**
      * The backing map data structure.
      */
@@ -74,7 +69,6 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
         putAll(m);
     }
 
-
     /**
      * Create a new instance backed with a new empty map.
      */
@@ -84,16 +78,177 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
         this.innerMap = PredicatedMap.predicatedMap(map, keyPredicate, null);
     }
 
-
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return new MantaMetadata(this);
     }
 
+    /**
+     * Removes all metadata with keys prefixed by <code>e-</code>.
+     */
+    public void removeAllEncrypted() {
+        final Set<Map.Entry<String, String>> set = entrySet();
+
+        set.removeIf(entry -> entry.getKey()
+           .startsWith(ENCRYPTED_METADATA_PREFIX));
+    }
+
+    /**
+     * Deletes user-supplied metadata associated with a Manta object.
+     * @param key key to delete
+     */
+    public void delete(final String key) {
+        put(key, null);
+    }
+
+    @Override
+    public String merge(final String key,
+                        final String value,
+                        final BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
+        return innerMap.merge(key, value, remappingFunction);
+    }
+
+    @Override
+    public String compute(final String key,
+                          final BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
+        return innerMap.compute(key, remappingFunction);
+    }
+
+    @Override
+    public String computeIfPresent(final String key,
+                                   final BiFunction<
+                                           ? super String,
+                                           ? super String,
+                                           ? extends String
+                                           > remappingFunction) {
+        return innerMap.computeIfPresent(key, remappingFunction);
+    }
+
+    @Override
+    public String computeIfAbsent(final String key, final Function<? super String, ? extends String> mappingFunction) {
+        return innerMap.computeIfAbsent(key, mappingFunction);
+    }
+
+    @Override
+    public String replace(final String key, final String value) {
+        return innerMap.replace(key, value);
+    }
+
+    @Override
+    public boolean replace(final String key, final String oldValue, final String newValue) {
+        return innerMap.replace(key, oldValue, newValue);
+    }
+
+    @Override
+    public boolean remove(final Object key, final Object value) {
+        return innerMap.remove(key, value);
+    }
+
+    @Override
+    public String putIfAbsent(final String key, final String value) {
+        return innerMap.putIfAbsent(key, value);
+    }
+
+    @Override
+    public void replaceAll(final BiFunction<? super String, ? super String, ? extends String> function) {
+        innerMap.replaceAll(function);
+    }
+
+    @Override
+    public void forEach(final BiConsumer<? super String, ? super String> action) {
+        innerMap.forEach(action);
+    }
+
+    @Override
+    public String getOrDefault(final Object key, final String defaultValue) {
+        return innerMap.getOrDefault(key, defaultValue);
+    }
+
+    @Override
+    public int hashCode() {
+        return innerMap.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object object) {
+        return getClass().equals(object.getClass())
+                && innerMap.equals(object);
+    }
+
+    @Override
+    public Collection<String> values() {
+        return innerMap.values();
+    }
+
+    @Override
+    public int size() {
+        return innerMap.size();
+    }
+
+    @Override
+    public String remove(final Object key) {
+        return innerMap.remove(key);
+    }
+
+    @Override
+    public Set<String> keySet() {
+        return innerMap.keySet();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return innerMap.isEmpty();
+    }
+
+    @Override
+    public String get(final Object key) {
+        return innerMap.get(key);
+    }
+
+    @Override
+    public boolean containsValue(final Object value) {
+        return innerMap.containsValue(value);
+    }
+
+    @Override
+    public boolean containsKey(final Object key) {
+        return innerMap.containsKey(key);
+    }
+
+    @Override
+    public void clear() {
+        innerMap.clear();
+    }
+
+    @Override
+    public String put(final String key, final String value) {
+        return innerMap.put(key, value);
+    }
+
+    @Override
+    public void putAll(final Map<? extends String, ? extends String> mapToCopy) {
+        innerMap.putAll(mapToCopy);
+    }
+
+    @Override
+    public Set<Entry<String, String>> entrySet() {
+        return innerMap.entrySet();
+    }
+
+    @Override
+    public String toString() {
+        String baseInfo = new ToStringBuilder(this)
+                .append("innerMap", innerMap).toString();
+        StringBuilder builder = new StringBuilder(baseInfo).append("\n");
+
+        for (Map.Entry<String, String> entry : innerMap.entrySet()) {
+            builder.append(" [").append(entry.getKey()).append("] = [")
+                   .append(entry.getValue()).append("]\n");
+        }
+
+        return builder.toString();
+    }
 
     /**
      * Implements the predicate used to validate header key values.
@@ -174,273 +329,5 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
             return intVal < ASCIICODE_32_SPACE;
         }
 
-    }
-
-    /**
-     * Removes all metadata with keys prefixed by <code>e-</code>.
-     */
-    public void removeAllEncrypted() {
-        final Set<Map.Entry<String, String>> set = entrySet();
-
-        set.removeIf(entry -> entry.getKey()
-           .startsWith(ENCRYPTED_METADATA_PREFIX));
-    }
-
-    /**
-     * Deletes user-supplied metadata associated with a Manta object.
-     * @param key key to delete
-     */
-    public void delete(final String key) {
-        put(key, null);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String merge(final String key,
-                        final String value,
-                        final BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
-        return innerMap.merge(key, value, remappingFunction);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String compute(final String key,
-                          final BiFunction<? super String, ? super String, ? extends String> remappingFunction) {
-        return innerMap.compute(key, remappingFunction);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String computeIfPresent(final String key,
-                                   final BiFunction<
-                                           ? super String,
-                                           ? super String,
-                                           ? extends String
-                                           > remappingFunction) {
-        return innerMap.computeIfPresent(key, remappingFunction);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String computeIfAbsent(final String key, final Function<? super String, ? extends String> mappingFunction) {
-        return innerMap.computeIfAbsent(key, mappingFunction);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String replace(final String key, final String value) {
-        return innerMap.replace(key, value);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean replace(final String key, final String oldValue, final String newValue) {
-        return innerMap.replace(key, oldValue, newValue);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean remove(final Object key, final Object value) {
-        return innerMap.remove(key, value);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String putIfAbsent(final String key, final String value) {
-        return innerMap.putIfAbsent(key, value);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void replaceAll(final BiFunction<? super String, ? super String, ? extends String> function) {
-        innerMap.replaceAll(function);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void forEach(final BiConsumer<? super String, ? super String> action) {
-        innerMap.forEach(action);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getOrDefault(final Object key, final String defaultValue) {
-        return innerMap.getOrDefault(key, defaultValue);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return innerMap.hashCode();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final Object object) {
-        return getClass().equals(object.getClass())
-                && innerMap.equals(object);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Collection<String> values() {
-        return innerMap.values();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int size() {
-        return innerMap.size();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String remove(final Object key) {
-        return innerMap.remove(key);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Set<String> keySet() {
-        return innerMap.keySet();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isEmpty() {
-        return innerMap.isEmpty();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String get(final Object key) {
-        return innerMap.get(key);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean containsValue(final Object value) {
-        return innerMap.containsValue(value);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean containsKey(final Object key) {
-        return innerMap.containsKey(key);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clear() {
-        innerMap.clear();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String put(final String key, final String value) {
-        return innerMap.put(key, value);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void putAll(final Map<? extends String, ? extends String> mapToCopy) {
-        innerMap.putAll(mapToCopy);
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Set<Entry<String, String>> entrySet() {
-        return innerMap.entrySet();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        String baseInfo = new ToStringBuilder(this)
-                .append("innerMap", innerMap).toString();
-        StringBuilder builder = new StringBuilder(baseInfo).append("\n");
-
-        for (Map.Entry<String, String> entry : innerMap.entrySet()) {
-            builder.append(" [").append(entry.getKey()).append("] = [")
-                   .append(entry.getValue()).append("]\n");
-        }
-
-        return builder.toString();
     }
 }

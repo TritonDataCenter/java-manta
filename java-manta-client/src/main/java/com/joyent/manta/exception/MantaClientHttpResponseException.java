@@ -171,7 +171,6 @@ public class MantaClientHttpResponseException extends MantaIOException {
         return code >= HttpStatus.SC_OK && code < HttpStatus.SC_BAD_REQUEST;
     }
 
-
     /**
      * @return The HTTP status code or {@code 0} for none.
      */
@@ -183,7 +182,6 @@ public class MantaClientHttpResponseException extends MantaIOException {
         }
     }
 
-
     /**
      * @return The HTTP status message or {@code null} for none.
      */
@@ -194,7 +192,6 @@ public class MantaClientHttpResponseException extends MantaIOException {
             return null;
         }
     }
-
 
     /**
      * @return The HTTP response headers.

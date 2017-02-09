@@ -72,7 +72,6 @@ public class EncryptedServerSideMultipartManagerIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {
@@ -80,7 +79,6 @@ public class EncryptedServerSideMultipartManagerIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     public void nonExistentFileHasNotStarted() throws IOException {
         String path = testPathPrefix + UUID.randomUUID().toString();

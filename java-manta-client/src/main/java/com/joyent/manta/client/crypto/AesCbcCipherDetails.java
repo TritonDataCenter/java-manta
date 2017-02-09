@@ -114,13 +114,11 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
             calculatedContentLength = (plaintextSize - padding) + blockBytes;
         }
 
-
         // CBC requires an IV an extra block for chaining to work
         if (!hasIV && plaintextSize >= blockBytes) {
             final double blocks = Math.floor(plaintextSize / ((long) blockBytes));
             calculatedContentLength = (((long)blocks + 1) * blockBytes);
         }
-
 
         // Append tag or hmac to the end of the stream
         calculatedContentLength += tagOrHmacBytes;

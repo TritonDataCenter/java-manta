@@ -63,12 +63,10 @@ public class DigestedEntity implements HttpEntity {
         return this.wrapped.isRepeatable();
     }
 
-
     @Override
     public boolean isChunked() {
         return this.wrapped.isChunked();
     }
-
 
     @Override
     public long getContentLength() {
@@ -80,12 +78,10 @@ public class DigestedEntity implements HttpEntity {
         return this.wrapped.getContentType();
     }
 
-
     @Override
     public Header getContentEncoding() {
         return null;
     }
-
 
     @Override
     public InputStream getContent() throws IOException, UnsupportedOperationException {

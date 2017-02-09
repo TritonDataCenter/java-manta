@@ -140,7 +140,6 @@ public class MantaClientRangeIT {
         }
     }
 
-
     public final void canGetWithEndRangeBeyondObjectSize() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

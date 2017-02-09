@@ -62,7 +62,6 @@ public class MantaClientJobIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void cleanup() throws IOException {
         if (mantaClient != null) {
@@ -70,7 +69,6 @@ public class MantaClientJobIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public void createJob() throws IOException {
@@ -128,7 +126,6 @@ public class MantaClientJobIT {
         Assert.assertTrue(jobResponse.getInputDone());
         Assert.assertNotNull(jobResponse.getTimeCreated());
     }
-
 
     @Test(dependsOnMethods = {"createJob"}, successPercentage = 66)
     public void canAddAndGetInputsFromIterator() throws IOException {

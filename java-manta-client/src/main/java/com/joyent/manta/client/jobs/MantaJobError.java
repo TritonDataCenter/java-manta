@@ -66,14 +66,12 @@ public class MantaJobError {
     public MantaJobError() {
     }
 
-
     /**
      * @return phase number of the failure
      */
     public int getPhase() {
         return phase;
     }
-
 
     /**
      * @return a human readable summary of what failed
@@ -89,14 +87,12 @@ public class MantaJobError {
         return p0input;
     }
 
-
     /**
      * @return Manta input object associated with error
      */
     public String getInput() {
         return input;
     }
-
 
     /**
      * @return a programmatic error code
@@ -105,14 +101,12 @@ public class MantaJobError {
         return code;
     }
 
-
     /**
      * @return a programmatic error code as a {@link MantaErrorCode} enum
      */
     public MantaErrorCode getMantaErrorCode() {
         return MantaErrorCode.valueOfCode(getCode());
     }
-
 
     /**
      * @return human readable error message
@@ -121,14 +115,12 @@ public class MantaJobError {
         return message;
     }
 
-
     /**
      * @return a key that saved the stderr for the given command
      */
     public String getStderr() {
         return stderr;
     }
-
 
     /**
      * @return the input key being processed when the task failed

@@ -69,7 +69,6 @@ public class MantaDirectoryListingIteratorIT {
                 config);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {

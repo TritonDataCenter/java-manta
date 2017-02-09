@@ -67,7 +67,6 @@ public class EncryptionContext {
         initializeCipher();
     }
 
-
     public SecretKey getSecretKey() {
         return key;
     }

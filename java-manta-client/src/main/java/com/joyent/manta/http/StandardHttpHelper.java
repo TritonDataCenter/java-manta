@@ -100,7 +100,6 @@ public class StandardHttpHelper implements HttpHelper {
         return executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
     }
 
-
     @Override
     public HttpResponse httpGet(final String path) throws IOException {
         Validate.notNull(path, "Path must not be null");
@@ -110,7 +109,6 @@ public class StandardHttpHelper implements HttpHelper {
         final HttpGet get = connectionFactory.get(path);
         return executeAndCloseRequest(get, "GET    {} response [{}] {} ");
     }
-
 
     @Override
     public HttpResponse httpDelete(final String path) throws IOException {
@@ -122,12 +120,10 @@ public class StandardHttpHelper implements HttpHelper {
         return executeAndCloseRequest(delete, "DELETE {} response [{}] {} ");
     }
 
-
     @Override
     public HttpResponse httpPost(final String path) throws IOException {
         return httpPost(path, null, null);
     }
-
 
     @Override
     public HttpResponse httpPost(final String path,
@@ -155,7 +151,6 @@ public class StandardHttpHelper implements HttpHelper {
         return executeAndCloseRequest(post, (Integer)null,
                 "POST   {} response [{}] {} ");
     }
-
 
     @Override
     public MantaObjectResponse httpPut(final String path,

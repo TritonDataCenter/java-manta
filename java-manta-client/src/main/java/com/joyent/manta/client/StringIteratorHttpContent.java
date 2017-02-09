@@ -64,7 +64,6 @@ public class StringIteratorHttpContent implements HttpEntity {
         this.contentType = contentType;
     }
 
-
     /**
      * Create a new instance based on a {@link Stream} of strings.
      * Stream will be closed after all elements are read.
@@ -164,7 +163,6 @@ public class StringIteratorHttpContent implements HttpEntity {
         }
     }
 
-
     /**
      * Write all of the strings in the stored stream to the passed
      * {@link OutputStream}.
@@ -197,7 +195,6 @@ public class StringIteratorHttpContent implements HttpEntity {
             throw e.getIOCause();
         }
     }
-
 
     /**
      * Inner exception class for handling the wrapping of {@link IOException}

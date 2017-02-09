@@ -439,7 +439,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         return new Long[] {initialSkipBytes, plaintextRangeLength, plaintextStart, plaintextEnd};
     }
 
-
     @Override
     public MantaObjectResponse httpPutMetadata(final String path,
                                                final MantaHttpHeaders headers,
@@ -602,7 +601,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 default:
             }
         }
-
 
         // If there is no cipher text, then there is nothing to decrypt
         if (metadataCiphertextBase64 == null) {

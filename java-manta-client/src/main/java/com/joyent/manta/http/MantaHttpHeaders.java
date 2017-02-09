@@ -167,7 +167,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public MantaHttpHeaders() {
     }
 
-
     /**
      * Creates an instance with headers prepopulated from the specified {@link Map}.
      *
@@ -1298,7 +1297,6 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return group.getFirstHeader(name).getValue();
     }
 
-
     /**
      * Returns a list of the header string values for the given header name.
      *
@@ -1358,15 +1356,10 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return condensedValue;
     }
 
-
-    /**
-     * {@inheritDoc}
-     * {@link java.util.AbstractMap#get}
-     */
+    @Override
     public Object get(final Object name) {
         return wrappedHeaders.get(name);
     }
-
 
     /**
      * {@inheritDoc}
@@ -1378,18 +1371,12 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         return MantaUtils.asString(get(name));
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.AbstractMap#put}
-     */
+    @Override
     public Object put(final String fieldName, final Object value) {
         return wrappedHeaders.put(fieldName, value);
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.AbstractMap#putAll}
-     */
+    @Override
     public void putAll(final Map<? extends String, ?> map) {
         wrappedHeaders.putAll(map);
     }
@@ -1412,18 +1399,12 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.AbstractMap#remove}
-     */
+    @Override
     public Object remove(final Object name) {
         return wrappedHeaders.remove(name);
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.AbstractMap#entrySet}
-     */
+    @Override
     public Set<Map.Entry<String, Object>> entrySet() {
         return wrappedHeaders.entrySet();
     }
@@ -1449,58 +1430,37 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         wrappedHeaders.putAll(unknownFields);
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#entrySet}
-     */
+    @Override
     public int size() {
         return wrappedHeaders.size();
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#isEmpty}
-     */
+    @Override
     public boolean isEmpty() {
         return wrappedHeaders.isEmpty();
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#containsValue}
-     */
+    @Override
     public boolean containsValue(final Object value) {
         return wrappedHeaders.containsValue(value);
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#containsKey}
-     */
+    @Override
     public boolean containsKey(final Object key) {
         return wrappedHeaders.containsKey(key);
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#clear}
-     */
+    @Override
     public void clear() {
         wrappedHeaders.clear();
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#keySet}
-     */
+    @Override
     public Set<String> keySet() {
         return wrappedHeaders.keySet();
     }
 
-    /**
-     * {@inheritDoc}
-     * {@link java.util.Map#values}
-     */
+    @Override
     public Collection<Object> values() {
         return wrappedHeaders.values();
     }

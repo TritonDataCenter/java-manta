@@ -47,7 +47,6 @@ public class MantaObjectOutputStreamIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {

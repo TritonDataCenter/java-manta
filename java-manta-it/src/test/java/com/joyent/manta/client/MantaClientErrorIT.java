@@ -99,7 +99,6 @@ public class MantaClientErrorIT {
                 (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
-
     @Test
     public void fileNotFoundWithContent() throws IOException {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());

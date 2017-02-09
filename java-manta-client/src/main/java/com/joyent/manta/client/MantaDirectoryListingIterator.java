@@ -158,7 +158,6 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                 throw new MantaObjectException(msg);
             }
 
-
             Reader streamReader = new InputStreamReader(entity.getContent(),
                     Charsets.UTF_8.name());
             br = new BufferedReader(streamReader);

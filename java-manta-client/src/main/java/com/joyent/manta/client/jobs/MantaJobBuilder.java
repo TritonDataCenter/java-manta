@@ -69,7 +69,6 @@ public class MantaJobBuilder {
         this.client = client;
     }
 
-
     /**
      * Create a new job with the specified name.
      * @param name name of job
@@ -78,7 +77,6 @@ public class MantaJobBuilder {
     public Create newJob(final String name) {
         return new Create(this, name);
     }
-
 
     /**
      * Returns a reference to a running/completed job as a builder object.
@@ -116,7 +114,6 @@ public class MantaJobBuilder {
         return cloneJob(job);
     }
 
-
     /**
      * Clones a completed job as a new job.
      *
@@ -133,7 +130,6 @@ public class MantaJobBuilder {
             return newJob;
         }
     }
-
 
     /**
      * Inner class that provides methods used in the construction of a new job.
@@ -172,7 +168,6 @@ public class MantaJobBuilder {
             this.name = name;
         }
 
-
         /**
          * Add a single phase to the job.
          *
@@ -184,7 +179,6 @@ public class MantaJobBuilder {
             phases.add(phase);
             return this;
         }
-
 
         /**
          * Add multiple phases to the job.
@@ -203,7 +197,6 @@ public class MantaJobBuilder {
             return this;
         }
 
-
         /**
          * Add multiple phases to the job.
          *
@@ -217,7 +210,6 @@ public class MantaJobBuilder {
 
             return this;
         }
-
 
         /**
          * Add multiple phases to the job.
@@ -233,7 +225,6 @@ public class MantaJobBuilder {
             return this;
         }
 
-
         /**
          * Add input to job.
          *
@@ -245,7 +236,6 @@ public class MantaJobBuilder {
 
             return this;
         }
-
 
         /**
          * Adds multiple inputs to the job.
@@ -261,7 +251,6 @@ public class MantaJobBuilder {
             return this;
         }
 
-
         /**
          * Adds multiple inputs to the job.
          *
@@ -275,7 +264,6 @@ public class MantaJobBuilder {
             return this;
         }
 
-
         /**
          * Adds multiple inputs to the job.
          *
@@ -287,7 +275,6 @@ public class MantaJobBuilder {
 
             return this;
         }
-
 
         /**
          * Validates the inputs already added and throws a {@link MantaJobException}
@@ -335,7 +322,6 @@ public class MantaJobBuilder {
 
             return this;
         }
-
 
         /**
          * Run the created job by invoking the remote Manta API.
@@ -396,7 +382,6 @@ public class MantaJobBuilder {
             this.id = id;
         }
 
-
         /**
          * Cancel the job.
          *
@@ -406,7 +391,6 @@ public class MantaJobBuilder {
             parent.client.cancelJob(id);
         }
 
-
         /**
          * Check the Manta API to see if a Job is done.
          * @return true if the job is done otherwise false
@@ -415,7 +399,6 @@ public class MantaJobBuilder {
         public boolean isDone() throws IOException {
             return getJob().getState().equals("done");
         }
-
 
         /**
          * Get the current job's state represented as a {@link MantaJob} object.
@@ -427,7 +410,6 @@ public class MantaJobBuilder {
             return parent.client.getJob(id);
         }
 
-
         /**
          * Get the current job's id.
          *
@@ -436,7 +418,6 @@ public class MantaJobBuilder {
         public UUID getId() {
             return this.id;
         }
-
 
         /**
          * Wait for the job to finish. We wait for a pre-set amount of time then
@@ -449,7 +430,6 @@ public class MantaJobBuilder {
         public Done waitUntilDone() throws IOException {
             return waitUntilDone(DEFAULT_TIME_BETWEEN_POLLS, DEFAULT_MAX_POLLS);
         }
-
 
         /**
          * Wait for the job to finish. We wait for the specified amount of time then
@@ -482,7 +462,6 @@ public class MantaJobBuilder {
             throw new MantaJobException(id, "Job didn't complete in the expected amount of time");
         }
 
-
         /**
          * Go to the done phase of this job without checking to see if the job
          * is done. Use this at your own risk.
@@ -493,7 +472,6 @@ public class MantaJobBuilder {
             return new Done(this.id, this.parent);
         }
     }
-
 
     /**
      * Inner class that provides methods that allow us to interact with a job
@@ -523,7 +501,6 @@ public class MantaJobBuilder {
             this.parent = parent;
         }
 
-
         /**
          * <p>Returns a stream of {@link InputStream} implementations for each
          * output returned from the Manta API for the job.</p>
@@ -536,7 +513,6 @@ public class MantaJobBuilder {
         public Stream<MantaObjectInputStream> outputAsStreams() throws IOException {
             return parent.client.getJobOutputsAsStreams(id);
         }
-
 
         /**
          * <p>Returns a stream of strings containing all of the
@@ -552,7 +528,6 @@ public class MantaJobBuilder {
             return parent.client.getJobOutputsAsStrings(id);
         }
 
-
         /**
          * <p>Returns a list of failure details for each object in which a failure
          * occurred.</p>
@@ -567,7 +542,6 @@ public class MantaJobBuilder {
             return parent.client.getJobErrors(id);
         }
 
-
         /**
          * Get the current job's state represented as a {@link MantaJob} object.
          *
@@ -577,7 +551,6 @@ public class MantaJobBuilder {
         public MantaJob getJob() throws IOException {
             return parent.client.getJob(id);
         }
-
 
         /**
          * Test to see if the job failed.
@@ -594,7 +567,6 @@ public class MantaJobBuilder {
             }
         }
 
-
         /**
          * Test to see if the job was successful.
          *
@@ -604,7 +576,6 @@ public class MantaJobBuilder {
         public boolean successful() throws IOException {
             return !failed();
         }
-
 
         /**
          * Validate that all of the inputs completed without errors.

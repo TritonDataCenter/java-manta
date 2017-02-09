@@ -63,14 +63,12 @@ public class MantaJobPhase {
     public MantaJobPhase() {
     }
 
-
     /**
      * @return command to execute as job phase
      */
     public String getExec() {
         return exec;
     }
-
 
     /**
      * @param exec command to execute as job phase
@@ -81,14 +79,12 @@ public class MantaJobPhase {
         return this;
     }
 
-
     /**
      * @return Phase type - either "map" or "reduce"
      */
     public String getType() {
         return type;
     }
-
 
     /**
      * @param type phase type - either "map" or "reduce"
@@ -105,14 +101,12 @@ public class MantaJobPhase {
         return this;
     }
 
-
     /**
      * @return list of Manta objects to include in job as assets
      */
     public List<String> getAssets() {
         return assets;
     }
-
 
     /**
      * @param assets list of Manta objects to include in job as assets
@@ -130,7 +124,6 @@ public class MantaJobPhase {
         return init;
     }
 
-
     /**
      * @param init initial command to execute before exec command is executed
      * @return reference to the current instance
@@ -140,14 +133,12 @@ public class MantaJobPhase {
         return this;
     }
 
-
     /**
      * @return an optional number of reducers for this phase (reduce-only)
      */
     public Integer getCount() {
         return count;
     }
-
 
     /**
      * @param count an optional number of reducers for this phase (reduce-only)
@@ -166,14 +157,12 @@ public class MantaJobPhase {
         return this;
     }
 
-
     /**
      * @return an optional amount of DRAM to give to your compute zone (MB)
      */
     public Integer getMemory() {
         return memory;
     }
-
 
     /**
      * @param memory an optional amount of DRAM to give to your compute zone (MB)
@@ -188,14 +177,12 @@ public class MantaJobPhase {
         return this;
     }
 
-
     /**
      * @return an optional amount of disk space to give to your compute zone (GB)
      */
     public Integer getDisk() {
         return disk;
     }
-
 
     /**
      * @param disk an optional amount of disk space to give to your compute zone (GB)
@@ -209,7 +196,6 @@ public class MantaJobPhase {
         this.disk = disk;
         return this;
     }
-
 
     @Override
     public boolean equals(final Object other) {
@@ -233,7 +219,6 @@ public class MantaJobPhase {
     public int hashCode() {
         return Objects.hash(assets, exec, type, init, count, memory, disk);
     }
-
 
     @Override
     public String toString() {

@@ -173,7 +173,6 @@ public class EncryptedMultipartManager
             headers = httpHeaders;
         }
 
-
         final EncryptionContext encryptionContext = buildEncryptionContext();
         final Cipher cipher = encryptionContext.getCipher();
 

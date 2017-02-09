@@ -101,7 +101,6 @@ public class MantaSeekableByteChannel extends InputStream
         this.responseStream = new AtomicReference<>();
     }
 
-
     /**
      * Creates a new instance of a read-only seekable byte channel.
      *
@@ -238,8 +237,6 @@ public class MantaSeekableByteChannel extends InputStream
         return totalSkipped;
     }
 
-
-
     @Override
     public int available() throws IOException {
         if (!open) {
@@ -333,7 +330,6 @@ public class MantaSeekableByteChannel extends InputStream
 
         open = false;
     }
-
 
     /**
      * Connects to the Manta API, updates the atomic reference and returns a

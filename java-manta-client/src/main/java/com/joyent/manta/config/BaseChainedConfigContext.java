@@ -527,7 +527,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
          */
     }
 
-
     /**
      * Checks to see that a given string is neither empty nor null.
      * @param string string to check

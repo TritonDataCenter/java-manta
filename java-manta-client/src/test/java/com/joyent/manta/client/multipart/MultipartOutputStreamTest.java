@@ -92,6 +92,4 @@ public class MultipartOutputStreamTest {
         Assert.assertEquals(s4.toString("UTF-8"), "");
         Assert.assertEquals(s5.toString("UTF-8"), "nt!");
     }
-
-
 }

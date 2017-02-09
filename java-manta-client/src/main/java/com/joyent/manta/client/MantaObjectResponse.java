@@ -110,7 +110,6 @@ public class MantaObjectResponse implements MantaObject {
     public MantaObjectResponse() {
     }
 
-
     /**
      * Creates a MantaObject.
      *
@@ -123,7 +122,6 @@ public class MantaObjectResponse implements MantaObject {
         this.httpHeaders = new MantaHttpHeaders();
     }
 
-
     /**
      * Creates a MantaObject.
      *
@@ -135,7 +133,6 @@ public class MantaObjectResponse implements MantaObject {
     public MantaObjectResponse(final String path, final MantaHttpHeaders headers) {
         this(path, headers, new MantaMetadata(headers.metadataAsStrings()));
     }
-
 
     /**
      * Creates a MantaObject.
@@ -180,12 +177,10 @@ public class MantaObjectResponse implements MantaObject {
         }
     }
 
-
     @Override
     public final String getPath() {
         return this.path;
     }
-
 
     /**
      * Sets the path value.
@@ -195,7 +190,6 @@ public class MantaObjectResponse implements MantaObject {
     public final void setPath(final String path) {
         this.path = path;
     }
-
 
     @Override
     public final Long getContentLength() {
@@ -216,7 +210,6 @@ public class MantaObjectResponse implements MantaObject {
         }
         return this;
     }
-
 
     @Override
     public final String getContentType() {
@@ -240,7 +233,6 @@ public class MantaObjectResponse implements MantaObject {
         }
         return this;
     }
-
 
     @Override
     public final String getEtag() {
@@ -269,7 +261,6 @@ public class MantaObjectResponse implements MantaObject {
     public final String getMtime() {
         return mtime;
     }
-
 
     /**
      * Sets the mtime value.
@@ -302,30 +293,25 @@ public class MantaObjectResponse implements MantaObject {
         return parsed;
     }
 
-
     @Override
     public String getType() {
         return type;
     }
-
 
     @Override
     public final MantaHttpHeaders getHttpHeaders() {
         return this.httpHeaders;
     }
 
-
     @Override
     public final Object getHeader(final String fieldName) {
         return this.httpHeaders.get(fieldName);
     }
 
-
     @Override
     public String getHeaderAsString(final String fieldName) {
         return this.httpHeaders.getAsString(fieldName);
     }
-
 
     @Override
     public MantaMetadata getMetadata() {
@@ -337,14 +323,11 @@ public class MantaObjectResponse implements MantaObject {
         return MANTA_OBJECT_TYPE_DIRECTORY.equals(this.type);
     }
 
-
     @Override
     public String getRequestId() {
         return this.requestId;
     }
 
-
-    /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
     public boolean equals(final Object o) {
@@ -363,8 +346,6 @@ public class MantaObjectResponse implements MantaObject {
                 && Objects.equals(httpHeaders, that.httpHeaders);
     }
 
-
-    /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
     public int hashCode() {
@@ -376,7 +357,6 @@ public class MantaObjectResponse implements MantaObject {
                 getMtime(),
                 httpHeaders);
     }
-
 
     @Override
     @SuppressWarnings("checkstyle:designforextension")

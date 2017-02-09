@@ -110,7 +110,6 @@ public class MantaJob {
     MantaJob() {
     }
 
-
     /**
      * Constructor used when creating a new Manta job to be executed.
      * @param name name of job
@@ -128,14 +127,12 @@ public class MantaJob {
         return id;
     }
 
-
     /**
      * @return Name of Manta job
      */
     public String getName() {
         return name;
     }
-
 
     /**
      * @return Manta job state (queued, running, done)
@@ -144,14 +141,12 @@ public class MantaJob {
         return state;
     }
 
-
     /**
      * @return flag indicating that a job is transient
      */
     public Boolean getTransient() {
         return tranzient;
     }
-
 
     /**
      * @return statistics about job
@@ -160,14 +155,12 @@ public class MantaJob {
         return stats;
     }
 
-
     /**
      * @return timestamp of when the job was archived
      */
     public Instant getTimeArchiveStarted() {
         return timeArchiveStarted;
     }
-
 
     /**
      * @return timestamp of when the job finished
@@ -176,14 +169,12 @@ public class MantaJob {
         return timeArchiveDone;
     }
 
-
     /**
      * @return list of options associated with job
      */
     public Map<String, Object> getOptions() {
         return options;
     }
-
 
     /**
      * @return flag indicating that the job was cancelled
@@ -192,14 +183,12 @@ public class MantaJob {
         return cancelled;
     }
 
-
     /**
      * @return flag indicating whether or not new input is accepted
      */
     public Boolean getInputDone() {
         return inputDone;
     }
-
 
     /**
      * @return creation time of job
@@ -208,7 +197,6 @@ public class MantaJob {
         return timeCreated;
     }
 
-
     /**
      * @return timestamp of when the job finished
      */
@@ -216,14 +204,12 @@ public class MantaJob {
         return timeDone;
     }
 
-
     /**
      * @return list of job phases associated with job (map/reduce)
      */
     public List<MantaJobPhase> getPhases() {
         return phases;
     }
-
 
     /**
      * List of all of the map phases of the job.
@@ -238,7 +224,6 @@ public class MantaJob {
         }
     }
 
-
     /**
      * List of all of the reduce phases of the job.
      *
@@ -251,7 +236,6 @@ public class MantaJob {
             return stream.collect(Collectors.toCollection(ArrayList::new));
         }
     }
-
 
     @Override
     public boolean equals(final Object that) {
@@ -274,13 +258,11 @@ public class MantaJob {
                 && Objects.equals(phases, mantaJob.phases);
     }
 
-
     @Override
     public int hashCode() {
         return Objects.hash(id, name, state, cancelled, inputDone,
                 timeCreated, timeDone, phases);
     }
-
 
     @Override
     public String toString() {

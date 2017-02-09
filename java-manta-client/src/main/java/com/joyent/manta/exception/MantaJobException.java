@@ -45,7 +45,6 @@ public class MantaJobException extends MantaException {
         this.errors = Collections.emptyList();
     }
 
-
     /**
      * Creates an exception without an associated error list.
      * @param jobId job ID
@@ -57,7 +56,6 @@ public class MantaJobException extends MantaException {
         setContextValue("jobId", this.jobId);
         this.errors = Collections.emptyList();
     }
-
 
     /**
      * Creates an exception without an associated error list.
@@ -73,7 +71,6 @@ public class MantaJobException extends MantaException {
         setContextValue("jobId", Objects.toString(this.jobId));
         this.errors = Collections.emptyList();
     }
-
 
     /**
      * Creates an exception with the specified message and cause.
@@ -101,14 +98,12 @@ public class MantaJobException extends MantaException {
         this.errors = errors;
     }
 
-
     /**
      * @return list of errors for each failed input
      */
     public List<MantaJobError> getErrors() {
         return errors;
     }
-
 
     /**
      * @return job id of job that failed

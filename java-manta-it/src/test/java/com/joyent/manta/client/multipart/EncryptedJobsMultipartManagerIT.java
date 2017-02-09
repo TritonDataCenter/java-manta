@@ -78,7 +78,6 @@ public class EncryptedJobsMultipartManagerIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (this.mantaClient != null) {

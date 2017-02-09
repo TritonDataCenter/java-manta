@@ -302,7 +302,6 @@ public final class Benchmark {
             executor.shutdown();
         }
 
-
         final long testEnd = System.nanoTime();
 
         final long fullAverage = Math.round(fullAggregation.get() / iterations);

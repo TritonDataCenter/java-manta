@@ -45,7 +45,6 @@ public class MantaHttpHeadersIT {
 
     private String testPathPrefix;
 
-
     @BeforeClass
     public void beforeClass() throws IOException {
 
@@ -58,7 +57,6 @@ public class MantaHttpHeadersIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void cleanup() throws IOException {
         if (mantaClient != null) {
@@ -66,7 +64,6 @@ public class MantaHttpHeadersIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public void cantSetUnknownTags() throws IOException {
@@ -80,7 +77,6 @@ public class MantaHttpHeadersIT {
         MantaAssert.assertResponseFailureStatusCode(409, INVALID_ROLE_TAG_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.put(path, TEST_DATA, headers));
     }
-
 
     @Test
     public void canSetSingleRoleTag() throws IOException {
@@ -115,7 +111,6 @@ public class MantaHttpHeadersIT {
             Assert.fail(msg);
         }
     }
-
 
     @Test
     public void canSetMultipleRoleTags() throws IOException {

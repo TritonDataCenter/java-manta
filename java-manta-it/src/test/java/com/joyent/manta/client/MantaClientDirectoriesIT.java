@@ -55,7 +55,6 @@ public class MantaClientDirectoriesIT {
         mantaClient.putDirectory(testPathBase, true);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {
@@ -63,7 +62,6 @@ public class MantaClientDirectoriesIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public void canCreateDirectory() throws IOException {
@@ -78,7 +76,6 @@ public class MantaClientDirectoriesIT {
         Assert.assertEquals(dir, response.getPath());
     }
 
-
     @Test
     public void willReturnFalseWhenWeOverwriteDirectory() throws IOException {
         mantaClient.putDirectory(testPathPrefix);
@@ -92,7 +89,6 @@ public class MantaClientDirectoriesIT {
         Assert.assertFalse(result, "Expected a false value because we "
                 + "didn't create a new directory");
     }
-
 
     @Test(dependsOnMethods = { "canCreateDirectory" })
     public void canDeleteDirectory() throws IOException {
@@ -134,7 +130,6 @@ public class MantaClientDirectoriesIT {
         mantaClient.putDirectory(file);
     }
 
-
     @Test(dependsOnMethods = { "canCreateDirectory" })
     public void directoryIsMarkedAsSuch() throws IOException {
         MantaObject dir = mantaClient.head(testPathPrefix);
@@ -142,7 +137,6 @@ public class MantaClientDirectoriesIT {
                 String.format("Directory should be marked as such [%s]. "
                         + "\nResponse: %s", testPathPrefix, dir));
     }
-
 
     @Test(dependsOnMethods = { "wontErrorWhenWeCreateOverAnExistingDirectory" })
     public void canRecursivelyCreateDirectory() throws IOException {

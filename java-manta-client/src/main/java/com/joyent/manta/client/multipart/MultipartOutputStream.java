@@ -66,7 +66,6 @@ public class MultipartOutputStream extends OutputStream {
         return buf.toByteArray();
     }
 
-
     // DOES NOT CLOSE UNDERLYING STREAM
     // It might look reasonable to flush the buffer here.  But that
     // would complicate HMAC where we need to write the final "normal

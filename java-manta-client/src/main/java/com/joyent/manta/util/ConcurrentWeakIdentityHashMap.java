@@ -60,7 +60,6 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
         return map.replace(newKey(key), oldValue, newValue);
     }
 
-
     @Override
     public V replace(final K key, final V value) {
         purgeKeys();
@@ -248,7 +247,6 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
         public void remove() {
             throw new UnsupportedOperationException();
         }
-
 
         protected abstract T extract(U u);
     }

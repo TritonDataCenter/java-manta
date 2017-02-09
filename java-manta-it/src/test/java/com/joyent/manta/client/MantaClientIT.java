@@ -71,7 +71,6 @@ public class MantaClientIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {
@@ -79,7 +78,6 @@ public class MantaClientIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public final void testCRUDObject() throws IOException {
@@ -184,7 +182,6 @@ public class MantaClientIT {
         mantaClient.deleteRecursive(dir);
     }
 
-
     @Test
     public final void testCRUDWithFileObject() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -201,7 +198,6 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testCRUDWithByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -216,7 +212,6 @@ public class MantaClientIT {
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
-
 
     @Test
     public final void testCRUDObjectWithHeaders() throws IOException {
@@ -237,7 +232,6 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testContentTypeSetByFilename() throws IOException {
         final String name = UUID.randomUUID().toString() + ".html";
@@ -249,7 +243,6 @@ public class MantaClientIT {
         Assert.assertEquals(object.getContentType(),
                 "text/html", "Content type wasn't auto-assigned");
     }
-
 
     @Test
     public final void testRecursiveDeleteObject() throws IOException {
@@ -275,7 +268,6 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
     }
 
-
     @Test
     public final void verifyYouCanJustSpecifyDirNameWhenPuttingFile() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -299,7 +291,6 @@ public class MantaClientIT {
 
         Assert.assertTrue(thrown, "Bad request response not received");
     }
-
 
     @Test
     public final void testHead() throws IOException {
@@ -340,7 +331,6 @@ public class MantaClientIT {
         Assert.assertEquals(mantaObjectHead.getEtag(), mantaLinkHead.getEtag());
     }
 
-
     @Test
     public final void testPutLink() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -353,7 +343,6 @@ public class MantaClientIT {
         Assert.assertEquals(linkContent, TEST_DATA);
 
     }
-
 
     @Test
     public final void testPutJsonLink() throws IOException {
@@ -371,7 +360,6 @@ public class MantaClientIT {
         Assert.assertEquals(linkContent, testData);
     }
 
-
     @Test
     public final void canMoveFile() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -385,7 +373,6 @@ public class MantaClientIT {
         final String movedContent = mantaClient.getAsString(newPath);
         Assert.assertEquals(movedContent, TEST_DATA);
     }
-
 
     @Test
     public final void canMoveEmptyDirectory() throws IOException {
@@ -412,7 +399,6 @@ public class MantaClientIT {
         Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
             + path);
     }
-
 
     @Test
     public final void canMoveDirectoryWithContents() throws IOException {
@@ -459,7 +445,6 @@ public class MantaClientIT {
                 + source);
     }
 
-
     @Test
     public final void testList() throws IOException {
         final String pathPrefix = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
@@ -481,7 +466,6 @@ public class MantaClientIT {
         Assert.assertEquals(3, count.get());
     }
 
-
     @Test(expectedExceptions = MantaObjectException.class)
     public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -494,7 +478,6 @@ public class MantaClientIT {
         }
     }
 
-
     @Test(expectedExceptions = MantaClientHttpResponseException.class)
     public final void testListNonexistentDir() throws IOException {
         final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",
@@ -505,7 +488,6 @@ public class MantaClientIT {
         }
     }
 
-
     @Test
     public final void testIsDirectoryEmptyWithEmptyDir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -515,7 +497,6 @@ public class MantaClientIT {
         Assert.assertTrue(mantaClient.isDirectoryEmpty(dir),
                 "Empty directory is not reported as empty");
     }
-
 
     @Test
     public final void testIsDirectoryEmptyWithDirWithFiles() throws IOException {
@@ -529,7 +510,6 @@ public class MantaClientIT {
                 "Empty directory is not reported as empty");
     }
 
-
     @Test(expectedExceptions = { MantaClientException.class })
     public final void testIsDirectoryEmptyWithAFileNotDir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -539,7 +519,6 @@ public class MantaClientIT {
 
         mantaClient.isDirectoryEmpty(file);
     }
-
 
     @Test
     public final void testRFC3986() throws IOException {
@@ -556,7 +535,6 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testFileExists() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -567,7 +545,6 @@ public class MantaClientIT {
         final boolean actual = mantaClient.existsAndIsAccessible(path);
         Assert.assertTrue(actual, "File object should exist");
     }
-
 
     @Test
     public final void testDirectoryExists() throws IOException {
@@ -580,7 +557,6 @@ public class MantaClientIT {
         Assert.assertTrue(actual, "File object should exist");
     }
 
-
     @Test
     public final void testFileDoesntExist() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -589,7 +565,6 @@ public class MantaClientIT {
         final boolean actual = mantaClient.existsAndIsAccessible(path);
         Assert.assertFalse(actual, "File object shouldn't exist");
     }
-
 
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDate() {
@@ -602,7 +577,6 @@ public class MantaClientIT {
                 "Last modified date should equal input to mtime");
     }
 
-
     @Test(groups = { "mtime" })
     public final void testGetNullLastModifiedDate() {
         final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
@@ -611,7 +585,6 @@ public class MantaClientIT {
         Assert.assertNull(obj.getLastModifiedTime(),
                 "Last modified date should be null when mtime is null");
     }
-
 
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDateWithUnparseableMtime() {
@@ -622,6 +595,5 @@ public class MantaClientIT {
         Assert.assertNull(obj.getLastModifiedTime(),
                 "Last modified date should be null when mtime is null");
     }
-
 
 }

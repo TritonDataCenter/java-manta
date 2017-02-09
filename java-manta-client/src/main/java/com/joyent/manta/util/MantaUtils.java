@@ -72,7 +72,6 @@ public final class MantaUtils {
         return last == match;
     }
 
-
     /**
      * Converts an object's toString value to a String. If an empty string, the return null.
      *
@@ -126,7 +125,6 @@ public final class MantaUtils {
         return parsed;
     }
 
-
     /**
      * Parses an arbitrary object for a boolean. If it can't be found, return null.
      *
@@ -165,7 +163,6 @@ public final class MantaUtils {
 
         return parsed;
     }
-
 
     /**
      * Parses an arbitrary object for an enum represented as a String. If the
@@ -317,7 +314,6 @@ public final class MantaUtils {
         return value.toString();
     }
 
-
     /**
      * Converts a naive CSV string to a collection.
      *
@@ -335,7 +331,6 @@ public final class MantaUtils {
         } else {
             list.add(line);
         }
-
 
         return list;
     }

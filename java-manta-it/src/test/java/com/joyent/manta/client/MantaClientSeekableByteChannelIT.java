@@ -63,7 +63,6 @@ public class MantaClientSeekableByteChannelIT {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {
@@ -71,7 +70,6 @@ public class MantaClientSeekableByteChannelIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public final void seekableByteSize() throws IOException {
@@ -87,7 +85,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-
     @Test
     public final void getAllSeekableBytes() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -99,7 +96,6 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(actual, TEST_DATA, "Couldn't read the same bytes as written");
         }
     }
-
 
     @Test
     public final void getAllSeekableBytesAtPosition() throws IOException {
@@ -138,7 +134,6 @@ public class MantaClientSeekableByteChannelIT {
             }
         }
     }
-
 
     @Test
     public final void readAllSeekableBytesFromPositionAsInputStream() throws IOException {
@@ -218,7 +213,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-
     @Test(expectedExceptions = NonWritableChannelException.class)
     public final void attemptToWrite() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -230,7 +224,6 @@ public class MantaClientSeekableByteChannelIT {
             channel.write(buffer);
         }
     }
-
 
     @Test( groups = { "seekable" })
     public final void getFromForwardPosition() throws IOException {
@@ -249,7 +242,6 @@ public class MantaClientSeekableByteChannelIT {
                     "Couldn't read the same bytes as written to specified position");
         }
     }
-
 
     @Test( groups = { "seekable" } )
     public final void getFromBaseChannelThenForwardPosition() throws IOException {
@@ -271,7 +263,6 @@ public class MantaClientSeekableByteChannelIT {
                     "Couldn't read the same bytes as written to specified position");
         }
     }
-
 
     @Test( groups = { "seekable" } )
     public final void getFromForwardPositionThenBackwardPosition() throws IOException {
@@ -301,7 +292,6 @@ public class MantaClientSeekableByteChannelIT {
                     "Couldn't read the same bytes as written to specified position");
         }
     }
-
 
     public static byte[] readAllBytes(SeekableByteChannel sbc) throws IOException {
         try (InputStream in = Channels.newInputStream(sbc);

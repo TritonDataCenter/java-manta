@@ -206,7 +206,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
         return parts[0] + keyLengthBits + separator + parts[1] + separator + parts[2];
     }
 
-
     @Override
     public boolean isAEADCipher() {
         return this.isAEADCipher;

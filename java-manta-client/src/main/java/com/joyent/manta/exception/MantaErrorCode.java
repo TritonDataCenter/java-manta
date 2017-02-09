@@ -142,7 +142,6 @@ public enum MantaErrorCode {
         return code;
     }
 
-
     /**
      * Looks up a {@link MantaErrorCode} by its code value.
      *
@@ -166,7 +165,6 @@ public enum MantaErrorCode {
 
         return found;
     }
-
 
     /**
      * Looks up a {@link MantaErrorCode} by its code value.

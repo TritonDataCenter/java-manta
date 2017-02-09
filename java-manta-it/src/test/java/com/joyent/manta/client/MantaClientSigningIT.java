@@ -56,7 +56,6 @@ public class MantaClientSigningIT {
         mantaClient.putDirectory(testPathPrefix, null);
     }
 
-
     @AfterClass
     public void afterClass() throws IOException {
         if (mantaClient != null) {
@@ -137,7 +136,6 @@ public class MantaClientSigningIT {
         }
     }
 
-
     @Test
     public final void testCanCreateSignedPUTUriFromPath()
             throws IOException, InterruptedException {
@@ -178,7 +176,6 @@ public class MantaClientSigningIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, TEST_DATA);
     }
-
 
     @Test
     public final void testCanCreateSignedOPTIONSUriFromPath()

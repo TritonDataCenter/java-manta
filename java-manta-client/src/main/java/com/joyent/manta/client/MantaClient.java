@@ -298,7 +298,6 @@ public class MantaClient implements AutoCloseable {
         httpHelper.httpDelete(path);
     }
 
-
     /**
      * Recursively deletes an object in Manta.
      *
@@ -370,7 +369,6 @@ public class MantaClient implements AutoCloseable {
 
         LOG.debug("Finished deleting path {}", path);
     }
-
 
     /**
      * Get the metadata for a Manta object. The difference with this method vs head() is
@@ -449,7 +447,6 @@ public class MantaClient implements AutoCloseable {
         return getAsInputStream(path, null);
     }
 
-
     /**
      * Get a Manta object's data as a {@link String} using the JVM's default encoding.
      * This method is not memory efficient, by loading the data into a String you are
@@ -464,7 +461,6 @@ public class MantaClient implements AutoCloseable {
             return IOUtils.toString(is, Charset.defaultCharset());
         }
     }
-
 
     /**
      * Get a Manta object's data as a {@link String} using the specified encoding.
@@ -483,7 +479,6 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
-
     /**
      * Get a Manta object's data as a {@link String} using the specified encoding.
      * This method is not memory efficient, by loading the data into a String you are
@@ -500,7 +495,6 @@ public class MantaClient implements AutoCloseable {
             return IOUtils.toString(is, charset);
         }
     }
-
 
     /**
      * Copies Manta object's data to a temporary file on the file system and return
@@ -521,7 +515,6 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
-
     /**
      * Copies Manta object's data to a temporary file on the file system and return
      * a reference to the file using a {@link File}. This method is memory
@@ -534,7 +527,6 @@ public class MantaClient implements AutoCloseable {
     public File getToTempFile(final String path) throws IOException {
         return getToTempPath(path).toFile();
     }
-
 
     /**
      * Get a Manta object's data as an NIO {@link java.nio.channels.SeekableByteChannel}.
@@ -557,7 +549,6 @@ public class MantaClient implements AutoCloseable {
                 this.connectionFactory, this.httpHelper);
     }
 
-
     /**
      * Get a Manta object's data as an NIO {@link java.nio.channels.SeekableByteChannel}.
      * This method allows you to stream data from the Manta storage service in
@@ -577,7 +568,6 @@ public class MantaClient implements AutoCloseable {
         return new MantaSeekableByteChannel(path, this.connectionFactory,
                 this.httpHelper);
     }
-
 
     /**
      * <p>Generates a URL that allows for the download of the resource specified
@@ -602,7 +592,6 @@ public class MantaClient implements AutoCloseable {
         return getAsSignedURI(path, method, expires);
     }
 
-
     /**
      * <p>Generates a URL that allows for the download of the resource specified
      * in the path without any additional authentication.</p>
@@ -625,7 +614,6 @@ public class MantaClient implements AutoCloseable {
 
         return getAsSignedURI(path, method, expires.getEpochSecond());
     }
-
 
     /**
      * <p>Generates a URL that allows for the download of the resource specified
@@ -653,7 +641,6 @@ public class MantaClient implements AutoCloseable {
         return uriSigner.signURI(request, method, expiresEpochSeconds);
     }
 
-
     /**
      * Get the metadata associated with a Manta object.
      *
@@ -669,7 +656,6 @@ public class MantaClient implements AutoCloseable {
         return new MantaObjectResponse(path, headers);
     }
 
-
     /**
      * Return a stream of the contents of a directory in Manta as an {@link Iterator}.
      *
@@ -682,7 +668,6 @@ public class MantaClient implements AutoCloseable {
         danglingStreams.add(itr);
         return itr;
     }
-
 
     /**
      * Return a stream of the contents of a directory in Manta.
@@ -763,7 +748,6 @@ public class MantaClient implements AutoCloseable {
         return stream;
     }
 
-
     /**
      * Return a boolean indicating if a directory is empty.
      *
@@ -793,7 +777,6 @@ public class MantaClient implements AutoCloseable {
         return size == 0;
     }
 
-
     /**
      * Convenience method that issues a HTTP HEAD request to see if a given
      * object exists at the specified path.
@@ -811,7 +794,6 @@ public class MantaClient implements AutoCloseable {
 
         return true;
     }
-
 
     /**
      * Puts an object into Manta.
@@ -845,7 +827,6 @@ public class MantaClient implements AutoCloseable {
         return put(path, source, null, metadata);
     }
 
-
     /**
      * Puts an object into Manta using a stream with an unknown length. Since
      * we don't know the length,
@@ -864,7 +845,6 @@ public class MantaClient implements AutoCloseable {
                                    final MantaMetadata metadata) throws IOException {
         return put(path, source, -1L, headers, metadata);
     }
-
 
     /**
      * Puts an object into Manta.
@@ -935,7 +915,6 @@ public class MantaClient implements AutoCloseable {
         return httpHelper.httpPut(path, headers, entity, metadata);
     }
 
-
     /**
      * Copies the supplied {@link InputStream} to a remote Manta object at the
      * specified path.
@@ -948,7 +927,6 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectResponse put(final String path, final InputStream source) throws IOException {
         return put(path, source, null, null);
     }
-
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
@@ -965,7 +943,6 @@ public class MantaClient implements AutoCloseable {
                                    final MantaHttpHeaders headers) throws IOException {
         return put(path, string, headers, null);
     }
-
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
@@ -1053,7 +1030,6 @@ public class MantaClient implements AutoCloseable {
         return stream;
     }
 
-
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
@@ -1109,7 +1085,6 @@ public class MantaClient implements AutoCloseable {
         return put(path, string, Charset.defaultCharset());
     }
 
-
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
@@ -1125,7 +1100,6 @@ public class MantaClient implements AutoCloseable {
                                    final String charsetName) throws IOException {
         return put(path, string, Charset.forName(charsetName));
     }
-
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
@@ -1146,7 +1120,6 @@ public class MantaClient implements AutoCloseable {
 
         return put(path, string, headers, null);
     }
-
 
     /**
      * Copies the supplied {@link File} to a remote Manta object at the specified
@@ -1232,7 +1205,6 @@ public class MantaClient implements AutoCloseable {
         return httpHelper.httpPut(path, headers, entity, metadata);
     }
 
-
     /**
      * Copies the supplied byte array to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
@@ -1246,7 +1218,6 @@ public class MantaClient implements AutoCloseable {
                                    final byte[] bytes) throws IOException {
         return put(path, bytes, null, null);
     }
-
 
     /**
      * Copies the supplied byte array to a remote Manta object at the specified
@@ -1264,7 +1235,6 @@ public class MantaClient implements AutoCloseable {
         return put(path, bytes, null, metadata);
     }
 
-
     /**
      * Copies the supplied byte array to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
@@ -1280,7 +1250,6 @@ public class MantaClient implements AutoCloseable {
                                    final MantaHttpHeaders headers) throws IOException {
         return put(path, bytes, headers, null);
     }
-
 
     /**
      * Copies the supplied byte array to a remote Manta object at the specified
@@ -1322,7 +1291,6 @@ public class MantaClient implements AutoCloseable {
         return putMetadata(path, headers, metadata);
     }
 
-
     /**
      * Appends metadata derived from HTTP headers to an existing Manta object.
      *
@@ -1338,7 +1306,6 @@ public class MantaClient implements AutoCloseable {
         final MantaMetadata metadata = new MantaMetadata(headers.metadataAsStrings());
         return putMetadata(path, headers, metadata);
     }
-
 
     /**
      * Replaces the specified metadata to an existing Manta object using the
@@ -1380,7 +1347,6 @@ public class MantaClient implements AutoCloseable {
         return putDirectory(path, null);
     }
 
-
     /**
      * Creates a directory in Manta.
      *
@@ -1419,7 +1385,6 @@ public class MantaClient implements AutoCloseable {
         return response.getFirstHeader(HttpHeaders.LAST_MODIFIED) == null;
     }
 
-
     /**
      * Creates a directory in Manta.
      *
@@ -1432,7 +1397,6 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         putDirectory(path, recursive, null);
     }
-
 
     /**
      * Creates a directory in Manta.
@@ -1472,7 +1436,6 @@ public class MantaClient implements AutoCloseable {
             }
         }
     }
-
 
     /**
      * Create a Manta snaplink.
@@ -1562,7 +1525,6 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
-
     /**
       * Method that returns the configuration context used to
       * instantiate the MantaClient instance.
@@ -1572,7 +1534,6 @@ public class MantaClient implements AutoCloseable {
     public ConfigContext getContext() {
         return this.config;
     }
-
 
     /* ======================================================================
      * Job Methods
@@ -1632,7 +1593,6 @@ public class MantaClient implements AutoCloseable {
         throw lastException;
     }
 
-
     /**
      * Submits inputs to an already created job, as created by createJob().
      * Inputs are object names, and are fed in as a \n separated stream.
@@ -1651,7 +1611,6 @@ public class MantaClient implements AutoCloseable {
 
         addJobInputs(jobId, entity);
     }
-
 
     /**
      * Submits inputs to an already created job, as created by createJob().
@@ -1687,7 +1646,6 @@ public class MantaClient implements AutoCloseable {
         processJobInputs(jobId, entity);
     }
 
-
     /**
      * Utility method for processing the addition of job inputs over HTTP.
      *
@@ -1707,7 +1665,6 @@ public class MantaClient implements AutoCloseable {
 
         httpHelper.executeAndCloseRequest(post, "POST   {} response [{}] {} ");
     }
-
 
     /**
      * <p>Get a stream of all of the input objects submitted for a job.</p>
@@ -1746,7 +1703,6 @@ public class MantaClient implements AutoCloseable {
         // We expect a return value of 202 when the cancel request was accepted
         return statusLine.getStatusCode() == HttpStatus.SC_ACCEPTED;
     }
-
 
     /**
      * <p>This cancels a job from doing any further work. Cancellation is
@@ -1885,7 +1841,6 @@ public class MantaClient implements AutoCloseable {
         return job;
     }
 
-
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} from
      * the Manta API. <strong>Make sure to close this stream when you are done with
@@ -1908,7 +1863,6 @@ public class MantaClient implements AutoCloseable {
         });
     }
 
-
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} that matches
      * the supplied name from the Manta API. <strong>Make sure to close this stream
@@ -1928,7 +1882,6 @@ public class MantaClient implements AutoCloseable {
         return getAllJobs("limit", String.valueOf(limit));
     }
 
-
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} that match
      * the supplied job state from the Manta API. <strong>Make sure to close this stream
@@ -1942,7 +1895,6 @@ public class MantaClient implements AutoCloseable {
         return getAllJobs("state", state);
     }
 
-
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} that match
      * the supplied name from the Manta API. <strong>Make sure to close this stream
@@ -1955,7 +1907,6 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaJob> getJobsByName(final String name) throws IOException {
         return getAllJobs("name", name);
     }
-
 
     /**
      * Gets all of the Manta jobs as a real-time {@link Stream} from
@@ -1989,7 +1940,6 @@ public class MantaClient implements AutoCloseable {
             });
     }
 
-
     /**
      * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
      * the Manta API. <strong>Make sure to close this stream when you are done with
@@ -2014,7 +1964,6 @@ public class MantaClient implements AutoCloseable {
             return UUID.fromString(id);
         });
     }
-
 
     /**
      * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
@@ -2047,7 +1996,6 @@ public class MantaClient implements AutoCloseable {
         return getAllJobIds("state", state);
     }
 
-
     /**
      * Gets all of the Manta jobs' IDs as a real-time {@link Stream} that matches
      * the supplied name from the Manta API. <strong>Make sure to close this stream
@@ -2060,7 +2008,6 @@ public class MantaClient implements AutoCloseable {
     public Stream<UUID> getJobIdsByName(final String name) throws IOException {
         return getAllJobIds("name", name);
     }
-
 
     /**
      * Gets all of the Manta jobs' IDs as a real-time {@link Stream} from
@@ -2115,7 +2062,6 @@ public class MantaClient implements AutoCloseable {
         });
     }
 
-
     /**
      * <p>Returns the current "live" set of outputs from a job. Think of this
      * like tail -f. The objects are returned as a stream. The stream is
@@ -2137,7 +2083,6 @@ public class MantaClient implements AutoCloseable {
                 "GET    {} response [{}] {} ");
         return responseAsStream(response);
     }
-
 
     /**
      * <p>Returns a stream of {@link InputStream} implementations for each
@@ -2165,7 +2110,6 @@ public class MantaClient implements AutoCloseable {
                     }
                 });
     }
-
 
     /**
      * <p>Returns a stream of strings containing all of the
@@ -2195,7 +2139,6 @@ public class MantaClient implements AutoCloseable {
                 });
     }
 
-
     /**
      * <p>Returns the current "live" set of failures from a job. Think of this
      * like tail -f. The objects are returned as a stream. The stream is
@@ -2224,7 +2167,6 @@ public class MantaClient implements AutoCloseable {
 
         return responseAsStream(response);
     }
-
 
     /**
      * <p>Returns a list of failure details for each object in which a failure
@@ -2271,7 +2213,6 @@ public class MantaClient implements AutoCloseable {
     public MantaJobBuilder jobBuilder() {
         return new MantaJobBuilder(this);
     }
-
 
     /**
      * Parses a HTTP response's content as a Java 8 stream of strings.
@@ -2365,7 +2306,6 @@ public class MantaClient implements AutoCloseable {
             throw exception;
         }
     }
-
 
     /**
      * Closes the Manta client resource and logs any problems to the debug level

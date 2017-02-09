@@ -23,42 +23,36 @@ public class MantaMetadataTest {
         Assert.assertEquals(instance.get("m-hello"), "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddNullMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put(null, "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddEmptyMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("", "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddMetadataKeyThatDoesntBeginWithM() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("hello", "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddMetadataKeyThatContainsSpace() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("m-hello my dear", "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddMetadataKeyThatIsntISO88591() {
         MantaMetadata instance = new MantaMetadata();
         String key = "m-\u3053\u3093\u306B\u3061\u306F";
         instance.put(key, "world");
     }
-
 
     @Test
     public void cantAddMetadataKeyThatIllegalCharacter() {
@@ -78,7 +72,6 @@ public class MantaMetadataTest {
         }
     }
 
-
     @Test
     public void canMarkKeyAsDeleted() {
         MantaMetadata instance = new MantaMetadata();
@@ -87,10 +80,9 @@ public class MantaMetadataTest {
 
         Assert.assertTrue(instance.containsKey("m-hello"),
                 "Deleting a metadata entry means marking its value as null"
-                + "but we still need the key stored.");
+                        + "but we still need the key stored.");
         Assert.assertNull(instance.get("m-hello"));
     }
-
 
     @Test
     public void autoConvertKeysToLowercase() {

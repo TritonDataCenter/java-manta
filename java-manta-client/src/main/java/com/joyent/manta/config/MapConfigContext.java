@@ -361,7 +361,6 @@ public class MapConfigContext implements ConfigContext {
         return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY));
     }
 
-
     @Override
     public String getEncryptionKeyId() {
         return normalizeEmptyAndNullAndDefaultToStringValue(
