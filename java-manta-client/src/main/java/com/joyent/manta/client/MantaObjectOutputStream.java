@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * {@link OutputStream} that wraps the PUT operations using an {@link java.io.InputStream}
@@ -117,7 +118,7 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * A running count of the total number of bytes written.
      */
-    private volatile long bytesWritten = 0L;
+    private AtomicLong bytesWritten = new AtomicLong(0L);
 
     /**
      * Flag indicating that this stream has been closed.
@@ -187,7 +188,7 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         httpContent.getWriter().write(b);
-        bytesWritten++;
+        bytesWritten.incrementAndGet();
     }
 
     @Override
@@ -199,7 +200,7 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         httpContent.getWriter().write(b);
-        bytesWritten += b.length;
+        bytesWritten.addAndGet(b.length);
     }
 
     @Override
@@ -211,7 +212,7 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         httpContent.getWriter().write(b, off, len);
-        bytesWritten += b.length;
+        bytesWritten.addAndGet(b.length);
     }
 
     @Override
@@ -305,7 +306,7 @@ public class MantaObjectOutputStream extends OutputStream {
 
         try {
             this.objectResponse = this.completed.get();
-            this.objectResponse.setContentLength(bytesWritten);
+            this.objectResponse.setContentLength(bytesWritten.get());
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
