@@ -87,6 +87,7 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     }
 
     /**
+     * Calculates the complete number of bytes for content including the hmac or tag if one exists.
      *
      * @param plaintextSize size in bytes of unencrypted body
      * @param blockBytes block size in bytes
