@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 /**
@@ -47,7 +48,7 @@ public class StringIteratorHttpContent implements HttpEntity {
     /**
      * Total bytes of content. Defaults to -1 before content is written.
      */
-    private volatile long length = -1L;
+    private AtomicLong length = new AtomicLong(-1L);
 
 
     /**
@@ -89,7 +90,7 @@ public class StringIteratorHttpContent implements HttpEntity {
 
     @Override
     public long getContentLength() {
-        return length;
+        return length.get();
     }
 
     @Override
@@ -147,7 +148,7 @@ public class StringIteratorHttpContent implements HttpEntity {
         Validate.notNull(iterator, "Iterator must not be null");
 
         // Start length at zero because it is set to -1 by default
-        length = 0L;
+        length.set(0L);
 
         while (iterator.hasNext()) {
             String next = iterator.next();
@@ -158,7 +159,7 @@ public class StringIteratorHttpContent implements HttpEntity {
             // We use Unix new lines intentionally for the Manta service
             final String formatted = String.format("%s%s", next, StringUtils.LF);
             byte[] bytes = formatted.getBytes("UTF-8");
-            length += bytes.length;
+            length.addAndGet(bytes.length);
             out.write(bytes);
         }
     }
@@ -175,7 +176,7 @@ public class StringIteratorHttpContent implements HttpEntity {
         Validate.notNull(stream, "Stream must not be null");
 
         // Start length at zero because it is set to -1 by default
-        length = 0L;
+        length.set(0L);
 
         /* This horribly contorted exception handling is because Java 8
          * streams do not support checked exception handling. */
@@ -185,7 +186,7 @@ public class StringIteratorHttpContent implements HttpEntity {
                     try {
                         String formatted = String.format("%s\n", item);
                         byte[] bytes = formatted.getBytes("UTF-8");
-                        length += bytes.length;
+                        length.addAndGet(bytes.length);
                         out.write(bytes);
                     } catch (IOException e) {
                         throw new StreamIOException(e);
