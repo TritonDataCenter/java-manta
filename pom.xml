@@ -108,7 +108,7 @@
         <!-- Plugin versions -->
         <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
-        <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.6.0</maven-compiler-plugin.version>
         <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
@@ -128,6 +128,11 @@
         <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
         <maven-jacoco-plugin.version>0.7.8</maven-jacoco-plugin.version>
         <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
+
+        <!-- Maven plugin dependency versions -->
+        <maven-plexus-compiler-javac-errorprone.version>2.8.1</maven-plexus-compiler-javac-errorprone.version>
+        <maven-error-prone-core.version>2.0.15</maven-error-prone-core.version>
+
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>3.0.1</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.2</dependency.apache-http-client.version>
@@ -212,9 +217,27 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
+                    <compilerId>javac-with-errorprone</compilerId>
+                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                    <!-- maven-compiler-plugin defaults to targeting Java 5, but our javac
+                         only supports >=6 -->
                     <source>${java.min.version}</source>
                     <target>${java.min.version}</target>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-compiler-javac-errorprone</artifactId>
+                        <version>${maven-plexus-compiler-javac-errorprone.version}</version>
+                    </dependency>
+                    <!-- override plexus-compiler-javac-errorprone's dependency on
+                         Error Prone with the latest version -->
+                    <dependency>
+                        <groupId>com.google.errorprone</groupId>
+                        <artifactId>error_prone_core</artifactId>
+                        <version>${maven-error-prone-core.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
