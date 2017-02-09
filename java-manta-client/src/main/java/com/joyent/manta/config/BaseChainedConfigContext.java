@@ -773,7 +773,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
-                encryptionPrivateKeyBytes);
+                Arrays.hashCode(encryptionPrivateKeyBytes));
     }
 
     @Override
