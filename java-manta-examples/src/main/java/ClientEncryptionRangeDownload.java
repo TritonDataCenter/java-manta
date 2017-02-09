@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.ChainedConfigContext;
@@ -12,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.Scanner;
-
 
 /*
 * Usage: set the mantaUserName, privateKeyPath, and publicKeyId with your own values.

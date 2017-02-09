@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
 import org.testng.Assert;
@@ -90,7 +97,7 @@ public class MantaHttpHeadersByteRangeTest {
                             "bytes=-500");
         Assert.assertEquals(headers.setByteRange(9500L, null).getRange(),
                             "bytes=9500-");
-        
+
     }
 
     public void getByteRangeHappyPath() {
