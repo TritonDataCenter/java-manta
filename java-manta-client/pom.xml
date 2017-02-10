@@ -51,6 +51,10 @@
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -73,6 +77,12 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${dependency.commons-io.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${dependency.commons-codec.version}</version>
         </dependency>
 
         <!-- Library for generating more robust UUIDs -->
