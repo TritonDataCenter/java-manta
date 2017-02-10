@@ -9,10 +9,10 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.exception.MantaClientEncryptionException;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.CharUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -67,7 +67,7 @@ public final class EncryptedMetadataUtils {
      * @return headers as map
      */
     public static Map<String, String> plaintextMetadataAsMap(final String plaintext) {
-        return plaintextMetadataAsMap(plaintext.getBytes(Charsets.US_ASCII));
+        return plaintextMetadataAsMap(plaintext.getBytes(StandardCharsets.US_ASCII));
     }
 
     /**

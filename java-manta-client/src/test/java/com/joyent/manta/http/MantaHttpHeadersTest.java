@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
@@ -17,6 +16,7 @@ import org.apache.http.message.BasicHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -64,7 +64,7 @@ public class MantaHttpHeadersTest {
     public void canExportApacheHeaders() {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setDurabilityLevel(3);
-        headers.setContentType(ContentType.APPLICATION_JSON.withCharset(Charsets.UTF_8).toString());
+        headers.setContentType(ContentType.APPLICATION_JSON.withCharset(StandardCharsets.UTF_8).toString());
         headers.put("X-Multi-Header",
                 Arrays.asList("value 1", "value 2"));
 

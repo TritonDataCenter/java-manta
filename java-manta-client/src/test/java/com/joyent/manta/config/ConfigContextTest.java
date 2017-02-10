@@ -14,8 +14,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 @Test
 public class ConfigContextTest {
@@ -50,11 +49,7 @@ public class ConfigContextTest {
             "-----END RSA PRIVATE KEY-----";
 
     {
-        try {
-            keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError(e.getMessage());
-        }
+        keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes(StandardCharsets.US_ASCII);
     }
 
     @Test(expectedExceptions = ConfigurationException.class)
@@ -66,7 +61,7 @@ public class ConfigContextTest {
     public void canValidateContextWithClientEncryptionDisabled() throws IOException {
         File mantaAuthPrivateKey = File.createTempFile("manta-key", "");
         FileUtils.forceDeleteOnExit(mantaAuthPrivateKey);
-        FileUtils.write(mantaAuthPrivateKey, MANTA_AUTH_PRIVATE_KEY, Charset.forName("US-ASCII"));
+        FileUtils.write(mantaAuthPrivateKey, MANTA_AUTH_PRIVATE_KEY, StandardCharsets.US_ASCII);
 
         StandardConfigContext config = new StandardConfigContext();
         config.setMantaURL(DefaultsConfigContext.DEFAULT_MANTA_URL);
@@ -79,7 +74,7 @@ public class ConfigContextTest {
     public void canValidateContextWithKeyPaths() throws IOException {
         File mantaAuthPrivateKey = File.createTempFile("manta-key", "");
         FileUtils.forceDeleteOnExit(mantaAuthPrivateKey);
-        FileUtils.write(mantaAuthPrivateKey, MANTA_AUTH_PRIVATE_KEY, Charset.forName("US-ASCII"));
+        FileUtils.write(mantaAuthPrivateKey, MANTA_AUTH_PRIVATE_KEY, StandardCharsets.US_ASCII);
 
         File encryptionPrivateKey = File.createTempFile("encryption-key", "");
         FileUtils.forceDeleteOnExit(encryptionPrivateKey);

@@ -12,6 +12,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 @Test
@@ -33,7 +34,8 @@ public class TestMultipartManagerTest {
 
         manager.complete(upload, partsStream);
 
-        String actual = FileUtils.readFileToString(upload.getContents(), "UTF-8");
+        String actual = FileUtils.readFileToString(upload.getContents(),
+                StandardCharsets.UTF_8);
 
         String expected = "Line 1\nLine 2\nLine 3\nLine 4\nLine 5";
 

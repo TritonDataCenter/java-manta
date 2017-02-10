@@ -33,7 +33,6 @@ import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -74,6 +73,7 @@ import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1606,7 +1606,7 @@ public class MantaClient implements AutoCloseable {
                              final Iterator<String> inputs) throws IOException {
         Validate.notNull(inputs, "Inputs must not be null");
 
-        ContentType contentType = ContentType.TEXT_PLAIN.withCharset(Charsets.UTF_8);
+        ContentType contentType = ContentType.TEXT_PLAIN.withCharset(StandardCharsets.UTF_8);
         HttpEntity entity = new StringIteratorHttpContent(inputs, contentType);
 
         addJobInputs(jobId, entity);
@@ -1625,7 +1625,7 @@ public class MantaClient implements AutoCloseable {
                              final Stream<String> inputs) throws IOException {
         Validate.notNull(inputs, "Inputs must not be null");
 
-        ContentType contentType = ContentType.TEXT_PLAIN.withCharset(Charsets.UTF_8);
+        ContentType contentType = ContentType.TEXT_PLAIN.withCharset(StandardCharsets.UTF_8);
         HttpEntity entity = new StringIteratorHttpContent(inputs, contentType);
 
         addJobInputs(jobId, entity);

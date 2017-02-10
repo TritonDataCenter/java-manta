@@ -25,7 +25,6 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.entity.NoContentEntity;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -54,6 +53,7 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
@@ -939,7 +939,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @return byte array of ciphertext
      */
     private byte[] encryptMetadata(final String metadataPlaintext, final Cipher cipher) {
-        byte[] rawBytes = metadataPlaintext.getBytes(Charsets.US_ASCII);
+        byte[] rawBytes = metadataPlaintext.getBytes(StandardCharsets.US_ASCII);
 
         try {
             return cipher.doFinal(rawBytes);

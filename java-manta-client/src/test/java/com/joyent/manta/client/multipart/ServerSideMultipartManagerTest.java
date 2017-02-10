@@ -37,6 +37,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -210,7 +211,7 @@ public class ServerSideMultipartManagerTest {
             Assert.assertEquals(jsonHeaders.get(HttpHeaders.CONTENT_TYPE.toLowerCase()).textValue(),
                     "application/octet-stream");
         } catch (AssertionError e) {
-            System.err.println(new String(json, "UTF-8"));
+            System.err.println(new String(json, StandardCharsets.UTF_8));
             throw e;
         }
     }
@@ -266,7 +267,7 @@ public class ServerSideMultipartManagerTest {
 
             Assert.assertNull(jsonHeaders.get("e-mykey"), "Encrypted headers should not be included");
         } catch (AssertionError e) {
-            System.err.println(new String(json, "UTF-8"));
+            System.err.println(new String(json, StandardCharsets.UTF_8));
             throw e;
         }
     }
@@ -296,7 +297,7 @@ public class ServerSideMultipartManagerTest {
             Assert.assertEquals(partsNode.get(3).textValue(), unsortedTuples[4].getEtag());
             Assert.assertEquals(partsNode.get(4).textValue(), unsortedTuples[0].getEtag());
         } catch (AssertionError e) {
-            System.err.println(new String(jsonRequest, "UTF-8"));
+            System.err.println(new String(jsonRequest, StandardCharsets.UTF_8));
             throw e;
         }
     }
@@ -368,7 +369,8 @@ public class ServerSideMultipartManagerTest {
 
         if (responseBody != null) {
             final BasicHttpEntity entity = new BasicHttpEntity();
-            entity.setContent(IOUtils.toInputStream(responseBody, "UTF-8"));
+            entity.setContent(IOUtils.toInputStream(responseBody,
+                    StandardCharsets.UTF_8));
             when(response.getEntity()).thenReturn(entity);
         }
 

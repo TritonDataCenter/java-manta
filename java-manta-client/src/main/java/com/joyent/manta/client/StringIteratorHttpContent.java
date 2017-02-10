@@ -18,6 +18,7 @@ import org.apache.http.message.BasicHeader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -157,7 +158,7 @@ public class StringIteratorHttpContent implements HttpEntity {
 
             // We use Unix new lines intentionally for the Manta service
             final String formatted = String.format("%s%s", next, StringUtils.LF);
-            byte[] bytes = formatted.getBytes("UTF-8");
+            byte[] bytes = formatted.getBytes(StandardCharsets.UTF_8);
             length.addAndGet(bytes.length);
             out.write(bytes);
         }
@@ -183,7 +184,7 @@ public class StringIteratorHttpContent implements HttpEntity {
                 if (item != null) {
                     try {
                         String formatted = String.format("%s\n", item);
-                        byte[] bytes = formatted.getBytes("UTF-8");
+                        byte[] bytes = formatted.getBytes(StandardCharsets.UTF_8);
                         length.addAndGet(bytes.length);
                         out.write(bytes);
                     } catch (IOException e) {
