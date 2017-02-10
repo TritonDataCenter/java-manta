@@ -149,6 +149,8 @@
         <dependency.commons-collections.version>4.1</dependency.commons-collections.version>
         <dependency.commons-lang.version>3.4</dependency.commons-lang.version>
         <dependency.commons-io.version>2.5</dependency.commons-io.version>
+        <dependency.kryo.version>4.0.0</dependency.kryo.version>
+        <dependency.objenesis.version>2.2</dependency.objenesis.version>
     </properties>
 
     <dependencies>
@@ -160,9 +162,21 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
             <version>${dependency.mockito.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+            <version>${dependency.objenesis.version}</version>
         </dependency>
     </dependencies>
 
