@@ -352,6 +352,7 @@ public class MantaConnectionFactory implements Closeable {
                         connFactory,
                         DNS_RESOLVER);
         poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
+        poolingConnectionManager.setMaxTotal(maxConns);
         poolingConnectionManager.setDefaultSocketConfig(buildSocketConfig());
         poolingConnectionManager.setDefaultConnectionConfig(buildConnectionConfig());
 
