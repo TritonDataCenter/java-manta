@@ -22,10 +22,6 @@
     <name>java-manta-it</name>
     <description>Integration and functional tests for Java Manta SDK</description>
 
-    <properties>
-        <dependency.commons-codec.version>1.9</dependency.commons-codec.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.joyent.manta</groupId>
