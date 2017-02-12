@@ -17,7 +17,6 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
@@ -32,6 +31,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.UUID;
@@ -203,7 +203,7 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        mantaClient.put(path, TEST_DATA.getBytes(Charsets.UTF_8));
+        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
         final String actual = mantaClient.getAsString(path);
 
         Assert.assertEquals(actual, TEST_DATA);
@@ -237,7 +237,7 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString() + ".html";
         final String path = testPathPrefix + name;
 
-        mantaClient.put(path, TEST_DATA.getBytes(Charsets.UTF_8));
+        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
         MantaObject object = mantaClient.head(path);
 
         Assert.assertEquals(object.getContentType(),
@@ -280,7 +280,7 @@ public class MantaClientIT {
         boolean thrown = false;
 
         try {
-            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+            Files.write(temp.toPath(), TEST_DATA.getBytes(StandardCharsets.UTF_8));
             mantaClient.put(path, temp);
         } catch (MantaClientHttpResponseException e) {
             thrown = e.getStatusCode() == 400;

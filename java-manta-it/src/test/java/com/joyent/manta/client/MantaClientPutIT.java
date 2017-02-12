@@ -13,7 +13,6 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
@@ -33,6 +32,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -76,13 +76,13 @@ public class MantaClientPutIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        MantaObject response = mantaClient.put(path, TEST_DATA, Charsets.UTF_8);
+        MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_8);
         String contentType = response.getContentType();
         Assert.assertEquals(contentType, "text/plain; charset=UTF-8",
                 "Content type wasn't detected correctly");
 
         try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
-            String actual = IOUtils.toString(object, Charsets.UTF_8);
+            String actual = IOUtils.toString(object, StandardCharsets.UTF_8);
 
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
@@ -94,13 +94,13 @@ public class MantaClientPutIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        MantaObject response = mantaClient.put(path, TEST_DATA, Charsets.UTF_16);
+        MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_16);
         String contentType = response.getContentType();
         Assert.assertEquals(contentType, "text/plain; charset=UTF-16",
                 "Content type wasn't detected correctly");
 
         try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
-            String actual = IOUtils.toString(object, Charsets.UTF_16);
+            String actual = IOUtils.toString(object, StandardCharsets.UTF_16);
 
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
@@ -175,14 +175,14 @@ public class MantaClientPutIT {
     public final void testPutWithByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = TEST_DATA.getBytes(Charsets.UTF_8);
+        final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
 
         MantaObject response = mantaClient.put(path, content);
         String contentType = response.getContentType();
         Assert.assertEquals(contentType, "application/octet-stream",
                 "Content type wasn't set to expected default");
 
-        final String actual = mantaClient.getAsString(path, Charsets.UTF_8);
+        final String actual = mantaClient.getAsString(path, StandardCharsets.UTF_8);
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
@@ -192,7 +192,7 @@ public class MantaClientPutIT {
     public final void testPutWithByteArrayAndContentType() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = TEST_DATA.getBytes(Charsets.UTF_8);
+        final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
 
         String contentType = "text/plain; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();
@@ -202,7 +202,7 @@ public class MantaClientPutIT {
         Assert.assertEquals(response.getContentType(), contentType,
                 "Content type wasn't set to expected default");
 
-        final String actual = mantaClient.getAsString(path, Charsets.UTF_8);
+        final String actual = mantaClient.getAsString(path, StandardCharsets.UTF_8);
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
@@ -215,7 +215,7 @@ public class MantaClientPutIT {
         File temp = File.createTempFile("upload", ".txt");
         FileUtils.forceDeleteOnExit(temp);
 
-        Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+        Files.write(temp.toPath(), TEST_DATA.getBytes(StandardCharsets.UTF_8));
         MantaObject response = mantaClient.put(path, temp);
         String contentType = response.getContentType();
         Assert.assertEquals(contentType, "text/plain",
@@ -235,7 +235,7 @@ public class MantaClientPutIT {
 
         final String content = "これは日本語です。";
 
-        Files.write(temp.toPath(), content.getBytes(Charsets.UTF_8));
+        Files.write(temp.toPath(), content.getBytes(StandardCharsets.UTF_8));
         MantaObject response = mantaClient.put(path, temp);
         String contentType = response.getContentType();
         Assert.assertEquals(contentType, "text/plain",
@@ -279,7 +279,7 @@ public class MantaClientPutIT {
         final String path = testPathPrefix + name;
         File temp = Files.createTempFile("name", ".data").toFile();
         FileUtils.forceDeleteOnExit(temp);
-        FileUtils.writeStringToFile(temp, TEST_DATA, Charsets.UTF_8);
+        FileUtils.writeStringToFile(temp, TEST_DATA, StandardCharsets.UTF_8);
 
         // Test putting with an unknown content length
         try (FileInputStream in = new FileInputStream(temp)){

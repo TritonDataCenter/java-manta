@@ -10,7 +10,6 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +21,7 @@ import org.apache.http.message.HeaderGroup;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -1225,7 +1225,8 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         Validate.notNull(password, "Password must not be null");
 
         String userPass = String.format("%s:%s", username, password);
-        String encoded = Base64.getEncoder().encodeToString(userPass.getBytes(Charsets.UTF_8));
+        String encoded = Base64.getEncoder().encodeToString(userPass.getBytes(
+                StandardCharsets.UTF_8));
 
         return setAuthorization("Basic " + encoded);
     }
