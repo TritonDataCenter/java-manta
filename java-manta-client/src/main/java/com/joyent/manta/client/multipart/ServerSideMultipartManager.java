@@ -24,7 +24,6 @@ import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -47,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
@@ -767,7 +767,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         if (requestBody != null) {
-            exception.setContextValue("requestBody", new String(requestBody, Charsets.UTF_8));
+            exception.setContextValue("requestBody", new String(requestBody,
+                    StandardCharsets.UTF_8));
         }
     }
 }

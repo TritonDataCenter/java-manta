@@ -17,7 +17,13 @@ import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -103,8 +109,8 @@ public class TestMultipartManager
         UUID partId = UUID.randomUUID();
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");
-        FileUtils.write(partIdFile, partId.toString(), "UTF-8");
-        FileUtils.write(part, contents, "UTF-8");
+        FileUtils.write(partIdFile, partId.toString(), StandardCharsets.UTF_8);
+        FileUtils.write(part, contents, StandardCharsets.UTF_8);
 
         return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId.toString());
     }
@@ -114,7 +120,7 @@ public class TestMultipartManager
         UUID partId = UUID.randomUUID();
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");
-        FileUtils.write(partIdFile, partId.toString(), "UTF-8");
+        FileUtils.write(partIdFile, partId.toString(), StandardCharsets.UTF_8);
         FileUtils.writeByteArrayToFile(part, bytes);
 
         return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId.toString());
@@ -125,7 +131,7 @@ public class TestMultipartManager
         UUID partId = UUID.randomUUID();
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");
-        FileUtils.write(partIdFile, partId.toString(), "UTF-8");
+        FileUtils.write(partIdFile, partId.toString(), StandardCharsets.UTF_8);
         FileUtils.copyFile(file, part);
 
         return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId.toString());
@@ -158,7 +164,7 @@ public class TestMultipartManager
         UUID partId = UUID.randomUUID();
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");
-        FileUtils.write(partIdFile, partId.toString(), "UTF-8");
+        FileUtils.write(partIdFile, partId.toString(), StandardCharsets.UTF_8);
 
         try (FileOutputStream fout = new FileOutputStream(part)) {
             entity.writeTo(fout);
@@ -171,7 +177,7 @@ public class TestMultipartManager
     public MantaMultipartUploadPart getPart(TestMultipartUpload upload, int partNumber) throws IOException {
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");
-        String partId = FileUtils.readFileToString(partIdFile, "UTF-8");
+        String partId = FileUtils.readFileToString(partIdFile, StandardCharsets.UTF_8);
 
         return new MantaMultipartUploadPart(partNumber, upload.getPath(), partId);
     }
@@ -187,7 +193,7 @@ public class TestMultipartManager
             try {
                 File part = new File(upload.getPartsPath() + File.separator + partNumber);
                 File partIdFile = new File(part.getPath() + ".id");
-                String etag = FileUtils.readFileToString(partIdFile, "UTF-8");
+                String etag = FileUtils.readFileToString(partIdFile, StandardCharsets.UTF_8);
                 return new MantaMultipartUploadPart(Integer.parseInt(partNumber), upload.getPath(), etag);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

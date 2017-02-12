@@ -11,7 +11,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.HttpHelper;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -24,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -159,7 +159,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             }
 
             Reader streamReader = new InputStreamReader(entity.getContent(),
-                    Charsets.UTF_8.name());
+                    StandardCharsets.UTF_8.name());
             br = new BufferedReader(streamReader);
         } else {
             String query = String.format("?limit=%d&marker=%s",
@@ -173,7 +173,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             currentResponse = httpHelper.executeRequest(get, null);
             HttpEntity entity = currentResponse.getEntity();
             Reader streamReader = new InputStreamReader(entity.getContent(),
-                    Charsets.UTF_8.name());
+                    StandardCharsets.UTF_8.name());
             br = new BufferedReader(streamReader);
 
             // We read one line to clear it because it is our marker

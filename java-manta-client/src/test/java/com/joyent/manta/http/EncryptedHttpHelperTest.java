@@ -30,6 +30,7 @@ import org.testng.annotations.Test;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
 import static org.mockito.Matchers.any;
@@ -126,7 +127,7 @@ public class EncryptedHttpHelperTest {
         when(fakeResponse.getStatusLine()).thenReturn(statusLine);
 
         BasicHttpEntity fakeEntity = new BasicHttpEntity();
-        InputStream source = IOUtils.toInputStream("I'm a stream", "US-ASCII");
+        InputStream source = IOUtils.toInputStream("I'm a stream", StandardCharsets.US_ASCII);
         EofSensorInputStream stream = new EofSensorInputStream(source, null);
         fakeEntity.setContent(stream);
         when(fakeResponse.getEntity()).thenReturn(fakeEntity);

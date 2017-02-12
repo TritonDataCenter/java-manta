@@ -135,7 +135,7 @@
 
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>3.0.1</dependency.http-client-signature.version>
-        <dependency.apache-http-client.version>4.5.2</dependency.apache-http-client.version>
+        <dependency.apache-http-client.version>4.5.3</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.55</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>3.1.3</dependency.fasterxml-uuid>
         <dependency.jackson.version>2.6.3</dependency.jackson.version>
@@ -149,6 +149,7 @@
         <dependency.commons-collections.version>4.1</dependency.commons-collections.version>
         <dependency.commons-lang.version>3.4</dependency.commons-lang.version>
         <dependency.commons-io.version>2.5</dependency.commons-io.version>
+        <dependency.commons-codec.version>1.10</dependency.commons-codec.version>
         <dependency.kryo.version>4.0.0</dependency.kryo.version>
         <dependency.objenesis.version>2.2</dependency.objenesis.version>
     </properties>

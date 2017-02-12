@@ -40,6 +40,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -115,7 +116,7 @@ public class EncryptedMultipartManagerTest {
             byte[] iv = upload.getEncryptionState().getEncryptionContext().getCipher().getIV();
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
-            byte[] assumedCiphertext = cipher.doFinal(expected.getBytes("US-ASCII"));
+            byte[] assumedCiphertext = cipher.doFinal(expected.getBytes(StandardCharsets.US_ASCII));
             byte[] contents = FileUtils.readFileToByteArray(upload.getWrapped().getContents());
             byte[] actualCiphertext = Arrays.copyOf(contents,
                     contents.length - cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
@@ -150,7 +151,7 @@ public class EncryptedMultipartManagerTest {
              EofSensorInputStream eofIn = new EofSensorInputStream(fin, null);
              MantaObjectInputStream objIn = new MantaObjectInputStream(response, httpResponse, eofIn);
              InputStream in = new MantaEncryptedObjectInputStream(objIn, cipherDetails, secretKey, true)) {
-            String actual = IOUtils.toString(in, "UTF-8");
+            String actual = IOUtils.toString(in, StandardCharsets.UTF_8);
 
             Assert.assertEquals(actual, expected);
         }

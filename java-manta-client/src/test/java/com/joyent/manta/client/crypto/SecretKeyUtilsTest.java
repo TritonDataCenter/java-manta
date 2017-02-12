@@ -14,8 +14,8 @@ import org.testng.annotations.Test;
 import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -25,11 +25,7 @@ public class SecretKeyUtilsTest {
     private final byte[] keyBytes;
 
     {
-        try {
-            keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError(e.getMessage());
-        }
+        keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes(StandardCharsets.US_ASCII);
     }
 
     public void canGenerateAesGcmNoPaddingKey() {

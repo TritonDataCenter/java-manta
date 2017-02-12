@@ -16,7 +16,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
@@ -146,7 +146,7 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 "Girt with a seint* of silk, with barres small; " +
                 "Of his array tell I no longer tale.";
 
-        byte[] plaintext = text.getBytes(Charset.forName("US-ASCII"));
+        byte[] plaintext = text.getBytes(StandardCharsets.US_ASCII);
 
         ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
         ExposedByteArrayEntity entity = new ExposedByteArrayEntity(plaintext, contentType);

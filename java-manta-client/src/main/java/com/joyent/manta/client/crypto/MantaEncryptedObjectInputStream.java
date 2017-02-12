@@ -679,6 +679,14 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             byte[] expected = new byte[this.hmac.getMacLength()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
+            if (super.getBackingStream().read() != EOF) {
+                String msg = "Expecting the end of the stream. However, more "
+                        + "bytes were available.";
+                MantaIOException e = new MantaIOException(msg);
+                annotateException(e);
+                throw e;
+            }
+
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
             }

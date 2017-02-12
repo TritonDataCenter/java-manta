@@ -11,6 +11,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 @Test
 public class MultipartOutputStreamTest {
@@ -46,7 +47,7 @@ public class MultipartOutputStreamTest {
         MultipartOutputStream mpos = new MultipartOutputStream(16);
 
         mpos.setNext(s1);
-        mpos.write("foo".getBytes("UTF-8"));
+        mpos.write("foo".getBytes(StandardCharsets.UTF_8));
         mpos.setNext(s2);
         mpos.flushBuffer();
         Assert.assertEquals(s1.toString("UTF-8"), "");
@@ -59,8 +60,8 @@ public class MultipartOutputStreamTest {
         MultipartOutputStream mpos = new MultipartOutputStream(4);
 
         mpos.setNext(s1);
-        mpos.write("fooo".getBytes("UTF-8"));
-        mpos.write("baarbaar".getBytes("UTF-8"));
+        mpos.write("fooo".getBytes(StandardCharsets.UTF_8));
+        mpos.write("baarbaar".getBytes(StandardCharsets.UTF_8));
         mpos.setNext(s2);
 
         Assert.assertEquals(s1.toString("UTF-8"), "fooobaarbaar");
@@ -77,13 +78,13 @@ public class MultipartOutputStreamTest {
         MultipartOutputStream mpos = new MultipartOutputStream(16);
 
         mpos.setNext(s1);
-        mpos.write("Hello ".getBytes("UTF-8"));
+        mpos.write("Hello ".getBytes(StandardCharsets.UTF_8));
         mpos.setNext(s2);
-        mpos.write("world ".getBytes("UTF-8"));
+        mpos.write("world ".getBytes(StandardCharsets.UTF_8));
         mpos.setNext(s3);
-        mpos.write("Joyent".getBytes("UTF-8"));
+        mpos.write("Joyent".getBytes(StandardCharsets.UTF_8));
         mpos.setNext(s4);
-        mpos.write("!".getBytes("UTF-8"));
+        mpos.write("!".getBytes(StandardCharsets.UTF_8));
         s5.write(mpos.getRemainder());
 
         Assert.assertEquals(s1.toString("UTF-8"), "");

@@ -10,7 +10,6 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
@@ -26,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -42,7 +42,8 @@ public class EncryptingEntityTest {
 
         SecretKey key = SecretKeyUtils.loadKey(Arrays.copyOfRange(keyBytes, 2, 10), cipherDetails);
 
-        ExposedStringEntity stringEntity = new ExposedStringEntity("boo", Charsets.US_ASCII);
+        ExposedStringEntity stringEntity = new ExposedStringEntity("boo",
+                StandardCharsets.US_ASCII);
 
         EncryptingEntity entity = new EncryptingEntity(key, cipherDetails, stringEntity);
     }
@@ -115,7 +116,7 @@ public class EncryptingEntityTest {
 
     private void canEncryptAndDecryptToAndFromFileWithManySizes(SupportedCipherDetails cipherDetails)
             throws Exception {
-        final Charset charset = Charsets.US_ASCII;
+        final Charset charset = StandardCharsets.US_ASCII;
         final int maxLength = 1025;
 
         for (int i = 0; i < maxLength; i++) {
@@ -140,7 +141,7 @@ public class EncryptingEntityTest {
 
     private static void verifyEncryptionWorksRoundTrip(SupportedCipherDetails cipherDetails) throws Exception {
         byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
-        final Charset charset = Charsets.US_ASCII;
+        final Charset charset = StandardCharsets.US_ASCII;
         final String expectedString = "012345678901245601234567890124";
         ExposedStringEntity stringEntity = new ExposedStringEntity(
                 expectedString, charset);
