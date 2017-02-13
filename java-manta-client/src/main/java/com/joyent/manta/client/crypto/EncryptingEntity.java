@@ -20,7 +20,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,7 +148,7 @@ public class EncryptingEntity implements HttpEntity {
             out.close();
 
             if (out instanceof HmacOutputStream) {
-                final Mac hmac = ((HmacOutputStream) out).getHmac();
+                final HMac hmac = ((HmacOutputStream) out).getHmac();
                 final int hmacSize = hmac.getMacSize();
                 final byte[] hmacBytes = new byte[hmacSize];
                 hmac.doFinal(hmacBytes, 0);

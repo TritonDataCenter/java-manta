@@ -8,7 +8,7 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,7 +24,7 @@ public class HmacOutputStream extends OutputStream {
     /**
      * HMAC instance used to generate HMAC for wrapped stream.
      */
-    private final Mac hmac;
+    private final HMac hmac;
 
     /**
      * Underlying stream being wrapped.
@@ -38,7 +38,7 @@ public class HmacOutputStream extends OutputStream {
      * @param hmac HMAC instance that has been initialized
      * @param chained stream being wrapped
      */
-    public HmacOutputStream(final Mac hmac, final OutputStream chained) {
+    public HmacOutputStream(final HMac hmac, final OutputStream chained) {
         Validate.notNull(hmac, "HMAC instance must not be null");
         Validate.notNull(chained, "OutputStream must not be null");
 
@@ -46,7 +46,7 @@ public class HmacOutputStream extends OutputStream {
         this.out = chained;
     }
 
-    public Mac getHmac() {
+    public HMac getHmac() {
         return hmac;
     }
 

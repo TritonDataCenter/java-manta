@@ -182,15 +182,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!-- Kryo serialization library for use with testing serialization
-             of multipart objects -->
-        <dependency>
-            <groupId>com.esotericsoftware</groupId>
-            <artifactId>kryo-shaded</artifactId>
-            <version>${dependency.kryo.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

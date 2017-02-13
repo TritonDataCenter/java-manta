@@ -20,7 +20,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
@@ -85,7 +85,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * The HMAC instance (if using non AEAD encryption) used to authenticate the ciphertext.
      */
-    private final Mac hmac;
+    private final HMac hmac;
 
     /**
      * The stream that wraps the backing stream allowing for streaming decryption.
@@ -319,7 +319,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      *
      * @return HMAC instance or null when encrypted by a AEAD cipher
      */
-    private Mac findHmac() {
+    private HMac findHmac() {
         if (this.cipherDetails.isAEADCipher() || !this.authenticateCiphertext) {
             return null;
         }
@@ -342,7 +342,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             throw e;
         }
 
-        Supplier<Mac> macSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacString);
+        Supplier<HMac> macSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacString);
 
         if (macSupplier == null) {
             String msg = String.format("HMAC stored in header metadata [%s] is unsupported",
