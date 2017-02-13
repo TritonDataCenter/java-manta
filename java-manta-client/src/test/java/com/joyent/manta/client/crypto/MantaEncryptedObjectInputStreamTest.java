@@ -1004,7 +1004,9 @@ public class MantaEncryptedObjectInputStreamTest {
         if (cipherDetails.isAEADCipher()) {
             headers.put(MantaHttpHeaders.ENCRYPTION_AEAD_TAG_LENGTH, cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
         } else {
-            headers.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE, cipherDetails.getAuthenticationHmac().getAlgorithm());
+            final String hmacName = SupportedHmacsLookupMap.hmacNameFromInstance(
+                    cipherDetails.getAuthenticationHmac());
+            headers.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE, hmacName);
         }
 
         headers.put(MantaHttpHeaders.ENCRYPTION_IV,

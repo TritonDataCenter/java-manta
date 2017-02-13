@@ -8,9 +8,9 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
+import org.bouncycastle.crypto.Mac;
 
 import javax.crypto.Cipher;
-import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;

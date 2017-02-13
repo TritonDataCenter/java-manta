@@ -8,8 +8,8 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.lang3.Validate;
+import org.bouncycastle.crypto.Mac;
 
-import javax.crypto.Mac;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -57,15 +57,15 @@ public class HmacOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(final byte[] b) throws IOException {
-        hmac.update(b);
-        out.write(b);
+    public void write(final byte[] buffer) throws IOException {
+        hmac.update(buffer, 0, buffer.length);
+        out.write(buffer);
     }
 
     @Override
-    public void write(final byte[] b, final int off, final int len) throws IOException {
-        hmac.update(b, off, len);
-        out.write(b, off, len);
+    public void write(final byte[] buffer, final int offset, final int length) throws IOException {
+        hmac.update(buffer, offset, length);
+        out.write(buffer, offset, length);
     }
 
     @Override

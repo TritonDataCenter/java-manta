@@ -27,7 +27,7 @@ public class EncryptionContext {
     /**
      * Secret key to encrypt stream with.
      */
-    private final SecretKey key;
+    private final transient SecretKey key;
 
     /**
      * Attributes of the cipher used for encryption.
@@ -37,7 +37,7 @@ public class EncryptionContext {
     /**
      * Cipher implementation used to encrypt as a stream.
      */
-    private final transient Cipher cipher;
+    private final Cipher cipher;
 
 
     /**

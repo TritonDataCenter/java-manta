@@ -16,6 +16,7 @@ import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
@@ -134,8 +135,11 @@ public class EncryptedMultipartManagerTest {
 
         MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
         responseHttpHeaders.setContentLength(actualUpload.getContents().length());
-        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
-                encryptionContext.getCipherDetails().getAuthenticationHmac().getAlgorithm());
+
+        final String hmacName = SupportedHmacsLookupMap.hmacNameFromInstance(
+                encryptionContext.getCipherDetails().getAuthenticationHmac());
+
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE, hmacName);
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_IV,
                 Base64.getEncoder().encodeToString(encryptionContext.getCipher().getIV()));
         responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,

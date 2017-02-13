@@ -10,11 +10,12 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.CipherOutputStream;
-import javax.crypto.Mac;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
 
@@ -69,15 +70,12 @@ public final class EncryptingEntityHelper {
             out = cipherOut;
         } else {
             hmac = encryptionContext.getCipherDetails().getAuthenticationHmac();
-            try {
-                hmac.init(encryptionContext.getSecretKey());
+            hmac.init(new KeyParameter(encryptionContext.getSecretKey().getEncoded()));
                 /* The first bytes of the HMAC are the IV. This is done in order to
                  * prevent IV collision or spoofing attacks. */
-                hmac.update(encryptionContext.getCipher().getIV());
-            } catch (InvalidKeyException e) {
-                String msg = "Error initializing HMAC with secret key";
-                throw new MantaClientEncryptionException(msg, e);
-            }
+            final byte[] iv = encryptionContext.getCipher().getIV();
+            hmac.update(iv, 0, iv.length);
+
             out = new HmacOutputStream(hmac, cipherOut);
         }
 

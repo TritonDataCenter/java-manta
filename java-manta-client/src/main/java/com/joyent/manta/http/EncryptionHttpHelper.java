@@ -43,13 +43,14 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -678,8 +679,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             final Mac hmac = hmacSupplier.get();
             initHmac(this.secretKey, hmac);
+            hmac.update(metadataCipherText, 0, metadataCipherText.length);
 
-            byte[] actualHmac = hmac.doFinal(metadataCipherText);
+            byte[] actualHmac = new byte[hmac.getMacSize()];
+            hmac.doFinal(actualHmac, 0);
 
             if (metadataHmacBase64 == null) {
                 String msg = "No metadata HMAC is available to authenticate metadata ciphertext";
@@ -757,9 +760,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             // HMAC Type because we are doing MtE
         } else {
             Mac hmac = cipherDetails.getAuthenticationHmac();
-            metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
-                    hmac.getAlgorithm());
-            LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
+            final String hmacName = SupportedHmacsLookupMap.hmacNameFromInstance(hmac);
+            metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE, hmacName);
+            LOGGER.debug("HMAC algorithm: {}", hmacName);
         }
     }
 
@@ -838,7 +841,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             final Mac hmac = this.cipherDetails.getAuthenticationHmac();
             initHmac(this.secretKey, hmac);
 
-            byte[] checksum = hmac.doFinal(metadataCipherText);
+            hmac.update(metadataCipherText, 0, metadataCipherText.length);
+
+            byte[] checksum = new byte[hmac.getMacSize()];
+            hmac.doFinal(checksum, 0);
+
             String checksumBase64 = Base64.getEncoder().encodeToString(checksum);
             metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC, checksumBase64);
 
@@ -1083,16 +1090,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param hmac HMAC object to be initialized
      */
     private static void initHmac(final SecretKey secretKey, final Mac hmac) {
-        try {
-            hmac.init(secretKey);
-        } catch (InvalidKeyException e) {
-            MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                    "There was a problem loading private key", e);
-            String details = String.format("key=%s, algorithm=%s",
-                    secretKey.getAlgorithm(), secretKey.getFormat());
-            mcee.setContextValue("key_details", details);
-            throw mcee;
-        }
+        hmac.init(new KeyParameter(secretKey.getEncoded()));
     }
 
     public SecretKey getSecretKey() {

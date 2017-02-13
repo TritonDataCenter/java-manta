@@ -22,6 +22,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.bouncycastle.crypto.Mac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,7 +289,9 @@ public class EncryptedMultipartManager
 
             // conditionally get hmac and upload part; yeah reenterant lock
             if (encryptionState.getCipherStream().getClass().equals(HmacOutputStream.class)) {
-                byte[] hmacBytes = ((HmacOutputStream) encryptionState.getCipherStream()).getHmac().doFinal();
+                Mac hmac = ((HmacOutputStream) encryptionState.getCipherStream()).getHmac();
+                byte[] hmacBytes = new byte[hmac.getMacSize()];
+                hmac.doFinal(hmacBytes, 0);
 
                 final int hmacSize = encryptionContext.getCipherDetails()
                         .getAuthenticationTagOrHmacLengthInBytes();
