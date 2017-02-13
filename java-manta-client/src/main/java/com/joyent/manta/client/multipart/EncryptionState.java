@@ -38,7 +38,7 @@ class EncryptionState {
     /**
      * The multipart stream that allows for attaching and detaching streams.
      */
-    private MultipartOutputStream multipartStream = null;
+    private transient MultipartOutputStream multipartStream = null;
 
     /**
      * The encrypting stream.
