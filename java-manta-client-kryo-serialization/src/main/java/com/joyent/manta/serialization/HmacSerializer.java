@@ -42,9 +42,8 @@ public class HmacSerializer extends Serializer<HMac> {
 
     /**
      * Creates a new Kryo serializer for {@link HMac} objects.
-     * @param kryo Kryo instance
      */
-    public HmacSerializer(final Kryo kryo) {
+    public HmacSerializer() {
         super(false);
     }
 
@@ -59,7 +58,7 @@ public class HmacSerializer extends Serializer<HMac> {
 
             final EncodableDigest digest = (EncodableDigest) object.getUnderlyingDigest();
 
-            output.writeString(digest.getClass().getCanonicalName());
+            kryo.writeObject(output, digest.getClass());
             output.writeInt(digest.getEncodedState().length);
             output.write(digest.getEncodedState());
             output.writeInt(ipadState.getEncodedState().length);
@@ -77,14 +76,7 @@ public class HmacSerializer extends Serializer<HMac> {
     @Override
     @SuppressWarnings("unchecked")
     public HMac read(final Kryo kryo, final Input input, final Class<HMac> type) {
-        String digestClassName = input.readString();
-        final Class<GeneralDigest> digestClass;
-
-        try {
-            digestClass = (Class<GeneralDigest>)Class.forName(digestClassName);
-        } catch (ClassNotFoundException e) {
-            throw new SerializationException("No class found with the name: " + digestClassName);
-        }
+        final Class<GeneralDigest> digestClass = (Class<GeneralDigest>)kryo.readObject(input, Class.class);
 
         byte[] digestStateBytes = input.readBytes(input.readInt());
         Digest digest = newInstance(digestClass, digestStateBytes);

@@ -25,14 +25,21 @@ import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 
+/**
+ * Unit tests that verify we can serialize and deserialize a {@link HMac}
+ * object using the Kryo framework.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 3.0.0
+ */
 @Test
-public class HmacKryoSerializerTest {
+public class HmacSerializerTest {
     private Kryo kryo = new Kryo();
     private SecretKey secretKey;
 
     @BeforeClass
     public void setup() {
-        kryo.register(HMac.class, new HmacSerializer(kryo));
+        kryo.register(HMac.class, new HmacSerializer());
         SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
         this.secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
@@ -65,13 +72,13 @@ public class HmacKryoSerializerTest {
         final byte[] actual;
 
         {
-            HMac hmac = SupportedHmacsLookupMap.INSTANCE.get(algorithm).get();
-            hmac.init(new KeyParameter(this.secretKey.getEncoded()));
-            hmac.update(dataIn1, 0, dataIn1.length);
-            hmac.update(dataIn1, 0, dataIn2.length);
-            expected = new byte[hmac.getMacSize()];
-            actual = new byte[hmac.getMacSize()];
-            hmac.doFinal(expected, 0);
+            HMac hmacExpected = SupportedHmacsLookupMap.INSTANCE.get(algorithm).get();
+            hmacExpected.init(new KeyParameter(this.secretKey.getEncoded()));
+            hmacExpected.update(dataIn1, 0, dataIn1.length);
+            hmacExpected.update(dataIn1, 0, dataIn2.length);
+            expected = new byte[hmacExpected.getMacSize()];
+            actual = new byte[hmacExpected.getMacSize()];
+            hmacExpected.doFinal(expected, 0);
         }
 
         HMac hmac = SupportedHmacsLookupMap.INSTANCE.get(algorithm).get();
