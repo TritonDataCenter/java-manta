@@ -10,7 +10,7 @@ package com.joyent.manta.client.crypto;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -167,7 +167,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     }
 
     @Override
-    public Mac getAuthenticationHmac() {
+    public HMac getAuthenticationHmac() {
         if (this.isAEADCipher) {
             return null;
         }

@@ -8,7 +8,7 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -114,7 +114,7 @@ public interface SupportedCipherDetails {
      *
      * @return null if AEAD cipher, otherwise a new instance of authentication HMAC
      */
-    Mac getAuthenticationHmac();
+    HMac getAuthenticationHmac();
 
     /**
      * Translates a plaintext byte range to a ciphertext byte range with

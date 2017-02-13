@@ -7,17 +7,15 @@
  */
 package com.joyent.manta.client.crypto;
 
-import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.CipherOutputStream;
 import java.io.OutputStream;
-import java.security.InvalidKeyException;
 
 /**
  * Utility class that provides methods for cross-cutting encryption operations.
@@ -63,7 +61,7 @@ public final class EncryptingEntityHelper {
         final CloseShieldOutputStream noCloseOut = new CloseShieldOutputStream(httpOut);
         final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, encryptionContext.getCipher());
         final OutputStream out;
-        final Mac hmac;
+        final HMac hmac;
 
         // Things are a lot more simple if we are using AEAD
         if (encryptionContext.getCipherDetails().isAEADCipher()) {

@@ -43,7 +43,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -668,7 +668,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 throw e;
             }
 
-            Supplier<Mac> hmacSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacId);
+            Supplier<HMac> hmacSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacId);
             if (hmacSupplier == null) {
                 String msg = String.format("Unsupported HMAC specified: %s",
                         hmacId);
@@ -677,7 +677,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 throw e;
             }
 
-            final Mac hmac = hmacSupplier.get();
+            final HMac hmac = hmacSupplier.get();
             initHmac(this.secretKey, hmac);
             hmac.update(metadataCipherText, 0, metadataCipherText.length);
 
@@ -759,7 +759,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             LOGGER.debug("AEAD tag length: {}", cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
             // HMAC Type because we are doing MtE
         } else {
-            Mac hmac = cipherDetails.getAuthenticationHmac();
+            HMac hmac = cipherDetails.getAuthenticationHmac();
             final String hmacName = SupportedHmacsLookupMap.hmacNameFromInstance(hmac);
             metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE, hmacName);
             LOGGER.debug("HMAC algorithm: {}", hmacName);
@@ -838,7 +838,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA, metadataCipherTextBase64);
 
         if (!this.cipherDetails.isAEADCipher()) {
-            final Mac hmac = this.cipherDetails.getAuthenticationHmac();
+            final HMac hmac = this.cipherDetails.getAuthenticationHmac();
             initHmac(this.secretKey, hmac);
 
             hmac.update(metadataCipherText, 0, metadataCipherText.length);
@@ -1089,7 +1089,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param secretKey secret key to initialize with
      * @param hmac HMAC object to be initialized
      */
-    private static void initHmac(final SecretKey secretKey, final Mac hmac) {
+    private static void initHmac(final SecretKey secretKey,
+                                 final HMac hmac) {
         hmac.init(new KeyParameter(secretKey.getEncoded()));
     }
 
