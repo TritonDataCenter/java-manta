@@ -71,6 +71,13 @@
             <version>${dependency.commons-lang.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>${dependency.commons-collections.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Kryo serialization library for use with testing serialization
              of multipart objects -->
         <dependency>
