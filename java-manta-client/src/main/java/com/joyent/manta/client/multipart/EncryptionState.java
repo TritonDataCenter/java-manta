@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author <a href="https://github.com/cburroughs/">Chris Burroughs</a>
  * @since 3.0.0
  */
-class EncryptionState {
+public class EncryptionState {
     /**
      * Encryption cipher state object.
      */
@@ -45,6 +45,12 @@ class EncryptionState {
      */
     private OutputStream cipherStream = null;
 
+
+    public EncryptionState() {
+        this.encryptionContext = null;
+        this.lock = null;
+    }
+
     /**
      * <p>Creates a new multipart encryption state object.</p>
      *
@@ -55,7 +61,7 @@ class EncryptionState {
      *
      * @param encryptionContext encryption cipher state object
      */
-    EncryptionState(final EncryptionContext encryptionContext) {
+    public EncryptionState(final EncryptionContext encryptionContext) {
         this.encryptionContext = encryptionContext;
         this.lock = new ReentrantLock();
     }
