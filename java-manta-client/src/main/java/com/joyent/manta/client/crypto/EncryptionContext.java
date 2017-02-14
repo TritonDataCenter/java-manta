@@ -13,6 +13,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.util.Objects;
 
 /**
  * Context class that contains a secret key, cipher/mode properties objects
@@ -109,4 +110,24 @@ public class EncryptionContext {
         }
     }
 
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final EncryptionContext that = (EncryptionContext) o;
+
+        return Objects.equals(key, that.key)
+               && Objects.equals(cipherDetails, that.cipherDetails);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, cipherDetails);
+    }
 }

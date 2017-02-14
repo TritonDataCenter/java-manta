@@ -10,6 +10,7 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.crypto.EncryptionContext;
 
 import java.io.OutputStream;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -98,5 +99,28 @@ public class EncryptionState {
 
     void setCipherStream(final OutputStream cipherStream) {
         this.cipherStream = cipherStream;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final EncryptionState that = (EncryptionState) o;
+
+        return lastPartNumber == that.lastPartNumber
+                && Objects.equals(encryptionContext, that.encryptionContext)
+                && Objects.equals(cipherStream, that.cipherStream);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(encryptionContext, lastPartNumber,
+                multipartStream, cipherStream);
     }
 }
