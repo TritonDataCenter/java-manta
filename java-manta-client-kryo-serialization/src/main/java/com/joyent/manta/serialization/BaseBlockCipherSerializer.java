@@ -26,7 +26,6 @@ import org.bouncycastle.jcajce.provider.symmetric.util.BaseWrapCipher;
 import org.bouncycastle.jcajce.provider.symmetric.util.BlockCipherProvider;
 import org.bouncycastle.jcajce.spec.GOST28147ParameterSpec;
 import org.bouncycastle.jcajce.util.BCJcaJceHelper;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.objenesis.instantiator.sun.MagicInstantiator;
 
 import javax.crypto.spec.GCMParameterSpec;
