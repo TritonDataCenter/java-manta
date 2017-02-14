@@ -8,11 +8,9 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.engines.AESFastEngine;
@@ -31,7 +29,11 @@ import org.bouncycastle.jcajce.util.BCJcaJceHelper;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.objenesis.instantiator.sun.MagicInstantiator;
 
-import javax.crypto.spec.*;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEParameterSpec;
+import javax.crypto.spec.RC2ParameterSpec;
+import javax.crypto.spec.RC5ParameterSpec;
 import java.lang.reflect.Field;
 import java.security.AlgorithmParameters;
 
@@ -121,7 +123,8 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         kryo.register(AESFastEngine.class, new CompatibleFieldSerializer(
                 kryo, AESFastEngine.class));
         kryo.register(BufferedBlockCipher.class);
-        kryo.register(bufferedGenericBlockCipherClass, new CompatibleFieldSerializer(kryo, bufferedGenericBlockCipherClass))
+        kryo.register(bufferedGenericBlockCipherClass,
+                new CompatibleFieldSerializer(kryo, bufferedGenericBlockCipherClass))
                 .setInstantiator(new MagicInstantiator<>(bufferedGenericBlockCipherClass));
         kryo.register(SICBlockCipher.class)
                 .setInstantiator(new MagicInstantiator<>(SICBlockCipher.class));

@@ -8,12 +8,8 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import org.apache.commons.lang3.SerializationException;
-import org.apache.commons.lang3.reflect.ConstructorUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.EncodableDigest;
 import org.bouncycastle.crypto.digests.GeneralDigest;

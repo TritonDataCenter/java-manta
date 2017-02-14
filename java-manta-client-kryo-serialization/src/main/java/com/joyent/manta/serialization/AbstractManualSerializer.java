@@ -11,10 +11,7 @@ import com.esotericsoftware.kryo.Serializer;
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.macs.HMac;
 
-import javax.crypto.Cipher;
 import java.lang.reflect.Field;
 
 /**
@@ -57,10 +54,32 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
         this.classReference = classReference;
     }
 
+    /**
+     * Gets a reference to a field on an object.
+     *
+     * @param fieldName field to get
+     * @return reference to an object's field
+     * @throws UnsupportedOperationException when the field isn't present
+     */
     protected Field captureField(final String fieldName) {
-        return FieldUtils.getField(classReference, fieldName, true);
+        Field field = FieldUtils.getField(classReference, fieldName, true);
+
+        if (field == null) {
+            String msg = String.format("No field [%s] found on object [%s]",
+                    classReference, fieldName);
+            throw new UnsupportedOperationException(msg);
+        }
+
+        return field;
     }
 
+    /**
+     * Reads a field from an object.
+     *
+     * @param field field to read
+     * @param object object to read from
+     * @return field's value
+     */
     protected Object readField(final Field field, Object object) {
         try {
             return FieldUtils.readField(field, object, true);
@@ -71,6 +90,13 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
         }
     }
 
+    /**
+     * Writes a object to an object's field.
+     *
+     * @param field field to write to
+     * @param target target object
+     * @param value object to write
+     */
     protected void writeField(final Field field, final Object target, final Object value) {
         try {
             FieldUtils.writeField(field, target, value);
@@ -81,6 +107,13 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
         }
     }
 
+    /**
+     * Gets a {@link Class} instance by looking up the name.
+     *
+     * @param className class name to look up
+     * @return class instance
+     * @throws UnsupportedOperationException if class can't be found
+     */
     protected static Class<?> findClass(final String className) {
         try {
             return Class.forName(className);
@@ -106,15 +139,16 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      *
      * @param instanceClass class to instantiate
      * @param params constructor parameters
+     * @param <R> type of class to instantiate
      * @return new instance
      */
     protected <R> R newInstance(final Class<R> instanceClass,
-                              final Object... params) {
+                                final Object... params) {
         try {
             return ConstructorUtils.invokeConstructor(instanceClass, params);
         } catch (ReflectiveOperationException e) {
             String msg = String.format("Error instantiating [%s] class",
-                    HMac.class.getName());
+                    instanceClass.getName());
             throw new SerializationException(msg);
         }
     }

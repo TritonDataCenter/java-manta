@@ -13,15 +13,16 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.joyent.manta.client.crypto.BouncyCastleLoader;
 import org.apache.commons.lang3.SerializationException;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.jcajce.provider.symmetric.AES;
 
 import javax.crypto.Cipher;
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
-import java.util.Base64;
 
 /**
+ * Kryo serializer that deconstructs a {@link Cipher} class backed by
+ * the BouncyCastle provider and allows for serialization / deserialization.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
@@ -32,7 +33,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
     private Field cryptoPermField = captureField("cryptoPerm");
     private Field exmechField = captureField("exmech");
     private Field firstServiceField = captureField("firstService");
-    private Field firstSpi = captureField("firstSpi");
+    private Field firstSpiField = captureField("firstSpi");
     private Field initializedField = captureField("initialized");
     private Field lockField = captureField("lock");
     private Field opmodeField = captureField("opmode");
@@ -51,7 +52,6 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
     }
 
     private void registerClasses(final Kryo kryo) {
-        Class<?> cryptoAllPermissionClass = findClass("javax.crypto.CryptoAllPermission");
         kryo.register(cryptoAllPermissionClass, new JavaSerializer());
 
         kryo.register(AES.ECB.class, new BaseBlockCipherSerializer<>(kryo, AES.ECB.class));
@@ -61,13 +61,13 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void write(Kryo kryo, Output output, Cipher object) {
+    public void write(final Kryo kryo, final Output output, final Cipher object) {
         final Object cryptoPerm = readField(cryptoPermField, object);
         kryo.writeObjectOrNull(output, cryptoPerm, cryptoAllPermissionClass);
 
         kryo.writeClassAndObject(output, readField(exmechField, object));
         kryo.writeClassAndObject(output, readField(firstServiceField, object));
-        kryo.writeClassAndObject(output, readField(firstSpi, object));
+        kryo.writeClassAndObject(output, readField(firstSpiField, object));
         output.writeBoolean((Boolean)readField(initializedField, object));
         kryo.writeClassAndObject(output, readField(lockField, object));
 
@@ -86,7 +86,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
 
     @Override
     @SuppressWarnings("InsecureCryptoUsage")
-    public Cipher read(Kryo kryo, Input input, Class<Cipher> type) {
+    public Cipher read(final Kryo kryo, final Input input, final Class<Cipher> type) {
         final Object cryptoPerm = kryo.readObjectOrNull(input, cryptoAllPermissionClass);
         final Object exmech = kryo.readClassAndObject(input);
         final Object firstService = kryo.readClassAndObject(input);
@@ -113,7 +113,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         writeField(cryptoPermField, cipher, cryptoPerm);
         writeField(exmechField, cipher, exmech);
         writeField(firstServiceField, cipher, firstService);
-        writeField(this.firstSpi, cipher, firstSpi);
+        writeField(firstSpiField, cipher, firstSpi);
         writeField(initializedField, cipher, initialized);
         writeField(lockField, cipher, lock);
         writeField(opmodeField, cipher, opmode);

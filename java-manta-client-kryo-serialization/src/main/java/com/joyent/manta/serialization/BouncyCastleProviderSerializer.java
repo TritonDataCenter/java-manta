@@ -15,6 +15,9 @@ import com.joyent.manta.client.crypto.BouncyCastleLoader;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
+ * A fake serializer that deserializes a BouncyCastle provider to the provider
+ * in memory. The write() operation performs a NOOP and serializes nothing.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
@@ -24,13 +27,13 @@ public class BouncyCastleProviderSerializer extends Serializer<BouncyCastleProvi
     }
 
     @Override
-    public void write(Kryo kryo, Output output, BouncyCastleProvider object) {
+    public void write(final Kryo kryo, final Output output, final BouncyCastleProvider object) {
         // do nothing
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public BouncyCastleProvider read(Kryo kryo, Input input, Class<BouncyCastleProvider> type) {
+    public BouncyCastleProvider read(final Kryo kryo, final Input input, final Class<BouncyCastleProvider> type) {
         return (BouncyCastleProvider)BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER;
     }
 }
