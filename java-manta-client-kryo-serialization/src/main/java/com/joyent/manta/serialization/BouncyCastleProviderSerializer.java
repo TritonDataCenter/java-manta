@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package com.joyent.manta.serialization;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.joyent.manta.client.crypto.BouncyCastleLoader;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+/**
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @since 3.0.0
+ */
+public class BouncyCastleProviderSerializer extends Serializer<BouncyCastleProvider> {
+    public BouncyCastleProviderSerializer() {
+        super(false);
+    }
+
+    @Override
+    public void write(Kryo kryo, Output output, BouncyCastleProvider object) {
+        // do nothing
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public BouncyCastleProvider read(Kryo kryo, Input input, Class<BouncyCastleProvider> type) {
+        return (BouncyCastleProvider)BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER;
+    }
+}

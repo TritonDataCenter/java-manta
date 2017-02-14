@@ -34,7 +34,7 @@ public class EncryptedMultipartManagerSerializationTest {
 
     @BeforeClass
     public void setup() {
-        kryo.register(HMac.class, new HmacSerializer(kryo));
+        kryo.register(HMac.class, new HmacSerializer());
         this.cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
         this.secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);

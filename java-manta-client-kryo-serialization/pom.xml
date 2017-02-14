@@ -11,6 +11,10 @@
 
     <artifactId>java-manta-client-kryo-serialization</artifactId>
 
+    <properties>
+        <dependency.minlog.slf4j.version>1.8</dependency.minlog.slf4j.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.joyent.manta</groupId>
@@ -84,6 +88,18 @@
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
             <version>${dependency.kryo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.esotericsoftware</groupId>
+                    <artifactId>minlog</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.dorkbox</groupId>
+            <artifactId>MinLog-SLF4J</artifactId>
+            <version>${dependency.minlog.slf4j.version}</version>
         </dependency>
 
         <dependency>
@@ -145,7 +161,7 @@
                     <relocations>
                         <relocation>
                             <pattern>org.apache</pattern>
-                            <shadedPattern>com.joyent.manta.serialization.org.apache</shadedPattern>
+                            <shadedPattern>com.joyent.manta.org.apache</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
