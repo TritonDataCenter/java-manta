@@ -40,7 +40,6 @@ public class CipherSerializer extends Serializer<Cipher> {
     private static Field INITIALIZED_FIELD = captureField("initialized");
     private static Field LOCK_FIELD = captureField("lock");
     private static Field OPMODE_FIELD = captureField("opmode");
-    private static Field PROVIDER_FIELD = captureField("provider");
     private static Field SERVICE_ITERATOR_FIELD = captureField("serviceIterator");
     private static Field SPI_FIELD = captureField("spi");
     private static Field TRANSFORMATION_FIELD = captureField("transformation");

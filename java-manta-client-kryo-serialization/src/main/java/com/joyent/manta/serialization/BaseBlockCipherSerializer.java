@@ -17,6 +17,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.modes.GCMBlockCipher;
 import org.bouncycastle.crypto.modes.SICBlockCipher;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -25,10 +26,12 @@ import org.bouncycastle.jcajce.provider.symmetric.AES;
 import org.bouncycastle.jcajce.provider.symmetric.util.BaseBlockCipher;
 import org.bouncycastle.jcajce.provider.symmetric.util.BaseWrapCipher;
 import org.bouncycastle.jcajce.provider.symmetric.util.BlockCipherProvider;
+import org.bouncycastle.jcajce.spec.GOST28147ParameterSpec;
 import org.bouncycastle.jcajce.util.BCJcaJceHelper;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.objenesis.instantiator.sun.MagicInstantiator;
 
+import javax.crypto.spec.*;
 import java.lang.reflect.Field;
 import java.security.AlgorithmParameters;
 
@@ -106,6 +109,9 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher> extends Serial
         final Class<?> paddedBufferedBlockCipherClass = findClass(
                 "org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher");
 
+        final Class<?> aeadGenericBlockCipherClass = findClass(
+                "org.bouncycastle.jcajce.provider.symmetric.util.BaseBlockCipher$AEADGenericBlockCipher");
+
         kryo.register(AESFastEngine.class, new CompatibleFieldSerializer(
                 kryo, AESFastEngine.class));
         kryo.register(BufferedBlockCipher.class);
@@ -124,8 +130,18 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher> extends Serial
                 .setInstantiator(new MagicInstantiator<>(paddedBufferedBlockCipherClass));
         kryo.register(CBCBlockCipher.class)
                 .setInstantiator(new MagicInstantiator<>(CBCBlockCipher.class));
-        kryo.register(AEADParameters.class)
+        kryo.register(AEADParameters.class, new CompatibleFieldSerializer(kryo, AEADParameters.class))
                 .setInstantiator(new MagicInstantiator<>(AEADParameters.class));
+        kryo.register(aeadGenericBlockCipherClass, new CompatibleFieldSerializer(kryo, aeadGenericBlockCipherClass))
+                .setInstantiator(new MagicInstantiator<>(aeadGenericBlockCipherClass));
+        kryo.register(GCMBlockCipher.class, new CompatibleFieldSerializer(kryo, GCMBlockCipher.class))
+                .setInstantiator(new MagicInstantiator<>(GCMBlockCipher.class));
+        kryo.register(RC2ParameterSpec.class);
+        kryo.register(RC5ParameterSpec.class);
+        kryo.register(GCMParameterSpec.class);
+        kryo.register(IvParameterSpec.class);
+        kryo.register(PBEParameterSpec.class);
+        kryo.register(GOST28147ParameterSpec.class);
     }
 
     @Override

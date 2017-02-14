@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.Base64;
 
 /**
- * Unit tests that verify we can serialize and deserialize a {@link javax.crypto.Cipher}
+ * Unit tests that verify we can serialize and deserialize a {@link Cipher}
  * object using the Kryo framework.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
