@@ -76,6 +76,12 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
 
     private final Class<T> serializeClass;
 
+    /**
+     * Creates a new instance of a serializer for T.
+     *
+     * @param kryo Kryo instance
+     * @param serializeClass reference to the class to serialize
+     */
     public BaseBlockCipherSerializer(final Kryo kryo, final Class<T> serializeClass) {
         super(serializeClass, false);
         registerClasses(kryo);
@@ -110,6 +116,11 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         this.wrapEngineField = captureField("wrapEngine");
     }
 
+    /**
+     * Registers the classes needed for serialization with Kryo.
+     *
+     * @param kryo Kryo instance
+     */
     private void registerClasses(final Kryo kryo) {
         final Class<?> bufferedGenericBlockCipherClass = findClass(
                 "org.bouncycastle.jcajce.provider.symmetric.util.BaseBlockCipher$BufferedGenericBlockCipher");
@@ -252,7 +263,12 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         return instance;
     }
 
-
+    /**
+     * Builds a new instance of a {@link BlockCipherProvider} by
+     * instantiating a new instance of T and getting its supplier.
+     *
+     * @return new instance of block cipher provider
+     */
     @SuppressWarnings("unchecked")
     private BlockCipherProvider buildEngineProvider() {
         final String name = this.serializeClass.getSimpleName();

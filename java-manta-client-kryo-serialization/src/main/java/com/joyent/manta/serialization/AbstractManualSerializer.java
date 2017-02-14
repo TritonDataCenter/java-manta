@@ -24,14 +24,25 @@ import java.lang.reflect.Field;
  * @param <T> type to serialize
  */
 public abstract class AbstractManualSerializer<T> extends Serializer<T> {
+    /**
+     * Class to be serialized.
+     */
     private Class<T> classReference;
 
+    /**
+     * Creates a new serializer instance for the specified class.
+     *
+     * @param classReference class to be serialized
+     */
     public AbstractManualSerializer(final Class<T> classReference) {
         this.classReference = classReference;
     }
 
     /**
-     * @param acceptsNull
+     * Creates a new serializer instance for the specified class.
+     *
+     * @param classReference class to be serialized
+     * @param acceptsNull if true, this serializer will handle null values
      * @see #setAcceptsNull(boolean)
      */
     public AbstractManualSerializer(final Class<T> classReference,
@@ -42,8 +53,11 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
     }
 
     /**
-     * @param acceptsNull
-     * @param immutable
+     * * Creates a new serializer instance for the specified class.
+     *
+     * @param classReference class to be serialized
+     * @param acceptsNull if true, this serializer will handle null values
+     * @param immutable if true, copy() will return the original object
      * @see #setAcceptsNull(boolean)
      * @see #setImmutable(boolean)
      */
@@ -80,7 +94,7 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @param object object to read from
      * @return field's value
      */
-    protected Object readField(final Field field, Object object) {
+    protected Object readField(final Field field, final Object object) {
         try {
             return FieldUtils.readField(field, object, true);
         } catch (IllegalAccessException e) {

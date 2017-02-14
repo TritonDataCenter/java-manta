@@ -22,6 +22,9 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
  * @since 3.0.0
  */
 public class BouncyCastleProviderSerializer extends Serializer<BouncyCastleProvider> {
+    /**
+     * Create a new instance of a dummy serializer for BouncyCastle providers.
+     */
     public BouncyCastleProviderSerializer() {
         super(false);
     }

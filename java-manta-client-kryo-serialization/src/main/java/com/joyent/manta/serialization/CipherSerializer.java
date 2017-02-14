@@ -27,7 +27,9 @@ import java.security.GeneralSecurityException;
  * @since 3.0.0
  */
 public class CipherSerializer extends AbstractManualSerializer<Cipher> {
-
+    /**
+     * Reference to the private crypto all permission class.
+     */
     private final Class<?> cryptoAllPermissionClass;
 
     private Field cryptoPermField = captureField("cryptoPerm");
@@ -46,11 +48,21 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         cryptoAllPermissionClass = findClass("javax.crypto.CryptoAllPermission");
     }
 
+    /**
+     * Creates a new {@link Cipher} serializer instance.
+     *
+     * @param kryo Kryo instance
+     */
     public CipherSerializer(final Kryo kryo) {
         super(Cipher.class, false);
         registerClasses(kryo);
     }
 
+    /**
+     * Registers the classes needed for serialization with Kryo.
+     *
+     * @param kryo Kryo instance
+     */
     private void registerClasses(final Kryo kryo) {
         kryo.register(cryptoAllPermissionClass, new JavaSerializer());
 
