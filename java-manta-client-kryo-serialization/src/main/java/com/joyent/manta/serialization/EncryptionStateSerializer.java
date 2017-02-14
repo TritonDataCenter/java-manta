@@ -10,8 +10,15 @@ package com.joyent.manta.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.joyent.manta.client.crypto.AesCbcCipherDetails;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.AesGcmCipherDetails;
+import com.joyent.manta.client.crypto.EncryptionContext;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
+import org.objenesis.instantiator.sun.MagicInstantiator;
 
+import javax.crypto.Cipher;
 import java.lang.reflect.Field;
 
 /**
@@ -27,8 +34,29 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
     private Field lastPartNumberField = captureField("lastPartNumber");
     private Field multipartStreamField = captureField("multipartStream");
 
+    /**
+     * Creates a new serializer instance.
+     *
+     * @param kryo Kryo instance
+     */
     public EncryptionStateSerializer(final Kryo kryo) {
         super(EncryptionState.class, false);
+        registerClasses(kryo);
+    }
+
+    /**
+     * Registers the classes needed for serialization with Kryo.
+     *
+     * @param kryo Kryo instance
+     */
+    private void registerClasses(final Kryo kryo) {
+        kryo.register(EncryptionContext.class)
+                .setInstantiator(new MagicInstantiator<>(EncryptionContext.class));
+        kryo.register(SupportedCipherDetails.class, new SupportedCipherDetailsSerializer());
+        kryo.register(AesCtrCipherDetails.class, new SupportedCipherDetailsSerializer());
+        kryo.register(AesCbcCipherDetails.class, new SupportedCipherDetailsSerializer());
+        kryo.register(AesGcmCipherDetails.class, new SupportedCipherDetailsSerializer());
+        kryo.register(Cipher.class, new CipherSerializer(kryo));
     }
 
     @Override
@@ -52,7 +80,7 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final int lastPartNumber = input.readVarInt(true);
         final Object multipartStream = kryo.readClassAndObject(input);
 
-        final EncryptionState encryptionState = new EncryptionState();
+        final EncryptionState encryptionState = newInstance();
 
         writeField(encryptionContextField, encryptionState, encryptionContext);
         writeField(lockField, encryptionState, lock);

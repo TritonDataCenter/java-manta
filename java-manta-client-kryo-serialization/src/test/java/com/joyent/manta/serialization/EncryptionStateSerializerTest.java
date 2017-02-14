@@ -17,6 +17,7 @@ import com.joyent.manta.client.multipart.EncryptionState;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
+import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -34,6 +35,8 @@ public class EncryptionStateSerializerTest {
 
     @BeforeClass
     public void setup() {
+        kryo.register(EncryptionStateSerializer.class, new EncryptionStateSerializer(kryo));
+
         SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
         SecretKey secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
@@ -42,15 +45,17 @@ public class EncryptionStateSerializerTest {
     }
 
     public void canSerializeEncryptionState() throws Exception {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        Output output = new Output(outputStream);
-        this.kryo.writeObject(output, this.encryptionState);
-        output.close();
+        final byte[] serializedData;
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             Output output = new Output(outputStream)) {
+            this.kryo.writeObject(output, this.encryptionState);
+            output.flush();
+            serializedData = outputStream.toByteArray();
+        }
 
-        Input input = new Input(outputStream.toByteArray());
-        EncryptionState deserializedEncryptionState = kryo.readObject(input, EncryptionState.class);
-        input.close();
-
-        //AssertJUnit.assertEquals(encryptionState.getEncryptionContext().getSecretKey(), deserializedEncryptionState.getEncryptionContext().getSecretKey());
+        try (Input input = new Input(serializedData)) {
+            EncryptionState deserializedEncryptionState = kryo.readObject(input, EncryptionState.class);
+//            Assert.assertEquals(deserializedEncryptionState, encryptionState);
+        }
     }
 }

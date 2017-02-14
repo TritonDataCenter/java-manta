@@ -27,7 +27,7 @@ public class EncryptionContext {
     /**
      * Secret key to encrypt stream with.
      */
-    private final transient SecretKey key;
+    private transient SecretKey key;
 
     /**
      * Attributes of the cipher used for encryption.
@@ -69,6 +69,15 @@ public class EncryptionContext {
 
     public SecretKey getSecretKey() {
         return key;
+    }
+
+    /**
+     * Sets the secret key (used by serialization).
+     *
+     * @param key secret key
+     */
+    public void setKey(final SecretKey key) {
+        this.key = key;
     }
 
     public SupportedCipherDetails getCipherDetails() {

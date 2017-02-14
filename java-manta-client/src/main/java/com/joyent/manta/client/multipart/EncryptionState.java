@@ -45,8 +45,10 @@ public class EncryptionState {
      */
     private OutputStream cipherStream = null;
 
-
-    public EncryptionState() {
+    /**
+     * Zero argument constructor used for serialization.
+     */
+    private EncryptionState() {
         this.encryptionContext = null;
         this.lock = null;
     }
