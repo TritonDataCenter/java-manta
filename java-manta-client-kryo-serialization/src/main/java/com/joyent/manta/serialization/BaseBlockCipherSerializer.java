@@ -36,10 +36,16 @@ import java.lang.reflect.Field;
 import java.security.AlgorithmParameters;
 
 /**
+ * Serializer that serializes the BouncyCastle base block cipher
+ * subclasses.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
+ *
+ * @param <T> subclass of {@link BaseBlockCipher} to serialize
  */
-public class BaseBlockCipherSerializer<T extends BaseBlockCipher> extends Serializer<T> {
+public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
+        extends AbstractManualSerializer<T> {
     private final Field aeadParamsField;
     private final Field availableSpecsField;
     private final Field baseEngineField;
@@ -69,7 +75,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher> extends Serial
     private final Class<T> serializeClass;
 
     public BaseBlockCipherSerializer(final Kryo kryo, final Class<T> serializeClass) {
-        super(false);
+        super(serializeClass, false);
         registerClasses(kryo);
 
         this.serializeClass = serializeClass;
@@ -212,14 +218,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher> extends Serial
         final int scheme = input.readVarInt(false);
         final Object wrapEngine = kryo.readClassAndObject(input);
 
-        final T instance;
-        try {
-             instance = serializeClass.newInstance();
-        } catch (ReflectiveOperationException e) {
-            String msg = String.format("Unable to create new instance of class "
-                            + "[%s]", serializeClass.getName());
-            throw new SerializationException(msg, e);
-        }
+        final T instance = newInstance();
 
         writeField(aeadParamsField, instance, aeadParams);
         writeField(availableSpecsField, instance, availableSpecs);
@@ -278,39 +277,5 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher> extends Serial
 
         return (BlockCipherProvider)readField(
                 engineProviderField, baseBlockCipher);
-    }
-
-    private Field captureField(final String fieldName) {
-        return FieldUtils.getField(serializeClass, fieldName, true);
-    }
-
-    private Object readField(final Field field, Object object) {
-        try {
-            return FieldUtils.readField(field, object, true);
-        } catch (IllegalAccessException e) {
-            String msg = String.format("Error reading private field from [%s] class",
-                    object.getClass().getName());
-            throw new SerializationException(msg);
-        }
-    }
-
-    private void writeField(final Field field, final Object target, final Object value) {
-        try {
-            FieldUtils.writeField(field, target, value);
-        } catch (IllegalAccessException e) {
-            String msg = String.format("Unable to write value [%s] to field [%s]",
-                    value, field);
-            throw new SerializationException(msg, e);
-        }
-    }
-
-    private static Class<?> findClass(final String className) {
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            String msg = String.format("Class not found in class path: %s",
-                    className);
-            throw new UnsupportedOperationException(msg, e);
-        }
     }
 }

@@ -28,49 +28,41 @@ import java.lang.reflect.Field;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class HmacSerializer extends Serializer<HMac> {
+public class HmacSerializer extends AbstractManualSerializer<HMac> {
     /**
      * Private field on {@link HMac} to query for ipad state.
      */
-    private final Field ipadStateField = FieldUtils.getField(
-            HMac.class, "ipadState", true);
+    private final Field ipadStateField = captureField("ipadState");
+
     /**
      * Private field onf {@link HMac} to query for opad state.
      */
-    private final Field opadStateField = FieldUtils.getField(
-            HMac.class, "opadState", true);
+    private final Field opadStateField = captureField("opadState");
 
     /**
      * Creates a new Kryo serializer for {@link HMac} objects.
      */
     public HmacSerializer() {
-        super(false);
+        super(HMac.class, false);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void write(final Kryo kryo, final Output output, final HMac object) {
-        try {
-            final EncodableDigest ipadState = (EncodableDigest) FieldUtils.readField(
-                    ipadStateField, object, true);
-            final EncodableDigest opadState = (EncodableDigest) FieldUtils.readField(
-                    opadStateField, object, true);
+        final EncodableDigest ipadState = (EncodableDigest)readField(ipadStateField, object);
+        final EncodableDigest opadState = (EncodableDigest)readField(opadStateField, object);
 
-            final EncodableDigest digest = (EncodableDigest) object.getUnderlyingDigest();
+        final EncodableDigest digest = (EncodableDigest) object.getUnderlyingDigest();
 
-            kryo.writeObject(output, digest.getClass());
-            output.writeInt(digest.getEncodedState().length);
-            output.write(digest.getEncodedState());
-            output.writeInt(ipadState.getEncodedState().length);
-            output.write(ipadState.getEncodedState());
-            output.writeInt(opadState.getEncodedState().length);
-            output.write(opadState.getEncodedState());
-            output.flush();
-        } catch (IllegalAccessException e) {
-            String msg = String.format("Error reading private field from [%s] class",
-                    object.getClass().getName());
-            throw new SerializationException(msg);
-        }
+        kryo.writeObject(output, digest.getClass());
+        output.writeInt(digest.getEncodedState().length);
+        output.write(digest.getEncodedState());
+        output.writeInt(ipadState.getEncodedState().length);
+        output.write(ipadState.getEncodedState());
+        output.writeInt(opadState.getEncodedState().length);
+        output.write(opadState.getEncodedState());
+
+        output.flush();
     }
 
     @Override
@@ -87,35 +79,9 @@ public class HmacSerializer extends Serializer<HMac> {
 
         HMac hmac = new HMac(digest);
 
-        try {
-            FieldUtils.writeField(ipadStateField, hmac, ipadState, true);
-            FieldUtils.writeField(opadStateField, hmac, opadState, true);
-        } catch (IllegalAccessException e) {
-            String msg = String.format("Error setting private field on [%s] class",
-                    HMac.class.getName());
-            throw new SerializationException(msg);
-        }
+        writeField(ipadStateField, hmac, ipadState);
+        writeField(opadStateField, hmac, opadState);
 
         return hmac;
-    }
-
-    /**
-     * Creates a new {@link Digest} populated with the specified state.
-     *
-     * @param digestClass digest class to create
-     * @param state byte array of inner state
-     * @return new digest class instance
-     */
-    @SuppressWarnings("unchecked")
-    private Digest newInstance(final Class<?> digestClass,
-                               final byte[] state) {
-        try {
-            final Object[] params = new Object[] {state};
-            return (Digest)ConstructorUtils.invokeConstructor(digestClass, params);
-        } catch (ReflectiveOperationException e) {
-            String msg = String.format("Error instantiating [%s] class",
-                    HMac.class.getName());
-            throw new SerializationException(msg);
-        }
     }
 }
