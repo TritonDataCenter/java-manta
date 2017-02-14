@@ -141,7 +141,6 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
                 .setInstantiator(new MagicInstantiator<>(SICBlockCipher.class));
         kryo.register(AlgorithmParameters.class);
         kryo.register(BCJcaJceHelper.class);
-        kryo.register(BouncyCastleProvider.class, new BouncyCastleProviderSerializer());
         kryo.register(ParametersWithIV.class)
                 .setInstantiator(new MagicInstantiator<>(ParametersWithIV.class));
         kryo.register(KeyParameter.class)
