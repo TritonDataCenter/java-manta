@@ -8,10 +8,11 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Serializer;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.SerializationException;
-import org.apache.commons.lang3.reflect.ConstructorUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
 /**
@@ -158,12 +159,23 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      */
     protected <R> R newInstance(final Class<R> instanceClass,
                                 final Object... params) {
+        final Object[] actualParams;
+
+        if (params == null) {
+            actualParams = new Object[0];
+        } else {
+            actualParams = params;
+        }
+
         try {
-            return ConstructorUtils.invokeConstructor(instanceClass, params);
+            final Class<?>[] types = ClassUtils.toClass(actualParams);
+            final Constructor<R> constructor = instanceClass.getDeclaredConstructor(types);
+            constructor.setAccessible(true);
+            return constructor.newInstance(actualParams);
         } catch (ReflectiveOperationException e) {
             String msg = String.format("Error instantiating [%s] class",
                     instanceClass.getName());
-            throw new SerializationException(msg);
+            throw new SerializationException(msg, e);
         }
     }
 }
