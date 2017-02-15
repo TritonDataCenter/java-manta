@@ -21,6 +21,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.serialization.EncryptionStateSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,8 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
+
+        kryo.register(EncryptionStateSerializer.class, new EncryptionStateSerializer(kryo));
     }
 
     @AfterClass
