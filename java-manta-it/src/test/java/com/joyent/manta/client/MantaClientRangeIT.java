@@ -177,14 +177,17 @@ public class MantaClientRangeIT {
     public final void canGetAllRanges() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        mantaClient.put(path, TEST_DATA);
 
-        for (int start = 0; start < TEST_DATA.length(); start++) {
-            for (int end = 0; end < TEST_DATA.length(); end++) {
-                if (end < start) {
-                    end = start;
-                }
-                String expected = StringUtils.substring(TEST_DATA, start, end + 1);
+        String testData = TEST_DATA;
+        for (int i = 0; i < 501; i++) {
+            testData += TEST_DATA;
+        }
+        mantaClient.put(path, testData);
+        int fifth = testData.length() / 5;
+
+        for (int start = 0; start <= testData.length(); start += fifth) {
+            for (int end = testData.length(); end >= start; end -= fifth) {
+                String expected = StringUtils.substring(testData, start, end + 1);
 
                 final MantaHttpHeaders headers = new MantaHttpHeaders();
                 // Range is inclusive, inclusive
