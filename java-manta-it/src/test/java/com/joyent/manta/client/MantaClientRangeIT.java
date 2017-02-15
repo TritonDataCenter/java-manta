@@ -7,10 +7,7 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.BaseChainedConfigContext;
-import com.joyent.manta.config.EncryptionAuthenticationMode;
-import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.SettableConfigContext;
+import com.joyent.manta.config.*;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +49,7 @@ public class MantaClientRangeIT {
             "Of his array tell I no longer tale.";
 
     private MantaClient mantaClient;
+    private ConfigContext config;
 
     private String testPathPrefix;
 
@@ -68,6 +66,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient = new MantaClient(config);
+        this.config = config;
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
@@ -182,6 +181,9 @@ public class MantaClientRangeIT {
 
         for (int start = 0; start < TEST_DATA.length(); start++) {
             for (int end = 0; end < TEST_DATA.length(); end++) {
+                if (end < start) {
+                    end = start;
+                }
                 String expected = StringUtils.substring(TEST_DATA, start, end + 1);
 
                 final MantaHttpHeaders headers = new MantaHttpHeaders();
@@ -189,10 +191,13 @@ public class MantaClientRangeIT {
                 String rangeHeader = "bytes=" + start + "-" + end;
                 headers.setRange(rangeHeader);
 
-                try (final InputStream min = mantaClient.getAsInputStream(path, headers)) {
+                MantaClient getClient = new MantaClient(this.config);
+                try (final InputStream min = getClient.getAsInputStream(path, headers)) {
                     String actual = IOUtils.toString(min, Charset.defaultCharset());
+                    System.out.println("Range: " + rangeHeader);
                     Assert.assertEquals(actual, expected, "Didn't receive correct range value for range: " + rangeHeader);
                 }
+                getClient.closeQuietly();
             }
         }
     }
