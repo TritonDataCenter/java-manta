@@ -260,7 +260,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         final Long initialSkipBytes;
         Long plaintextRangeLength;
         final Long plaintextStart;
-        Long plaintextEnd;
+        final Long plaintextEnd;
 
         if (hasRangeRequest) {
             Long[] rangeProperties = calculateSkipBytesAndPlaintextLength(request, requestHeaders);
