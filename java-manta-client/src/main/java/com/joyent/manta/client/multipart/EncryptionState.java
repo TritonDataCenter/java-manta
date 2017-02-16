@@ -51,7 +51,7 @@ public class EncryptionState {
      */
     private EncryptionState() {
         this.encryptionContext = null;
-        this.lock = null;
+        this.lock = new ReentrantLock();
     }
 
     /**

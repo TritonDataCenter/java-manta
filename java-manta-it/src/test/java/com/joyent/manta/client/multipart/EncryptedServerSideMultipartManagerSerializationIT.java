@@ -58,11 +58,13 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
     private Kryo kryo = new Kryo();
 
+    private ConfigContext config;
+
     @BeforeClass()
     @Parameters({"usingEncryption"})
     public void beforeClass(@org.testng.annotations.Optional Boolean usingEncryption) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        this.config = new IntegrationTestConfigContext(usingEncryption);
 
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
@@ -108,8 +110,9 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              Output output = new Output(outputStream, 1_000_000)) {
-            kryo.writeObject(output, upload.getEncryptionState());
-            output.flush();
+
+            EncryptionStateSerializer serializer = new EncryptionStateSerializer(kryo);
+            serializer.write(kryo, output, upload.getEncryptionState());
             serializedEncryptionState = outputStream.toByteArray();
         }
 
@@ -117,30 +120,40 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         String resumePath = upload.getPath();
         String resumePartsDirectory = upload.getWrapped().getPartsDirectory();
 
-        MantaMultipartUploadPart resumePart1 = new MantaMultipartUploadPart(part1.getPartNumber(), part1.getObjectPath(), part1.getEtag());
+
+        MantaMultipartUploadPart part2 = resumeUpload(serializedEncryptionState, resumeUploadId, resumePath, resumePartsDirectory, content2);
+        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
+
+
+        multipart.complete(upload, partsStream);
+
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
+
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+
+            Assert.assertEquals(in.getContentType(), contentType,
+                    "Set content-type doesn't match actual content type");
+        }
+    }
+
+    public final MantaMultipartUploadPart resumeUpload(byte[] serializedEncryptionState, UUID resumeUploadId, String resumePath, String resumePartsDirectory, byte[] content) throws IOException {
+        MantaClient resumeClient = new MantaClient(this.config);
+        EncryptedServerSideMultipartManager resumeMultipart = new EncryptedServerSideMultipartManager(resumeClient);
 
         try (Input inputEncryptionState = new FastInput(serializedEncryptionState)) {
-            EncryptionState encryptionState = kryo.readObject(inputEncryptionState, EncryptionState.class);
+            EncryptionStateSerializer serializer = new EncryptionStateSerializer(kryo);
+            EncryptionState encryptionState = serializer.read(kryo, inputEncryptionState, EncryptionState.class);
             ServerSideMultipartUpload serverSideMultipartUpload = new ServerSideMultipartUpload(resumeUploadId, resumePath, resumePartsDirectory);
 
             EncryptedMultipartUpload<ServerSideMultipartUpload> resumeUpload = new EncryptedMultipartUpload<>(serverSideMultipartUpload, encryptionState);
 
-            MantaMultipartUploadPart part2 = multipart.uploadPart(resumeUpload, 2, content2);
+            MantaMultipartUploadPart part = resumeMultipart.uploadPart(resumeUpload, 2, content);
 
-            MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { resumePart1, part2 };
-            Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
-            multipart.complete(upload, partsStream);
-
-            try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
-                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                IOUtils.copy(in, out);
-
-                AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
-                        content, out.toByteArray());
-
-                Assert.assertEquals(in.getContentType(), contentType,
-                        "Set content-type doesn't match actual content type");
-            }
+            return part;
         }
     }
 }
