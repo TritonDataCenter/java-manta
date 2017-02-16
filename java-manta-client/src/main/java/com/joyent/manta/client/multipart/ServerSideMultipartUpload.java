@@ -22,7 +22,14 @@ public class ServerSideMultipartUpload extends AbstractMultipartUpload {
     /**
      * Directory containing the multipart upload parts.
      */
-    private final String partsDirectory;
+    private String partsDirectory;
+
+    /**
+     * Private constructor for serialization purposes.
+     */
+    private ServerSideMultipartUpload() {
+        super();
+    }
 
     /**
      * Creates a new instance with a parts directory in addition to the

@@ -1753,7 +1753,7 @@ public class MantaClient implements AutoCloseable {
 
         try (CloseableHttpResponse initialResponse = client.execute(initialRequest)) {
             lastResponse = initialResponse;
-            StatusLine statusLine = initialResponse.getStatusLine();
+            final StatusLine statusLine = initialResponse.getStatusLine();
 
             // If we can't get the live status of the job, we try to get the archived
             // status of the job just like the CLI mjob utility.
@@ -1769,16 +1769,16 @@ public class MantaClient implements AutoCloseable {
 
                 try (CloseableHttpResponse archiveResponse = client.execute(archiveRequest)) {
                     lastResponse = archiveResponse;
-                    statusLine = initialResponse.getStatusLine();
+                    final StatusLine archiveStatusLine = archiveResponse.getStatusLine();
 
                     // Job wasn't available via live status nor archive
-                    if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    if (archiveStatusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                         String msg = "No record for job in Manta";
                         MantaJobException e = new MantaJobException(jobId, msg);
                         HttpHelper.annotateContextedException(e, archiveRequest, archiveResponse);
                         throw e;
                         // There was an undefined problem with pulling the job from the archive
-                    } else if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
+                    } else if (archiveStatusLine.getStatusCode() != HttpStatus.SC_OK) {
                         String msg = "Unable to get job data from archive";
                         MantaIOException ioe = new MantaIOException(msg);
                         HttpHelper.annotateContextedException(ioe, archiveRequest, archiveResponse);

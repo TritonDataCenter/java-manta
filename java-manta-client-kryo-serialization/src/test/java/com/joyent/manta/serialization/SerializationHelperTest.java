@@ -8,75 +8,58 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.FastOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptionState;
-import com.joyent.manta.client.multipart.JobsMultipartUpload;
 import com.joyent.manta.client.multipart.ServerSideMultipartUpload;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
-import org.bouncycastle.crypto.macs.HMac;
-import org.objenesis.instantiator.sun.MagicInstantiator;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.testng.asserts.Assertion;
 
 import javax.crypto.SecretKey;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
 
-/**
- * Unit tests that attempt to serialize objects in the graph of a
- * {@link EncryptedMultipartUpload} class.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @since 3.0.0
- */
 @Test
-public class EncryptedMultipartManagerSerializationTest {
+public class SerializationHelperTest {
     private byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
     private SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
     private SecretKey secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
     private Kryo kryo = new Kryo();
+    private SerializationHelper<ServerSideMultipartUpload> helper =
+            new SerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
 
-    @BeforeClass
-    public void setup() {
-        kryo.register(EncryptedMultipartUpload.class,
-                new EncryptedMultipartSerializer<>(kryo, EncryptedMultipartUpload.class,
-                        ServerSideMultipartUpload.class, secretKey));
-    }
-
-    public void canSerializeEncryptedServerSideMultipartUpload() throws IOException {
+    public void canSerializeAndDeserializeUpload() throws IOException {
         final UUID uploadId = new UUID(0L, 0L);
         final String path = "/user/stor/myObject";
         final String partsDir = "/user/uploads/0/" + uploadId;
         final ServerSideMultipartUpload inner = new ServerSideMultipartUpload(uploadId, path, partsDir);
         final EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
         final EncryptionState encryptionState = new EncryptionState(encryptionContext);
-        final EncryptedMultipartUpload upload = newUploadInstance(inner, encryptionState);
+        @SuppressWarnings("unchecked")
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> upload =
+                (EncryptedMultipartUpload<ServerSideMultipartUpload>)newUploadInstance(inner, encryptionState);
 
-        final byte[] serializedData;
+        final byte[] serializedData = helper.serialize(upload);
+        final EncryptedMultipartUpload deserialized = helper.deserialize(serializedData);
+        System.out.println(deserialized);
+    }
 
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-             Output output = new Output(outputStream)) {
-            this.kryo.writeObject(output, upload);
-            output.flush();
-            serializedData = outputStream.toByteArray();
-        }
+    public void canConcatenateByteArrays() {
+        byte[] array1 = "This is the first array. ".getBytes(StandardCharsets.US_ASCII);
+        byte[] array2 = "This is the second array. ".getBytes(StandardCharsets.US_ASCII);
+        byte[] array3 = "This is the third array.".getBytes(StandardCharsets.US_ASCII);
 
-        try (Input input = new Input(serializedData)) {
-            final EncryptedMultipartUpload actual = kryo.readObject(
-                    input, EncryptedMultipartUpload.class);
-            Assert.assertEquals(actual, upload);
-        }
+        String expected = "This is the first array. This is the second array. This is the third array.";
+
+        byte[] concatenated = SerializationHelper.addAll(array1, array2, array3);
+        String actual = new String(concatenated, StandardCharsets.US_ASCII);
+        Assert.assertEquals(actual, expected);
     }
 
     private EncryptedMultipartUpload newUploadInstance(final Object... params) {

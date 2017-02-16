@@ -7,7 +7,9 @@
         </encoder>
     </appender>
 
-    <root level="info">
+    <logger name="com.esotericsoftware.minlog" level="info" />
+
+    <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

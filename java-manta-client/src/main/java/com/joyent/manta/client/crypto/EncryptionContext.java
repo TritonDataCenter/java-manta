@@ -40,7 +40,6 @@ public class EncryptionContext {
      */
     private final Cipher cipher;
 
-
     /**
      * Creates a new instance of an encryption context.
      *

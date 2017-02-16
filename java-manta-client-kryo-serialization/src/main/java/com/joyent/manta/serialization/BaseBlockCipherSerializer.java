@@ -273,23 +273,30 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
 
         final BaseBlockCipher baseBlockCipher;
 
-        if (name.equals("ECB")) {
-            baseBlockCipher = new AES.ECB();
-        } else if (name.equals("CBC")) {
-            baseBlockCipher = new AES.CBC();
-        } else if (name.equals("CFB")) {
-            baseBlockCipher = new AES.CFB();
-        } else if (name.equals("OFB")) {
-            baseBlockCipher = new AES.OFB();
-        } else if (name.equals("GCM")) {
-            baseBlockCipher = new AES.GCM();
-        } else if (name.equals("CCM")) {
-            baseBlockCipher = new AES.CCM();
-        } else {
-            String msg = String.format("Can't generate engine provider because "
-                    + "BaseBlockCipher is an unknown implementation: %s",
-                    this.serializeClass.getName());
-            throw new UnsupportedOperationException(msg);
+        switch (name) {
+            case "ECB":
+                baseBlockCipher = new AES.ECB();
+                break;
+            case "CBC":
+                baseBlockCipher = new AES.CBC();
+                break;
+            case "CFB":
+                baseBlockCipher = new AES.CFB();
+                break;
+            case "OFB":
+                baseBlockCipher = new AES.OFB();
+                break;
+            case "GCM":
+                baseBlockCipher = new AES.GCM();
+                break;
+            case "CCM":
+                baseBlockCipher = new AES.CCM();
+                break;
+            default:
+                String msg = String.format("Can't generate engine provider because "
+                                + "BaseBlockCipher is an unknown implementation: %s",
+                        this.serializeClass.getName());
+                throw new UnsupportedOperationException(msg);
         }
 
         return (BlockCipherProvider)readField(

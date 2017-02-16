@@ -16,6 +16,7 @@ import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
 import org.objenesis.instantiator.sun.MagicInstantiator;
 
 import javax.crypto.Cipher;
@@ -68,23 +69,24 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final int lastPartNumber = (int)readField(lastPartNumberField, object);
         output.writeInt(lastPartNumber, true);
 
-        kryo.writeClassAndObject(output, readField(multipartStreamField, object));
-
         output.flush();
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public EncryptionState read(final Kryo kryo, final Input input, final Class<EncryptionState> type) {
-        final Object encryptionContext = kryo.readClassAndObject(input);
+        final EncryptionContext encryptionContext = (EncryptionContext)kryo.readClassAndObject(input);
         final Object lock = kryo.readClassAndObject(input);
         final int lastPartNumber = input.readVarInt(true);
-        final Object multipartStream = kryo.readClassAndObject(input);
 
         final EncryptionState encryptionState = newInstance();
 
         writeField(encryptionContextField, encryptionState, encryptionContext);
         writeField(lockField, encryptionState, lock);
         writeField(lastPartNumberField, encryptionState, lastPartNumber);
+
+        final int blockSize = encryptionContext.getCipherDetails().getBlockSizeInBytes();
+        final MultipartOutputStream multipartStream = new MultipartOutputStream(blockSize);
         writeField(multipartStreamField, encryptionState, multipartStream);
 
         return encryptionState;

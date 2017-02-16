@@ -23,12 +23,18 @@ public abstract class AbstractMultipartUpload implements MantaMultipartUpload {
     /**
      * Transaction ID for multipart upload.
      */
-    private final UUID id;
+    private UUID id;
 
     /**
      * Path to final object being uploaded to Manta.
      */
-    private final String path;
+    private String path;
+
+    /**
+     * Protected constructor for serialization purposes.
+     */
+    protected AbstractMultipartUpload() {
+    }
 
     /**
      * Creates a new instance.

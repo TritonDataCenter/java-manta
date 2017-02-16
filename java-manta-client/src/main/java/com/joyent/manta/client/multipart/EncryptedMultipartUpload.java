@@ -23,13 +23,19 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     /**
      * Backing implementation used by the underlying multipart implementation.
      */
-    private final WRAPPED wrapped;
+    private WRAPPED wrapped;
 
     /**
      * Object containing the state of encryption operations for the
      * current multipart upload.
      */
-    private final EncryptionState encryptionState;
+    private EncryptionState encryptionState;
+
+    /**
+     * Private constructor used for serialization.
+     */
+    private EncryptedMultipartUpload() {
+    }
 
     /**
      * Creates a new encrypted instance based on an existing instance.
