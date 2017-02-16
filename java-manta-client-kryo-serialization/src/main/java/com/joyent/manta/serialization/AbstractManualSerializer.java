@@ -75,7 +75,7 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @throws UnsupportedOperationException when the field isn't present
      */
     protected Field captureField(final String fieldName) {
-        Field field = FieldUtils.getField(classReference, fieldName, true);
+        final Field field = ReflectionUtils.getField(classReference, fieldName);
 
         if (field == null) {
             String msg = String.format("No field [%s] found on object [%s]",

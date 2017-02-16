@@ -30,12 +30,10 @@ import java.lang.reflect.Field;
  */
 public class EncryptedMultipartSerializer<WRAPPED extends AbstractMultipartUpload>
         extends FieldSerializer<EncryptedMultipartUpload<WRAPPED>> {
-    private Field encryptionStateField = FieldUtils.getField(
-            EncryptedMultipartUpload.class, "encryptionState", true);
-    private Field encryptionContextField = FieldUtils.getField(
-            EncryptionState.class, "encryptionContext", true);
-    private Field cipherDetailsField = FieldUtils.getField(
-            EncryptionContext.class, "cipherDetails", true);
+    private Field encryptionStateField = ReflectionUtils.getField(
+            EncryptedMultipartUpload.class, "encryptionState");
+    private Field encryptionContextField = ReflectionUtils.getField(
+            EncryptionState.class, "encryptionContext");
 
     /**
      * Secret key to inject upon deserialization.

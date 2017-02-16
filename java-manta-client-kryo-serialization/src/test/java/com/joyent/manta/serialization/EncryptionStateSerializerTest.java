@@ -16,24 +16,19 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.objenesis.instantiator.ObjectInstantiator;
-import org.objenesis.strategy.InstantiatorStrategy;
 import org.testng.Assert;
-import org.testng.AssertJUnit;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Base64;
 
 @Test
 public class EncryptionStateSerializerTest {
     private static final Field ENCRYPTION_CONTEXT_FIELD =
-            FieldUtils.getField(EncryptionState.class, "encryptionContext", true);
+            ReflectionUtils.getField(EncryptionState.class, "encryptionContext");
 
     private byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
     SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;

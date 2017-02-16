@@ -11,7 +11,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
@@ -95,7 +94,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         this.cipherField = captureField("cipher");
         this.digestField = captureField("digest");
         this.engineParamsField = captureField("engineParams");
-        this.engineProviderField = FieldUtils.getField(BaseBlockCipher.class, "engineProvider", true);
+        this.engineProviderField = ReflectionUtils.getField(BaseBlockCipher.class, "engineProvider");
         this.fixedIvField = captureField("fixedIv");
         this.helperField = captureField("helper");
         this.ivField = captureField("iv");
@@ -104,8 +103,8 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         this.ivSizeField = captureField("ivSize");
         this.keySizeInBitsField = captureField("keySizeInBits");
         this.modeNameField = captureField("modeName");
-        this.baseWrapCipherAvailableSpecsField =  FieldUtils.getField(
-                BaseWrapCipher.class, "availableSpecs", true);
+        this.baseWrapCipherAvailableSpecsField =  ReflectionUtils.getField(
+                BaseWrapCipher.class, "availableSpecs");
         this.paddedField = captureField("padded");
         this.pbeAlgorithmField = captureField("pbeAlgorithm");
         this.pbeHashField = captureField("pbeHash");
