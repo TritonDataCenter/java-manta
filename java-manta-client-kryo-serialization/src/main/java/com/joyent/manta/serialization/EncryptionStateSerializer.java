@@ -31,7 +31,6 @@ import java.lang.reflect.Field;
 public class EncryptionStateSerializer extends AbstractManualSerializer<EncryptionState> {
 
     private Field encryptionContextField = captureField("encryptionContext");
-    private Field lockField = captureField("lock");
     private Field lastPartNumberField = captureField("lastPartNumber");
     private Field multipartStreamField = captureField("multipartStream");
 
@@ -64,7 +63,6 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
     @SuppressWarnings("unchecked")
     public void write(final Kryo kryo, final Output output, final EncryptionState object) {
         kryo.writeClassAndObject(output, readField(encryptionContextField, object));
-        kryo.writeClassAndObject(output, readField(lockField, object));
 
         final int lastPartNumber = (int)readField(lastPartNumberField, object);
         output.writeInt(lastPartNumber, true);
@@ -76,13 +74,11 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
     @SuppressWarnings("unchecked")
     public EncryptionState read(final Kryo kryo, final Input input, final Class<EncryptionState> type) {
         final EncryptionContext encryptionContext = (EncryptionContext)kryo.readClassAndObject(input);
-        final Object lock = kryo.readClassAndObject(input);
         final int lastPartNumber = input.readVarInt(true);
 
         final EncryptionState encryptionState = newInstance();
 
         writeField(encryptionContextField, encryptionState, encryptionContext);
-        writeField(lockField, encryptionState, lock);
         writeField(lastPartNumberField, encryptionState, lastPartNumber);
 
         final int blockSize = encryptionContext.getCipherDetails().getBlockSizeInBytes();
