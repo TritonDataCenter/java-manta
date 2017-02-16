@@ -11,6 +11,8 @@
 
     <artifactId>java-manta-client-kryo-serialization</artifactId>
 
+    <description>Module providing functionality for serializing encrypted multipart uploads</description>
+
     <properties>
         <dependency.minlog.slf4j.version>1.8</dependency.minlog.slf4j.version>
     </properties>

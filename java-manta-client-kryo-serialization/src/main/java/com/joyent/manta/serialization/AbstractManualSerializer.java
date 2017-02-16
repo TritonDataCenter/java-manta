@@ -8,12 +8,10 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Serializer;
-import org.apache.commons.lang3.ClassUtils;
-import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 /**
  * Abstract class providing reflection helper methods for use with
@@ -96,12 +94,18 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @return field's value
      */
     protected Object readField(final Field field, final Object object) {
+        Objects.requireNonNull(field, "Field must not be null");
+        Objects.requireNonNull(object, "Object must not be null");
+
         try {
             return FieldUtils.readField(field, object, true);
         } catch (IllegalAccessException e) {
             String msg = String.format("Error reading private field from [%s] class",
                     object.getClass().getName());
-            throw new SerializationException(msg);
+            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
+            mcse.setContextValue("field", field.getName());
+            mcse.setContextValue("objectClass", object.getClass());
+            throw mcse;
         }
     }
 
@@ -113,29 +117,23 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @param value object to write
      */
     protected void writeField(final Field field, final Object target, final Object value) {
+        Objects.requireNonNull(field, "Field must not be null");
+        Objects.requireNonNull(target, "Target must not be null");
+
         try {
             FieldUtils.writeField(field, target, value);
         } catch (IllegalAccessException e) {
             String msg = String.format("Unable to write value [%s] to field [%s]",
                     value, field);
-            throw new SerializationException(msg, e);
-        }
-    }
-
-    /**
-     * Gets a {@link Class} instance by looking up the name.
-     *
-     * @param className class name to look up
-     * @return class instance
-     * @throws UnsupportedOperationException if class can't be found
-     */
-    protected static Class<?> findClass(final String className) {
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            String msg = String.format("Class not found in class path: %s",
-                    className);
-            throw new UnsupportedOperationException(msg, e);
+            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
+            mcse.setContextValue("field", field.getName());
+            mcse.setContextValue("targetClass", target.getClass());
+            if (value == null) {
+                mcse.setContextValue("valueClass", "null");
+            } else {
+                mcse.setContextValue("valueClass", value.getClass());
+            }
+            throw mcse;
         }
     }
 
@@ -146,36 +144,6 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @return new instance
      */
     protected T newInstance(final Object... params) {
-        return newInstance(classReference, params);
-    }
-
-    /**
-     * Creates a new instance with the specified constructor parameters.
-     *
-     * @param instanceClass class to instantiate
-     * @param params constructor parameters
-     * @param <R> type of class to instantiate
-     * @return new instance
-     */
-    protected <R> R newInstance(final Class<R> instanceClass,
-                                final Object... params) {
-        final Object[] actualParams;
-
-        if (params == null) {
-            actualParams = new Object[0];
-        } else {
-            actualParams = params;
-        }
-
-        try {
-            final Class<?>[] types = ClassUtils.toClass(actualParams);
-            final Constructor<R> constructor = instanceClass.getDeclaredConstructor(types);
-            constructor.setAccessible(true);
-            return constructor.newInstance(actualParams);
-        } catch (ReflectiveOperationException e) {
-            String msg = String.format("Error instantiating [%s] class",
-                    instanceClass.getName());
-            throw new SerializationException(msg, e);
-        }
+        return ReflectionUtils.newInstance(classReference, params);
     }
 }

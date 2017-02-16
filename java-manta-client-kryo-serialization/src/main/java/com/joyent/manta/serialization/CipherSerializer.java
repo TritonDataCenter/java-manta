@@ -12,12 +12,13 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.joyent.manta.client.crypto.BouncyCastleLoader;
-import org.apache.commons.lang3.SerializationException;
 import org.bouncycastle.jcajce.provider.symmetric.AES;
 
 import javax.crypto.Cipher;
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
+
+import static com.joyent.manta.serialization.ReflectionUtils.findClass;
 
 /**
  * Kryo serializer that deconstructs a {@link Cipher} class backed by
@@ -117,9 +118,10 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
             cipher = Cipher.getInstance(transformation,
                     BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
         } catch (GeneralSecurityException e) {
-            String msg = String.format("Unable to instantiate Cipher [%s]",
-                    transformation);
-            throw new SerializationException(msg, e);
+            String msg = "Unable to instantiate Cipher";
+            MantaClientSerializationException mcse =  new MantaClientSerializationException(msg, e);
+            mcse.setContextValue("algorithmName", transformation);
+            throw mcse;
         }
 
         writeField(cryptoPermField, cipher, cryptoPerm);

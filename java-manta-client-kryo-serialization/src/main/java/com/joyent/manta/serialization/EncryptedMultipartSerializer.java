@@ -11,11 +11,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.joyent.manta.client.crypto.EncryptionContext;
-import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.AbstractMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptionState;
-import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 import javax.crypto.SecretKey;
@@ -92,14 +90,10 @@ public class EncryptedMultipartSerializer<WRAPPED extends AbstractMultipartUploa
             EncryptionContext encryptionContext = (EncryptionContext)FieldUtils
                     .readField(encryptionContextField, encryptionState, true);
             encryptionContext.setKey(secretKey);
-
-            SupportedCipherDetails cipherDetails = (SupportedCipherDetails)FieldUtils
-                    .readField(cipherDetailsField, encryptionContext, true);
-
         } catch (ReflectiveOperationException e) {
             String msg = "Couldn't read private fields from "
                     + "encrypted multipart upload object";
-            throw new SerializationException(msg, e);
+            throw new MantaClientSerializationException(msg, e);
         }
 
         return value;

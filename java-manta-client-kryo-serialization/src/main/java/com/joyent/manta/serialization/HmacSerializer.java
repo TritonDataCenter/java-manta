@@ -67,11 +67,11 @@ public class HmacSerializer extends AbstractManualSerializer<HMac> {
         final Class<GeneralDigest> digestClass = (Class<GeneralDigest>)kryo.readObject(input, Class.class);
 
         byte[] digestStateBytes = input.readBytes(input.readInt());
-        Digest digest = newInstance(digestClass, new Object[] {digestStateBytes});
+        Digest digest = ReflectionUtils.newInstance(digestClass, new Object[] {digestStateBytes});
         byte[] ipadStateBytes = input.readBytes(input.readInt());
-        Digest ipadState = newInstance(digestClass, new Object[] {ipadStateBytes});
+        Digest ipadState = ReflectionUtils.newInstance(digestClass, new Object[] {ipadStateBytes});
         byte[] opadStateBytes = input.readBytes(input.readInt());
-        Digest opadState = newInstance(digestClass, new Object[] {opadStateBytes});
+        Digest opadState = ReflectionUtils.newInstance(digestClass, new Object[] {opadStateBytes});
 
         HMac hmac = new HMac(digest);
 
