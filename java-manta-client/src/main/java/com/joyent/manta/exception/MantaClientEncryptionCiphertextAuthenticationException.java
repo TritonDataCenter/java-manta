@@ -36,7 +36,7 @@ public class MantaClientEncryptionCiphertextAuthenticationException extends Mant
      * @param message The exception message.
      */
     public MantaClientEncryptionCiphertextAuthenticationException(final String message) {
-        super(message + " " + message);
+        super(message);
     }
 
     /**

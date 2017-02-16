@@ -707,7 +707,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             if (!Arrays.equals(expected, checksum)) {
                 String msg = "Stored authentication HMAC failed to validate ciphertext.";
                 MantaClientEncryptionCiphertextAuthenticationException e =
-                        new MantaClientEncryptionCiphertextAuthenticationException(msg);
+                        new MantaClientEncryptionCiphertextAuthenticationException();
                 annotateException(e);
                 e.setContextValue("expected", Hex.encodeHexString(expected));
                 e.setContextValue("checksum", Hex.encodeHexString(checksum));
