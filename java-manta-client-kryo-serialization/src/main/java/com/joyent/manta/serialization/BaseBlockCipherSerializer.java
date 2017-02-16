@@ -169,7 +169,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
     public void write(final Kryo kryo, final Output output, final T object) {
         kryo.writeObjectOrNull(output, readField(aeadParamsField, object), AEADParameters.class);
         kryo.writeClassAndObject(output, readField(availableSpecsField, object));
-        //kryo.writeClassAndObject(output, readField(baseEngineField, object));
+        kryo.writeClassAndObject(output, readField(baseEngineField, object));
         kryo.writeClassAndObject(output, readField(cipherField, object));
         output.writeVarInt((Integer)readField(digestField, object), true);
 
@@ -207,7 +207,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
     public T read(final Kryo kryo, final Input input, final Class<T> type) {
         final AEADParameters aeadParams = kryo.readObjectOrNull(input, AEADParameters.class);
         final Object availableSpecs = kryo.readClassAndObject(input);
-        final Object baseEngine = new org.bouncycastle.crypto.engines.AESEngine();
+        final Object baseEngine = kryo.readClassAndObject(input);
         final Object cipher = kryo.readClassAndObject(input);
         final int digest = input.readVarInt(true);
         final BlockCipherProvider engineProvider = buildEngineProvider();
