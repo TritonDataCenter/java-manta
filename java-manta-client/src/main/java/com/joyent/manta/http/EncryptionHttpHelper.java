@@ -317,10 +317,15 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
             if (originalPlaintextLengthS.length() > 0) {
                 final Long originalPlaintextLength = Long.parseLong(originalPlaintextLengthS);
-                if (plaintextRangeLength == 0L) {
+                if (plaintextRangeLength == 0L || plaintextRangeLength >= originalPlaintextLength) {
                     plaintextRangeLength = originalPlaintextLength - plaintextStart;
                 }
-                unboundedEnd = (plaintextEnd >= originalPlaintextLength || plaintextEnd < 0);
+                if (plaintextStart > 0 && plaintextEnd >= originalPlaintextLength) {
+                    plaintextRangeLength = originalPlaintextLength - plaintextStart;
+                    unboundedEnd = false;
+                } else {
+                    unboundedEnd = (plaintextEnd < 0);
+                }
             }
 
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
