@@ -36,6 +36,8 @@ import javax.crypto.spec.RC5ParameterSpec;
 import java.lang.reflect.Field;
 import java.security.AlgorithmParameters;
 
+import static com.joyent.manta.serialization.ReflectionUtils.findClass;
+
 /**
  * Serializer that serializes the BouncyCastle base block cipher
  * subclasses.

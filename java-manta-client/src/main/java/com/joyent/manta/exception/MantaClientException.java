@@ -8,10 +8,11 @@
 package com.joyent.manta.exception;
 
 /**
+ * General exception class for Manta client exceptions.
+ *
  * @author Yunong Xiao
  */
 public class MantaClientException extends MantaException {
-
     private static final long serialVersionUID = 4004550753800130185L;
 
     /**
