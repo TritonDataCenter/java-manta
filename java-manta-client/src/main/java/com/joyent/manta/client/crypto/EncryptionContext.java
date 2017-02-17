@@ -13,6 +13,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.util.Objects;
 
 /**
  * Context class that contains a secret key, cipher/mode properties objects
@@ -27,7 +28,7 @@ public class EncryptionContext {
     /**
      * Secret key to encrypt stream with.
      */
-    private final SecretKey key;
+    private transient SecretKey key;
 
     /**
      * Attributes of the cipher used for encryption.
@@ -37,8 +38,7 @@ public class EncryptionContext {
     /**
      * Cipher implementation used to encrypt as a stream.
      */
-    private final transient Cipher cipher;
-
+    private final Cipher cipher;
 
     /**
      * Creates a new instance of an encryption context.
@@ -71,6 +71,15 @@ public class EncryptionContext {
         return key;
     }
 
+    /**
+     * Sets the secret key (used by serialization).
+     *
+     * @param key secret key
+     */
+    public void setKey(final SecretKey key) {
+        this.key = key;
+    }
+
     public SupportedCipherDetails getCipherDetails() {
         return cipherDetails;
     }
@@ -100,4 +109,24 @@ public class EncryptionContext {
         }
     }
 
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final EncryptionContext that = (EncryptionContext) o;
+
+        return Objects.equals(key, that.key)
+               && Objects.equals(cipherDetails, that.cipherDetails);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, cipherDetails);
+    }
 }

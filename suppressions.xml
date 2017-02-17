@@ -21,4 +21,5 @@
     <suppress checks="[a-zA-Z0-9]*" files="BlockSizeBench.java" />
     <suppress checks="[a-zA-Z0-9]*" files="ConcurrentWeakIdentityHashMap.java" />
     <suppress checks="Header" files="NotThreadSafe.java" />
+    <suppress checks="JavadocVariable" files="^.+Serializer.java" />
 </suppressions>

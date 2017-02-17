@@ -8,8 +8,8 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.lang3.Validate;
+import org.bouncycastle.crypto.macs.HMac;
 
-import javax.crypto.Mac;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -24,12 +24,18 @@ public class HmacOutputStream extends OutputStream {
     /**
      * HMAC instance used to generate HMAC for wrapped stream.
      */
-    private final Mac hmac;
+    private HMac hmac;
 
     /**
      * Underlying stream being wrapped.
      */
-    private final OutputStream out;
+    private OutputStream out;
+
+    /**
+     * Private constructor used for serialization.
+     */
+    private HmacOutputStream() {
+    }
 
     /**
      * Creates a new instance using the specified HMAC instance and wrapping
@@ -38,7 +44,7 @@ public class HmacOutputStream extends OutputStream {
      * @param hmac HMAC instance that has been initialized
      * @param chained stream being wrapped
      */
-    public HmacOutputStream(final Mac hmac, final OutputStream chained) {
+    public HmacOutputStream(final HMac hmac, final OutputStream chained) {
         Validate.notNull(hmac, "HMAC instance must not be null");
         Validate.notNull(chained, "OutputStream must not be null");
 
@@ -46,7 +52,7 @@ public class HmacOutputStream extends OutputStream {
         this.out = chained;
     }
 
-    public Mac getHmac() {
+    public HMac getHmac() {
         return hmac;
     }
 
@@ -57,15 +63,15 @@ public class HmacOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(final byte[] b) throws IOException {
-        hmac.update(b);
-        out.write(b);
+    public void write(final byte[] buffer) throws IOException {
+        hmac.update(buffer, 0, buffer.length);
+        out.write(buffer);
     }
 
     @Override
-    public void write(final byte[] b, final int off, final int len) throws IOException {
-        hmac.update(b, off, len);
-        out.write(b, off, len);
+    public void write(final byte[] buffer, final int offset, final int length) throws IOException {
+        hmac.update(buffer, offset, length);
+        out.write(buffer, offset, length);
     }
 
     @Override

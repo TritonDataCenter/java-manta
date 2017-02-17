@@ -20,13 +20,14 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,7 +85,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * The HMAC instance (if using non AEAD encryption) used to authenticate the ciphertext.
      */
-    private final Mac hmac;
+    private final HMac hmac;
 
     /**
      * The stream that wraps the backing stream allowing for streaming decryption.
@@ -208,16 +209,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return;
         }
 
-        try {
-            this.hmac.init(secretKey);
-        } catch (InvalidKeyException e) {
-            String msg = "Couldn't initialize HMAC with secret key";
-            MantaClientEncryptionException mce = new MantaClientEncryptionException(msg, e);
-            annotateException(mce);
-            throw mce;
-        }
+        this.hmac.init(new KeyParameter(secretKey.getEncoded()));
 
-        this.hmac.update(this.cipher.getIV());
+        final byte[] iv = this.cipher.getIV();
+        this.hmac.update(iv, 0, iv.length);
     }
 
     /**
@@ -285,7 +280,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             if (this.hmac == null) {
                 hmacSize = this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
             } else {
-                hmacSize = this.hmac.getMacLength();
+                hmacSize = this.hmac.getMacSize();
             }
 
             if (!isRangeRequest || this.unboundedEnd) {
@@ -324,7 +319,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
      *
      * @return HMAC instance or null when encrypted by a AEAD cipher
      */
-    private Mac findHmac() {
+    private HMac findHmac() {
         if (this.cipherDetails.isAEADCipher() || !this.authenticateCiphertext) {
             return null;
         }
@@ -347,7 +342,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             throw e;
         }
 
-        Supplier<Mac> macSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacString);
+        Supplier<HMac> macSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacString);
 
         if (macSupplier == null) {
             String msg = String.format("HMAC stored in header metadata [%s] is unsupported",
@@ -645,7 +640,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         if (this.cipherDetails.isAEADCipher()) {
             cipherTextContentLength -= this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
         } else {
-            cipherTextContentLength -= this.hmac.getMacLength();
+            cipherTextContentLength -= this.hmac.getMacSize();
         }
         final int bufferSize;
 
@@ -675,8 +670,9 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         IOUtils.closeQuietly(cipherInputStream);
 
         if (hmac != null && authenticateCiphertext) {
-            byte[] checksum = hmac.doFinal();
-            byte[] expected = new byte[this.hmac.getMacLength()];
+            byte[] checksum = new byte[hmac.getMacSize()];
+            hmac.doFinal(checksum, 0);
+            byte[] expected = new byte[this.hmac.getMacSize()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
             if (super.getBackingStream().read() != EOF) {
@@ -691,10 +687,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
             }
 
-            if (readHmacBytes != this.hmac.getMacLength()) {
+            if (readHmacBytes != this.hmac.getMacSize()) {
                 MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
                 annotateException(e);
-                e.setContextValue("expectedHmacSize", this.hmac.getMacLength());
+                e.setContextValue("expectedHmacSize", this.hmac.getMacSize());
                 e.setContextValue("actualHmacSize", readHmacBytes);
                 throw e;
             }
@@ -711,7 +707,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             if (!Arrays.equals(expected, checksum)) {
                 String msg = "Stored authentication HMAC failed to validate ciphertext.";
                 MantaClientEncryptionCiphertextAuthenticationException e =
-                        new MantaClientEncryptionCiphertextAuthenticationException(msg);
+                        new MantaClientEncryptionCiphertextAuthenticationException();
                 annotateException(e);
                 e.setContextValue("expected", Hex.encodeHexString(expected));
                 e.setContextValue("checksum", Hex.encodeHexString(checksum));
@@ -744,7 +740,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         }
 
         if (this.hmac != null) {
-            exception.setContextValue("hmacAlgorithm", this.hmac.getAlgorithm());
+            exception.setContextValue("hmacAlgorithm", this.hmac.getAlgorithmName());
         } else {
             exception.setContextValue("hmacAlgorithm", "null");
         }

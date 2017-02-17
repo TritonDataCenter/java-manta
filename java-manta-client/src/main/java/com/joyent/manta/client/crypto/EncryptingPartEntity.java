@@ -10,6 +10,7 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.http.MantaContentTypes;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -108,7 +109,15 @@ public class EncryptingPartEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
+        Validate.notNull(httpOut, "HttpOut stream must not be null");
+        Validate.notNull(multipartStream, "MultipartStream must not be null");
+
         multipartStream.setNext(httpOut);
+
+        final InputStream contentStream = getContent();
+        Validate.notNull(contentStream, "Content input stream must not be null");
+        Validate.notNull(cipherStream, "Cipher output stream must not be null");
+
         try {
             IOUtils.copy(getContent(), cipherStream, BUFFER_SIZE);
             cipherStream.flush();

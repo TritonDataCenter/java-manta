@@ -10,6 +10,7 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.crypto.EncryptionContext;
 
 import java.io.OutputStream;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -19,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author <a href="https://github.com/cburroughs/">Chris Burroughs</a>
  * @since 3.0.0
  */
-class EncryptionState {
+public class EncryptionState {
     /**
      * Encryption cipher state object.
      */
@@ -38,12 +39,20 @@ class EncryptionState {
     /**
      * The multipart stream that allows for attaching and detaching streams.
      */
-    private MultipartOutputStream multipartStream = null;
+    private transient MultipartOutputStream multipartStream = null;
 
     /**
      * The encrypting stream.
      */
-    private OutputStream cipherStream = null;
+    private transient OutputStream cipherStream = null;
+
+    /**
+     * Zero argument constructor used for serialization.
+     */
+    private EncryptionState() {
+        this.encryptionContext = null;
+        this.lock = new ReentrantLock();
+    }
 
     /**
      * <p>Creates a new multipart encryption state object.</p>
@@ -55,7 +64,7 @@ class EncryptionState {
      *
      * @param encryptionContext encryption cipher state object
      */
-    EncryptionState(final EncryptionContext encryptionContext) {
+    public EncryptionState(final EncryptionContext encryptionContext) {
         this.encryptionContext = encryptionContext;
         this.lock = new ReentrantLock();
     }
@@ -90,5 +99,26 @@ class EncryptionState {
 
     void setCipherStream(final OutputStream cipherStream) {
         this.cipherStream = cipherStream;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final EncryptionState that = (EncryptionState) o;
+
+        return lastPartNumber == that.lastPartNumber
+                && Objects.equals(encryptionContext, that.encryptionContext);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(encryptionContext, lastPartNumber);
     }
 }

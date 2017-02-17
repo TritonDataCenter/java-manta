@@ -43,13 +43,14 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -672,7 +673,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 throw e;
             }
 
-            Supplier<Mac> hmacSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacId);
+            Supplier<HMac> hmacSupplier = SupportedHmacsLookupMap.INSTANCE.get(hmacId);
             if (hmacSupplier == null) {
                 String msg = String.format("Unsupported HMAC specified: %s",
                         hmacId);
@@ -681,10 +682,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 throw e;
             }
 
-            final Mac hmac = hmacSupplier.get();
+            final HMac hmac = hmacSupplier.get();
             initHmac(this.secretKey, hmac);
+            hmac.update(metadataCipherText, 0, metadataCipherText.length);
 
-            byte[] actualHmac = hmac.doFinal(metadataCipherText);
+            byte[] actualHmac = new byte[hmac.getMacSize()];
+            hmac.doFinal(actualHmac, 0);
 
             if (metadataHmacBase64 == null) {
                 String msg = "No metadata HMAC is available to authenticate metadata ciphertext";
@@ -761,10 +764,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             LOGGER.debug("AEAD tag length: {}", cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
             // HMAC Type because we are doing MtE
         } else {
-            Mac hmac = cipherDetails.getAuthenticationHmac();
-            metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
-                    hmac.getAlgorithm());
-            LOGGER.debug("HMAC algorithm: {}", hmac.getAlgorithm());
+            HMac hmac = cipherDetails.getAuthenticationHmac();
+            final String hmacName = SupportedHmacsLookupMap.hmacNameFromInstance(hmac);
+            metadata.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE, hmacName);
+            LOGGER.debug("HMAC algorithm: {}", hmacName);
         }
     }
 
@@ -840,10 +843,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA, metadataCipherTextBase64);
 
         if (!this.cipherDetails.isAEADCipher()) {
-            final Mac hmac = this.cipherDetails.getAuthenticationHmac();
+            final HMac hmac = this.cipherDetails.getAuthenticationHmac();
             initHmac(this.secretKey, hmac);
 
-            byte[] checksum = hmac.doFinal(metadataCipherText);
+            hmac.update(metadataCipherText, 0, metadataCipherText.length);
+
+            byte[] checksum = new byte[hmac.getMacSize()];
+            hmac.doFinal(checksum, 0);
+
             String checksumBase64 = Base64.getEncoder().encodeToString(checksum);
             metadata.put(MantaHttpHeaders.ENCRYPTION_METADATA_HMAC, checksumBase64);
 
@@ -1087,17 +1094,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param secretKey secret key to initialize with
      * @param hmac HMAC object to be initialized
      */
-    private static void initHmac(final SecretKey secretKey, final Mac hmac) {
-        try {
-            hmac.init(secretKey);
-        } catch (InvalidKeyException e) {
-            MantaClientEncryptionException mcee = new MantaClientEncryptionException(
-                    "There was a problem loading private key", e);
-            String details = String.format("key=%s, algorithm=%s",
-                    secretKey.getAlgorithm(), secretKey.getFormat());
-            mcee.setContextValue("key_details", details);
-            throw mcee;
-        }
+    private static void initHmac(final SecretKey secretKey,
+                                 final HMac hmac) {
+        hmac.init(new KeyParameter(secretKey.getEncoded()));
     }
 
     public SecretKey getSecretKey() {

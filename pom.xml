@@ -65,6 +65,7 @@
 
     <modules>
         <module>java-manta-client</module>
+        <module>java-manta-client-kryo-serialization</module>
         <module>java-manta-cli</module>
         <module>java-manta-it</module>
         <module>java-manta-benchmark</module>
@@ -150,6 +151,8 @@
         <dependency.commons-lang.version>3.4</dependency.commons-lang.version>
         <dependency.commons-io.version>2.5</dependency.commons-io.version>
         <dependency.commons-codec.version>1.10</dependency.commons-codec.version>
+        <dependency.kryo.version>4.0.0</dependency.kryo.version>
+        <dependency.objenesis.version>2.2</dependency.objenesis.version>
     </properties>
 
     <dependencies>
@@ -161,8 +164,21 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
             <version>${dependency.mockito.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+            <version>${dependency.objenesis.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

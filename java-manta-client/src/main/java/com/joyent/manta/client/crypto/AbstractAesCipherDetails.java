@@ -10,9 +10,9 @@ package com.joyent.manta.client.crypto;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.bouncycastle.crypto.macs.HMac;
 
 import javax.crypto.Cipher;
-import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -116,7 +116,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
         this.cipherId = createMantaCipherIdFromJavaAlgorithmId(
                 cipherAlgorithmJavaName, keyLengthBits);
         this.hmacAlgorithm = hmacAlgorithm;
-        this.authenticationTagOrHmacLength = getAuthenticationHmac().getMacLength();
+        this.authenticationTagOrHmacLength = getAuthenticationHmac().getMacSize();
         this.isAEADCipher = false;
     }
 
@@ -167,7 +167,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     }
 
     @Override
-    public Mac getAuthenticationHmac() {
+    public HMac getAuthenticationHmac() {
         if (this.isAEADCipher) {
             return null;
         }
