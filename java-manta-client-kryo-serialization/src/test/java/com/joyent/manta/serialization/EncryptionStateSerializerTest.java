@@ -10,10 +10,12 @@ package com.joyent.manta.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.testng.Assert;
@@ -22,6 +24,7 @@ import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.Base64;
 
@@ -34,21 +37,21 @@ public class EncryptionStateSerializerTest {
     SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
     SecretKey secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
     private Kryo kryo = new Kryo();
-    private EncryptionState encryptionState;
 
     @BeforeClass
     public void setup() {
-        kryo.register(EncryptionStateSerializer.class, new EncryptionStateSerializer(kryo));
-        EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
-        this.encryptionState = new EncryptionState(encryptionContext);
+        kryo.register(EncryptionStateSerializer.class,
+                new EncryptionStateSerializer(kryo, secretKey));
     }
 
     @SuppressWarnings("unchecked")
     public void canSerializeEncryptionState() throws Exception {
+        final EncryptionState encryptionState = newEncryptionStateInstance();
+
         final byte[] serializedData;
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              Output output = new Output(outputStream)) {
-            this.kryo.writeObject(output, this.encryptionState);
+            this.kryo.writeObject(output, encryptionState);
             output.flush();
             serializedData = outputStream.toByteArray();
         }
@@ -61,5 +64,31 @@ public class EncryptionStateSerializerTest {
 
             Assert.assertEquals(actual, encryptionState);
         }
+    }
+
+    private EncryptionState newEncryptionStateInstance() {
+        EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
+        EncryptionState encryptionState = new EncryptionState(encryptionContext);
+
+        MultipartOutputStream multipartStream = new MultipartOutputStream(
+                cipherDetails.getBlockSizeInBytes());
+
+        Field multipartStreamField = ReflectionUtils.getField(EncryptionState.class,
+                "multipartStream");
+        Field cipherStreamField = ReflectionUtils.getField(EncryptionState.class,
+                "cipherStream");
+
+        try {
+            FieldUtils.writeField(multipartStreamField, encryptionState, multipartStream);
+
+            final OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
+                    multipartStream, encryptionContext);
+
+            FieldUtils.writeField(cipherStreamField, encryptionState, cipherStream);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+
+        return encryptionState;
     }
 }

@@ -9,12 +9,13 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.CipherOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -63,11 +64,16 @@ public final class EncryptingEntityHelper {
         final OutputStream out;
         final HMac hmac;
 
+        Validate.notNull(encryptionContext.getCipherDetails(),
+                "Cipher details must not be null");
+
         // Things are a lot more simple if we are using AEAD
         if (encryptionContext.getCipherDetails().isAEADCipher()) {
             out = cipherOut;
         } else {
             hmac = encryptionContext.getCipherDetails().getAuthenticationHmac();
+            Validate.notNull(encryptionContext.getSecretKey(),
+                    "Secret key must not be null");
             hmac.init(new KeyParameter(encryptionContext.getSecretKey().getEncoded()));
                 /* The first bytes of the HMAC are the IV. This is done in order to
                  * prevent IV collision or spoofing attacks. */

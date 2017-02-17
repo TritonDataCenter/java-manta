@@ -24,12 +24,18 @@ public class HmacOutputStream extends OutputStream {
     /**
      * HMAC instance used to generate HMAC for wrapped stream.
      */
-    private final HMac hmac;
+    private HMac hmac;
 
     /**
      * Underlying stream being wrapped.
      */
-    private final OutputStream out;
+    private OutputStream out;
+
+    /**
+     * Private constructor used for serialization.
+     */
+    private HmacOutputStream() {
+    }
 
     /**
      * Creates a new instance using the specified HMAC instance and wrapping

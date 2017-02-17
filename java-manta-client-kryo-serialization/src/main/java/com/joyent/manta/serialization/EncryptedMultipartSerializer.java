@@ -8,13 +8,10 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.multipart.AbstractMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptionState;
-import org.apache.commons.lang3.reflect.FieldUtils;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
@@ -71,29 +68,7 @@ public class EncryptedMultipartSerializer<WRAPPED extends AbstractMultipartUploa
      * @param kryo Kryo instance
      */
     private void registerClasses(final Kryo kryo) {
-        kryo.register(EncryptionState.class, new EncryptionStateSerializer(kryo));
+        kryo.register(EncryptionState.class, new EncryptionStateSerializer(kryo, secretKey));
         kryo.register(wrappedType, new MultipartUploadSerializer<WRAPPED>(kryo, wrappedType));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public EncryptedMultipartUpload<WRAPPED> read(final Kryo kryo,
-                                                  final Input input,
-                                                  final Class<EncryptedMultipartUpload<WRAPPED>> type) {
-        EncryptedMultipartUpload<WRAPPED> value = super.read(kryo, input, type);
-
-        try {
-            EncryptionState encryptionState = (EncryptionState)FieldUtils
-                    .readField(encryptionStateField, value, true);
-            EncryptionContext encryptionContext = (EncryptionContext)FieldUtils
-                    .readField(encryptionContextField, encryptionState, true);
-            encryptionContext.setKey(secretKey);
-        } catch (ReflectiveOperationException e) {
-            String msg = "Couldn't read private fields from "
-                    + "encrypted multipart upload object";
-            throw new MantaClientSerializationException(msg, e);
-        }
-
-        return value;
     }
 }

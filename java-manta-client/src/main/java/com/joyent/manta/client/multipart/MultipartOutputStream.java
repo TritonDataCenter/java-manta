@@ -17,7 +17,7 @@ import java.util.Arrays;
 /**
  * {@link OutputStream} implementation that allows for the attaching and
  * detaching of delegated (wrapped) streams. This is done so that we can
- * preserve the state of a {@link javax.crypto.CipherOutputStream} instance
+ * preserve the state of a {@link org.bouncycastle.jcajce.io.CipherOutputStream} instance
  * while switching the backing stream (in this case a stream that allows
  * writing to the HTTP socket).
  *
@@ -39,6 +39,12 @@ public class MultipartOutputStream extends OutputStream {
      * Blocksize to segment to.
      */
     private int blockSize;
+
+    /**
+     * Private no-arg constructor for serialization.
+     */
+    private MultipartOutputStream() {
+    }
 
     /**
      * Creates a new instance with the specified block size.

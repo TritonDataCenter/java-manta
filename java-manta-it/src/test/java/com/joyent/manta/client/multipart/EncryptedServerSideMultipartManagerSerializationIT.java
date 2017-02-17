@@ -14,6 +14,9 @@ import com.esotericsoftware.kryo.io.Output;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -22,6 +25,7 @@ import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.serialization.EncryptionStateSerializer;
+import com.joyent.manta.serialization.SerializationHelper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.LoggerFactory;
@@ -34,6 +38,7 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -80,8 +85,6 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
-
-        kryo.register(EncryptionStateSerializer.class, new EncryptionStateSerializer(kryo));
     }
 
     @AfterClass
@@ -93,6 +96,12 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
     }
 
     public final void canResumeUploadWithByteArrayAndMultipleParts() throws IOException {
+        final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.get(
+                config.getEncryptionAlgorithm());
+        final SecretKey secretKey = SecretKeyUtils.loadKey(config.getEncryptionPrivateKeyBytes(),
+                cipherDetails);
+        final SerializationHelper<ServerSideMultipartUpload> helper =
+                new SerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
@@ -106,27 +115,15 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
 
-        final byte[] serializedEncryptionState;
+        final byte[] serializedEncryptionState = helper.serialize(upload);
 
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-             Output output = new Output(outputStream, 1_000_000)) {
-
-            EncryptionStateSerializer serializer = new EncryptionStateSerializer(kryo);
-            serializer.write(kryo, output, upload.getEncryptionState());
-            serializedEncryptionState = outputStream.toByteArray();
-        }
-
-        UUID resumeUploadId = upload.getId();
-        String resumePath = upload.getPath();
-        String resumePartsDirectory = upload.getWrapped().getPartsDirectory();
-
-
-        MantaMultipartUploadPart part2 = resumeUpload(serializedEncryptionState, resumeUploadId, resumePath, resumePartsDirectory, content2);
+        EncryptedMultipartUpload<ServerSideMultipartUpload> deserializedUpload
+                = helper.deserialize(serializedEncryptionState);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(deserializedUpload, 2, content2);
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
 
-
-        multipart.complete(upload, partsStream);
+        multipart.complete(deserializedUpload, partsStream);
 
         try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -137,23 +134,6 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
             Assert.assertEquals(in.getContentType(), contentType,
                     "Set content-type doesn't match actual content type");
-        }
-    }
-
-    public final MantaMultipartUploadPart resumeUpload(byte[] serializedEncryptionState, UUID resumeUploadId, String resumePath, String resumePartsDirectory, byte[] content) throws IOException {
-        MantaClient resumeClient = new MantaClient(this.config);
-        EncryptedServerSideMultipartManager resumeMultipart = new EncryptedServerSideMultipartManager(resumeClient);
-
-        try (Input inputEncryptionState = new FastInput(serializedEncryptionState)) {
-            EncryptionStateSerializer serializer = new EncryptionStateSerializer(kryo);
-            EncryptionState encryptionState = serializer.read(kryo, inputEncryptionState, EncryptionState.class);
-            ServerSideMultipartUpload serverSideMultipartUpload = new ServerSideMultipartUpload(resumeUploadId, resumePath, resumePartsDirectory);
-
-            EncryptedMultipartUpload<ServerSideMultipartUpload> resumeUpload = new EncryptedMultipartUpload<>(serverSideMultipartUpload, encryptionState);
-
-            MantaMultipartUploadPart part = resumeMultipart.uploadPart(resumeUpload, 2, content);
-
-            return part;
         }
     }
 }

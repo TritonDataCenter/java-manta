@@ -36,7 +36,7 @@ final class ReflectionUtils {
      *
      * @param className class name to look up
      * @return class instance
-     * @throws UnsupportedOperationException if class can't be found
+     * @throws MantaClientSerializationException if class can't be found
      */
     static Class<?> findClass(final String className) {
         try {
@@ -47,6 +47,22 @@ final class ReflectionUtils {
             mcse.setContextValue("className", className);
 
             throw mcse;
+        }
+    }
+
+    /**
+     * Gets a {@link Class} instance by looking up the name or returns
+     * null if not found.
+     *
+     * @param className class name to look up
+     * @return class instance or null if not found
+     * @throws MantaClientSerializationException if class can't be found
+     */
+    static Class<?> findClassOrNull(final String className) {
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            return null;
         }
     }
 

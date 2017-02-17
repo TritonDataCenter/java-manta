@@ -44,7 +44,7 @@ public class EncryptionState {
     /**
      * The encrypting stream.
      */
-    private OutputStream cipherStream = null;
+    private transient OutputStream cipherStream = null;
 
     /**
      * Zero argument constructor used for serialization.
@@ -114,13 +114,11 @@ public class EncryptionState {
         final EncryptionState that = (EncryptionState) o;
 
         return lastPartNumber == that.lastPartNumber
-                && Objects.equals(encryptionContext, that.encryptionContext)
-                && Objects.equals(cipherStream, that.cipherStream);
+                && Objects.equals(encryptionContext, that.encryptionContext);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(encryptionContext, lastPartNumber,
-                multipartStream, cipherStream);
+        return Objects.hash(encryptionContext, lastPartNumber);
     }
 }

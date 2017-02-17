@@ -14,11 +14,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.http.HttpEntity;
+import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
 import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.FileInputStream;

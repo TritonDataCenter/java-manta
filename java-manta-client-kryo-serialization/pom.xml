@@ -84,6 +84,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${dependency.commons-io.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Kryo serialization library for use with testing serialization
              of multipart objects -->
         <dependency>

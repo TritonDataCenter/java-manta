@@ -124,8 +124,8 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
         }
 
         final byte[] serializedData;
-        // Typically the output is around 1-2k serialized, 4k should be fine
-        final int outputBufferSize = 4096;
+        // 16k buffer should handle the serialized content
+        final int outputBufferSize = 16384;
         try (Output output = new Output(new byte[outputBufferSize])) {
             kryo.writeClassAndObject(output, upload);
             output.flush();
