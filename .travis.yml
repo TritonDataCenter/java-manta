@@ -1,5 +1,9 @@
 dist: trusty
 language: java
+# We now cache the Maven dependencies directory for faster builds
+cache:
+  directories:
+  - $HOME/.m2
 sudo: false
 
 before_install:
