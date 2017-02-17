@@ -62,6 +62,13 @@ tmp/
 local.properties
 .settings/
 .loadpath
+.project
+.classpath
+.checkstyle
+workbench.xmi
+
+### Netbeans ###
+nbactions.xml
 
 # External tool builders
 .externalToolBuilders/
