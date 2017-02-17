@@ -49,6 +49,39 @@ public final class EncryptingEntityHelper {
      */
     public static OutputStream makeCipherOutputForStream(
             final OutputStream httpOut, final EncryptionContext encryptionContext) {
+        final HMac hmac;
+
+        if (encryptionContext.getCipherDetails().isAEADCipher()) {
+            hmac = null;
+        } else {
+            hmac = encryptionContext.getCipherDetails().getAuthenticationHmac();
+            Validate.notNull(encryptionContext.getSecretKey(),
+                    "Secret key must not be null");
+            hmac.init(new KeyParameter(encryptionContext.getSecretKey().getEncoded()));
+                /* The first bytes of the HMAC are the IV. This is done in order to
+                 * prevent IV collision or spoofing attacks. */
+            final byte[] iv = encryptionContext.getCipher().getIV();
+            hmac.update(iv, 0, iv.length);
+        }
+
+        return makeCipherOutputForStream(httpOut, encryptionContext, hmac);
+    }
+
+    /**
+     * Creates a new {@link OutputStream} implementation that is backed directly
+     * by a {@link CipherOutputStream} or a {@link HmacOutputStream} that wraps
+     * a {@link CipherOutputStream} depending on the encryption cipher/mode being
+     * used. This allows us to support EtM authentication for ciphers/modes that
+     * do not natively support authenticating encryption.
+     *
+     * @param httpOut output stream for writing to the HTTP network socket
+     * @param encryptionContext current encryption running state
+     * @param hmac current HMAC object with the current checksum state
+     * @return a new stream configured based on the parameters
+     */
+    public static OutputStream makeCipherOutputForStream(
+            final OutputStream httpOut, final EncryptionContext encryptionContext,
+            final HMac hmac) {
         /* We have to use a "close shield" here because when close() is called
          * on a CipherOutputStream() for two reasons:
          *
@@ -62,7 +95,6 @@ public final class EncryptingEntityHelper {
         final CloseShieldOutputStream noCloseOut = new CloseShieldOutputStream(httpOut);
         final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, encryptionContext.getCipher());
         final OutputStream out;
-        final HMac hmac;
 
         Validate.notNull(encryptionContext.getCipherDetails(),
                 "Cipher details must not be null");
@@ -71,15 +103,6 @@ public final class EncryptingEntityHelper {
         if (encryptionContext.getCipherDetails().isAEADCipher()) {
             out = cipherOut;
         } else {
-            hmac = encryptionContext.getCipherDetails().getAuthenticationHmac();
-            Validate.notNull(encryptionContext.getSecretKey(),
-                    "Secret key must not be null");
-            hmac.init(new KeyParameter(encryptionContext.getSecretKey().getEncoded()));
-                /* The first bytes of the HMAC are the IV. This is done in order to
-                 * prevent IV collision or spoofing attacks. */
-            final byte[] iv = encryptionContext.getCipher().getIV();
-            hmac.update(iv, 0, iv.length);
-
             out = new HmacOutputStream(hmac, cipherOut);
         }
 

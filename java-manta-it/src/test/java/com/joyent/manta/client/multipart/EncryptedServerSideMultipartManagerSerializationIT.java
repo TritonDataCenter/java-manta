@@ -26,8 +26,10 @@ import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.serialization.EncryptionStateSerializer;
 import com.joyent.manta.serialization.SerializationHelper;
+import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.crypto.macs.HMac;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
@@ -41,6 +43,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
@@ -115,10 +118,19 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
 
+        @SuppressWarnings("unchecked")
+        final HMac preSerializedHmac = ((HmacOutputStream)upload.getEncryptionState()
+                .getCipherStream()).getHmac();
+
         final byte[] serializedEncryptionState = helper.serialize(upload);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> deserializedUpload
                 = helper.deserialize(serializedEncryptionState);
+
+        @SuppressWarnings("unchecked")
+        final HMac deserializedHmac = ((HmacOutputStream)deserializedUpload.getEncryptionState()
+                .getCipherStream()).getHmac();
+
         MantaMultipartUploadPart part2 = multipart.uploadPart(deserializedUpload, 2, content2);
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);

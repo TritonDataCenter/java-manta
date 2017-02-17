@@ -18,6 +18,7 @@ import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
 import com.joyent.manta.client.multipart.MultipartOutputStream;
+import com.joyent.manta.util.HmacOutputStream;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.objenesis.instantiator.sun.MagicInstantiator;
@@ -114,6 +115,19 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final int lastPartNumber = (int)readField(lastPartNumberField, object);
         output.writeInt(lastPartNumber, true);
 
+        Object cipherStream = readField(cipherStreamField, object);
+
+        final HMac hmac;
+
+        if (cipherStream.getClass().equals(HmacOutputStream.class)) {
+            HmacOutputStream hmacStream = (HmacOutputStream)cipherStream;
+            hmac = hmacStream.getHmac();
+        } else {
+            hmac = null;
+        }
+
+        kryo.writeObjectOrNull(output, hmac, HMac.class);
+
         output.flush();
     }
 
@@ -133,8 +147,10 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final MultipartOutputStream multipartStream = new MultipartOutputStream(blockSize);
         writeField(multipartStreamField, encryptionState, multipartStream);
 
+        final HMac hmac = kryo.readObjectOrNull(input, HMac.class);
+
         final OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
-                multipartStream, encryptionContext);
+                multipartStream, encryptionContext, hmac);
 
         writeField(cipherStreamField, encryptionState, cipherStream);
 
