@@ -64,60 +64,57 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     public ByteRangeConversion translateByteRange(final long startInclusive, final long endInclusive) {
         final long plaintextMax = getMaximumPlaintextSizeInBytes();
 
-        if (startInclusive < 0) {
-            String msg = String.format("Start position must be zero or higher. Actually: %d",
-                    startInclusive);
+        if (startInclusive > endInclusive) {
+            String msg = "Start position must be precede end position (startInclusive=" + startInclusive
+                    + ", endInclusive=" + endInclusive + ")";
             throw new IllegalArgumentException(msg);
         }
 
-        if (startInclusive > plaintextMax) {
-            String msg = String.format("Start position must be less than maximum "
-                            + "ciphertext size [%d]. Actually: %d",
-                    plaintextMax, startInclusive);
+        if (startInclusive < 0) {
+            String msg = "Start position must be zero or higher (startInclusive=" + startInclusive + ")";
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (startInclusive >= plaintextMax) {
+            String msg = "Start position must be less than maximum plaintext size (startInclusive="
+                    + startInclusive + ", plaintextMax=" + plaintextMax + ")";
             throw new IllegalArgumentException(msg);
         }
 
         if (endInclusive < 0) {
-            String msg = String.format("End position must be zero or higher. Actually: %d",
-                    endInclusive);
+            String msg = "End position must be zero or higher (endInclusive=" + endInclusive + ")";
             throw new IllegalArgumentException(msg);
         }
 
-        if (endInclusive > plaintextMax) {
-            String msg = String.format("End position must be less than maximum "
-                            + "ciphertext size [%d]. Actually: %d",
-                    plaintextMax, endInclusive);
+        if (endInclusive >= plaintextMax) {
+            String msg = "End position must be less than maximum plaintext size (endInclusive=" + endInclusive
+                    + ", plaintextMax=" + plaintextMax + ")";
             throw new IllegalArgumentException(msg);
         }
 
         final int blockSize = getBlockSizeInBytes();
-        long adjustedStart;
-        long adjustedEnd;
-        long plaintextEndLength;
 
-        // How many bytes do we offset in the first block
-        long plaintextStartAdjustment = startInclusive % blockSize;
+        // How many bytes do we offset in the first block?
+        final long plaintextBytesToSkipInitially = startInclusive % blockSize;
 
-        // The first block is considered block 0
-        double startBlockNumber = Math.floor(startInclusive / blockSize);
+        // Get the ciphertext block index for the start byte (zero based)
+        final long startingBlockNumberInclusive = startInclusive / blockSize;
 
-        // Content-Range: bytes=adjustedStart-adjustedEnd
-        adjustedStart = ((long) startBlockNumber) * blockSize;
+        // Get the ciphertext byte position for the start block (block size bytes per block)
+        final long ciphertextStartPositionInclusive = startingBlockNumberInclusive * blockSize;
 
-        // Get the full block for the end range, plus an additional block
-        double endBlockNumber = Math.ceil(endInclusive / blockSize) + 1;
+        // Get the ciphertext block index for the end byte (zero based)
+        final long endingBlockNumberInclusive = endInclusive / blockSize;
 
-        adjustedEnd = (((long) endBlockNumber) * blockSize) + 1;
+        // Get the ciphertext byte position for the start block (next block subtract a byte)
+        final long ciphertextEndPositionInclusive = ((endingBlockNumberInclusive + 1) * blockSize) - 1;
 
-        // We want to read a single byte, subtract 1 from adjustedEnd, which assumed 2 or more bytes are read
-        if (startInclusive == endInclusive) {
-            adjustedEnd--;
-        }
+        // Compute plaintext length (byte indices are zero based)
+        final long lengthOfPlaintextIncludingSkipBytes = (endInclusive - startInclusive)
+                + (plaintextBytesToSkipInitially + 1);
 
-        plaintextEndLength = (endInclusive - startInclusive) + 1;
-
-        return new ByteRangeConversion(adjustedStart, plaintextStartAdjustment,
-                adjustedEnd, plaintextEndLength, (long)startBlockNumber);
+        return new ByteRangeConversion(ciphertextStartPositionInclusive, plaintextBytesToSkipInitially,
+                ciphertextEndPositionInclusive, lengthOfPlaintextIncludingSkipBytes, startingBlockNumberInclusive);
     }
 
     @Override
