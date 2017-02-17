@@ -16,7 +16,7 @@ import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 
 /**
  * Serializer class for {@link SupportedCipherDetails} implementations
- * that only serializes the name of the cipher id. Derserialization is done
+ * that only serializes the name of the cipher id. Deserialization is done
  * by looking up the id against the values in {@link SupportedCiphersLookupMap}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>

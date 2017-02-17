@@ -8,6 +8,7 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -104,10 +105,8 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
      *
      * @param upload object to serialize and encrypt
      * @return serialized and encrypted byte array
-     * @throws IOException thrown when there is a problem serializing the object
      */
-    public byte[] serialize(final EncryptedMultipartUpload<WRAPPED> upload)
-            throws IOException {
+    public byte[] serialize(final EncryptedMultipartUpload<WRAPPED> upload) {
         Cipher cipher = cipherDetails.getCipher();
         byte[] iv = cipherDetails.generateIv();
 
@@ -124,9 +123,10 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
         }
 
         final byte[] serializedData;
-        // 16k buffer should handle the serialized content
-        final int outputBufferSize = 16384;
-        try (Output output = new Output(new byte[outputBufferSize])) {
+        // 16k buffer *should* handle the serialized content
+        final int outputBufferSize = 8192;
+        final int maxBufferSize = 16384;
+        try (Output output = new ByteBufferOutput(outputBufferSize, maxBufferSize)) {
             kryo.writeClassAndObject(output, upload);
             output.flush();
             serializedData = output.toBytes();
@@ -169,11 +169,9 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
      *
      * @param serializedData data to decrypt and deserialize
      * @return an upload object
-     * @throws IOException thrown when there is a problem deserializing
      */
     @SuppressWarnings("unchecked")
-    public EncryptedMultipartUpload<WRAPPED> deserialize(final byte[] serializedData)
-            throws IOException {
+    public EncryptedMultipartUpload<WRAPPED> deserialize(final byte[] serializedData) {
         final byte[] iv = Arrays.copyOf(serializedData, cipherDetails.getIVLengthInBytes());
 
         if (LOGGER.isDebugEnabled()) {

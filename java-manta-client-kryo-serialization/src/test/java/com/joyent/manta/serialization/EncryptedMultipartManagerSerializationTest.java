@@ -8,23 +8,22 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.FastOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
-import com.joyent.manta.client.multipart.*;
+import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
+import com.joyent.manta.client.multipart.EncryptionState;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
+import com.joyent.manta.client.multipart.ServerSideMultipartUpload;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.bouncycastle.crypto.macs.HMac;
-import org.objenesis.instantiator.sun.MagicInstantiator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.testng.asserts.Assertion;
 
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;

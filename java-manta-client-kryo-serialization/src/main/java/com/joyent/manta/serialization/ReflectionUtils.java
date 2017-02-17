@@ -18,7 +18,7 @@ import java.util.Objects;
  * Utility class providing helper methods for use with reflection.
  * We intentionally are not using external dependencies for this
  * functionality because we want to limit our dependency scope
- * because we will need to reshade within this module.
+ * because we will need to (re)shade within this module.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
