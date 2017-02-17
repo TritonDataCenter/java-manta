@@ -17,6 +17,9 @@ import org.bouncycastle.crypto.macs.HMac;
 
 import java.lang.reflect.Field;
 
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
+
 /**
  * Kryo serializer that deconstructs a BouncyCastle {@link HMac} instance
  * and allows for serialization and deserialization.

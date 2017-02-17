@@ -59,7 +59,7 @@ public class EncryptionStateSerializerTest {
         try (Input input = new Input(serializedData)) {
             EncryptionState actual = kryo.readObject(input, EncryptionState.class);
             EncryptionContext actualEncryptionContext =
-                    (EncryptionContext)FieldUtils.readField(ENCRYPTION_CONTEXT_FIELD, actual, true);
+                    (EncryptionContext)ReflectionUtils.readField(ENCRYPTION_CONTEXT_FIELD, actual);
             actualEncryptionContext.setKey(secretKey);
 
             Assert.assertEquals(actual, encryptionState);

@@ -8,7 +8,6 @@
 package com.joyent.manta.serialization;
 
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.lang3.ClassUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -89,12 +88,10 @@ final class ReflectionUtils {
                 // just continue the loop if the field can't be found
             }
         }
-        // check the public interface case. This must be manually searched for
-        // incase there is a public supersuperclass field hidden by a private/package
-        // superclass field.
+
         Field field = null;
 
-        for (final Class<?> c : ClassUtils.getAllInterfaces(clazz)) {
+        for (final Class<?> c : clazz.getInterfaces()) {
             try {
                 final Field potentialField = c.getField(name);
                 if (field != null) {
@@ -109,6 +106,65 @@ final class ReflectionUtils {
             }
         }
         return field;
+    }
+
+    /**
+     * Reads a field from an object.
+     *
+     * @param field field to read
+     * @param object object to read from
+     * @return field's value
+     */
+    static Object readField(final Field field, final Object object) {
+        Objects.requireNonNull(field, "Field must not be null");
+        Objects.requireNonNull(object, "Object must not be null");
+
+        if (!field.isAccessible()) {
+            field.setAccessible(true);
+        }
+
+        try {
+            return field.get(object);
+        } catch (IllegalAccessException e) {
+            String msg = String.format("Error reading private field from [%s] class",
+                    object.getClass().getName());
+            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
+            mcse.setContextValue("field", field.getName());
+            mcse.setContextValue("objectClass", object.getClass());
+            throw mcse;
+        }
+    }
+
+    /**
+     * Writes a object to an object's field.
+     *
+     * @param field field to write to
+     * @param target target object
+     * @param value object to write
+     */
+    static void writeField(final Field field, final Object target, final Object value) {
+        Objects.requireNonNull(field, "Field must not be null");
+        Objects.requireNonNull(target, "Target must not be null");
+
+        if (!field.isAccessible()) {
+            field.setAccessible(true);
+        }
+
+        try {
+            field.set(target, value);
+        } catch (IllegalAccessException e) {
+            String msg = String.format("Unable to write value [%s] to field [%s]",
+                    value, field);
+            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
+            mcse.setContextValue("field", field.getName());
+            mcse.setContextValue("targetClass", target.getClass());
+            if (value == null) {
+                mcse.setContextValue("valueClass", "null");
+            } else {
+                mcse.setContextValue("valueClass", value.getClass());
+            }
+            throw mcse;
+        }
     }
 
     /**

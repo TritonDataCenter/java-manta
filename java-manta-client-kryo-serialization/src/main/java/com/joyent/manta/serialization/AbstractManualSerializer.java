@@ -8,10 +8,8 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Serializer;
-import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.lang.reflect.Field;
-import java.util.Objects;
 
 /**
  * Abstract class providing reflection helper methods for use with
@@ -84,57 +82,6 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
         }
 
         return field;
-    }
-
-    /**
-     * Reads a field from an object.
-     *
-     * @param field field to read
-     * @param object object to read from
-     * @return field's value
-     */
-    protected Object readField(final Field field, final Object object) {
-        Objects.requireNonNull(field, "Field must not be null");
-        Objects.requireNonNull(object, "Object must not be null");
-
-        try {
-            return FieldUtils.readField(field, object, true);
-        } catch (IllegalAccessException e) {
-            String msg = String.format("Error reading private field from [%s] class",
-                    object.getClass().getName());
-            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
-            mcse.setContextValue("field", field.getName());
-            mcse.setContextValue("objectClass", object.getClass());
-            throw mcse;
-        }
-    }
-
-    /**
-     * Writes a object to an object's field.
-     *
-     * @param field field to write to
-     * @param target target object
-     * @param value object to write
-     */
-    protected void writeField(final Field field, final Object target, final Object value) {
-        Objects.requireNonNull(field, "Field must not be null");
-        Objects.requireNonNull(target, "Target must not be null");
-
-        try {
-            FieldUtils.writeField(field, target, value);
-        } catch (IllegalAccessException e) {
-            String msg = String.format("Unable to write value [%s] to field [%s]",
-                    value, field);
-            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
-            mcse.setContextValue("field", field.getName());
-            mcse.setContextValue("targetClass", target.getClass());
-            if (value == null) {
-                mcse.setContextValue("valueClass", "null");
-            } else {
-                mcse.setContextValue("valueClass", value.getClass());
-            }
-            throw mcse;
-        }
     }
 
     /**

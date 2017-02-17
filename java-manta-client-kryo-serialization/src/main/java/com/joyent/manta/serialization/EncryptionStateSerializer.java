@@ -29,6 +29,9 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.Objects;
 
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
+
 /**
  * Kryo serializer that deconstructs a {@link EncryptionState} class for serialization / deserialization.
  *

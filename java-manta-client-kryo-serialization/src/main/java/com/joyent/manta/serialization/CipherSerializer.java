@@ -19,6 +19,8 @@ import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
 
 import static com.joyent.manta.serialization.ReflectionUtils.findClass;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
 
 /**
  * Kryo serializer that deconstructs a {@link Cipher} class backed by
