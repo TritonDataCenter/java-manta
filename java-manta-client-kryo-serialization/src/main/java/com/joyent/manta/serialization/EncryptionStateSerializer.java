@@ -119,6 +119,8 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
 
         final HMac hmac;
 
+        Objects.requireNonNull(cipherStream, "Cipher stream must not be null");
+
         if (cipherStream.getClass().equals(HmacOutputStream.class)) {
             HmacOutputStream hmacStream = (HmacOutputStream)cipherStream;
             hmac = hmacStream.getHmac();

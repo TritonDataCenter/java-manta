@@ -11,15 +11,14 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.FastOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
-import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
-import com.joyent.manta.client.multipart.EncryptionState;
-import com.joyent.manta.client.multipart.JobsMultipartUpload;
-import com.joyent.manta.client.multipart.ServerSideMultipartUpload;
+import com.joyent.manta.client.multipart.*;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.macs.HMac;
 import org.objenesis.instantiator.sun.MagicInstantiator;
 import org.testng.Assert;
@@ -30,6 +29,8 @@ import org.testng.asserts.Assertion;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -61,6 +62,18 @@ public class EncryptedMultipartManagerSerializationTest {
         final ServerSideMultipartUpload inner = new ServerSideMultipartUpload(uploadId, path, partsDir);
         final EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
         final EncryptionState encryptionState = new EncryptionState(encryptionContext);
+
+        Field cipherStreamField = ReflectionUtils.getField(EncryptionState.class, "cipherStream");
+        MultipartOutputStream multipartStream = new MultipartOutputStream(cipherDetails.getBlockSizeInBytes());
+        OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
+                multipartStream, encryptionContext);
+
+        try {
+            FieldUtils.writeField(cipherStreamField, encryptionState, cipherStream);
+        } catch (IllegalAccessException e) {
+            throw new AssertionError(e);
+        }
+
         final EncryptedMultipartUpload upload = newUploadInstance(inner, encryptionState);
 
         final byte[] serializedData;

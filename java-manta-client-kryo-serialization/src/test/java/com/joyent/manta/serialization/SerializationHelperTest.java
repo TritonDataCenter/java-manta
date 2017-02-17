@@ -8,19 +8,24 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptionState;
+import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.client.multipart.ServerSideMultipartUpload;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
@@ -45,9 +50,20 @@ public class SerializationHelperTest {
         final EncryptedMultipartUpload<ServerSideMultipartUpload> upload =
                 (EncryptedMultipartUpload<ServerSideMultipartUpload>)newUploadInstance(inner, encryptionState);
 
+        Field cipherStreamField = ReflectionUtils.getField(EncryptionState.class, "cipherStream");
+        MultipartOutputStream multipartStream = new MultipartOutputStream(cipherDetails.getBlockSizeInBytes());
+        OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
+                multipartStream, encryptionContext);
+
+        try {
+            FieldUtils.writeField(cipherStreamField, encryptionState, cipherStream);
+        } catch (IllegalAccessException e) {
+            throw new AssertionError(e);
+        }
+
         final byte[] serializedData = helper.serialize(upload);
         final EncryptedMultipartUpload deserialized = helper.deserialize(serializedData);
-        System.out.println(deserialized);
+        Assert.assertEquals(upload, deserialized);
     }
 
     public void canConcatenateByteArrays() {
