@@ -76,7 +76,7 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         kryo.register(AesCbcCipherDetails.class, new SupportedCipherDetailsSerializer());
         kryo.register(AesGcmCipherDetails.class, new SupportedCipherDetailsSerializer());
         kryo.register(Cipher.class, new CipherSerializer(kryo));
-        kryo.register(HMac.class, new HmacSerializer());
+        kryo.register(HMac.class, new HmacSerializer(kryo));
 
         final Class<?> closeShieldStreamClass = findCloseShieldStreamClass();
         Objects.requireNonNull(closeShieldStreamClass,

@@ -142,6 +142,13 @@
             </exclusions>
         </dependency>
 
+        <!-- High speed MD5 implementation -->
+        <dependency>
+            <groupId>com.twmacinta</groupId>
+            <artifactId>fast-md5</artifactId>
+            <version>${dependency.fast-md5.version}</version>
+        </dependency>
+
         <!-- Logging bridge that will be shaded to bridge between the Apache
              Commons Logging framework and SLF4J -->
         <dependency>
@@ -201,6 +208,7 @@
                             <exclude>net.java.dev.jna:*</exclude>
                             <exclude>org.hamcrest:*</exclude>
                             <exclude>org.mockito:*</exclude>
+                            <exclude>com.twmacinta:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>

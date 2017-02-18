@@ -22,9 +22,9 @@ SDK for interacting with Joyent's Manta system.
 #### CLI Requirements
 
 Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
- 1. Edit "jre\lib\security\java.security " Add an entry for BouncyCastle  
+ 1. Edit "$JAVA_HOME/jre/lib/security/java.security " Add an entry for BouncyCastle  
  `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
- 2. Copy bc*.jar to jre\lib\ext
+ 2. Copy bc*.jar to $JAVA_HOME/jre/lib/ext
 
 ### Using Maven
 Add the latest java-manta dependency to your Maven `pom.xml`.
