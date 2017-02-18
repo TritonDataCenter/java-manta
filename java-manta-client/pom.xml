@@ -208,7 +208,6 @@
                             <exclude>net.java.dev.jna:*</exclude>
                             <exclude>org.hamcrest:*</exclude>
                             <exclude>org.mockito:*</exclude>
-                            <exclude>com.twmacinta:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>
