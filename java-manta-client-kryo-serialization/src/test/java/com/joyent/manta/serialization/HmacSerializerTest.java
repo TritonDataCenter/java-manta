@@ -39,7 +39,7 @@ public class HmacSerializerTest {
 
     @BeforeClass
     public void setup() {
-        kryo.register(HMac.class, new HmacSerializer());
+        kryo.register(HMac.class, new HmacSerializer(kryo));
         SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
         this.secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
@@ -90,6 +90,8 @@ public class HmacSerializerTest {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
              Output output = new Output(out)) {
             kryo.writeObject(output, hmac);
+            output.flush();
+
             serializedContent = out.toByteArray();
         }
 

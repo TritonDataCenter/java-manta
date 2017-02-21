@@ -13,6 +13,7 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
+import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.output.NullOutputStream;
 
 import javax.crypto.SecretKey;
@@ -60,7 +61,7 @@ public final class EncryptingEntityBenchmark {
                         cipherDetails, entity);
 
                 DigestedEntity digestedEntity = new DigestedEntity(encryptingEntity,
-                        "MD5");
+                        new FastMD5Digest());
 
                 long start = System.nanoTime();
                 digestedEntity.writeTo(noopOut);

@@ -51,6 +51,11 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
     private static final int CIPHER_ID_SIZE_BYTES = 16;
 
     /**
+     * Serialized object graph version.
+     */
+    private static final int ENCRYPTED_MULTIPART_UPLOAD_SERIALIZATION_VERSION = 1;
+
+    /**
      * Kryo serializer instance.
      */
     private final Kryo kryo;
@@ -126,6 +131,7 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
         final int outputBufferSize = 8192;
         final int maxBufferSize = 16384;
         try (Output output = new ByteBufferOutput(outputBufferSize, maxBufferSize)) {
+            output.writeVarInt(ENCRYPTED_MULTIPART_UPLOAD_SERIALIZATION_VERSION, true);
             kryo.writeClassAndObject(output, upload);
             output.flush();
             serializedData = output.toBytes();
@@ -247,7 +253,14 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
         final EncryptedMultipartUpload<WRAPPED> upload;
 
         try (Input input = new Input(plaintext)) {
-             upload = (EncryptedMultipartUpload<WRAPPED>)kryo.readClassAndObject(input);
+            final int serializationVersion = input.readVarInt(true);
+
+            if (serializationVersion != ENCRYPTED_MULTIPART_UPLOAD_SERIALIZATION_VERSION) {
+                LOGGER.warn("Deserialized version [%d] is different than serialization version [%d",
+                        serializationVersion, ENCRYPTED_MULTIPART_UPLOAD_SERIALIZATION_VERSION);
+            }
+
+            upload = (EncryptedMultipartUpload<WRAPPED>)kryo.readClassAndObject(input);
         }
 
         return upload;

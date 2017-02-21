@@ -8,11 +8,11 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.twmacinta.util.FastMD5Digest;
 import com.joyent.manta.util.LookupMap;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
-import org.bouncycastle.crypto.digests.MD5Digest;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.digests.SHA384Digest;
@@ -59,7 +59,7 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
     private static Supplier<HMac> hmacSupplierByName(final String algorithm) {
         return () -> {
             if (algorithm.equalsIgnoreCase("HmacMD5")) {
-                return new HMac(new MD5Digest());
+                return new HMac(new FastMD5Digest());
             } else if (algorithm.equalsIgnoreCase("HmacSHA1")) {
                 return new HMac(new SHA1Digest());
             } else if (algorithm.equalsIgnoreCase("HmacSHA256")) {

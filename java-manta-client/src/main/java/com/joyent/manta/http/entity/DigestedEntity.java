@@ -7,18 +7,18 @@
  */
 package com.joyent.manta.http.entity;
 
-import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
+import org.apache.commons.io.output.TeeOutputStream;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.io.DigestOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.nio.ByteBuffer;
 
 /**
  * Class that wraps an {@link HttpEntity} instance and calculates a running
@@ -31,7 +31,7 @@ public class DigestedEntity implements HttpEntity {
     /**
      * Calculates a running MD5 as data is streamed out.
      */
-    private final MessageDigest messageDigest;
+    private final Digest digest;
 
     /**
      * Wrapped entity implementation in which the API is proxied through.
@@ -43,19 +43,12 @@ public class DigestedEntity implements HttpEntity {
      * digest.
      *
      * @param wrapped entity to wrap
-     * @param algorithm lookup name of cryptographic digest
+     * @param digest cryptographic digest implementation
      */
     public DigestedEntity(final HttpEntity wrapped,
-                   final String algorithm) {
+                          final Digest digest) {
         this.wrapped = wrapped;
-
-        try {
-            this.messageDigest = MessageDigest.getInstance(algorithm);
-        } catch (NoSuchAlgorithmException e) {
-            String msg = String.format("No digest algorithm by the name of "
-                    + "[%s] available in the JVM", algorithm);
-            throw new MantaException(msg);
-        }
+        this.digest = digest;
     }
 
     @Override
@@ -93,13 +86,25 @@ public class DigestedEntity implements HttpEntity {
         // If our wrapped entity is backed by a buffer of some form
         // we can read easily read the whole buffer into our message digest.
         if (wrapped instanceof MemoryBackedEntity) {
-            MemoryBackedEntity entity = (MemoryBackedEntity)wrapped;
-            messageDigest.update(entity.getBackingBuffer());
+            final MemoryBackedEntity entity = (MemoryBackedEntity)wrapped;
+            final ByteBuffer backingBuffer = entity.getBackingBuffer();
 
-            wrapped.writeTo(out);
+            if (backingBuffer.hasArray()) {
+                final byte[] bytes = backingBuffer.array();
+                final int offset = backingBuffer.arrayOffset();
+                final int position = backingBuffer.position();
+                final int limit = backingBuffer.limit();
+
+                digest.update(bytes, offset + position, limit - position);
+                backingBuffer.position(limit);
+
+                wrapped.writeTo(out);
+            }
         } else {
-            try (DigestOutputStream dout = new DigestOutputStream(out, messageDigest)) {
-                wrapped.writeTo(dout);
+            try (DigestOutputStream dout = new DigestOutputStream(digest);
+                 TeeOutputStream teeOut = new TeeOutputStream(out, dout)) {
+                wrapped.writeTo(teeOut);
+                teeOut.flush();
             }
         }
     }
@@ -122,13 +127,17 @@ public class DigestedEntity implements HttpEntity {
      * @return a byte array containing the md5 value
      */
     public byte[] getDigest() {
-        return this.messageDigest.digest();
+        final byte[] res = new byte[digest.getDigestSize()];
+
+        digest.doFinal(res, 0);
+
+        return res;
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("messageDigest", MantaUtils.byteArrayAsHexString(getDigest()))
+                .append("digest", MantaUtils.byteArrayAsHexString(getDigest()))
                 .append("wrapped", wrapped)
                 .toString();
     }

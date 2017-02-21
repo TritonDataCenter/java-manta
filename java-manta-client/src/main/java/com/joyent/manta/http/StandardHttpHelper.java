@@ -19,7 +19,7 @@ import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
@@ -181,7 +181,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         if (entity != null) {
             if (validateUploadsEnabled()) {
-                md5DigestedEntity = new DigestedEntity(entity, MessageDigestAlgorithms.MD5);
+                md5DigestedEntity = new DigestedEntity(entity, new FastMD5Digest());
                 put.setEntity(md5DigestedEntity);
             } else {
                 md5DigestedEntity = null;
@@ -191,7 +191,8 @@ public class StandardHttpHelper implements HttpHelper {
             md5DigestedEntity = null;
         }
 
-        CloseableHttpClient client = connectionContext.getHttpClient();
+        final CloseableHttpClient client = connectionContext.getHttpClient();
+        final MantaObjectResponse obj;
 
         try (CloseableHttpResponse response = client.execute(put)) {
             StatusLine statusLine = response.getStatusLine();
@@ -201,27 +202,27 @@ public class StandardHttpHelper implements HttpHelper {
             // We add back in the metadata made in the request so that it is easily available
             responseHeaders.putAll(httpHeaders.metadata());
 
-            MantaObjectResponse obj = new MantaObjectResponse(path, responseHeaders, metadata);
+            obj = new MantaObjectResponse(path, responseHeaders, metadata);
 
             if (statusLine.getStatusCode() != HttpStatus.SC_NO_CONTENT) {
                 throw new MantaClientHttpResponseException(put, response,
                         put.getURI().getPath());
             }
-
-            /* We set the content type on the result object from the entity
-             * PUT if that content type isn't already present on the result object.
-             * This allows for the result object to have the original
-             * content-type even if it isn't part of any response headers. */
-            if (obj.getContentType() == null && entity != null && entity.getContentType() != null) {
-                obj.setContentType(entity.getContentType().getValue());
-            }
-
-            if (validateUploadsEnabled()) {
-                validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
-            }
-
-            return obj;
         }
+
+        /* We set the content type on the result object from the entity
+         * PUT if that content type isn't already present on the result object.
+         * This allows for the result object to have the original
+         * content-type even if it isn't part of any response headers. */
+        if (obj.getContentType() == null && entity != null && entity.getContentType() != null) {
+            obj.setContentType(entity.getContentType().getValue());
+        }
+
+        if (validateUploadsEnabled()) {
+            validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
+        }
+
+        return obj;
     }
 
     @Override

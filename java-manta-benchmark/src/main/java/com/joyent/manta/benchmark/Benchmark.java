@@ -15,11 +15,14 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.NullOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -378,15 +381,36 @@ public final class Benchmark {
     private static Duration[] measureGet(final String path) throws IOException {
         final Instant start = Instant.now();
         final String serverLatencyString;
-        try (MantaObjectInputStream is = client.getAsInputStream(path)) {
-            while (is.skip(SKIP_VALUE) != 0) { }
+        MantaObjectInputStream is = client.getAsInputStream(path);
+
+        try {
+            copyToTheEther(is);
             serverLatencyString = is.getHeader("x-response-time").toString();
+        } finally {
+            IOUtils.closeQuietly(is);
         }
         final Instant stop = Instant.now();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));
         Duration fullLatency = Duration.between(start, stop);
         return new Duration[] {fullLatency, serverLatency};
+    }
+
+    /**
+     * Copies the entirety of an input stream to a {@link NullOutputStream}.
+     * @param input stream to copy
+     * @throws IOException thrown when you can't copy to nothing
+     */
+    @SuppressWarnings("InnerAssignment")
+    private static void copyToTheEther(final InputStream input) throws IOException {
+
+        try (OutputStream output = new NullOutputStream()) {
+            final byte[] buffer = new byte[512];
+
+            for (int n; -1 != (n = input.read(buffer));) {
+                output.write(buffer, 0, n);
+            }
+        }
     }
 
     /**

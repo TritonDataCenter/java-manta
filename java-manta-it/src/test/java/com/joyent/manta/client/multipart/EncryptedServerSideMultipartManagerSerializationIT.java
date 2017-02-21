@@ -118,10 +118,6 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
 
-        @SuppressWarnings("unchecked")
-        final HMac preSerializedHmac = ((HmacOutputStream)upload.getEncryptionState()
-                .getCipherStream()).getHmac();
-
         final byte[] serializedEncryptionState = helper.serialize(upload);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> deserializedUpload
