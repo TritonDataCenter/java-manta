@@ -264,11 +264,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         final Long plaintextEnd;
 
         if (hasRangeRequest) {
-            Long[] rangeProperties = calculateSkipBytesAndPlaintextLength(request, requestHeaders);
-            initialSkipBytes = rangeProperties[0];
-            plaintextRangeLength = rangeProperties[1];
-            plaintextStart = rangeProperties[2];
-            plaintextEnd = rangeProperties[3];
+            PlaintextByteRangePosition rangeProperties = calculateSkipBytesAndPlaintextLength(
+                    request, requestHeaders);
+            initialSkipBytes = rangeProperties.getInitialPlaintextSkipBytes();
+            plaintextRangeLength = rangeProperties.getPlaintextRangeLength();
+            plaintextStart = rangeProperties.getPlaintextStart();
+            plaintextEnd = rangeProperties.getPlaintextEnd();
         } else {
             initialSkipBytes = null;
             plaintextRangeLength = null;
@@ -346,9 +347,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @return a {@link Long} array containing two elements: skip bytes, plaintext length
      * @throws IOException thrown when we fail making an additional HEAD request
      */
-    @SuppressWarnings("MagicNumber")
-    private Long[] calculateSkipBytesAndPlaintextLength(final HttpUriRequest request,
-                                                        final MantaHttpHeaders requestHeaders)
+    private PlaintextByteRangePosition calculateSkipBytesAndPlaintextLength(
+            final HttpUriRequest request, final MantaHttpHeaders requestHeaders)
             throws IOException {
         final Long initialSkipBytes;
         Long plaintextRangeLength = 0L;
@@ -442,7 +442,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             plaintextRangeLength = 0L;
         }
 
-        return new Long[] {initialSkipBytes, plaintextRangeLength, plaintextStart, plaintextEnd};
+        return new PlaintextByteRangePosition()
+                .setInitialPlaintextSkipBytes(initialSkipBytes)
+                .setPlaintextRangeLength(plaintextRangeLength)
+                .setPlaintextStart(plaintextStart)
+                .setPlaintextEnd(plaintextEnd);
     }
 
     @Override
