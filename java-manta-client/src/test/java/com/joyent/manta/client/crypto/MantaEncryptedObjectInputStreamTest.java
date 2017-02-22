@@ -859,19 +859,18 @@ public class MantaEncryptedObjectInputStreamTest {
             randomAccessFile.seek(ciphertextStart);
 
             long initialSkipBytes = ranges.getPlaintextBytesToSkipInitially() + ranges.getCiphertextStartPositionInclusive();
-            long binaryEndPositionInclusive = 0L;
+            long binaryEndPositionInclusive = ranges.getCiphertextEndPositionInclusive();
 
-            if (ranges.getCiphertextEndPositionInclusive() > 0) {
-                binaryEndPositionInclusive = ranges.getCiphertextEndPositionInclusive();
-            }
+            long ciphertextRangeMaxBytes = ciphertextSize - ciphertextStart;
+            long ciphertextRangeRequestBytes = binaryEndPositionInclusive - ciphertextStart + 1;
 
             /* We then calculate the range length based on the *actual* ciphertext
              * size so that we are emulating HTTP range requests by returning a
              * the binary of the actual object (even if the range went beyond). */
-            long ciphertextByteRangeLength = binaryEndPositionInclusive - ciphertextStart;
-            if (binaryEndPositionInclusive == 0L || ciphertextByteRangeLength > (ciphertextSize - ciphertextStart)) {
-                ciphertextByteRangeLength = ciphertextSize - ciphertextStart;
-            }
+            long ciphertextByteRangeLength = Math.min(ciphertextRangeMaxBytes, ciphertextRangeRequestBytes);
+
+            if (unboundedEnd)
+                ciphertextByteRangeLength = ciphertextSize - ciphertextStart; // include MAC
 
             byte[] rangedBytes = new byte[(int)ciphertextByteRangeLength];
             randomAccessFile.read(rangedBytes);
