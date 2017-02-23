@@ -117,6 +117,7 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         Assert.assertEquals(byteRange3.getCiphertextStartPositionInclusive(), 32);
         Assert.assertEquals(byteRange3.getCiphertextEndPositionInclusive(), 47);
         Assert.assertEquals(byteRange3.getPlaintextBytesToSkipInitially(), 0);
+        Assert.assertEquals(byteRange3.getLengthOfPlaintextIncludingSkipBytes(), 4);
 
     }
 
