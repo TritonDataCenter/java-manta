@@ -317,7 +317,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             // Try to calculate from original-plaintext header
             final String originalPlaintextLengthS = rawStream.getHeaderAsString(
                     MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
-            if (originalPlaintextLengthS.length() > 0) {
+            if (originalPlaintextLengthS != null && originalPlaintextLengthS.length() > 0) {
                 final Long originalPlaintextLength = Long.parseLong(originalPlaintextLengthS);
                 if (plaintextRangeLength == 0L || plaintextRangeLength >= originalPlaintextLength) {
                     plaintextRangeLength = originalPlaintextLength - plaintextStart;
