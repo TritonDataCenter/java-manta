@@ -359,3 +359,4 @@ goes out to:
 * [The JNAGMP Project](https://github.com/square/jna-gmp)
 * [The TestNG Project](http://testng.org/doc/index.html)
 * [The Mockito Project](http://site.mockito.org/)
+* [Timothy W Macinta's FastMD5 Project](http://twmacinta.com/myjava/fast_md5.php)
