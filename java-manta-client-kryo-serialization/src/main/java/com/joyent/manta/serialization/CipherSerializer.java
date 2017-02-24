@@ -11,7 +11,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import com.joyent.manta.client.crypto.BouncyCastleLoader;
 import org.bouncycastle.jcajce.provider.symmetric.AES;
 
 import javax.crypto.Cipher;
@@ -117,8 +116,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         final Cipher cipher;
 
         try {
-            cipher = Cipher.getInstance(transformation,
-                    BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+            cipher = Cipher.getInstance(transformation);
         } catch (GeneralSecurityException e) {
             String msg = "Unable to instantiate Cipher";
             MantaClientSerializationException mcse =  new MantaClientSerializationException(msg, e);

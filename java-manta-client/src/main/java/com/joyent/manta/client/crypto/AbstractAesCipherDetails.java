@@ -16,6 +16,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.time.Duration;
@@ -81,6 +82,11 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * new seed value.
      */
     private volatile Instant seedLastRefreshedTimestamp = Instant.now();
+
+    /**
+     * Provider
+     */
+    private static Provider pkcs11Provider = new sun.security.pkcs11.SunPKCS11("/var/tmp/nss.cfg");
 
     /**
      * Creates a new instance for a AEAD cipher.
@@ -162,8 +168,9 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public Cipher getCipher() {
+        final Provider provider = pkcs11Provider;
         return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
-                BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+                provider);
     }
 
     @Override
