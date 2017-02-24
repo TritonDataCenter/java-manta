@@ -411,9 +411,18 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             binaryEndPositionInclusive = ciphertextSize;
         // This is the typical case like: bytes=3-44
         } else {
+
+            long scaledPlaintextEnd = plaintextEnd;
+
+            // interpret maximum plaintext value as unbounded end
+            if (plaintextEnd == cipherDetails.getMaximumPlaintextSizeInBytes()) {
+
+                scaledPlaintextEnd--;
+            }
+
             // calculates the ciphertext byte range
             final ByteRangeConversion computedRanges = this.cipherDetails.translateByteRange(
-                    plaintextStart, plaintextEnd);
+                    plaintextStart, scaledPlaintextEnd);
 
             binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
             initialSkipBytes = computedRanges.getPlaintextBytesToSkipInitially()
@@ -425,7 +434,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                 binaryEndPositionInclusive = 0;
             }
 
-            plaintextRangeLength = (plaintextEnd - plaintextStart) + 1;
+            plaintextRangeLength = (scaledPlaintextEnd - plaintextStart) + 1;
         }
 
         // We don't know the ending position

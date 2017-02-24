@@ -103,21 +103,22 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
     public void translateByteRangeReturnsCorrectRange() throws Exception {
         ByteRangeConversion byteRange1 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 10);
         Assert.assertEquals(byteRange1.getCiphertextStartPositionInclusive(), 0);
-        Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 17);
+        Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 15);
         Assert.assertEquals(byteRange1.getPlaintextBytesToSkipInitially(), 5);
-        Assert.assertEquals(byteRange1.getLengthOfPlaintextIncludingSkipBytes(), 6);
+        Assert.assertEquals(byteRange1.getLengthOfPlaintextIncludingSkipBytes(), 11);
 
         ByteRangeConversion byteRange2 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 22);
         Assert.assertEquals(byteRange2.getCiphertextStartPositionInclusive(), 0);
-        Assert.assertEquals(byteRange2.getCiphertextEndPositionInclusive(), 33);
+        Assert.assertEquals(byteRange2.getCiphertextEndPositionInclusive(), 31);
         Assert.assertEquals(byteRange2.getPlaintextBytesToSkipInitially(), 5);
-        Assert.assertEquals(byteRange2.getLengthOfPlaintextIncludingSkipBytes(), 18);
+        Assert.assertEquals(byteRange2.getLengthOfPlaintextIncludingSkipBytes(), 23);
 
         ByteRangeConversion byteRange3 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(32, 35);
         Assert.assertEquals(byteRange3.getCiphertextStartPositionInclusive(), 32);
-        Assert.assertEquals(byteRange3.getCiphertextEndPositionInclusive(), 49);
+        Assert.assertEquals(byteRange3.getCiphertextEndPositionInclusive(), 47);
         Assert.assertEquals(byteRange3.getPlaintextBytesToSkipInitially(), 0);
         Assert.assertEquals(byteRange3.getLengthOfPlaintextIncludingSkipBytes(), 4);
+
     }
 
     protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
@@ -176,15 +177,15 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
                 long adjustedPlaintextRange = cipherDetails.updateCipherToPosition(decryptor, startPlaintextRange);
 
-                byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int) startCipherTextRange, (int) endCipherTextRange);
+                byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int) startCipherTextRange, (int) Math.min(ciphertext.length, endCipherTextRange + 1));
                 byte[] out = decryptor.doFinal(adjustedCipherText);
                 byte[] decrypted = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
-                        (int) adjustedPlaintextLength + (int) adjustedPlaintextRange);
+                        (int) Math.min(out.length, adjustedPlaintextLength));
 
                 String decryptedText = new String(decrypted);
                 String adjustedText = new String(adjustedPlaintext);
 
-                Assert.assertEquals(decryptedText, adjustedText,
+                Assert.assertEquals(adjustedText, decryptedText,
                         "Random read output from ciphertext doesn't match expectation " +
                                 "[cipher=" + cipherDetails.getCipherId() + "]");
             }
