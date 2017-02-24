@@ -289,6 +289,54 @@ public class EncryptedServerSideMultipartManagerIT {
         }
     }
 
+    public final void canUploadWithSinglePartAndPerformRangeRequest() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(524);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
+
+        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
+        multipart.complete(upload, partsStream);
+
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setByteRange(5L, 10L);
+
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path, headers);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
+
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    Arrays.copyOfRange(content, 5, 11), out.toByteArray());
+        }
+    }
+
+    public final void canUploadWithSinglePartAndPerformUnboundedRangeRequest() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(524);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
+
+        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
+        multipart.complete(upload, partsStream);
+
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setByteRange(5L, null);
+
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path, headers);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
+
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    Arrays.copyOfRange(content, 5, 524), out.toByteArray());
+        }
+    }
+
     public void errorWhenMissingPart() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

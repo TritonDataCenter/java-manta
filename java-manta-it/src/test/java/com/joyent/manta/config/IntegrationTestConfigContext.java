@@ -58,6 +58,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         if (usingEncryption) {
             context.setClientEncryptionEnabled(true);
             context.setEncryptionKeyId("integration-test-key");
+            context.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
 
             SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher,
                     DefaultsConfigContext.DEFAULT_CIPHER);
