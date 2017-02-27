@@ -84,11 +84,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     private volatile Instant seedLastRefreshedTimestamp = Instant.now();
 
     /**
-     * Provider
-     */
-    private static Provider pkcs11Provider = new sun.security.pkcs11.SunPKCS11("/var/tmp/nss.cfg");
-
-    /**
      * Creates a new instance for a AEAD cipher.
      *
      * @param keyLengthBits size of the secret key
@@ -168,7 +163,20 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public Cipher getCipher() {
-        final Provider provider = pkcs11Provider;
+        if (ExternalSecurityProviderLoader.getPkcs11Provider() == null ) {
+            return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
+                    ExternalSecurityProviderLoader.getBouncyCastleProvider());
+        }
+
+        final Provider provider;
+
+        if (ExternalSecurityProviderLoader.getPkcs11Provider().containsKey(
+                "Cipher." + cipherAlgorithmJavaName)) {
+            provider = ExternalSecurityProviderLoader.getPkcs11Provider();
+        } else {
+            provider = ExternalSecurityProviderLoader.getBouncyCastleProvider();
+        }
+
         return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
                 provider);
     }

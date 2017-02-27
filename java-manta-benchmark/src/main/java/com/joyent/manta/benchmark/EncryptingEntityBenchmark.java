@@ -19,7 +19,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.security.SecureRandom;
+import java.security.Provider;
 import java.time.Duration;
 
 /**
@@ -97,7 +97,6 @@ public final class EncryptingEntityBenchmark {
      */
     public static void main(final String[] argv) throws Exception {
         final int tries;
-        final SecureRandom random;
 
         if (argv.length < 1) {
             tries = 10;
@@ -106,8 +105,9 @@ public final class EncryptingEntityBenchmark {
         }
 
         for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
+            Provider provider = cipherDetails.getCipher().getProvider();
             System.out.println("===================================================");
-            System.out.printf(" %s Timings:\n", cipherDetails.getCipherId());
+            System.out.printf(" %s [%s] Timings:\n", cipherDetails.getCipherId(), provider);
             System.out.println("===================================================");
             throughputTest(tries, cipherDetails);
         }

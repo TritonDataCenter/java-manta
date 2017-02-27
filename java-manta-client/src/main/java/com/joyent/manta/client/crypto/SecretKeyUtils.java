@@ -67,7 +67,7 @@ public final class SecretKeyUtils {
         Validate.isTrue(bits > 0, "Cipher bits must be greater than zero");
 
         KeyGenerator symKeyGenerator = KeyGenerator.getInstance(algorithm,
-                BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+                ExternalSecurityProviderLoader.getPreferredProvider());
         symKeyGenerator.init(bits);
         return symKeyGenerator.generateKey();
     }
