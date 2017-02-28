@@ -16,10 +16,16 @@ import java.security.Provider;
 import java.security.Security;
 
 /**
+ * Serializer class that writes out the name of a {@link Provider} without
+ * writing its state.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
 public class ProviderSerializer extends Serializer<Provider> {
+    /**
+     * Creates a new instance.
+     */
     public ProviderSerializer() {
         super(false, true);
     }

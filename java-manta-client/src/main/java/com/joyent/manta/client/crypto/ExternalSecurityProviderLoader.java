@@ -28,7 +28,14 @@ public final class ExternalSecurityProviderLoader {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(ExternalSecurityProviderLoader.class);
 
+    /**
+     * Name of BouncyCastle security provider.
+     */
     private static final String BC_PROVIDER_NAME = "org.bouncycastle.jce.provider.BouncyCastleProvider";
+
+    /**
+     * Name of native PKCS11 NSS security provider.
+     */
     private static final String PKCS11_PROVIDER_NAME = "SunPKCS11-NSS";
 
     /**

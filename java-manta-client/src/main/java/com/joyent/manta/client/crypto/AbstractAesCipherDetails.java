@@ -163,7 +163,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public Cipher getCipher() {
-        if (ExternalSecurityProviderLoader.getPkcs11Provider() == null ) {
+        if (ExternalSecurityProviderLoader.getPkcs11Provider() == null) {
             return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
                     ExternalSecurityProviderLoader.getBouncyCastleProvider());
         }
