@@ -54,11 +54,11 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
      * @param kryo Kryo instance
      */
     private void registerClasses(final Kryo kryo) {
-        Class<?> tokenClass = findClass("sun.security.pkcs11.Token");
-
-        if (tokenClass != null) {
-            kryo.register(tokenClass, new JavaSerializer());
-        }
+//        Class<?> tokenClass = findClass("sun.security.pkcs11.Token");
+//
+//        if (tokenClass != null) {
+//            kryo.register(tokenClass);
+//        }
     }
 
     @Override

@@ -8,29 +8,20 @@
 package com.joyent.manta.client.multipart;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.FastInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.exception.MantaClientException;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaErrorCode;
-import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.serialization.EncryptionStateSerializer;
 import com.joyent.manta.serialization.SerializationHelper;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.bouncycastle.crypto.macs.HMac;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.SkipException;
@@ -39,20 +30,17 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
+import static org.unitils.reflectionassert.ReflectionAssert.assertReflectionEquals;
 
 @Test(groups = { "encrypted" })
 @SuppressWarnings("Duplicates")
@@ -98,7 +86,7 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         }
     }
 
-    public final void canResumeUploadWithByteArrayAndMultipleParts() throws IOException {
+    public final void canResumeUploadWithByteArrayAndMultipleParts() throws Exception {
         final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.get(
                 config.getEncryptionAlgorithm());
         final SecretKey secretKey = SecretKeyUtils.loadKey(config.getEncryptionPrivateKeyBytes(),
@@ -123,9 +111,24 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         EncryptedMultipartUpload<ServerSideMultipartUpload> deserializedUpload
                 = helper.deserialize(serializedEncryptionState);
 
-        @SuppressWarnings("unchecked")
-        final HMac deserializedHmac = ((HmacOutputStream)deserializedUpload.getEncryptionState()
-                .getCipherStream()).getHmac();
+        assertReflectionEquals("Cipher state differs between uploads",
+                upload.getEncryptionState().getEncryptionContext().getCipher(),
+                deserializedUpload.getEncryptionState().getEncryptionContext().getCipher());
+
+        Field innerOutputStreamField = FieldUtils.getField(
+                HmacOutputStream.class, "out", true);
+
+        CipherOutputStream uploadCipherStream = (CipherOutputStream)
+                FieldUtils.readField(innerOutputStreamField, upload.getEncryptionState().getCipherStream(), true);
+
+        CipherOutputStream deserializedCipherStream = (CipherOutputStream)
+                FieldUtils.readField(innerOutputStreamField, deserializedUpload.getEncryptionState().getCipherStream(), true);
+
+        Field cipherField = FieldUtils.getField(CipherOutputStream.class, "cipher", true);
+
+        assertReflectionEquals(
+                deserializedUpload.getEncryptionState().getEncryptionContext().getCipher(),
+                FieldUtils.readField(cipherField, deserializedCipherStream, true));
 
         MantaMultipartUploadPart part2 = multipart.uploadPart(deserializedUpload, 2, content2);
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
@@ -133,15 +136,23 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
         multipart.complete(deserializedUpload, partsStream);
 
-        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            IOUtils.copy(in, out);
-
-            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
-                    content, out.toByteArray());
-
+        final byte[] bytes;
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path)) {
             Assert.assertEquals(in.getContentType(), contentType,
                     "Set content-type doesn't match actual content type");
+
+            int b;
+            int i = 0;
+            while ((b = in.read()) != -1) {
+                final byte expected = content[i++];
+
+                Assert.assertEquals((byte)b, expected,
+                        "Byte not matched at position: " + (i - 1));
+            }
+
+            if (i + 1 < content.length) {
+                fail("Missing " + (content.length - i + 1) + "bytes from Manta stream");
+            }
         }
     }
 }

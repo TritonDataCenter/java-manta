@@ -59,7 +59,11 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
 
     @Override
     public UUID getId() {
-        return this.wrapped.getId();
+        if (this.wrapped != null) {
+            return this.wrapped.getId();
+        }
+
+        return null;
     }
 
     @Override
