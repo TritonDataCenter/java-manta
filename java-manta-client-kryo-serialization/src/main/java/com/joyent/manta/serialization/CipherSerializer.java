@@ -23,7 +23,9 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.IdentityHashMap;
 
-import static com.joyent.manta.serialization.ReflectionUtils.*;
+import static com.joyent.manta.serialization.ReflectionUtils.findClass;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
 
 /**
  * Kryo serializer that deconstructs a {@link Cipher} class and
@@ -91,126 +93,91 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
 
         kryo.register(IdentityHashMap.class, new JavaSerializer());
 
-        Class<?> p11CipherClass = findClass("sun.security.pkcs11.P11Cipher");
-
-        if (p11CipherClass != null) {
-            kryo.register(p11CipherClass, new CompatibleFieldSerializer(kryo, p11CipherClass))
-                    .setInstantiator(new MagicInstantiator<>(p11CipherClass));
-        }
-
-        Class<?> p11SecretKeyClass = findClass("sun.security.pkcs11.P11Key$P11SecretKey");
-
-        if (p11SecretKeyClass != null) {
-            kryo.register(p11SecretKeyClass)
-                .setInstantiator(new MagicInstantiator<>(p11SecretKeyClass));
-        }
-
-        Class<?> sessionKeyRefClass = findClass("sun.security.pkcs11.SessionKeyRef");
-
-        if (sessionKeyRefClass != null) {
-            kryo.register(sessionKeyRefClass, new CompatibleFieldSerializer<>(
-                    kryo, sessionKeyRefClass))
-                    .setInstantiator(new MagicInstantiator<>(sessionKeyRefClass));
-        }
-
-        Class<?> sessionClass = findClass("sun.security.pkcs11.Session");
-
-        if (sessionClass != null) {
-            kryo.register(sessionClass, new CompatibleFieldSerializer<>(kryo, sessionClass))
-                    .setInstantiator(new MagicInstantiator<>(sessionClass));
-        }
-
-        Class<?> sessionRefClass = findClass("sun.security.pkcs11.SessionRef");
-
-        if (sessionKeyRefClass != null) {
-            kryo.register(sessionRefClass, new SessionRefSerializer(kryo));
-        }
-
-        Class<?> tokenClass = findClass("sun.security.pkcs11.Token");
-
-        if (tokenClass != null) {
-            kryo.register(tokenClass)
-                    .setInstantiator(new MagicInstantiator<>(tokenClass));
-        }
-
-        Class<?> configClass = findClass("sun.security.pkcs11.Config");
-
-        if (configClass != null) {
-            kryo.register(configClass).setInstantiator(new MagicInstantiator<>(configClass));
-        }
-
-        Class<?> templateKeyClass = findClass("sun.security.pkcs11.TemplateManager$TemplateKey");
-
-        if (templateKeyClass != null) {
-            kryo.register(templateKeyClass)
-                    .setInstantiator(new MagicInstantiator<>(templateKeyClass));
-        }
-
-        Class<?> keyAndTemplateClass = findClass("sun.security.pkcs11.TemplateManager$KeyAndTemplate");
-
-        if (keyAndTemplateClass != null) {
-            kryo.register(keyAndTemplateClass)
-                    .setInstantiator(new MagicInstantiator<>(keyAndTemplateClass));
-        }
-
-        Class<?> p11DSAKeyFactoryClass = findClass("sun.security.pkcs11.P11DSAKeyFactory");
-
-        if (p11DSAKeyFactoryClass != null) {
-            kryo.register(p11DSAKeyFactoryClass)
-                    .setInstantiator(new MagicInstantiator<>(p11DSAKeyFactoryClass));
-        }
-
-        Class<?> ckMechanismInfoClass = findClass("sun.security.pkcs11.wrapper.CK_MECHANISM_INFO");
-
-        if (ckMechanismInfoClass != null) {
-            kryo.register(ckMechanismInfoClass)
-                    .setInstantiator(new MagicInstantiator<>(ckMechanismInfoClass));
-        }
-
-        Class<?> pkcs11Class = findClass("sun.security.pkcs11.wrapper.PKCS11");
-
-        if (pkcs11Class != null) {
-            kryo.register(pkcs11Class).setInstantiator(new MagicInstantiator<>(pkcs11Class));
-        }
-
         kryo.register(java.lang.ref.WeakReference.class)
                 .setInstantiator(new MagicInstantiator<>(java.lang.ref.WeakReference.class));
-
-        Class<?> dsaPublicKeyImpl = findClass("sun.security.provider.DSAPublicKeyImpl");
-
-        if (dsaPublicKeyImpl != null) {
-            kryo.register(dsaPublicKeyImpl).setInstantiator(new MagicInstantiator<>(dsaPublicKeyImpl));
-        }
 
         kryo.register(java.security.AlgorithmParameters.class)
                 .setInstantiator(new MagicInstantiator<>(java.security.AlgorithmParameters.class));
 
-        Class<?> objectIdentifierClass = findClass("sun.security.util.ObjectIdentifier");
+        kryo.register(SecretKeySpec.class, new JavaSerializer());
 
-        if (objectIdentifierClass != null) {
-            kryo.register(objectIdentifierClass)
-                    .setInstantiator(new MagicInstantiator<>(objectIdentifierClass));
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11RSAKeyFactory");
+
+        registerWithCompatSerializerMagicInstantiator(kryo, "sun.security.pkcs11.P11Cipher");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11ECKeyFactory");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11Key$P11SecretKey");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.SessionKeyRef");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Session");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Token");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Config");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.TemplateManager$TemplateKey");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.TemplateManager$KeyAndTemplate");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11DSAKeyFactory");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.wrapper.CK_MECHANISM_INFO");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.wrapper.CK_TOKEN_INFO");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.wrapper.CK_VERSION");
+
+        registerWithMagicInstantiator(kryo, "sun.security.provider.DSAPublicKeyImpl");
+
+        registerWithMagicInstantiator(kryo, "sun.security.util.ObjectIdentifier");
+
+        registerWithMagicInstantiator(kryo, "sun.security.util.DerValue");
+
+        registerWithMagicInstantiator(kryo, "sun.security.util.MemoryCache");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.KeyCache$IdentityWrapper");
+
+        registerWithMagicInstantiator(kryo, "sun.security.util.MemoryCache$HardCacheEntry");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.SessionManager");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.SessionManager$Pool");
+
+        Class<?> p11SecureRandomClass = findClass("sun.security.pkcs11.P11SecureRandom");
+
+        if (p11SecureRandomClass != null) {
+            kryo.register(p11SecureRandomClass, new JavaSerializer());
         }
 
-        Class<?> derValueClass = findClass("sun.security.util.DerValue");
+        Class<?> sessionRefClass = findClass("sun.security.pkcs11.SessionRef");
 
-        if (derValueClass != null) {
-            kryo.register(derValueClass)
-                    .setInstantiator(new MagicInstantiator<>(derValueClass));
+        if (sessionRefClass != null) {
+            kryo.register(sessionRefClass, new SessionRefSerializer(kryo));
         }
 
-        Class<?> memoryCacheClass = findClass("sun.security.util.MemoryCache");
+        Class <?> pkcs11Class = findClass("sun.security.pkcs11.wrapper.PKCS11");
 
-        if (memoryCacheClass != null) {
-            kryo.register(memoryCacheClass)
-                    .setInstantiator(new MagicInstantiator<>(memoryCacheClass));
+        if (pkcs11Class != null) {
+            kryo.register(pkcs11Class, new PKCS11Serializer());
         }
+    }
 
-        Class<?> keyCacheIdentityWrapperClass = findClass("sun.security.pkcs11.KeyCache$IdentityWrapper");
+    private void registerWithCompatSerializerMagicInstantiator(final Kryo kryo, final String className) {
+        Class<?> clazz = findClass(className);
 
-        if (keyCacheIdentityWrapperClass != null) {
-            kryo.register(keyCacheIdentityWrapperClass)
-                    .setInstantiator(new MagicInstantiator<>(keyCacheIdentityWrapperClass));
+        if (clazz != null) {
+            kryo.register(clazz, new CompatibleFieldSerializer(kryo, clazz))
+                    .setInstantiator(new MagicInstantiator<>(clazz));
+        }
+    }
+
+    private void registerWithMagicInstantiator(final Kryo kryo, final String className) {
+        Class<?> clazz = findClass(className);
+
+        if (clazz != null) {
+            kryo.register(clazz).setInstantiator(new MagicInstantiator<>(clazz));
         }
     }
 
