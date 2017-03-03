@@ -17,6 +17,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,11 +66,6 @@ public final class Benchmark {
     private static final int DEFAULT_CONCURRENCY = 1;
 
     /**
-     * Number of bytes to skip at one time when looping over streams.
-     */
-    private static final int SKIP_VALUE = 1024;
-
-    /**
      * Time to wait until checking to see if a thread pool has finished.
      */
     private static final long CHECK_INTERVAL = Duration.ofSeconds(1).getSeconds();
@@ -95,9 +91,9 @@ public final class Benchmark {
     private static String testDirectory;
 
     /**
-     * Size of object in kilobytes.
+     * Size of object in bytes or number of directories.
      */
-    private static long sizeInKb;
+    private static int sizeInBytesOrNoOfDirs;
 
     /**
      * Use the main method and not the constructor.
@@ -128,9 +124,9 @@ public final class Benchmark {
 
         try {
             if (argv.length > 1) {
-                sizeInKb = Long.parseLong(argv[1]);
+                sizeInBytesOrNoOfDirs = Integer.parseInt(argv[1]);
             } else {
-                sizeInKb = DEFAULT_OBJ_SIZE_KB;
+                sizeInBytesOrNoOfDirs = DEFAULT_OBJ_SIZE_KB;
             }
 
             final int iterations;
@@ -151,10 +147,10 @@ public final class Benchmark {
 
             System.out.printf("Testing latencies on a %d kb object for %d "
                             + "iterations with a concurrency value of %d\n",
-                    sizeInKb, actualIterations, concurrency);
+                    sizeInBytesOrNoOfDirs, actualIterations, concurrency);
 
             setupTestDirectory();
-            String path = addTestFile(FileUtils.ONE_KB * sizeInKb);
+            String path = addTestFile(FileUtils.ONE_KB * sizeInBytesOrNoOfDirs);
 
             if (concurrency == 1) {
                 singleThreadedBenchmark(method, path, iterations);
@@ -191,7 +187,9 @@ public final class Benchmark {
             Duration[] durations;
 
             if (method.equals("put")) {
-                durations = measurePut(sizeInKb);
+                durations = measurePut(sizeInBytesOrNoOfDirs);
+            } else if (method.equals("putDir")) {
+                durations = measurePutDir(sizeInBytesOrNoOfDirs);
             } else {
                 durations = measureGet(path);
             }
@@ -246,7 +244,9 @@ public final class Benchmark {
                 Duration[] durations;
 
                 if (method.equals("put")) {
-                    durations = measurePut(sizeInKb);
+                    durations = measurePut(sizeInBytesOrNoOfDirs);
+                } else if (method.equals("putDir")) {
+                    durations = measurePutDir(sizeInBytesOrNoOfDirs);
                 } else {
                     durations = measureGet(path);
                 }
@@ -437,6 +437,33 @@ public final class Benchmark {
         final long stop = System.nanoTime();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));
+        Duration fullLatency = Duration.ofNanos(stop - start);
+        return new Duration[] {fullLatency, serverLatency};
+    }
+
+    /**
+     * Measures the total time to put multiple directories to Manta.
+     *
+     * @param diretoryCount number of directories to create
+     * @return two durations - full time in the JVM, -1 because server time is unavailable
+     * @throws IOException thrown when we can't access Manta over the network
+     */
+    private static Duration[] measurePutDir(final int diretoryCount) throws IOException {
+        final StringBuilder path = new StringBuilder()
+                .append(testDirectory);
+
+        for (int i = 0; i < diretoryCount; i++) {
+            path.append(MantaClient.SEPARATOR)
+                .append(RandomStringUtils.randomAlphabetic(2));
+        }
+
+        final long start = System.nanoTime();
+
+        client.putDirectory(path.toString(), true);
+
+        final long stop = System.nanoTime();
+
+        Duration serverLatency = Duration.ofMillis(-1L);
         Duration fullLatency = Duration.ofNanos(stop - start);
         return new Duration[] {fullLatency, serverLatency};
     }
