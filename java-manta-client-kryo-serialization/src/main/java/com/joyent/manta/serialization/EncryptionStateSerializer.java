@@ -120,8 +120,15 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         output.writeInt(lastPartNumber, true);
 
         MultipartOutputStream multipartStream = (MultipartOutputStream)readField(multipartStreamField, object);
+        ByteArrayOutputStream multipartStreamBuf;
 
-        kryo.writeClassAndObject(output, multipartStream.getBuf());
+        if (multipartStream == null) {
+            multipartStreamBuf = null;
+        } else {
+            multipartStreamBuf = multipartStream.getBuf();
+        }
+
+        kryo.writeClassAndObject(output, multipartStreamBuf);
 
         Object cipherStream = readField(cipherStreamField, object);
 
@@ -154,7 +161,15 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         writeField(lastPartNumberField, encryptionState, lastPartNumber);
 
         final int blockSize = encryptionContext.getCipherDetails().getBlockSizeInBytes();
-        ByteArrayOutputStream multipartStreamBuffer = (ByteArrayOutputStream)kryo.readClassAndObject(input);
+        Object bufferObject = kryo.readClassAndObject(input);
+
+        ByteArrayOutputStream multipartStreamBuffer;
+
+        if (bufferObject == null) {
+            multipartStreamBuffer = new ByteArrayOutputStream(blockSize);
+        } else {
+            multipartStreamBuffer = (ByteArrayOutputStream)bufferObject;
+        }
 
         final MultipartOutputStream multipartStream = new MultipartOutputStream(blockSize, multipartStreamBuffer);
         writeField(multipartStreamField, encryptionState, multipartStream);
