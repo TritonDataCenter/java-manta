@@ -135,7 +135,7 @@
         <maven-error-prone-core.version>2.0.15</maven-error-prone-core.version>
 
         <!-- Dependency versions -->
-        <dependency.http-client-signature.version>3.0.2-SNAPSHOT</dependency.http-client-signature.version>
+        <dependency.http-client-signature.version>3.0.2</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.3</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.55</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>3.1.3</dependency.fasterxml-uuid>
