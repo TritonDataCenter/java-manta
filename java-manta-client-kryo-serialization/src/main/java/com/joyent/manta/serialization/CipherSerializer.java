@@ -113,43 +113,9 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
 
         registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Session");
 
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Token");
+        registerWithJavaSerializer(kryo, "sun.security.pkcs11.Token");
 
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Config");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.TemplateManager$TemplateKey");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.TemplateManager$KeyAndTemplate");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11DSAKeyFactory");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.wrapper.CK_MECHANISM_INFO");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.wrapper.CK_TOKEN_INFO");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.wrapper.CK_VERSION");
-
-        registerWithMagicInstantiator(kryo, "sun.security.provider.DSAPublicKeyImpl");
-
-        registerWithMagicInstantiator(kryo, "sun.security.util.ObjectIdentifier");
-
-        registerWithMagicInstantiator(kryo, "sun.security.util.DerValue");
-
-        registerWithMagicInstantiator(kryo, "sun.security.util.MemoryCache");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.KeyCache$IdentityWrapper");
-
-        registerWithMagicInstantiator(kryo, "sun.security.util.MemoryCache$HardCacheEntry");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.SessionManager");
-
-        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.SessionManager$Pool");
-
-        Class<?> p11SecureRandomClass = findClass("sun.security.pkcs11.P11SecureRandom");
-
-        if (p11SecureRandomClass != null) {
-            kryo.register(p11SecureRandomClass, new JavaSerializer());
-        }
+        registerWithJavaSerializer(kryo, "sun.security.pkcs11.P11SecureRandom");
 
         Class<?> sessionRefClass = findClass("sun.security.pkcs11.SessionRef");
 
@@ -177,6 +143,20 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         if (clazz != null) {
             kryo.register(clazz, new CompatibleFieldSerializer(kryo, clazz))
                     .setInstantiator(new MagicInstantiator<>(clazz));
+        }
+    }
+
+    /**
+     * Registers a class by name assigns it a {@link JavaSerializer}.
+     *
+     * @param kryo kryo instance
+     * @param className class name to register
+     */
+    private void registerWithJavaSerializer(final Kryo kryo, final String className) {
+        Class<?> clazz = findClass(className);
+
+        if (clazz != null) {
+            kryo.register(clazz, new JavaSerializer());
         }
     }
 
