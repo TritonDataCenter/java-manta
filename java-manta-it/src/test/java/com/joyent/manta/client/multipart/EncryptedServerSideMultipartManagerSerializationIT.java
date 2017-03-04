@@ -17,6 +17,8 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.serialization.SerializationHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -26,6 +28,7 @@ import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.security.Provider;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -35,6 +38,8 @@ import static org.testng.Assert.fail;
 @Test(groups = { "encrypted" })
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerSerializationIT {
+    private static final Logger LOGGER = LoggerFactory.getLogger
+            (EncryptedServerSideMultipartManagerSerializationIT.class);
     private MantaClient mantaClient;
     private EncryptedServerSideMultipartManager multipart;
 
@@ -97,29 +102,14 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
 
+        Provider provider = upload.getEncryptionState().getEncryptionContext().getCipher().getProvider();
+
+        LOGGER.info("Testing serialization with encryption provider: {}", provider.getInfo());
+
         final byte[] serializedEncryptionState = helper.serialize(upload);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> deserializedUpload
                 = helper.deserialize(serializedEncryptionState);
-
-//        assertReflectionEquals("Cipher state differs between uploads",
-//                upload.getEncryptionState().getEncryptionContext().getCipher(),
-//                deserializedUpload.getEncryptionState().getEncryptionContext().getCipher());
-//
-//        Field innerOutputStreamField = FieldUtils.getField(
-//                HmacOutputStream.class, "out", true);
-//
-//        CipherOutputStream uploadCipherStream = (CipherOutputStream)
-//                FieldUtils.readField(innerOutputStreamField, upload.getEncryptionState().getCipherStream(), true);
-//
-//        CipherOutputStream deserializedCipherStream = (CipherOutputStream)
-//                FieldUtils.readField(innerOutputStreamField, deserializedUpload.getEncryptionState().getCipherStream(), true);
-//
-//        Field cipherField = FieldUtils.getField(CipherOutputStream.class, "cipher", true);
-//
-//        assertReflectionEquals(
-//                deserializedUpload.getEncryptionState().getEncryptionContext().getCipher(),
-//                FieldUtils.readField(cipherField, deserializedCipherStream, true));
 
         MantaMultipartUploadPart part2 = multipart.uploadPart(deserializedUpload, 2, content2);
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
@@ -127,7 +117,6 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
         multipart.complete(deserializedUpload, partsStream);
 
-        final byte[] bytes;
         try (MantaObjectInputStream in = mantaClient.getAsInputStream(path)) {
             Assert.assertEquals(in.getContentType(), contentType,
                     "Set content-type doesn't match actual content type");
@@ -138,11 +127,11 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
                 final byte expected = content[i++];
 
                 Assert.assertEquals((byte)b, expected,
-                        "Byte not matched at position: " + (i - 1));
+                        "Byte [" + (char)b + "] not matched at position: " + (i - 1));
             }
 
             if (i + 1 < content.length) {
-                fail("Missing " + (content.length - i + 1) + "bytes from Manta stream");
+                fail("Missing " + (content.length - i + 1) + " bytes from Manta stream");
             }
         }
     }

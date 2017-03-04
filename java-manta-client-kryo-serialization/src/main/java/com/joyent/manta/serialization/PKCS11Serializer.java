@@ -17,13 +17,21 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 
 /**
+ * Kryo serializer class that serializes {@link PKCS11} instances.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
 public class PKCS11Serializer extends AbstractManualSerializer<PKCS11> {
+    /**
+     * Name of field that identifies the PKCS11 module.
+     */
     private static final Field MODULE_PATH_FIELD = ReflectionUtils
             .getField(PKCS11.class, "pkcs11ModulePath");
 
+    /**
+     * Creates a new serializer instance.
+     */
     public PKCS11Serializer() {
         super(PKCS11.class, false, true);
     }

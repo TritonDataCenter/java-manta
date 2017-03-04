@@ -10,12 +10,12 @@ package com.joyent.manta.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
-import static com.joyent.manta.serialization.ReflectionUtils.*;
+import static com.joyent.manta.serialization.ReflectionUtils.getField;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
 
 /**
  * Serialization class that allows for (de)serialization of

@@ -25,6 +25,7 @@ import org.objenesis.instantiator.sun.MagicInstantiator;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.Objects;
@@ -118,6 +119,10 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final int lastPartNumber = (int)readField(lastPartNumberField, object);
         output.writeInt(lastPartNumber, true);
 
+        MultipartOutputStream multipartStream = (MultipartOutputStream)readField(multipartStreamField, object);
+
+        kryo.writeClassAndObject(output, multipartStream.getBuf());
+
         Object cipherStream = readField(cipherStreamField, object);
 
         final HMac hmac;
@@ -149,7 +154,9 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         writeField(lastPartNumberField, encryptionState, lastPartNumber);
 
         final int blockSize = encryptionContext.getCipherDetails().getBlockSizeInBytes();
-        final MultipartOutputStream multipartStream = new MultipartOutputStream(blockSize);
+        ByteArrayOutputStream multipartStreamBuffer = (ByteArrayOutputStream)kryo.readClassAndObject(input);
+
+        final MultipartOutputStream multipartStream = new MultipartOutputStream(blockSize, multipartStreamBuffer);
         writeField(multipartStreamField, encryptionState, multipartStream);
 
         final HMac hmac = kryo.readObjectOrNull(input, HMac.class);

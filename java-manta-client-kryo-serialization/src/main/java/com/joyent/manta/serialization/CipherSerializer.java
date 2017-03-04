@@ -157,13 +157,20 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
             kryo.register(sessionRefClass, new SessionRefSerializer(kryo));
         }
 
-        Class <?> pkcs11Class = findClass("sun.security.pkcs11.wrapper.PKCS11");
+        Class<?> pkcs11Class = findClass("sun.security.pkcs11.wrapper.PKCS11");
 
         if (pkcs11Class != null) {
             kryo.register(pkcs11Class, new PKCS11Serializer());
         }
     }
 
+    /**
+     * Registers a class by name assigns it a {@link CompatibleFieldSerializer}
+     * and sets it to be instantiated using a {@link MagicInstantiator}.
+     *
+     * @param kryo kryo instance
+     * @param className class name to register
+     */
     private void registerWithCompatSerializerMagicInstantiator(final Kryo kryo, final String className) {
         Class<?> clazz = findClass(className);
 
@@ -173,6 +180,12 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         }
     }
 
+    /**
+     * Registers a class by name and sets it to be instantiated using a {@link MagicInstantiator}.
+     *
+     * @param kryo kryo instance
+     * @param className class name to register
+     */
     private void registerWithMagicInstantiator(final Kryo kryo, final String className) {
         Class<?> clazz = findClass(className);
 
