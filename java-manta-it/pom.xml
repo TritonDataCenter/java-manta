@@ -84,13 +84,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <dependency>
-            <groupId>org.unitils</groupId>
-            <artifactId>unitils-test</artifactId>
-            <version>3.4.6</version>
-        </dependency>
-
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
