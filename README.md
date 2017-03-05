@@ -261,7 +261,7 @@ need to add a configuration file that will be referenced by your JVM. There is d
 on the install process [available online](http://docs.oracle.com/javase/8/docs/technotes/guides/security/p11guide.html), 
 but not much guidance on what to do per distro / operating system.
 
-Below is a list of distros / operating systems and the packages and locates of
+Below is a list of distros / operating systems and the packages and locations of
 libnss.
 
 **Ubuntu**
