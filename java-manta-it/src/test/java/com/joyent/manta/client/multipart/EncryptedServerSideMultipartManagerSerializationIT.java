@@ -16,7 +16,7 @@ import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.serialization.SerializationHelper;
+import com.joyent.manta.serialization.EncryptedMultipartUploaSerializationHelper;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,8 +87,8 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
                 config.getEncryptionAlgorithm());
         final SecretKey secretKey = SecretKeyUtils.loadKey(config.getEncryptionPrivateKeyBytes(),
                 cipherDetails);
-        final SerializationHelper<ServerSideMultipartUpload> helper =
-                new SerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
+        final EncryptedMultipartUploaSerializationHelper<ServerSideMultipartUpload> helper =
+                new EncryptedMultipartUploaSerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);

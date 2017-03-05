@@ -31,13 +31,13 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Test
-public class SerializationHelperTest {
+public class EncryptedMultipartUploaSerializationHelperTest {
     private byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
     private SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
     private SecretKey secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
     private Kryo kryo = new Kryo();
-    private SerializationHelper<ServerSideMultipartUpload> helper =
-            new SerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
+    private EncryptedMultipartUploaSerializationHelper<ServerSideMultipartUpload> helper =
+            new EncryptedMultipartUploaSerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
 
     public void canSerializeAndDeserializeUpload() throws IOException {
         final UUID uploadId = new UUID(0L, 0L);
@@ -73,7 +73,7 @@ public class SerializationHelperTest {
 
         String expected = "This is the first array. This is the second array. This is the third array.";
 
-        byte[] concatenated = SerializationHelper.addAll(array1, array2, array3);
+        byte[] concatenated = EncryptedMultipartUploaSerializationHelper.addAll(array1, array2, array3);
         String actual = new String(concatenated, StandardCharsets.US_ASCII);
         Assert.assertEquals(actual, expected);
     }
