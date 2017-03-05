@@ -17,6 +17,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.serialization.SerializationHelper;
+import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -90,8 +91,7 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
                 new SerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = new byte[FIVE_MB + 1024];
-        Arrays.fill(content, (byte)'f');
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
         final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
         final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, FIVE_MB + 1024);
 
