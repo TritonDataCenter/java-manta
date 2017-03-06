@@ -16,6 +16,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.time.Duration;
@@ -162,8 +163,22 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public Cipher getCipher() {
+        if (ExternalSecurityProviderLoader.getPkcs11Provider() == null) {
+            return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
+                    ExternalSecurityProviderLoader.getBouncyCastleProvider());
+        }
+
+        final Provider provider;
+
+        if (ExternalSecurityProviderLoader.getPkcs11Provider().containsKey(
+                "Cipher." + cipherAlgorithmJavaName)) {
+            provider = ExternalSecurityProviderLoader.getPkcs11Provider();
+        } else {
+            provider = ExternalSecurityProviderLoader.getBouncyCastleProvider();
+        }
+
         return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
-                BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+                provider);
     }
 
     @Override

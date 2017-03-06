@@ -8,6 +8,7 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.jobs.MantaJobBuilder;
 import com.joyent.manta.client.jobs.MantaJobError;
@@ -33,7 +34,6 @@ import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -178,17 +178,8 @@ public class MantaClient implements AutoCloseable {
     /* We preform some sanity checks against the JVM in order to determine if
      * we can actually run on the platform. */
     static {
-        if (!MantaUtils.isDigestSupported(MessageDigestAlgorithms.MD5)) {
-            String msg = "The MD5 digest algorithm is not supported on this JVM. "
-                    + "Please choose a different JVM to run the Manta SDK.";
-            throw new MantaException(msg);
-        }
-
-        if (!MantaUtils.isDigestSupported(MessageDigestAlgorithms.SHA_256)) {
-            String msg = "The SHA-256 digest algorithm is not supported on this JVM. "
-                    + "Please choose a different JVM to run the Manta SDK.";
-            throw new MantaException(msg);
-        }
+        LOG.debug("Preferred Security Provider: {}",
+                ExternalSecurityProviderLoader.getPreferredProvider());
     }
 
     /**

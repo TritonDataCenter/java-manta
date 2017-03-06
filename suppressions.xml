@@ -22,4 +22,5 @@
     <suppress checks="[a-zA-Z0-9]*" files="ConcurrentWeakIdentityHashMap.java" />
     <suppress checks="Header" files="NotThreadSafe.java" />
     <suppress checks="JavadocVariable" files="^.+Serializer.java" />
+    <suppress checks="IllegalImport" files="PKCS11Serializer.java" />
 </suppressions>

@@ -23,8 +23,6 @@ import java.net.InetAddress;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -543,23 +541,6 @@ public final class MantaUtils {
      */
     public static Date parseHttpDate(final String date) {
         return DateUtils.parseDate(date);
-    }
-
-    /**
-     * Queries the JVM implementation to determine if a given digest algorithm
-     * is supported.
-     *
-     * @param digestName digest name to query for
-     * @return true if supported false if not supported
-     */
-    public static boolean isDigestSupported(final String digestName) {
-        try {
-            MessageDigest.getInstance(digestName);
-        } catch (NoSuchAlgorithmException e) {
-            return false;
-        }
-
-        return true;
     }
 
     /**

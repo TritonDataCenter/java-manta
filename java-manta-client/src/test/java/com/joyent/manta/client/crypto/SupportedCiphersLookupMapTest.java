@@ -12,6 +12,8 @@ import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 
+import java.security.Provider;
+
 import static com.joyent.manta.client.crypto.SupportedCiphersLookupMap.INSTANCE;
 
 @Test
@@ -31,13 +33,15 @@ public class SupportedCiphersLookupMapTest {
     }
 
     public void canFindCiphers() {
+        Provider provider = ExternalSecurityProviderLoader.getBouncyCastleProvider();
+
         for (SupportedCipherDetails cipherDetails : INSTANCE.values()) {
-            Cipher cipher = SupportedCipherDetails.findCipher(cipherDetails.getCipherAlgorithm(),
-                    BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+            String cipherAlgorithm = cipherDetails.getCipherAlgorithm();
+            Cipher cipher = SupportedCipherDetails.findCipher(cipherAlgorithm, provider);
             Assert.assertNotNull(cipher, "Couldn't find cipher for algorithm: " + cipherDetails);
 
-            Cipher cipherLowercase = SupportedCipherDetails.findCipher(cipherDetails.getCipherAlgorithm().toLowerCase(),
-                    BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+            Cipher cipherLowercase = SupportedCipherDetails.findCipher(cipherAlgorithm.toLowerCase(),
+                    provider);
             Assert.assertNotNull(cipherLowercase, "Couldn't find cipher for algorithm: " + cipherDetails);
         }
     }

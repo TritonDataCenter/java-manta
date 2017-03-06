@@ -48,11 +48,23 @@ public class MultipartOutputStream extends OutputStream {
 
     /**
      * Creates a new instance with the specified block size.
+     *
      * @param blockSize cipher block size
      */
     public MultipartOutputStream(final int blockSize) {
         this.blockSize = blockSize;
-        buf = new ByteArrayOutputStream(blockSize);
+        this.buf = new ByteArrayOutputStream(blockSize);
+    }
+
+    /**
+     * Creates a new instance with the specified block size and output buffer.
+     *
+     * @param blockSize cipher block size
+     * @param buf output buffer
+     */
+    public MultipartOutputStream(final int blockSize, final ByteArrayOutputStream buf) {
+        this.blockSize = blockSize;
+        this.buf = buf;
     }
 
     /**
@@ -118,5 +130,9 @@ public class MultipartOutputStream extends OutputStream {
     @Override
     public void write(final int value) throws IOException {
         wrapped.write(value);
+    }
+
+    public ByteArrayOutputStream getBuf() {
+        return buf;
     }
 }

@@ -11,9 +11,9 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test
-public class BouncyCastleLoaderTest {
+public class ExternalSecurityProviderLoaderTest {
     public void canLoadBouncyCastleProvider() {
-        Assert.assertNotNull(BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER,
+        Assert.assertNotNull(ExternalSecurityProviderLoader.getBouncyCastleProvider(),
                 "Bouncy Castle provider wasn't loaded");
     }
 }

@@ -8,55 +8,39 @@
 package com.joyent.manta.client.multipart;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.FastInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.exception.MantaClientException;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaErrorCode;
-import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.serialization.EncryptionStateSerializer;
-import com.joyent.manta.serialization.SerializationHelper;
-import com.joyent.manta.util.HmacOutputStream;
-import org.apache.commons.io.IOUtils;
+import com.joyent.manta.serialization.EncryptedMultipartUploaSerializationHelper;
 import org.apache.commons.lang3.RandomUtils;
-import org.bouncycastle.crypto.macs.HMac;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.security.Provider;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Test(groups = { "encrypted" })
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerSerializationIT {
+    private static final Logger LOGGER = LoggerFactory.getLogger
+            (EncryptedServerSideMultipartManagerSerializationIT.class);
     private MantaClient mantaClient;
     private EncryptedServerSideMultipartManager multipart;
 
@@ -98,13 +82,13 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         }
     }
 
-    public final void canResumeUploadWithByteArrayAndMultipleParts() throws IOException {
+    public final void canResumeUploadWithByteArrayAndMultipleParts() throws Exception {
         final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.get(
                 config.getEncryptionAlgorithm());
         final SecretKey secretKey = SecretKeyUtils.loadKey(config.getEncryptionPrivateKeyBytes(),
                 cipherDetails);
-        final SerializationHelper<ServerSideMultipartUpload> helper =
-                new SerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
+        final EncryptedMultipartUploaSerializationHelper<ServerSideMultipartUpload> helper =
+                new EncryptedMultipartUploaSerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
@@ -118,14 +102,14 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
 
+        Provider provider = upload.getEncryptionState().getEncryptionContext().getCipher().getProvider();
+
+        LOGGER.info("Testing serialization with encryption provider: {}", provider.getInfo());
+
         final byte[] serializedEncryptionState = helper.serialize(upload);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> deserializedUpload
                 = helper.deserialize(serializedEncryptionState);
-
-        @SuppressWarnings("unchecked")
-        final HMac deserializedHmac = ((HmacOutputStream)deserializedUpload.getEncryptionState()
-                .getCipherStream()).getHmac();
 
         MantaMultipartUploadPart part2 = multipart.uploadPart(deserializedUpload, 2, content2);
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2 };
@@ -133,15 +117,22 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
         multipart.complete(deserializedUpload, partsStream);
 
-        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            IOUtils.copy(in, out);
-
-            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
-                    content, out.toByteArray());
-
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path)) {
             Assert.assertEquals(in.getContentType(), contentType,
                     "Set content-type doesn't match actual content type");
+
+            int b;
+            int i = 0;
+            while ((b = in.read()) != -1) {
+                final byte expected = content[i++];
+
+                Assert.assertEquals((byte)b, expected,
+                        "Byte [" + (char)b + "] not matched at position: " + (i - 1));
+            }
+
+            if (i + 1 < content.length) {
+                fail("Missing " + (content.length - i + 1) + " bytes from Manta stream");
+            }
         }
     }
 }

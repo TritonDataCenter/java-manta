@@ -39,11 +39,11 @@ import java.util.function.Supplier;
  *
  * @param <WRAPPED> backing implementation of a {@link AbstractMultipartUpload}
  */
-public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
+public class EncryptedMultipartUploaSerializationHelper<WRAPPED extends AbstractMultipartUpload> {
     /**
      * Logger instance.
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(SerializationHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartUploaSerializationHelper.class);
 
     /**
      * Size in bytes of binary record identifying HMAC algorithm name.
@@ -83,10 +83,10 @@ public class SerializationHelper<WRAPPED extends AbstractMultipartUpload> {
      * @param cipherDetails cipher / mode properties object
      * @param wrappedMultipartClass multipart class that encrypting mpu class is wrapping
      */
-    public SerializationHelper(final Kryo kryo,
-                               final SecretKey secretKey,
-                               final SupportedCipherDetails cipherDetails,
-                               final Class<WRAPPED> wrappedMultipartClass) {
+    public EncryptedMultipartUploaSerializationHelper(final Kryo kryo,
+                                                      final SecretKey secretKey,
+                                                      final SupportedCipherDetails cipherDetails,
+                                                      final Class<WRAPPED> wrappedMultipartClass) {
         this.kryo = kryo;
         this.secretKey = secretKey;
         this.wrappedMultipartClass = wrappedMultipartClass;

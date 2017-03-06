@@ -249,6 +249,84 @@ authenticate that ciphertext was not modified.
 *Note* each instance of a MantaClient will only support the encryption/decryption for the algorithm configured for that instance.
  
 
+### Improving Encryption Performance
+
+[Libnss](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS) can be used with 
+[PKCS11](https://en.wikipedia.org/wiki/PKCS_11) to provide a native code interface for encryption 
+functions. The SDK will detect if libnss is installed via PKCS11 and prefer it over
+the Legion of the Bouncy Castle library if it is available.
+
+To add libnss support to your JVM, you will need to locate libnss on your system. Then you will
+need to add a configuration file that will be referenced by your JVM. There is documentation
+on the install process [available online](http://docs.oracle.com/javase/8/docs/technotes/guides/security/p11guide.html), 
+but not much guidance on what to do per distro / operating system.
+
+Below is a list of distros / operating systems and the packages and locations of
+libnss.
+
+**Ubuntu**
+Debian Package: `libnss3`
+Library Location: /usr/lib/x86_64-linux-gnu 
+
+**CentOS**
+Yum Package: `nss`
+Library Location: /usr/lib64
+
+**MacOS**
+Homebrew Package: `nss`
+Library Location: /usr/local/opt/nss/lib
+ 
+**SmartOS**
+Pkgsrc Package: `nss`
+Library Location: /opt/local/lib/nss
+
+Once you have installed libnss and have located it's path, you will need to add a configuration
+file to your system. The path doesn't matter, but for the example's sake, we will give it a
+path of `/etc/nss.cfg`.
+
+The file would have the following contents if you were on Ubuntu:
+```
+name = NSS
+nssLibraryDirectory = /usr/lib/x86_64-linux-gnu
+nssDbMode = noDb
+attributes = compatibility
+```
+
+Make sure that the name field is `NSS` because the SDK will only use the library if that specific
+name is set. Next, edit the following file: `$JAVA_HOME/jre/lib/security/java.security`
+
+Find the lines specifying security providers. It should look something like:
+```
+security.provider.1=sun.security.provider.Sun
+security.provider.2=sun.security.rsa.SunRsaSign
+security.provider.3=sun.security.ec.SunEC
+security.provider.4=com.sun.net.ssl.internal.ssl.Provider
+security.provider.5=com.sun.crypto.provider.SunJCE
+security.provider.6=sun.security.jgss.SunProvider
+security.provider.7=com.sun.security.sasl.Provider
+security.provider.8=org.jcp.xml.dsig.internal.dom.XMLDSigRI
+security.provider.9=sun.security.smartcardio.SunPCSC
+```
+
+Now, add a line in front of the first provider and make it provider number one,
+then appropriately increment the other providers:
+
+```
+security.provider.1=sun.security.pkcs11.SunPKCS11 /etc/nss.cfg
+security.provider.2=sun.security.provider.Sun
+security.provider.3=sun.security.rsa.SunRsaSign
+security.provider.4=sun.security.ec.SunEC
+security.provider.5=com.sun.net.ssl.internal.ssl.Provider
+security.provider.6=com.sun.crypto.provider.SunJCE
+security.provider.7=sun.security.jgss.SunProvider
+security.provider.8=com.sun.security.sasl.Provider
+security.provider.9=org.jcp.xml.dsig.internal.dom.XMLDSigRI
+security.provider.10=sun.security.smartcardio.SunPCSC
+```
+
+Once this is complete, you should now have libnss providing your cryptographic
+functions.
+
 ## Server-side Multipart Upload
 
 Manta supports multipart upload for dividing large files into many smaller parts 

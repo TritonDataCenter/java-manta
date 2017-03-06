@@ -10,21 +10,26 @@ package com.joyent.manta.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import com.joyent.manta.client.crypto.BouncyCastleLoader;
 import org.bouncycastle.jcajce.provider.symmetric.AES;
+import org.objenesis.instantiator.sun.MagicInstantiator;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
+import java.security.Provider;
+import java.security.Security;
+import java.util.IdentityHashMap;
 
 import static com.joyent.manta.serialization.ReflectionUtils.findClass;
 import static com.joyent.manta.serialization.ReflectionUtils.readField;
 import static com.joyent.manta.serialization.ReflectionUtils.writeField;
 
 /**
- * Kryo serializer that deconstructs a {@link Cipher} class backed by
- * the BouncyCastle provider and allows for serialization / deserialization.
+ * Kryo serializer that deconstructs a {@link Cipher} class and
+ * allows for serialization / deserialization.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
@@ -41,6 +46,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
     private Field firstSpiField = captureField("firstSpi");
     private Field initializedField = captureField("initialized");
     private Field lockField = captureField("lock");
+    private Field providerField = captureField("provider");
     private Field opmodeField = captureField("opmode");
     private Field serviceIteratorField = captureField("serviceIterator");
     private Field spiField = captureField("spi");
@@ -72,6 +78,100 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         kryo.register(AES.ECB.class, new BaseBlockCipherSerializer<>(kryo, AES.ECB.class));
         kryo.register(AES.CBC.class, new BaseBlockCipherSerializer<>(kryo, AES.CBC.class));
         kryo.register(AES.GCM.class, new BaseBlockCipherSerializer<>(kryo, AES.GCM.class));
+
+        // We just store the name of the provider and then get it by that name
+        ProviderSerializer providerSerializer = new ProviderSerializer();
+
+        // We register every available provider so that in can be serialized
+        kryo.register(Provider.class, providerSerializer);
+
+        for (Provider p : Security.getProviders()) {
+            kryo.register(p.getClass(), providerSerializer);
+        }
+
+        // Everything below is for supporting serializing PKCS11 native ciphers
+
+        kryo.register(IdentityHashMap.class, new JavaSerializer());
+
+        kryo.register(java.lang.ref.WeakReference.class)
+                .setInstantiator(new MagicInstantiator<>(java.lang.ref.WeakReference.class));
+
+        kryo.register(java.security.AlgorithmParameters.class)
+                .setInstantiator(new MagicInstantiator<>(java.security.AlgorithmParameters.class));
+
+        kryo.register(SecretKeySpec.class, new JavaSerializer());
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11RSAKeyFactory");
+
+        registerWithCompatSerializerMagicInstantiator(kryo, "sun.security.pkcs11.P11Cipher");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11ECKeyFactory");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.P11Key$P11SecretKey");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.SessionKeyRef");
+
+        registerWithMagicInstantiator(kryo, "sun.security.pkcs11.Session");
+
+        registerWithJavaSerializer(kryo, "sun.security.pkcs11.Token");
+
+        registerWithJavaSerializer(kryo, "sun.security.pkcs11.P11SecureRandom");
+
+        Class<?> sessionRefClass = findClass("sun.security.pkcs11.SessionRef");
+
+        if (sessionRefClass != null) {
+            kryo.register(sessionRefClass, new SessionRefSerializer(kryo));
+        }
+
+        Class<?> pkcs11Class = findClass("sun.security.pkcs11.wrapper.PKCS11");
+
+        if (pkcs11Class != null) {
+            kryo.register(pkcs11Class, new PKCS11Serializer());
+        }
+    }
+
+    /**
+     * Registers a class by name assigns it a {@link CompatibleFieldSerializer}
+     * and sets it to be instantiated using a {@link MagicInstantiator}.
+     *
+     * @param kryo kryo instance
+     * @param className class name to register
+     */
+    private void registerWithCompatSerializerMagicInstantiator(final Kryo kryo, final String className) {
+        Class<?> clazz = findClass(className);
+
+        if (clazz != null) {
+            kryo.register(clazz, new CompatibleFieldSerializer(kryo, clazz))
+                    .setInstantiator(new MagicInstantiator<>(clazz));
+        }
+    }
+
+    /**
+     * Registers a class by name assigns it a {@link JavaSerializer}.
+     *
+     * @param kryo kryo instance
+     * @param className class name to register
+     */
+    private void registerWithJavaSerializer(final Kryo kryo, final String className) {
+        Class<?> clazz = findClass(className);
+
+        if (clazz != null) {
+            kryo.register(clazz, new JavaSerializer());
+        }
+    }
+
+    /**
+     * Registers a class by name and sets it to be instantiated using a {@link MagicInstantiator}.
+     *
+     * @param kryo kryo instance
+     * @param className class name to register
+     */
+    private void registerWithMagicInstantiator(final Kryo kryo, final String className) {
+        Class<?> clazz = findClass(className);
+
+        if (clazz != null) {
+            kryo.register(clazz).setInstantiator(new MagicInstantiator<>(clazz));
+        }
     }
 
     @Override
@@ -88,6 +188,9 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
 
         final int opmode = (int)readField(opmodeField, object);
         output.writeInt(opmode, true);
+
+        Provider provider = (Provider)readField(providerField, object);
+        output.writeString(provider.getName());
 
         kryo.writeClassAndObject(output, readField(serviceIteratorField, object));
 
@@ -109,6 +212,15 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         final boolean initialized = input.readBoolean();
         final Object lock = kryo.readClassAndObject(input);
         final int opmode = input.readVarInt(true);
+
+        final String providerName = input.readString();
+        final Provider provider;
+        if (providerName != null) {
+            provider = Security.getProvider(providerName);
+        } else {
+            provider = null;
+        }
+
         final Object serviceIterator = kryo.readClassAndObject(input);
         final Object spi = kryo.readClassAndObject(input);
         final String transformation = input.readString();
@@ -117,8 +229,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         final Cipher cipher;
 
         try {
-            cipher = Cipher.getInstance(transformation,
-                    BouncyCastleLoader.BOUNCY_CASTLE_PROVIDER);
+            cipher = Cipher.getInstance(transformation);
         } catch (GeneralSecurityException e) {
             String msg = "Unable to instantiate Cipher";
             MantaClientSerializationException mcse =  new MantaClientSerializationException(msg, e);
@@ -133,6 +244,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         writeField(initializedField, cipher, initialized);
         writeField(lockField, cipher, lock);
         writeField(opmodeField, cipher, opmode);
+        writeField(providerField, cipher, provider);
         writeField(serviceIteratorField, cipher, serviceIterator);
         writeField(spiField, cipher, spi);
         writeField(transformationField, cipher, transformation);

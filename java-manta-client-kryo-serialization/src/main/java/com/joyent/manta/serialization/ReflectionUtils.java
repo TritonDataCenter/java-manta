@@ -221,7 +221,7 @@ final class ReflectionUtils {
             constructor.setAccessible(true);
             return constructor.newInstance(actualParams);
         } catch (ReflectiveOperationException e) {
-            String msg = "Error instantiating [%s] class";
+            String msg = "Error instantiating class";
             MantaClientSerializationException mcse = new MantaClientSerializationException(msg, e);
             mcse.setContextValue("instanceClass", instanceClass.getCanonicalName());
             mcse.setContextValue("params", MantaUtils.asString(types));

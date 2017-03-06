@@ -32,6 +32,7 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @param classReference class to be serialized
      */
     public AbstractManualSerializer(final Class<T> classReference) {
+        super(false, true);
         this.classReference = classReference;
     }
 
@@ -44,7 +45,7 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      */
     public AbstractManualSerializer(final Class<T> classReference,
                                     final boolean acceptsNull) {
-        super(acceptsNull);
+        super(acceptsNull, true);
 
         this.classReference = classReference;
     }

@@ -637,11 +637,10 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     private int calculateBufferSize() {
         long cipherTextContentLength = ObjectUtils.firstNonNull(getContentLength(), -1L);
 
-        if (this.cipherDetails.isAEADCipher()) {
+        if (cipherTextContentLength >= 0) {
             cipherTextContentLength -= this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
-        } else {
-            cipherTextContentLength -= this.hmac.getMacSize();
         }
+
         final int bufferSize;
 
         if (cipherTextContentLength > DEFAULT_BUFFER_SIZE || cipherTextContentLength < 0) {
@@ -663,9 +662,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             this.closed = true;
         }
 
-        if (authenticateCiphertext) {
-            readRemainingBytes();
-        }
+        readRemainingBytes();
 
         IOUtils.closeQuietly(cipherInputStream);
 
