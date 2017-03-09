@@ -40,4 +40,10 @@
             <package name="com.joyent.manta.client.jobs.*" />
         </packages>
     </test>
+
+    <test name="Manta Client Integration Crypto Tests">
+        <packages>
+            <package name="com.joyent.manta.client.crypto.*" />
+        </packages>
+    </test>
 </suite>
