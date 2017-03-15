@@ -22,7 +22,6 @@ import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
-import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
@@ -148,9 +147,11 @@ public class MantaConnectionFactory implements Closeable {
      * Create new instance using the passed configuration.
      * @param config configuration of the connection parameters
      * @param keyPair cryptographic signing key pair used for HTTP signatures
+     * @param signer Signer configured to work with the the given keyPair
      */
     public MantaConnectionFactory(final ConfigContext config,
-                                  final KeyPair keyPair) {
+                                  final KeyPair keyPair,
+                                  final ThreadLocalSigner signer) {
         Validate.notNull(config, "Configuration context must not be null");
 
         CONNECTION_FACTORY_COUNT.incrementAndGet();
@@ -172,30 +173,16 @@ public class MantaConnectionFactory implements Closeable {
             authScheme = null;
             this.signerThreadLocalRef = new WeakReference<>(null);
         // When auth is enabled we assign a configurator that sets up signing
-        // using RSA keys
         } else {
             this.signatureConfigurator = new HttpSignatureConfigurator(
                     keyPair,
                     createCredentials(),
-                    useNativeCodeToSign);
-
-            AuthScheme rawAuthScheme = this.signatureConfigurator.getAuthScheme();
-
-            // We should never have a non-HttpSignatureAuthScheme but we still
-            // have to check because of Java's type system
-            if (rawAuthScheme instanceof HttpSignatureAuthScheme) {
-                authScheme = (HttpSignatureAuthScheme) rawAuthScheme;
-                // We assign the thread local signer instance to the factory,
-                // so that we can remove thread local variables on close()
-                this.signerThreadLocalRef = new WeakReference<>(authScheme.getSigner());
-            } else {
-                authScheme = null;
-                this.signerThreadLocalRef = new WeakReference<>(null);
-            }
+                    signer);
+            this.signerThreadLocalRef = new WeakReference<>(signer);
+            authScheme = (HttpSignatureAuthScheme) this.signatureConfigurator.getAuthScheme();
         }
 
         this.connectionManager = buildConnectionManager();
-
 
         this.httpClientBuilder = createBuilder(authScheme);
         this.jmxDynamicBeans = buildMBeans();

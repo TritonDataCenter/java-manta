@@ -7,6 +7,8 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.http.signature.Signer;
+import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.config.TestConfigContext;
@@ -98,8 +100,8 @@ public class MantaClientConnectionFailuresIT {
     }
 
     private class NoHttpResponseMantaConnectionFactory extends MantaConnectionFactory {
-        public NoHttpResponseMantaConnectionFactory(ConfigContext config, KeyPair keyPair) {
-            super(config, keyPair);
+        public NoHttpResponseMantaConnectionFactory(ConfigContext config, KeyPair keyPair, ThreadLocalSigner signer) {
+            super(config, keyPair, signer);
         }
 
         @Override
@@ -113,8 +115,10 @@ public class MantaClientConnectionFailuresIT {
     public void canRetryOnNoHttpResponseException() throws IOException {
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
+        final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keyPair));
         MantaClient mantaClient = new MantaClient(config, keyPair,
-                new NoHttpResponseMantaConnectionFactory(config, keyPair));
+                                                  new NoHttpResponseMantaConnectionFactory(config, keyPair, signer),
+                                                  signer);
         String testPathPrefix = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
 

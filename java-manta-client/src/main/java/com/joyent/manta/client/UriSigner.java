@@ -34,7 +34,7 @@ public class UriSigner {
     /**
      * HTTP signature generator instance.
      */
-    private final ThreadLocalSigner signer = new ThreadLocalSigner();
+    private final ThreadLocalSigner signer;
 
     /**
      * Cryptographic key pair used to sign URIs.
@@ -46,10 +46,12 @@ public class UriSigner {
      *
      * @param config Manta configuration context
      * @param keyPair cryptographic key pair used to sign URIs
+     * @param signer Signer configured to work with the the given keyPair
      */
-    public UriSigner(final ConfigContext config, final KeyPair keyPair) {
+    public UriSigner(final ConfigContext config, final KeyPair keyPair, final ThreadLocalSigner signer) {
         this.config = config;
         this.keyPair = keyPair;
+        this.signer = signer;
     }
 
     /**
@@ -74,7 +76,7 @@ public class UriSigner {
         }
 
         final String charset = "UTF-8";
-        final String algorithm = "RSA-SHA256";
+        final String algorithm = signer.get().getHttpHeaderAlgorithm().toUpperCase();
         final String keyId = String.format("/%s/keys/%s",
                 config.getMantaUser(), config.getMantaKeyId());
         final String keyIdEncoded = URLEncoder.encode(keyId, charset);

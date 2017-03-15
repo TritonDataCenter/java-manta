@@ -10,11 +10,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
-import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
-import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
-import com.joyent.manta.http.StandardHttpHelper;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -43,12 +39,6 @@ public class MantaDirectoryListingIteratorIT {
 
     private ConfigContext config;
 
-    private MantaConnectionContext connectionContext;
-
-    private MantaConnectionFactory connectionFactory;
-
-    private HttpHelper httpHelper;
-
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
@@ -63,10 +53,6 @@ public class MantaDirectoryListingIteratorIT {
 
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
-        this.connectionFactory = new MantaConnectionFactory(config, keyPair);
-        this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
-        this.httpHelper = new StandardHttpHelper(connectionContext, connectionFactory,
-                config);
     }
 
     @AfterClass
@@ -92,10 +78,7 @@ public class MantaDirectoryListingIteratorIT {
             mantaClient.put(path, TEST_DATA);
         }
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 5)) {
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 5)) {
             // Make sure we can get the first element
             Assert.assertTrue(itr.hasNext(), "We should have the first element");
             Map<String, Object> first = itr.next();
@@ -144,11 +127,7 @@ public class MantaDirectoryListingIteratorIT {
             mantaClient.put(path, TEST_DATA);
         }
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 10)) {
-
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 10)) {
             Runnable search = () -> {
                 while (itr.hasNext()) {
                     try {
@@ -194,10 +173,7 @@ public class MantaDirectoryListingIteratorIT {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 10)) {
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 10)) {
             Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
 
             boolean failed = false;
@@ -227,11 +203,7 @@ public class MantaDirectoryListingIteratorIT {
             mantaClient.put(path, TEST_DATA);
         }
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 2)) {
-
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 2)) {
             for (int i = 1; i < MAX; i++) {
                 Assert.assertTrue(itr.hasNext(), "We should have the next element");
                 Map<String, Object> next = itr.next();

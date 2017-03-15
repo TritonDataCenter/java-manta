@@ -7,6 +7,8 @@
  */
 package com.joyent.manta.client.multipart;
 
+import com.joyent.http.signature.Signer;
+import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectMapper;
@@ -212,8 +214,9 @@ public class EncryptedMultipartManagerTest {
         } catch (GeneralSecurityException e) {
             throw new AssertionError(e);
         }
+        final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keyPair));
 
-        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair);
+        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory, config);
