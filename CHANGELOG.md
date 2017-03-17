@@ -11,6 +11,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Job related classes have been moved to the com.joyent.manta.client.jobs package.
  - In `BaseChainedConfigContext`, `setHttpsCiphers` has been renamed to 
    `setHttpsCipherSuites` to be in alignment with the getter of a similar name.
+ - Request IDs are now generated using time-based UUIDs. 
 ### Added
  - Added version information to user agent and debug output. 
  - Added simple CLI to use for debugging.
