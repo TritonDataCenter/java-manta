@@ -10,7 +10,6 @@ package com.joyent.manta.http;
 import com.fasterxml.uuid.EthernetAddress;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedGenerator;
-import com.joyent.manta.exception.MantaClientException;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -20,6 +19,10 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.MDC;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -37,13 +40,17 @@ public class RequestIdInterceptor implements HttpRequestInterceptor {
     private static final TimeBasedGenerator TIME_BASED_GENERATOR;
 
     static {
-        final EthernetAddress ethernetAddress = EthernetAddress.fromInterface();
+        Random nonBlockingRandomness;
 
-        if (ethernetAddress == null) {
-            String msg = "A network interface is needed to use the Java Manta SDK";
-            throw new MantaClientException(msg);
+        try {
+            nonBlockingRandomness = SecureRandom.getInstance("NativePRNGNonBlocking", "SUN");
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            nonBlockingRandomness = new Random(System.nanoTime());
         }
 
+        // Fake ethernet address based on a random value
+        final EthernetAddress ethernetAddress = EthernetAddress.constructMulticastAddress(
+                nonBlockingRandomness);
         TIME_BASED_GENERATOR = Generators.timeBasedGenerator(ethernetAddress);
     }
 
