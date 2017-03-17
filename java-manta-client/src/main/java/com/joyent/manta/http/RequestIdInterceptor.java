@@ -7,6 +7,10 @@
  */
 package com.joyent.manta.http;
 
+import com.fasterxml.uuid.EthernetAddress;
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.TimeBasedGenerator;
+import com.joyent.manta.exception.MantaClientException;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -28,13 +32,30 @@ import java.util.UUID;
  */
 public class RequestIdInterceptor implements HttpRequestInterceptor {
     /**
+     * Time-based UUID generator for generating request ids.
+     */
+    private static final TimeBasedGenerator TIME_BASED_GENERATOR;
+
+    static {
+        final EthernetAddress ethernetAddress = EthernetAddress.fromInterface();
+
+        if (ethernetAddress == null) {
+            String msg = "A network interface is needed to use the Java Manta SDK";
+            throw new MantaClientException(msg);
+        }
+
+        TIME_BASED_GENERATOR = Generators.timeBasedGenerator(ethernetAddress);
+    }
+
+    /**
      * Constant identifying the request id as a MDC attribute.
      */
     public static final String MDC_REQUEST_ID_STRING = "mantaRequestId";
 
     @Override
     public void process(final HttpRequest request, final HttpContext context) throws HttpException, IOException {
-        final String requestId = UUID.randomUUID().toString();
+        final UUID id = TIME_BASED_GENERATOR.generate();
+        final String requestId = id.toString();
         final Header idHeader = new BasicHeader(MantaHttpHeaders.REQUEST_ID, requestId);
         request.addHeader(idHeader);
 
