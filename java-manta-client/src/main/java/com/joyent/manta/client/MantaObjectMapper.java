@@ -8,8 +8,10 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -39,12 +41,17 @@ public class MantaObjectMapper extends ObjectMapper {
      */
     public MantaObjectMapper() {
         registerModule(new JavaTimeModule());
-        getDeserializationConfig()
+
+        DeserializationConfig deserializationConfig = getDeserializationConfig()
                 .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .without(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES);
-        getSerializationConfig()
+        setConfig(deserializationConfig);
+
+        SerializationConfig serializationConfig = getSerializationConfig()
                 .with(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)
                 .without(SerializationFeature.WRITE_NULL_MAP_VALUES);
+        setConfig(serializationConfig);
+
         setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 }
