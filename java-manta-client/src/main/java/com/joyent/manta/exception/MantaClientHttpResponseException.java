@@ -7,11 +7,13 @@
  */
 package com.joyent.manta.exception;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -23,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Exception class representing a failure in the contract of Manta's behavior.
@@ -124,26 +127,31 @@ public class MantaClientHttpResponseException extends MantaIOException {
                                             final String path) {
         super(String.format("HTTP request failed to: %s", path));
         final HttpEntity entity = response.getEntity();
-        final String jsonMimeType = ContentType.APPLICATION_JSON.getMimeType();
+        final ContentType jsonContentType = ContentType.APPLICATION_JSON;
 
-        final String mimeType;
+        final ContentType responseContentType;
 
         if (entity != null && entity.getContentType() != null) {
-            mimeType = entity.getContentType().getValue();
+            responseContentType = ContentType.getLenient(entity);
         } else {
-            mimeType = null;
+            responseContentType = null;
         }
 
         ErrorDetail errorDetail = null;
         ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
-        if (entity != null && (mimeType == null || mimeType.equals(jsonMimeType))) {
-            try {
-                try (InputStream json = entity.getContent()) {
-                    errorDetail = mapper.readValue(json, ErrorDetail.class);
-                } catch (RuntimeException e) {
-                    LOGGER.warn("Unable to deserialize json error data", e);
-                }
+        if (entity != null && (responseContentType == null
+                || responseContentType.getMimeType().equals(jsonContentType.getMimeType()))) {
+            byte[] jsonBytes = new byte[0];
+
+            try (InputStream jsonStream = entity.getContent()) {
+                jsonBytes = IOUtils.toByteArray(jsonStream);
+                errorDetail = mapper.readValue(jsonBytes, ErrorDetail.class);
+            } catch (RuntimeException | JsonProcessingException e) {
+                String json = new String(jsonBytes, StandardCharsets.UTF_8);
+                String msg = String.format("Unable to deserialize json "
+                        + "error data. Actual response:\n%s", json);
+                LOGGER.warn(msg, e);
             } catch (IOException e) {
                 LOGGER.warn("Problem getting response error content", e);
             }

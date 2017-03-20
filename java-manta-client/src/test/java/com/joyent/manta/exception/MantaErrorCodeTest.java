@@ -15,8 +15,8 @@ import org.testng.annotations.Test;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@Test
 public class MantaErrorCodeTest {
-    @Test
     public void valueOfCodeCanFindByMatchingCode() {
         final MantaErrorCode expected = MantaErrorCode.INVALID_LIMIT_ERROR;
         final MantaErrorCode actual = MantaErrorCode.valueOfCode("InvalidLimit");
@@ -24,7 +24,6 @@ public class MantaErrorCodeTest {
         Assert.assertEquals(actual, expected);
     }
 
-    @Test
     public void valueOfCodeCanFindByNonmatching() {
         final MantaErrorCode expected = MantaErrorCode.UNKNOWN_ERROR;
         final MantaErrorCode actual = MantaErrorCode.valueOfCode("Who knows?");
@@ -32,7 +31,6 @@ public class MantaErrorCodeTest {
         Assert.assertEquals(actual, expected);
     }
 
-    @Test
     public void valueOfCodeCanFindByNull() {
         final MantaErrorCode expected = MantaErrorCode.NO_CODE_ERROR;
         final MantaErrorCode actual = MantaErrorCode.valueOfCode(null);

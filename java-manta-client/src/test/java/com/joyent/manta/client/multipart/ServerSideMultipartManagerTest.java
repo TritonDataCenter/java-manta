@@ -75,14 +75,10 @@ public class ServerSideMultipartManagerTest {
     }
 
     public void canInitiateUploadFailure503() throws IOException {
-        final UUID uploadId = UUID.randomUUID();
-        final String partsDirectory = "/test/uploads/a/abcdef";
-
         final StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,
                 HttpStatus.SC_SERVICE_UNAVAILABLE, "UNAVAILABLE");
 
-        final String jsonResponse = String.format("{ \"id\":\"%s\", \"partsDirectory\":\"%s\" }",
-                uploadId.toString(), partsDirectory);
+        final String jsonResponse = "{ \"code\":\"InternalError\", \"message\":\"Unit test message.\"}";
 
         String path = "/test/stor/object";
 
