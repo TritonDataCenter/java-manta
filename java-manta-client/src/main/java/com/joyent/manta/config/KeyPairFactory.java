@@ -7,18 +7,14 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.http.signature.Signer;
-import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.http.signature.KeyPairLoader;
 import com.joyent.manta.exception.ConfigurationException;
-import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.security.KeyPair;
-
-import static org.apache.commons.lang3.BooleanUtils.toBoolean;
 
 /**
  * Factory class for generating {@link KeyPair} instances based on passed
@@ -54,30 +50,10 @@ public class KeyPairFactory {
         final KeyPair keyPair;
         final String password = config.getPassword();
         final String keyPath = config.getMantaKeyPath();
-        final ThreadLocalSigner threadLocalSigner;
-
-        if (config.disableNativeSignatures() == null) {
-            threadLocalSigner = new ThreadLocalSigner();
-        } else {
-            threadLocalSigner = new ThreadLocalSigner(!config.disableNativeSignatures());
-        }
-
-        final Signer signer = threadLocalSigner.get();
-
-        if (LOGGER.isDebugEnabled()) {
-            final boolean nativeGmp = toBoolean(System.getProperty("native.jnagmp"));
-            final String enabled = BooleanUtils.toString(nativeGmp, "enabled", "disabled");
-            LOGGER.debug("Native GMP is {}", enabled);
-        }
-
-        if (signer == null) {
-            final String msg = "Error getting signer instance from thread local";
-            throw new NullPointerException(msg);
-        }
 
         try {
             if (keyPath != null) {
-                keyPair = signer.getKeyPair(new File(keyPath).toPath());
+                keyPair = KeyPairLoader.getKeyPair(new File(keyPath).toPath());
             } else {
                 final char[] charPassword;
 
@@ -97,14 +73,12 @@ public class KeyPairFactory {
                     throw exception;
                 }
 
-                keyPair = signer.getKeyPair(privateKeyContent, charPassword);
+                keyPair = KeyPairLoader.getKeyPair(privateKeyContent, charPassword);
             }
         } catch (IOException e) {
             String msg = String.format("Unable to read key files from path: %s",
                     keyPath);
             throw new ConfigurationException(msg, e);
-        } finally {
-            threadLocalSigner.remove();
         }
 
         return keyPair;

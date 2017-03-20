@@ -8,6 +8,8 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joyent.http.signature.Signer;
+import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.jobs.MantaJobBuilder;
@@ -202,7 +204,13 @@ public class MantaClient implements AutoCloseable {
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
         final KeyPair keyPair = keyPairFactory.createKeyPair();
 
-        this.connectionFactory = new MantaConnectionFactory(config, keyPair);
+        final Signer.Builder builder = new Signer.Builder(keyPair);
+        if (config.disableNativeSignatures()) {
+            builder.providerCode("stdlib");
+        }
+        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
+
+        this.connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
@@ -213,7 +221,7 @@ public class MantaClient implements AutoCloseable {
                     config);
         }
 
-        this.uriSigner = new UriSigner(this.config, keyPair);
+        this.uriSigner = new UriSigner(this.config, keyPair, signer);
     }
 
     /**
@@ -227,7 +235,8 @@ public class MantaClient implements AutoCloseable {
      */
     MantaClient(final ConfigContext config,
                 final KeyPair keyPair,
-                final MantaConnectionFactory connectionFactory) {
+                final MantaConnectionFactory connectionFactory,
+                final ThreadLocalSigner signer) {
         dumpConfig(config);
 
         final String mantaURL = config.getMantaURL();
@@ -250,7 +259,7 @@ public class MantaClient implements AutoCloseable {
                     config);
         }
 
-        this.uriSigner = new UriSigner(this.config, keyPair);
+        this.uriSigner = new UriSigner(this.config, keyPair, signer);
     }
 
     /**
@@ -654,8 +663,19 @@ public class MantaClient implements AutoCloseable {
      * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the directory.
      */
     public MantaDirectoryListingIterator streamingIterator(final String path) {
-        MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
-                this.url, path, httpHelper, MAX_RESULTS);
+        return streamingIterator(path, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a directory in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the directory.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the directory.
+     */
+    public MantaDirectoryListingIterator streamingIterator(final String path, final int pagingSize) {
+        MantaDirectoryListingIterator itr =
+            new MantaDirectoryListingIterator(this.url, path, httpHelper, pagingSize);
         danglingStreams.add(itr);
         return itr;
     }
