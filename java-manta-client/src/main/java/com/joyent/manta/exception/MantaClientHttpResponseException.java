@@ -140,8 +140,8 @@ public class MantaClientHttpResponseException extends MantaIOException {
         ErrorDetail errorDetail = null;
         ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
-        if (entity != null && (responseContentType == null ||
-                responseContentType.getMimeType().equals(jsonContentType.getMimeType()))) {
+        if (entity != null && (responseContentType == null
+                || responseContentType.getMimeType().equals(jsonContentType.getMimeType()))) {
             byte[] jsonBytes = new byte[0];
 
             try (InputStream jsonStream = entity.getContent()) {
