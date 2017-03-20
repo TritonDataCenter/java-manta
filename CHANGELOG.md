@@ -4,6 +4,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.0.0] - ?
 ### Changed
+ - Upgraded HTTP Signatures library to 4.0.1.
  - Moved configuration validation into a static method on ConfigContext.
  - Manta specific content-types are now contained in `MantaContentTypes`.
  - MantaClient.close() no longer throws Exception.
@@ -30,6 +31,10 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Added support for client-side encrypted multipart upload.
  - Added support for client-side encrypted HTTP range download.
  - Added module supporting serializing encrypted MPU upload objects.
+ - Added support for libnss via PKCS11.
+ - Added support for FastMD5 native MD5 calculation.
+ - Added support for single-second caching of HTTP signatures.
+ - Added support for ECDSA and DSA HTTP signatures.
 ### Removed
  - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
  - Removed MantaCryptoException.

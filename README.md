@@ -178,13 +178,16 @@ account name because of historic compatibility concerns.
 
 ## Usage
 
-You'll need a manta login, an associated rsa key, and its corresponding key
-fingerprint. Note that this api currently only supports rsa ssh keys --
-enterprising individuals wishing to use dsa keys can contribute to this repo by
-consulting the [node-http-signing
-spec](https://github.com/joyent/node-http-signature/blob/master/http_signing.md).
+You'll need a manta login, an associated key, and its corresponding key
+fingerprint.  
 
-For detailed usage instructions, consult the provided javadoc.
+You will then create or use an implementation of `ConfigContext` to set up
+your configuration. Once you have an instance of your configuration class,
+you will then construct a `MantaClient` instance. The `MantaClient` class
+is intended to be used per Manta account. It is thread-safe and you should
+share one instance across multiple threads.
+
+For detailed usage instructions consult the provided javadoc and examples.
 
 ### General Examples
  
@@ -250,6 +253,8 @@ authenticate that ciphertext was not modified.
  
 
 ### Improving Encryption Performance
+
+#### Enabling libnss Support via PKCS11
 
 [Libnss](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS) can be used with 
 [PKCS11](https://en.wikipedia.org/wiki/PKCS_11) to provide a native code interface for encryption 
@@ -326,6 +331,30 @@ security.provider.10=sun.security.smartcardio.SunPCSC
 
 Once this is complete, you should now have libnss providing your cryptographic
 functions.
+
+#### Enabling Native FastMD5 Support
+
+The Java Manta SDK uses [Timothy W Macinta's Fast MD5](http://www.twmacinta.com/myjava/fast_md5.php)
+implementation internally to perform MD5 checksum operations. By default, the
+SDK uses the pure Java MD5 implementation which is faster than the default
+JDK implementation for large amounts of data. If the default performance
+provided by the SDK is insufficient, native MD5 implementation libraries can
+be loaded via JNI.
+
+To get a native library for your system, [download the library](http://www.twmacinta.com/myjava/fast_md5.php#download) and choose the share object library that is appropriate for
+your system (hint: they are contained in the `./build/` directory). The easiest
+way to get up and running is to copy the library to a path that makes sense 
+for your application and then when you load your application pass the following
+Java system property to your application indicating the path to the native 
+library:
+
+```
+java -Dcom.twmacinta.util.MD5.NATIVE_LIB_FILE=/opt/myapp/lib/arch/linux_amd64/MD5.so
+```
+
+You can also place multiple files in a directory structure and have the FastMD5
+library automatically choose the right library for your platform. The details
+for getting are best described in the [FastMD5 Javadocs](http://www.twmacinta.com/myjava/fast_md5_javadocs/). 
 
 ## Server-side Multipart Upload
 
