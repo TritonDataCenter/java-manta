@@ -14,102 +14,82 @@ import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import com.twmacinta.util.FastMD5Digest;
-import org.apache.commons.io.output.NullOutputStream;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.util.NullOutputStream;
 
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.security.Provider;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
+
 
 /**
  * Benchmark for determining the throughput of an encryption algorithm.
  */
-public final class EncryptingEntityBenchmark {
-    /**
-     * Use the main method and not the constructor.
-     */
-    private EncryptingEntityBenchmark() {
+@State(Scope.Thread)
+@SuppressWarnings({"checkstyle:javadocmethod", "checkstyle:javadoctype", "checkstyle:javadocvariable",
+            "checkstyle:visibilitymodifier"})
+public class EncryptingEntityBenchmark {
+
+    @Param({"AES128/GCM/NoPadding", "AES192/GCM/NoPadding", "AES256/GCM/NoPadding",
+                "AES128/CTR/NoPadding", "AES192/CTR/NoPadding",
+                "AES256/CTR/NoPadding", "AES128/CBC/PKCS5Padding",
+                "AES192/CBC/PKCS5Padding", "AES256/CBC/PKCS5Padding",
+                "AES128/CTR/NoPadding"})
+    private String encryptionAlgorithm;
+
+    // NOTE: EncryptingEntity requires modification for this to be
+    // configurable for testing
+    @Param({"128"})
+    private int blockSize;
+
+    private SupportedCipherDetails cipherDetails;
+    private SecretKey secretKey;
+
+    @Setup
+    public void setup() throws IOException {
+        cipherDetails = SupportedCiphersLookupMap.INSTANCE.get(encryptionAlgorithm);
+        secretKey = SecretKeyUtils.generate(cipherDetails);
+        System.out.println("\n#Provider: " + cipherDetails.getCipher().getProvider().getName());
     }
 
-    /**
-     * Method that runs the benchmark.
-     *
-     * @param tries number of times to execute
-     * @param cipherDetails cipher implementation to benchmark
-     * @throws IOException thrown when there is a problem streaming
-     */
-    private static void throughputTest(final int tries,
-                                       final SupportedCipherDetails cipherDetails)
-            throws IOException {
-        final long oneMb = 1_048_576L;
 
-        Duration[] durations = new Duration[tries];
-
-        long totalMs = 0L;
-        long totalMbs = 0L;
-        long totalMbps = 0L;
-
-        for (int i = 0; i < tries + 1; i++) {
-            try (RandomInputStream in = new RandomInputStream(oneMb);
-                 OutputStream noopOut = new NullOutputStream()) {
-
-                MantaInputStreamEntity entity = new MantaInputStreamEntity(in, oneMb);
-                SecretKey key = SecretKeyUtils.generate(cipherDetails);
-
-                EncryptingEntity encryptingEntity = new EncryptingEntity(key,
-                        cipherDetails, entity);
-
-                DigestedEntity digestedEntity = new DigestedEntity(encryptingEntity,
-                        new FastMD5Digest());
-
-                long start = System.nanoTime();
-                digestedEntity.writeTo(noopOut);
-                long end = System.nanoTime();
-
-                Duration duration = Duration.ofNanos(end - start);
-
-                // We throw out the first try because the JVM is warming up
-                if (i > 0) {
-                    durations[i - 1] = duration;
-                    long timeMs = duration.toMillis();
-                    totalMs += timeMs;
-                    long mbs = timeMs * 1000;
-                    totalMbs += mbs;
-                    long mbps = timeMs * 1000 * 8;
-                    totalMbps += mbps;
-
-                    System.out.printf("Total time=%dms, mbs=%d, mbps=%d\n",
-                            timeMs, mbs, mbps);
-                }
-            }
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public OutputStream encryptOneMiB() throws IOException {
+        final long oneMib = 1024 * 1024;
+        try (RandomInputStream in = new RandomInputStream(oneMib);
+             OutputStream noopOut = new NullOutputStream()) {
+            MantaInputStreamEntity entity = new MantaInputStreamEntity(in, oneMib);
+            EncryptingEntity encryptingEntity = new EncryptingEntity(secretKey,
+                                                                     cipherDetails, entity);
+            encryptingEntity.writeTo(noopOut);
+            return noopOut;
         }
-
-        System.out.printf("\nAverage time=%dms, mbs=%d, mbps=%d\n",
-                totalMs / tries, totalMbs / tries, totalMbps / tries);
     }
 
-    /**
-     * Public entrance to the class.
-     *
-     * @param argv parameters
-     * @throws Exception thrown when there is a problem streaming
-     */
-    public static void main(final String[] argv) throws Exception {
-        final int tries;
-
-        if (argv.length < 1) {
-            tries = 10;
-        } else {
-            tries = Integer.parseInt(argv[0].trim());
-        }
-
-        for (SupportedCipherDetails cipherDetails : SupportedCiphersLookupMap.INSTANCE.values()) {
-            Provider provider = cipherDetails.getCipher().getProvider();
-            System.out.println("===================================================");
-            System.out.printf(" %s [%s] Timings:\n", cipherDetails.getCipherId(), provider);
-            System.out.println("===================================================");
-            throughputTest(tries, cipherDetails);
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public OutputStream encryptAndDigestOneMiB() throws IOException {
+        final long oneMib = 1024 * 1024;
+        try (RandomInputStream in = new RandomInputStream(oneMib);
+             OutputStream noopOut = new NullOutputStream()) {
+            MantaInputStreamEntity entity = new MantaInputStreamEntity(in, oneMib);
+            EncryptingEntity encryptingEntity = new EncryptingEntity(secretKey,
+                                                                     cipherDetails, entity);
+            DigestedEntity digestedEntity = new DigestedEntity(encryptingEntity,
+                                                               new FastMD5Digest());
+            digestedEntity.writeTo(noopOut);
+            return noopOut;
         }
     }
 }

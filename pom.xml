@@ -225,6 +225,7 @@
                     <skip>${checkstyle.skip}</skip>
                     <suppressionsLocation>suppressions.xml</suppressionsLocation>
                     <violationSeverity>warning</violationSeverity>
+                    <excludes>**/generated/**/*</excludes>
                 </configuration>
                 <executions>
                     <execution>
