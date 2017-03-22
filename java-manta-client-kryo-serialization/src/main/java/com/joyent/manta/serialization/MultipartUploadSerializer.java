@@ -27,7 +27,7 @@ public class MultipartUploadSerializer<T extends AbstractMultipartUpload> extend
      * @param kryo Kryo instance
      * @param type type of instance to serialize
      */
-    public MultipartUploadSerializer(final Kryo kryo, final Class type) {
+    public MultipartUploadSerializer(final Kryo kryo, final Class<?> type) {
         super(kryo, type);
         registerClasses(kryo);
     }

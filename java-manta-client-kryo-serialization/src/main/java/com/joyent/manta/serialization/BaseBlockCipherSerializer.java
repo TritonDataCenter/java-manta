@@ -133,11 +133,11 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         final Class<?> aeadGenericBlockCipherClass = findClass(
                 "org.bouncycastle.jcajce.provider.symmetric.util.BaseBlockCipher$AEADGenericBlockCipher");
 
-        kryo.register(AESFastEngine.class, new CompatibleFieldSerializer(
+        kryo.register(AESFastEngine.class, new CompatibleFieldSerializer<>(
                 kryo, AESFastEngine.class));
         kryo.register(BufferedBlockCipher.class);
         kryo.register(bufferedGenericBlockCipherClass,
-                new CompatibleFieldSerializer(kryo, bufferedGenericBlockCipherClass))
+                new CompatibleFieldSerializer<>(kryo, bufferedGenericBlockCipherClass))
                 .setInstantiator(new MagicInstantiator<>(bufferedGenericBlockCipherClass));
         kryo.register(SICBlockCipher.class)
                 .setInstantiator(new MagicInstantiator<>(SICBlockCipher.class));
@@ -151,11 +151,11 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
                 .setInstantiator(new MagicInstantiator<>(paddedBufferedBlockCipherClass));
         kryo.register(CBCBlockCipher.class)
                 .setInstantiator(new MagicInstantiator<>(CBCBlockCipher.class));
-        kryo.register(AEADParameters.class, new CompatibleFieldSerializer(kryo, AEADParameters.class))
+        kryo.register(AEADParameters.class, new CompatibleFieldSerializer<>(kryo, AEADParameters.class))
                 .setInstantiator(new MagicInstantiator<>(AEADParameters.class));
-        kryo.register(aeadGenericBlockCipherClass, new CompatibleFieldSerializer(kryo, aeadGenericBlockCipherClass))
+        kryo.register(aeadGenericBlockCipherClass, new CompatibleFieldSerializer<>(kryo, aeadGenericBlockCipherClass))
                 .setInstantiator(new MagicInstantiator<>(aeadGenericBlockCipherClass));
-        kryo.register(GCMBlockCipher.class, new CompatibleFieldSerializer(kryo, GCMBlockCipher.class))
+        kryo.register(GCMBlockCipher.class, new CompatibleFieldSerializer<>(kryo, GCMBlockCipher.class))
                 .setInstantiator(new MagicInstantiator<>(GCMBlockCipher.class));
         kryo.register(RC2ParameterSpec.class);
         kryo.register(RC5ParameterSpec.class);

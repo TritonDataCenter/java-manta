@@ -185,7 +185,7 @@ final class ReflectionUtils {
             return new Class<?>[0];
         }
 
-        final Class<?>[] classes = new Class[objects.length];
+        final Class<?>[] classes = new Class<?>[objects.length];
 
         for (int i = 0; i < objects.length; i++) {
             if (objects[i] != null) {

@@ -28,6 +28,7 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
     /**
      * Class reference to {@link sun.security.pkcs11.SessionRef}.
      */
+    @SuppressWarnings("unchecked")
     private static final Class<Object> SESSION_REF_CLASS =
             (Class<Object>)ReflectionUtils.findClass("sun.security.pkcs11.SessionRef");
 
@@ -83,7 +84,7 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
         final Object discovered = kryo.readClassAndObject(input);
 
         try {
-            Constructor constructor = SESSION_REF_CLASS.getDeclaredConstructors()[0];
+            Constructor<?> constructor = SESSION_REF_CLASS.getDeclaredConstructors()[0];
             constructor.setAccessible(true);
 
             Object instance = constructor.newInstance(referent, id, token);

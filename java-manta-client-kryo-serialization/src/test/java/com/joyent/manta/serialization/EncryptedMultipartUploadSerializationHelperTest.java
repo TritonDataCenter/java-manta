@@ -31,7 +31,7 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Test
-public class EncryptedMultipartUploaSerializationHelperTest {
+public class EncryptedMultipartUploadSerializationHelperTest {
     private byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
     private SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
     private SecretKey secretKey = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
@@ -62,7 +62,8 @@ public class EncryptedMultipartUploaSerializationHelperTest {
         }
 
         final byte[] serializedData = helper.serialize(upload);
-        final EncryptedMultipartUpload deserialized = helper.deserialize(serializedData);
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> deserialized =
+                helper.deserialize(serializedData);
         Assert.assertEquals(upload, deserialized);
     }
 
@@ -78,7 +79,7 @@ public class EncryptedMultipartUploaSerializationHelperTest {
         Assert.assertEquals(actual, expected);
     }
 
-    private EncryptedMultipartUpload newUploadInstance(final Object... params) {
+    private EncryptedMultipartUpload<?> newUploadInstance(final Object... params) {
         try {
             return ConstructorUtils.invokeConstructor(EncryptedMultipartUpload.class,
                     params);

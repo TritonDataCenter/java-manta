@@ -141,7 +141,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         Class<?> clazz = findClass(className);
 
         if (clazz != null) {
-            kryo.register(clazz, new CompatibleFieldSerializer(kryo, clazz))
+            kryo.register(clazz, new CompatibleFieldSerializer<>(kryo, clazz))
                     .setInstantiator(new MagicInstantiator<>(clazz));
         }
     }

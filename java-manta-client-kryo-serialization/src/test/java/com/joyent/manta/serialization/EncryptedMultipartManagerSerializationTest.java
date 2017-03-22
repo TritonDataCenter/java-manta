@@ -73,7 +73,7 @@ public class EncryptedMultipartManagerSerializationTest {
             throw new AssertionError(e);
         }
 
-        final EncryptedMultipartUpload upload = newUploadInstance(inner, encryptionState);
+        final EncryptedMultipartUpload<?> upload = newUploadInstance(inner, encryptionState);
 
         final byte[] serializedData;
 
@@ -85,13 +85,13 @@ public class EncryptedMultipartManagerSerializationTest {
         }
 
         try (Input input = new Input(serializedData)) {
-            final EncryptedMultipartUpload actual = kryo.readObject(
+            final EncryptedMultipartUpload<?> actual = kryo.readObject(
                     input, EncryptedMultipartUpload.class);
             Assert.assertEquals(actual, upload);
         }
     }
 
-    private EncryptedMultipartUpload newUploadInstance(final Object... params) {
+    private EncryptedMultipartUpload<?> newUploadInstance(final Object... params) {
         try {
             return ConstructorUtils.invokeConstructor(EncryptedMultipartUpload.class,
                     params);

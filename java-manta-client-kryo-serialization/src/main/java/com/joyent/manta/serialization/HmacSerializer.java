@@ -65,7 +65,7 @@ public class HmacSerializer extends AbstractManualSerializer<HMac> {
         kryo.register(FastMD5Digest.class);
         kryo.register(MD5.class);
         Class<?> md5StateClass = ReflectionUtils.findClass("com.twmacinta.util.MD5State");
-        kryo.register(md5StateClass, new CompatibleFieldSerializer(kryo, md5StateClass));
+        kryo.register(md5StateClass, new CompatibleFieldSerializer<>(kryo, md5StateClass));
         kryo.register(MD5Digest.class);
         kryo.register(SHA1Digest.class);
         kryo.register(SHA256Digest.class);
