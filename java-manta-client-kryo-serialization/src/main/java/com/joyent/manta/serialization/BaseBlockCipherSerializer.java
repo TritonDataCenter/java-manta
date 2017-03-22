@@ -12,6 +12,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import org.bouncycastle.crypto.BufferedBlockCipher;
+import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
 import org.bouncycastle.crypto.modes.GCMBlockCipher;
@@ -135,6 +136,8 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
 
         kryo.register(AESFastEngine.class, new CompatibleFieldSerializer<>(
                 kryo, AESFastEngine.class));
+        kryo.register(AESEngine.class, new CompatibleFieldSerializer<>(
+                kryo, AESEngine.class));
         kryo.register(BufferedBlockCipher.class);
         kryo.register(bufferedGenericBlockCipherClass,
                 new CompatibleFieldSerializer<>(kryo, bufferedGenericBlockCipherClass))
