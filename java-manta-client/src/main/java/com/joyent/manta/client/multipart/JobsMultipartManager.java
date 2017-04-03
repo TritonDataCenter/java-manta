@@ -169,6 +169,11 @@ public class JobsMultipartManager extends AbstractMultipartManager
     }
 
     @Override
+    public int getMinimumPartSize() {
+        return 1;
+    }
+
+    @Override
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
         final List<Exception> exceptions = new ArrayList<>();
 

@@ -289,6 +289,40 @@ public class EncryptedServerSideMultipartManagerIT {
         }
     }
 
+    public final void canUploadWithByteArrayAndMultipleFullParts() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB *3);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
+        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, FIVE_MB * 2 + 1);
+        final byte[] content3 = Arrays.copyOfRange(content, FIVE_MB * 2 + 1, content.length);
+
+        String contentType = "application/something-never-seen-before; charset=UTF-8";
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentType(contentType);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
+        MantaMultipartUploadPart part3 = multipart.uploadPart(upload, 3, content3);
+
+        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1, part2, part3 };
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
+        multipart.complete(upload, partsStream);
+
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
+
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+
+            Assert.assertEquals(in.getContentType(), contentType,
+                    "Set content-type doesn't match actual content type");
+        }
+    }
+
+
     public final void canUploadWithSinglePartAndPerformRangeRequest() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -383,37 +417,41 @@ public class EncryptedServerSideMultipartManagerIT {
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
 
-        for (int i = 0; i < parts.length; i++) {
-            String part = parts[i];
-            int partNumber = i + 1;
-            MantaMultipartUploadTuple uploaded = multipart.uploadPart(
-                    upload, partNumber, part);
-
-            uploadedParts.add(uploaded);
+        Throwable exception = null;
+        //0
+        MantaMultipartUploadTuple uploaded0 = multipart.uploadPart(upload, 1, parts[0]);
+        uploadedParts.add(uploaded0);
+        //1-3
+        for (int i = 1; i < parts.length; i++) {
+            final int j = i;
+            exception = Assert.expectThrows(MantaMultipartException.class,
+                                        () -> {
+                                            MantaMultipartUploadTuple uploaded = multipart.uploadPart(upload, j + 1, parts[j]);
+                                            uploadedParts.add(uploaded);
+                                        });
+            assert exception.getCause() instanceof IllegalStateException;
         }
-
         multipart.validateThatThereAreSequentialPartNumbers(upload);
 
-        boolean caught = false;
-        try {
-            multipart.complete(upload, uploadedParts);
-        } catch (MantaMultipartException e) {
-            Throwable cause = e.getCause();
-
-            if (cause instanceof MantaClientHttpResponseException) {
-                MantaClientHttpResponseException responseException =
-                        (MantaClientHttpResponseException)cause;
-
-                Assert.assertEquals(responseException.getStatusCode(),
-                        400,
-                        "Unexpected response code");
-                Assert.assertEquals(responseException.getServerCode(),
-                        MantaErrorCode.MULTIPART_UPLOAD_PART_SIZE,
-                        "Unexpected error code");
-                caught = true;
-            }
-        }
-
-        Assert.assertTrue(caught, "Expected exception was not caught");
+        // This "completes" but only uploads one part due to the previous exceptions
+        multipart.complete(upload, uploadedParts);
     }
+
+    public final void doubleCompleteFails() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(524);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content);
+
+        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
+        multipart.complete(upload, partsStream);
+        Assert.assertThrows(IllegalStateException.class,
+                            () -> {
+                                multipart.complete(upload, partsStream);
+                            });
+    }
+
 }

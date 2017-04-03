@@ -281,7 +281,7 @@ public class ServerSideMultipartManagerTest {
 
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(unsortedTuples);
 
-        byte[] jsonRequest = ServerSideMultipartManager.createCommitRequestBody(partsStream);
+        byte[] jsonRequest = ServerSideMultipartManager.createCommitRequestBody(partsStream).getLeft();
 
         ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(jsonRequest, ObjectNode.class);
         @SuppressWarnings("unchecked")

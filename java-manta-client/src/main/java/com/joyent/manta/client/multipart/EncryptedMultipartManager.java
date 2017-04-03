@@ -17,12 +17,9 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.util.HmacOutputStream;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.bouncycastle.crypto.macs.HMac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,12 +117,26 @@ public class EncryptedMultipartManager
             throw new UnsupportedOperationException("Currently only AES/CTR "
                     + "cipher/modes are supported for encrypted multipart uploads");
         }
+
+        /* When combining CSE and MPU, an additional buffering layer
+         * is added via MultipartOutputStream.  If the minimum part
+         * size did not align with the cipher block size, a user could
+         * upload what they thought was a large enough part, but be
+         * presented with an error when the client actually uploaded a
+         * few bytes left due to the buffer.
+         */
+        assert getMinimumPartSize() == 1 ||  getMinimumPartSize() % cipherDetails.getBlockSizeInBytes() == 0;
     }
 
     @Override
     public int getMaxParts() {
         // We need one part for the HMAC, so the maximum will always be one less
         return this.wrapped.getMaxParts() - 1;
+    }
+
+    @Override
+    public int getMinimumPartSize() {
+        return this.wrapped.getMinimumPartSize();
     }
 
     @Override
@@ -254,7 +265,18 @@ public class EncryptedMultipartManager
 
             final EncryptingPartEntity entity = new EncryptingPartEntity(
                     encryptionState.getCipherStream(),
-                    encryptionState.getMultipartStream(), sourceEntity);
+                    encryptionState.getMultipartStream(), sourceEntity,
+                    new EncryptingPartEntity.LastPartCallback() {
+                        @Override
+                        public ByteArrayOutputStream call(final long uploadedBytes) throws IOException {
+                            if (uploadedBytes < wrapped.getMinimumPartSize()) {
+                                LOGGER.debug("Detected part {} as last part based on size", partNumber);
+                                return encryptionState.remainderAndLastPartAuth();
+                            } else {
+                                return new ByteArrayOutputStream();
+                            }
+                        }
+                    });
             encryptionState.setLastPartNumber(partNumber);
             return wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
         } finally {
@@ -282,33 +304,14 @@ public class EncryptedMultipartManager
         encryptionState.getLock().lock();
         try {
             Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
-            ByteArrayOutputStream remainderStream = new ByteArrayOutputStream();
-            encryptionState.getMultipartStream().setNext(remainderStream);
-            encryptionState.getCipherStream().close();
-            remainderStream.write(encryptionState.getMultipartStream().getRemainder());
-
-            // conditionally get hmac and upload part; yeah reenterant lock
-            if (encryptionState.getCipherStream().getClass().equals(HmacOutputStream.class)) {
-                HMac hmac = ((HmacOutputStream) encryptionState.getCipherStream()).getHmac();
-                byte[] hmacBytes = new byte[hmac.getMacSize()];
-                hmac.doFinal(hmacBytes, 0);
-
-                final int hmacSize = encryptionContext.getCipherDetails()
-                        .getAuthenticationTagOrHmacLengthInBytes();
-
-                Validate.isTrue(hmacBytes.length == hmacSize,
-                        "HMAC actual bytes doesn't equal the number of bytes expected");
-
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
+            if (!encryptionState.isLastPartAuthWritten()) {
+                ByteArrayOutputStream remainderStream = encryptionState.remainderAndLastPartAuth();
+                if (remainderStream.size() > 0) {
+                    MantaMultipartUploadPart finalPart = wrapped.uploadPart(upload.getWrapped(),
+                                                                            encryptionState.getLastPartNumber() + 1,
+                                                                            remainderStream.toByteArray());
+                    finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
                 }
-                remainderStream.write(hmacBytes);
-            }
-
-            if (remainderStream.size() > 0) {
-                MantaMultipartUploadPart finalPart = wrapped.uploadPart(upload.getWrapped(),
-                        encryptionState.getLastPartNumber() + 1, remainderStream.toByteArray());
-                finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
             }
 
             wrapped.complete(upload.getWrapped(), finalPartsStream);
