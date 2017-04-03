@@ -40,7 +40,7 @@ public class EncryptionStateSerializerTest {
 
     @BeforeClass
     public void setup() {
-        kryo.register(EncryptionStateSerializer.class,
+        kryo.register(EncryptionState.class,
                 new EncryptionStateSerializer(kryo, secretKey));
     }
 
@@ -77,6 +77,8 @@ public class EncryptionStateSerializerTest {
                 "multipartStream");
         Field cipherStreamField = ReflectionUtils.getField(EncryptionState.class,
                 "cipherStream");
+        Field lastPartAuthWrittenField = ReflectionUtils.getField(EncryptionState.class,
+                "lastPartAuthWritten");
 
         try {
             FieldUtils.writeField(multipartStreamField, encryptionState, multipartStream);
@@ -85,6 +87,7 @@ public class EncryptionStateSerializerTest {
                     multipartStream, encryptionContext);
 
             FieldUtils.writeField(cipherStreamField, encryptionState, cipherStream);
+            FieldUtils.writeField(lastPartAuthWrittenField, encryptionState, true);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }

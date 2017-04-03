@@ -43,6 +43,11 @@ public interface MantaMultipartManager<UPLOAD extends MantaMultipartUpload,
      */
     int getMaxParts();
 
+      /**
+     * @return the minimum part size
+     */
+    int getMinimumPartSize();
+
     /**
      * Lists multipart uploads that are currently in progress.
      *

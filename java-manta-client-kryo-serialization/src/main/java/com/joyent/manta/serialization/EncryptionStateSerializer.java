@@ -45,6 +45,7 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
     private Field lastPartNumberField = captureField("lastPartNumber");
     private Field multipartStreamField = captureField("multipartStream");
     private Field cipherStreamField = captureField("cipherStream");
+    private Field lastPartAuthWrittenField = captureField("lastPartAuthWritten");
 
     /**
      * Secret key to inject into encryption context.
@@ -119,6 +120,9 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final int lastPartNumber = (int)readField(lastPartNumberField, object);
         output.writeInt(lastPartNumber, true);
 
+        final boolean lastPartAuthWritten = (boolean)readField(lastPartAuthWrittenField, object);
+        output.writeBoolean(lastPartAuthWritten);
+
         MultipartOutputStream multipartStream = (MultipartOutputStream)readField(multipartStreamField, object);
         ByteArrayOutputStream multipartStreamBuf;
 
@@ -153,12 +157,14 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
     public EncryptionState read(final Kryo kryo, final Input input, final Class<EncryptionState> type) {
         final EncryptionContext encryptionContext = (EncryptionContext)kryo.readClassAndObject(input);
         final int lastPartNumber = input.readVarInt(true);
+        final boolean lastPartAuthWritten = input.readBoolean();
         encryptionContext.setKey(secretKey);
 
         final EncryptionState encryptionState = newInstance();
 
         writeField(encryptionContextField, encryptionState, encryptionContext);
         writeField(lastPartNumberField, encryptionState, lastPartNumber);
+        writeField(lastPartAuthWrittenField, encryptionState, lastPartAuthWritten);
 
         final int blockSize = encryptionContext.getCipherDetails().getBlockSizeInBytes();
         Object bufferObject = kryo.readClassAndObject(input);

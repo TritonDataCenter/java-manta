@@ -27,6 +27,7 @@ import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -78,7 +79,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     /**
      * Minimum size of a part in bytes.
      */
-    public static final int MIN_PART_SIZE = 5_242_880; // 5 mebibytes
+    private static final int MIN_PART_SIZE = 5_242_880; // 5 mebibytes
 
     /**
      * Configuration context used to get home directory.
@@ -168,6 +169,12 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     public int getMaxParts() {
         return MAX_PARTS;
     }
+
+    @Override
+    public int getMinimumPartSize() {
+        return MIN_PART_SIZE;
+    }
+
 
     @Override
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
@@ -559,9 +566,12 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final HttpPost post = connectionFactory.post(postPath + "/commit");
 
         final byte[] jsonRequest;
+        final int numParts;
 
         try {
-            jsonRequest = createCommitRequestBody(partsStream);
+            ImmutablePair<byte[], Integer> pair = createCommitRequestBody(partsStream);
+            jsonRequest = pair.getLeft();
+            numParts = pair.getRight();
         } catch (NullPointerException | IllegalArgumentException e) {
             String msg = "Expected response field was missing or malformed";
             MantaMultipartException me = new MantaMultipartException(msg, e);
@@ -585,8 +595,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             Header location = response.getFirstHeader(HttpHeaders.LOCATION);
 
             if (location != null && LOGGER.isInfoEnabled()) {
-                LOGGER.info("Multipart upload [{}] for file [{}] has completed",
-                        upload.getId(), location.getValue());
+                LOGGER.info("Multipart upload [{}] for file [{}] from [{}] parts has completed",
+                            upload.getId(), location.getValue(), numParts);
             }
         }
     }
@@ -623,7 +633,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @param parts stream of tuples - this is a terminal operation that will close the stream
      * @return byte array containing JSON data
      */
-    static byte[] createCommitRequestBody(final Stream<? extends MantaMultipartUploadTuple> parts) {
+    static ImmutablePair<byte[], Integer>
+        createCommitRequestBody(final Stream<? extends MantaMultipartUploadTuple> parts) {
         final JsonNodeFactory nodeFactory = MantaObjectMapper.NODE_FACTORY_INSTANCE;
         final ObjectNode objectNode = new ObjectNode(nodeFactory);
 
@@ -638,7 +649,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 "Can't commit multipart upload with no parts");
 
         try {
-            return MantaObjectMapper.INSTANCE.writeValueAsBytes(objectNode);
+            return ImmutablePair.of(MantaObjectMapper.INSTANCE.writeValueAsBytes(objectNode), partsArrayNode.size());
         } catch (IOException e) {
             String msg = "Error serializing JSON for commit MPU request body";
             throw new MantaMultipartException(msg, e);

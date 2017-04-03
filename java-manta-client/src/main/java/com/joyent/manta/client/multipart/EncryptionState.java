@@ -8,7 +8,16 @@
 package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.crypto.EncryptionContext;
+import com.joyent.manta.exception.MantaMultipartException;
+import com.joyent.manta.util.HmacOutputStream;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.Validate;
+import org.bouncycastle.crypto.macs.HMac;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,6 +30,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 3.0.0
  */
 public class EncryptionState {
+
+    /**
+     * Logger instance.
+     */
+    private static final transient Logger LOGGER = LoggerFactory.getLogger(EncryptionState.class);
+
     /**
      * Encryption cipher state object.
      */
@@ -45,6 +60,12 @@ public class EncryptionState {
      * The encrypting stream.
      */
     private transient OutputStream cipherStream = null;
+
+    /**
+     * Indicates if the multipart stream buffer has been flushed and
+     * final cipher auth bytes written.
+     */
+    private boolean lastPartAuthWritten = false;
 
     /**
      * Zero argument constructor used for serialization.
@@ -101,6 +122,43 @@ public class EncryptionState {
         this.cipherStream = cipherStream;
     }
 
+    boolean isLastPartAuthWritten() {
+        return lastPartAuthWritten;
+    }
+
+    ByteArrayOutputStream remainderAndLastPartAuth() throws IOException {
+        if (!getLock().isHeldByCurrentThread()) {
+            throw new IllegalStateException("remainderAndLastPartAuth called without lock owned");
+        }
+        if (isLastPartAuthWritten()) {
+            final String msg = "final CSE auth already written (complete called multiple times or "
+                + "parts below min size)";
+            throw new MantaMultipartException(new IllegalStateException(msg));
+        }
+        ByteArrayOutputStream remainderStream = new ByteArrayOutputStream();
+        getMultipartStream().setNext(remainderStream);
+        getCipherStream().close();
+        remainderStream.write(getMultipartStream().getRemainder());
+
+        if (getCipherStream().getClass().equals(HmacOutputStream.class)) {
+            HMac hmac = ((HmacOutputStream) getCipherStream()).getHmac();
+            byte[] hmacBytes = new byte[hmac.getMacSize()];
+            hmac.doFinal(hmacBytes, 0);
+
+            final int hmacSize = encryptionContext.getCipherDetails().getAuthenticationTagOrHmacLengthInBytes();
+
+            Validate.isTrue(hmacBytes.length == hmacSize,
+                            "HMAC actual bytes doesn't equal the number of bytes expected");
+
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
+            }
+            remainderStream.write(hmacBytes);
+        }
+        lastPartAuthWritten = true;
+        return remainderStream;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -114,7 +172,8 @@ public class EncryptionState {
         final EncryptionState that = (EncryptionState) o;
 
         return lastPartNumber == that.lastPartNumber
-                && Objects.equals(encryptionContext, that.encryptionContext);
+            && lastPartAuthWritten == that.lastPartAuthWritten
+            && Objects.equals(encryptionContext, that.encryptionContext);
     }
 
     @Override
