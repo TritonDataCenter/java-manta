@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
 import org.apache.commons.lang3.StringUtils;
@@ -78,7 +79,9 @@ public class UriSigner {
         final String charset = "UTF-8";
         final String algorithm = signer.get().getHttpHeaderAlgorithm().toUpperCase();
         final String keyId = String.format("/%s/keys/%s",
-                config.getMantaUser(), config.getMantaKeyId());
+                                           config.getMantaUser(),
+                                           KeyFingerprinter.md5Fingerprint(keyPair));
+
         final String keyIdEncoded = URLEncoder.encode(keyId, charset);
 
         StringBuilder sigText = new StringBuilder();
@@ -93,7 +96,7 @@ public class UriSigner {
         StringBuilder request = new StringBuilder();
         final byte[] sigBytes = sigText.toString().getBytes();
         final byte[] signed = signer.get().sign(config.getMantaUser(),
-                config.getMantaKeyId(), keyPair, sigBytes);
+                                                keyPair, sigBytes);
         final String encoded = new String(Base64.encode(signed), charset);
         final String urlEncoded = URLEncoder.encode(encoded, charset);
 

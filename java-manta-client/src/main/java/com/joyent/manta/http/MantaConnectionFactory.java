@@ -428,10 +428,7 @@ public class MantaConnectionFactory implements Closeable {
         final String user = config.getMantaUser();
         Validate.notNull(user, "User must not be null");
 
-        final String keyId = config.getMantaKeyId();
-        Validate.notNull(keyId, "Key id must not be null");
-
-        return new UsernamePasswordCredentials(user, keyId);
+        return new UsernamePasswordCredentials(user, null);
     }
 
     /**

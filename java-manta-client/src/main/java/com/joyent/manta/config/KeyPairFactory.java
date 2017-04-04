@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.KeyPairLoader;
 import com.joyent.manta.exception.ConfigurationException;
 import org.slf4j.Logger;
@@ -48,37 +49,42 @@ public class KeyPairFactory {
      */
     public KeyPair createKeyPair() {
         final KeyPair keyPair;
-        final String password = config.getPassword();
+        final String privateKeyContent = config.getPrivateKeyContent();
         final String keyPath = config.getMantaKeyPath();
+        final String password = config.getPassword();
 
         try {
-            if (keyPath != null) {
-                keyPair = KeyPairLoader.getKeyPair(new File(keyPath).toPath());
-            } else {
+            if (privateKeyContent != null) {
                 final char[] charPassword;
-
                 if (password != null) {
                     charPassword = password.toCharArray();
                 } else {
                     charPassword = null;
                 }
-
-                final String privateKeyContent = config.getPrivateKeyContent();
-
-                if (privateKeyContent == null) {
-                    String msg = "Private key content setting must be set if "
-                            + "key file path is not set";
-                    ConfigurationException exception = new ConfigurationException(msg);
-                    exception.setContextValue("config", config);
-                    throw exception;
-                }
-
                 keyPair = KeyPairLoader.getKeyPair(privateKeyContent, charPassword);
+            } else if (keyPath != null) {
+                keyPair = KeyPairLoader.getKeyPair(new File(keyPath).toPath());
+            } else {
+                String msg = "Private key content setting must be set if "
+                    + "key file path is not set";
+                ConfigurationException exception = new ConfigurationException(msg);
+                exception.setContextValue("config", config);
+                throw exception;
             }
         } catch (IOException e) {
             String msg = String.format("Unable to read key files from path: %s",
                     keyPath);
             throw new ConfigurationException(msg, e);
+        }
+
+        if (!KeyFingerprinter.verifyFingerprint(keyPair, config.getMantaKeyId())) {
+            String msg = String.format("Given fingerprint %s does not match expected key "
+                                       + "MD5:%s SHA256:%s",
+                                       config.getMantaKeyId(),
+                                       KeyFingerprinter.md5Fingerprint(keyPair),
+                                       KeyFingerprinter.sha256Fingerprint(keyPair));
+            ConfigurationException exception = new ConfigurationException(msg);
+            throw exception;
         }
 
         return keyPair;
