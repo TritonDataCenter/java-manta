@@ -255,11 +255,6 @@ public interface ConfigContext {
             }
         }
 
-        if (StringUtils.startsWith(config.getMantaKeyId(), "SHA256:")) {
-            failureMessages.add("We don't support SHA256 "
-                    + "fingerprints yet. Change fingerprint to MD5 format.");
-        }
-
         if (config.getMantaKeyPath() == null && config.getPrivateKeyContent() == null) {
             failureMessages.add("Either the Manta key path must be set or the private "
                     + "key content must be set. Both can't be null.");
