@@ -19,7 +19,7 @@ import static com.joyent.manta.serialization.ReflectionUtils.readField;
 
 /**
  * Serialization class that allows for (de)serialization of
- * {@link sun.security.pkcs11.SessionRef} instances.
+ * <code>sun.security.pkcs11.SessionRef</code> instances.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0

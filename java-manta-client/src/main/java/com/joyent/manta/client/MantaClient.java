@@ -418,8 +418,8 @@ public class MantaClient implements AutoCloseable {
      *
      * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param requestHeaders optional HTTP headers to include when getting an object
-     * @param startPosition @see MantaRequestHeaders.setByteRange(Long, Long)
-     * @param endPosition @see MantaRequestHeaders.setByteRange(Long, Long)
+     * @param startPosition see {@link MantaHttpHeaders#setByteRange(Long, Long)}
+     * @param endPosition see {@link MantaHttpHeaders#setByteRange(Long, Long)}
      * @return {@link InputStream} that extends {@link MantaObjectResponse}.
      * @throws IOException when there is a problem getting the object over the network
      */

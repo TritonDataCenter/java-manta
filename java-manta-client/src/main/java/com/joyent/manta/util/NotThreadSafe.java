@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
  * <p>The only modifications to this class from its original is this block
  * comment and the package name</p>
  *
- * @see {@link org.apache.http.annotation.NotThreadSafe}
+ * @see <a href="http://svn.apache.org/repos/asf/httpcomponents/httpcore/tags/4.4.4/httpcore/src/main/java/org/apache/http/annotation/NotThreadSafe.java">Apache httpcore Implementation</a>
  */
 @Documented
 @Target(ElementType.TYPE)
