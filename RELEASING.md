@@ -18,6 +18,19 @@ The following is an example settings.xml file:
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
                               http://maven.apache.org/xsd/settings-1.0.0.xsd">
   <profiles>
+    <!-- Snapshot Repo -->
+    <profile>
+    <id>allow-snapshots</id>
+      <activation><activeByDefault>true</activeByDefault></activation>
+    <repositories>
+     <repository>
+       <id>snapshots-repo</id>
+       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+       <releases><enabled>false</enabled></releases>
+       <snapshots><enabled>true</enabled></snapshots>
+     </repository>
+    </repositories>
+    </profile>
     <profile>
       <id>gpg</id>
       <properties>
@@ -102,3 +115,13 @@ as configured in the maven repo sets values for this assumption
 github repo, doing a merge via pull request will not also copy the tags that
 were created during the release process.  The tags will have to be created in
 the primary repo separately, but this may be preferred anyway.
+
+To perform a snapshot release:
+
+1. Make sure the source builds, test suites pass, and the source and java artifacts can
+ be generated and signed:
+`mvn clean verify -Prelease`
+2. Start from a clean working directory and make sure you have no modified
+files in your workspace:
+`mvn clean && git status`
+3. Deploy the snapshot directly to Maven Central: `mvn -Pallow-snapshots clean deploy`

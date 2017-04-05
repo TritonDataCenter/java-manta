@@ -60,10 +60,11 @@
 
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
-    <!-- <module name="Header"> -->
-    <!--   <property name="headerFile" value="${checkstyle.header.file}"/> -->
-    <!--   <property name="fileExtensions" value="java"/> -->
-    <!-- </module> -->
+    <module name="Header">
+        <property name="header" value="/*\n * Copyright (c) 2017, Joyent, Inc. All rights reserved.\n *\n * This Source Code Form is subject to the terms of the Mozilla Public\n * License, v. 2.0. If a copy of the MPL was not distributed with this\n * file, You can obtain one at http://mozilla.org/MPL/2.0/.\n */" />
+        <property name="ignoreLines" value="2" />
+        <property name="fileExtensions" value="java" />
+    </module>
 
     <module name="TreeWalker">
         <!-- Make annotations available for filtering via SuppressWarningsFilter -->
@@ -76,6 +77,7 @@
             <property name="allowThrowsTagsForSubclasses" value="true"/>
             <property name="suppressLoadErrors" value="true"/>
             <property name="allowMissingPropertyJavadoc" value="true"/>
+            <property name="excludeScope" value="package"/>
         </module>
         <module name="JavadocType" />
         <module name="JavadocVariable"/>
@@ -110,6 +112,9 @@
         </module>
         <module name="MethodLength" />
         <module name="ParameterNumber" />
+
+        <!-- Finds methods missing the @Override annotation -->
+        <module name="MissingOverride" />
 
         <!-- Checks for whitespace                               -->
         <!-- See http://checkstyle.sf.net/config_whitespace.html -->
@@ -156,7 +161,9 @@
         </module>
         <module name="IllegalInstantiation"/>
         <module name="InnerAssignment"/>
-        <module name="MagicNumber"/>
+        <module name="MagicNumber">
+            <property name="constantWaiverParentToken" value="ASSIGN, ARRAY_INIT, EXPR, UNARY_PLUS, UNARY_MINUS, TYPECAST, ELIST, LITERAL_NEW, METHOD_CALL, STAR, DIV, PLUS, MINUS, SL,SR" />
+        </module>
         <module name="MissingSwitchDefault"/>
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
@@ -175,8 +182,9 @@
         <!-- See http://checkstyle.sf.net/config_misc.html -->
         <module name="ArrayTypeStyle" />
         <module name="FinalParameters" />
-        <module name="TodoComment" />
+        <module name="TodoComment">
+            <property name="format" value="(TODO)|(FIXME)|(XXX)"/>
+        </module>
         <module name="UpperEll" />
     </module>
-
 </module>

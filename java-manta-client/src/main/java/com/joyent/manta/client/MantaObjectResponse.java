@@ -1,11 +1,16 @@
-/**
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.util.Key;
+import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.Objects;
 
-import static com.joyent.manta.client.MantaHttpHeaders.COMPUTED_MD5;
+import static com.joyent.manta.http.MantaHttpHeaders.COMPUTED_MD5;
 
 /**
  * A Manta storage object.
@@ -28,7 +33,7 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaObjectResponse.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectResponse.class);
 
     /**
      * The content-type used to represent Manta directory resources in http responses.
@@ -54,35 +59,30 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * The name value for this object.
      */
-    @Key("name")
     private String path;
 
 
     /**
      * The content length (size) value for this object.
      */
-    @Key("size")
     private Long contentLength;
 
 
     /**
      * The etag value for this object.
      */
-    @Key("etag")
     private String etag;
 
 
     /**
      * The mtime value for this object.
      */
-    @Key("mtime")
     private String mtime;
 
 
     /**
      * The type value for this object.
      */
-    @Key("type")
     private String type;
 
 
@@ -110,21 +110,17 @@ public class MantaObjectResponse implements MantaObject {
     public MantaObjectResponse() {
     }
 
-
     /**
      * Creates a MantaObject.
      *
      * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
     public MantaObjectResponse(final String path) {
-        if (path == null) {
-            throw new IllegalArgumentException("Path must be present");
-        }
+        Validate.notNull(path, "Path must not be null");
 
         this.path = path;
         this.httpHeaders = new MantaHttpHeaders();
     }
-
 
     /**
      * Creates a MantaObject.
@@ -135,9 +131,8 @@ public class MantaObjectResponse implements MantaObject {
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      */
     public MantaObjectResponse(final String path, final MantaHttpHeaders headers) {
-        this(path, headers, null);
+        this(path, headers, new MantaMetadata(headers.metadataAsStrings()));
     }
-
 
     /**
      * Creates a MantaObject.
@@ -148,9 +143,10 @@ public class MantaObjectResponse implements MantaObject {
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
      * @param metadata User set metadata associated with object
      */
-    public MantaObjectResponse(final String path, final MantaHttpHeaders headers, final MantaMetadata metadata) {
-        Objects.requireNonNull(path, "Path must be present");
-        Objects.requireNonNull(headers, "Headers must be present");
+    public MantaObjectResponse(final String path, final MantaHttpHeaders headers,
+                               final MantaMetadata metadata) {
+        Validate.notNull(path, "Path must be not be null");
+        Validate.notNull(headers, "Headers must not be null");
 
         this.path = path;
         this.httpHeaders = headers;
@@ -159,9 +155,19 @@ public class MantaObjectResponse implements MantaObject {
         this.mtime = headers.getLastModified();
         this.requestId = headers.getRequestId();
 
-        final String contentType = headers.getContentType();
-        if (contentType != null && contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
-            this.type = "directory";
+        // Detect if we are pointing to a file or an object
+        if (headers.getContentType() != null) {
+            final String contentType = headers.getContentType();
+
+            if (contentType == null) {
+                this.type = null;
+            } else if (contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+                this.type = "directory";
+            } else {
+                this.type = "object";
+            }
+        } else {
+            this.type = null;
         }
 
         if (metadata != null) {
@@ -171,12 +177,10 @@ public class MantaObjectResponse implements MantaObject {
         }
     }
 
-
     @Override
     public final String getPath() {
         return this.path;
     }
-
 
     /**
      * Sets the path value.
@@ -186,7 +190,6 @@ public class MantaObjectResponse implements MantaObject {
     public final void setPath(final String path) {
         this.path = path;
     }
-
 
     @Override
     public final Long getContentLength() {
@@ -199,6 +202,7 @@ public class MantaObjectResponse implements MantaObject {
      * @param length new content length
      * @return a reference to the current instance
      */
+    @SuppressWarnings("UnusedReturnValue")
     MantaObjectResponse setContentLength(final Long length) {
         this.contentLength = length;
         if (getHttpHeaders() != null) {
@@ -206,7 +210,6 @@ public class MantaObjectResponse implements MantaObject {
         }
         return this;
     }
-
 
     @Override
     public final String getContentType() {
@@ -223,13 +226,13 @@ public class MantaObjectResponse implements MantaObject {
      * @param contentType the content type of the object
      * @return a reference to the current instance
      */
-    MantaObjectResponse setContentType(final String contentType) {
+    @SuppressWarnings("UnusedReturnValue")
+    public MantaObjectResponse setContentType(final String contentType) {
         if (getHttpHeaders() != null) {
             getHttpHeaders().setContentType(contentType);
         }
         return this;
     }
-
 
     @Override
     public final String getEtag() {
@@ -259,7 +262,6 @@ public class MantaObjectResponse implements MantaObject {
         return mtime;
     }
 
-
     /**
      * Sets the mtime value.
      *
@@ -284,37 +286,32 @@ public class MantaObjectResponse implements MantaObject {
         final Date parsed = DateUtils.parseDate(lastModified, DATETIME_FORMATS);
 
         if (parsed == null) {
-            LOG.warn("Error parsing mtime value [{}] with formats: {}",
+            LOGGER.warn("Error parsing mtime value [{}] with formats: {}",
                     lastModified, DATETIME_FORMATS);
         }
 
         return parsed;
     }
 
-
     @Override
     public String getType() {
         return type;
     }
-
 
     @Override
     public final MantaHttpHeaders getHttpHeaders() {
         return this.httpHeaders;
     }
 
-
     @Override
     public final Object getHeader(final String fieldName) {
         return this.httpHeaders.get(fieldName);
     }
 
-
     @Override
     public String getHeaderAsString(final String fieldName) {
         return this.httpHeaders.getAsString(fieldName);
     }
-
 
     @Override
     public MantaMetadata getMetadata() {
@@ -323,17 +320,14 @@ public class MantaObjectResponse implements MantaObject {
 
     @Override
     public final boolean isDirectory() {
-        return MANTA_OBJECT_TYPE_DIRECTORY.equals(type);
+        return MANTA_OBJECT_TYPE_DIRECTORY.equals(this.type);
     }
-
 
     @Override
     public String getRequestId() {
-        return null;
+        return this.requestId;
     }
 
-
-    /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
     public boolean equals(final Object o) {
@@ -352,8 +346,6 @@ public class MantaObjectResponse implements MantaObject {
                 && Objects.equals(httpHeaders, that.httpHeaders);
     }
 
-
-    /** {@inheritDoc} */
     @Override
     @SuppressWarnings("checkstyle:designforextension")
     public int hashCode() {
@@ -366,7 +358,6 @@ public class MantaObjectResponse implements MantaObject {
                 httpHeaders);
     }
 
-
     @Override
     @SuppressWarnings("checkstyle:designforextension")
     public String toString() {
@@ -377,6 +368,7 @@ public class MantaObjectResponse implements MantaObject {
         sb.append(", contentType='").append(getContentType()).append('\'');
         sb.append(", etag='").append(getEtag()).append('\'');
         sb.append(", mtime='").append(getMtime()).append('\'');
+        sb.append(", type='").append(getType()).append('\'');
         sb.append(", requestId='").append(getRequestId()).append('\'');
         sb.append(", httpHeaders=").append(httpHeaders);
         sb.append(", directory=").append(isDirectory());

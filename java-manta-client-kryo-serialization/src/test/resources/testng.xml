@@ -1,0 +1,8 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Kryo Serialization Test Suite" verbose="1">
+    <test name="Serializer Tests">
+        <packages>
+            <package name="com.joyent.manta.serialization.*" />
+        </packages>
+    </test>
+</suite>

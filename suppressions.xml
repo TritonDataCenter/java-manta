@@ -2,6 +2,11 @@
 <!DOCTYPE suppressions PUBLIC "-//Puppy Crawl//DTD Suppressions 1.1//EN" "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 <suppressions>
     <suppress checks="DesignForExtension" files="MantaClient.java" />
+    <suppress checks="LineLength" files="MantaCLI.java" />
+    <suppress checks="MagicNumber" files="MantaCLI.java" />
+    <suppress checks="MagicNumber" files="Benchmark.java" />
+    <suppress checks="MagicNumber" files="^.*CipherDetails\.java" />
+    <suppress checks="LineLength" files="SupportedCiphersLookupMap.java" />
     <!-- ignore suppressions for test classes -->
     <suppress checks="MagicNumber" files="^.*Test\.java$" />
     <suppress checks="JavadocMethod" files="^.*Test\.java$" />
@@ -12,4 +17,11 @@
     <suppress checks="AvoidStarImport" files="^.*Test\.java$" />
     <suppress checks="ImportControl" files="^.*Test\.java$" />
     <suppress checks="EmptyBlock" files="Benchmark.java" />
+
+    <suppress checks="[a-zA-Z0-9]*" files="BlockSizeBench.java" />
+    <suppress checks="[a-zA-Z0-9]*" files="ConcurrentWeakIdentityHashMap.java" />
+    <suppress checks="Header" files="NotThreadSafe.java" />
+    <suppress checks="JavadocVariable" files="^.+Serializer.java" />
+    <suppress checks="IllegalImport" files="PKCS11Serializer.java" />
+    <suppress checks="LineLength" files="NotThreadSafe.java" />
 </suppressions>

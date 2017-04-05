@@ -1,14 +1,21 @@
-/**
- * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpResponse;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.http.HttpHelper;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Validate;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -25,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
-import static com.joyent.manta.client.MantaUtils.formatPath;
+import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
  * <p>Class that wraps the paging of directory listing in Manta to a single
@@ -79,7 +87,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     /**
      * Jackson JSON parsing instance.
      */
-    private final ObjectMapper mapper = MantaObjectParser.MAPPER;
+    private final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
     /**
      * The last marker we used to request against the Manta API.
@@ -96,7 +104,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
      * The most recent response object from the page of data that we are currently
      * parsing.
      */
-    private volatile HttpResponse currentResponse;
+    private volatile CloseableHttpResponse currentResponse;
 
     /**
      * Create a new instance of a directory list iterator.
@@ -110,9 +118,9 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                                          final String path,
                                          final HttpHelper httpHelper,
                                          final int pagingSize) {
-        Objects.requireNonNull(url, "URL must be present");
-        Objects.requireNonNull(path, "Path must be present");
-        Objects.requireNonNull(httpHelper, "HTTP help must be present");
+        Validate.notNull(url, "URL must not be null");
+        Validate.notNull(path, "Path must not be null");
+        Validate.notNull(httpHelper, "HTTP help must not be null");
 
         this.url = url;
         this.path = path;
@@ -136,36 +144,36 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     private synchronized void selectReader() throws IOException {
         if (lastMarker == null) {
             String query = String.format("?limit=%d", pagingSize);
-            GenericUrl genericUrl = new GenericUrl(url + formatPath(path)
-                    + query);
-            currentResponse = httpHelper.httpGet(genericUrl, null);
-            HttpHeaders headers = currentResponse.getHeaders();
+            String uri = url + formatPath(path) + query;
+            HttpGet get = new HttpGet(uri);
 
-            if (!headers.getContentType().contentEquals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            IOUtils.closeQuietly(currentResponse);
+            currentResponse = httpHelper.executeRequest(get, null);
+            HttpEntity entity = currentResponse.getEntity();
+            String contentType = entity.getContentType().getValue();
+
+            if (!contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
                 String msg = String.format("Expected directory path, but was file path: %s",
                         path);
                 throw new MantaObjectException(msg);
             }
 
-            Reader streamReader = new InputStreamReader(currentResponse.getContent(),
-                    "UTF-8");
+            Reader streamReader = new InputStreamReader(entity.getContent(),
+                    StandardCharsets.UTF_8.name());
             br = new BufferedReader(streamReader);
         } else {
             String query = String.format("?limit=%d&marker=%s",
                     pagingSize, URLEncoder.encode(lastMarker, "UTF-8"));
-            GenericUrl genericUrl = new GenericUrl(url + formatPath(path)
-                + query);
+            String uri = url + formatPath(path) + query;
+            HttpGet get = new HttpGet(uri);
 
-            try {
-                br.close();
-                currentResponse.disconnect();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            IOUtils.closeQuietly(br);
+            IOUtils.closeQuietly(currentResponse);
 
-            currentResponse = httpHelper.httpGet(genericUrl, null);
-            Reader streamReader = new InputStreamReader(currentResponse.getContent(),
-                    "UTF-8");
+            currentResponse = httpHelper.executeRequest(get, null);
+            HttpEntity entity = currentResponse.getEntity();
+            Reader streamReader = new InputStreamReader(entity.getContent(),
+                    StandardCharsets.UTF_8.name());
             br = new BufferedReader(streamReader);
 
             // We read one line to clear it because it is our marker
@@ -217,7 +225,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                     new TypeReference<Map<String, Object>>() { });
             final String name = Objects.toString(lookup.get("name"));
 
-            Objects.requireNonNull(name, "Name must be present in JSON input");
+            Validate.notNull(name, "Name must not be null in JSON input");
 
             this.lastMarker = name;
 
@@ -230,17 +238,8 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
     @Override
     public void close() {
-        try {
-            if (br != null) {
-                br.close();
-            }
-
-            if (currentResponse != null) {
-                currentResponse.disconnect();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        IOUtils.closeQuietly(br);
+        IOUtils.closeQuietly(currentResponse);
     }
 
     /**

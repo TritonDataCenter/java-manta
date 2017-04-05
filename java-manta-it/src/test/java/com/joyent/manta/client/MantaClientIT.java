@@ -1,18 +1,24 @@
-/**
- * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.benchmark.RandomInputStream;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
-import org.apache.commons.codec.Charsets;
-import org.apache.http.client.utils.DateUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -21,16 +27,21 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
-
 
 /**
  * Tests the basic functionality of the {@link MantaClient} class.
@@ -42,43 +53,31 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
-    private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
     private MantaClient mantaClient;
 
     private String testPathPrefix;
 
-
-    @BeforeClass()
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+    @BeforeClass
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/%s/",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        mantaClient.putDirectory(testPathPrefix);
+        mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public final void testCRUDObject() throws IOException {
@@ -94,7 +93,7 @@ public class MantaClientIT {
             Assert.assertNotNull(gotObject.getMtime());
             Assert.assertNotNull(gotObject.getPath());
 
-            final String data = MantaUtils.inputStreamToString(gotObject);
+            final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
             Assert.assertEquals(data, TEST_DATA);
         }
 
@@ -104,8 +103,70 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
+    @Test
+    public final void canReadStreamAndThenCloseWithoutErrors() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
 
-    @Test()
+        try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
+            gotObject.read();
+            gotObject.read();
+        }
+    }
+
+    @Test
+    public final void canCopyStreamToFileAndCloseWithoutErrors() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        try (InputStream in = new RandomInputStream(8000)) {
+            mantaClient.put(path, in);
+        }
+
+        File temp = File.createTempFile("object-" + name, ".data");
+        FileUtils.forceDeleteOnExit(temp);
+
+        InputStream in = mantaClient.getAsInputStream(path);
+        FileOutputStream out = new FileOutputStream(temp);
+
+        try {
+            IOUtils.copyLarge(in, out);
+        } finally {
+            in.close();
+            out.close();
+        }
+    }
+
+    @Test
+    public final void canCreateStreamInOneThreadAndCloseInAnother()
+            throws Exception {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        try (InputStream in = new RandomInputStream(8000)) {
+            mantaClient.put(path, in);
+        }
+
+        File temp = File.createTempFile("object-" + name, ".data");
+        FileUtils.forceDeleteOnExit(temp);
+
+        FileOutputStream out = new FileOutputStream(temp);
+
+        Callable<InputStream> callable = () -> mantaClient.getAsInputStream(path);
+
+        ExecutorService service = Executors.newFixedThreadPool(1);
+        InputStream in = service.submit(callable).get();
+
+        try {
+            IOUtils.copyLarge(in, out);
+        } finally {
+            in.close();
+            out.close();
+        }
+    }
+
+    @Test
     public final void testManyOperations() throws IOException {
         String dir = String.format("%s/multiple", testPathPrefix);
         mantaClient.putDirectory(dir);
@@ -121,7 +182,6 @@ public class MantaClientIT {
         mantaClient.deleteRecursive(dir);
     }
 
-
     @Test
     public final void testCRUDWithFileObject() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -130,7 +190,7 @@ public class MantaClientIT {
         mantaClient.put(path, TEST_DATA);
         final File file = mantaClient.getToTempFile(path);
 
-        final String data = MantaUtils.readFileToString(file);
+        final String data = FileUtils.readFileToString(file, Charset.defaultCharset());
         Assert.assertEquals(data, TEST_DATA);
         mantaClient.delete(path);
 
@@ -138,13 +198,12 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testCRUDWithByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
-        mantaClient.put(path, TEST_DATA.getBytes(Charsets.UTF_8));
+        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
         final String actual = mantaClient.getAsString(path);
 
         Assert.assertEquals(actual, TEST_DATA);
@@ -154,17 +213,16 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testCRUDObjectWithHeaders() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final MantaHttpHeaders headers = new MantaHttpHeaders();
-        headers.set("durability-level", 4);
+        headers.setDurabilityLevel(4);
 
         mantaClient.put(path, TEST_DATA, headers);
         try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
-            final String data = MantaUtils.inputStreamToString(gotObject);
+            final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
             Assert.assertEquals(data, TEST_DATA);
             Assert.assertEquals("4", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));
             mantaClient.delete(gotObject.getPath());
@@ -174,19 +232,17 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testContentTypeSetByFilename() throws IOException {
         final String name = UUID.randomUUID().toString() + ".html";
         final String path = testPathPrefix + name;
 
-        mantaClient.put(path, TEST_DATA.getBytes(Charsets.UTF_8));
+        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
         MantaObject object = mantaClient.head(path);
 
         Assert.assertEquals(object.getContentType(),
                 "text/html", "Content type wasn't auto-assigned");
     }
-
 
     @Test
     public final void testRecursiveDeleteObject() throws IOException {
@@ -212,41 +268,6 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
     }
 
-
-    @Test
-    public final void testPutWithStream() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
-
-        try (InputStream testDataInputStream = classLoader.getResourceAsStream(TEST_FILENAME)) {
-            mantaClient.put(path, testDataInputStream);
-        }
-    }
-
-    @Test
-    public final void testPutWithFile() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        File temp = File.createTempFile("upload", ".txt");
-
-        try {
-            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
-            MantaObject response = mantaClient.put(path, temp);
-            String contentType = response.getContentType();
-            Assert.assertEquals(contentType, "text/plain",
-                    "Content type wasn't detected correctly");
-        } finally {
-            Files.delete(temp.toPath());
-        }
-
-        String actual = mantaClient.getAsString(path);
-        Assert.assertEquals(actual, TEST_DATA,
-                "Uploaded file didn't match expectation");
-    }
-
-
     @Test
     public final void verifyYouCanJustSpecifyDirNameWhenPuttingFile() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -259,7 +280,7 @@ public class MantaClientIT {
         boolean thrown = false;
 
         try {
-            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+            Files.write(temp.toPath(), TEST_DATA.getBytes(StandardCharsets.UTF_8));
             mantaClient.put(path, temp);
         } catch (MantaClientHttpResponseException e) {
             thrown = e.getStatusCode() == 400;
@@ -270,7 +291,6 @@ public class MantaClientIT {
 
         Assert.assertTrue(thrown, "Bad request response not received");
     }
-
 
     @Test
     public final void testHead() throws IOException {
@@ -311,7 +331,6 @@ public class MantaClientIT {
         Assert.assertEquals(mantaObjectHead.getEtag(), mantaLinkHead.getEtag());
     }
 
-
     @Test
     public final void testPutLink() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -324,7 +343,6 @@ public class MantaClientIT {
         Assert.assertEquals(linkContent, TEST_DATA);
 
     }
-
 
     @Test
     public final void testPutJsonLink() throws IOException {
@@ -342,7 +360,6 @@ public class MantaClientIT {
         Assert.assertEquals(linkContent, testData);
     }
 
-
     @Test
     public final void canMoveFile() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -356,7 +373,6 @@ public class MantaClientIT {
         final String movedContent = mantaClient.getAsString(newPath);
         Assert.assertEquals(movedContent, TEST_DATA);
     }
-
 
     @Test
     public final void canMoveEmptyDirectory() throws IOException {
@@ -383,7 +399,6 @@ public class MantaClientIT {
         Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
             + path);
     }
-
 
     @Test
     public final void canMoveDirectoryWithContents() throws IOException {
@@ -430,7 +445,6 @@ public class MantaClientIT {
                 + source);
     }
 
-
     @Test
     public final void testList() throws IOException {
         final String pathPrefix = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
@@ -452,7 +466,6 @@ public class MantaClientIT {
         Assert.assertEquals(3, count.get());
     }
 
-
     @Test(expectedExceptions = MantaObjectException.class)
     public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -465,7 +478,6 @@ public class MantaClientIT {
         }
     }
 
-
     @Test(expectedExceptions = MantaClientHttpResponseException.class)
     public final void testListNonexistentDir() throws IOException {
         final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",
@@ -476,7 +488,6 @@ public class MantaClientIT {
         }
     }
 
-
     @Test
     public final void testIsDirectoryEmptyWithEmptyDir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -486,7 +497,6 @@ public class MantaClientIT {
         Assert.assertTrue(mantaClient.isDirectoryEmpty(dir),
                 "Empty directory is not reported as empty");
     }
-
 
     @Test
     public final void testIsDirectoryEmptyWithDirWithFiles() throws IOException {
@@ -500,7 +510,6 @@ public class MantaClientIT {
                 "Empty directory is not reported as empty");
     }
 
-
     @Test(expectedExceptions = { MantaClientException.class })
     public final void testIsDirectoryEmptyWithAFileNotDir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -510,7 +519,6 @@ public class MantaClientIT {
 
         mantaClient.isDirectoryEmpty(file);
     }
-
 
     @Test
     public final void testRFC3986() throws IOException {
@@ -527,7 +535,6 @@ public class MantaClientIT {
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
-
     @Test
     public final void testFileExists() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -538,7 +545,6 @@ public class MantaClientIT {
         final boolean actual = mantaClient.existsAndIsAccessible(path);
         Assert.assertTrue(actual, "File object should exist");
     }
-
 
     @Test
     public final void testDirectoryExists() throws IOException {
@@ -551,7 +557,6 @@ public class MantaClientIT {
         Assert.assertTrue(actual, "File object should exist");
     }
 
-
     @Test
     public final void testFileDoesntExist() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -561,39 +566,16 @@ public class MantaClientIT {
         Assert.assertFalse(actual, "File object shouldn't exist");
     }
 
-    @Test
-    public final void testCanGetWithRangeHeader() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        final String expected = TEST_DATA.substring(7, 18); // substring is inclusive, exclusive
-
-        // Test data: "EPISODEII_IS_BEST_EPISODE"
-        // Our Range:         [---------]
-
-        mantaClient.put(path, TEST_DATA);
-
-        final MantaHttpHeaders headers = new MantaHttpHeaders();
-        // Range is inclusive, inclusive
-        headers.setRange("bytes=7-17");
-
-        try (final InputStream min = mantaClient.getAsInputStream(path, headers)) {
-            String actual = MantaUtils.inputStreamToString(min);
-            Assert.assertEquals(actual, expected, "Didn't receive correct range value");
-        }
-    }
-
-
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDate() {
         final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
-        final Date expected = DateUtils.parseDate(mtime);
+        final Date expected = MantaUtils.parseHttpDate(mtime);
         final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
         obj.setMtime(mtime);
 
         Assert.assertEquals(obj.getLastModifiedTime(), expected,
                 "Last modified date should equal input to mtime");
     }
-
 
     @Test(groups = { "mtime" })
     public final void testGetNullLastModifiedDate() {
@@ -604,7 +586,6 @@ public class MantaClientIT {
                 "Last modified date should be null when mtime is null");
     }
 
-
     @Test(groups = { "mtime" })
     public final void testGetLastModifiedDateWithUnparseableMtime() {
         final String mtime = "Bad unparseable string";
@@ -614,6 +595,5 @@ public class MantaClientIT {
         Assert.assertNull(obj.getLastModifiedTime(),
                 "Last modified date should be null when mtime is null");
     }
-
 
 }

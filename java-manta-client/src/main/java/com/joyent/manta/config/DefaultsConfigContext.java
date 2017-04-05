@@ -1,7 +1,14 @@
-/**
- * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.config;
+
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
 
 import java.io.File;
 
@@ -38,14 +45,32 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final String MANTA_KEY_PATH;
 
     /**
-     * The default {@link com.google.api.client.http.HttpTransport} implementation to use.
+     * The size of the internal socket buffer used to buffer data
+     * while receiving / transmitting HTTP messages.
      */
-    public static final String DEFAULT_HTTP_TRANSPORT = "ApacheHttpTransport";
+    public static final int DEFAULT_HTTP_BUFFER_SIZE = 4096;
 
     /**
      * Default TLS protocols.
      */
     public static final String DEFAULT_HTTPS_PROTOCOLS = "TLSv1.2";
+
+    /**
+     * By default we verify that checksums on all uploads.
+     */
+    public static final boolean DEFAULT_VERIFY_UPLOADS = true;
+
+    /**
+     * By default we don't allow downloading unencrypted data when using
+     * client-side encryption.
+     */
+    public static final boolean DEFAULT_PERMIT_UNENCRYPTED_DOWNLOADS = false;
+
+    /**
+     * Default client-side encryption cipher algorithm.
+     */
+    public static final SupportedCipherDetails DEFAULT_CIPHER =
+            AesCtrCipherDetails.INSTANCE_128_BIT;
 
     /**
      * Default TLS cipher suites.
@@ -57,9 +82,15 @@ public class DefaultsConfigContext implements ConfigContext {
           + "TLS_RSA_WITH_AES_128_CBC_SHA256";
 
     /**
-     * Default HTTP signature cache TTL.
+     * Default number of milliseconds to wait for a TCP socket's connection to
+     * timeout.
      */
-    public static final int DEFAULT_SIGNATURE_CACHE_TTL = 0;
+    public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
+
+    /**
+     * Default size of pre-streaming upload buffer (16K).
+     */
+    public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
 
     static {
         // Don't even bother setting a default key path if it doesn't exist
@@ -127,8 +158,8 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public String getHttpTransport() {
-        return DEFAULT_HTTP_TRANSPORT;
+    public Integer getHttpBufferSize() {
+        return DEFAULT_HTTP_BUFFER_SIZE;
     }
 
     @Override
@@ -152,8 +183,53 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        return DEFAULT_SIGNATURE_CACHE_TTL;
+    public Integer getTcpSocketTimeout() {
+        return DEFAULT_TCP_SOCKET_TIMEOUT;
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        return DEFAULT_VERIFY_UPLOADS;
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        return DEFAULT_UPLOAD_BUFFER_SIZE;
+    }
+
+    @Override
+    public Boolean isClientEncryptionEnabled() {
+        return false;
+    }
+
+    @Override
+    public String getEncryptionKeyId() {
+        return null;
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return DEFAULT_CIPHER.getCipherAlgorithm();
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        return DEFAULT_PERMIT_UNENCRYPTED_DOWNLOADS;
+    }
+
+    @Override
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
+        return EncryptionAuthenticationMode.DEFAULT_MODE;
+    }
+
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return null;
+    }
+
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        return null;
     }
 
     @Override

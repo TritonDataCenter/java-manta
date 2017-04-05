@@ -1,137 +1,70 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.exception;
 
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpResponseException;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.LowLevelHttpResponse;
-import com.google.api.client.testing.http.MockHttpTransport;
-import com.google.api.client.testing.http.MockLowLevelHttpRequest;
-import com.google.api.client.testing.http.MockLowLevelHttpResponse;
-import org.testng.Assert;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.HttpVersion;
+import org.apache.http.StatusLine;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicRequestLine;
+import org.apache.http.message.BasicStatusLine;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-
-import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * Tests the deserialization of errors on the Manta API that return JSON.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * Unit test that verifies that exception class can handle JSON correctly.
  */
+@Test
+@SuppressWarnings("DeadException")
 public class MantaClientHttpResponseExceptionTest {
+    public void canHandleJson() throws Exception {
+        final String jsonResponse = "{ \"code\":\"InternalError\", \"message\":\"Unit test message.\"}";
 
-    @Test
-    public void simulate404WithContent() throws IOException {
-        final String json = "{\"code\":\"ResourceNotFound\",\"message\":"
-                + "\"/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e "
-                + "was not found\"}";
+        final HttpRequest request = request();
+        final HttpResponse response = responseWithErrorJson(jsonResponse);
 
-        MockLowLevelHttpRequest lowLevelHttpRequest = new MockLowLevelHttpRequest();
-
-        MockLowLevelHttpResponse lowLevelHttpResponse = new MockLowLevelHttpResponse();
-
-        final String reasonPhrase = "Not Found";
-        final int httpErrorCode = 404;
-        final String method = "GET";
-
-        lowLevelHttpResponse.setContent(json);
-        lowLevelHttpResponse.setStatusCode(httpErrorCode);
-        lowLevelHttpResponse.setReasonPhrase(reasonPhrase);
-        lowLevelHttpResponse.addHeader("x-request-id", new UUID(0L, 0L).toString());
-
-        HttpResponse response = fakeResponse(lowLevelHttpRequest, lowLevelHttpResponse,
-                method);
-
-        HttpResponseException httpResponseException =
-                new HttpResponseException(response);
-        MantaClientHttpResponseException exception =
-                new MantaClientHttpResponseException(httpResponseException);
-
-        Assert.assertEquals(exception.getContent(), json);
-        Assert.assertEquals(exception.getServerCode(), RESOURCE_NOT_FOUND_ERROR);
-        Assert.assertEquals(exception.getServerMessage(),
-                "/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e was not found");
-        Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
-        Assert.assertEquals(exception.getStatusCode(), httpErrorCode);
-        Assert.assertEquals(exception.getMessage(),
-                "404 Not Found (request: 00000000-0000-0000-0000-000000000000) - [ResourceNotFound] "
-                + "/bob/stor/19dd6047-e0d4-41c1-9a3c-013e180fa07e was not found");
+        new MantaClientHttpResponseException(request, response,
+                        "/user/stor/an/object");
     }
 
-    @Test
-    public void simulate404WithNoContent() throws IOException {
-        MockLowLevelHttpRequest lowLevelHttpRequest = new MockLowLevelHttpRequest();
-        MockLowLevelHttpResponse lowLevelHttpResponse = new MockLowLevelHttpResponse();
+    public void canHandleJsonWithUnknownProperty() {
+        final String jsonResponse = "{ \"id\":\"foo\", \"code\":\"InternalError\", \"message\":\"Unit test message.\"}";
 
-        final String reasonPhrase = "Not Found";
-        final int httpErrorCode = 404;
-        final String method = "GET";
+        final HttpRequest request = request();
+        final HttpResponse response = responseWithErrorJson(jsonResponse);
 
-        lowLevelHttpResponse.setStatusCode(httpErrorCode);
-        lowLevelHttpResponse.setReasonPhrase(reasonPhrase);
-
-        HttpResponse response = fakeResponse(lowLevelHttpRequest, lowLevelHttpResponse,
-                method);
-
-        HttpResponseException httpResponseException =
-                new HttpResponseException(response);
-        MantaClientHttpResponseException exception =
-                new MantaClientHttpResponseException(httpResponseException);
-
-        Assert.assertNull(exception.getContent());
-        Assert.assertEquals(exception.getServerCode(), NO_CODE_ERROR);
-        Assert.assertNull(exception.getServerMessage());
-        Assert.assertEquals(exception.getStatusMessage(), reasonPhrase);
-        Assert.assertEquals(exception.getStatusCode(), httpErrorCode);
-        Assert.assertEquals(exception.getMessage(), "404 Not Found");
+        new MantaClientHttpResponseException(request, response,
+                "/user/stor/an/object");
     }
 
-    private static HttpResponse fakeResponse(MockLowLevelHttpRequest lowLevelHttpRequest,
-                                             MockLowLevelHttpResponse lowLevelHttpResponse,
-                                             String method) {
+    private static HttpRequest request() {
+        final HttpRequest request = mock(HttpRequest.class);
+        when(request.getRequestLine()).thenReturn(new BasicRequestLine("GET", "http://localhost",
+                HttpVersion.HTTP_1_1));
 
-        MockHttpTransport.Builder builder = new MockHttpTransport.Builder();
-        Set<String> methods = new HashSet<>();
-        methods.add(method);
+        return request;
+    }
 
-        lowLevelHttpRequest.setResponse(lowLevelHttpResponse);
+    private static HttpResponse responseWithErrorJson(final String json) {
+        final StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,
+                HttpStatus.SC_SERVICE_UNAVAILABLE, "UNAVAILABLE");
+        final HttpResponse response = mock(HttpResponse.class);
+        when(response.getStatusLine()).thenReturn(statusLine);
 
-        MockHttpTransport transport =
-                builder.setLowLevelHttpRequest(lowLevelHttpRequest)
-                       .setSupportedMethods(methods)
-                       .build();
+        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        when(response.getEntity()).thenReturn(entity);
 
-
-        Class<HttpRequest> requestClazz = HttpRequest.class;
-        Class<HttpResponse> responseClazz = HttpResponse.class;
-
-        try {
-            // Build request
-            Constructor<HttpRequest> requestConstructor =
-                    requestClazz.getDeclaredConstructor(HttpTransport.class,
-                            String.class);
-            requestConstructor.setAccessible(true);
-            HttpRequest request = requestConstructor.newInstance(transport, method);
-
-            // Build response
-            Constructor<HttpResponse> responseConstructor =
-                    responseClazz.getDeclaredConstructor(HttpRequest.class,
-                            LowLevelHttpResponse.class);
-            responseConstructor.setAccessible(true);
-
-            return responseConstructor.newInstance(request, lowLevelHttpResponse);
-
-        } catch (NoSuchMethodException | IllegalAccessException |
-                 InstantiationException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        return response;
     }
 }

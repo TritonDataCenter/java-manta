@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.exception;
 
 import org.apache.commons.lang3.exception.DefaultExceptionContext;
@@ -21,7 +28,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     private final ExceptionContext exceptionContext;
 
     /**
-     * Constructs an {@code CloudApiIOException} with {@code null}
+     * Constructs an instance with {@code null}
      * as its error detail message.
      */
     public MantaIOException() {
@@ -29,7 +36,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     }
 
     /**
-     * Constructs an {@code CloudApiIOException} with the specified detail message.
+     * Constructs an instance with the specified detail message.
      *
      * @param message
      *        The detail message (which is saved for later retrieval
@@ -41,7 +48,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     }
 
     /**
-     * Constructs an {@code CloudApiIOException} with the specified detail message
+     * Constructs an instance with the specified detail message
      * and cause.
      *
      * <p> Note that the detail message associated with {@code cause} is
@@ -63,7 +70,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     }
 
     /**
-     * Constructs an {@code CloudApiIOException} with the specified cause and a
+     * Constructs an instance with the specified cause and a
      * detail message of {@code (cause==null ? null : cause.toString())}
      * (which typically contains the class and detail message of {@code cause}).
      * This constructor is useful for IO exceptions that are little more

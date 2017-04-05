@@ -1,8 +1,13 @@
-/**
- * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.config;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -12,7 +17,8 @@ import java.util.Objects;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public abstract class BaseChainedConfigContext implements ConfigContext {
+@SuppressWarnings("unused")
+public abstract class BaseChainedConfigContext implements SettableConfigContext<BaseChainedConfigContext> {
     /**
      * Manta service endpoint.
      */
@@ -59,9 +65,9 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     private String password;
 
     /**
-     * The class name of the {@link com.google.api.client.http.HttpTransport} implementation to use.
+     * Size of buffer in bytes to use to buffer streams of HTTP data.
      */
-    private String httpTransport;
+    private Integer httpBufferSize;
 
     /**
      * Comma delimited list of supported TLS protocols.
@@ -71,7 +77,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     /**
      * Comma delimited list of supported TLS ciphers.
      */
-    private String httpsCiphers;
+    private String httpsCipherSuites;
 
     /**
      * Flag indicating if HTTP signatures are turned off.
@@ -86,7 +92,64 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     /**
      * Time in milliseconds to cache HTTP signature headers.
      */
-    private Integer signatureCacheTTL;
+    private Integer tcpSocketTimeout;
+
+    /**
+     * Flag indicating if we verify the uploaded file's checksum against the
+     * server's checksum (MD5).
+     */
+    private Boolean verifyUploads;
+
+    /**
+     * Number of bytes to read into memory for a streaming upload before
+     * deciding if we want to load it in memory before send it.
+     */
+    private Integer uploadBufferSize;
+
+    /**
+     * Flag indicating when client-side encryption is enabled.
+     */
+    private Boolean clientEncryptionEnabled;
+
+    /**
+     * The unique identifier of the key used for encryption.
+     */
+    private String encryptionKeyId;
+
+    /**
+     * The client encryption algorithm name in the format of
+     * <code>cipher/mode/padding state</code>.
+     */
+    private String encryptionAlgorithm;
+
+    /**
+     * Flag indicating when downloading unencrypted files is allowed in
+     * encryption mode.
+     */
+    private Boolean permitUnencryptedDownloads;
+
+    /**
+     * Enum specifying if we are in strict ciphertext authentication mode or not.
+     */
+    private EncryptionAuthenticationMode encryptionAuthenticationMode;
+
+    /**
+     * Path to the private encryption key on the filesystem (can't be used if
+     * private key bytes is not null).
+     */
+    private String encryptionPrivateKeyPath;
+
+    /**
+     * Private encryption key data (can't be used if private key path is not null).
+     */
+    private byte[] encryptionPrivateKeyBytes;
+
+    /**
+     * Flag indicating the the mantaKeyPath has been set only by the defaults.
+     * True = set by defaults.
+     * False = overwritten by non-defaults.
+     */
+    private boolean mantaKeyPathSetOnlyByDefaults = false;
 
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
@@ -160,8 +223,8 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
-    public String getHttpTransport() {
-        return this.httpTransport;
+    public Integer getHttpBufferSize() {
+        return this.httpBufferSize;
     }
 
     @Override
@@ -171,7 +234,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
 
     @Override
     public String getHttpsCipherSuites() {
-        return httpsCiphers;
+        return httpsCipherSuites;
     }
 
     @Override
@@ -185,8 +248,59 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        return signatureCacheTTL;
+    public Integer getTcpSocketTimeout() {
+        return tcpSocketTimeout;
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        return verifyUploads;
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        return uploadBufferSize;
+    }
+
+    @Override
+    public Boolean isClientEncryptionEnabled() {
+        return clientEncryptionEnabled;
+    }
+
+    @Override
+    public String getEncryptionKeyId() {
+        return encryptionKeyId;
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return encryptionAlgorithm;
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        return permitUnencryptedDownloads;
+    }
+
+    @Override
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
+        return encryptionAuthenticationMode;
+    }
+
+    /**
+     * @return path to the private encryption key on the filesystem (can't be used if private key bytes is not null)
+     */
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return encryptionPrivateKeyPath;
+    }
+
+    /**
+     * @return private encryption key data (can't be used if private key path is not null)
+     */
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        return encryptionPrivateKeyBytes;
     }
 
     /**
@@ -196,6 +310,16 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
      * @param context context to overwrite configuration with
      */
     public void overwriteWithContext(final ConfigContext context) {
+        /* If a default context is being used to overwrite after this
+         * context has been initialized, then we want to be careful to not
+         * overwrite values that have already been set with defaults. */
+        boolean isDefaultContext = context instanceof DefaultsConfigContext;
+
+        if (isDefaultContext) {
+            overwriteWithDefaultContext((DefaultsConfigContext)context);
+            return;
+        }
+
         if (isPresent(context.getMantaURL())) {
             this.mantaURL = context.getMantaURL();
         }
@@ -229,7 +353,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         }
 
         if (isPresent(context.getPrivateKeyContent())) {
-            if (isPresent(mantaKeyPath)) {
+            if (isPresent(mantaKeyPath) && !this.mantaKeyPathSetOnlyByDefaults) {
                 String msg = "You can't set both a private key path and private key content";
                 throw new IllegalArgumentException(msg);
             }
@@ -241,16 +365,12 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
             this.password = context.getPassword();
         }
 
-        if (isPresent(context.getHttpTransport())) {
-            this.httpTransport = context.getHttpTransport();
-        }
-
         if (isPresent(context.getHttpsProtocols())) {
             this.httpsProtocols = context.getHttpsProtocols();
         }
 
         if (isPresent(context.getHttpsCipherSuites())) {
-            this.httpsCiphers = context.getHttpsCipherSuites();
+            this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
 
         if (context.noAuth() != null) {
@@ -261,9 +381,150 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
 
-        if (context.getSignatureCacheTTL() != null) {
-            this.signatureCacheTTL = context.getSignatureCacheTTL();
+        if (context.getHttpBufferSize() != null) {
+            this.httpBufferSize = context.getHttpBufferSize();
         }
+
+        if (context.getTcpSocketTimeout() != null) {
+            this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
+        if (context.verifyUploads() != null) {
+            this.verifyUploads = context.verifyUploads();
+        }
+
+        if (context.getUploadBufferSize() != null) {
+            this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (context.isClientEncryptionEnabled() != null) {
+            this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (context.getEncryptionKeyId() != null) {
+            this.encryptionKeyId = context.getEncryptionKeyId();
+        }
+
+        if (context.getEncryptionAlgorithm() != null) {
+            this.encryptionAlgorithm = context.getEncryptionAlgorithm();
+        }
+
+        if (context.getEncryptionAuthenticationMode() != null) {
+            this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
+        }
+
+        if (context.getEncryptionPrivateKeyPath() != null) {
+            this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
+        }
+
+        if (context.getEncryptionPrivateKeyBytes() != null) {
+            this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
+        }
+
+        if (context.permitUnencryptedDownloads() != null) {
+            this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
+        }
+    }
+
+    /**
+     * Overwrites this context with the supplied defaults context instance.
+     *
+     * @param context default configuration context
+     */
+    protected void overwriteWithDefaultContext(final DefaultsConfigContext context) {
+        if (!isPresent(this.getMantaURL())) {
+            this.mantaURL = context.getMantaURL();
+        }
+
+        if (!isPresent(this.getMantaUser())) {
+            this.account = context.getMantaUser();
+        }
+
+        if (!isPresent(this.getMantaKeyId())) {
+            this.mantaKeyId = context.getMantaKeyId();
+        }
+
+        if (!isPresent(this.getMantaKeyPath()) && !isPresent(this.getPrivateKeyContent())) {
+            this.mantaKeyPathSetOnlyByDefaults = true;
+            this.mantaKeyPath = context.getMantaKeyPath();
+        }
+
+        if (this.getTimeout() == null) {
+            this.timeout = context.getTimeout();
+        }
+
+        if (this.getRetries() == null) {
+            this.retries = context.getRetries();
+        }
+
+        if (this.getMaximumConnections() == null) {
+            this.maxConnections = context.getMaximumConnections();
+        }
+
+        if (!isPresent(this.getPassword())) {
+            this.password = context.getPassword();
+        }
+
+        if (!isPresent(this.getHttpsProtocols())) {
+            this.httpsProtocols = context.getHttpsProtocols();
+        }
+
+        if (!isPresent(this.getHttpsCipherSuites())) {
+            this.httpsCipherSuites = context.getHttpsCipherSuites();
+        }
+
+        if (this.noAuth() == null) {
+            this.noAuth = context.noAuth();
+        }
+
+        if (this.disableNativeSignatures() == null) {
+            this.disableNativeSignatures = context.disableNativeSignatures();
+        }
+
+        if (this.httpBufferSize == null) {
+            this.httpBufferSize = context.getHttpBufferSize();
+        }
+
+        if (this.tcpSocketTimeout == null) {
+            this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
+        if (this.verifyUploads == null) {
+            this.verifyUploads = context.verifyUploads();
+        }
+
+        if (this.uploadBufferSize == null) {
+            this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (this.clientEncryptionEnabled == null) {
+            this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (this.encryptionKeyId == null) {
+            this.encryptionKeyId = context.getEncryptionKeyId();
+        }
+
+        if (this.encryptionAlgorithm == null) {
+            this.encryptionAlgorithm = context.getEncryptionAlgorithm();
+        }
+
+        if (this.encryptionAuthenticationMode == null) {
+            this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
+        }
+
+        if (this.encryptionPrivateKeyPath == null) {
+            this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
+        }
+
+        if (this.permitUnencryptedDownloads == null) {
+            this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
+        }
+
+        /* Note: we purposely omitted privateKeyContent and
+         * EncryptionPrivateKeyBytes because there are never going to
+         * be defaults for those values.
+         */
     }
 
     /**
@@ -275,41 +536,25 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return string != null && !string.isEmpty();
     }
 
-    /**
-     * Sets the Manta service endpoint.
-     * @param mantaURL Manta service endpoint
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaURL(final String mantaURL) {
         this.mantaURL = mantaURL;
         return this;
     }
 
-    /**
-     * Sets the account associated with the Manta service.
-     * @param mantaUser Manta user account
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaUser(final String mantaUser) {
         this.account = mantaUser;
         return this;
     }
 
-    /**
-     * Sets the RSA key fingerprint of the private key used to access Manta.
-     * @param mantaKeyId RSA key fingerprint
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaKeyId(final String mantaKeyId) {
         this.mantaKeyId = mantaKeyId;
         return this;
     }
 
-    /**
-     * Sets the path on the filesystem to the private RSA key used to access Manta.
-     * @param mantaKeyPath path on the filesystem
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMantaKeyPath(final String mantaKeyPath) {
         if (isPresent(privateKeyContent)) {
             String msg = "You can't set both a private key path and private key content";
@@ -320,21 +565,13 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the general connection timeout for the Manta service.
-     * @param timeout timeout in milliseconds
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setTimeout(final Integer timeout) {
         this.timeout = timeout;
         return this;
     }
 
-    /**
-     * Sets the number of times to retry failed HTTP requests.
-     * @param retries number of times to retry
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setRetries(final Integer retries) {
         if (retries < 0) {
             throw new IllegalArgumentException("Retries must be zero or greater");
@@ -343,11 +580,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the maximum number of open connections to the Manta API.
-     * @param maxConns number of connections greater than zero
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setMaximumConnections(final Integer maxConns) {
         if (maxConns < 1) {
             throw new IllegalArgumentException("Maximum number of connections must "
@@ -358,12 +591,7 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the private key content used to authenticate. This can't be set if
-     * you already have a private key path specified.
-     * @param privateKeyContent contents of private key in plain text
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setPrivateKeyContent(final String privateKeyContent) {
         if (isPresent(mantaKeyPath)) {
             String msg = "You can't set both a private key path and private key content";
@@ -375,103 +603,124 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
         return this;
     }
 
-    /**
-     * Sets the password used for the private key. This is optional and not
-     * typically used.
-     * @param password password to set
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setPassword(final String password) {
         this.password = password;
 
         return this;
     }
 
-    /**
-     * Sets the class name of the {@link com.google.api.client.http.HttpTransport}
-     * implementation to use. Use the strings ApacheHttpTransport, NetHttpTransport
-     * or MockHttpTransport to use the included implementations. If the value
-     * is not one of those three - then we default to the ApacheHttpTransport
-     * method.
-     *
-     * @param httpTransport Typically 'ApacheHttpTransport' or 'NetHttpTransport'
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
-    public BaseChainedConfigContext setHttpTransport(final String httpTransport) {
-        this.httpTransport = httpTransport;
+    @Override
+    public BaseChainedConfigContext setHttpBufferSize(final Integer httpBufferSize) {
+        this.httpBufferSize = httpBufferSize;
 
         return this;
     }
 
-    /**
-     * Set the supported TLS protocols.
-     *
-     * @param httpsProtocols comma delimited list of TLS protocols
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setHttpsProtocols(final String httpsProtocols) {
         this.httpsProtocols = httpsProtocols;
 
         return this;
     }
 
-    /**
-     * Set the supported TLS ciphers.
-     *
-     * @param httpsCiphers comma delimited list of TLS ciphers
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
-    public BaseChainedConfigContext setHttpsCiphers(final String httpsCiphers) {
-        this.httpsCiphers = httpsCiphers;
+    @Override
+    public BaseChainedConfigContext setHttpsCipherSuites(final String httpsCipherSuites) {
+        this.httpsCipherSuites = httpsCipherSuites;
 
         return this;
     }
 
-    /**
-     * Change the state of whether or not HTTP signatures are sent to the Manta API.
-     *
-     * @param noAuth true to disable HTTP signatures
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setNoAuth(final Boolean noAuth) {
         this.noAuth = noAuth;
 
         return this;
     }
 
-    /**
-     * Change the state of whether or not HTTP signatures are using native code
-     * to generate the cryptographic signatures.
-     *
-     * @param disableNativeSignatures true to disable
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
+    @Override
     public BaseChainedConfigContext setDisableNativeSignatures(final Boolean disableNativeSignatures) {
         this.disableNativeSignatures = disableNativeSignatures;
 
         return this;
     }
 
-    /**
-     * Sets the time in milliseconds to cache HTTP signature headers.
-     *
-     * @param signatureCacheTTL time in milliseconds to cache HTTP signature headers
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
-    public BaseChainedConfigContext setSignatureCacheTTL(final Integer signatureCacheTTL) {
-        this.signatureCacheTTL = signatureCacheTTL;
+    @Override
+    public BaseChainedConfigContext setTcpSocketTimeout(final Integer tcpSocketTimeout) {
+        this.tcpSocketTimeout = tcpSocketTimeout;
 
         return this;
     }
 
-    /**
-     * Sets the maximum number of open connections to the Manta API.
-     *
-     * @param maxConnections maximum number of open connections to open
-     * @return the current instance of {@link BaseChainedConfigContext}
-     */
-    public BaseChainedConfigContext setMaxConnections(final Integer maxConnections) {
-        this.maxConnections = maxConnections;
+    @Override
+    public BaseChainedConfigContext setVerifyUploads(final Boolean verify) {
+        this.verifyUploads = verify;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setUploadBufferSize(final Integer size) {
+        this.uploadBufferSize = size;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
+        this.clientEncryptionEnabled = clientEncryptionEnabled;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setEncryptionKeyId(final String keyId) {
+        this.encryptionKeyId = keyId;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setEncryptionAlgorithm(final String algorithm) {
+        this.encryptionAlgorithm = algorithm;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setPermitUnencryptedDownloads(final Boolean permitUnencryptedDownloads) {
+        this.permitUnencryptedDownloads = permitUnencryptedDownloads;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setEncryptionAuthenticationMode(
+            final EncryptionAuthenticationMode encryptionAuthenticationMode) {
+        this.encryptionAuthenticationMode = encryptionAuthenticationMode;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setEncryptionPrivateKeyPath(final String encryptionPrivateKeyPath) {
+        if (encryptionPrivateKeyBytes != null) {
+            String msg = "You can't set both encryption key content and a private encryption key path";
+            throw new IllegalArgumentException(msg);
+        }
+        this.encryptionPrivateKeyPath = encryptionPrivateKeyPath;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setEncryptionPrivateKeyBytes(final byte[] encryptionPrivateKeyBytes) {
+        if (isPresent(encryptionPrivateKeyPath)) {
+            String msg = "You can't set both a private encryption key path and encryption key content";
+            throw new IllegalArgumentException(msg);
+        }
+
+        this.encryptionPrivateKeyBytes = encryptionPrivateKeyBytes;
 
         return this;
     }
@@ -496,20 +745,34 @@ public abstract class BaseChainedConfigContext implements ConfigContext {
                 && Objects.equals(maxConnections, that.maxConnections)
                 && Objects.equals(privateKeyContent, that.privateKeyContent)
                 && Objects.equals(password, that.password)
-                && Objects.equals(httpTransport, that.httpTransport)
+                && Objects.equals(httpBufferSize, that.httpBufferSize)
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
-                && Objects.equals(httpsCiphers, that.httpsCiphers)
+                && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
-                && Objects.equals(signatureCacheTTL, that.signatureCacheTTL);
+                && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
+                && Objects.equals(verifyUploads, that.verifyUploads)
+                && Objects.equals(uploadBufferSize, that.uploadBufferSize)
+                && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
+                && Objects.equals(encryptionKeyId, that.encryptionKeyId)
+                && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
+                && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
+                && Objects.equals(encryptionAuthenticationMode, that.encryptionAuthenticationMode)
+                && Objects.equals(encryptionPrivateKeyPath, that.encryptionPrivateKeyPath)
+                && Arrays.equals(encryptionPrivateKeyBytes, that.encryptionPrivateKeyBytes);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
-                httpTransport, httpsProtocols, httpsCiphers, noAuth,
-                disableNativeSignatures, signatureCacheTTL);
+                httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
+                disableNativeSignatures, tcpSocketTimeout,
+                verifyUploads, uploadBufferSize,
+                clientEncryptionEnabled, encryptionKeyId,
+                encryptionAlgorithm, permitUnencryptedDownloads,
+                encryptionAuthenticationMode, encryptionPrivateKeyPath,
+                Arrays.hashCode(encryptionPrivateKeyBytes));
     }
 
     @Override

@@ -1,8 +1,14 @@
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
@@ -35,34 +41,27 @@ public class MantaClientDirectoriesIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+        config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        String testPathBase = String.format("%s/stor/java-manta-integration-tests",
+                config.getMantaHomeDirectory());
+        testPathPrefix = String.format("%s/%s",
+                testPathBase, UUID.randomUUID());
+        mantaClient.putDirectory(testPathBase, true);
     }
 
-
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public void canCreateDirectory() throws IOException {
@@ -77,7 +76,6 @@ public class MantaClientDirectoriesIT {
         Assert.assertEquals(dir, response.getPath());
     }
 
-
     @Test
     public void willReturnFalseWhenWeOverwriteDirectory() throws IOException {
         mantaClient.putDirectory(testPathPrefix);
@@ -91,7 +89,6 @@ public class MantaClientDirectoriesIT {
         Assert.assertFalse(result, "Expected a false value because we "
                 + "didn't create a new directory");
     }
-
 
     @Test(dependsOnMethods = { "canCreateDirectory" })
     public void canDeleteDirectory() throws IOException {
@@ -133,14 +130,13 @@ public class MantaClientDirectoriesIT {
         mantaClient.putDirectory(file);
     }
 
-
     @Test(dependsOnMethods = { "canCreateDirectory" })
     public void directoryIsMarkedAsSuch() throws IOException {
         MantaObject dir = mantaClient.head(testPathPrefix);
         Assert.assertTrue(dir.isDirectory(),
-                String.format("Directory should be marked as such [%s]", testPathPrefix));
+                String.format("Directory should be marked as such [%s]. "
+                        + "\nResponse: %s", testPathPrefix, dir));
     }
-
 
     @Test(dependsOnMethods = { "wontErrorWhenWeCreateOverAnExistingDirectory" })
     public void canRecursivelyCreateDirectory() throws IOException {

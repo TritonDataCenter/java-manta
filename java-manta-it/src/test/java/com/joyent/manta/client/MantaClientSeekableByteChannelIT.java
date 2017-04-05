@@ -1,9 +1,17 @@
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.client;
 
-import com.google.api.client.util.IOUtils;
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.config.BaseChainedConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.SettableConfigContext;
+import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -19,8 +27,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.Charset;
 import java.util.UUID;
-
 
 /**
  * Tests for verifying the behavior of {@link SeekableByteChannel} with
@@ -38,35 +46,30 @@ public class MantaClientSeekableByteChannelIT {
 
 
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
+
+        // Range request have to be in optional authentication mode
+        if (config.isClientEncryptionEnabled()) {
+            config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
+        }
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s/",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        mantaClient.putDirectory(testPathPrefix, null);
+        mantaClient.putDirectory(testPathPrefix, true);
     }
 
-
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public final void seekableByteSize() throws IOException {
@@ -82,7 +85,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-
     @Test
     public final void getAllSeekableBytes() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -94,7 +96,6 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(actual, TEST_DATA, "Couldn't read the same bytes as written");
         }
     }
-
 
     @Test
     public final void getAllSeekableBytesAtPosition() throws IOException {
@@ -134,7 +135,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-
     @Test
     public final void readAllSeekableBytesFromPositionAsInputStream() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -146,14 +146,14 @@ public class MantaClientSeekableByteChannelIT {
         try (MantaSeekableByteChannel channel = mantaClient.getSeekableByteChannel(path, position)) {
             final String expected = TEST_DATA.substring(position);
 
-            Assert.assertEquals(MantaUtils.inputStreamToString(channel),
+            Assert.assertEquals(IOUtils.toString(channel, Charset.defaultCharset()),
                     expected, "Couldn't read the same bytes as written");
 
             final int secondPosition = 7;
             final String secondExpected = TEST_DATA.substring(secondPosition);
             try (MantaSeekableByteChannel channel2 = (MantaSeekableByteChannel)channel.position(secondPosition)) {
 
-                Assert.assertEquals(MantaUtils.inputStreamToString(channel2),
+                Assert.assertEquals(IOUtils.toString(channel2, Charset.defaultCharset()),
                         secondExpected, "Couldn't read the same bytes as written");
             }
         }
@@ -170,7 +170,7 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(channel.skip(5), 5L, "Didn't skip the expected number of bytes");
             Assert.assertEquals(channel.position(), 5L, "Position didn't update properly");
 
-            Assert.assertEquals(MantaUtils.inputStreamToString(channel),
+            Assert.assertEquals(IOUtils.toString(channel, Charset.defaultCharset()),
                     expected, "Couldn't read the same bytes as written");
 
             Assert.assertEquals(channel.position(), TEST_DATA.length(),
@@ -213,7 +213,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-
     @Test(expectedExceptions = NonWritableChannelException.class)
     public final void attemptToWrite() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -225,7 +224,6 @@ public class MantaClientSeekableByteChannelIT {
             channel.write(buffer);
         }
     }
-
 
     @Test( groups = { "seekable" })
     public final void getFromForwardPosition() throws IOException {
@@ -244,7 +242,6 @@ public class MantaClientSeekableByteChannelIT {
                     "Couldn't read the same bytes as written to specified position");
         }
     }
-
 
     @Test( groups = { "seekable" } )
     public final void getFromBaseChannelThenForwardPosition() throws IOException {
@@ -266,7 +263,6 @@ public class MantaClientSeekableByteChannelIT {
                     "Couldn't read the same bytes as written to specified position");
         }
     }
-
 
     @Test( groups = { "seekable" } )
     public final void getFromForwardPositionThenBackwardPosition() throws IOException {
@@ -296,7 +292,6 @@ public class MantaClientSeekableByteChannelIT {
                     "Couldn't read the same bytes as written to specified position");
         }
     }
-
 
     public static byte[] readAllBytes(SeekableByteChannel sbc) throws IOException {
         try (InputStream in = Channels.newInputStream(sbc);

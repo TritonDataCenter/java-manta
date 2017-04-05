@@ -1,11 +1,16 @@
-/**
- * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.KeyPairFactory;
+import com.joyent.manta.http.MantaApacheHttpClientContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -14,6 +19,7 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.security.KeyPair;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -33,39 +39,24 @@ public class MantaDirectoryListingIteratorIT {
 
     private ConfigContext config;
 
-    private HttpRequestFactoryProvider httpRequestFactoryProvider;
-
-    private HttpHelper httpHelper;
-
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+        config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/%s",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
+        mantaClient.putDirectory(testPathPrefix, true);
 
-        mantaClient.putDirectory(testPathPrefix);
-
-        httpRequestFactoryProvider = mantaClient.getHttpRequestFactoryProvider();
-        httpHelper = new HttpHelper(config.getMantaURL(),
-                httpRequestFactoryProvider.getRequestFactory());
+        final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
+        final KeyPair keyPair = keyPairFactory.createKeyPair();
     }
 
-
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
@@ -87,10 +78,7 @@ public class MantaDirectoryListingIteratorIT {
             mantaClient.put(path, TEST_DATA);
         }
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 5)) {
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 5)) {
             // Make sure we can get the first element
             Assert.assertTrue(itr.hasNext(), "We should have the first element");
             Map<String, Object> first = itr.next();
@@ -139,11 +127,7 @@ public class MantaDirectoryListingIteratorIT {
             mantaClient.put(path, TEST_DATA);
         }
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 10)) {
-
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 10)) {
             Runnable search = () -> {
                 while (itr.hasNext()) {
                     try {
@@ -178,7 +162,7 @@ public class MantaDirectoryListingIteratorIT {
             }
 
             // Validate that all files were found
-            valuesFound.entrySet().stream().forEach(m -> Assert.assertTrue(m.getValue()));
+            valuesFound.entrySet().forEach(m -> Assert.assertTrue(m.getValue()));
         } catch (InterruptedException e) {
             afterClass();
         }
@@ -189,10 +173,7 @@ public class MantaDirectoryListingIteratorIT {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 10)) {
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 10)) {
             Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
 
             boolean failed = false;
@@ -222,11 +203,7 @@ public class MantaDirectoryListingIteratorIT {
             mantaClient.put(path, TEST_DATA);
         }
 
-        String url = config.getMantaURL();
-
-        try (MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(url,
-                dir, httpHelper, 2)) {
-
+        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 2)) {
             for (int i = 1; i < MAX; i++) {
                 Assert.assertTrue(itr.hasNext(), "We should have the next element");
                 Map<String, Object> next = itr.next();

@@ -1,27 +1,38 @@
-/**
- * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
-import com.google.api.client.http.HttpContent;
+import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.entity.EmbeddedHttpContent;
+import org.apache.commons.io.output.ClosedOutputStream;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * {@link OutputStream} that wraps the PUT operations using an {@link java.io.InputStream}
- * as a data source. This implementation uses another thread to keep the Google HTTP
+ * as a data source. This implementation uses another thread to keep the Apache HTTP
  * Client's {@link OutputStream} open in order to proxy all calls to it. This is far
  * from an ideal implementation. Please only use this class as a last resort when needing
  * to provide compatibility with inflexible APIs that require an {@link OutputStream}.
@@ -33,7 +44,7 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(MantaObjectOutputStream.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectOutputStream.class);
 
     /**
      * Thread group for all Manta output stream threads.
@@ -44,6 +55,25 @@ public class MantaObjectOutputStream extends OutputStream {
      * Number of milliseconds to wait between checks to see if the stream has been closed.
      */
     private static final long CLOSED_CHECK_INTERVAL = 50L;
+
+
+    /* Note: Do not turn this into a lambda expression - as of now it causes
+     * a compilation error. */
+    /**
+     * Unhandled exception handler that logs errors that happened when reading
+     * from the {@link InputStream}.
+     */
+    private static final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER =
+            new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(final Thread t, final Throwable e) {
+                    String msg = String.format("An error occurred in the "
+                            + "reading thread [%s] when attempting to "
+                            + "write to an object via an OutputStream.",
+                            t.getName());
+                    LOGGER.error(msg, e);
+                }
+            };
 
     /**
      * Custom thread factory that makes sensibly named daemon threads.
@@ -56,6 +86,7 @@ public class MantaObjectOutputStream extends OutputStream {
             final String name = String.format("stream-%d", count.getAndIncrement());
             Thread thread = new Thread(THREAD_GROUP, runnable, name);
             thread.setDaemon(true);
+            thread.setUncaughtExceptionHandler(EXCEPTION_HANDLER);
 
             return thread;
         }
@@ -68,84 +99,6 @@ public class MantaObjectOutputStream extends OutputStream {
      * if needed.
      */
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(THREAD_FACTORY);
-
-    /**
-     * Inner class that provides visibility into the {@link HttpContent} object being
-     * put to the server. This allows us to proxy all of the {@link OutputStream} API
-     * calls.
-     */
-    private class EmbeddedHttpContent implements HttpContent {
-        /**
-         * The actual output stream that is used by Google HTTP Client.
-         */
-        private volatile OutputStream writer;
-
-        @Override
-        public long getLength() throws IOException {
-            return -1L;
-        }
-
-        @Override
-        public String getType() {
-            return contentType;
-        }
-
-        @Override
-        public boolean retrySupported() {
-            return false;
-        }
-
-        @Override
-        public synchronized void writeTo(final OutputStream out) throws IOException {
-            writer = out;
-
-            /* Loop while the parent OutputStream is still open. This allows us to write
-             * to the stream from the parent class while keeping the stream open with
-             * another thread. */
-            while (!isClosed) {
-                try {
-                    this.wait(CLOSED_CHECK_INTERVAL);
-                } catch (InterruptedException e) {
-                    return; // exit loop and assume closed if interrupted
-                }
-            }
-        }
-    }
-
-    /**
-     * Thread execution definition that runs the HTTP PUT operation.
-     */
-    private Callable<MantaObjectResponse> upload = new Callable<MantaObjectResponse>() {
-        @Override
-        public MantaObjectResponse call() throws Exception {
-            return httpHelper.httpPut(path, headers, httpContent, metadata);
-        }
-    };
-
-    /**
-     * Path to the object in Manta.
-     */
-    private final String path;
-
-    /**
-     * The helper object that provides a PUT interface.
-     */
-    private final HttpHelper httpHelper;
-
-    /**
-     * The headers to send along with the PUT request.
-     */
-    private final MantaHttpHeaders headers;
-
-    /**
-     * The metadata to metadata to send along with the PUT request.
-     */
-    private final MantaMetadata metadata;
-
-    /**
-     * Content type value for the file being uploaded.
-     */
-    private final String contentType;
 
     /**
      * Http content object that is proxied by this stream.
@@ -165,12 +118,17 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * A running count of the total number of bytes written.
      */
-    private volatile long bytesWritten = 0L;
+    private AtomicLong bytesWritten = new AtomicLong(0L);
 
     /**
      * Flag indicating that this stream has been closed.
      */
-    private volatile boolean isClosed = false;
+    private AtomicBoolean closed = new AtomicBoolean(false);
+
+    /**
+     * Path of the object being written to.
+     */
+    private final String path;
 
     /**
      * Creates a new instance of an {@link OutputStream} that wraps PUT
@@ -178,27 +136,41 @@ public class MantaObjectOutputStream extends OutputStream {
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param httpHelper reference to HTTP operations helper class
-     * @param headers optional HTTP headers to include when copying the object
+     * @param mantaHttpHeaders optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @param contentType HTTP Content-Type header value
      */
     MantaObjectOutputStream(final String path, final HttpHelper httpHelper,
-                            final MantaHttpHeaders headers,
+                            final MantaHttpHeaders mantaHttpHeaders,
                             final MantaMetadata metadata,
-                            final String contentType) {
+                            final ContentType contentType) {
+        this.httpContent = new EmbeddedHttpContent(contentType.toString(),
+                closed);
         this.path = path;
-        this.httpHelper = httpHelper;
-        this.headers = headers;
-        this.metadata = metadata;
-        this.contentType = contentType;
-        this.httpContent = new EmbeddedHttpContent();
-        this.completed = EXECUTOR.submit(upload);
 
-        /**
+        final MantaHttpHeaders headers;
+
+        if (mantaHttpHeaders == null) {
+            headers = new MantaHttpHeaders();
+        } else {
+            headers = mantaHttpHeaders;
+        }
+
+        if (contentType != null) {
+            headers.setContentType(contentType.toString());
+        }
+
+        /*
+         * Thread execution definition that runs the HTTP PUT operation.
+         */
+        this.completed = EXECUTOR.submit(() ->
+                httpHelper.httpPut(path, headers, httpContent, metadata));
+
+        /*
          * We have to wait here until the upload to Manta starts and a Writer
          * becomes available.
          */
-        while (httpContent.writer == null) {
+        while (httpContent.getWriter() == null) {
             try {
                 Thread.sleep(CLOSED_CHECK_INTERVAL);
             } catch (InterruptedException e) {
@@ -209,25 +181,47 @@ public class MantaObjectOutputStream extends OutputStream {
 
     @Override
     public void write(final int b) throws IOException {
-        httpContent.writer.write(b);
-        bytesWritten++;
+        if (this.closed.get()) {
+            MantaIOException e = new MantaIOException("Can't write to a closed stream");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        httpContent.getWriter().write(b);
+        bytesWritten.incrementAndGet();
     }
 
     @Override
     public void write(final byte[] b) throws IOException {
-        httpContent.writer.write(b);
-        bytesWritten += b.length;
+        if (this.closed.get()) {
+            MantaIOException e = new MantaIOException("Can't write to a closed stream");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        httpContent.getWriter().write(b);
+        bytesWritten.addAndGet(b.length);
     }
 
     @Override
     public void write(final byte[] b, final int off, final int len) throws IOException {
-        httpContent.writer.write(b, off, len);
-        bytesWritten += b.length;
+        if (this.closed.get()) {
+            MantaIOException e = new MantaIOException("Can't write to a closed stream");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        httpContent.getWriter().write(b, off, len);
+        bytesWritten.addAndGet(b.length);
     }
 
     @Override
     public void flush() throws IOException {
-        httpContent.writer.flush();
+        if (this.closed.get()) {
+            return;
+        }
+
+        httpContent.getWriter().flush();
     }
 
     /**
@@ -239,11 +233,28 @@ public class MantaObjectOutputStream extends OutputStream {
      * @return reference to closed property or null if unavailable
      */
     protected static Boolean isInnerStreamClosed(final OutputStream stream) {
+        OutputStream inner = findMostInnerOutputStream(stream);
+
+        // If the inner most stream is a closed instance, then we can assume
+        // the stream is close.
+        if (inner.getClass().equals(ClosedOutputStream.class)) {
+            return true;
+        }
+
         try {
-            Field f = FieldUtils.getField(stream.getClass(), "closed", true);
-            Object result = f.get(stream);
+            Field f = FieldUtils.getField(inner.getClass(), "closed", true);
+
+            if (f == null) {
+                throw new IllegalArgumentException("FieldUtils.getField(inner.getClass()) "
+                        + "returned null");
+            }
+
+            Object result = f.get(inner);
             return  (boolean)result;
         } catch (IllegalArgumentException | IllegalAccessException | ClassCastException e) {
+            String msg = String.format("Error finding [closed] field on class: %s",
+                    inner.getClass());
+            LOGGER.warn(msg, e);
             /* If we don't have an inner field called closed, it is inaccessible or
              * the field isn't a boolean, return null because we are now dealing with
              * undefined behavior. */
@@ -251,14 +262,43 @@ public class MantaObjectOutputStream extends OutputStream {
         }
     }
 
+    /**
+     * Finds the most inner stream if the embedded stream is stored on the passed
+     * stream as a field named <code>out</code>. This hold true for all classes
+     * that extend {@link java.io.FilterOutputStream}.
+     *
+     * @param stream stream to search for inner stream
+     * @return reference to inner stream class
+     */
+    protected static OutputStream findMostInnerOutputStream(final OutputStream stream) {
+        Field f = FieldUtils.getField(stream.getClass(), "out", true);
+
+        if (f == null) {
+            return stream;
+        } else {
+            try {
+                Object result = f.get(stream);
+
+                if (result instanceof OutputStream) {
+                    return findMostInnerOutputStream((OutputStream) result);
+                } else {
+                    return stream;
+                }
+            } catch (IllegalAccessException e) {
+                // If we can't access the field, then we just return back the original stream
+                return stream;
+            }
+        }
+    }
+
     @Override
     public synchronized void close() throws IOException {
-        Boolean innerIsClosed = isInnerStreamClosed(this.httpContent.writer);
-        if (innerIsClosed != null && !innerIsClosed) {
-            this.httpContent.writer.flush();
-        }
+        this.closed.compareAndSet(false, true);
 
-        this.isClosed = true;
+        Boolean innerIsClosed = isInnerStreamClosed(this.httpContent.getWriter());
+        if (innerIsClosed != null && !innerIsClosed) {
+            this.httpContent.getWriter().flush();
+        }
 
         synchronized (this.httpContent) {
             this.httpContent.notify();
@@ -266,11 +306,11 @@ public class MantaObjectOutputStream extends OutputStream {
 
         try {
             this.objectResponse = this.completed.get();
-            this.objectResponse.setContentLength(bytesWritten);
+            this.objectResponse.setContentLength(bytesWritten.get());
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
-            throw new IOException(e);
+            throw new MantaIOException(e);
         }
     }
 
@@ -280,7 +320,7 @@ public class MantaObjectOutputStream extends OutputStream {
      * @return true if closed, otherwise false
      */
     public boolean isClosed() {
-        return isClosed;
+        return closed.get();
     }
 
     /**

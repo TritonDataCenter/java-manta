@@ -1,5 +1,9 @@
-/**
- * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.exception;
 
@@ -67,7 +71,9 @@ public enum MantaErrorCode {
     LINK_REQUIRED_ERROR("LinkRequired"),
     LOCATION_REQUIRED_ERROR("LocationRequired"),
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
+    METHOD_NOT_ALLOWED("MethodNotAllowedError"),
     MISSING_PERMISSION_ERROR("MissingPermission"),
+    MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"),
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     NOT_ACCEPTABLE_ERROR("NotAcceptable"),
     NOT_ENOUGH_SPACE_ERROR("NotEnoughSpace"),
@@ -114,10 +120,10 @@ public enum MantaErrorCode {
 
 
     /**
-     * Thread-safe reference to a lookup map for codes to enum. This is populated
+     * Thread-safe reference to a LOOKUP map for codes to enum. This is populated
      * upon first invocation of valueOfCode().
      */
-    private static AtomicReference<Map<String, MantaErrorCode>> lookup =
+    private static final AtomicReference<Map<String, MantaErrorCode>> LOOKUP =
             new AtomicReference<>();
 
     /**
@@ -136,7 +142,6 @@ public enum MantaErrorCode {
         return code;
     }
 
-
     /**
      * Looks up a {@link MantaErrorCode} by its code value.
      *
@@ -144,15 +149,15 @@ public enum MantaErrorCode {
      * @return Manta error code enum associated with serverCode parameter
      */
     public static MantaErrorCode valueOfCode(final String serverCode) {
-        if (lookup.get() == null) {
+        if (LOOKUP.get() == null) {
             Map<String, MantaErrorCode> backing = new HashMap<>(values().length);
             for (MantaErrorCode m : values()) {
                 backing.put(m.getCode(), m);
             }
-            lookup.compareAndSet(null, Collections.unmodifiableMap(backing));
+            LOOKUP.compareAndSet(null, Collections.unmodifiableMap(backing));
         }
 
-        MantaErrorCode found = lookup.get().getOrDefault(serverCode, UNKNOWN_ERROR);
+        MantaErrorCode found = LOOKUP.get().getOrDefault(serverCode, UNKNOWN_ERROR);
 
         if (found.equals(UNKNOWN_ERROR)) {
             LOG.warn("Unknown error code received from Manta: {}", serverCode);
@@ -160,7 +165,6 @@ public enum MantaErrorCode {
 
         return found;
     }
-
 
     /**
      * Looks up a {@link MantaErrorCode} by its code value.

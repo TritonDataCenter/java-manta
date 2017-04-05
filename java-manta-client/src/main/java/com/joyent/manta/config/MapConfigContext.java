@@ -1,7 +1,16 @@
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MantaUtils;
+import com.joyent.manta.util.MantaUtils;
 
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 
 import static com.joyent.manta.config.EnvVarConfigContext.*;
@@ -59,9 +68,9 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_PASSWORD_KEY = "manta.password";
 
     /**
-     * Property key for setting HttpTransport implementation.
+     * Property key for setting HTTP buffer size.
      */
-    public static final String MANTA_HTTP_TRANSPORT_KEY = "manta.http_transport";
+    public static final String MANTA_HTTP_BUFFER_SIZE_KEY = "manta.http_buffer_size";
 
     /**
      * Property key for setting TLS protocols.
@@ -84,9 +93,64 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_NO_NATIVE_SIGS_KEY = "manta.disable_native_sigs";
 
     /**
-     * Property key for looking up the time in milliseconds to cache HTTP signature headers.
+     * Property key for looking up the timeout value for TCP sockets.
      */
-    public static final String MANTA_SIGS_CACHE_TTL_KEY = "http.signature.cache.ttl";
+    public static final String MANTA_TCP_SOCKET_TIMEOUT_KEY = "manta.tcp_socket_timeout";
+
+    /**
+     * Property key for enabling the checksum verification of uploaded files.
+     */
+    public static final String MANTA_VERIFY_UPLOADS_KEY = "manta.verify_uploads";
+
+    /**
+     * Property key for setting the size of pre-streaming upload buffers.
+     */
+    public static final String MANTA_UPLOAD_BUFFER_SIZE_KEY = "manta.upload_buffer_size";
+
+    /**
+     * Property key for flag indicating when client-side encryption is enabled.
+     */
+    public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
+
+    /**
+     * Property key for setting an identifier for the client-side encryption key used.
+     */
+    public static final String MANTA_ENCRYPTION_KEY_ID_KEY = "manta.encryption_key_id";
+
+    /**
+     * Property key for setting  the name of the algorithm used to encrypt and decrypt.
+     */
+    public static final String MANTA_ENCRYPTION_ALGORITHM_KEY = "manta.encryption_algorithm";
+
+    /**
+     * Property key for flag indicating when downloading unencrypted
+     * files is allowed in encryption mode.
+     */
+    public static final String MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY = "manta.permit_unencrypted_downloads";
+
+    /**
+     * Property key for enum specifying if we are in strict ciphertext
+     * authentication mode or not.
+     */
+    public static final String MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY = "manta.encryption_auth_mode";
+
+    /**
+     * Property key for path to the private encryption key on the
+     * filesystem (can't be used if private key bytes is not null).
+     */
+    public static final String MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY = "manta.encryption_key_path";
+
+    /**
+     * Property key for private encryption key data (can't be used if
+     * private key path is not null).
+     */
+    public static final String MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY = "manta.encryption_key_bytes";
+
+    /**
+     * Property key for private encryption key data (can't be used if
+     * private key path is not null) and must be passed in base64 encoding.
+     */
+    public static final String MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY = "manta.encryption_key_bytes_base64";
 
     // I know manually adding them all sucks, but it is the simplest operation
     // for a shared library. We could do all sorts of complicated reflection
@@ -98,11 +162,26 @@ public class MapConfigContext implements ConfigContext {
             MANTA_URL_KEY, MANTA_USER_KEY, MANTA_KEY_ID_KEY,
             MANTA_KEY_PATH_KEY, MANTA_TIMEOUT_KEY, MANTA_RETRIES_KEY,
             MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
-            MANTA_PASSWORD_KEY, MANTA_HTTP_TRANSPORT_KEY,
-            MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_KEY,
+            MANTA_PASSWORD_KEY, MANTA_HTTP_BUFFER_SIZE_KEY,
+            MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
-            MANTA_SIGS_CACHE_TTL_KEY
+            MANTA_TCP_SOCKET_TIMEOUT_KEY,
+            MANTA_VERIFY_UPLOADS_KEY,
+            MANTA_UPLOAD_BUFFER_SIZE_KEY,
+            MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
+            MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
+            MANTA_ENCRYPTION_KEY_ID_KEY,
+            MANTA_ENCRYPTION_ALGORITHM_KEY,
+            MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY,
+            MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
+            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY,
+            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY
     };
+
+    static {
+        // Sorts the properties so that we can do a binary search on them if needed
+        Arrays.sort(ALL_PROPERTIES);
+    }
 
     /**
      * Internal map used as the source of the configuration bean values.
@@ -194,9 +273,14 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public String getHttpTransport() {
-        return normalizeEmptyAndNullAndDefaultToStringValue(
-                MANTA_HTTP_TRANSPORT_KEY, MANTA_HTTP_TRANSPORT_ENV_KEY);
+    public Integer getHttpBufferSize() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_HTTP_BUFFER_SIZE_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_HTTP_BUFFER_SIZE_ENV_KEY));
     }
 
     @Override
@@ -234,14 +318,118 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SIGS_CACHE_TTL_KEY));
+    public Integer getTcpSocketTimeout() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_KEY));
 
         if (mapValue != null) {
             return mapValue;
         }
 
-        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SIGS_CACHE_TTL_ENV_KEY));
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_VERIFY_UPLOADS_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_VERIFY_UPLOADS_ENV_KEY));
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_UPLOAD_BUFFER_SIZE_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY));
+    }
+
+    @Override
+    public Boolean isClientEncryptionEnabled() {
+        Boolean enabled = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_KEY));
+
+        if (enabled != null) {
+            return enabled;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY));
+    }
+
+    @Override
+    public String getEncryptionKeyId() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_ENCRYPTION_KEY_ID_KEY, MANTA_ENCRYPTION_KEY_ID_ENV_KEY);
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_ENCRYPTION_ALGORITHM_KEY, MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        Boolean permit = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY));
+
+        if (permit != null) {
+            return permit;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY));
+    }
+
+    @Override
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
+        EncryptionAuthenticationMode authMode = MantaUtils.parseEnumOrNull(
+                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY), EncryptionAuthenticationMode.class);
+
+        if (authMode != null) {
+            return authMode;
+        }
+
+        return MantaUtils.parseEnumOrNull(
+                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY), EncryptionAuthenticationMode.class);
+    }
+
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
+                MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY);
+    }
+
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        String base64 = normalizeEmptyAndNullAndDefaultToStringValue(
+                MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY,
+                MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY);
+
+        Object bytesObj = backingMap.get(MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY);
+        final byte[] bytes;
+
+        if (bytesObj instanceof byte[]) {
+            bytes = (byte[])bytesObj;
+        } else {
+            bytes = null;
+        }
+
+        if (bytes != null && base64 != null) {
+            String msg = "You can't set a base64 private key value AND a byte "
+                         + "array value at the same time";
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (base64 != null) {
+            return Base64.getDecoder().decode(base64);
+        }
+
+        return bytes;
     }
 
     /**

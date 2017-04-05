@@ -1,11 +1,17 @@
-/**
- * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.exception;
 
 import org.apache.commons.lang3.exception.ContextedRuntimeException;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Exception class that provides an aggregated view of all the exceptions
@@ -20,7 +26,7 @@ public class OnCloseAggregateException extends ContextedRuntimeException {
     /**
      * Count of the number of exceptions that have been aggregated.
      */
-    private volatile int count = 0;
+    private AtomicInteger count = new AtomicInteger(0);
 
     /**
      * Instantiates ContextedRuntimeException without message or cause.
@@ -81,7 +87,7 @@ public class OnCloseAggregateException extends ContextedRuntimeException {
      * @param e exception to add
      */
     public void aggregateException(final Exception e) {
-        String label = String.format("%03d_exception", ++count);
+        String label = String.format("%03d_exception", count.incrementAndGet());
         setContextValue(label, ExceptionUtils.getStackTrace(e));
     }
 }

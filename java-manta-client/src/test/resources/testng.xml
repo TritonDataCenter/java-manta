@@ -1,18 +1,25 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Java Manta Client Test Suite" verbose="1">
-
     <test name="Manta Utils Test">
         <classes>
-            <class name="com.joyent.manta.client.MantaUtilsTest" />
+            <class name="com.joyent.manta.util.MantaUtilsTest" />
+            <class name="com.joyent.manta.util.MantaVersionTest" />
         </classes>
+    </test>
+    <test name="Manta HTTP Tests">
+        <packages>
+            <package name="com.joyent.manta.http.*" />
+        </packages>
     </test>
     <test name="Configuration Context Tests">
         <groups>
             <define name="config" />
         </groups>
-        <packages>
-            <package name="com.joyent.manta.client.config.*" />
-        </packages>
+        <classes>
+            <class name="com.joyent.manta.config.SystemSettingsConfigContextTest" />
+            <class name="com.joyent.manta.config.TestConfigContextTest" />
+            <class name="com.joyent.manta.config.ConfigContextTest" />
+        </classes>
     </test>
     <test name="Collection Tests">
         <classes>
@@ -21,8 +28,41 @@
     </test>
     <test name="Exception Tests">
         <classes>
-            <class name="com.joyent.manta.exception.MantaClientHttpResponseExceptionTest" />
             <class name="com.joyent.manta.exception.MantaErrorCodeTest" />
+            <class name="com.joyent.manta.exception.OnCloseAggregateExceptionTest" />
         </classes>
     </test>
+    <test name="Job Tests">
+        <classes>
+            <class name="com.joyent.manta.client.jobs.MantaJobTest" />
+            <class name="com.joyent.manta.client.jobs.MantaJobPhaseTest" />
+        </classes>
+    </test>
+    <test name="Multipart Tests">
+        <classes>
+            <class name="com.joyent.manta.client.multipart.EncryptedMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.MultipartOutputStreamTest" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.TestMultipartManagerTest" />
+        </classes>
+    </test>
+    <test name="Encryption Tests">
+        <packages>
+            <package name="com.joyent.manta.client.crypto.*" />
+        </packages>
+        <classes>
+            <class name="com.joyent.manta.http.EncryptedHttpHelperTest" />
+            <class name="com.joyent.manta.http.MantaHttpHeadersByteRangeTest" />
+            <class name="com.joyent.manta.http.MantaHttpHeadersTest" />
+        </classes>
+    </test>
+
+    <!-- This is commented out because it is an integration test and it doesn't
+         play nicely with unit test only runs in CI -->
+    <!--<test name="Integration Tests Depending on Shaded Resources">-->
+        <!--<classes>-->
+            <!--<class name="com.joyent.manta.client.MantaClientConnectionFailuresIT" />-->
+        <!--</classes>-->
+    <!--</test>-->
 </suite>

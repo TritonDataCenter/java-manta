@@ -1,17 +1,19 @@
-/**
- * Copyright (c) 2016, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.exception.MantaCryptoException;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -19,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -30,6 +33,7 @@ import java.util.UUID;
  *
  * @author Elijah Zupancic
  */
+@Test
 public class MantaClientSigningIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -41,19 +45,10 @@ public class MantaClientSigningIT {
     private ConfigContext config;
 
     @BeforeClass()
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException, MantaCryptoException {
+    public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+        config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
         testPathPrefix = String.format("%s/stor/%s/",
@@ -61,9 +56,8 @@ public class MantaClientSigningIT {
         mantaClient.putDirectory(testPathPrefix, null);
     }
 
-
     @AfterClass
-    public void afterClass() throws IOException, MantaCryptoException {
+    public void afterClass() throws IOException {
         if (mantaClient != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
@@ -72,6 +66,10 @@ public class MantaClientSigningIT {
 
     @Test
     public final void testCanCreateSignedGETUriFromPath() throws IOException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -90,10 +88,11 @@ public class MantaClientSigningIT {
             connection.connect();
 
             if (connection.getResponseCode() != 200) {
-                Assert.fail(MantaUtils.inputStreamToString(connection.getErrorStream()));
+                Assert.fail(IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset()));
             }
 
-            String actual = MantaUtils.inputStreamToString(is);
+            String actual = IOUtils.toString(is, Charset.defaultCharset());
+
             Assert.assertEquals(actual, TEST_DATA);
         } finally {
             connection.disconnect();
@@ -102,6 +101,10 @@ public class MantaClientSigningIT {
 
     @Test
     public final void testCanCreateSignedHEADUriFromPath() throws IOException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -123,7 +126,7 @@ public class MantaClientSigningIT {
             Map<String, List<String>> headers = connection.getHeaderFields();
 
             if (connection.getResponseCode() != 200) {
-                Assert.fail(MantaUtils.inputStreamToString(connection.getErrorStream()));
+                Assert.fail(IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset()));
             }
 
             Assert.assertNotNull(headers);
@@ -133,9 +136,13 @@ public class MantaClientSigningIT {
         }
     }
 
-
     @Test
-    public final void testCanCreateSignedPUTUriFromPath() throws IOException, InterruptedException {
+    public final void testCanCreateSignedPUTUriFromPath()
+            throws IOException, InterruptedException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -170,9 +177,13 @@ public class MantaClientSigningIT {
         Assert.assertEquals(actual, TEST_DATA);
     }
 
-
     @Test
-    public final void testCanCreateSignedOPTIONSUriFromPath() throws IOException, InterruptedException {
+    public final void testCanCreateSignedOPTIONSUriFromPath()
+            throws IOException, InterruptedException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
 
@@ -196,7 +207,7 @@ public class MantaClientSigningIT {
             Map<String, List<String>> headers = connection.getHeaderFields();
 
             if (connection.getResponseCode() != 200) {
-                String errorText = MantaUtils.inputStreamToString(connection.getErrorStream());
+                String errorText = IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset());
 
                 if (config.getMantaUser().contains("/")) {
                     String msg = String.format("This fails due to an outstanding bug: MANTA-2839.\n%s",

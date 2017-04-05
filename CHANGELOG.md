@@ -2,9 +2,47 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [2.7.2] - ?
+## [3.0.0] - ?
 ### Changed
+ - Upgraded HTTP Signatures library to 4.0.1.
+ - Moved configuration validation into a static method on ConfigContext.
+ - Manta specific content-types are now contained in `MantaContentTypes`.
+ - MantaClient.close() no longer throws Exception.
  - Liberalized boolean parsing in configuration - true, t, T, yes, and 1 are equal true.
+ - Job related classes have been moved to the com.joyent.manta.client.jobs package.
+ - In `BaseChainedConfigContext`, `setHttpsCiphers` has been renamed to 
+   `setHttpsCipherSuites` to be in alignment with the getter of a similar name.
+ - Request IDs are now generated using time-based UUIDs. 
+### Added
+ - Added version information to user agent and debug output. 
+ - Added simple CLI to use for debugging.
+ - Added configuration dump system property: manta.configDump
+ - [Add JMX to monitor configuration and thread pools](https://github.com/joyent/java-manta/issues/133)
+ - SettableConfigContext has been added as an interface to indicate that a given
+   config context has settable properties.
+ - Added isClosed() method to MantaClient.
+ - Added HTTP buffer size configuration parameter.
+ - Added TCP socket time out configuration parameter.
+ - Added verify upload checksum configuration parameter.
+ - Added upload buffer size configuration parameter.
+ - Added getInputStream method that accepts byte range parameter.
+ - Added support for client-side encryption.
+ - Added support for server supported multipart.
+ - Added support for client-side encrypted multipart upload.
+ - Added support for client-side encrypted HTTP range download.
+ - Added module supporting serializing encrypted MPU upload objects.
+ - Added support for libnss via PKCS11.
+ - Added support for FastMD5 native MD5 calculation.
+ - Added support for single-second caching of HTTP signatures.
+ - Added support for ECDSA and DSA HTTP signatures.
+### Removed
+ - Remove Google HTTP Client and replaced it with stand-alone Apache Commons HTTPClient.
+ - Removed MantaCryptoException.
+ - Removed signature cache TTL and HTTP transport configuration parameters because
+   they are no longer relevant in the 3.0 implementation.  
+### Fixed
+ - [Convert IllegalArgumentException uses that are catching null to NPEs](https://github.com/joyent/java-manta/issues/126)
+ - [Add capability to calculate a Content-MD5 on putting of objects](https://github.com/joyent/java-manta/issues/95) 
 
 ## [2.7.1] - 2016-11-11
 ### Added

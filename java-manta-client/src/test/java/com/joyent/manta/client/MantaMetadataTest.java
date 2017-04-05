@@ -1,5 +1,9 @@
-/**
- * Copyright (c) 2015, Joyent, Inc. All rights reserved.
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.joyent.manta.client;
 
@@ -19,42 +23,36 @@ public class MantaMetadataTest {
         Assert.assertEquals(instance.get("m-hello"), "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddNullMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put(null, "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddEmptyMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("", "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddMetadataKeyThatDoesntBeginWithM() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("hello", "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddMetadataKeyThatContainsSpace() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("m-hello my dear", "world");
     }
 
-
-    @Test(expectedExceptions = { IllegalArgumentException.class })
+    @Test(expectedExceptions = {IllegalArgumentException.class})
     public void cantAddMetadataKeyThatIsntISO88591() {
         MantaMetadata instance = new MantaMetadata();
         String key = "m-\u3053\u3093\u306B\u3061\u306F";
         instance.put(key, "world");
     }
-
 
     @Test
     public void cantAddMetadataKeyThatIllegalCharacter() {
@@ -74,7 +72,6 @@ public class MantaMetadataTest {
         }
     }
 
-
     @Test
     public void canMarkKeyAsDeleted() {
         MantaMetadata instance = new MantaMetadata();
@@ -83,10 +80,9 @@ public class MantaMetadataTest {
 
         Assert.assertTrue(instance.containsKey("m-hello"),
                 "Deleting a metadata entry means marking its value as null"
-                + "but we still need the key stored.");
+                        + "but we still need the key stored.");
         Assert.assertNull(instance.get("m-hello"));
     }
-
 
     @Test
     public void autoConvertKeysToLowercase() {

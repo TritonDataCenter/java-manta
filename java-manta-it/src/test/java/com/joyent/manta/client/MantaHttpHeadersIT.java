@@ -1,8 +1,16 @@
+/*
+ * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
@@ -10,8 +18,6 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -19,8 +25,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.joyent.manta.client.MantaUtils.asString;
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
+import static com.joyent.manta.util.MantaUtils.asString;
 
 /**
  * Integration tests for verifying the behavior of HTTP header assignment.
@@ -39,28 +45,17 @@ public class MantaHttpHeadersIT {
 
     private String testPathPrefix;
 
-
     @BeforeClass
-    @Parameters({"manta.url", "manta.user", "manta.key_path", "manta.key_id", "manta.timeout", "manta.http_transport"})
-    public void beforeClass(@Optional String mantaUrl,
-                            @Optional String mantaUser,
-                            @Optional String mantaKeyPath,
-                            @Optional String mantaKeyId,
-                            @Optional Integer mantaTimeout,
-                            @Optional String mantaHttpTransport)
-            throws IOException {
+    public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(
-                mantaUrl, mantaUser, mantaKeyPath, mantaKeyId, mantaTimeout,
-                mantaHttpTransport);
+        ConfigContext config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("/%s/stor/%s/",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        mantaClient.putDirectory(testPathPrefix, null);
+        mantaClient.putDirectory(testPathPrefix, true);
     }
-
 
     @AfterClass
     public void cleanup() throws IOException {
@@ -69,7 +64,6 @@ public class MantaHttpHeadersIT {
             mantaClient.closeWithWarning();
         }
     }
-
 
     @Test
     public void cantSetUnknownTags() throws IOException {
@@ -83,7 +77,6 @@ public class MantaHttpHeadersIT {
         MantaAssert.assertResponseFailureStatusCode(409, INVALID_ROLE_TAG_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.put(path, TEST_DATA, headers));
     }
-
 
     @Test
     public void canSetSingleRoleTag() throws IOException {
@@ -118,7 +111,6 @@ public class MantaHttpHeadersIT {
             Assert.fail(msg);
         }
     }
-
 
     @Test
     public void canSetMultipleRoleTags() throws IOException {

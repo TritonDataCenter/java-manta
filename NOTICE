@@ -1,0 +1,5 @@
+The product includes software from the ehcache3 project
+under the Apache License 2.0 (see: com.joyent.manta.util.ConcurrentWeakIdentityHashMap).
+
+The product includes software from the Apache HTTPClient project
+under the Apache License 2.0 (see: com.joyent.manta.util.NotThreadSafe).
