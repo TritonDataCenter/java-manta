@@ -74,7 +74,9 @@ public class ServerSideMultipartUpload extends AbstractMultipartUpload {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("partsDirectory", partsDirectory)
-                .toString();
+            .append("id", getId())
+            .append("path", getPath())
+            .append("partsDirectory", partsDirectory)
+            .toString();
     }
 }

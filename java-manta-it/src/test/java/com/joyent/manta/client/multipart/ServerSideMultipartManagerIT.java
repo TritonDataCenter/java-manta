@@ -119,35 +119,34 @@ public class ServerSideMultipartManagerIT {
         final byte[] content = RandomUtils.nextBytes(5242880);
 
         ServerSideMultipartUpload upload = multipart.initiateUpload(path);
-        try {
-            MantaMultipartStatus newStatus = multipart.getStatus(upload);
-            Assert.assertEquals(newStatus, MantaMultipartStatus.CREATED,
-                    "Created status wasn't set. Actual status: " + newStatus);
-            MantaMultipartUploadPart part = multipart.uploadPart(upload, 1, content);
+        MantaMultipartStatus newStatus = multipart.getStatus(upload);
+        Assert.assertEquals(newStatus, MantaMultipartStatus.CREATED,
+                            "Created status wasn't set. Actual status: " + newStatus);
+        MantaMultipartUploadPart part = multipart.uploadPart(upload, 1, content);
 
-            Executors.newFixedThreadPool(1).execute(() -> {
+        multipart.complete(upload, Stream.of(part));
+        MantaMultipartStatus completeStatus = multipart.getStatus(upload);
+
+        if (completeStatus.equals(MantaMultipartStatus.COMMITTING)) {
+            MantaMultipartStatus lastStatus = completeStatus;
+            for (int i = 2; i <= 15 ; i++) {
                 try {
-                    multipart.complete(upload, Stream.of(part));
-                    MantaMultipartStatus completeStatus = multipart.getStatus(upload);
-//                    Assert.assertEquals(completeStatus, MantaMultipartStatus.UNKNOWN,
-//                            "Unknown status wasn't set. Actual status: " + completeStatus);
-                } catch (Exception e) {
-                    LoggerFactory.getLogger(ServerSideMultipartManagerIT.class)
-                            .error("Error asynchronously calling commit", e);
-                }
-            });
-
-
-            try {
-                Thread.sleep(400);
-                MantaMultipartStatus committingStatus = multipart.getStatus(upload);
-                Assert.assertEquals(committingStatus, MantaMultipartStatus.COMMITTING,
-                        "Committing status wasn't set. Actual status: " + committingStatus);
-            } catch (AssertionError e) {
-                throw new SkipException("Timing based tests are prone to failure. Skip on failure.");
+                    Thread.sleep((long)Math.pow(2, i));
+                    if (mantaClient.existsAndIsAccessible(path)) {
+                        lastStatus = null;
+                        break;
+                    }
+                    lastStatus = multipart.getStatus(upload);
+                } catch (InterruptedException ignored) {}
             }
-        } catch (Exception e) {
-            multipart.abort(upload);
+            if (lastStatus != null) {
+                Assert.fail("MPU " + upload  + "did not complete after multiple status checks.  Last status: " + lastStatus);
+            }
+        } else if (completeStatus.equals(MantaMultipartStatus.COMPLETED)) {
+            // That was fast
+            // NOTE: Server side MPU does not use this state yet
+        } else {
+            Assert.fail("MPU " + upload  + "in invalid status after complete invocation. Actual status: " + completeStatus);
         }
     }
 
