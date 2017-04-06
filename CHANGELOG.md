@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.0.0] - ?
+## [3.0.0] - 2017-04-06
 ### Changed
  - Upgraded HTTP Signatures library to 4.0.1.
  - Moved configuration validation into a static method on ConfigContext.
