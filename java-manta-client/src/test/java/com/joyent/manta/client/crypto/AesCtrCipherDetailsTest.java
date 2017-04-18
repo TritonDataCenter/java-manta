@@ -7,13 +7,18 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.ClosedByteRange;
+import com.joyent.manta.client.NullByteRange;
+import com.joyent.manta.client.OpenByteRange;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
+
 import org.apache.http.entity.ContentType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +27,119 @@ import java.util.Arrays;
 
 @Test
 public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
+
+        static final String TEXT = "A SERGEANT OF THE LAW, wary and wise, " +
+                                   "That often had y-been at the Parvis, <26> " +
+                                   "There was also, full rich of excellence. " +
+                                   "Discreet he was, and of great reverence: " +
+                                   "He seemed such, his wordes were so wise, " +
+                                   "Justice he was full often in assize, " +
+                                   "By patent, and by plein* commission; " +
+                                   "For his science, and for his high renown, " +
+                                   "Of fees and robes had he many one. " +
+                                   "So great a purchaser was nowhere none. " +
+                                   "All was fee simple to him, in effect " +
+                                   "His purchasing might not be in suspect* " +
+                                   "Nowhere so busy a man as he there was " +
+                                   "And yet he seemed busier than he was " +
+                                   "In termes had he case' and doomes* all " +
+                                   "That from the time of King Will. were fall. " +
+                                   "Thereto he could indite, and make a thing " +
+                                   "There coulde no wight *pinch at* his writing. " +
+                                   "And every statute coud* he plain by rote " +
+                                   "He rode but homely in a medley* coat, " +
+                                   "Girt with a seint* of silk, with barres small; " +
+                                   "Of his array tell I no longer tale.";
+
+    /**
+     * Method to test a random read of a ciphertext.
+     *
+     * @param start plaintext start
+     * @param end plaintext end
+     * @param plaintextBytes plaintext bytes
+     * @param ciphertextBytes ciphertext bytes
+     * @param iv cipher initialization vector
+     * @param key secret key
+     * @param details cipher details
+     *
+     * @throws IOException if there is an error reading any data
+     * @throws GeneralSecurityException if there is an error decrypting the ciphertext
+     */
+    private static void testRandomRead(final long start, final long end,
+                                       final byte[] plaintextBytes, final byte[] ciphertextBytes,
+                                       final byte[] iv, final SecretKey key, final SupportedCipherDetails details)
+            throws IOException, GeneralSecurityException {
+
+        final ClosedByteRange byteRange = new ClosedByteRange(start, end + 1);
+        final EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>
+                encryptedByteRange = new EncryptedClosedByteRange<>(byteRange, (RandomAccessCipher) details, details);
+
+        final int plaintextStart = (int) byteRange.getStart();
+        final int plaintextEnd = (int) byteRange.getEnd();
+        final int plaintextLength = plaintextEnd - plaintextStart;
+
+        final int ciphertextStart = (int) encryptedByteRange.getStart();
+        final int ciphertextEnd = (int) encryptedByteRange.getEnd();
+        final int ciphertextLength = ciphertextEnd - ciphertextStart;
+
+        final int ciphertextOffset = (int) encryptedByteRange.getOffset();
+
+        byte[] rangeBytes = Arrays.copyOfRange(plaintextBytes, plaintextStart, plaintextEnd);
+
+        final Cipher cipher = details.getCipher();
+        cipher.init(Cipher.DECRYPT_MODE, key, details.getEncryptionParameterSpec(iv));
+
+        details.updateCipherToPosition(cipher, ciphertextStart);
+
+        byte[] ciphertextRangeBytes = Arrays.copyOfRange(ciphertextBytes, ciphertextStart, Math.min(ciphertextBytes.length, ciphertextEnd));
+
+        byte[] decryptedBytes = cipher.doFinal(ciphertextRangeBytes);
+        byte[] decryptedRangeBytes = Arrays.copyOfRange(decryptedBytes, ciphertextOffset, Math.min(decryptedBytes.length, ciphertextOffset + plaintextLength));
+
+        String decryptedRangeText = new String(decryptedRangeBytes);
+        String rangeText = new String(rangeBytes);
+
+        Assert.assertEquals(decryptedRangeText, rangeText,
+                "Random read output from ciphertext doesn't match expectation " +
+                        "[cipherId=" + details.getCipherId() +
+                        ", ciphertextStart=" + ciphertextStart +
+                        ", ciphertextEnd=" + ciphertextEnd +
+                        ", ciphertextLength=" + ciphertextLength +
+                        ", ciphertextOffset=" + ciphertextOffset +
+                        ", plaintextStart=" + plaintextStart +
+                        ", plaintextEnd=" + plaintextEnd +
+                        ", plaintextLength=" + plaintextLength +
+                        ", plaintextBytes.length=" + plaintextBytes.length +
+                        ", ciphertextBytes.length=" + ciphertextBytes.length +
+                        ", decryptedBytes.length=" + decryptedBytes.length +
+                        "]");
+    }
+
+    private static EncryptingEntity buildEncryptingEntity(final byte[] plaintext, final SecretKey key, final SupportedCipherDetails details) {
+
+        final ExposedByteArrayEntity entity = new ExposedByteArrayEntity(plaintext, ContentType.APPLICATION_OCTET_STREAM);
+        final EncryptingEntity encryptingEntity = new EncryptingEntity(key, details, entity);
+
+        return encryptingEntity;
+    }
+
+    private static byte[] plainToCiphertext(final EncryptingEntity encryptor, final SupportedCipherDetails details) throws IOException {
+
+        final byte[] ciphertext;
+
+        final int macLength = (int) details.getAuthenticationTagOrHmacLengthInBytes();
+
+        try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            encryptor.writeTo(out);
+
+            final byte[] encrypted = out.toByteArray();
+
+            ciphertext = Arrays.copyOf(encrypted, encrypted.length - macLength);
+        }
+
+        return ciphertext;
+    }
     public void size1024bCalculationWorksRoundTripAes128() {
         final long size = 1024;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
@@ -79,116 +197,50 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
     }
 
+    public void canQueryCiphertextByteRangeAes128() throws Exception {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+    }
+
+    public void canQueryCiphertextByteRangeAes192() throws Exception {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_192_BIT;
+        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+    }
+
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void translateByteRangeThrowsWithoutStartInclusive() {
-        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(-1, 0);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void translateByteRangeThrowsWithLargeStartInclusive() {
-        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(Long.MAX_VALUE, 0);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void translateByteRangeThrowsWithoutEndInclusive() {
-        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(1, -1);
-    }
-
-    public void translateByteRangeReturnsCorrectRange() throws Exception {
-        ByteRangeConversion byteRange1 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 10);
-        Assert.assertEquals(byteRange1.getCiphertextStartPositionInclusive(), 0);
-        Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 15);
-        Assert.assertEquals(byteRange1.getPlaintextBytesToSkipInitially(), 5);
-        Assert.assertEquals(byteRange1.getLengthOfPlaintextIncludingSkipBytes(), 11);
-
-        ByteRangeConversion byteRange2 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 22);
-        Assert.assertEquals(byteRange2.getCiphertextStartPositionInclusive(), 0);
-        Assert.assertEquals(byteRange2.getCiphertextEndPositionInclusive(), 31);
-        Assert.assertEquals(byteRange2.getPlaintextBytesToSkipInitially(), 5);
-        Assert.assertEquals(byteRange2.getLengthOfPlaintextIncludingSkipBytes(), 23);
-
-        ByteRangeConversion byteRange3 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(32, 35);
-        Assert.assertEquals(byteRange3.getCiphertextStartPositionInclusive(), 32);
-        Assert.assertEquals(byteRange3.getCiphertextEndPositionInclusive(), 47);
-        Assert.assertEquals(byteRange3.getPlaintextBytesToSkipInitially(), 0);
-        Assert.assertEquals(byteRange3.getLengthOfPlaintextIncludingSkipBytes(), 4);
-
-    }
-
-    protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
-                                                                  final SupportedCipherDetails cipherDetails)
+    protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey key,
+                                                                  final SupportedCipherDetails details)
             throws IOException, GeneralSecurityException {
-        String text = "A SERGEANT OF THE LAW, wary and wise, " +
-                "That often had y-been at the Parvis, <26> " +
-                "There was also, full rich of excellence. " +
-                "Discreet he was, and of great reverence: " +
-                "He seemed such, his wordes were so wise, " +
-                "Justice he was full often in assize, " +
-                "By patent, and by plein* commission; " +
-                "For his science, and for his high renown, " +
-                "Of fees and robes had he many one. " +
-                "So great a purchaser was nowhere none. " +
-                "All was fee simple to him, in effect " +
-                "His purchasing might not be in suspect* " +
-                "Nowhere so busy a man as he there was " +
-                "And yet he seemed busier than he was " +
-                "In termes had he case' and doomes* all " +
-                "That from the time of King Will. were fall. " +
-                "Thereto he could indite, and make a thing " +
-                "There coulde no wight *pinch at* his writing. " +
-                "And every statute coud* he plain by rote " +
-                "He rode but homely in a medley* coat, " +
-                "Girt with a seint* of silk, with barres small; " +
-                "Of his array tell I no longer tale.";
 
-        byte[] plaintext = text.getBytes(StandardCharsets.US_ASCII);
+        final byte[] plaintextBytes = TEXT.getBytes(StandardCharsets.US_ASCII);
 
-        ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
-        ExposedByteArrayEntity entity = new ExposedByteArrayEntity(plaintext, contentType);
-        EncryptingEntity encryptingEntity = new EncryptingEntity(secretKey, cipherDetails,
-                entity);
+        if (!(details instanceof RandomAccessCipher)) {
 
-        final byte[] ciphertext;
-        final byte[] iv = encryptingEntity.getCipher().getIV();
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            encryptingEntity.writeTo(out);
-            ciphertext = Arrays.copyOf(out.toByteArray(), out.toByteArray().length - cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
+            final String msg = "cipher doesn't support random access";
+            throw new IllegalArgumentException(msg);
         }
 
-        for (long startPlaintextRange = 0; startPlaintextRange < plaintext.length - 1; startPlaintextRange++) {
-            for (long endPlaintextRange = startPlaintextRange; endPlaintextRange < plaintext.length; endPlaintextRange++) {
+        final EncryptingEntity encryptor = buildEncryptingEntity(plaintextBytes, key, details);
 
-                byte[] adjustedPlaintext = Arrays.copyOfRange(plaintext,
-                        (int) startPlaintextRange, (int) endPlaintextRange + 1);
+        final byte[] iv = encryptor.getCipher()
+                                   .getIV();
+        final byte[] ciphertextBytes = plainToCiphertext(encryptor, details);
 
-                ByteRangeConversion ranges = cipherDetails.translateByteRange(startPlaintextRange, endPlaintextRange);
-                long startCipherTextRange = ranges.getCiphertextStartPositionInclusive();
-                long endCipherTextRange = ranges.getCiphertextEndPositionInclusive();
-                long adjustedPlaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
+        for (long start = 0; start < plaintextBytes.length - 1; start++) {
 
-                Cipher decryptor = cipherDetails.getCipher();
+            for (long end = start; end < plaintextBytes.length - 1; end++) {
 
-                decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
-                long adjustedPlaintextRange = cipherDetails.updateCipherToPosition(decryptor, startPlaintextRange);
-
-                byte[] adjustedCipherText = Arrays.copyOfRange(ciphertext, (int) startCipherTextRange, (int) Math.min(ciphertext.length, endCipherTextRange + 1));
-                byte[] out = decryptor.doFinal(adjustedCipherText);
-                byte[] decrypted = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
-                        (int) Math.min(out.length, adjustedPlaintextLength));
-
-                String decryptedText = new String(decrypted);
-                String adjustedText = new String(adjustedPlaintext);
-
-                Assert.assertEquals(adjustedText, decryptedText,
-                        "Random read output from ciphertext doesn't match expectation " +
-                                "[cipher=" + cipherDetails.getCipherId() + "]");
+                testRandomRead(start, end, plaintextBytes, ciphertextBytes, iv, key, details);
             }
+
         }
+
     }
 }

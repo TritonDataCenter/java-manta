@@ -73,21 +73,4 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes128() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
-        cipherDetails.translateByteRange(0, 128);
-    }
-
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes192() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_192_BIT;
-        cipherDetails.translateByteRange(0, 128);
-    }
-
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes256() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_256_BIT;
-        cipherDetails.translateByteRange(0, 128);
-    }
 }

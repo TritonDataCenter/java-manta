@@ -9,7 +9,11 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.Range;
+import com.joyent.manta.client.RangeConstructor;
+import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
+
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.StringUtils;
@@ -1095,6 +1099,118 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         }
 
         return new Long[] {startPos, endPos};
+    }
+
+    /**
+     * Method to get range from {@code "Range"} header.
+     *
+     * @param constructor methods to construct {@code Range} values
+     *
+     * @param <T> type of range constructed
+     *
+     * @return the range described by the range header
+     *
+     * @throws MantaException if range is malformed
+     */
+    public <T extends Range> T getByteRange(final RangeConstructor<T> constructor) throws MantaException {
+
+        assert (constructor != null);
+
+        if (constructor == null) {
+
+            final String msg = "constructor must not be null";
+            throw new IllegalArgumentException(msg);
+        }
+
+        final String units = MantaHttpByteRange.HTTP_RANGE_BYTES_UNIT;
+        final String ranges = getRange();
+
+        // better safe
+        if (ranges == null) {
+
+            return constructor.constructNull();
+        }
+
+        String buf = ranges;
+
+        if (!buf.startsWith(units)) {
+
+            final String msg = "unexpected range units: expect '"
+                + units + "' (ranges="
+                + ranges + ")";
+            throw new MantaException(msg);
+        }
+
+        buf = buf.substring(units.length()).trim();
+
+        if (!buf.startsWith("=")) {
+
+            final String msg = "incorrect separator, should be '=' (ranges=" + ranges + ")";
+            throw new MantaException(msg);
+        }
+
+        buf = buf.substring(1).trim();
+
+        if (buf.split(",").length > 1) {
+
+            final String msg = "cannot parse multiple byte ranges (ranges=" + ranges + ")";
+            throw new MantaException(msg);
+        }
+
+        return MantaHttpByteRange.rangeFromString(buf, constructor);
+    }
+
+    /**
+     * Method to get range from {@code "Content-Range"} header.
+     *
+     * @param constructor methods to construct {@code Range} values
+     *
+     * @param <T> type of range constructed
+     *
+     * @return the range described by the content range header
+     *
+     * @throws MantaException if range is malformed
+     */
+    public <T extends Range> T getContentRange(final RangeConstructor<T> constructor) throws MantaException {
+
+        assert (constructor != null);
+
+        if (constructor == null) {
+
+            final String msg = "constructor must not be null";
+            throw new IllegalArgumentException(msg);
+        }
+
+        final String units = MantaHttpByteRange.HTTP_RANGE_BYTES_UNIT;
+        final String range = getContentRange();
+
+        // better safe
+        if (range == null) {
+
+            return constructor.constructNull();
+        }
+
+        String buf = range;
+
+        if (!buf.startsWith(units)) {
+
+            final String msg = "unexpected range units: expect '"
+                + units + "' (range="
+                + range + ")";
+            throw new MantaException(msg);
+        }
+
+        buf = buf.substring(units.length()).trim();
+
+        if (!buf.startsWith(" ")) {
+
+            final String msg = "incorrect separator, should be ' ' (range=" + range + ")";
+            throw new MantaException(msg);
+        }
+
+        buf = buf.substring(1).trim();
+
+        return MantaHttpByteRange.rangeFromString(buf, constructor);
     }
 
     /**

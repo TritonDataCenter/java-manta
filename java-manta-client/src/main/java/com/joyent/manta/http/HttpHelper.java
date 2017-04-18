@@ -10,8 +10,6 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.crypto.SupportedCipherDetails;
-import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.http.Header;
@@ -356,40 +354,5 @@ public interface HttpHelper extends AutoCloseable {
                 exception.setContextValue("responseStatusReason", statusLine.getReasonPhrase());
             }
         }
-    }
-
-    /**
-     * Parses a response object for the unencrypted plaintext size in bytes.
-     *
-     * @param response response to parse
-     * @param ciphertextSize size in bytes of the ciphertext
-     * @param cipherDetails cipher used to decrypt
-     * @return plaintext size in bytes
-     * @throws MantaClientEncryptionException thrown when unable to get the plaintext size
-     */
-    static long attemptToFindPlaintextSize(final MantaObjectResponse response,
-                                           final long ciphertextSize,
-                                           final SupportedCipherDetails cipherDetails) {
-        // If the calculation is accurate, then we attempt to calculate plaintext size
-        if (!cipherDetails.plaintextSizeCalculationIsAnEstimate()) {
-            return cipherDetails.plaintextSize(ciphertextSize);
-        }
-
-        // We try to get the metadata about the actual plaintext size
-        String plaintextLengthHeaderVal = response.getHeaderAsString(
-                MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
-
-        // If it is there, we replace the plaintext length specified with the file size
-        if (plaintextLengthHeaderVal != null) {
-            return Long.parseLong(plaintextLengthHeaderVal);
-        }
-
-        // Otherwise we error
-        String msg = "Plaintext length specified is greater than "
-                + "the size of the file and there is no reliable fallback "
-                + "information for getting the real plaintext value";
-        MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-        e.setContextValue("response", response);
-        throw e;
     }
 }

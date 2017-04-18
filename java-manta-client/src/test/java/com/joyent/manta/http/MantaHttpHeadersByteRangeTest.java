@@ -10,9 +10,38 @@ package com.joyent.manta.http;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import com.joyent.manta.client.ByteRange;
+import com.joyent.manta.client.ClosedByteRange;
+import com.joyent.manta.client.NullByteRange;
+import com.joyent.manta.client.OpenByteRange;
+import com.joyent.manta.client.RangeConstructor;
+import com.joyent.manta.exception.MantaException;
+
 
 @Test
 public class MantaHttpHeadersByteRangeTest {
+
+    private final RangeConstructor<ByteRange> constructor = new RangeConstructor<ByteRange>() {
+
+        @Override
+        public ByteRange construct() {
+
+            return new NullByteRange();
+        }
+
+        @Override
+        public ByteRange construct(final long start) {
+
+            return new OpenByteRange(start);
+        }
+
+       @Override
+       public ByteRange construct(final long start, final long end) {
+
+            return new ClosedByteRange(start, end);
+       }
+
+    };
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void dualNullCheck() {
@@ -117,4 +146,23 @@ public class MantaHttpHeadersByteRangeTest {
 
         Assert.assertEquals(headers3.getByteRange(), new Long[]{ 13L, null });
     }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void willThrowIllegalArgumentExceptionIfConstructorNull() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes=1-2");
+
+        ByteRange range = headers.getByteRange(null);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = MantaException.class)
+    public void willThrowMantaExceptionIfMultipleRange() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes=1-2,3-4");
+
+        ByteRange range = headers.getByteRange(constructor);
+    }
+
 }
