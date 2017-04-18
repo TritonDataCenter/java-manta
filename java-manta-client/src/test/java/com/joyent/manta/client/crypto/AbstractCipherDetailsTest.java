@@ -27,28 +27,28 @@ import java.util.Arrays;
 
 public abstract class AbstractCipherDetailsTest {
 
-        static final String TEXT = "A SERGEANT OF THE LAW, wary and wise, " +
-                                   "That often had y-been at the Parvis, <26> " +
-                                   "There was also, full rich of excellence. " +
-                                   "Discreet he was, and of great reverence: " +
-                                   "He seemed such, his wordes were so wise, " +
-                                   "Justice he was full often in assize, " +
-                                   "By patent, and by plein* commission; " +
-                                   "For his science, and for his high renown, " +
-                                   "Of fees and robes had he many one. " +
-                                   "So great a purchaser was nowhere none. " +
-                                   "All was fee simple to him, in effect " +
-                                   "His purchasing might not be in suspect* " +
-                                   "Nowhere so busy a man as he there was " +
-                                   "And yet he seemed busier than he was " +
-                                   "In termes had he case' and doomes* all " +
-                                   "That from the time of King Will. were fall. " +
-                                   "Thereto he could indite, and make a thing " +
-                                   "There coulde no wight *pinch at* his writing. " +
-                                   "And every statute coud* he plain by rote " +
-                                   "He rode but homely in a medley* coat, " +
-                                   "Girt with a seint* of silk, with barres small; " +
-                                   "Of his array tell I no longer tale.";
+        private static final String TEXT = "A SERGEANT OF THE LAW, wary and wise, " +
+                                           "That often had y-been at the Parvis, <26> " +
+                                           "There was also, full rich of excellence. " +
+                                           "Discreet he was, and of great reverence: " +
+                                           "He seemed such, his wordes were so wise, " +
+                                           "Justice he was full often in assize, " +
+                                           "By patent, and by plein* commission; " +
+                                           "For his science, and for his high renown, " +
+                                           "Of fees and robes had he many one. " +
+                                           "So great a purchaser was nowhere none. " +
+                                           "All was fee simple to him, in effect " +
+                                           "His purchasing might not be in suspect* " +
+                                           "Nowhere so busy a man as he there was " +
+                                           "And yet he seemed busier than he was " +
+                                           "In termes had he case' and doomes* all " +
+                                           "That from the time of King Will. were fall. " +
+                                           "Thereto he could indite, and make a thing " +
+                                           "There coulde no wight *pinch at* his writing. " +
+                                           "And every statute coud* he plain by rote " +
+                                           "He rode but homely in a medley* coat, " +
+                                           "Girt with a seint* of silk, with barres small; " +
+                                           "Of his array tell I no longer tale.";
 
     /**
      * Method to test plaintext to ciphertext byte position translation (start).

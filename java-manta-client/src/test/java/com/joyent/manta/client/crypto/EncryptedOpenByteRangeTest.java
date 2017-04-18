@@ -1,0 +1,150 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package com.joyent.manta.client.crypto;
+
+import org.mockito.AdditionalAnswers;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+import com.joyent.manta.client.ClosedByteRange;
+import com.joyent.manta.client.NullByteRange;
+import com.joyent.manta.client.OpenByteRange;
+
+/**
+ * Tests for {@code EncryptedOpenByteRange}.
+ *
+ * @author <a href="https://github.com/uxcn">Jason Schulz</a>
+ */
+@Test
+public class EncryptedOpenByteRangeTest {
+
+    final int BLOCK_SIZE = 16;
+    final int MAC_SIZE = 16;
+
+    final long MAX_PLAINTEXT_SIZE = Long.MAX_VALUE / 2;
+
+    @Mock
+    private CipherMap map;
+
+    @Mock
+    private SupportedCipherDetails details;
+
+    @BeforeClass
+    private void init() {
+
+        MockitoAnnotations.initMocks(this);
+
+        Mockito.when(map.plainToCipherStart(Mockito.anyLong())).then(AdditionalAnswers.returnsFirstArg());
+        Mockito.when(map.plainToCipherEnd(Mockito.anyLong())).then(AdditionalAnswers.returnsFirstArg());
+        Mockito.when(map.plainToCipherOffset(Mockito.anyLong())).thenReturn(Long.valueOf(0));
+
+        Mockito.when(details.getBlockSizeInBytes()).thenReturn(BLOCK_SIZE);
+        Mockito.when(details.getAuthenticationTagOrHmacLengthInBytes()).thenReturn(MAC_SIZE);
+        Mockito.when(details.getMaximumPlaintextSizeInBytes()).thenReturn(MAX_PLAINTEXT_SIZE);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    private void willThrowIllegalArgumentExceptionWithNullRange() {
+
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedRange = new EncryptedOpenByteRange<>(null, map, details);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    private void willThrowIllegalArgumentExceptionWithNullCipherMap() {
+
+        final OpenByteRange range = new OpenByteRange(1);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedRange = new EncryptedOpenByteRange<>(range, null, details);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    private void willThrowIllegalArgumentExceptionWithNullCipherDetails() {
+
+        final OpenByteRange range = new OpenByteRange(1);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedRange = new EncryptedOpenByteRange<>(range, map, null);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    private void willThrowIllegalArgumentExceptionWithLargeStart() {
+
+        final OpenByteRange range = new OpenByteRange(details.getMaximumPlaintextSizeInBytes());
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedOpenByteRange = new EncryptedOpenByteRange<>(range, map, details);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    private void willThrowIllegalArgumentExceptionWithSmallStart() {
+
+        final OpenByteRange range = new OpenByteRange(-details.getMaximumPlaintextSizeInBytes() - 1);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedOpenByteRange = new EncryptedOpenByteRange<>(range, map, details);
+
+    }
+
+    @Test void canGetLengthFromPositive() {
+
+        final OpenByteRange range = new OpenByteRange(1);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedRange = new EncryptedOpenByteRange<>(range, map, details);
+
+        Assert.assertFalse(encryptedRange.getLength().isPresent());
+    }
+
+    @Test void canGetLengthFromNegative() {
+
+        final long mts = details.getMaximumPlaintextSizeInBytes();
+        final int mcb = details.getAuthenticationTagOrHmacLengthInBytes();
+
+        final OpenByteRange range = new OpenByteRange(-mts);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedRange = new EncryptedOpenByteRange<>(range, map, details);
+
+        Assert.assertTrue(encryptedRange.getLength().isPresent());
+        Assert.assertEquals(encryptedRange.getLength().get(), (Long) (mts + mcb));
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = UnsupportedOperationException.class)
+    private void canAdjust() {
+
+        final OpenByteRange range = new OpenByteRange(1);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedByteRange = new EncryptedOpenByteRange<>(range, map, details);
+        final EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange> adjByteRange = encryptedByteRange.doAdjust();
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = UnsupportedOperationException.class)
+    private void canAdjustOpen() {
+
+        final OpenByteRange range = new OpenByteRange(1);
+        final OpenByteRange openRange = new OpenByteRange(2);
+
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedByteRange = new EncryptedOpenByteRange<>(range, map, details);
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedOpenByteRange = new EncryptedOpenByteRange<>(openRange, map, details);
+
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> adjByteRange = encryptedByteRange.doAdjust(openRange.getStart());
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = UnsupportedOperationException.class)
+    private void canAdjustClosed() {
+
+        final OpenByteRange range = new OpenByteRange(1);
+        final ClosedByteRange closedRange = new ClosedByteRange(0, details.getMaximumPlaintextSizeInBytes() - 1);
+
+        final EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedByteRange = new EncryptedOpenByteRange<>(range, map, details);
+        final EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange> encryptedClosedByteRange = new EncryptedClosedByteRange<>(closedRange, map, details);
+
+        final EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange> adjByteRange = encryptedByteRange.doAdjust(encryptedClosedByteRange.getStart(), encryptedClosedByteRange.getEnd());
+    }
+
+}

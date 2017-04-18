@@ -14,6 +14,7 @@ import com.joyent.manta.client.ByteRange;
 import com.joyent.manta.client.ClosedByteRange;
 import com.joyent.manta.client.NullByteRange;
 import com.joyent.manta.client.OpenByteRange;
+import com.joyent.manta.client.Range;
 import com.joyent.manta.client.RangeConstructor;
 import com.joyent.manta.exception.MantaException;
 
@@ -21,24 +22,54 @@ import com.joyent.manta.exception.MantaException;
 @Test
 public class MantaHttpHeadersByteRangeTest {
 
-    private final RangeConstructor<ByteRange> constructor = new RangeConstructor<ByteRange>() {
+    private final RangeConstructor<ByteRange<? extends Range>> constructor = new RangeConstructor<ByteRange<? extends Range>>() {
 
         @Override
-        public ByteRange construct() {
+        public ByteRange<NullByteRange> constructNull() {
 
-            return new NullByteRange();
+            ByteRange<NullByteRange> range = new NullByteRange();
+
+            return range;
         }
 
         @Override
-        public ByteRange construct(final long start) {
+        public ByteRange<NullByteRange> constructNull(final long length) {
 
-            return new OpenByteRange(start);
+            NullByteRange range = new NullByteRange();
+
+            return range.doFix(length);
+        }
+
+        @Override
+        public ByteRange<OpenByteRange> constructOpen(final long start) {
+
+            OpenByteRange range = new OpenByteRange(start);
+
+            return range;
+        }
+
+        @Override
+        public ByteRange<OpenByteRange> constructOpen(final long start, final long length) {
+
+            OpenByteRange range = new OpenByteRange(start);
+
+            return range.doFix(length);
         }
 
        @Override
-       public ByteRange construct(final long start, final long end) {
+       public ByteRange<ClosedByteRange> constructClosed(final long start, final long end) {
 
-            return new ClosedByteRange(start, end);
+            ClosedByteRange range = new ClosedByteRange(start, end);
+
+            return range;
+       }
+
+       @Override
+       public ByteRange<ClosedByteRange> constructClosed(final long start, final long end, final long length) {
+
+            ClosedByteRange range = new ClosedByteRange(start, end);
+
+            return range.doFix(length);
        }
 
     };
@@ -149,20 +180,65 @@ public class MantaHttpHeadersByteRangeTest {
 
     @SuppressWarnings("unused")
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void willThrowIllegalArgumentExceptionIfConstructorNull() {
+    public void byteRangeWillThrowIllegalArgumentExceptionIfConstructorNull() {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setRange("bytes=1-2");
 
-        ByteRange range = headers.getByteRange(null);
+        ByteRange<? extends Range> range = headers.getByteRange(null);
     }
 
     @SuppressWarnings("unused")
     @Test(expectedExceptions = MantaException.class)
-    public void willThrowMantaExceptionIfMultipleRange() {
+    public void byteRangeWillThrowIllegalArgumentExceptionIfBadUnits() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("quads=1-2");
+
+        ByteRange<? extends Range> range = headers.getByteRange(constructor);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = MantaException.class)
+    public void byteRangeWillThrowMantaExceptionIfBadSeparator() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setRange("bytes 1-2");
+
+        ByteRange<? extends Range> range = headers.getByteRange(constructor);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = MantaException.class)
+    public void byteRangeillThrowMantaExceptionIfMultipleRange() {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setRange("bytes=1-2,3-4");
 
-        ByteRange range = headers.getByteRange(constructor);
+        ByteRange<? extends Range> range = headers.getByteRange(constructor);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void contentRangeWillThrowIllegalArgumentExceptionIfConstructorNull() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentRange("bytes=1-2");
+
+        ByteRange<? extends Range> range = headers.getContentRange(null);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = MantaException.class)
+    public void contentRangeWillThrowMantaExceptionIfBadUnits() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentRange("quads=1-2");
+
+        ByteRange<? extends Range> range = headers.getContentRange(constructor);
+    }
+
+    @SuppressWarnings("unused")
+    @Test(expectedExceptions = MantaException.class)
+    public void contentRangeWillThrowIllegalArgumentExceptionIfBadSeparator() {
+        MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setContentRange("bytes=1-2");
+
+        ByteRange<? extends Range> range = headers.getContentRange(constructor);
     }
 
 }
