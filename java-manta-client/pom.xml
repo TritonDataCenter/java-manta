@@ -267,6 +267,7 @@
                     <suiteXmlFiles>
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
+                    <argLine>-da</argLine>
                 </configuration>
             </plugin>
             <!-- Library that creates a properties file containing version info -->
