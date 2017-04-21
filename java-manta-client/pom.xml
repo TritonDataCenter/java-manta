@@ -163,6 +163,13 @@
             </exclusions>
         </dependency>
 
+        <!-- url encoding utility -->
+        <dependency>
+            <groupId>io.mikael</groupId>
+            <artifactId>urlbuilder</artifactId>
+            <version>${dependency.urlbuilder.version}</version>
+        </dependency>
+
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
@@ -226,6 +233,10 @@
                         <relocation>
                             <pattern>com.fasterxml</pattern>
                             <shadedPattern>com.joyent.manta.com.fasterxml</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>io.mikael.urlbuilder</pattern>
+                            <shadedPattern>com.joyent.manta.io.mikael.urlbuilder</shadedPattern>
                         </relocation>
                     </relocations>
                     <filters>

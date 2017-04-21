@@ -62,6 +62,41 @@ public class MantaUtilsTest {
         Assert.assertFalse(actual, "Matched last character in StringBuilder when we shouldn't have because it was empty");
     }
 
+    public void testFormatPath() throws Exception {
+        Assert.assertEquals(MantaUtils.formatPath("/foo"), "/foo");
+        Assert.assertEquals(MantaUtils.formatPath("/foo/bar"), "/foo/bar");
+        Assert.assertEquals(MantaUtils.formatPath("/foo/bar.txt"), "/foo/bar.txt");
+        // Generall speaking encoding characters that do not strctly
+        // need to be is harmless
+        Assert.assertEquals(MantaUtils.formatPath("/foo/!@#$%^&*().txt"),
+                            "/foo/!@%23$%25%5E&*().txt");
+        Assert.assertEquals(MantaUtils.formatPath("/foo\\/bar"), "/foo%5C/bar");
+        Assert.assertEquals(MantaUtils.formatPath("/foo+bar"), "/foo+bar");
+        Assert.assertEquals(MantaUtils.formatPath("/foo bar"), "/foo%20bar");
+    }
+
+    public void testDecodePath() throws Exception {
+        Assert.assertEquals(MantaUtils.decodePath("/foo"), "/foo");
+        Assert.assertEquals(MantaUtils.decodePath("/foo/bar"), "/foo/bar");
+        Assert.assertEquals(MantaUtils.decodePath("/foo/bar.txt"), "/foo/bar.txt");
+        Assert.assertEquals(MantaUtils.decodePath("/foo/!@%23$%25%5E&*().txt"),
+                            "/foo/!@#$%^&*().txt");
+        Assert.assertEquals(MantaUtils.decodePath("/foo/%21%40%23%24%25%5E%26%2A%28%29.txt"),
+                            "/foo/!@#$%^&*().txt");
+        Assert.assertEquals(MantaUtils.decodePath("/foo%5C/bar"), "/foo\\/bar");
+        Assert.assertEquals(MantaUtils.decodePath("/foo+%2Bbar"), "/foo++bar");
+        Assert.assertEquals(MantaUtils.decodePath("/foo%20bar"), "/foo bar");
+    }
+
+    public void testEncodeDecodeCycle() {
+        Assert.assertEquals(MantaUtils.decodePath(MantaUtils.formatPath("/foo")),
+                                                  "/foo");
+        Assert.assertEquals(MantaUtils.decodePath(MantaUtils.formatPath("/foo/!@#$%^&*().txt")),
+                                                  "/foo/!@#$%^&*().txt");
+        Assert.assertEquals(MantaUtils.decodePath(MantaUtils.formatPath("/foo bar")),
+                                                  "/foo bar");
+    }
+
     public final void canParseAccountWithNoSubuser() {
         final String account = "username";
         final String[] parts = MantaUtils.parseAccount(account);

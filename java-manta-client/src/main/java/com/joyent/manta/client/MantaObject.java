@@ -30,7 +30,8 @@ public interface MantaObject extends Serializable {
     String MANTA_OBJECT_TYPE_DIRECTORY = "directory";
 
     /**
-     * Returns the path value.
+     * Returns the (decoded) path value.  In other words, the path as
+     * given by the user.
      *
      * @return the path
      */

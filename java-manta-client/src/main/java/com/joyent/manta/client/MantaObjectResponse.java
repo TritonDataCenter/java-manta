@@ -8,6 +8,7 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
@@ -113,7 +114,8 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * Creates a MantaObject.
      *
-     * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
+     * @param path The (encoded) fully qualified path of the object in
+     * Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
     public MantaObjectResponse(final String path) {
         Validate.notNull(path, "Path must not be null");
@@ -125,7 +127,8 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * Creates a MantaObject.
      *
-     * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
+     * @param path The (encoded) fully qualified path of the object in
+     * Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      * @param headers Optional {@link MantaHttpHeaders}. Use this to set any additional headers on the Manta object.
      *                For the full list of Manta headers see the
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
@@ -137,7 +140,8 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * Creates a MantaObject.
      *
-     * @param path The fully qualified path of the object in Manta. i.e. "/user/stor/path/to/some/file/or/dir".
+     * @param path The (encoded) fully qualified path of the object in
+     * Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      * @param headers Optional {@link MantaHttpHeaders}. Use this to set any additional headers on the Manta object.
      *                For the full list of Manta headers see the
      *                <a href="http://apidocs.joyent.com/manta/manta/">Manta API</a>.
@@ -179,7 +183,7 @@ public class MantaObjectResponse implements MantaObject {
 
     @Override
     public final String getPath() {
-        return this.path;
+        return MantaUtils.decodePath(this.path);
     }
 
     /**

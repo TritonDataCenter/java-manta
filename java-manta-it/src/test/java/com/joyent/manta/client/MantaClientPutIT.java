@@ -90,6 +90,22 @@ public class MantaClientPutIT {
     }
 
     @Test
+    public final void testPutWithErrorProneCharacters() throws IOException {
+        final String name = UUID.randomUUID().toString() + "- -`~!@#$%^&*().txt";
+        final String path = testPathPrefix + name;
+
+        MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_8);
+        try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
+            String actual = IOUtils.toString(object, StandardCharsets.UTF_8);
+
+            Assert.assertEquals(actual, TEST_DATA,
+                    "Uploaded string didn't match expectation");
+            Assert.assertEquals(response.getPath(), path, "path not returned as written");
+            Assert.assertEquals(object.getPath(), path, "path not returned as written");
+        }
+    }
+
+    @Test
     public final void testPutWithStringUTF16() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -172,8 +188,44 @@ public class MantaClientPutIT {
     }
 
     @Test
+    public final void testPutWithStreamAndErrorProneName() throws IOException {
+        final String name = UUID.randomUUID().toString() + "- -!@#$%^&*().txt";
+        final String path = testPathPrefix + name;
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
+
+        final int length = mantaClient.getContext().getUploadBufferSize() + 1024;
+
+        try (InputStream testDataInputStream = new RandomInputStream(length)) {
+            Assert.assertFalse(testDataInputStream.markSupported());
+            mantaClient.put(path, testDataInputStream);
+        }
+        try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
+            Assert.assertEquals(object.getPath(), path, "path not returned as written");
+            byte[] actualBytes = IOUtils.readFully(object, length);
+        }
+    }
+
+    @Test
     public final void testPutWithByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
+
+        MantaObject response = mantaClient.put(path, content);
+        String contentType = response.getContentType();
+        Assert.assertEquals(contentType, "application/octet-stream",
+                "Content type wasn't set to expected default");
+
+        final String actual = mantaClient.getAsString(path, StandardCharsets.UTF_8);
+
+        Assert.assertEquals(actual, TEST_DATA,
+                "Uploaded byte array was malformed");
+    }
+
+    @Test
+    public final void testPutWithByteArrayAndErrorProneCharacters() throws IOException {
+        final String name = UUID.randomUUID().toString() + "- -!@#$%^&*().bin";
         final String path = testPathPrefix + name;
         final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
 
@@ -244,6 +296,25 @@ public class MantaClientPutIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, content,
                 "Uploaded file didn't match expectation");
+    }
+
+    @Test
+    public final void testPutWithPlainTextFileWithErrorProneName() throws IOException {
+        final String name = UUID.randomUUID().toString() + "- -~!@#$%^&*().txt";
+        final String path = testPathPrefix + name;
+        File temp = File.createTempFile("upload", ".txt");
+        FileUtils.forceDeleteOnExit(temp);
+
+        Files.write(temp.toPath(), TEST_DATA.getBytes(StandardCharsets.UTF_8));
+        MantaObject response = mantaClient.put(path, temp);
+        String contentType = response.getContentType();
+        Assert.assertEquals(contentType, "text/plain",
+                "Content type wasn't detected correctly");
+
+        String actual = mantaClient.getAsString(path);
+        Assert.assertEquals(actual, TEST_DATA,
+                "Uploaded file didn't match expectation");
+        Assert.assertEquals(response.getPath(), path, "path returned as written");
     }
 
     @Test
