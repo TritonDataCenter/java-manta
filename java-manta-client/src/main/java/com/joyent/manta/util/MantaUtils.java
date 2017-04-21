@@ -7,6 +7,8 @@
  */
 package com.joyent.manta.util;
 
+import io.mikael.urlbuilder.util.Encoder;
+import io.mikael.urlbuilder.util.Decoder;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,10 +19,9 @@ import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
-import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -45,6 +46,18 @@ public final class MantaUtils {
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaUtils.class);
+
+
+    /**
+     * Shared url encoder instance.
+     */
+    private static final Encoder UTF8_URL_ENCODER = new Encoder(StandardCharsets.UTF_8);
+
+    /**
+     * Shared url decoder instance.
+     */
+
+    private static final Decoder UTF8_URL_DECODER = new Decoder(StandardCharsets.UTF_8);
 
     /**
      * Default no-args constructor.
@@ -203,23 +216,25 @@ public final class MantaUtils {
     }
 
     /**
-     * Format the path according to RFC3986.
+     * Format the manta path for inclusion in a URI path according to
+     * RFC3986.  Note that the encoding rules vary for each part of
+     * the url
      *
      * @param path the raw path string.
      * @return the URI formatted string with the exception of '/' which is special in manta.
-     * @throws UnsupportedEncodingException If UTF-8 is not supported on this system.
      */
-    public static String formatPath(final String path) throws UnsupportedEncodingException {
-        // first split the path by slashes.
-        final String[] elements = path.split("/");
-        final StringBuilder encodedPath = new StringBuilder();
-        for (final String string : elements) {
-            if (string.equals("")) {
-                continue;
-            }
-            encodedPath.append("/").append(URLEncoder.encode(string, "UTF-8"));
-        }
-        return encodedPath.toString();
+    public static String formatPath(final String path) {
+        return UTF8_URL_ENCODER.encodePath(path);
+    }
+
+    /**
+     * Decodes a percent encoded manta path.
+     *
+     * @param encodedPath The percent encoded path
+     * @return The percent decoded path
+     */
+    public static String decodePath(final String encodedPath) {
+        return UTF8_URL_DECODER.decodePath(encodedPath);
     }
 
     /**

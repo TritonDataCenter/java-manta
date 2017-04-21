@@ -188,10 +188,8 @@ public class MantaDirectoryListingIteratorIT {
         }
     }
 
-    @Test
-    public void canListDirectoryUsingSmallPagingSize() throws IOException {
-        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        mantaClient.putDirectory(dir);
+    public void listDirectoryUsingSmallPagingSize(final String dir) throws IOException {
+        mantaClient.putDirectory(dir, true);
 
         final int MAX = 5;
 
@@ -210,5 +208,17 @@ public class MantaDirectoryListingIteratorIT {
                 Assert.assertEquals(next.get("name").toString(), String.format("%05d", i));
             }
         }
+    }
+
+    @Test
+    public void canListDirectoryUsingSmallPagingSize() throws IOException {
+        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        listDirectoryUsingSmallPagingSize(dir);
+    }
+
+    @Test(enabled = false) // Triggers server side bug: MANTA-2409
+    public void canListDirectoryUsingSmallPagingSizeAndErrorProneName() throws IOException {
+        String dir = String.format("%s/%s/%s", testPathPrefix, UUID.randomUUID(), "- -!@#$%^&*()");
+        listDirectoryUsingSmallPagingSize(dir);
     }
 }

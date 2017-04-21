@@ -78,6 +78,22 @@ public class MantaObjectOutputStreamIT {
                 "Uploaded bytes don't match");
     }
 
+    public void canUploadSmallStringWithErrorProneName() throws IOException {
+        String path = testPathPrefix + "uploaded-" + UUID.randomUUID() + "- -~!@#$%^&*().txt";
+        MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
+
+        try {
+            out.write(TEST_DATA.getBytes());
+        } finally {
+            out.close();
+        }
+
+        MantaObject uploaded = out.getObjectResponse();
+
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(path),
+                "File wasn't uploaded: " + path);
+    }
+
     public void canUploadMuchLargerFile() throws IOException {
         String path = testPathPrefix + "uploaded-" + UUID.randomUUID() + ".txt";
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);

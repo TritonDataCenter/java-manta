@@ -400,12 +400,9 @@ public class MantaClientIT {
             + path);
     }
 
-    @Test
-    public final void canMoveDirectoryWithContents() throws IOException {
-        final String name = "source-" + UUID.randomUUID().toString();
-        final String source = testPathPrefix + name + MantaClient.SEPARATOR;
+
+    public void moveDirectoryWithContents(final String source, final String destination) throws IOException {
         mantaClient.putDirectory(source);
-        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "/";
 
         mantaClient.putDirectory(source + "dir1");
         mantaClient.putDirectory(source + "dir2");
@@ -444,6 +441,24 @@ public class MantaClientIT {
         Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
                 + source);
     }
+
+
+    @Test
+    public final void canMoveDirectoryWithContents() throws IOException {
+        final String name = "source-" + UUID.randomUUID().toString();
+        final String source = testPathPrefix + name + MantaClient.SEPARATOR;
+        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "/";
+        moveDirectoryWithContents(source, destination);
+    }
+
+    @Test(enabled = false) // Triggers server side bug: MANTA-2409
+    public final void canMoveDirectoryWithContentsAndErrorProneCharacters() throws IOException {
+        final String name = "source-" + UUID.randomUUID().toString() + "- -!@#$%^&*()";
+        final String source = testPathPrefix + name + MantaClient.SEPARATOR;
+        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "- -!@#$%^&*" + "/";
+        moveDirectoryWithContents(source, destination);
+    }
+
 
     @Test
     public final void testList() throws IOException {

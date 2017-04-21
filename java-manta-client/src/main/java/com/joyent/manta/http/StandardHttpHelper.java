@@ -281,7 +281,11 @@ public class StandardHttpHelper implements HttpHelper {
 
             final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getAllHeaders());
             final String path = request.getURI().getPath();
-            final MantaObjectResponse metadata = new MantaObjectResponse(path, responseHeaders);
+            // MantaObjectResponse expects to be constructed with the
+            // encoded path, which it then decodes when a caller does
+            // getPath.  However, here the HttpUriRequest has already
+            // decoded.
+            final MantaObjectResponse metadata = new MantaObjectResponse(MantaUtils.formatPath(path), responseHeaders);
 
             if (metadata.isDirectory()) {
                 final String msg = "Directories do not have data, so data streams "

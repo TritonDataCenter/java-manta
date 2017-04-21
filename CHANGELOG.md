@@ -2,6 +2,27 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [x.x.x] - YYYY-MM-DD
+
+Several related URL encoding bugs have been fixed.  Objects with
+non-alphanumeric characters created by java-manta may have been
+created with unexpected encoding characters.  Only the object names
+were affected, not the content.
+
+### Changed
+ - Paths with URL unsafe characters are now encoded correctly.
+   Previously the
+   [space character was being transformed](https://github.com/joyent/java-manta/issues/229)
+   into a plus (`+`) character.  So a PUT to the Manta object
+   `/user/stor/Hello World.txt`, would instead create
+   `/user/stor/Hello+World.txt`.
+ - All `MantaClient` operations now
+   [consistently encode](https://github.com/joyent/java-manta/issues/230),
+   and `MantaObject.getPath` always returns the original (not encoded)
+   path.
+ - Recursive directory creation will no longer
+   [encode the path twice](https://github.com/joyent/java-manta/issues/231).
+
 ## [3.0.0] - 2017-04-06
 ### Changed
  - Upgraded HTTP Signatures library to 4.0.1.

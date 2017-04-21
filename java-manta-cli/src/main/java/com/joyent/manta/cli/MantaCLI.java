@@ -8,6 +8,7 @@
 package com.joyent.manta.cli;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.config.ChainedConfigContext;
@@ -20,14 +21,15 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.stream.Stream;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Class providing a CLI interface to the Java Manta SDK.
@@ -82,6 +84,15 @@ public final class MantaCLI {
 
                     System.out.println(generateKey(argv[1].trim(), Integer.valueOf(argv[2].trim()),
                             Paths.get(argv[3].trim())));
+                    break;
+                case "ls":
+                    if (argv.length < 2) {
+                        System.err.println(help());
+                        System.err.println();
+                        System.err.println("ls requires one parameter: dir");
+                        break;
+                    }
+                    System.out.println(listDir(argv[1].trim()));
                     break;
                 case "get-file":
                     if (argv.length < 2) {
@@ -225,6 +236,27 @@ public final class MantaCLI {
             String msg = String.format("Unable to write key to path [%s]",
                     path);
             throw new UncheckedIOException(msg, e);
+        }
+
+        return b.toString();
+    }
+
+
+    /**
+     * ls.
+     *
+     * @param dirPath dir to ls
+     * @return String containing the output of the operation
+     * @throws IOException thrown when we are unable to connect to Manta
+     */
+    protected static String listDir(final String dirPath) throws IOException {
+        final StringBuilder b = new StringBuilder();
+        ConfigContext config = buildConfig();
+        try (MantaClient client = new MantaClient(config)) {
+        final Stream<MantaObject> objs = client.listObjects(dirPath);
+        objs.forEach(obj -> {
+                b.append(INDENT).append(obj.getPath()).append(BR);
+            });
         }
 
         return b.toString();
