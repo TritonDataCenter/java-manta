@@ -173,7 +173,7 @@ public class MantaClientRangeIT {
         }
     }
 
-    @Test (enabled = false)
+    @Test
     public final void canGetAllRanges() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
