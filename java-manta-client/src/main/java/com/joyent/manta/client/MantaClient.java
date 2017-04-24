@@ -47,7 +47,6 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -703,10 +702,7 @@ public class MantaClient implements AutoCloseable {
             }
         } catch (UncheckedIOException e) {
             if (e.getCause() instanceof MantaClientHttpResponseException) {
-                MantaClientHttpResponseException cause = (MantaClientHttpResponseException)e.getCause();
-                @SuppressWarnings("unchecked")
-                HttpResponseException innerCause = (HttpResponseException)cause.getCause();
-                throw new MantaClientHttpResponseException(innerCause);
+                throw e.getCause();
             } else {
                 throw e;
             }
