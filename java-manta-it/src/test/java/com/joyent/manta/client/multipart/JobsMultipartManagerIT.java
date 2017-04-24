@@ -260,10 +260,6 @@ public class JobsMultipartManagerIT {
         canUploadMultipartBinary(5, 10);
     }
 
-    public void canUpload5MbX200MultipartBinary() throws IOException {
-        canUploadMultipartBinary(5, 200);
-    }
-
     private void canUploadMultipartBinary(final long sizeInMb,
                                           final int noOfParts) throws IOException {
         final long size = sizeInMb * 1024L * 1024L;
