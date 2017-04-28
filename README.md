@@ -192,7 +192,7 @@ For detailed usage instructions consult the provided javadoc and examples.
 ### General Examples
  
 * [Get request and client setup](java-manta-examples/src/main/java/SimpleClient.java)
-* [Multipart upload](java-manta-examples/src/main/java/Multipart.java)
+* [Multipart upload](java-manta-examples/src/main/java/ServerMultipart.java)
 * [Client-side Encryption](java-manta-examples/src/main/java/SimpleClientEncryption.java)
 
 ### Job Examples
