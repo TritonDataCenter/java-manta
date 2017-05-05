@@ -6,6 +6,11 @@ cache:
   - $HOME/.m2
 sudo: false
 
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+
 before_install:
   - echo 'MAVEN_OPTS="-Dorg.slf4j.simpleLogger.defaultLogLevel=warn"' >~/.mavenrc
 
