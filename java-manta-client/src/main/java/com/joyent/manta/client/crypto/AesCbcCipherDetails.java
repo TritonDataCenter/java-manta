@@ -17,7 +17,7 @@ import javax.crypto.Cipher;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
+public final class AesCbcCipherDetails extends AbstractAesCipherDetails implements CipherMap {
 
     /**
      * Instance of AES128-CBC cipher.
@@ -72,18 +72,64 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     }
 
     @Override
-    public ByteRangeConversion translateByteRange(final long startInclusive, final long endInclusive) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        final int blockSize = getBlockSizeInBytes();
+        final long block = position / blockSize;
+        final long blockOffset = (position % blockSize);
+
+        byte[] throwaway = new byte[blockSize];
+        for (long i = 0; i < block; i++) {
+            cipher.update(throwaway);
+        }
+
+        return blockOffset;
     }
 
     @Override
     public boolean supportsRandomAccess() {
         return false;
+    }
+
+    @Override
+    public long plainToCipherStart(final long start) {
+
+        final long s = start;
+        final long bs = getBlockSizeInBytes();
+
+        if (s < 0) {
+
+            return bs * (((s + 1)  / bs) - 2);
+
+        } else {
+
+            return Math.max(0, bs * ((s / bs) - 1));
+        }
+
+    }
+
+    @Override
+    public long plainToCipherEnd(final long end) {
+
+        final long e = end;
+        final long bs = getBlockSizeInBytes();
+
+        if (e < 0) {
+
+            return bs * ((e + 1) / bs) - 1;
+
+        } else {
+
+            return bs * ((e / bs) + 1) - 1;
+        }
+
+    }
+
+    @Override
+    public long plainToCipherOffset(final long pos) {
+
+        final long s = plainToCipherStart(pos);
+
+        return pos - s;
     }
 
     /**
@@ -126,4 +172,5 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
 
         return calculatedContentLength;
     }
+
 }

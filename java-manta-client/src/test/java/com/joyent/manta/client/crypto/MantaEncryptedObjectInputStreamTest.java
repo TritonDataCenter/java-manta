@@ -7,12 +7,20 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.ClosedByteRange;
+import com.joyent.manta.client.ClosedRange;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.NullByteRange;
+import com.joyent.manta.client.NullRange;
+import com.joyent.manta.client.OpenByteRange;
+import com.joyent.manta.client.OpenRange;
+import com.joyent.manta.client.Range;
 import com.joyent.manta.exception.MantaClientEncryptionCiphertextAuthenticationException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -25,6 +33,7 @@ import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,6 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.UUID;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -64,7 +74,7 @@ public class MantaEncryptedObjectInputStreamTest {
             throw new AssertionError(e);
         }
 
-        this.plaintextSize = (int)testFile.toFile().length();
+        this.plaintextSize = (int) testFile.toFile().length();
 
         try (InputStream in = this.testURL.openStream()) {
             this.plaintextBytes = IOUtils.readFully(in, plaintextSize);
@@ -681,9 +691,10 @@ public class MantaEncryptedObjectInputStreamTest {
         final long ciphertextSize = encryptedFile.file.length();
 
         InputStream backing = new FileInputStream(encryptedFile.file);
+        EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>  encryptedRange = new EncryptedNullByteRange<>(new NullByteRange(), cipherDetails);
         MantaEncryptedObjectInputStream in = createEncryptedObjectInputStream(
                 key, backing, ciphertextSize, cipherDetails, iv, authenticate,
-                sourceLength);
+                encryptedRange);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
@@ -766,9 +777,11 @@ public class MantaEncryptedObjectInputStreamTest {
         long ciphertextSize = encryptedFile.file.length();
 
         FileInputStream in = new FileInputStream(encryptedFile.file);
+        EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>  encryptedRange = new EncryptedNullByteRange<>(new NullByteRange(), cipherDetails);
+
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
-                (long)this.plaintextSize);
+                 encryptedRange);
 
         try {
             byte[] actual = new byte[plaintextSize];
@@ -817,8 +830,8 @@ public class MantaEncryptedObjectInputStreamTest {
 
     private void canReadByteRange(SupportedCipherDetails cipherDetails,
                                   ReadBytes readBytes,
-                                  int startPosInclusive,
-                                  int endPosInclusive) throws IOException {
+                                  long startPosInclusive,
+                                  long endPosInclusive) throws IOException {
         final byte[] content;
         try (InputStream in = testURL.openStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -826,53 +839,39 @@ public class MantaEncryptedObjectInputStreamTest {
             content = out.toByteArray();
         }
 
-        /* If the plaintext size specified is greater than the actual plaintext
-         * size, we adjust it here. This is only for creating the expectation
-         * that we compare our output to. */
-        final int endPositionExclusive;
+        if (!(cipherDetails instanceof RandomAccessCipher)) {
 
-        if (endPosInclusive + 1 > plaintextSize) {
-            endPositionExclusive = plaintextSize;
-        } else {
-            endPositionExclusive = endPosInclusive + 1;
+            final String msg = "cipher doesn't support random access";
+            throw new IllegalArgumentException(msg);
         }
 
-        boolean unboundedEnd = (endPositionExclusive >= plaintextSize || endPosInclusive < 0);
-        byte[] expected = Arrays.copyOfRange(content, startPosInclusive, endPositionExclusive);
+        ClosedByteRange range = new ClosedByteRange(startPosInclusive, Math.min(plaintextSize, endPosInclusive + 1));
+
+        EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>  encryptedByteRange = new EncryptedClosedByteRange<>(range, (RandomAccessCipher) cipherDetails, cipherDetails);
+
+        final int start = (int) range.getStart();
+        final int end = (int) range.getEnd();
+
+        final byte[] expected = Arrays.copyOfRange(content, start, end);
 
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        /* Here we translate the plaintext ranges to ciphertext ranges. Notice
-         * that we take the input of endPos because it may overrun past the
-         * size of the plaintext. */
-        ByteRangeConversion ranges = cipherDetails.translateByteRange(startPosInclusive, endPosInclusive);
-        long ciphertextStart = ranges.getCiphertextStartPositionInclusive();
-        long plaintextLength = (endPosInclusive - startPosInclusive) + 1;
+        Optional<Long> maybeCiphertextByteRangeLength = encryptedByteRange.getLength();
+
+        // this is safe (^EncryptedClosedByteRange)
+        final long ciphertextByteRangeLength = maybeCiphertextByteRangeLength.get();
 
         /* Here, we simulate being passed only a subset of the total bytes of
          * a file - just like how the output of a HTTP range request would be
          * passed. */
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(encryptedFile.file, "r")) {
             // We seek to the start of the ciphertext to emulate a HTTP byte range request
-            randomAccessFile.seek(ciphertextStart);
 
-            long initialSkipBytes = ranges.getPlaintextBytesToSkipInitially() + ranges.getCiphertextStartPositionInclusive();
-            long binaryEndPositionInclusive = ranges.getCiphertextEndPositionInclusive();
+            randomAccessFile.seek(encryptedByteRange.getStart());
 
-            long ciphertextRangeMaxBytes = ciphertextSize - ciphertextStart;
-            long ciphertextRangeRequestBytes = binaryEndPositionInclusive - ciphertextStart + 1;
-
-            /* We then calculate the range length based on the *actual* ciphertext
-             * size so that we are emulating HTTP range requests by returning a
-             * the binary of the actual object (even if the range went beyond). */
-            long ciphertextByteRangeLength = Math.min(ciphertextRangeMaxBytes, ciphertextRangeRequestBytes);
-
-            if (unboundedEnd)
-                ciphertextByteRangeLength = ciphertextSize - ciphertextStart; // include MAC
-
-            byte[] rangedBytes = new byte[(int)ciphertextByteRangeLength];
+            byte[] rangedBytes = new byte[(int) ciphertextSize];
             randomAccessFile.read(rangedBytes);
 
             try (ByteArrayInputStream bin = new ByteArrayInputStream(rangedBytes);
@@ -882,10 +881,8 @@ public class MantaEncryptedObjectInputStreamTest {
                  * test how the stream handles incorrect values of plaintext length. */
                  MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, bin,
                          ciphertextByteRangeLength, cipherDetails, encryptedFile.cipher.getIV(),
-                    false, (long)this.plaintextSize,
-                         initialSkipBytes,
-                         plaintextLength,
-                         unboundedEnd)) {
+                    false, encryptedByteRange))  {
+
                 byte[] actual = new byte[expected.length];
                 readBytes.readAll(min, actual);
 
@@ -893,8 +890,8 @@ public class MantaEncryptedObjectInputStreamTest {
                     AssertJUnit.assertArrayEquals("Byte range output doesn't match",
                             expected, actual);
                 } catch (AssertionError e) {
-                    Assert.fail(String.format("%s\nexpected: %s\nactual  : %s",
-                            e.getMessage(), new String(expected), new String(actual)));
+                    Assert.fail(String.format("%s\nexpected: %s\nactual  : %s (%s)",
+                            e.getMessage(), new String(expected), new String(actual), "encryptedByteRange=" + encryptedByteRange));
                 }
             }
         }
@@ -908,9 +905,10 @@ public class MantaEncryptedObjectInputStreamTest {
         long ciphertextSize = encryptedFile.file.length();
 
         FileInputStream in = new FileInputStream(encryptedFile.file);
+        EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>  encryptedRange = new EncryptedNullByteRange<>(new NullByteRange(), cipherDetails);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
-                authenticate, (long)this.plaintextSize);
+                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
+                encryptedRange);
 
         try {
             byte[] actual = new byte[plaintextSize];
@@ -937,9 +935,10 @@ public class MantaEncryptedObjectInputStreamTest {
         boolean thrown = false;
 
         FileInputStream in = new FileInputStream(encryptedFile.file);
+        EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>  encryptedRange = new EncryptedNullByteRange<>(new NullByteRange(), cipherDetails);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
-                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
-                true, (long)this.plaintextSize);
+                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), true,
+                encryptedRange);
 
         try {
             byte[] actual = new byte[plaintextSize];
@@ -984,16 +983,11 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
-            SecretKey key, InputStream in, long contentLength,
-            SupportedCipherDetails cipherDetails,
-            byte[] iv, boolean authenticate, long plaintextSize) {
-        return createEncryptedObjectInputStream(key, in, contentLength, cipherDetails, iv,
-                authenticate, plaintextSize, null, null, true);
-    }
-
-    private MantaEncryptedObjectInputStream createEncryptedObjectInputStream(
             SecretKey key, InputStream in, long ciphertextSize, SupportedCipherDetails cipherDetails,
-            byte[] iv, boolean authenticate, long plaintextSize, Long skipBytes, Long plaintextLength, boolean unboundedEnd) {
+            byte[] iv, boolean authenticate, EncryptedByteRange<? extends NullRange,
+                                                                ? extends OpenRange,
+                                                                ? extends ClosedRange,
+                                                                ? extends Range> range) {
         String path = String.format("/test/stor/test-%s", UUID.randomUUID());
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.put(MantaHttpHeaders.ENCRYPTION_CIPHER, cipherDetails.getCipherId());
@@ -1026,7 +1020,6 @@ public class MantaEncryptedObjectInputStreamTest {
         );
 
         return new MantaEncryptedObjectInputStream(mantaObjectInputStream,
-                cipherDetails, key, authenticate,
-                skipBytes, plaintextLength, unboundedEnd);
+                cipherDetails, key, authenticate, range);
     }
 }

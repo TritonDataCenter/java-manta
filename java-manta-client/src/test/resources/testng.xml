@@ -57,6 +57,20 @@
             <class name="com.joyent.manta.http.MantaHttpHeadersTest" />
         </classes>
     </test>
+    <test name="Range Tests">
+        <classes>
+            <class name="com.joyent.manta.client.NullByteRangeTest" />
+            <class name="com.joyent.manta.client.OpenByteRangeTest" />
+            <class name="com.joyent.manta.client.ClosedByteRangeTest" />
+            <class name="com.joyent.manta.client.crypto.EncryptedNullByteRangeTest" />
+            <class name="com.joyent.manta.client.crypto.EncryptedOpenByteRangeTest" />
+            <class name="com.joyent.manta.client.crypto.EncryptedClosedByteRangeTest" />
+            <class name="com.joyent.manta.http.MantaHttpByteRangeTest" />
+            <class name="com.joyent.manta.http.MantaHttpNullByteRangeTest" />
+            <class name="com.joyent.manta.http.MantaHttpOpenByteRangeTest" />
+            <class name="com.joyent.manta.http.MantaHttpClosedByteRangeTest" />
+        </classes>
+    </test>
 
     <!-- This is commented out because it is an integration test and it doesn't
          play nicely with unit test only runs in CI -->

@@ -19,7 +19,7 @@ import java.security.spec.AlgorithmParameterSpec;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
+public final class AesGcmCipherDetails  extends AbstractAesCipherDetails implements CipherMap {
     /**
      * The maximum number of 16 byte blocks that can be encrypted with a
      * AES GCM cipher: 2^32 - 2.
@@ -98,11 +98,6 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     }
 
     @Override
-    public ByteRangeConversion translateByteRange(final long startInclusive, final long endInclusive) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -111,4 +106,45 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     public boolean supportsRandomAccess() {
         return false;
     }
+
+    @Override
+    public long plainToCipherStart(final long start) {
+
+        final long s = start;
+        final long bs = getBlockSizeInBytes();
+
+        if (s < 0) {
+
+            return s;
+
+        } else {
+
+            return bs * (s / bs);
+        }
+
+    }
+
+    @Override
+    public long plainToCipherEnd(final long end) {
+
+        return end;
+    }
+
+    @Override
+    public long plainToCipherOffset(final long pos) {
+
+        final long bs = getBlockSizeInBytes();
+        final long o = pos % bs;
+
+        if (o < 0) {
+
+            return bs + o;
+
+        } else {
+
+            return o;
+        }
+
+    }
+
 }

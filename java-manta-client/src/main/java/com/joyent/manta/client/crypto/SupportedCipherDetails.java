@@ -117,16 +117,6 @@ public interface SupportedCipherDetails {
     HMac getAuthenticationHmac();
 
     /**
-     * Translates a plaintext byte range to a ciphertext byte range with
-     * skip modifier.
-     *
-     * @param startPositionInclusive starting position of byte range (0-Long.MAX)
-     * @param endPositionInclusive ending position of byte range (-1, 0-Long.MAX)
-     * @return object with the needed ciphertext numeric positions specified
-     */
-    ByteRangeConversion translateByteRange(long startPositionInclusive, long endPositionInclusive);
-
-    /**
      * Updates a given {@link Cipher}'s state such that it can decrypt
      * data from a given position.
      *

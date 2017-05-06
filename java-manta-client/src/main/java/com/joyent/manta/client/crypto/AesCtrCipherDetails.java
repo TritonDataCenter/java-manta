@@ -17,7 +17,7 @@ import javax.crypto.Cipher;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
+public final class AesCtrCipherDetails extends AbstractAesCipherDetails implements RandomAccessCipher {
 
     /**
      * Instance of AES128-CTR cipher.
@@ -61,78 +61,64 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     }
 
     @Override
-    public ByteRangeConversion translateByteRange(final long startInclusive, final long endInclusive) {
-        final long plaintextMax = getMaximumPlaintextSizeInBytes();
-
-        if (startInclusive > endInclusive) {
-            String msg = "Start position must be precede end position (startInclusive=" + startInclusive
-                    + ", endInclusive=" + endInclusive + ")";
-            throw new IllegalArgumentException(msg);
-        }
-
-        if (startInclusive < 0) {
-            String msg = "Start position must be zero or higher (startInclusive=" + startInclusive + ")";
-            throw new IllegalArgumentException(msg);
-        }
-
-        if (startInclusive >= plaintextMax) {
-            String msg = "Start position must be less than maximum plaintext size (startInclusive="
-                    + startInclusive + ", plaintextMax=" + plaintextMax + ")";
-            throw new IllegalArgumentException(msg);
-        }
-
-        if (endInclusive < 0) {
-            String msg = "End position must be zero or higher (endInclusive=" + endInclusive + ")";
-            throw new IllegalArgumentException(msg);
-        }
-
-        if (endInclusive >= plaintextMax) {
-            String msg = "End position must be less than maximum plaintext size (endInclusive=" + endInclusive
-                    + ", plaintextMax=" + plaintextMax + ")";
-            throw new IllegalArgumentException(msg);
-        }
-
-        final int blockSize = getBlockSizeInBytes();
-
-        // How many bytes do we offset in the first block?
-        final long plaintextBytesToSkipInitially = startInclusive % blockSize;
-
-        // Get the ciphertext block index for the start byte (zero based)
-        final long startingBlockNumberInclusive = startInclusive / blockSize;
-
-        // Get the ciphertext byte position for the start block (block size bytes per block)
-        final long ciphertextStartPositionInclusive = startingBlockNumberInclusive * blockSize;
-
-        // Get the ciphertext block index for the end byte (zero based)
-        final long endingBlockNumberInclusive = endInclusive / blockSize;
-
-        // Get the ciphertext byte position for the start block (next block subtract a byte)
-        final long ciphertextEndPositionInclusive = ((endingBlockNumberInclusive + 1) * blockSize) - 1;
-
-        // Compute plaintext length (byte indices are zero based)
-        final long lengthOfPlaintextIncludingSkipBytes = (endInclusive - startInclusive)
-                + (plaintextBytesToSkipInitially + 1);
-
-        return new ByteRangeConversion(ciphertextStartPositionInclusive, plaintextBytesToSkipInitially,
-                ciphertextEndPositionInclusive, lengthOfPlaintextIncludingSkipBytes, startingBlockNumberInclusive);
-    }
-
-    @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {
+
         final int blockSize = getBlockSizeInBytes();
         final long block = position / blockSize;
-        final long skip = (position % blockSize);
+        final long blockOffset = (position % blockSize);
 
         byte[] throwaway = new byte[blockSize];
+
         for (long i = 0; i < block; i++) {
             cipher.update(throwaway);
         }
 
-        return skip;
+        return blockOffset;
     }
 
     @Override
     public boolean supportsRandomAccess() {
         return true;
     }
+
+    @Override
+    public long plainToCipherStart(final long start) {
+
+        final long s = start;
+        final long bs = getBlockSizeInBytes();
+
+        if (s < 0) {
+
+            return s;
+
+        } else {
+
+            return bs * (s / bs);
+        }
+
+    }
+
+    @Override
+    public long plainToCipherEnd(final long end) {
+
+        return end;
+    }
+
+    @Override
+    public long plainToCipherOffset(final long pos) {
+
+        final long bs = getBlockSizeInBytes();
+        final long o = pos % bs;
+
+        if (o < 0) {
+
+            return bs + o;
+
+        } else {
+
+            return o;
+        }
+
+    }
+
 }

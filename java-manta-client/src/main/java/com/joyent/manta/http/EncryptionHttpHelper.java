@@ -7,14 +7,27 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.client.AdjustableRange;
+import com.joyent.manta.client.ClosedByteRange;
+import com.joyent.manta.client.FixableRange;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.crypto.ByteRangeConversion;
+import com.joyent.manta.client.NullByteRange;
+import com.joyent.manta.client.NullRange;
+import com.joyent.manta.client.OpenByteRange;
+import com.joyent.manta.client.OpenRange;
+import com.joyent.manta.client.Range;
+import com.joyent.manta.client.RangeConstructor;
+import com.joyent.manta.client.crypto.EncryptedByteRange;
+import com.joyent.manta.client.crypto.EncryptedClosedByteRange;
 import com.joyent.manta.client.crypto.EncryptedMetadataUtils;
+import com.joyent.manta.client.crypto.EncryptedNullByteRange;
+import com.joyent.manta.client.crypto.EncryptedOpenByteRange;
 import com.joyent.manta.client.crypto.EncryptingEntity;
 import com.joyent.manta.client.crypto.EncryptionType;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
+import com.joyent.manta.client.crypto.RandomAccessCipher;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
@@ -25,6 +38,7 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.entity.NoContentEntity;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -38,13 +52,14 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +67,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKey;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -109,6 +125,221 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Cipher implementation used to encrypt and decrypt data.
      */
     private final SupportedCipherDetails cipherDetails;
+
+    /**
+    * Class providing an encrypted http range constructor.
+    *
+    * @author <a href="https://github.com/uxcn">Jason Schulz</a>
+    * @since 3.0.0
+    */
+    private static class MantaHttpEncryptedRangeConstructor
+            implements RangeConstructor<
+                           MantaHttpByteRange<
+                              EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                              EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                              EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                              ? extends EncryptedByteRange<NullByteRange, OpenByteRange, ClosedByteRange,
+                                                           ? extends Range>>> {
+
+        /**
+         * Cipher details.
+         */
+        private final SupportedCipherDetails cipherDetails;
+
+        /**
+         * {@code MantaHttpEncryptedRangeConstructor} constructor.
+         *
+         * @param cipherDetails cipher details
+         */
+        MantaHttpEncryptedRangeConstructor(final SupportedCipherDetails cipherDetails) {
+
+            this.cipherDetails = cipherDetails;
+        }
+
+        @Override
+        public MantaHttpNullByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+                constructNull() {
+
+            NullByteRange byteRange = new NullByteRange();
+
+            EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>
+            encryptedByteRange = new EncryptedNullByteRange<>(byteRange, cipherDetails);
+
+            MantaHttpNullByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+            requestEncryptedByteRange = new MantaHttpNullByteRange<>(encryptedByteRange);
+
+            return requestEncryptedByteRange;
+        }
+
+        @Override
+        public MantaHttpNullByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+                constructNull(final long length) {
+
+            MantaHttpNullByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+            requestEncryptedByteRange = constructNull();
+
+            return requestEncryptedByteRange.doFix(length);
+        }
+
+        @Override
+        public MantaHttpOpenByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+                constructOpen(final long start) {
+
+
+            if (!(cipherDetails instanceof RandomAccessCipher)) {
+
+                throw new UnsupportedOperationException("cipher doesn't support random access");
+            }
+
+            RandomAccessCipher randomAccessCipher = (RandomAccessCipher) cipherDetails;
+
+            OpenByteRange byteRange = new OpenByteRange(start);
+
+            EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>
+            encryptedByteRange = new EncryptedOpenByteRange<>(byteRange, randomAccessCipher, cipherDetails);
+
+            MantaHttpOpenByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+            requestEncryptedByteRange = new MantaHttpOpenByteRange<>(encryptedByteRange);
+
+            return requestEncryptedByteRange;
+        }
+
+        @Override
+        public MantaHttpOpenByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                      EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+                constructOpen(final long start, final long length) {
+
+            MantaHttpOpenByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                   EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+            requestEncryptedByteRange = constructOpen(start);
+
+            return requestEncryptedByteRange.doFix(length);
+        }
+
+        @Override
+        public MantaHttpClosedByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                        EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                        EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+                constructClosed(final long start, final long end) {
+
+            if (!(cipherDetails instanceof RandomAccessCipher)) {
+
+                throw new UnsupportedOperationException("cipher doesn't support random access");
+            }
+
+            RandomAccessCipher randomAccessCipher = (RandomAccessCipher) cipherDetails;
+
+            ClosedByteRange byteRange = new ClosedByteRange(start, end);
+
+            EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>
+                encryptedByteRange = new EncryptedClosedByteRange<>(byteRange, randomAccessCipher, cipherDetails);
+
+            MantaHttpClosedByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                     EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                     EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+
+                requestEncryptedByteRange = new MantaHttpClosedByteRange<>(encryptedByteRange);
+
+            return requestEncryptedByteRange;
+        }
+
+        @Override
+        public MantaHttpClosedByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                        EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                        EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+                constructClosed(final long start, final long end, final long length) {
+
+            MantaHttpClosedByteRange<EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                     EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                                     EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>>
+
+                requestEncryptedByteRange = constructClosed(start, end);
+
+            return requestEncryptedByteRange.doFix(length);
+        }
+    };
+
+    /**
+    * Class providing a range adjust constructor.
+    *
+    * @param <T> the type of range to adjust
+    *
+    * @author <a href="https://github.com/uxcn">Jason Schulz</a>
+    * @since 3.0.0
+    */
+    private static class RangeAdjustConstructor<T extends
+                            FixableRange<? extends T>
+                            & AdjustableRange<? extends T, ? extends T, ? extends T>>
+            implements RangeConstructor<T> {
+
+        /**
+        * Range to construct adjusted range from.
+        */
+        private final T range;
+
+        /** {@code RangeAdjustConstructor} constructor.
+         *
+         * @param range range to construct adjusted range from
+         */
+        RangeAdjustConstructor(final T range) {
+
+            this.range = range;
+        }
+
+        @Override
+        public T constructNull() {
+
+            return range.doAdjust();
+        }
+
+        @Override
+        public T constructNull(final long length) {
+
+            return range.doAdjust()
+                        .doFix(length);
+        }
+
+        @Override
+        public T constructOpen(final long start) {
+
+            return range.doAdjust(start);
+        }
+
+        @Override
+        public T constructOpen(final long start, final long length) {
+
+            return range.doAdjust(start)
+                        .doFix(length);
+        }
+
+        @Override
+        public T constructClosed(final long start, final long end) {
+
+            return range.doAdjust(start, end);
+        }
+
+        @Override
+        public T constructClosed(final long start, final long end, final long length) {
+
+            return range.doAdjust(start, end)
+                        .doFix(length);
+        }
+
+    };
 
     /**
      * Creates a new instance of the helper class.
@@ -244,41 +475,38 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     }
 
     @Override
-    @SuppressWarnings("MagicNumber")
     public MantaObjectInputStream httpRequestAsInputStream(final HttpUriRequest request,
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
-        final boolean hasRangeRequest = requestHeaders != null && requestHeaders.getRange() != null;
 
-        if (hasRangeRequest && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
-            String msg = "HTTP range requests (random reads) aren't supported when using "
-                    + "client-side encryption in mandatory authentication mode.";
-            MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-            HttpHelper.annotateContextedException(e, request, null);
-            throw e;
-        }
+        // parse byte range from request, and translate to the corresponding encrypted (http) values
 
-        final Long initialSkipBytes;
-        Long plaintextRangeLength;
-        final Long plaintextStart;
-        final Long plaintextEnd;
+        final MantaHttpEncryptedRangeConstructor
+        requestConstructor = new MantaHttpEncryptedRangeConstructor(cipherDetails);
 
-        if (hasRangeRequest) {
-            PlaintextByteRangePosition rangeProperties = calculateSkipBytesAndPlaintextLength(
-                    request, requestHeaders);
-            initialSkipBytes = rangeProperties.getInitialPlaintextSkipBytes();
-            plaintextRangeLength = rangeProperties.getPlaintextRangeLength();
-            plaintextStart = rangeProperties.getPlaintextStart();
-            plaintextEnd = rangeProperties.getPlaintextEnd();
-        } else {
-            initialSkipBytes = null;
-            plaintextRangeLength = null;
-            plaintextStart = null;
-            plaintextEnd = null;
+        final MantaHttpByteRange<
+                  EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                  EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                  EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                  ? extends EncryptedByteRange<NullByteRange, OpenByteRange, ClosedByteRange, ? extends Range>>
+        requestByteRange = requestHeaders.getByteRange(requestConstructor);
+
+        requestByteRange.addTo(requestHeaders);
+
+        if (!(requestByteRange instanceof NullRange)) {
+
+            if (encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
+
+                String msg = "HTTP range requests (random reads) aren't supported when using "
+                        + "client-side encryption in mandatory authentication mode.";
+                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(e, request, null);
+                throw e;
+            }
         }
 
         final MantaObjectInputStream rawStream = super.httpRequestAsInputStream(request, requestHeaders);
-        @SuppressWarnings("unchecked")
+
         final HttpResponse response = (HttpResponse)rawStream.getHttpResponse();
 
         final String cipherId = rawStream.getHeaderAsString(MantaHttpHeaders.ENCRYPTION_CIPHER);
@@ -312,151 +540,30 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             rawStream.getMetadata().putAll(encryptedMetadata);
         }
 
-        if (hasRangeRequest) {
-            boolean unboundedEnd = (plaintextEnd >= cipherDetails.getMaximumPlaintextSizeInBytes() || plaintextEnd < 0);
-            // Try to calculate from original-plaintext header
-            final String originalPlaintextLengthS = rawStream.getHeaderAsString(
-                    MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH);
-            if (originalPlaintextLengthS != null && originalPlaintextLengthS.length() > 0) {
-                final Long originalPlaintextLength = Long.parseLong(originalPlaintextLengthS);
-                if (plaintextRangeLength == 0L || plaintextRangeLength >= originalPlaintextLength) {
-                    plaintextRangeLength = originalPlaintextLength - plaintextStart;
-                }
-                if (plaintextStart > 0 && plaintextEnd >= originalPlaintextLength) {
-                    plaintextRangeLength = originalPlaintextLength - plaintextStart;
-                    unboundedEnd = false;
-                } else {
-                    unboundedEnd = (plaintextEnd < 0);
-                }
-            }
+        final MantaHttpHeaders responseHeaders = rawStream.getHttpHeaders();
 
-            return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
-                    secretKey, false, initialSkipBytes, plaintextRangeLength, unboundedEnd);
-        } else {
-            return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
-                    secretKey, true);
-        }
+        final RangeAdjustConstructor<
+                   MantaHttpByteRange<
+                       EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                       EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                       EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                       ? extends EncryptedByteRange<NullByteRange, OpenByteRange, ClosedByteRange, ? extends Range>>>
+        responseConstructor = new RangeAdjustConstructor<>(requestByteRange);
+
+        final MantaHttpByteRange<
+                  EncryptedNullByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                  EncryptedOpenByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                  EncryptedClosedByteRange<NullByteRange, OpenByteRange, ClosedByteRange>,
+                  ? extends EncryptedByteRange<NullByteRange, OpenByteRange, ClosedByteRange, ? extends Range>>
+        responseByteRange = responseHeaders.getContentRange(responseConstructor);
+
+        final boolean authenticate = (responseByteRange instanceof NullRange
+                                        || responseByteRange instanceof OpenRange);
+
+        return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
+                secretKey, authenticate, responseByteRange.doUndecorate());
     }
 
-    /**
-     * Calculates the skip bytes and plaintext length for a encrypted ranged
-     * request.
-     *
-     * @param request source request that hasn't been made yet
-     * @param requestHeaders headers passed to the request
-     * @return a {@link Long} array containing two elements: skip bytes, plaintext length
-     * @throws IOException thrown when we fail making an additional HEAD request
-     */
-    private PlaintextByteRangePosition calculateSkipBytesAndPlaintextLength(
-            final HttpUriRequest request, final MantaHttpHeaders requestHeaders)
-            throws IOException {
-        final Long initialSkipBytes;
-        Long plaintextRangeLength = 0L;
-
-        final long[] plaintextRanges = byteRangeAsNullSafe(requestHeaders.getByteRange(),
-                this.cipherDetails);
-
-        final long plaintextStart = plaintextRanges[0];
-        final long plaintextEnd = plaintextRanges[1];
-
-        final long binaryStartPositionInclusive;
-        final long binaryEndPositionInclusive;
-
-        final boolean negativeEndRequest = plaintextEnd < 0;
-
-        // We have been passed a request in the form of something like: bytes=-50
-        if (plaintextStart == 0 && negativeEndRequest) {
-            /* Since we don't know the size of the object, there is no way
-             * for us to know what the value of objectSize - N is. So we
-             * do a HEAD request and discover the plaintext object size
-             * and the size of the ciphertext. This allows us to have
-             * the information needed to do a proper range request. */
-            final String path = request.getURI().getPath();
-
-            // Forward on all headers to the HEAD request
-            HttpHead head = getConnectionFactory().head(path);
-            head.setHeaders(request.getAllHeaders());
-            head.removeHeaders(HttpHeaders.RANGE);
-
-            HttpResponse headResponse = super.executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
-            final MantaHttpHeaders headers = new MantaHttpHeaders(headResponse.getAllHeaders());
-            MantaObjectResponse objectResponse = new MantaObjectResponse(path, headers);
-
-            /* We make the actual GET request's success dependent on the
-             * object not changing since we did the HEAD request. */
-            request.setHeader(HttpHeaders.IF_MATCH, objectResponse.getEtag());
-            request.setHeader(HttpHeaders.IF_UNMODIFIED_SINCE,
-                    objectResponse.getHeaderAsString(HttpHeaders.LAST_MODIFIED));
-
-            Long ciphertextSize = objectResponse.getContentLength();
-            Validate.notNull(ciphertextSize,
-                    "Manta should always return a content-size");
-
-            // We query the response object for multiple properties that will
-            // give us the plaintext size. If not possible, this will error.
-            long fullPlaintextSize = HttpHelper.attemptToFindPlaintextSize(
-                    objectResponse, ciphertextSize, this.cipherDetails);
-
-            // Since plaintextEnd is a negative value - this will be set to
-            // the number of bytes before the end of the file (in plaintext)
-            initialSkipBytes = plaintextEnd + fullPlaintextSize;
-
-            // calculates the ciphertext byte range
-            final ByteRangeConversion computedRanges = this.cipherDetails.translateByteRange(
-                    initialSkipBytes, fullPlaintextSize - 1);
-
-            // We only use the ciphertext start position, because we already
-            // have the position of the end of the ciphertext (eg content-length)
-            binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
-            binaryEndPositionInclusive = ciphertextSize;
-        // This is the typical case like: bytes=3-44
-        } else {
-
-            long scaledPlaintextEnd = plaintextEnd;
-
-            // interpret maximum plaintext value as unbounded end
-            if (plaintextEnd == cipherDetails.getMaximumPlaintextSizeInBytes()) {
-
-                scaledPlaintextEnd--;
-            }
-
-            // calculates the ciphertext byte range
-            final ByteRangeConversion computedRanges = this.cipherDetails.translateByteRange(
-                    plaintextStart, scaledPlaintextEnd);
-
-            binaryStartPositionInclusive = computedRanges.getCiphertextStartPositionInclusive();
-            initialSkipBytes = computedRanges.getPlaintextBytesToSkipInitially()
-                    + computedRanges.getCiphertextStartPositionInclusive();
-
-            if (computedRanges.getCiphertextEndPositionInclusive() > 0) {
-                binaryEndPositionInclusive = computedRanges.getCiphertextEndPositionInclusive();
-            } else {
-                binaryEndPositionInclusive = 0;
-            }
-
-            plaintextRangeLength = (scaledPlaintextEnd - plaintextStart) + 1;
-        }
-
-        // We don't know the ending position
-        if (binaryEndPositionInclusive == 0) {
-            requestHeaders.setRange(String.format("bytes=%d-",
-                    binaryStartPositionInclusive));
-        } else {
-            requestHeaders.setRange(String.format("bytes=%d-%d",
-                    binaryStartPositionInclusive, binaryEndPositionInclusive));
-        }
-
-        // Range in the form of 50-, so we don't know the actual plaintext length
-        if (plaintextEnd >= cipherDetails.getMaximumPlaintextSizeInBytes()) {
-            plaintextRangeLength = 0L;
-        }
-
-        return new PlaintextByteRangePosition()
-                .setInitialPlaintextSkipBytes(initialSkipBytes)
-                .setPlaintextRangeLength(plaintextRangeLength)
-                .setPlaintextStart(plaintextStart)
-                .setPlaintextEnd(plaintextEnd);
-    }
 
     @Override
     public MantaObjectResponse httpPutMetadata(final String path,

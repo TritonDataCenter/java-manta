@@ -12,82 +12,136 @@ import org.testng.annotations.Test;
 
 @Test
 public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
+
+    private static final AesGcmCipherDetails AES_128_GCM = AesGcmCipherDetails.INSTANCE_128_BIT;
+
+    private static final AesGcmCipherDetails AES_192_GCM = AesGcmCipherDetails.INSTANCE_192_BIT;
+
+    private static final AesGcmCipherDetails AES_256_GCM = AesGcmCipherDetails.INSTANCE_256_BIT;
+
+    private static final AesGcmCipherDetails DEFAULT_CIPHER = AES_256_GCM;
+
+    private final long BLOCK_SIZE = DEFAULT_CIPHER.getBlockSizeInBytes();
+
     public void doesntCalculateHmac() throws Exception {
-        Assert.assertEquals(AesGcmCipherDetails.INSTANCE_256_BIT.getAuthenticationHmac(), null);
+        Assert.assertEquals(DEFAULT_CIPHER.getAuthenticationHmac(), null);
     }
 
     public void size1024bCalculationWorksRoundTripAes128() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_128_GCM, size);
     }
 
     public void size1024bCalculationWorksRoundTripAes192() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_192_GCM, size);
     }
 
     public void size1024bCalculationWorksRoundTripAes256() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_256_GCM, size);
     }
 
     public void size0bCalculationWorksRoundTripAes128() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_128_GCM, size);
     }
 
     public void size0bCalculationWorksRoundTripAes192() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_192_GCM, size);
     }
 
     public void size0bCalculationWorksRoundTripAes256() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_256_GCM, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes128() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_128_GCM, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes192() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_192_GCM, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes256() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_256_GCM, size);
     }
 
     public void ciphertextSizeCalculationWorksForAes128() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_128_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_128_GCM);
     }
 
     public void ciphertextSizeCalculationWorksForAes192() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_192_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_192_GCM);
     }
 
     public void ciphertextSizeCalculationWorksForAes256() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_256_GCM);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes128() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
-        cipherDetails.translateByteRange(0, 128);
+    public void canTranslatePlainToCipherStartZero() {
+
+        testPlainToCipherStart(0, 0, DEFAULT_CIPHER);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes192() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_192_BIT;
-        cipherDetails.translateByteRange(0, 128);
+    public void canTranslatePlainToCipherStartPositiveFirstBlockA() {
+
+        testPlainToCipherStart(1, 0, DEFAULT_CIPHER);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes256() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_256_BIT;
-        cipherDetails.translateByteRange(0, 128);
+    public void canTranslatePlainToCipherStartPositiveFirstBlockB() {
+
+        testPlainToCipherStart(BLOCK_SIZE - 1, 0, DEFAULT_CIPHER);
     }
+
+    public void canTranslatePlainToCipherStartPositiveSecondBlockA() {
+
+        testPlainToCipherStart(BLOCK_SIZE, BLOCK_SIZE, DEFAULT_CIPHER);
+    }
+
+    public void canTranslatePlainToCipherStartPositiveSecondBlockB() {
+
+        testPlainToCipherStart(BLOCK_SIZE + (BLOCK_SIZE - 1), BLOCK_SIZE, DEFAULT_CIPHER);
+    }
+
+    public void canTranslatePlainToCipherStartNegative() {
+
+        testPlainToCipherStart(-1, -1, DEFAULT_CIPHER);
+    }
+
+    public void canTranslatePlainToCipherEnd() {
+
+        testPlainToCipherEnd(1, 1, DEFAULT_CIPHER);
+    }
+
+    public void canGetBlockCipherOffsetBlockBoundaryPositive() {
+
+        testPlainToCipherOffset(0, 0, DEFAULT_CIPHER);
+    }
+
+    public void canGetBlockCipherOffsetNonBlockBoundaryPositiveA() {
+
+        testPlainToCipherOffset(1, 1, DEFAULT_CIPHER);
+    }
+
+    public void canGetBlockCipherOffsetNonBlockBoundaryPositiveB() {
+
+        testPlainToCipherOffset(BLOCK_SIZE - 1, BLOCK_SIZE - 1, DEFAULT_CIPHER);
+    }
+
+    public void canGetBlockCipherOffsetNonBlockBoundaryNegativeA() {
+
+        testPlainToCipherOffset(-1, BLOCK_SIZE - 1, DEFAULT_CIPHER);
+    }
+
+    public void canGetBlockCipherOffsetNonBlockBoundaryNegativeB() {
+
+        testPlainToCipherOffset(-(BLOCK_SIZE - 1), 1, DEFAULT_CIPHER);
+    }
+
 }
