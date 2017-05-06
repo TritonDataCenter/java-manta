@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.AbstractAesCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 
 import java.io.File;
@@ -70,7 +70,7 @@ public class DefaultsConfigContext implements ConfigContext {
      * Default client-side encryption cipher algorithm.
      */
     public static final SupportedCipherDetails DEFAULT_CIPHER =
-            AesCtrCipherDetails.INSTANCE_128_BIT;
+            AbstractAesCipherDetails.DEFAULT_CIPHER_AES;
 
     /**
      * Default TLS cipher suites.

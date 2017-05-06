@@ -9,15 +9,18 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.io.FileUtils;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 @Test
@@ -28,37 +31,51 @@ public class SecretKeyUtilsTest {
         keyBytes = "FFFFFFFBD96783C6C91E2222".getBytes(StandardCharsets.US_ASCII);
     }
 
+    private AesCbcCipherDetails AES_CBC_128;
+
+    private AesCtrCipherDetails AES_CTR_128;
+
+    private AesGcmCipherDetails AES_GCM_128;
+
+    @BeforeClass
+    private void init() throws NoSuchAlgorithmException {
+
+        AES_CBC_128 = AesCbcCipherDetails.aesCbc128();
+        AES_CTR_128 = AesCtrCipherDetails.aesCtr128();
+        AES_GCM_128 = AesGcmCipherDetails.aesGcm128();
+    }
+
     public void canGenerateAesGcmNoPaddingKey() {
-        SecretKey key = SecretKeyUtils.generate(AesGcmCipherDetails.INSTANCE_128_BIT);
+        SecretKey key = SecretKeyUtils.generate(AES_GCM_128);
         Assert.assertNotNull(key, "Generated key was null");
 
         byte[] bytes = key.getEncoded();
 
-        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesGcmCipherDetails.INSTANCE_128_BIT);
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AES_GCM_128);
 
         Assert.assertEquals(loaded, key,
                 "Generated key doesn't match loaded key");
     }
 
     public void canGenerateAesCtrNoPaddingKey() {
-        SecretKey key = SecretKeyUtils.generate(AesCtrCipherDetails.INSTANCE_128_BIT);
+        SecretKey key = SecretKeyUtils.generate(AES_CTR_128);
         Assert.assertNotNull(key, "Generated key was null");
 
         byte[] bytes = key.getEncoded();
 
-        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesCtrCipherDetails.INSTANCE_128_BIT);
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AES_CTR_128);
 
         Assert.assertEquals(loaded, key,
                 "Generated key doesn't match loaded key");
     }
 
     public void canGenerateAesCbcPkcs5PaddingKey() {
-        SecretKey key = SecretKeyUtils.generate(AesCbcCipherDetails.INSTANCE_128_BIT);
+        SecretKey key = SecretKeyUtils.generate(AES_CBC_128);
         Assert.assertNotNull(key, "Generated key was null");
 
         byte[] bytes = key.getEncoded();
 
-        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AesCbcCipherDetails.INSTANCE_128_BIT);
+        SecretKey loaded = SecretKeyUtils.loadKey(bytes, AES_CBC_128);
 
         Assert.assertEquals(loaded, key,
                 "Generated key doesn't match loaded key");
@@ -70,8 +87,8 @@ public class SecretKeyUtilsTest {
         FileUtils.writeByteArrayToFile(file, keyBytes);
         URI uri = URI.create("file://" + file.getAbsolutePath());
 
-        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128_BIT);
-        SecretKey actual = SecretKeyUtils.loadKeyFromPath(Paths.get(uri), AesGcmCipherDetails.INSTANCE_128_BIT);
+        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AES_GCM_128);
+        SecretKey actual = SecretKeyUtils.loadKeyFromPath(Paths.get(uri), AES_GCM_128);
 
         Assert.assertEquals(actual.getAlgorithm(), expected.getAlgorithm());
         Assert.assertTrue(Arrays.equals(expected.getEncoded(), actual.getEncoded()),
@@ -84,8 +101,8 @@ public class SecretKeyUtilsTest {
         FileUtils.writeByteArrayToFile(file, keyBytes);
         Path path = file.toPath();
 
-        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128_BIT);
-        SecretKey actual = SecretKeyUtils.loadKeyFromPath(path, AesGcmCipherDetails.INSTANCE_128_BIT);
+        SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AES_GCM_128);
+        SecretKey actual = SecretKeyUtils.loadKeyFromPath(path, AES_GCM_128);
 
         Assert.assertEquals(actual.getAlgorithm(), expected.getAlgorithm());
         Assert.assertTrue(Arrays.equals(expected.getEncoded(), actual.getEncoded()),
@@ -99,7 +116,7 @@ public class SecretKeyUtilsTest {
 
     @Test(expectedExceptions = Exception.class)
     public void writeKeyWithNullOutStream() throws IOException {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        SupportedCipherDetails cipherDetails = AES_GCM_128;
         byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
 
         SecretKey key = SecretKeyUtils.loadKey(Arrays.copyOfRange(keyBytes, 2, 10), cipherDetails);
@@ -116,7 +133,7 @@ public class SecretKeyUtilsTest {
         FileUtils.forceDeleteOnExit(file);
         Path path = file.toPath();
 
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        SupportedCipherDetails cipherDetails = AES_GCM_128;
         byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
         SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
         SecretKeyUtils.writeKeyToPath(key, path);

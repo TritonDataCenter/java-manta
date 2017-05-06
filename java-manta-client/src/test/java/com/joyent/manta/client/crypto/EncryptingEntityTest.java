@@ -16,10 +16,12 @@ import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.http.HttpEntity;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,16 +30,31 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
 @Test
 public class EncryptingEntityTest {
+
+    private AesCbcCipherDetails AES_CBC_128;
+
+    private AesCtrCipherDetails AES_CTR_128;
+
+    private AesGcmCipherDetails AES_GCM_128;
+
+    @BeforeClass
+    private void init() throws NoSuchAlgorithmException {
+
+        AES_CBC_128 = AesCbcCipherDetails.aesCbc128();
+        AES_CTR_128 = AesCtrCipherDetails.aesCtr128();
+        AES_GCM_128 = AesGcmCipherDetails.aesGcm128();
+    }
     /* Constructor Tests */
 
     @Test(expectedExceptions = MantaClientEncryptionException.class)
     public void throwsWithTooLargeContentLength() {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        SupportedCipherDetails cipherDetails = AES_GCM_128;
         byte[] keyBytes = SecretKeyUtils.generate(cipherDetails).getEncoded();
 
         SecretKey key = SecretKeyUtils.loadKey(Arrays.copyOfRange(keyBytes, 2, 10), cipherDetails);
@@ -51,43 +68,43 @@ public class EncryptingEntityTest {
     /* AES-GCM-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesGcm() throws Exception {
-        verifyEncryptionWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT);
+        verifyEncryptionWorksRoundTrip(AES_GCM_128);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesGcm() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesGcmCipherDetails.INSTANCE_128_BIT);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AES_GCM_128);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesGcm() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE_128_BIT);
+        canCountBytesFromStreamWithUnknownLength(AES_GCM_128);
     }
 
     /* AES-CTR-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCtr() throws Exception {
-        verifyEncryptionWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT);
+        verifyEncryptionWorksRoundTrip(AES_CTR_128);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesCtr() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesCtrCipherDetails.INSTANCE_128_BIT);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AES_CTR_128);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesCtr() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesCtrCipherDetails.INSTANCE_128_BIT);
+        canCountBytesFromStreamWithUnknownLength(AES_CTR_128);
     }
 
     /* AES-CBC-PKCS5Padding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCbc() throws Exception {
-        verifyEncryptionWorksRoundTrip(AesCbcCipherDetails.INSTANCE_128_BIT);
+        verifyEncryptionWorksRoundTrip(AES_CBC_128);
     }
 
     public void canEncryptAndDecryptToAndFromFileWithManySizesInAesCbc() throws Exception {
-        canEncryptAndDecryptToAndFromFileWithManySizes(AesCbcCipherDetails.INSTANCE_128_BIT);
+        canEncryptAndDecryptToAndFromFileWithManySizes(AES_CBC_128);
     }
 
     public void canCountBytesFromStreamWithUnknownLengthInAesCbc() throws Exception {
-        canCountBytesFromStreamWithUnknownLength(AesCbcCipherDetails.INSTANCE_128_BIT);
+        canCountBytesFromStreamWithUnknownLength(AES_CBC_128);
     }
 
     /* Test helper methods */

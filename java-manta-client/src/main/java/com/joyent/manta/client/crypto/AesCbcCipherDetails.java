@@ -9,6 +9,8 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.lang3.Validate;
 
+import java.security.NoSuchAlgorithmException;
+
 import javax.crypto.Cipher;
 
 /**
@@ -22,24 +24,101 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-CBC cipher.
      */
-    public static final AesCbcCipherDetails INSTANCE_128_BIT = new AesCbcCipherDetails(128);
+    private static volatile AesCbcCipherDetails instance128Bit;
 
     /**
      * Instance of AES192-CBC cipher.
      */
-    public static final AesCbcCipherDetails INSTANCE_192_BIT = new AesCbcCipherDetails(192);
+    private static volatile AesCbcCipherDetails instance192Bit;
 
     /**
      * Instance of AES256-CBC cipher.
      */
-    public static final AesCbcCipherDetails INSTANCE_256_BIT = new AesCbcCipherDetails(256);
+    private static volatile AesCbcCipherDetails instance256Bit;
+
+    /**
+     * Method to retrieve AES-CBC-128 cipher details.
+     *
+     * @return AES-CBC-128 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-CBC-128
+     */
+    public static AesCbcCipherDetails aesCbc128() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance128Bit == null) {
+
+            synchronized (AesCbcCipherDetails.class) {
+
+                if (instance128Bit == null) {
+
+                    instance128Bit = new AesCbcCipherDetails(128);
+                }
+            }
+        }
+
+        return instance128Bit;
+    }
+
+    /**
+     * Method to retrieve AES-CBC-192 cipher details.
+     *
+     * @return AES-CBC-192 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-CBC-192
+     */
+    public static AesCbcCipherDetails aesCbc192() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance192Bit == null) {
+
+            synchronized (AesCbcCipherDetails.class) {
+
+                if (instance192Bit == null) {
+
+                    instance192Bit = new AesCbcCipherDetails(192);
+                }
+            }
+        }
+
+        return instance192Bit;
+    }
+
+    /**
+     * Method to retrieve AES-CBC-256 cipher details.
+     *
+     * @return AES-CBC-256 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-CBC-256
+     */
+    public static AesCbcCipherDetails aesCbc256() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance256Bit == null) {
+
+            synchronized (AesCbcCipherDetails.class) {
+
+                if (instance256Bit == null) {
+
+                    instance256Bit = new AesCbcCipherDetails(256);
+                }
+            }
+        }
+
+        return instance256Bit;
+    }
 
     /**
      * Creates a new instance of a AES-CBC cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
+     *
+     * @throws NoSuchAlgorithmException if no provider implements the requested algorithm
      */
-    private AesCbcCipherDetails(final int keyLengthBits) {
+    private AesCbcCipherDetails(final int keyLengthBits) throws NoSuchAlgorithmException {
         super(keyLengthBits, "AES/CBC/PKCS5Padding", DEFAULT_HMAC_ALGORITHM);
     }
 

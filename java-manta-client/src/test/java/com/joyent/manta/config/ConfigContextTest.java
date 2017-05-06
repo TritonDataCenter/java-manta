@@ -71,7 +71,7 @@ public class ConfigContextTest {
         config.setClientEncryptionEnabled(false);
     }
 
-    public void canValidateContextWithKeyPaths() throws IOException {
+    public void canValidateContextWithKeyPaths() throws Exception {
         File mantaAuthPrivateKey = File.createTempFile("manta-key", "");
         FileUtils.forceDeleteOnExit(mantaAuthPrivateKey);
         FileUtils.write(mantaAuthPrivateKey, MANTA_AUTH_PRIVATE_KEY, StandardCharsets.US_ASCII);
@@ -90,11 +90,11 @@ public class ConfigContextTest {
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
         config.setEncryptionPrivateKeyPath(encryptionPrivateKey.getAbsolutePath());
-        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId());
+        config.setEncryptionAlgorithm(AesGcmCipherDetails.aesGcm128().getCipherId());
         ConfigContext.validate(config);
     }
 
-    public void canValidateContextWithKeyValues() throws IOException {
+    public void canValidateContextWithKeyValues() throws Exception {
         StandardConfigContext config = new StandardConfigContext();
         config.setMantaURL(DefaultsConfigContext.DEFAULT_MANTA_URL);
         config.setMantaUser("username");
@@ -105,7 +105,7 @@ public class ConfigContextTest {
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
         config.setEncryptionPrivateKeyBytes(keyBytes);
-        config.setEncryptionAlgorithm(AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId());
+        config.setEncryptionAlgorithm(AesGcmCipherDetails.aesGcm128().getCipherId());
         ConfigContext.validate(config);
     }
 }
