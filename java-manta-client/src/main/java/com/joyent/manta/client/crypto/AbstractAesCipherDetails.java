@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.exception.MantaClientException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -89,10 +90,14 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * @param keyLengthBits size of the secret key
      * @param cipherAlgorithmJavaName identifier used to get the cipher via JCE
      * @param authenticationTagLength size of AEAD tag
+     *
+     * @throws NoSuchAlgorithmException if no provider implements
      */
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
-                                    final int authenticationTagLength) {
+                                    final int authenticationTagLength) throws NoSuchAlgorithmException {
+        ensureKeyStrengthAllowed(keyLengthBits, cipherAlgorithmJavaName);
+
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
         this.cipherId = createMantaCipherIdFromJavaAlgorithmId(
@@ -102,16 +107,21 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
         this.isAEADCipher = true;
     }
 
+
     /**
      * Creates a new instance for a cipher authenticated by a HMAC.
      *
      * @param keyLengthBits size of the secret key
      * @param cipherAlgorithmJavaName identifier used to get the cipher via JCE
      * @param hmacAlgorithm HMAC algorithm to use for authentication
+     *
+     * @throws NoSuchAlgorithmException if no provider implements {@code cipherAlgorithmJavaName}
      */
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
-                                    final String hmacAlgorithm) {
+                                    final String hmacAlgorithm) throws NoSuchAlgorithmException {
+        ensureKeyStrengthAllowed(keyLengthBits, cipherAlgorithmJavaName);
+
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
         this.cipherId = createMantaCipherIdFromJavaAlgorithmId(
@@ -304,5 +314,24 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
             // so we go with the default value
             return new SecureRandom();
         }
+    }
+
+    /**
+     *
+     * @param keyLengthBits size of the secret key
+     * @param cipherAlgorithmJavaName identifier used to get the cipher via JCE
+     *
+     * @throws NoSuchAlgorithmException if no provider implements {@code cipherAlgorithmJavaName}
+     */
+    private void ensureKeyStrengthAllowed(int keyLengthBits, String cipherAlgorithmJavaName) throws NoSuchAlgorithmException {
+        final int maxKeyLength = Cipher.getMaxAllowedKeyLength(cipherAlgorithmJavaName);
+
+        if (keyLengthBits <= maxKeyLength) {
+            return;
+        }
+
+        final String msg = "requested cipher key length greater than maximum allowed [jce policy] "
+                + "(keyLengthBits=" + keyLengthBits + ", maxKeyLength=" + maxKeyLength + ")";
+        throw new MantaClientException(msg);
     }
 }
