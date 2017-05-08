@@ -7,87 +7,105 @@
  */
 package com.joyent.manta.client.crypto;
 
+import java.security.NoSuchAlgorithmException;
+
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 @Test
 public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
+
+    private AesGcmCipherDetails AES_GCM_128;
+
+    private AesGcmCipherDetails AES_GCM_192;
+
+    private AesGcmCipherDetails AES_GCM_256;
+
+    @BeforeClass
+    private void init() throws NoSuchAlgorithmException {
+
+        AES_GCM_128 = AesGcmCipherDetails.aesGcm128();
+        AES_GCM_192 = AesGcmCipherDetails.aesGcm192();
+        AES_GCM_256 = AesGcmCipherDetails.aesGcm256();
+    }
+
     public void doesntCalculateHmac() throws Exception {
-        Assert.assertEquals(AesGcmCipherDetails.INSTANCE_256_BIT.getAuthenticationHmac(), null);
+        Assert.assertEquals(AES_GCM_256.getAuthenticationHmac(), null);
     }
 
     public void size1024bCalculationWorksRoundTripAes128() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_128, size);
     }
 
     public void size1024bCalculationWorksRoundTripAes192() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_192, size);
     }
 
     public void size1024bCalculationWorksRoundTripAes256() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_256, size);
     }
 
     public void size0bCalculationWorksRoundTripAes128() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_128, size);
     }
 
     public void size0bCalculationWorksRoundTripAes192() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_192, size);
     }
 
     public void size0bCalculationWorksRoundTripAes256() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_256, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes128() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_128, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes192() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_192, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes256() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_GCM_256, size);
     }
 
     public void ciphertextSizeCalculationWorksForAes128() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_128_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_GCM_128);
     }
 
     public void ciphertextSizeCalculationWorksForAes192() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_192_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_GCM_192);
     }
 
     public void ciphertextSizeCalculationWorksForAes256() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_GCM_256);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes128() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_128_BIT;
+        SupportedCipherDetails cipherDetails = AES_GCM_128;
         cipherDetails.translateByteRange(0, 128);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes192() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_192_BIT;
+        SupportedCipherDetails cipherDetails = AES_GCM_192;
         cipherDetails.translateByteRange(0, 128);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void canQueryCiphertextByteRangeAes256() throws Exception {
-        SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_256_BIT;
+        SupportedCipherDetails cipherDetails = AES_GCM_256;
         cipherDetails.translateByteRange(0, 128);
     }
 }

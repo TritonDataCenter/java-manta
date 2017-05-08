@@ -41,45 +41,81 @@ public class CipherSerializerTest {
 
     private Kryo kryo = new Kryo();
 
+    // AES-CBC
+    private AesCbcCipherDetails AES_CBC_128;
+
+    private AesCbcCipherDetails AES_CBC_192;
+
+    private AesCbcCipherDetails AES_CBC_256;
+
+    // AES-CTR
+    private AesCtrCipherDetails AES_CTR_128;
+
+    private AesCtrCipherDetails AES_CTR_192;
+
+    private AesCtrCipherDetails AES_CTR_256;
+
+    // AES-GCM
+    private AesGcmCipherDetails AES_GCM_128;
+
+    private AesGcmCipherDetails AES_GCM_192;
+
+    private AesGcmCipherDetails AES_GCM_256;
+
     @BeforeClass
     public void setup() throws Exception {
         kryo.register(Cipher.class, new CipherSerializer(kryo));
+
+        // AES-CBC
+        AES_CBC_128 = AesCbcCipherDetails.aesCbc128();
+        AES_CBC_192 = AesCbcCipherDetails.aesCbc192();
+        AES_CBC_256 = AesCbcCipherDetails.aesCbc256();
+
+        // AES-CTR
+        AES_CTR_128 = AesCtrCipherDetails.aesCtr128();
+        AES_CTR_192 = AesCtrCipherDetails.aesCtr192();
+        AES_CTR_256 = AesCtrCipherDetails.aesCtr256();
+
+        // AES-GCM
+        AES_GCM_128 = AesGcmCipherDetails.aesGcm128();
+        AES_GCM_192 = AesGcmCipherDetails.aesGcm192();
+        AES_GCM_256 = AesGcmCipherDetails.aesGcm256();
     }
 
     public void canSerializeAesGcm128() throws Exception {
-        canSerializeCipher(AesGcmCipherDetails.INSTANCE_128_BIT);
+        canSerializeCipher(AES_GCM_128);
     }
 
     public void canSerializeAesGcm192() throws Exception {
-        canSerializeCipher(AesGcmCipherDetails.INSTANCE_192_BIT);
+        canSerializeCipher(AES_GCM_192);
     }
 
     public void canSerializeAesGcm256() throws Exception {
-        canSerializeCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
+        canSerializeCipher(AES_GCM_256);
     }
 
     public void canSerializeAesCtr128() throws Exception {
-        canSerializeCipher(AesCtrCipherDetails.INSTANCE_128_BIT);
+        canSerializeCipher(AES_CTR_128);
     }
 
     public void canSerializeAesCtr192() throws Exception {
-        canSerializeCipher(AesCtrCipherDetails.INSTANCE_192_BIT);
+        canSerializeCipher(AES_CTR_192);
     }
 
     public void canSerializeAesCtr256() throws Exception {
-        canSerializeCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
+        canSerializeCipher(AES_CTR_256);
     }
 
     public void canSerializeAesCbc128() throws Exception {
-        canSerializeCipher(AesCbcCipherDetails.INSTANCE_128_BIT);
+        canSerializeCipher(AES_CBC_128);
     }
 
     public void canSerializeAesCbc192() throws Exception {
-        canSerializeCipher(AesCbcCipherDetails.INSTANCE_192_BIT);
+        canSerializeCipher(AES_CBC_192);
     }
 
     public void canSerializeAesCbc256() throws Exception {
-        canSerializeCipher(AesCbcCipherDetails.INSTANCE_256_BIT);
+        canSerializeCipher(AES_CBC_256);
     }
 
     private void canSerializeCipher(final SupportedCipherDetails cipherDetails)

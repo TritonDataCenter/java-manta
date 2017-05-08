@@ -13,6 +13,7 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectMapper;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.AbstractAesCipherDetails;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
@@ -28,6 +29,7 @@ import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -41,6 +43,7 @@ import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +59,7 @@ import static org.mockito.Mockito.mock;
 
 @Test
 public class EncryptedMultipartManagerTest {
-    private SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+    private SupportedCipherDetails cipherDetails = AbstractAesCipherDetails.DEFAULT_CIPHER_AES;
     private SecretKey secretKey = SecretKeyUtils.loadKey(
             Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q=="), cipherDetails);
 

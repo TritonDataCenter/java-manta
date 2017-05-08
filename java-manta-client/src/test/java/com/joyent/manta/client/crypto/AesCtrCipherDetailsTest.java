@@ -10,110 +10,128 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 @Test
 public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
+
+    private AesCtrCipherDetails AES_CTR_128;
+
+    private AesCtrCipherDetails AES_CTR_192;
+
+    private AesCtrCipherDetails AES_CTR_256;
+
+    @BeforeClass
+    private void init() throws NoSuchAlgorithmException {
+
+        AES_CTR_128 = AesCtrCipherDetails.aesCtr128();
+        AES_CTR_192 = AesCtrCipherDetails.aesCtr192();
+        AES_CTR_256 = AesCtrCipherDetails.aesCtr256();
+    }
+
     public void size1024bCalculationWorksRoundTripAes128() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_128, size);
     }
 
     public void size1024bCalculationWorksRoundTripAes192() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_192, size);
     }
 
     public void size1024bCalculationWorksRoundTripAes256() {
         final long size = 1024;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_256, size);
     }
 
     public void size0bCalculationWorksRoundTripAes128() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_128, size);
     }
 
     public void size0bCalculationWorksRoundTripAes192() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_192, size);
     }
 
     public void size0bCalculationWorksRoundTripAes256() {
         final long size = 0;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_256, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes128() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_128, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes192() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_192_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_192, size);
     }
 
     public void size2009125bCalculationWorksRoundTripAes256() {
         final long size = 2009125;
-        sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_256_BIT, size);
+        sizeCalculationWorksRoundTrip(AES_CTR_256, size);
     }
 
     public void ciphertextSizeCalculationWorksForAes128() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_128_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_CTR_128);
     }
 
     public void ciphertextSizeCalculationWorksForAes192() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_192_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_CTR_192);
     }
 
     public void ciphertextSizeCalculationWorksForAes256() throws Exception {
-        sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
+        sizeCalculationWorksComparedToActualCipher(AES_CTR_256);
     }
 
     public void canQueryCiphertextByteRangeAes256() throws Exception {
-        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        SupportedCipherDetails cipherDetails = AES_CTR_256;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void translateByteRangeThrowsWithoutStartInclusive() {
-        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(-1, 0);
+        AES_CTR_128.translateByteRange(-1, 0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void translateByteRangeThrowsWithLargeStartInclusive() {
-        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(Long.MAX_VALUE, 0);
+        AES_CTR_128.translateByteRange(Long.MAX_VALUE, 0);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void translateByteRangeThrowsWithoutEndInclusive() {
-        AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(1, -1);
+        AES_CTR_128.translateByteRange(1, -1);
     }
 
     public void translateByteRangeReturnsCorrectRange() throws Exception {
-        ByteRangeConversion byteRange1 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 10);
+        ByteRangeConversion byteRange1 = AES_CTR_128.translateByteRange(5, 10);
         Assert.assertEquals(byteRange1.getCiphertextStartPositionInclusive(), 0);
         Assert.assertEquals(byteRange1.getCiphertextEndPositionInclusive(), 15);
         Assert.assertEquals(byteRange1.getPlaintextBytesToSkipInitially(), 5);
         Assert.assertEquals(byteRange1.getLengthOfPlaintextIncludingSkipBytes(), 11);
 
-        ByteRangeConversion byteRange2 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(5, 22);
+        ByteRangeConversion byteRange2 = AES_CTR_128.translateByteRange(5, 22);
         Assert.assertEquals(byteRange2.getCiphertextStartPositionInclusive(), 0);
         Assert.assertEquals(byteRange2.getCiphertextEndPositionInclusive(), 31);
         Assert.assertEquals(byteRange2.getPlaintextBytesToSkipInitially(), 5);
         Assert.assertEquals(byteRange2.getLengthOfPlaintextIncludingSkipBytes(), 23);
 
-        ByteRangeConversion byteRange3 = AesCtrCipherDetails.INSTANCE_128_BIT.translateByteRange(32, 35);
+        ByteRangeConversion byteRange3 = AES_CTR_128.translateByteRange(32, 35);
         Assert.assertEquals(byteRange3.getCiphertextStartPositionInclusive(), 32);
         Assert.assertEquals(byteRange3.getCiphertextEndPositionInclusive(), 47);
         Assert.assertEquals(byteRange3.getPlaintextBytesToSkipInitially(), 0);

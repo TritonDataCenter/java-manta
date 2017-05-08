@@ -95,7 +95,7 @@ public class EncryptedHttpHelperTest {
         MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
         StandardConfigContext config = new StandardConfigContext();
 
-        SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
+        SupportedCipherDetails cipherDetails = AesCbcCipherDetails.aesCbc192();
 
         config.setClientEncryptionEnabled(true)
                 .setEncryptionPrivateKeyBytes(SecretKeyUtils.generate(cipherDetails).getEncoded())
@@ -115,7 +115,7 @@ public class EncryptedHttpHelperTest {
 
 
         SupportedCipherDetails objectCipherDetails =
-                AesGcmCipherDetails.INSTANCE_128_BIT;
+                AesGcmCipherDetails.aesGcm128();
 
         Header[] headers = new Header[] {
                 // Notice this is a different cipher than the one set in config

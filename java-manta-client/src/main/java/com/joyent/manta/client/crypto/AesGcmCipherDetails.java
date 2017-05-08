@@ -11,6 +11,8 @@ import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
+
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.AlgorithmParameterSpec;
 
 /**
@@ -35,24 +37,101 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_128_BIT = new AesGcmCipherDetails(128);
+    private static volatile AesGcmCipherDetails instance128Bit;
 
     /**
      * Instance of AES192-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_192_BIT = new AesGcmCipherDetails(192);
+    private static volatile AesGcmCipherDetails instance192Bit;
 
     /**
      * Instance of AES256-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_256_BIT = new AesGcmCipherDetails(256);
+    private static volatile AesGcmCipherDetails instance256Bit;
+
+    /**
+     * Method to retrieve AES-GCM-128 cipher details.
+     *
+     * @return AES-GCM-128 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-GCM-128
+     */
+    public static AesGcmCipherDetails aesGcm128() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance128Bit == null) {
+
+            synchronized (AesGcmCipherDetails.class) {
+
+                if (instance128Bit == null) {
+
+                    instance128Bit = new AesGcmCipherDetails(128);
+                }
+            }
+        }
+
+        return instance128Bit;
+    }
+
+    /**
+     * Method to retrieve AES-GCM-192 cipher details.
+     *
+     * @return AES-GCM-192 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-GCM-192
+     */
+    public static AesGcmCipherDetails aesGcm192() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance192Bit == null) {
+
+            synchronized (AesGcmCipherDetails.class) {
+
+                if (instance192Bit == null) {
+
+                    instance192Bit = new AesGcmCipherDetails(192);
+                }
+            }
+        }
+
+        return instance192Bit;
+    }
+
+    /**
+     * Method to retrieve AES-GCM-256 cipher details.
+     *
+     * @return AES-GCM-256 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-GCM-256
+     */
+    public static AesGcmCipherDetails aesGcm256() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance256Bit == null) {
+
+            synchronized (AesGcmCipherDetails.class) {
+
+                if (instance256Bit == null) {
+
+                    instance256Bit = new AesGcmCipherDetails(256);
+                }
+            }
+        }
+
+        return instance256Bit;
+    }
 
     /**
      * Creates a new instance of a AES-GCM cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
+     *
+     * @throws NoSuchAlgorithmException if no provider implements the requested algorithm
      */
-    private AesGcmCipherDetails(final int keyLengthBits) {
+    private AesGcmCipherDetails(final int keyLengthBits) throws NoSuchAlgorithmException {
         // Use 128-bit AEAD tag
         super(keyLengthBits, "AES/GCM/NoPadding", 16);
     }

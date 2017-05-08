@@ -9,6 +9,8 @@ package com.joyent.manta.client.crypto;
 
 import org.apache.commons.lang3.Validate;
 
+import java.security.NoSuchAlgorithmException;
+
 import javax.crypto.Cipher;
 
 /**
@@ -22,24 +24,101 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-CTR cipher.
      */
-    public static final AesCtrCipherDetails INSTANCE_128_BIT = new AesCtrCipherDetails(128);
+    private static volatile AesCtrCipherDetails instance128Bit;
 
     /**
      * Instance of AES192-CTR cipher.
      */
-    public static final AesCtrCipherDetails INSTANCE_192_BIT = new AesCtrCipherDetails(192);
+    private static volatile AesCtrCipherDetails instance192Bit;
 
     /**
      * Instance of AES256-CTR cipher.
      */
-    public static final AesCtrCipherDetails INSTANCE_256_BIT = new AesCtrCipherDetails(256);
+    private static volatile AesCtrCipherDetails instance256Bit;
+
+    /**
+     * Method to retrieve AES-CTR-128 cipher details.
+     *
+     * @return AES-CTR-128 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-CTR-128
+     */
+    public static AesCtrCipherDetails aesCtr128() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance128Bit == null) {
+
+            synchronized (AesCtrCipherDetails.class) {
+
+                if (instance128Bit == null) {
+
+                    instance128Bit = new AesCtrCipherDetails(128);
+                }
+            }
+        }
+
+        return instance128Bit;
+    }
+
+    /**
+     * Method to retrieve AES-CTR-192 cipher details.
+     *
+     * @return AES-CTR-192 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-CTR-192
+     */
+    public static AesCtrCipherDetails aesCtr192() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance192Bit == null) {
+
+            synchronized (AesCtrCipherDetails.class) {
+
+                if (instance192Bit == null) {
+
+                    instance192Bit = new AesCtrCipherDetails(192);
+                }
+            }
+        }
+
+        return instance192Bit;
+    }
+
+    /**
+     * Method to retrieve AES-CTR-256 cipher details.
+     *
+     * @return AES-CTR-256 cipher details
+     *
+     * @throws NoSuchAlgorithmException if no provider implements AES-CTR-256
+     */
+    public static AesCtrCipherDetails aesCtr256() throws NoSuchAlgorithmException {
+
+        // use double-checked lock to minimize parallel contention
+
+        if (instance256Bit == null) {
+
+            synchronized (AesCtrCipherDetails.class) {
+
+                if (instance256Bit == null) {
+
+                    instance256Bit = new AesCtrCipherDetails(256);
+                }
+            }
+        }
+
+        return instance256Bit;
+    }
 
     /**
      * Creates a new instance of a AES-CTR cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
+     *
+     * @throws NoSuchAlgorithmException if no provider implements the requested algorithm
      */
-    private AesCtrCipherDetails(final int keyLengthBits) {
+    private AesCtrCipherDetails(final int keyLengthBits) throws NoSuchAlgorithmException {
         super(keyLengthBits, "AES/CTR/NoPadding", DEFAULT_HMAC_ALGORITHM);
     }
 

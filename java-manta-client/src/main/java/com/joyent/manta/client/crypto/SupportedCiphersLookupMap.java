@@ -10,6 +10,7 @@ package com.joyent.manta.client.crypto;
 import com.joyent.manta.util.LookupMap;
 import com.joyent.manta.util.MantaUtils;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 /**
@@ -30,18 +31,41 @@ public final class SupportedCiphersLookupMap extends LookupMap<String, Supported
      * Package default constructor because interface is through {@link SupportedCipherDetails}.
      */
     private SupportedCiphersLookupMap() {
-        super(MantaUtils.unmodifiableMap(
-                AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_128_BIT,
-                AesGcmCipherDetails.INSTANCE_192_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_192_BIT,
-                AesGcmCipherDetails.INSTANCE_256_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_256_BIT,
 
-                AesCtrCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_128_BIT,
-                AesCtrCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_192_BIT,
-                AesCtrCipherDetails.INSTANCE_256_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_256_BIT,
+        super(supportedCipherMap());
+    }
 
-                AesCbcCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_128_BIT,
-                AesCbcCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_192_BIT,
-                AesCbcCipherDetails.INSTANCE_256_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_256_BIT
-        ));
+    /**
+     * Method to construct a map of supported ciphers.
+     *
+     * @return map of supported ciphers
+     */
+    private static Map<String, SupportedCipherDetails> supportedCipherMap() {
+
+        final Map<String, SupportedCipherDetails> map;
+
+        try {
+
+            map = MantaUtils.unmodifiableMap(
+                        AesGcmCipherDetails.aesGcm128().getCipherId(), AesGcmCipherDetails.aesGcm128(),
+                        AesGcmCipherDetails.aesGcm192().getCipherId(), AesGcmCipherDetails.aesGcm192(),
+                        AesGcmCipherDetails.aesGcm256().getCipherId(), AesGcmCipherDetails.aesGcm256(),
+
+                        AesCtrCipherDetails.aesCtr128().getCipherId(), AesCtrCipherDetails.aesCtr128(),
+                        AesCtrCipherDetails.aesCtr192().getCipherId(), AesCtrCipherDetails.aesCtr192(),
+                        AesCtrCipherDetails.aesCtr256().getCipherId(), AesCtrCipherDetails.aesCtr256(),
+
+                        AesCbcCipherDetails.aesCbc128().getCipherId(), AesCbcCipherDetails.aesCbc128(),
+                        AesCbcCipherDetails.aesCbc192().getCipherId(), AesCbcCipherDetails.aesCbc192(),
+                        AesCbcCipherDetails.aesCbc256().getCipherId(), AesCbcCipherDetails.aesCbc256()
+                );
+
+        } catch (NoSuchAlgorithmException nsae) {
+
+            final String msg = "unable to instantiate supported cipher details map";
+            throw new Error(msg, nsae);
+        }
+
+        return map;
     }
 }
