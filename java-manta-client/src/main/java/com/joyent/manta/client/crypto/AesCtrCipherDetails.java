@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.crypto.AesCipherDetailsFactory.CipherMode;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
@@ -22,17 +23,20 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-CTR cipher.
      */
-    public static final AesCtrCipherDetails INSTANCE_128_BIT = new AesCtrCipherDetails(128);
+    public static final SupportedCipherDetails INSTANCE_128_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.CTR, 128);
 
     /**
      * Instance of AES192-CTR cipher.
      */
-    public static final AesCtrCipherDetails INSTANCE_192_BIT = new AesCtrCipherDetails(192);
+    public static final SupportedCipherDetails INSTANCE_192_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.CTR, 192);
 
     /**
      * Instance of AES256-CTR cipher.
      */
-    public static final AesCtrCipherDetails INSTANCE_256_BIT = new AesCtrCipherDetails(256);
+    public static final SupportedCipherDetails INSTANCE_256_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.CTR, 256);
 
     /**
      * Creates a new instance of a AES-CTR cipher for the static instance.
