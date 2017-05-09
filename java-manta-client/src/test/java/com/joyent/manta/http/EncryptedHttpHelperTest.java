@@ -44,6 +44,7 @@ public class EncryptedHttpHelperTest {
      * Verifies that encrypted HEAD requests made with a different cipher/mode
      * configured from the cipher/mode on the object will result in an error.
      */
+    @Test(groups = {"unlimited-crypto"})
     public void doesntAllowDifferentCipherForObjectAndConfigHeadIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
@@ -54,6 +55,7 @@ public class EncryptedHttpHelperTest {
      * Verifies that encrypted GET requests made with a different cipher/mode
      * configured from the cipher/mode on the object will result in an error.
      */
+    @Test(groups = {"unlimited-crypto"})
     public void allowDifferentCipherForObjectAndConfigGetIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
@@ -65,6 +67,7 @@ public class EncryptedHttpHelperTest {
      * made with a different cipher/mode configured from the cipher/mode on
      * the object will result in an error.
      */
+    @Test(groups = {"unlimited-crypto"})
     public void doesntAllowDifferentCipherForObjectAndConfigInputStream() throws Exception {
         String path = "/user/path/encrypted-object";
         EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
@@ -89,7 +92,6 @@ public class EncryptedHttpHelperTest {
      * be configured for one cipher/mode and executes requests in another
      * cipher/mode.
      */
-    @Test(groups = {"unlimited-crypto"})
     private static EncryptionHttpHelper fakeEncryptionHttpHelper(String path)
             throws Exception {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
