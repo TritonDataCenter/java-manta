@@ -42,6 +42,11 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     protected static final String DEFAULT_HMAC_ALGORITHM = "HmacMD5";
 
     /**
+     * Default maximum key length.
+     */
+    private static final int DEFAULT_MAX_KEY_LENGTH = 128;
+
+    /**
      * HMAC algorithm identifier.
      */
     private final String hmacAlgorithm;
@@ -90,13 +95,11 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * @param keyLengthBits size of the secret key
      * @param cipherAlgorithmJavaName identifier used to get the cipher via JCE
      * @param authenticationTagLength size of AEAD tag
-     *
-     * @throws NoSuchAlgorithmException if no provider implements
      */
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
-                                    final int authenticationTagLength) throws NoSuchAlgorithmException {
-        ensureKeyStrengthAllowed(keyLengthBits, cipherAlgorithmJavaName);
+                                    final int authenticationTagLength) {
+        ensureKeyStrengthAllowed(keyLengthBits);
 
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
@@ -114,13 +117,11 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * @param keyLengthBits size of the secret key
      * @param cipherAlgorithmJavaName identifier used to get the cipher via JCE
      * @param hmacAlgorithm HMAC algorithm to use for authentication
-     *
-     * @throws NoSuchAlgorithmException if no provider implements {@code cipherAlgorithmJavaName}
      */
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
-                                    final String hmacAlgorithm) throws NoSuchAlgorithmException {
-        ensureKeyStrengthAllowed(keyLengthBits, cipherAlgorithmJavaName);
+                                    final String hmacAlgorithm) {
+        ensureKeyStrengthAllowed(keyLengthBits);
 
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
@@ -318,20 +319,24 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     /**
      *
-     * @param keyLengthBits size of the secret key
-     * @param cipherAlgorithmJavaName identifier used to get the cipher via JCE
-     *
-     * @throws NoSuchAlgorithmException if no provider implements {@code cipherAlgorithmJavaName}
+     * @param requestedKeyLengthBits size of the secret key
      */
-    private void ensureKeyStrengthAllowed(int keyLengthBits, String cipherAlgorithmJavaName) throws NoSuchAlgorithmException {
-        final int maxKeyLength = Cipher.getMaxAllowedKeyLength(cipherAlgorithmJavaName);
+    private void ensureKeyStrengthAllowed(final int requestedKeyLengthBits) {
+        int maxKeyLength;
 
-        if (keyLengthBits <= maxKeyLength) {
+        try {
+            maxKeyLength = Cipher.getMaxAllowedKeyLength("AES");
+            // will return DEFAULT_MAX_KEY_LENGTH if JCE missing, catch is for the compiler
+        } catch (NoSuchAlgorithmException nsae) {
+            maxKeyLength = DEFAULT_MAX_KEY_LENGTH;
+        }
+
+        if (requestedKeyLengthBits <= maxKeyLength) {
             return;
         }
 
         final String msg = "requested cipher key length greater than maximum allowed [jce policy] "
-                + "(keyLengthBits=" + keyLengthBits + ", maxKeyLength=" + maxKeyLength + ")";
+                + "(keyLengthBits=" + requestedKeyLengthBits + ", maxKeyLength=" + maxKeyLength + ")";
         throw new MantaClientException(msg);
     }
 }
