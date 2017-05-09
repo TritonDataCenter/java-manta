@@ -21,13 +21,13 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void size1024bCalculationWorksRoundTripAes192() {
         final long size = 1024;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void size1024bCalculationWorksRoundTripAes256() {
         final long size = 1024;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
@@ -38,13 +38,13 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void size0bCalculationWorksRoundTripAes192() {
         final long size = 0;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void size0bCalculationWorksRoundTripAes256() {
         final long size = 0;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
@@ -55,13 +55,13 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_128_BIT, size);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void size2009125bCalculationWorksRoundTripAes192() {
         final long size = 2009125;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_192_BIT, size);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void size2009125bCalculationWorksRoundTripAes256() {
         final long size = 2009125;
         sizeCalculationWorksRoundTrip(AesGcmCipherDetails.INSTANCE_256_BIT, size);
@@ -71,12 +71,12 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void ciphertextSizeCalculationWorksForAes192() throws Exception {
         sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_192_BIT);
     }
 
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     public void ciphertextSizeCalculationWorksForAes256() throws Exception {
         sizeCalculationWorksComparedToActualCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
@@ -87,13 +87,13 @@ public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
         cipherDetails.translateByteRange(0, 128);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class, groups = {"strong-crypto"})
+    @Test(expectedExceptions = UnsupportedOperationException.class, groups = {"unlimited-crypto"})
     public void canQueryCiphertextByteRangeAes192() throws Exception {
         SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_192_BIT;
         cipherDetails.translateByteRange(0, 128);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class, groups = {"strong-crypto"})
+    @Test(expectedExceptions = UnsupportedOperationException.class, groups = {"unlimited-crypto"})
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesGcmCipherDetails.INSTANCE_256_BIT;
         cipherDetails.translateByteRange(0, 128);

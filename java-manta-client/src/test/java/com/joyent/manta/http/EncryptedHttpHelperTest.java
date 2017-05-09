@@ -89,7 +89,7 @@ public class EncryptedHttpHelperTest {
      * be configured for one cipher/mode and executes requests in another
      * cipher/mode.
      */
-    @Test(groups = {"strong-crypto"})
+    @Test(groups = {"unlimited-crypto"})
     private static EncryptionHttpHelper fakeEncryptionHttpHelper(String path)
             throws Exception {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
