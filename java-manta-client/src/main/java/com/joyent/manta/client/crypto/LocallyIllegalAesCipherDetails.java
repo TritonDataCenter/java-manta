@@ -30,7 +30,7 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
      *
      * @param keyLengthBits size of the secret key
      */
-    LocallyIllegalAesCipherDetails(int keyLengthBits) {
+    LocallyIllegalAesCipherDetails(final int keyLengthBits) {
         this.keyLengthBits = keyLengthBits;
     }
 

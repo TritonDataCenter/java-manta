@@ -102,7 +102,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
         this.isAEADCipher = true;
     }
 
-
     /**
      * Creates a new instance for a cipher authenticated by a HMAC.
      *
@@ -113,7 +112,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
                                     final String hmacAlgorithm) {
-
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
         this.cipherId = createMantaCipherIdFromJavaAlgorithmId(
