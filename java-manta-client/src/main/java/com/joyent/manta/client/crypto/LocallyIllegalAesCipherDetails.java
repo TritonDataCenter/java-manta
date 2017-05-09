@@ -16,7 +16,6 @@ import java.security.spec.AlgorithmParameterSpec;
  * Implementation of an AESCipherDetails that MUST NOT be used within the current runtime.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
- * @since 3.0.0
  */
 public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
 
@@ -35,7 +34,9 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
     }
 
     /**
-     * Fail immediately, we don't belong on this JVM.
+     * Fail immediately, we don't belong on this JVM. We throw an Error instead of an Exception because it is unlikely
+     * the runtime could recover from a missing extension. Additionally, Errors are unchecked exceptions so they don't
+     * require callers to change their method signatures.
      */
     private void fail() {
         throw new Error("This cipher is not compatible with the current runtime: (keyLengthBits="

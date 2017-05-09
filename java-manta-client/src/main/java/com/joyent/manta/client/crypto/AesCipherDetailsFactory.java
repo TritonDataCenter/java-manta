@@ -14,7 +14,6 @@ import java.security.NoSuchAlgorithmException;
  * Class for constructing AesCipherDetails which may or may not be useable in the current runtime.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
- * @since 3.0.0
  */
 public final class AesCipherDetailsFactory {
 
@@ -64,8 +63,6 @@ public final class AesCipherDetailsFactory {
      *
      * @param mode cipher mode
      * @param requestedKeyLengthBits secret key length in bits
-     *
-     * @return static
      */
     static SupportedCipherDetails buildWith(final CipherMode mode, final int requestedKeyLengthBits) {
 
