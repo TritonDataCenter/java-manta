@@ -50,10 +50,12 @@ public class CipherSerializerTest {
         canSerializeCipher(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
+    @Test(groups = {"strong-crypto"})
     public void canSerializeAesGcm192() throws Exception {
         canSerializeCipher(AesGcmCipherDetails.INSTANCE_192_BIT);
     }
 
+    @Test(groups = {"strong-crypto"})
     public void canSerializeAesGcm256() throws Exception {
         canSerializeCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
@@ -62,10 +64,12 @@ public class CipherSerializerTest {
         canSerializeCipher(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
+    @Test(groups = {"strong-crypto"})
     public void canSerializeAesCtr192() throws Exception {
         canSerializeCipher(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
+    @Test(groups = {"strong-crypto"})
     public void canSerializeAesCtr256() throws Exception {
         canSerializeCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
     }
@@ -74,10 +78,12 @@ public class CipherSerializerTest {
         canSerializeCipher(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
+    @Test(groups = {"strong-crypto"})
     public void canSerializeAesCbc192() throws Exception {
         canSerializeCipher(AesCbcCipherDetails.INSTANCE_192_BIT);
     }
 
+    @Test(groups = {"strong-crypto"})
     public void canSerializeAesCbc256() throws Exception {
         canSerializeCipher(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
