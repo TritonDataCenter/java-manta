@@ -39,7 +39,7 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
      */
     private void fail() {
         throw new Error("This cipher is not compatible with the current runtime: (keyLengthBits="
-                + this.keyLengthBits + ", maxKeyLength=" + AesCipherDetailsFactory.DEFAULT_MAX_KEY_LENGTH);
+                + this.keyLengthBits + ", maxKeyLength=" + AesCipherDetailsFactory.MAX_KEY_LENGTH_ALLOWED);
     }
 
     @Override

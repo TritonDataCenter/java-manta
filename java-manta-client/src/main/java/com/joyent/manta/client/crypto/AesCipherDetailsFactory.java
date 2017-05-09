@@ -37,7 +37,25 @@ public final class AesCipherDetailsFactory {
     /**
      * Default maximum key length.
      */
-    static final int DEFAULT_MAX_KEY_LENGTH = 128;
+    private static final int MAX_KEY_LENGTH_DEFAULT = 128;
+
+    /**
+     * Maximum key length allowed by current runtime.
+     */
+    static final int MAX_KEY_LENGTH_ALLOWED;
+
+    static {
+        int maxKeyLength;
+
+        try {
+            maxKeyLength = Cipher.getMaxAllowedKeyLength("AES");
+            // will return MAX_KEY_LENGTH_DEFAULT if JCE missing, catch is for the compiler
+        } catch (NoSuchAlgorithmException nsae) {
+            maxKeyLength = MAX_KEY_LENGTH_DEFAULT;
+        }
+
+        MAX_KEY_LENGTH_ALLOWED = maxKeyLength;
+    }
 
     /**
      * @param mode cipher mode
@@ -71,16 +89,6 @@ public final class AesCipherDetailsFactory {
      * @return runtime legality of key length
      */
     private static boolean keyStrengthAllowedByRuntime(final int requestedKeyLengthBits) {
-        int maxKeyLength;
-
-        try {
-            // TODO: potentially reuse {@code cipherAlgorithmJavaName} here?
-            maxKeyLength = Cipher.getMaxAllowedKeyLength("AES");
-            // will return DEFAULT_MAX_KEY_LENGTH if JCE missing, catch is for the compiler
-        } catch (NoSuchAlgorithmException nsae) {
-            maxKeyLength = DEFAULT_MAX_KEY_LENGTH;
-        }
-
-        return requestedKeyLengthBits <= maxKeyLength;
+        return requestedKeyLengthBits <= MAX_KEY_LENGTH_ALLOWED;
     }
 }
