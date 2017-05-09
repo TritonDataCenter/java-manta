@@ -36,7 +36,7 @@ public final class AesCipherDetailsFactory {
     /**
      * Maximum AES key length when Java Cryptography Extensions are missing.
      */
-    private static final int MAX_KEY_LENGTH_FALLBACK = 128;
+    static final int MAX_KEY_LENGTH_FALLBACK = 128;
 
     /**
      * Maximum key length allowed by current runtime.

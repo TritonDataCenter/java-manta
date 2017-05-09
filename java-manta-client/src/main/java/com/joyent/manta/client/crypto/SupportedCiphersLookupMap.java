@@ -30,18 +30,37 @@ public final class SupportedCiphersLookupMap extends LookupMap<String, Supported
      * Package default constructor because interface is through {@link SupportedCipherDetails}.
      */
     private SupportedCiphersLookupMap() {
-        super(MantaUtils.unmodifiableMap(
-                AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_128_BIT,
-                AesGcmCipherDetails.INSTANCE_192_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_192_BIT,
-                AesGcmCipherDetails.INSTANCE_256_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_256_BIT,
+        super(runtimeCompatibleCiphers());
+    }
 
-                AesCtrCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_128_BIT,
-                AesCtrCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_192_BIT,
-                AesCtrCipherDetails.INSTANCE_256_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_256_BIT,
+    /**
+     * Provide a map of legal ciphers for the current runtime.
+     *
+     * @return A plain Map for use with super() containing only the ciphers which are valid for the current runtime
+     */
+    private static Map<String, SupportedCipherDetails> runtimeCompatibleCiphers() {
+        if (AesCipherDetailsFactory.MAX_KEY_LENGTH_FALLBACK == AesCipherDetailsFactory.MAX_KEY_LENGTH_ALLOWED) {
+            // The max allowed cipher strength is unchanged, JCE is not installed
 
-                AesCbcCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_128_BIT,
-                AesCbcCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_192_BIT,
-                AesCbcCipherDetails.INSTANCE_256_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_256_BIT
-        ));
+            return MantaUtils.unmodifiableMap(
+                    AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_128_BIT,
+                    AesCtrCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_128_BIT,
+                    AesCbcCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_128_BIT
+            );
+        } else {
+            return MantaUtils.unmodifiableMap(
+                    AesGcmCipherDetails.INSTANCE_128_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_128_BIT,
+                    AesGcmCipherDetails.INSTANCE_192_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_192_BIT,
+                    AesGcmCipherDetails.INSTANCE_256_BIT.getCipherId(), AesGcmCipherDetails.INSTANCE_256_BIT,
+
+                    AesCtrCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_128_BIT,
+                    AesCtrCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_192_BIT,
+                    AesCtrCipherDetails.INSTANCE_256_BIT.getCipherId(), AesCtrCipherDetails.INSTANCE_256_BIT,
+
+                    AesCbcCipherDetails.INSTANCE_128_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_128_BIT,
+                    AesCbcCipherDetails.INSTANCE_192_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_192_BIT,
+                    AesCbcCipherDetails.INSTANCE_256_BIT.getCipherId(), AesCbcCipherDetails.INSTANCE_256_BIT
+            );
+        }
     }
 }
