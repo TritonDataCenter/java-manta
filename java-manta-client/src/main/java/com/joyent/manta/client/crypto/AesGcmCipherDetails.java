@@ -52,7 +52,7 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
      */
-    private AesGcmCipherDetails(final int keyLengthBits) {
+    protected AesGcmCipherDetails(final int keyLengthBits) {
         // Use 128-bit AEAD tag
         super(keyLengthBits, "AES/GCM/NoPadding", 16);
     }

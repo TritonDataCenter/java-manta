@@ -39,7 +39,7 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
      */
-    private AesCbcCipherDetails(final int keyLengthBits) {
+    protected AesCbcCipherDetails(final int keyLengthBits) {
         super(keyLengthBits, "AES/CBC/PKCS5Padding", DEFAULT_HMAC_ALGORITHM);
     }
 

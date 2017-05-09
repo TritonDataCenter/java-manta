@@ -39,7 +39,7 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
      */
-    private AesCtrCipherDetails(final int keyLengthBits) {
+    protected AesCtrCipherDetails(final int keyLengthBits) {
         super(keyLengthBits, "AES/CTR/NoPadding", DEFAULT_HMAC_ALGORITHM);
     }
 
