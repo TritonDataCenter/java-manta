@@ -58,6 +58,10 @@ public final class AesCipherDetailsFactory {
     }
 
     /**
+     * Builds a concrete subclass of AbstractAesCipherDetails, or a LocallyIllegalAesCipherDetails when the current
+     * runtime lacks the required <a href="https://en.wikipedia.org/wiki/Java_Cryptography_Extension">Java Cryptography
+     * Extensions</a>.
+     *
      * @param mode cipher mode
      * @param requestedKeyLengthBits secret key length in bits
      *
