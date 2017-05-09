@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.client.crypto;
 
-import com.joyent.manta.exception.MantaClientException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -40,11 +39,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
      * Default HMAC algorithm to use for AES ciphers.
      */
     protected static final String DEFAULT_HMAC_ALGORITHM = "HmacMD5";
-
-    /**
-     * Default maximum key length.
-     */
-    private static final int DEFAULT_MAX_KEY_LENGTH = 128;
 
     /**
      * HMAC algorithm identifier.
@@ -99,8 +93,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
                                     final int authenticationTagLength) {
-        ensureKeyStrengthAllowed(keyLengthBits);
-
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
         this.cipherId = createMantaCipherIdFromJavaAlgorithmId(
@@ -121,7 +113,6 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     public AbstractAesCipherDetails(final int keyLengthBits,
                                     final String cipherAlgorithmJavaName,
                                     final String hmacAlgorithm) {
-        ensureKeyStrengthAllowed(keyLengthBits);
 
         this.keyLengthBits = keyLengthBits;
         this.cipherAlgorithmJavaName = cipherAlgorithmJavaName;
@@ -315,28 +306,5 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
             // so we go with the default value
             return new SecureRandom();
         }
-    }
-
-    /**
-     *
-     * @param requestedKeyLengthBits size of the secret key
-     */
-    private void ensureKeyStrengthAllowed(final int requestedKeyLengthBits) {
-        int maxKeyLength;
-
-        try {
-            maxKeyLength = Cipher.getMaxAllowedKeyLength("AES");
-            // will return DEFAULT_MAX_KEY_LENGTH if JCE missing, catch is for the compiler
-        } catch (NoSuchAlgorithmException nsae) {
-            maxKeyLength = DEFAULT_MAX_KEY_LENGTH;
-        }
-
-        if (requestedKeyLengthBits <= maxKeyLength) {
-            return;
-        }
-
-        final String msg = "requested cipher key length greater than maximum allowed [jce policy] "
-                + "(keyLengthBits=" + requestedKeyLengthBits + ", maxKeyLength=" + maxKeyLength + ")";
-        throw new MantaClientException(msg);
     }
 }
