@@ -440,6 +440,12 @@ service.  In order to run the test suite, you will need to specify environment
 variables, system properties or TestNG parameters to tell the library how to
 authenticate against Manta.
 
+While the Java Cryptography Extensions are expected to be installed, it is possible to
+run a subset of the test suite by adding `-DexcludedGroups=unlimited-crypto`, e.g.:
+```
+mvn test -DexcludedGroups=unlimited-crypto
+```
+
 ### Releasing
 
 Please refer to the [release documentation](RELEASING.md).
