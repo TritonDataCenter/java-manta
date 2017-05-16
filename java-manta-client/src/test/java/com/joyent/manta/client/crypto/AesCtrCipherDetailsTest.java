@@ -27,11 +27,13 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void size1024bCalculationWorksRoundTripAes192() {
         final long size = 1024;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_192_BIT, size);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void size1024bCalculationWorksRoundTripAes256() {
         final long size = 1024;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_256_BIT, size);
@@ -42,11 +44,13 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void size0bCalculationWorksRoundTripAes192() {
         final long size = 0;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_192_BIT, size);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void size0bCalculationWorksRoundTripAes256() {
         final long size = 0;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_256_BIT, size);
@@ -57,11 +61,13 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_128_BIT, size);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void size2009125bCalculationWorksRoundTripAes192() {
         final long size = 2009125;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_192_BIT, size);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void size2009125bCalculationWorksRoundTripAes256() {
         final long size = 2009125;
         sizeCalculationWorksRoundTrip(AesCtrCipherDetails.INSTANCE_256_BIT, size);
@@ -71,14 +77,17 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
         sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void ciphertextSizeCalculationWorksForAes192() throws Exception {
         sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void ciphertextSizeCalculationWorksForAes256() throws Exception {
         sizeCalculationWorksComparedToActualCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
     }
 
+    @Test(groups = {"unlimited-crypto"})
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);

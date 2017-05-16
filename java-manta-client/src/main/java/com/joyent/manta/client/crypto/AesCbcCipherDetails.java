@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.crypto.AesCipherDetailsFactory.CipherMode;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
@@ -22,24 +23,27 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-CBC cipher.
      */
-    public static final AesCbcCipherDetails INSTANCE_128_BIT = new AesCbcCipherDetails(128);
+    public static final SupportedCipherDetails INSTANCE_128_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.CBC, 128);
 
     /**
      * Instance of AES192-CBC cipher.
      */
-    public static final AesCbcCipherDetails INSTANCE_192_BIT = new AesCbcCipherDetails(192);
+    public static final SupportedCipherDetails INSTANCE_192_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.CBC, 192);
 
     /**
      * Instance of AES256-CBC cipher.
      */
-    public static final AesCbcCipherDetails INSTANCE_256_BIT = new AesCbcCipherDetails(256);
+    public static final SupportedCipherDetails INSTANCE_256_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.CBC, 256);
 
     /**
      * Creates a new instance of a AES-CBC cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
      */
-    private AesCbcCipherDetails(final int keyLengthBits) {
+    protected AesCbcCipherDetails(final int keyLengthBits) {
         super(keyLengthBits, "AES/CBC/PKCS5Padding", DEFAULT_HMAC_ALGORITHM);
     }
 

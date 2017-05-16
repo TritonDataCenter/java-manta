@@ -18,16 +18,21 @@ import static com.joyent.manta.client.crypto.SupportedCiphersLookupMap.INSTANCE;
 
 @Test
 public class SupportedCiphersLookupMapTest {
-    public void canGetAllCiphers() {
+
+    public void canGetRestrictedCiphers() {
         Assert.assertTrue(INSTANCE.get("AES128/GCM/NoPadding") instanceof AesGcmCipherDetails);
+        Assert.assertTrue(INSTANCE.get("AES128/CTR/NoPadding") instanceof AesCtrCipherDetails);
+        Assert.assertTrue(INSTANCE.get("AES128/CBC/PKCS5Padding") instanceof AesCbcCipherDetails);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void canGetAllCiphers() {
         Assert.assertTrue(INSTANCE.get("AES192/GCM/NoPadding") instanceof AesGcmCipherDetails);
         Assert.assertTrue(INSTANCE.get("AES256/GCM/NoPadding") instanceof AesGcmCipherDetails);
 
-        Assert.assertTrue(INSTANCE.get("AES128/CTR/NoPadding") instanceof AesCtrCipherDetails);
         Assert.assertTrue(INSTANCE.get("AES192/CTR/NoPadding") instanceof AesCtrCipherDetails);
         Assert.assertTrue(INSTANCE.get("AES256/CTR/NoPadding") instanceof AesCtrCipherDetails);
 
-        Assert.assertTrue(INSTANCE.get("AES128/CBC/PKCS5Padding") instanceof AesCbcCipherDetails);
         Assert.assertTrue(INSTANCE.get("AES192/CBC/PKCS5Padding") instanceof AesCbcCipherDetails);
         Assert.assertTrue(INSTANCE.get("AES256/CBC/PKCS5Padding") instanceof AesCbcCipherDetails);
     }

@@ -22,6 +22,9 @@ were affected, not the content.
    path.
  - Recursive directory creation will no longer
    [encode the path twice](https://github.com/joyent/java-manta/issues/231).
+ - Gracefully handle missing JCE Unlimited Strength Policy by [only enabling stronger ciphers when
+   they are allowed by the runtime](https://github.com/joyent/java-manta/issues/242).
+   Installing the Unlimited Policy files where necessary is still strongly recommended.
 
 ## [3.0.0] - 2017-04-06
 ### Changed

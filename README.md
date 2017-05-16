@@ -48,6 +48,8 @@ If you prefer to build from source, you'll also need
 Which will compile the jar to ./targets/java-manta-version.jar. You can then
 add it as a dependency to your Java project.
 
+If you want to skip running of the test suite, use the `-DskipTests` property.
+
 ## Configuration
 
 Configuration parameters take precedence from left to right - values on the
@@ -157,8 +159,6 @@ ConfigContext customConfig = new StandardConfigContext()
     .setMantaUser("test-user");
 ConfigContext config = new ChainedConfigContext(defaultConfig, customConfig);
 ```
-
-If you want to skip running of the test suite, use the `-DskipTests` property.
 
 ## Accounts, Usernames and Subusers
 Joyent's SmartDataCenter account implementation is such that you can have a
@@ -439,6 +439,12 @@ By default, the test suite invokes the java manta client against the live manta
 service.  In order to run the test suite, you will need to specify environment
 variables, system properties or TestNG parameters to tell the library how to
 authenticate against Manta.
+
+While the Java Cryptography Extensions are expected to be installed, it is possible to
+run a subset of the test suite by adding `-DexcludedGroups=unlimited-crypto`, e.g.:
+```
+mvn test -DexcludedGroups=unlimited-crypto
+```
 
 ### Releasing
 

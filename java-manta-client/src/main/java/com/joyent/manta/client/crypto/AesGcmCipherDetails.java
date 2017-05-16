@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.crypto.AesCipherDetailsFactory.CipherMode;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
@@ -35,24 +36,27 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
     /**
      * Instance of AES128-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_128_BIT = new AesGcmCipherDetails(128);
+    public static final SupportedCipherDetails INSTANCE_128_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.GCM, 128);
 
     /**
      * Instance of AES192-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_192_BIT = new AesGcmCipherDetails(192);
+    public static final SupportedCipherDetails INSTANCE_192_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.GCM, 192);
 
     /**
      * Instance of AES256-GCM cipher.
      */
-    public static final AesGcmCipherDetails INSTANCE_256_BIT = new AesGcmCipherDetails(256);
+    public static final SupportedCipherDetails INSTANCE_256_BIT =
+            AesCipherDetailsFactory.buildWith(CipherMode.GCM, 256);
 
     /**
      * Creates a new instance of a AES-GCM cipher for the static instance.
      *
      * @param keyLengthBits size of the private key - which determines the AES algorithm type
      */
-    private AesGcmCipherDetails(final int keyLengthBits) {
+    protected AesGcmCipherDetails(final int keyLengthBits) {
         // Use 128-bit AEAD tag
         super(keyLengthBits, "AES/GCM/NoPadding", 16);
     }
