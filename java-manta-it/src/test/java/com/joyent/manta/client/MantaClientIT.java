@@ -167,6 +167,22 @@ public class MantaClientIT {
     }
 
     @Test
+    public final void canReadEmptyFileAsInputStream()
+            throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, new byte[0]);
+
+        try (InputStream in = mantaClient.getAsInputStream(path)) {
+            // InputStream#read() returns -1 when the stream has reached the end
+            Assert.assertEquals(in.read(), -1);
+        } finally {
+            mantaClient.delete(path);
+        }
+    }
+
+    @Test
     public final void testManyOperations() throws IOException {
         String dir = String.format("%s/multiple", testPathPrefix);
         mantaClient.putDirectory(dir);
