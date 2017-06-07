@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [x.x.x] - YYYY-MM-DD
+## [3.1.0] - 2017-06-07
 
 Several related URL encoding bugs have been fixed.  Objects with
 non-alphanumeric characters created by java-manta may have been
