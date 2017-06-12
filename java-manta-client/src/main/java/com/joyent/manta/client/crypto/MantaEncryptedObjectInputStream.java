@@ -678,7 +678,15 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 while (readHmacBytes < this.hmac.getMacSize()) {
                     int bytesNeeded = this.hmac.getMacSize() - readHmacBytes;
                     int bytesRetried = super.getBackingStream().read(expected, readHmacBytes, bytesNeeded);
-                    readHmacBytes += bytesRetried;
+
+                    /*
+                     * it is unlikely that we would get EOF out of the previous call to read() but then again
+                     * we just failed to get all 16 bytes on the first read() so might as well be on the safe side
+                     */
+
+                    if (bytesRetried > EOF) {
+                        readHmacBytes += bytesRetried;
+                    }
                 }
             }
 
