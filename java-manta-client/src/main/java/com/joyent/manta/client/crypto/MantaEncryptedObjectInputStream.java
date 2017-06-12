@@ -672,28 +672,21 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             byte[] expected = new byte[this.hmac.getMacSize()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+            }
+
             if (plaintextBytesRead == getContentLength()
                     && plaintextBytesRead + readHmacBytes < super.getContentLength()) {
-                // we read too few bytes for the hmac but there are still more available
-                int bytesNeeded = this.hmac.getMacSize() - readHmacBytes;
-                int bytesRetried;
-
-                while ((bytesRetried = super.getBackingStream().read(expected, readHmacBytes, bytesNeeded)) != EOF) {
+                // we read too few bytes for the hmac but there are still more available AND expected
+                while (readHmacBytes < this.hmac.getMacSize()) {
+                    int bytesNeeded = this.hmac.getMacSize() - readHmacBytes;
+                    int bytesRetried = super.getBackingStream().read(expected, readHmacBytes, bytesNeeded);
                     readHmacBytes += bytesRetried;
-                    bytesNeeded = this.hmac.getMacSize() - readHmacBytes;
                 }
             }
 
-            if (readHmacBytes != this.hmac.getMacSize()) {
-                MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
-                annotateException(e);
-                e.setContextValue("expectedHmacSize", this.hmac.getMacSize());
-                e.setContextValue("actualHmacSize", readHmacBytes);
-                throw e;
-            }
-
-            final int extraByte = super.getBackingStream().read();
-            if (extraByte != EOF) {
+            if (super.getBackingStream().read() != EOF) {
                 String msg = "Expecting the end of the stream. However, more "
                         + "bytes were available.";
                 MantaIOException e = new MantaIOException(msg);
@@ -701,8 +694,13 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 throw e;
             }
 
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+
+            if (readHmacBytes != this.hmac.getMacSize()) {
+                MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
+                annotateException(e);
+                e.setContextValue("expectedHmacSize", this.hmac.getMacSize());
+                e.setContextValue("actualHmacSize", readHmacBytes);
+                throw e;
             }
 
             if (super.getBackingStream().read() >= 0) {
