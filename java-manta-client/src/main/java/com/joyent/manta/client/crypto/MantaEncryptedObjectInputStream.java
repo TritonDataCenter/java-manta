@@ -652,6 +652,49 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         return bufferSize;
     }
 
+    /**
+     * Reads the HMAC from the end of the underlying stream and returns it as
+     * a byte array.
+     *
+     * @return HMAC as byte array
+     * @throws MantaIOException thrown when stream is unavailable or invalid
+     */
+    private byte[] readHmacFromEndOfStream() throws MantaIOException {
+        final InputStream stream = super.getBackingStream();
+        final int hmacSize = this.hmac.getMacSize();
+        final byte[] hmacBytes = new byte[hmacSize];
+
+        int totalBytesRead = 0;
+        int bytesRead;
+
+        while (totalBytesRead < hmacSize) {
+            final int lengthToRead = hmacSize - totalBytesRead;
+
+            try {
+                 bytesRead = stream.read(hmacBytes, totalBytesRead, lengthToRead);
+            } catch (IOException e) {
+                String msg = "Unable to read HMAC from the end of stream";
+                MantaIOException mioe = new MantaIOException(msg);
+                annotateException(mioe);
+                mioe.setContextValue("backing_stream_class", stream.getClass());
+                mioe.setContextValue("total_hmac_bytes_read", totalBytesRead);
+
+                throw mioe;
+            }
+
+            if (totalBytesRead < hmacSize && bytesRead == EOF) {
+                String msg = "No HMAC was stored at the end of the stream";
+                MantaIOException e = new MantaIOException(msg);
+                annotateException(e);
+                throw e;
+            }
+
+            totalBytesRead += bytesRead;
+        }
+
+        return hmacBytes;
+    }
+
     @Override
     public void close() throws IOException {
         synchronized (this.closeLock) {
@@ -664,32 +707,19 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         readRemainingBytes();
 
-        IOUtils.closeQuietly(cipherInputStream);
+        try {
+            IOUtils.closeQuietly(cipherInputStream);
+        } catch (Exception e) {
+            LOGGER.warn("Error closing CipherInputStream", e);
+        }
 
         if (hmac != null && authenticateCiphertext) {
             byte[] checksum = new byte[hmac.getMacSize()];
             hmac.doFinal(checksum, 0);
-            byte[] expected = new byte[this.hmac.getMacSize()];
-            int readHmacBytes = super.getBackingStream().read(expected);
-
-            if (super.getBackingStream().read() != EOF) {
-                String msg = "Expecting the end of the stream. However, more "
-                        + "bytes were available.";
-                MantaIOException e = new MantaIOException(msg);
-                annotateException(e);
-                throw e;
-            }
+            byte[] expected = readHmacFromEndOfStream();
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
-            }
-
-            if (readHmacBytes != this.hmac.getMacSize()) {
-                MantaIOException e = new MantaIOException("The HMAC stored was in the incorrect size");
-                annotateException(e);
-                e.setContextValue("expectedHmacSize", this.hmac.getMacSize());
-                e.setContextValue("actualHmacSize", readHmacBytes);
-                throw e;
             }
 
             if (super.getBackingStream().read() >= 0) {
