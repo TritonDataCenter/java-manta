@@ -618,6 +618,20 @@ public class MantaEncryptedObjectInputStreamTest {
         willValidateIfHmacIsReadInMultipleReads(AesCtrCipherDetails.INSTANCE_256_BIT);
     }
 
+    public void willValidateIfHmacIsReadInMultipleReadsAesCbc128() throws IOException {
+        willValidateIfHmacIsReadInMultipleReads(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void willValidateIfHmacIsReadInMultipleReadsAesCbc192() throws IOException {
+        willValidateIfHmacIsReadInMultipleReads(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void willValidateIfHmacIsReadInMultipleReadsAesCbc256() throws IOException {
+        willValidateIfHmacIsReadInMultipleReads(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
     /* TEST UTILITY CLASSES */
 
     private static class EncryptedFile {
