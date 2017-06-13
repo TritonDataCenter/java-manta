@@ -345,20 +345,34 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void testPutLinkWithPlusInPath() throws IOException {
-        final String name = UUID.randomUUID().toString();
+    public final void testPutLinkWithPlusInPathOfDestination() throws IOException {
         final String destPrefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
         mantaClient.putDirectory(destPrefix);
 
-        final String sourcePath = testPathPrefix + name;
-        final String destPath = destPrefix + MantaClient.SEPARATOR + name;
+        final String sourcePath = testPathPrefix + UUID.randomUUID();
+        final String destPath = destPrefix
+                + MantaClient.SEPARATOR + UUID.randomUUID();
 
         mantaClient.put(sourcePath, TEST_DATA);
 
-        final String link = UUID.randomUUID().toString();
-        mantaClient.putSnapLink(sourcePath + link,
-                destPath + name, null);
-        final String linkContent = mantaClient.getAsString(testPathPrefix + link);
+        mantaClient.putSnapLink(destPath, sourcePath, null);
+        final String linkContent = mantaClient.getAsString(destPath);
+        Assert.assertEquals(linkContent, TEST_DATA);
+    }
+
+    @Test
+    public final void testPutLinkWithPlusInPathOfSource() throws IOException {
+        final String sourcePrefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
+        mantaClient.putDirectory(sourcePrefix);
+
+        final String sourcePath = sourcePrefix + MantaClient.SEPARATOR + UUID.randomUUID();
+        final String destPath = testPathPrefix
+                + MantaClient.SEPARATOR + UUID.randomUUID();
+
+        mantaClient.put(sourcePath, TEST_DATA);
+
+        mantaClient.putSnapLink(destPath, sourcePath, null);
+        final String linkContent = mantaClient.getAsString(destPath);
         Assert.assertEquals(linkContent, TEST_DATA);
     }
 

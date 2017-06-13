@@ -40,6 +40,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.exception.ContextedException;
+import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -1472,9 +1474,15 @@ public class MantaClient implements AutoCloseable {
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.SNAPLINK.getContentType());
         put.setHeader(HttpHeaders.LOCATION, objectPath);
 
-        httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
-                "PUT    {} -> {} response [{}] {} ",
-                objectPath, linkPath);
+        try {
+            httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
+                    "PUT    {} -> {} response [{}] {} ",
+                    objectPath, linkPath);
+        } catch (MantaIOException e) {
+            e.addContextValue("linkPath", linkPath);
+            e.addContextValue("objectPath", objectPath);
+            throw e;
+        }
     }
 
     /**
