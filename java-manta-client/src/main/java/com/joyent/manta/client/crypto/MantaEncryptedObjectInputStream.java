@@ -672,24 +672,6 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             byte[] expected = new byte[this.hmac.getMacSize()];
             int readHmacBytes = super.getBackingStream().read(expected);
 
-            if (plaintextBytesRead == getContentLength()
-                    && plaintextBytesRead + readHmacBytes < super.getContentLength()) {
-                // we read too few bytes for the hmac but there are still more available AND expected
-                while (readHmacBytes < this.hmac.getMacSize()) {
-                    int bytesNeeded = this.hmac.getMacSize() - readHmacBytes;
-                    int bytesRetried = super.getBackingStream().read(expected, readHmacBytes, bytesNeeded);
-
-                    /*
-                     * it is unlikely that we would get EOF out of the previous call to read() but then again
-                     * we just failed to get all 16 bytes on the first read() so might as well be on the safe side
-                     */
-
-                    if (bytesRetried > EOF) {
-                        readHmacBytes += bytesRetried;
-                    }
-                }
-            }
-
             if (super.getBackingStream().read() != EOF) {
                 String msg = "Expecting the end of the stream. However, more "
                         + "bytes were available.";
