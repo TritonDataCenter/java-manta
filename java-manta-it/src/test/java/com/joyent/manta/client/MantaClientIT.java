@@ -345,6 +345,24 @@ public class MantaClientIT {
     }
 
     @Test
+    public final void testPutLinkWithPlusInPath() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String prefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
+
+        mantaClient.putDirectory(prefix);
+        final String sourcePath = testPathPrefix + name;
+        final String destPath = prefix + MantaClient.SEPARATOR + name;
+
+        mantaClient.put(sourcePath, TEST_DATA);
+
+        final String link = UUID.randomUUID().toString();
+        mantaClient.putSnapLink(sourcePath + link,
+                destPath + name, null);
+        final String linkContent = mantaClient.getAsString(testPathPrefix + link);
+        Assert.assertEquals(linkContent, TEST_DATA);
+    }
+
+    @Test
     public final void testPutJsonLink() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name + ".json";
@@ -482,6 +500,7 @@ public class MantaClientIT {
     }
 
     @Test(expectedExceptions = MantaObjectException.class)
+    @SuppressWarnings("ReturnValueIgnored")
     public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -494,6 +513,7 @@ public class MantaClientIT {
     }
 
     @Test(expectedExceptions = MantaClientHttpResponseException.class)
+    @SuppressWarnings("ReturnValueIgnored")
     public final void testListNonexistentDir() throws IOException {
         final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",
                 mantaClient.getContext().getMantaHomeDirectory(), UUID.randomUUID());
