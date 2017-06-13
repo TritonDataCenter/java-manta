@@ -346,34 +346,32 @@ public class MantaClientIT {
 
     @Test
     public final void testPutLinkWithPlusInPathOfDestination() throws IOException {
-        final String destPrefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
-        mantaClient.putDirectory(destPrefix);
-
-        final String sourcePath = testPathPrefix + UUID.randomUUID();
-        final String destPath = destPrefix
-                + MantaClient.SEPARATOR + UUID.randomUUID();
-
-        mantaClient.put(sourcePath, TEST_DATA);
-
-        mantaClient.putSnapLink(destPath, sourcePath, null);
-        final String linkContent = mantaClient.getAsString(destPath);
-        Assert.assertEquals(linkContent, TEST_DATA);
+        putLinkWithCharInPathOfDestination('+');
     }
 
     @Test
     public final void testPutLinkWithPlusInPathOfSource() throws IOException {
-        final String sourcePrefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
-        mantaClient.putDirectory(sourcePrefix);
+        putLinkWithCharInPathOfSource('+');
+    }
 
-        final String sourcePath = sourcePrefix + MantaClient.SEPARATOR + UUID.randomUUID();
-        final String destPath = testPathPrefix
-                + MantaClient.SEPARATOR + UUID.randomUUID();
+    @Test
+    public final void testPutLinkWithEqualsInPathOfDestination() throws IOException {
+        putLinkWithCharInPathOfDestination('=');
+    }
 
-        mantaClient.put(sourcePath, TEST_DATA);
+    @Test
+    public final void testPutLinkWithEqualsInPathOfSource() throws IOException {
+        putLinkWithCharInPathOfSource('=');
+    }
 
-        mantaClient.putSnapLink(destPath, sourcePath, null);
-        final String linkContent = mantaClient.getAsString(destPath);
-        Assert.assertEquals(linkContent, TEST_DATA);
+    @Test
+    public final void testPutLinkWithAtInPathOfDestination() throws IOException {
+        putLinkWithCharInPathOfDestination('@');
+    }
+
+    @Test
+    public final void testPutLinkWithAtInPathOfSource() throws IOException {
+        putLinkWithCharInPathOfSource('@');
     }
 
     @Test
@@ -645,4 +643,33 @@ public class MantaClientIT {
                 "Last modified date should be null when mtime is null");
     }
 
+    private final void putLinkWithCharInPathOfDestination(final char c) throws IOException {
+        final String destPrefix = testPathPrefix + MantaClient.SEPARATOR + c + "tmp";
+        mantaClient.putDirectory(destPrefix);
+
+        final String sourcePath = testPathPrefix + UUID.randomUUID();
+        final String destPath = destPrefix
+                + MantaClient.SEPARATOR + UUID.randomUUID();
+
+        mantaClient.put(sourcePath, TEST_DATA);
+
+        mantaClient.putSnapLink(destPath, sourcePath, null);
+        final String linkContent = mantaClient.getAsString(destPath);
+        Assert.assertEquals(linkContent, TEST_DATA);
+    }
+
+    public final void putLinkWithCharInPathOfSource(char c) throws IOException {
+        final String sourcePrefix = testPathPrefix + MantaClient.SEPARATOR + c + "tmp";
+        mantaClient.putDirectory(sourcePrefix);
+
+        final String sourcePath = sourcePrefix + MantaClient.SEPARATOR + UUID.randomUUID();
+        final String destPath = testPathPrefix
+                + MantaClient.SEPARATOR + UUID.randomUUID();
+
+        mantaClient.put(sourcePath, TEST_DATA);
+
+        mantaClient.putSnapLink(destPath, sourcePath, null);
+        final String linkContent = mantaClient.getAsString(destPath);
+        Assert.assertEquals(linkContent, TEST_DATA);
+    }
 }
