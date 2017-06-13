@@ -676,8 +676,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 String msg = "Unable to read HMAC from the end of stream";
                 MantaIOException mioe = new MantaIOException(msg);
                 annotateException(mioe);
-                mioe.setContextValue("backing_stream_class", stream.getClass());
-                mioe.setContextValue("total_hmac_bytes_read", totalBytesRead);
+                mioe.setContextValue("backingStreamClass", stream.getClass());
+                mioe.setContextValue("totalHmacBytesRead", totalBytesRead);
 
                 throw mioe;
             }
