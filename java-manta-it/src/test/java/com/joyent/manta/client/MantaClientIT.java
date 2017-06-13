@@ -347,11 +347,11 @@ public class MantaClientIT {
     @Test
     public final void testPutLinkWithPlusInPath() throws IOException {
         final String name = UUID.randomUUID().toString();
-        final String prefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
+        final String destPrefix = testPathPrefix + MantaClient.SEPARATOR + "+tmp";
+        mantaClient.putDirectory(destPrefix);
 
-        mantaClient.putDirectory(prefix);
         final String sourcePath = testPathPrefix + name;
-        final String destPath = prefix + MantaClient.SEPARATOR + name;
+        final String destPath = destPrefix + MantaClient.SEPARATOR + name;
 
         mantaClient.put(sourcePath, TEST_DATA);
 
