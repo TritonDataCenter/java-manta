@@ -7,8 +7,8 @@
  */
 package com.joyent.manta.util;
 
-import io.mikael.urlbuilder.util.Encoder;
 import io.mikael.urlbuilder.util.Decoder;
+import io.mikael.urlbuilder.util.Encoder;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
