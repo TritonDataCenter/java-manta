@@ -1494,6 +1494,27 @@ public class MantaClient implements AutoCloseable {
      */
     public void move(final String source, final String destination)
             throws IOException {
+        move(source, destination, false);
+    }
+
+    /**
+     * <p>Moves an object from one path to another path. When moving
+     * directories or files between different directories, this operation is
+     * not transactional and may fail or produce inconsistent result if
+     * the source or the destination is modified while the operation is
+     * in progress.</p>
+     *
+     * <p><em>Note: If you need to do a rename, then use
+     * {@link #putSnapLink(String, String, MantaHttpHeaders)}</em></p>
+     *
+     * @param source Original path to move from
+     * @param destination Destination path to move to
+     * @param recursivelyCreateDestinationDirectories when true create the full destination directory path
+     * @throws IOException thrown when something goes wrong
+     */
+    public void move(final String source, final String destination,
+                     final boolean recursivelyCreateDestinationDirectories)
+            throws IOException {
         LOG.debug("Moving [{}] to [{}]", source, destination);
 
         final String formattedSource = formatPath(source);
@@ -1504,7 +1525,7 @@ public class MantaClient implements AutoCloseable {
         if (entry.isDirectory()) {
             moveDirectory(formattedSource, formattedDestination, entry);
         } else {
-            moveFile(formattedSource, formattedDestination);
+            moveFile(formattedSource, formattedDestination, recursivelyCreateDestinationDirectories);
         }
     }
 
@@ -1517,14 +1538,17 @@ public class MantaClient implements AutoCloseable {
      *
      * @param source Original path to move from
      * @param destination Destination path to move to
+     * @param recursivelyCreateDestinationDirectories when true create the full destination directory path
      *
      * @throws IOException thrown when something goes wrong
      */
-    private void moveFile(final String source, final String destination) throws IOException {
+    private void moveFile(final String source, final String destination,
+                          final boolean recursivelyCreateDestinationDirectories)
+            throws IOException {
         final String destinationDir = FilenameUtils.getFullPath(destination);
 
-        if (!existsAndIsAccessible(destinationDir)) {
-            putDirectory(destinationDir, true);
+        if (recursivelyCreateDestinationDirectories && !existsAndIsAccessible(destinationDir)) {
+                putDirectory(destinationDir, true);
         }
 
         putSnapLink(destination, source, null);

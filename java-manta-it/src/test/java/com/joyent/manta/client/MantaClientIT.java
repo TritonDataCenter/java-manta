@@ -12,6 +12,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
@@ -375,7 +376,7 @@ public class MantaClientIT {
     }
 
     @Test(groups = "move")
-    public final void canMoveFileToDifferentUncreatedDirectory() throws IOException {
+    public final void canMoveFileToDifferentUncreatedDirectoryCreationEnabled() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
@@ -383,9 +384,33 @@ public class MantaClientIT {
 
         final String newPath = newDir + "this-is-a-new-name.txt";
 
-        mantaClient.move(path, newPath);
+        mantaClient.move(path, newPath, true);
         final String movedContent = mantaClient.getAsString(newPath);
         Assert.assertEquals(movedContent, TEST_DATA);
+    }
+
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentUncreatedDirectoryCreationDisabled() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+
+        final String newPath = newDir + "this-is-a-new-name.txt";
+
+        boolean thrown = false;
+
+        try {
+            mantaClient.move(path, newPath, false);
+        } catch (MantaClientHttpResponseException e) {
+            String serverCode = e.getContextValues("serverCode").get(0).toString();
+
+            if (serverCode.equals(MantaErrorCode.DIRECTORY_DOES_NOT_EXIST_ERROR.getCode())) {
+                thrown = true;
+            }
+        }
+
+        Assert.assertTrue(thrown, "Expected exception [MantaClientHttpResponseException] wasn't thrown");
     }
 
     @Test(groups = "move")
