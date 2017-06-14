@@ -677,7 +677,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 MantaIOException mioe = new MantaIOException(msg);
                 annotateException(mioe);
                 mioe.setContextValue("backingStreamClass", stream.getClass());
-                mioe.setContextValue("totalHmacBytesRead", totalBytesRead);
+                mioe.setContextValue("hmacBytesReadTotal", totalBytesRead);
+                mioe.setContextValue("hmacBytesExpected", hmacSize);
 
                 throw mioe;
             }
