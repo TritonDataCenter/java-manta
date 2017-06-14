@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.1.1] - 2017-?
+### Fixed
+ - [MantaClient.move() does not support moving a file to a non-existent directory](https://github.com/joyent/java-manta/issues/256)
+   This fix optionally allows users to recursively create a destination directory 
+   structure on move(). This is useful for supporting third-party APIs/libraries
+   that use this pattern due to a S3 first design. 
+
 ## [3.1.0] - 2017-06-07
 
 Several related URL encoding bugs have been fixed.  Objects with
