@@ -1524,13 +1524,10 @@ public class MantaClient implements AutoCloseable {
 
         MantaObjectResponse entry = head(source);
 
-        final String formattedSource = formatPath(source);
-        final String formattedDestination = formatPath(destination);
-
         if (entry.isDirectory()) {
-            moveDirectory(formattedSource, formattedDestination, entry);
+            moveDirectory(source, destination, entry);
         } else {
-            moveFile(formattedSource, formattedDestination, recursivelyCreateDestinationDirectories);
+            moveFile(source, destination, recursivelyCreateDestinationDirectories);
         }
     }
 
@@ -1550,7 +1547,8 @@ public class MantaClient implements AutoCloseable {
     private void moveFile(final String source, final String destination,
                           final boolean recursivelyCreateDestinationDirectories)
             throws IOException {
-        final String destinationDir = FilenameUtils.getFullPath(destination);
+        final String formattedDestination = formatPath(destination);
+        final String destinationDir = FilenameUtils.getFullPath(formattedDestination);
 
         if (recursivelyCreateDestinationDirectories && !existsAndIsAccessible(destinationDir)) {
                 putDirectory(destinationDir, true);
