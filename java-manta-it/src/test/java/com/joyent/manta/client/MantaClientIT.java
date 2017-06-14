@@ -389,18 +389,6 @@ public class MantaClientIT {
     }
 
     @Test(groups = "move")
-    public final void canMoveFileToDifferentDirectory() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String source = testPathPrefix + name;
-        mantaClient.put(source, TEST_DATA);
-
-        final String destination = testPathPrefix +
-                "stor/knoxmetrics-dev-marc/topics/+tmp/knox-metrics/partition=0/4ab7bccf-3f31-4b5c-bc74-35926084fd3d_tmp.parquet";
-
-        mantaClient.move(source, destination);
-    }
-
-    @Test(groups = "move")
     public final void canMoveEmptyDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
