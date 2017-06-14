@@ -360,8 +360,8 @@ public class MantaClientIT {
         Assert.assertEquals(linkContent, testData);
     }
 
-    @Test
-    public final void canMoveFile() throws IOException {
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentPrecreatedDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
@@ -374,7 +374,33 @@ public class MantaClientIT {
         Assert.assertEquals(movedContent, TEST_DATA);
     }
 
-    @Test
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentUncreatedDirectory() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+
+        final String newPath = newDir + "this-is-a-new-name.txt";
+
+        mantaClient.move(path, newPath);
+        final String movedContent = mantaClient.getAsString(newPath);
+        Assert.assertEquals(movedContent, TEST_DATA);
+    }
+
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentDirectory() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String source = testPathPrefix + name;
+        mantaClient.put(source, TEST_DATA);
+
+        final String destination = testPathPrefix +
+                "stor/knoxmetrics-dev-marc/topics/+tmp/knox-metrics/partition=0/4ab7bccf-3f31-4b5c-bc74-35926084fd3d_tmp.parquet";
+
+        mantaClient.move(source, destination);
+    }
+
+    @Test(groups = "move")
     public final void canMoveEmptyDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -400,8 +426,7 @@ public class MantaClientIT {
             + path);
     }
 
-
-    public void moveDirectoryWithContents(final String source, final String destination) throws IOException {
+    private void moveDirectoryWithContents(final String source, final String destination) throws IOException {
         mantaClient.putDirectory(source);
 
         mantaClient.putDirectory(source + "dir1");
@@ -441,7 +466,6 @@ public class MantaClientIT {
         Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
                 + source);
     }
-
 
     @Test
     public final void canMoveDirectoryWithContents() throws IOException {

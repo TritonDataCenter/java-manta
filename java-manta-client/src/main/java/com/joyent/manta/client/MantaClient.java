@@ -36,6 +36,7 @@ import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -1478,9 +1479,14 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Moves a file from one path to another path. This operation is not
-     * transactional and will fail or produce inconsistent result if the source
-     * or the destination is modified while the operation is in progress.
+     * <p>Moves a file or directory from one path to another path. When moving
+     * directories or files between different directories, this operation is
+     * not transactional and will fail or produce inconsistent result if
+     * the source or the destination is modified while the operation is
+     * in progress.</p>
+     *
+     * <p><em>Note: If you need to do a rename, then use
+     * {@link #putSnapLink(String, String, MantaHttpHeaders)}</em></p>
      *
      * @param source Original path to move from
      * @param destination Destination path to move to
@@ -1493,46 +1499,79 @@ public class MantaClient implements AutoCloseable {
         MantaObjectResponse entry = head(source);
 
         if (entry.isDirectory()) {
-            putDirectory(destination, true);
-            MantaHttpHeaders sourceHeaders = entry.getHttpHeaders();
-            Long contentsCount = sourceHeaders.getResultSetSize();
-
-            // If we were just copying an empty directory, we just create the
-            // new directory and delete the original
-            if (contentsCount != null && contentsCount == 0L) {
-                delete(source);
-                return;
-            }
-
-            MantaObjectResponse destDir = head(destination);
-            String destDirPath = destDir.getPath();
-            String sourceDirPath = entry.getPath();
-
-            try {
-                listObjects(source).forEach(mantaObject -> {
-                    try {
-                        String sourcePath = mantaObject.getPath();
-                        String relPath = sourcePath.substring(sourceDirPath.length());
-                        String destFullPath = destDirPath + SEPARATOR + relPath;
-
-                        if (mantaObject.isDirectory()) {
-                            move(mantaObject.getPath(), destFullPath);
-                        } else {
-                            putSnapLink(destFullPath, sourcePath, null);
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-            } catch (UncheckedIOException e) {
-                throw e.getCause();
-            }
-
-            deleteRecursive(source);
+            moveDirectory(source, destination, entry);
         } else {
-            putSnapLink(destination, source, null);
-            delete(source);
+            moveFile(source, destination, entry);
         }
+    }
+
+    /**
+     * Moves a file from one path to another path. When moving
+     * files between different directories, this operation is
+     * not transactional and will fail or produce inconsistent result if
+     * the source or the destination is modified while the operation is
+     * in progress.
+     *
+     * @param source Original path to move from
+     * @param destination Destination path to move to
+     * @throws IOException thrown when something goes wrong
+     */
+    private void moveFile(final String source, final String destination,
+                          final MantaObjectResponse entry) throws IOException {
+        final String destinationDir = FilenameUtils.getFullPath(destination);
+
+        if (!existsAndIsAccessible(destinationDir)) {
+            putDirectory(destinationDir, true);
+        }
+
+        putSnapLink(destination, source, null);
+        delete(source);
+    }
+
+    /**
+     * Moves a directory from one path to another path. This operation is not
+     * transactional and will fail or produce inconsistent result if the source
+     * or the destination is modified while the operation is in progress.
+     *
+     * @param source Original path to move from
+     * @param destination Destination path to move to
+     * @throws IOException thrown when something goes wrong
+     */
+    private void moveDirectory(final String source, final String destination,
+                               final MantaObjectResponse entry)
+            throws IOException {
+        putDirectory(destination, true);
+        MantaHttpHeaders sourceHeaders = entry.getHttpHeaders();
+        Long contentsCount = sourceHeaders.getResultSetSize();
+
+        // If we were just copying an empty directory, we just create the
+        // new directory and delete the original
+        if (contentsCount != null && contentsCount == 0L) {
+            delete(source);
+            return;
+        }
+
+        MantaObjectResponse destDir = head(destination);
+        String destDirPath = destDir.getPath();
+        String sourceDirPath = entry.getPath();
+
+        listObjects(source).forEach(mantaObject -> {
+            try {
+                String sourcePath = mantaObject.getPath();
+                String relPath = sourcePath.substring(sourceDirPath.length());
+                String destFullPath = destDirPath + SEPARATOR + relPath;
+
+                if (mantaObject.isDirectory()) {
+                    move(mantaObject.getPath(), destFullPath);
+                } else {
+                    putSnapLink(destFullPath, sourcePath, null);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+
+        deleteRecursive(source);
     }
 
     /**
