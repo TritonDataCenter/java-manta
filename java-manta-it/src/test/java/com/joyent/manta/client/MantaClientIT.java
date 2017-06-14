@@ -439,7 +439,6 @@ public class MantaClientIT {
             + path);
     }
 
-    @Test(groups = "move")
     private void moveDirectoryWithContents(final String source, final String destination) throws IOException {
         mantaClient.putDirectory(source);
 
