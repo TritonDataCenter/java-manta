@@ -404,7 +404,9 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 annotateException(mce);
                 throw mce;
             } else {
-                throw e;
+                MantaIOException mioe = new MantaIOException("Error reading from cipher stream", e);
+                annotateException(mioe);
+                throw mioe;
             }
         }
     }
@@ -469,7 +471,9 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 annotateException(mce);
                 throw mce;
             } else {
-                throw e;
+                MantaIOException mioe = new MantaIOException("Error reading from cipher stream", e);
+                annotateException(mioe);
+                throw mioe;
             }
         }
 
@@ -513,7 +517,9 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 annotateException(mce);
                 throw mce;
             } else {
-                throw e;
+                MantaIOException mioe = new MantaIOException("Error reading from cipher stream", e);
+                annotateException(mioe);
+                throw mioe;
             }
         }
     }
@@ -541,10 +547,16 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             long skipped = 0L;
 
             for (long l = 0L; l < numberOfBytesToSkip; l++) {
-                final int read = cipherInputStream.read();
+                try {
+                    final int read = cipherInputStream.read();
 
-                if (read > EOF) {
-                    skipped++;
+                    if (read > EOF) {
+                        skipped++;
+                    }
+                } catch (IOException e) {
+                    MantaIOException mioe = new MantaIOException("Error reading from cipher stream", e);
+                    annotateException(mioe);
+                    throw mioe;
                 }
             }
 

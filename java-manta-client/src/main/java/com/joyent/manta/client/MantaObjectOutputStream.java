@@ -310,7 +310,10 @@ public class MantaObjectOutputStream extends OutputStream {
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
-            throw new MantaIOException(e);
+            MantaIOException mioe = new MantaIOException(e);
+            mioe.addContextValue("path", path);
+
+            throw mioe;
         }
     }
 
