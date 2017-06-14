@@ -1517,10 +1517,10 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         LOG.debug("Moving [{}] to [{}]", source, destination);
 
+        MantaObjectResponse entry = head(source);
+
         final String formattedSource = formatPath(source);
         final String formattedDestination = formatPath(destination);
-
-        MantaObjectResponse entry = head(formattedSource);
 
         if (entry.isDirectory()) {
             moveDirectory(formattedSource, formattedDestination, entry);
