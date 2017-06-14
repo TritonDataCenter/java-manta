@@ -1501,7 +1501,7 @@ public class MantaClient implements AutoCloseable {
         if (entry.isDirectory()) {
             moveDirectory(source, destination, entry);
         } else {
-            moveFile(source, destination, entry);
+            moveFile(source, destination);
         }
     }
 
@@ -1514,10 +1514,10 @@ public class MantaClient implements AutoCloseable {
      *
      * @param source Original path to move from
      * @param destination Destination path to move to
+     *
      * @throws IOException thrown when something goes wrong
      */
-    private void moveFile(final String source, final String destination,
-                          final MantaObjectResponse entry) throws IOException {
+    private void moveFile(final String source, final String destination) throws IOException {
         final String destinationDir = FilenameUtils.getFullPath(destination);
 
         if (!existsAndIsAccessible(destinationDir)) {
@@ -1535,6 +1535,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param source Original path to move from
      * @param destination Destination path to move to
+     * @param entry Directory supplemental data object
      * @throws IOException thrown when something goes wrong
      */
     private void moveDirectory(final String source, final String destination,
