@@ -1479,9 +1479,9 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * <p>Moves a file or directory from one path to another path. When moving
+     * <p>Moves an object from one path to another path. When moving
      * directories or files between different directories, this operation is
-     * not transactional and will fail or produce inconsistent result if
+     * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.</p>
      *
@@ -1508,7 +1508,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * Moves a file from one path to another path. When moving
      * files between different directories, this operation is
-     * not transactional and will fail or produce inconsistent result if
+     * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.
      *
@@ -1530,7 +1530,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Moves a directory from one path to another path. This operation is not
-     * transactional and will fail or produce inconsistent result if the source
+     * transactional and may fail or produce inconsistent result if the source
      * or the destination is modified while the operation is in progress.
      *
      * @param source Original path to move from
