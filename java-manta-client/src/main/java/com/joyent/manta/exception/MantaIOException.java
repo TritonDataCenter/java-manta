@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.exception.DefaultExceptionContext;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,6 +34,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
      */
     public MantaIOException() {
         exceptionContext = new DefaultExceptionContext();
+        addContextValue("mantaSdkVersion", MantaVersion.VERSION);
     }
 
     /**
@@ -45,6 +47,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     public MantaIOException(final String message) {
         super(message);
         exceptionContext = new DefaultExceptionContext();
+        addContextValue("mantaSdkVersion", MantaVersion.VERSION);
     }
 
     /**
@@ -67,6 +70,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     public MantaIOException(final String message, final Throwable cause) {
         super(message, cause);
         exceptionContext = new DefaultExceptionContext();
+        addContextValue("mantaSdkVersion", MantaVersion.VERSION);
     }
 
     /**
@@ -84,6 +88,7 @@ public class MantaIOException extends IOException implements ExceptionContext {
     public MantaIOException(final Throwable cause) {
         super(cause);
         exceptionContext = new DefaultExceptionContext();
+        addContextValue("mantaSdkVersion", MantaVersion.VERSION);
     }
 
     /* All code below was copied from org.apache.commons.lang3.exception.ContextedException
