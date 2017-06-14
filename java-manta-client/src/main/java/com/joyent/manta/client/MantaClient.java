@@ -650,6 +650,8 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse head(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "Path must not be empty nor null");
+
         String path = formatPath(rawPath);
         final HttpResponse response = httpHelper.httpHead(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
@@ -1515,6 +1517,9 @@ public class MantaClient implements AutoCloseable {
     public void move(final String source, final String destination,
                      final boolean recursivelyCreateDestinationDirectories)
             throws IOException {
+        Validate.notBlank(source, "Source path must not be empty nor null");
+        Validate.notBlank(destination, "Destination path must not be empty nor null");
+
         LOG.debug("Moving [{}] to [{}]", source, destination);
 
         MantaObjectResponse entry = head(source);
