@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.exception.ContextedRuntimeException;
 
 /**
@@ -17,6 +18,10 @@ import org.apache.commons.lang3.exception.ContextedRuntimeException;
  */
 public class ConfigurationException extends ContextedRuntimeException {
     private static final long serialVersionUID = -192386811586026956L;
+
+    {
+        addContextValue("mantaSdkVersion", MantaVersion.VERSION);
+    }
 
     /**
      * Constructs a new runtime exception with {@code null} as its
