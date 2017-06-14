@@ -12,11 +12,13 @@ import com.joyent.manta.exception.MantaClientEncryptionCiphertextAuthenticationE
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.RequestIdInterceptor;
 import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -25,6 +27,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
@@ -742,6 +745,12 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         exception.setContextValue("cipherInputStream", this.cipherInputStream);
         exception.setContextValue("authenticationEnabled", this.authenticateCiphertext);
         exception.setContextValue("threadName", Thread.currentThread().getName());
+
+        final String requestId = MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
+
+        if (!StringUtils.isBlank(requestId)) {
+            exception.setContextValue("requestId", requestId);
+        }
 
         if (this.cipher != null && this.cipher.getIV() != null) {
             exception.setContextValue("iv", Hex.encodeHexString(this.cipher.getIV()));
