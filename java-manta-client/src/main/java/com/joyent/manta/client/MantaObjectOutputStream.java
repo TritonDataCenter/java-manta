@@ -310,7 +310,20 @@ public class MantaObjectOutputStream extends OutputStream {
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
-            throw new MantaIOException(e);
+            MantaIOException mioe = new MantaIOException(e);
+
+            if (this.objectResponse != null) {
+                final String requestId = this.objectResponse.getHeaderAsString(
+                        MantaHttpHeaders.REQUEST_ID);
+
+                if (requestId != null) {
+                    mioe.addContextValue("requestId", requestId);
+                }
+            }
+
+            mioe.addContextValue("path", path);
+
+            throw mioe;
         }
     }
 
