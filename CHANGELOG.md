@@ -2,6 +2,22 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.1.1] - 2017-06-14
+### Changed
+ - Added additional error context information for IOExceptions thrown
+   during read() in encrypted streams.
+### Fixed
+ - [MantaClient.move() does not support moving a file to a non-existent directory](https://github.com/joyent/java-manta/issues/256)
+   This fix optionally allows users to recursively create a destination directory 
+   structure on move(). This is useful for supporting third-party APIs/libraries
+   that use this pattern due to a S3 first design. 
+ - Resolve issue where
+   [MantaClient.getAsInputStream().close() throws MantaIOException](https://github.com/joyent/java-manta/issues/250)
+   for encrypted objects with trailing HMAC. Infrequently an issue could occur where
+   less bytes than requested were read and the stream was left in a bad state.
+   This would prevent the underlying connection from being returned to the connection pool.
+ - Exception contexts now [include SDK version.](https://github.com/joyent/java-manta/issues/254)
+
 ## [3.1.0] - 2017-06-07
 
 Several related URL encoding bugs have been fixed.  Objects with
