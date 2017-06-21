@@ -22,6 +22,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -158,7 +159,7 @@ public class MantaClientSigningIT {
         connection.connect();
 
         try (OutputStreamWriter out = new OutputStreamWriter(
-                connection.getOutputStream())) {
+                connection.getOutputStream(), StandardCharsets.UTF_8)) {
             out.write(TEST_DATA);
         } finally {
             connection.disconnect();

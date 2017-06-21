@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@SuppressWarnings("InputStreamSlowMultibyteRead")
 public class RandomInputStream extends InputStream {
     /**
      * End of file magic number.

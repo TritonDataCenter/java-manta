@@ -17,6 +17,7 @@ import org.bouncycastle.util.encoders.Base64;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 
 /**
@@ -94,7 +95,8 @@ public class UriSigner {
 
 
         StringBuilder request = new StringBuilder();
-        final byte[] sigBytes = sigText.toString().getBytes();
+        final byte[] sigBytes = sigText.toString().getBytes(
+                StandardCharsets.UTF_8);
         final byte[] signed = signer.get().sign(config.getMantaUser(),
                                                 keyPair, sigBytes);
         final String encoded = new String(Base64.encode(signed), charset);
