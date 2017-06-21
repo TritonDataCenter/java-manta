@@ -10,6 +10,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +52,7 @@ public class SimpleClientEncryption {
 
             // Print out every line from file streamed real-time from Manta
             try (InputStream is = client.getAsInputStream(mantaPath);
-                 Scanner scanner = new Scanner(is)) {
+                 Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name())) {
 
                 while (scanner.hasNextLine()) {
                     System.out.println(scanner.nextLine());
