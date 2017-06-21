@@ -258,6 +258,7 @@
                         <arg>-Xdiags:verbose</arg>
                         <arg>-Xlint:all</arg>
                     </compilerArgs>
+                    <showWarnings>true</showWarnings>
                 </configuration>
                 <dependencies>
                     <dependency>
