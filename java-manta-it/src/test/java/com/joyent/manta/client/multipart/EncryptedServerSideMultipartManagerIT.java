@@ -18,6 +18,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.entity.FileEntity;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -479,11 +480,11 @@ public class EncryptedServerSideMultipartManagerIT {
         final String path = testPathPrefix + MantaClient.SEPARATOR + UUID.randomUUID().toString();
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
 
-        final FileEntity bareFileEntity = new FileEntity(uploadFile);
+        final HttpEntity bareFileEntity = new FileEntity(uploadFile);
         final InputStream fileStream = bareFileEntity.getContent();
 
         // spy on the FileEntity and the stream we'll be forcing it to return
-        FileEntity fileEntitySpy = Mockito.spy(bareFileEntity);
+        HttpEntity fileEntitySpy = Mockito.spy(bareFileEntity);
         InputStream fileStreamSpy = Mockito.spy(fileStream);
 
         /*
