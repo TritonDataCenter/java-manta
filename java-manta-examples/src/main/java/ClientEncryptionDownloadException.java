@@ -13,6 +13,7 @@ import com.joyent.manta.exception.MantaClientEncryptionException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Scanner;
 
@@ -70,7 +71,7 @@ public class ClientEncryptionDownloadException {
         try (MantaClient downloadClient = new MantaClient(downloadConfig)) {
             // Try to download and decrypt the file, handle the expected exception from an invalid key
             try (InputStream is = downloadClient.getAsInputStream(mantaPath);
-                 Scanner scanner = new Scanner(is)) {
+                 Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name())) {
 
                 while (scanner.hasNextLine()) {
                     System.out.println(scanner.nextLine());

@@ -131,8 +131,8 @@
         <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
 
         <!-- Maven plugin dependency versions -->
-        <maven-plexus-compiler-javac-errorprone.version>2.8.1</maven-plexus-compiler-javac-errorprone.version>
-        <maven-error-prone-core.version>2.0.15</maven-error-prone-core.version>
+        <maven-plexus-compiler-javac-errorprone.version>2.8.2</maven-plexus-compiler-javac-errorprone.version>
+        <maven-error-prone-core.version>2.0.19</maven-error-prone-core.version>
 
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>4.0.3</dependency.http-client-signature.version>
@@ -258,6 +258,7 @@
                         <arg>-Xdiags:verbose</arg>
                         <arg>-Xlint:all</arg>
                     </compilerArgs>
+                    <showWarnings>true</showWarnings>
                 </configuration>
                 <dependencies>
                     <dependency>

@@ -2305,7 +2305,8 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         // This resource is closed using the onClose() lambda below
         final HttpEntity entity = response.getEntity();
-        final Reader reader = new InputStreamReader(entity.getContent());
+        final Reader reader = new InputStreamReader(entity.getContent(),
+                StandardCharsets.UTF_8);
         final BufferedReader br = new BufferedReader(reader);
 
         Stream<String> stream = br.lines().onClose(() -> {

@@ -276,6 +276,10 @@ public final class MantaUtils {
             Enum<?> enumValue = (Enum<?>)value;
 
             try {
+                /* In this case, we actually want the subclass of the enum type
+                 * because we are trying to read a property from it via
+                 * reflection. */
+                @SuppressWarnings("GetClassOnEnum")
                 Field field = enumValue.getClass().getField(enumValue.name());
                 Validate.notNull(field,
                         "A non-null field should always be returned. "
