@@ -13,12 +13,13 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.http.entity.FileEntity;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -30,12 +31,14 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.assertEquals;
@@ -52,6 +55,8 @@ public class EncryptedServerSideMultipartManagerIT {
 
     private static final int FIVE_MB = 5242880;
 
+    private static final String TEST_FILENAME = "Master-Yoda.jpg";
+
     private String testPathPrefix;
 
     @BeforeClass()
@@ -65,13 +70,18 @@ public class EncryptedServerSideMultipartManagerIT {
         }
         mantaClient = new MantaClient(config);
 
+        // sanity check
+        if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory())) {
+            Assert.fail("Invalid credentials, cannot proceed with test suite");
+        }
+
         if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory()
                 + MantaClient.SEPARATOR + "uploads")) {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
         multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
@@ -325,7 +335,6 @@ public class EncryptedServerSideMultipartManagerIT {
         }
     }
 
-
     public final void canUploadWithSinglePartAndPerformRangeRequest() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -458,4 +467,40 @@ public class EncryptedServerSideMultipartManagerIT {
                             });
     }
 
+    public final void properlyClosesStreamsForFilesAfterUpload() throws IOException {
+        final URL testResource = Thread.currentThread().getContextClassLoader().getResource(TEST_FILENAME);
+        Assert.assertNotNull(testResource, "Test file missing");
+
+        final File uploadFile = File.createTempFile("upload", ".jpg");
+        FileUtils.forceDeleteOnExit(uploadFile);
+        FileUtils.copyURLToFile(testResource, uploadFile);
+        Assert.assertTrue(0 < uploadFile.length(), "Error preparing upload file");
+
+        final String path = testPathPrefix + MantaClient.SEPARATOR + UUID.randomUUID().toString();
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+
+        final FileEntity bareFileEntity = new FileEntity(uploadFile);
+        final InputStream fileStream = bareFileEntity.getContent();
+
+        // spy on the FileEntity and the stream we'll be forcing it to return
+        FileEntity fileEntitySpy = Mockito.spy(bareFileEntity);
+        InputStream fileStreamSpy = Mockito.spy(fileStream);
+
+        /*
+             Force fileEntitySpy to always return the same FileInputStream so we can spy on the right object.
+             We are changing the behavior of the FileEntity since it creates a new stream for every call to
+             getContent() so we'll enforce that it's only called once
+         */
+        Mockito.doReturn(fileStreamSpy).when(fileEntitySpy).getContent();
+
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, fileEntitySpy);
+
+        // verify only a single FileInputStream was created and that the stream is closed
+        Mockito.verify(fileEntitySpy, Mockito.times(1)).getContent();
+        Mockito.verify(fileStreamSpy).close();
+
+        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[]{part1};
+        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
+        multipart.complete(upload, partsStream);
+    }
 }
