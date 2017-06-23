@@ -452,16 +452,17 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 String state = stateNode.textValue();
                 Validate.notBlank(state, "State field was blank in response");
 
-                switch (state.toLowerCase(Locale.ROOT)) {
-                    case "created":
-                        return MantaMultipartStatus.CREATED;
-                    case "finalizing":
-                        return extractMultipartStatusResult(objectNode);
-                    case "done":
-                        return extractMultipartStatusResult(objectNode);
-                    default:
-                        return MantaMultipartStatus.UNKNOWN;
+                if (state.equalsIgnoreCase("created")) {
+                    return MantaMultipartStatus.CREATED;
                 }
+                if (state.equalsIgnoreCase("finalizing")) {
+                    return extractMultipartStatusResult(objectNode);
+                }
+                if (state.equalsIgnoreCase("done")) {
+                    return extractMultipartStatusResult(objectNode);
+                }
+
+                return MantaMultipartStatus.UNKNOWN;
             } catch (JsonParseException e) {
                 String msg = "Response body was not JSON";
                 MantaMultipartException me = new MantaMultipartException(msg, e);
@@ -488,18 +489,20 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         String result = resultNode.textValue();
         Validate.notBlank(result, "Result field was blank in response");
 
-        switch (result.toLowerCase(Locale.ROOT)) {
-            case "aborting":
-                return MantaMultipartStatus.ABORTING;
-            case "aborted":
-                return MantaMultipartStatus.ABORTED;
-            case "committing":
-                return MantaMultipartStatus.COMMITTING;
-            case "committed":
-                return MantaMultipartStatus.COMMITTING;
-            default:
-                return MantaMultipartStatus.UNKNOWN;
+        if (result.equalsIgnoreCase("aborting")) {
+            return MantaMultipartStatus.ABORTING;
         }
+        if (result.equalsIgnoreCase("aborted")) {
+            return MantaMultipartStatus.ABORTED;
+        }
+        if (result.equalsIgnoreCase("committing")) {
+            return MantaMultipartStatus.COMMITTING;
+        }
+        if (result.equalsIgnoreCase("committed")) {
+            return MantaMultipartStatus.COMMITTING;
+        }
+
+        return MantaMultipartStatus.UNKNOWN;
     }
 
     @Override
