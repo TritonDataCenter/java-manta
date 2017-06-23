@@ -98,6 +98,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_KEY = "manta.tcp_socket_timeout";
 
     /**
+     * Property key for looking up the connection pool TTL in seconds.
+     */
+    public static final String MANTA_CONNECTION_POOL_TTL_KEY = "manta.connection_pool_ttl";
+
+    /**
      * Property key for enabling the checksum verification of uploaded files.
      */
     public static final String MANTA_VERIFY_UPLOADS_KEY = "manta.verify_uploads";
@@ -166,6 +171,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
+            MANTA_CONNECTION_POOL_TTL_KEY,
             MANTA_VERIFY_UPLOADS_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
@@ -326,6 +332,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Integer getConnectionPoolTTLInSeconds() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_CONNECTION_POOL_TTL_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_CONNECTION_POOL_TTL_ENV_KEY));
     }
 
     @Override

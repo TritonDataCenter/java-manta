@@ -95,6 +95,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Integer tcpSocketTimeout;
 
     /**
+     * TODO: copy and edit
+     */
+    private Integer connectionPoolTTLInSeconds;
+
+    /**
      * Flag indicating if we verify the uploaded file's checksum against the
      * server's checksum (MD5).
      */
@@ -253,6 +258,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Integer getConnectionPoolTTLInSeconds() {
+        return connectionPoolTTLInSeconds;
+    }
+
+    @Override
     public Boolean verifyUploads() {
         return verifyUploads;
     }
@@ -389,6 +399,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.tcpSocketTimeout = context.getTcpSocketTimeout();
         }
 
+        if (context.getConnectionPoolTTLInSeconds() != null) {
+            this.connectionPoolTTLInSeconds = context.getConnectionPoolTTLInSeconds();
+        }
+
         if (context.verifyUploads() != null) {
             this.verifyUploads = context.verifyUploads();
         }
@@ -487,6 +501,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.tcpSocketTimeout == null) {
             this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
+        if (this.connectionPoolTTLInSeconds == null) {
+            this.connectionPoolTTLInSeconds = context.getConnectionPoolTTLInSeconds();
         }
 
         if (this.verifyUploads == null) {
@@ -653,6 +671,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setConnectionPoolTTLInSeconds(Integer connectionPoolTTLInSeconds) {
+        this.connectionPoolTTLInSeconds = connectionPoolTTLInSeconds;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setVerifyUploads(final Boolean verify) {
         this.verifyUploads = verify;
 
@@ -751,6 +776,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
+                && Objects.equals(connectionPoolTTLInSeconds, that.connectionPoolTTLInSeconds)
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
@@ -767,7 +793,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, tcpSocketTimeout,
+                disableNativeSignatures, tcpSocketTimeout, connectionPoolTTLInSeconds,
                 verifyUploads, uploadBufferSize,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,

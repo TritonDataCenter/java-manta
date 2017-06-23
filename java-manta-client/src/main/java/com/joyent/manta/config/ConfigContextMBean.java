@@ -120,6 +120,10 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "Time in milliseconds to wait to see if a TCP socket has timed out",
                         true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_CONNECTION_POOL_TTL_KEY,
+                        Integer.class.getName(),
+                        "", // TODO: another slightly different description
+                        true, this.isSettable, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY,
                         Boolean.class.getName(),
                         "Flag indicating the checksum verification of uploaded files is enabled",

@@ -88,6 +88,11 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
 
     /**
+     * TODO: find a proper default TTL
+     */
+    public static final int DEFAULT_CONNECTION_POOL_TTL = -1;
+
+    /**
      * Default size of pre-streaming upload buffer (16K).
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
@@ -185,6 +190,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getTcpSocketTimeout() {
         return DEFAULT_TCP_SOCKET_TIMEOUT;
+    }
+
+    @Override
+    public Integer getConnectionPoolTTLInSeconds() {
+        return DEFAULT_CONNECTION_POOL_TTL;
     }
 
     @Override

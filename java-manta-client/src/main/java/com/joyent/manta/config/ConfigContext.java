@@ -110,6 +110,12 @@ public interface ConfigContext {
     Integer getTcpSocketTimeout();
 
     /**
+     * @see org.apache.http. PoolingClient
+     * @return time in seconds to hold on to connections in the connection pool
+     */
+    Integer getConnectionPoolTTLInSeconds();
+
+    /**
      * @return true when we verify the uploaded file's checksum against the
      *         server's checksum (MD5)
      */
@@ -200,6 +206,7 @@ public interface ConfigContext {
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
         sb.append(", tcpSocketTimeout=").append(context.getTcpSocketTimeout());
+        sb.append(", connectionPoolTTLInSeconds=").append(context.getConnectionPoolTTLInSeconds());
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
@@ -247,6 +254,11 @@ public interface ConfigContext {
 
         if (config.getTimeout() != null && config.getTimeout() < 0) {
             failureMessages.add("Manta timeout must be 0 or greater");
+        }
+
+        if (!(config.getConnectionPoolTTLInSeconds() == -1
+                || 0 < config.getConnectionPoolTTLInSeconds())) {
+            failureMessages.add("Connection Pool TTL must be -1 or greater than 0");
         }
 
         if (config.noAuth() != null && !config.noAuth()) {
@@ -431,6 +443,9 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_MAX_CONNS_KEY:
             case EnvVarConfigContext.MANTA_MAX_CONNS_ENV_KEY:
                 return config.getMaximumConnections();
+            case MapConfigContext.MANTA_CONNECTION_POOL_TTL_KEY:
+            case EnvVarConfigContext.MANTA_CONNECTION_POOL_TTL_ENV_KEY:
+                return config.getConnectionPoolTTLInSeconds();
             case MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY:
             case EnvVarConfigContext.MANTA_PRIVATE_KEY_CONTENT_ENV_KEY:
                 return config.getPrivateKeyContent();

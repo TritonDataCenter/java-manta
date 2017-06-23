@@ -131,10 +131,18 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * Sets the time in milliseconds to wait to see if a TCP socket has timed out.
      *
      * @see java.net.SocketOptions#SO_TIMEOUT
-     * @param tcpSocketTimeout time in milliseconds to cache HTTP signature headers
+     * @param tcpSocketTimeout time in milliseconds TODO: fix this thing
      * @return the current instance of {@link T}
      */
     T setTcpSocketTimeout(Integer tcpSocketTimeout);
+
+    /**
+     * Sets the time in seconds to hold on to DNS-resolved connections.
+     * TODO: poolingblah class
+     * @param ttlTimeout time in seconds to keep connections from DNS resolution
+     * @return the current instance of {@link T}
+     */
+    T setConnectionPoolTTLInSeconds(Integer ttlTimeout);
 
     /**
      * Sets if we verify the uploaded file's checksum against the server's
@@ -290,6 +298,9 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
                 config.setTcpSocketTimeout(MantaUtils.parseIntegerOrNull(value));
+            case MapConfigContext.MANTA_CONNECTION_POOL_TTL_KEY:
+            case EnvVarConfigContext.MANTA_CONNECTION_POOL_TTL_ENV_KEY:
+                config.setConnectionPoolTTLInSeconds(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:

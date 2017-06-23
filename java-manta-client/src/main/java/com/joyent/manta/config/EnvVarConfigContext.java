@@ -95,6 +95,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY = "MANTA_TCP_SOCKET_TIMEOUT";
 
     /**
+     * Property key for looking up connection pool TTLs in seconds.
+     */
+    public static final String MANTA_CONNECTION_POOL_TTL_ENV_KEY = "MANTA_CONNECTION_POOL_TTL";
+
+    /**
      * Environment variable for enabling the checksum verification of uploaded files.
      */
     public static final String MANTA_VERIFY_UPLOADS_ENV_KEY = "MANTA_VERIFY_UPLOADS";
@@ -154,6 +159,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
+            MANTA_CONNECTION_POOL_TTL_ENV_KEY,
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
@@ -163,6 +169,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY
     };
+
 
     static {
         // Sorts the properties so that we can do a binary search on them if needed
@@ -273,6 +280,13 @@ public class EnvVarConfigContext implements ConfigContext {
         String timeoutString = getEnv(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY);
 
         return MantaUtils.parseIntegerOrNull(timeoutString);
+    }
+
+    @Override
+    public Integer getConnectionPoolTTLInSeconds() {
+        String ttlString = getEnv(MANTA_CONNECTION_POOL_TTL_ENV_KEY);
+
+        return MantaUtils.parseIntegerOrNull(ttlString);
     }
 
     @Override
