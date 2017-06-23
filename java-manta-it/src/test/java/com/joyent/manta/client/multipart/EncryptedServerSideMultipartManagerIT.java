@@ -468,45 +468,4 @@ public class EncryptedServerSideMultipartManagerIT {
                             });
     }
 
-    @Test(enabled = false)
-    public final void properlyClosesStreamsForFilesAfterUpload() throws IOException {
-        // org.apache.http.HttpEntity is shaded so this test will fail with the following error:
-        // (argument mismatch; org.apache.http.HttpEntity cannot be converted to
-        // com.joyent.manta.org.apache.http.HttpEntity)
-
-        final URL testResource = Thread.currentThread().getContextClassLoader().getResource(TEST_FILENAME);
-        Assert.assertNotNull(testResource, "Test file missing");
-
-        final File uploadFile = File.createTempFile("upload", ".jpg");
-        FileUtils.forceDeleteOnExit(uploadFile);
-        FileUtils.copyURLToFile(testResource, uploadFile);
-        Assert.assertTrue(0 < uploadFile.length(), "Error preparing upload file");
-
-        final String path = testPathPrefix + MantaClient.SEPARATOR + UUID.randomUUID().toString();
-        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
-
-        final HttpEntity bareFileEntity = new FileEntity(uploadFile);
-        final InputStream fileStream = bareFileEntity.getContent();
-
-        // spy on the FileEntity and the stream we'll be forcing it to return
-        HttpEntity fileEntitySpy = Mockito.spy(bareFileEntity);
-        InputStream fileStreamSpy = Mockito.spy(fileStream);
-
-        /*
-             Force fileEntitySpy to always return the same FileInputStream so we can spy on the right object.
-             We are changing the behavior of the FileEntity since it creates a new stream for every call to
-             getContent() so we'll enforce that it's only called once
-         */
-        Mockito.doReturn(fileStreamSpy).when(fileEntitySpy).getContent();
-
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, fileEntitySpy);
-
-        // verify only a single FileInputStream was created and that the stream is closed
-        Mockito.verify(fileEntitySpy, Mockito.times(1)).getContent();
-        Mockito.verify(fileStreamSpy).close();
-
-        MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[]{part1};
-        Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
-        multipart.complete(upload, partsStream);
-    }
 }
