@@ -479,8 +479,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     /**
      * Extract the "result" field from the get-mpu payload.
      *
-     * @param get           The request for MPU status. Used for exception annotation.
-     * @param response      The response received. Also used for exception annotation.
      * @param objectNode    The response JSON object.
      * @return MantaMultipartStatus extracted
      */
