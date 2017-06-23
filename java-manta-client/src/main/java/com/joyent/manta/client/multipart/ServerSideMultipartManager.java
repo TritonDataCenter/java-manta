@@ -49,6 +49,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -451,25 +452,20 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 String state = stateNode.textValue();
                 Validate.notBlank(state, "State field was blank in response");
 
-                if (state.equalsIgnoreCase("created")) {
-                    return MantaMultipartStatus.CREATED;
+                switch (state) {
+                    case "created":
+                        return MantaMultipartStatus.CREATED;
+                    case "finalizing":
+                        return extractMultipartStatusResult(get, response, objectNode, state);
+                    case "done":
+                        return extractMultipartStatusResult(get, response, objectNode, state);
+                        // return MantaMultipartStatus.COMPLETED;
+                    default:
+                        final String stateMsg = "Expected response field was missing or malformed: state: " + state;
+                        final MantaMultipartException e = new MantaMultipartException(stateMsg);
+                        annotateException(e, get, response, null, null);
+                        throw e;
                 }
-
-                if (state.equalsIgnoreCase("finalizing")) {
-                    JsonNode typeNode = objectNode.get("type");
-                    Validate.notNull(typeNode, "Unable to get type from response");
-                    String type = typeNode.textValue();
-                    Validate.notBlank(type, "Type field was blank in response");
-
-                    if (type.equalsIgnoreCase("commit")) {
-                        return MantaMultipartStatus.COMMITTING;
-                    }
-                    if (type.equalsIgnoreCase("abort")) {
-                        return MantaMultipartStatus.ABORTING;
-                    }
-                }
-
-                return MantaMultipartStatus.UNKNOWN;
             } catch (JsonParseException e) {
                 String msg = "Response body was not JSON";
                 MantaMultipartException me = new MantaMultipartException(msg, e);
@@ -481,6 +477,29 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 annotateException(me, get, response, null, null);
                 throw me;
             }
+        }
+    }
+
+    private MantaMultipartStatus extractMultipartStatusResult(HttpGet get, CloseableHttpResponse response, ObjectNode objectNode, String state) {
+        JsonNode detailNode = objectNode.get("result");
+        Validate.notNull(detailNode, "Unable to get result from response");
+        String detail = detailNode.textValue();
+        Validate.notBlank(detail, "Result field was blank in response");
+
+        switch (detail.toLowerCase(Locale.ROOT)) {
+            case "aborting":
+                return MantaMultipartStatus.ABORTING;
+            case "aborted":
+                return MantaMultipartStatus.ABORTED;
+            case "committing":
+                return MantaMultipartStatus.COMMITTING;
+            case "committed":
+                return MantaMultipartStatus.COMMITTING;
+            default:
+                final String stateTypeMsg = "Result response field was missing or malformed: " + detail;
+                final MantaMultipartException e = new MantaMultipartException(stateTypeMsg);
+                annotateException(e, get, response, null, null);
+                throw e;
         }
     }
 
