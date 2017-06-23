@@ -456,9 +456,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                     case "created":
                         return MantaMultipartStatus.CREATED;
                     case "finalizing":
-                        return extractMultipartStatusResult(get, response, objectNode, state);
+                        return extractMultipartStatusResult(get, response, objectNode);
                     case "done":
-                        return extractMultipartStatusResult(get, response, objectNode, state);
+                        return extractMultipartStatusResult(get, response, objectNode);
                     default:
                         final String stateMsg = "Expected response field was missing or malformed: state: " + state;
                         final MantaMultipartException e = new MantaMultipartException(stateMsg);
@@ -479,7 +479,18 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
     }
 
-    private MantaMultipartStatus extractMultipartStatusResult(HttpGet get, CloseableHttpResponse response, ObjectNode objectNode, String state) {
+    /**
+     * Extract the "result" field from the get-mpu payload.
+     *
+     * @param get           The request for MPU status. Used for exception annotation.
+     * @param response      The response received. Also used for exception annotation.
+     * @param objectNode    The response JSON object.
+     * @return MantaMultipartStatus extracted
+     */
+    private MantaMultipartStatus extractMultipartStatusResult(
+            final HttpGet get,
+            final CloseableHttpResponse response,
+            final ObjectNode objectNode) {
         JsonNode resultNode = objectNode.get("result");
         Validate.notNull(resultNode, "Unable to get result from response");
         String result = resultNode.textValue();
