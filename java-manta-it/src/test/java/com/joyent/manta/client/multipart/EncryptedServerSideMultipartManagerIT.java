@@ -468,7 +468,12 @@ public class EncryptedServerSideMultipartManagerIT {
                             });
     }
 
+    @Test(enabled = false)
     public final void properlyClosesStreamsForFilesAfterUpload() throws IOException {
+        // org.apache.http.HttpEntity is shaded so this test will fail with the following error:
+        // (argument mismatch; org.apache.http.HttpEntity cannot be converted to
+        // com.joyent.manta.org.apache.http.HttpEntity)
+
         final URL testResource = Thread.currentThread().getContextClassLoader().getResource(TEST_FILENAME);
         Assert.assertNotNull(testResource, "Test file missing");
 
