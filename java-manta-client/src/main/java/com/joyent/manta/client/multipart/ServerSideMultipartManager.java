@@ -480,12 +480,12 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     }
 
     private MantaMultipartStatus extractMultipartStatusResult(HttpGet get, CloseableHttpResponse response, ObjectNode objectNode, String state) {
-        JsonNode detailNode = objectNode.get("result");
-        Validate.notNull(detailNode, "Unable to get result from response");
-        String detail = detailNode.textValue();
-        Validate.notBlank(detail, "Result field was blank in response");
+        JsonNode resultNode = objectNode.get("result");
+        Validate.notNull(resultNode, "Unable to get result from response");
+        String result = resultNode.textValue();
+        Validate.notBlank(result, "Result field was blank in response");
 
-        switch (detail.toLowerCase(Locale.ROOT)) {
+        switch (result.toLowerCase(Locale.ROOT)) {
             case "aborting":
                 return MantaMultipartStatus.ABORTING;
             case "aborted":
@@ -495,7 +495,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             case "committed":
                 return MantaMultipartStatus.COMMITTING;
             default:
-                final String stateTypeMsg = "Result response field was missing or malformed: " + detail;
+                final String stateTypeMsg = "Expected response field was missing or malformed: result: " + result;
                 final MantaMultipartException e = new MantaMultipartException(stateTypeMsg);
                 annotateException(e, get, response, null, null);
                 throw e;
