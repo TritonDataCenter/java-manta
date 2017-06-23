@@ -456,14 +456,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                     case "created":
                         return MantaMultipartStatus.CREATED;
                     case "finalizing":
-                        return extractMultipartStatusResult(get, response, objectNode);
+                        return extractMultipartStatusResult(objectNode);
                     case "done":
-                        return extractMultipartStatusResult(get, response, objectNode);
+                        return extractMultipartStatusResult(objectNode);
                     default:
-                        final String stateMsg = "Expected response field was missing or malformed: state: " + state;
-                        final MantaMultipartException e = new MantaMultipartException(stateMsg);
-                        annotateException(e, get, response, null, null);
-                        throw e;
+                        return MantaMultipartStatus.UNKNOWN;
                 }
             } catch (JsonParseException e) {
                 String msg = "Response body was not JSON";
@@ -487,10 +484,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @param objectNode    The response JSON object.
      * @return MantaMultipartStatus extracted
      */
-    private MantaMultipartStatus extractMultipartStatusResult(
-            final HttpGet get,
-            final CloseableHttpResponse response,
-            final ObjectNode objectNode) {
+    private MantaMultipartStatus extractMultipartStatusResult(final ObjectNode objectNode) {
         JsonNode resultNode = objectNode.get("result");
         Validate.notNull(resultNode, "Unable to get result from response");
         String result = resultNode.textValue();
@@ -506,10 +500,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             case "committed":
                 return MantaMultipartStatus.COMMITTING;
             default:
-                final String stateTypeMsg = "Expected response field was missing or malformed: result: " + result;
-                final MantaMultipartException e = new MantaMultipartException(stateTypeMsg);
-                annotateException(e, get, response, null, null);
-                throw e;
+                return MantaMultipartStatus.UNKNOWN;
         }
     }
 
