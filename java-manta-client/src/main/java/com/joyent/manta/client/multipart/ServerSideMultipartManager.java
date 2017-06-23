@@ -452,14 +452,13 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 String state = stateNode.textValue();
                 Validate.notBlank(state, "State field was blank in response");
 
-                switch (state) {
+                switch (state.toLowerCase(Locale.ROOT)) {
                     case "created":
                         return MantaMultipartStatus.CREATED;
                     case "finalizing":
                         return extractMultipartStatusResult(get, response, objectNode, state);
                     case "done":
                         return extractMultipartStatusResult(get, response, objectNode, state);
-                        // return MantaMultipartStatus.COMPLETED;
                     default:
                         final String stateMsg = "Expected response field was missing or malformed: state: " + state;
                         final MantaMultipartException e = new MantaMultipartException(stateMsg);
