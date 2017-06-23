@@ -365,7 +365,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             try (InputStream in = response.getEntity().getContent()) {
                 ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
 
-                JsonNode objectPathNode = objectNode.get("objectPath");
+                JsonNode objectPathNode = objectNode.get("targetObject");
                 Validate.notNull(objectPathNode, "Unable to read object path from response");
                 objectPath = objectPathNode.textValue();
                 Validate.notBlank(objectPath, "Object path field was blank in response");
