@@ -79,6 +79,7 @@ public class StringIteratorHttpContent implements HttpEntity {
         this.contentType = contentType;
     }
 
+    @Override
     public boolean isRepeatable() {
         return false;
     }

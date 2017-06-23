@@ -262,6 +262,7 @@ public class MantaObjectResponse implements MantaObject {
      *
      * @return the mtime
      */
+    @Override
     public final String getMtime() {
         return mtime;
     }
