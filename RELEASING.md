@@ -1,6 +1,6 @@
 ### Releasing
 
-In order to release to [Maven central](https://search.maven.org/), you will need [an account] (https://issues.sonatype.org) with [Sonatype OSSRH](http://central.sonatype.org/pages/ossrh-guide.html).
+In order to release to [Maven central](https://search.maven.org/), you will need [an account](https://issues.sonatype.org) with [Sonatype OSSRH](http://central.sonatype.org/pages/ossrh-guide.html).
 If you do not already have an account, you can click the signup link from the login screen
 to begin the process of registering for an account.  After signing up, you will need to add
 your sonatype credentials to your your maven settings file.  By default this settings file is
