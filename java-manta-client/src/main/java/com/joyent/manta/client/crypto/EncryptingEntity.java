@@ -194,7 +194,6 @@ public class EncryptingEntity implements HttpEntity {
              * EncryptingEntityBenchmark. */
             final int bufferSize = 128;
 
-
             InputStream contentStream = getContent();
             bytesCopied = IOUtils.copy(contentStream, out, bufferSize);
             out.flush();
