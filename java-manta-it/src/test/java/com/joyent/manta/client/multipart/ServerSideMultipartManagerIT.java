@@ -62,7 +62,7 @@ public class ServerSideMultipartManagerIT {
         }
 
         multipart = new ServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
@@ -329,18 +329,21 @@ public class ServerSideMultipartManagerIT {
         } catch (MantaMultipartException e) {
             Throwable cause = e.getCause();
 
-            if (cause instanceof MantaClientHttpResponseException) {
-                MantaClientHttpResponseException responseException =
-                        (MantaClientHttpResponseException)cause;
-
-                Assert.assertEquals(responseException.getStatusCode(),
-                        400,
-                        "Unexpected response code");
-                Assert.assertEquals(responseException.getServerCode(),
-                        MantaErrorCode.MULTIPART_UPLOAD_PART_SIZE,
-                        "Unexpected error code");
-                caught = true;
+            if (!(cause instanceof MantaClientHttpResponseException)) {
+                Assert.fail("Unexpected exception cause", e);
             }
+
+            MantaClientHttpResponseException responseException =
+                    (MantaClientHttpResponseException)cause;
+            Assert.assertEquals(responseException.getStatusCode(),
+                    409,
+                    "Unexpected response code");
+            Assert.assertEquals(responseException.getServerCode(),
+                    MantaErrorCode.MULTIPART_UPLOAD_INVALID_ARGUMENT,
+                    "Unexpected error code");
+
+            caught = true;
+
         }
 
         Assert.assertTrue(caught, "Expected exception was not caught");
