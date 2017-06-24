@@ -67,7 +67,7 @@ public class MantaClientIT {
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
@@ -169,7 +169,7 @@ public class MantaClientIT {
 
     @Test
     public final void testManyOperations() throws IOException {
-        String dir = String.format("%s/multiple", testPathPrefix);
+        String dir = testPathPrefix + "multiple";
         mantaClient.putDirectory(dir);
 
         for (int i = 0; i < 100; i++) {

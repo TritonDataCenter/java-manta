@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+
+## [3.1.2] - 2017-06-22
+### Fixed
+ - [`InputStream` left open in EncryptingEntity and EncryptingPartEntity](https://github.com/joyent/java-manta/pull/264)
+  leading to space from deleted files not being reclaimed until JVM shutdown.
+
 ## [3.1.1] - 2017-06-14
 ### Changed
  - Added additional error context information for IOExceptions thrown
