@@ -10,7 +10,7 @@ also need to add a [gpg signing](https://maven.apache.org/plugins/maven-gpg-plug
 For the security conscious, a [guide to encrypting credentials in maven settings files](https://maven.apache.org/guides/mini/guide-encryption.html) exists to
 illustrate how credentials can be protected.
 
-The following is an example settings.xml file:
+The following is an example settings.xml file which will read requied fields from the environment. Don't forget to set environment values (or literal values in the file) for the requred fields: `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_KEYNAME`, `GPG_PASSPHRASE`. Using the format `${env.SONATYPE_USERNAME}` allows the usage of environment variables but literal values can be supplied directly where desired.
 
 ```xml
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
@@ -36,8 +36,12 @@ The following is an example settings.xml file:
       <properties>
         <!-- Customize the following properties to configure your gpg settings. -->
         <gpg.executable>gpg</gpg.executable>
-        <gpg.keyname>keyname</gpg.keyname>
-        <gpg.passphrase>passphrase</gpg.passphrase>
+        <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
+        <!-- 
+        or passed directly:
+        <gpg.keyname>0123456789ABCDEF</gpg.keyname>
+        -->
+        <gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
         <gpg.secretKeyring>${env.HOME}/.gnupg/secring.gpg</gpg.secretKeyring>
       </properties>
     </profile>
@@ -45,8 +49,8 @@ The following is an example settings.xml file:
   <servers>
     <server>
       <id>ossrh</id>
-      <username>username</username>
-      <password>password</password>
+      <username>${env.SONATYPE_USERNAME}</username>
+      <password>${env.SONATYPE_PASSWORD}</password>
     </server>
   </servers>
 </settings>
