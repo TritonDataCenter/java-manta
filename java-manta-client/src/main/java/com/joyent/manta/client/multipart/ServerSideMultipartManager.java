@@ -364,7 +364,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
             try (InputStream in = response.getEntity().getContent()) {
                 ObjectNode objectNode = MantaObjectMapper.INSTANCE.readValue(in, ObjectNode.class);
 
-                JsonNode objectPathNode = objectNode.get("objectPath");
+                JsonNode objectPathNode = objectNode.get("targetObject");
                 Validate.notNull(objectPathNode, "Unable to read object path from response");
                 objectPath = objectPathNode.textValue();
                 Validate.notBlank(objectPath, "Object path field was blank in response");
@@ -454,19 +454,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 if (state.equalsIgnoreCase("created")) {
                     return MantaMultipartStatus.CREATED;
                 }
-
                 if (state.equalsIgnoreCase("finalizing")) {
-                    JsonNode typeNode = objectNode.get("type");
-                    Validate.notNull(typeNode, "Unable to get type from response");
-                    String type = typeNode.textValue();
-                    Validate.notBlank(type, "Type field was blank in response");
-
-                    if (type.equalsIgnoreCase("commit")) {
-                        return MantaMultipartStatus.COMMITTING;
-                    }
-                    if (type.equalsIgnoreCase("abort")) {
-                        return MantaMultipartStatus.ABORTING;
-                    }
+                    return extractMultipartStatusResult(objectNode);
+                }
+                if (state.equalsIgnoreCase("done")) {
+                    return extractMultipartStatusResult(objectNode);
                 }
 
                 return MantaMultipartStatus.UNKNOWN;
@@ -482,6 +474,34 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 throw me;
             }
         }
+    }
+
+    /**
+     * Extract the "result" field from the get-mpu payload.
+     *
+     * @param objectNode    The response JSON object.
+     * @return MantaMultipartStatus extracted
+     */
+    private MantaMultipartStatus extractMultipartStatusResult(final ObjectNode objectNode) {
+        JsonNode resultNode = objectNode.get("result");
+        Validate.notNull(resultNode, "Unable to get result from response");
+        String result = resultNode.textValue();
+        Validate.notBlank(result, "Result field was blank in response");
+
+        if (result.equalsIgnoreCase("aborting")) {
+            return MantaMultipartStatus.ABORTING;
+        }
+        if (result.equalsIgnoreCase("aborted")) {
+            return MantaMultipartStatus.ABORTED;
+        }
+        if (result.equalsIgnoreCase("committing")) {
+            return MantaMultipartStatus.COMMITTING;
+        }
+        if (result.equalsIgnoreCase("committed")) {
+            return MantaMultipartStatus.COMMITTING;
+        }
+
+        return MantaMultipartStatus.UNKNOWN;
     }
 
     @Override

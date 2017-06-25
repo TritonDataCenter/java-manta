@@ -518,6 +518,7 @@ public class MantaClientIT {
         Assert.assertEquals(3, count.get());
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     @Test(expectedExceptions = MantaObjectException.class)
     public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -530,6 +531,7 @@ public class MantaClientIT {
         }
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     @Test(expectedExceptions = MantaClientHttpResponseException.class)
     public final void testListNonexistentDir() throws IOException {
         final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",

@@ -23,6 +23,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
@@ -60,7 +61,7 @@ public class MantaObjectOutputStreamIT {
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
 
         try {
-            out.write(TEST_DATA.getBytes());
+            out.write(TEST_DATA.getBytes(StandardCharsets.UTF_8));
         } finally {
             out.close();
         }
@@ -83,7 +84,7 @@ public class MantaObjectOutputStreamIT {
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
 
         try {
-            out.write(TEST_DATA.getBytes());
+            out.write(TEST_DATA.getBytes(StandardCharsets.UTF_8));
         } finally {
             out.close();
         }

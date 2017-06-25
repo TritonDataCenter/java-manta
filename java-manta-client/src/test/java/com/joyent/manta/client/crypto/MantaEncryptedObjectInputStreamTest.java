@@ -42,6 +42,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -619,9 +620,9 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     /*
-    
+
     removing failing tests documented in https://github.com/joyent/java-manta/issues/257
-    
+
     public void willValidateIfHmacIsReadInMultipleReadsAesCbc128() throws IOException {
         willValidateIfHmacIsReadInMultipleReads(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
@@ -635,7 +636,7 @@ public class MantaEncryptedObjectInputStreamTest {
     public void willValidateIfHmacIsReadInMultipleReadsAesCbc256() throws IOException {
         willValidateIfHmacIsReadInMultipleReads(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
-    
+
     */
 
     /* TEST UTILITY CLASSES */
@@ -1025,7 +1026,9 @@ public class MantaEncryptedObjectInputStreamTest {
                             expected, actual);
                 } catch (AssertionError e) {
                     Assert.fail(String.format("%s\nexpected: %s\nactual  : %s",
-                            e.getMessage(), new String(expected), new String(actual)));
+                            e.getMessage(),
+                            new String(expected, StandardCharsets.UTF_8),
+                            new String(actual, StandardCharsets.UTF_8)));
                 }
             }
         }

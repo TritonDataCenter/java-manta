@@ -47,6 +47,7 @@ import java.lang.reflect.Field;
 abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
                                         PART extends MantaMultipartUploadPart>
         implements MantaMultipartManager<UPLOAD, PART> {
+    @SuppressWarnings("ReturnValueIgnored")
     @Override
     public void validateThatThereAreSequentialPartNumbers(final UPLOAD upload)
             throws IOException, MantaMultipartException {
