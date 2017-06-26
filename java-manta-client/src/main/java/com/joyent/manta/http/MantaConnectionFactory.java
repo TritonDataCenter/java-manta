@@ -77,6 +77,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -316,10 +317,6 @@ public class MantaConnectionFactory implements Closeable {
      * @return fully configured connection manager
      */
     protected PoolingHttpClientConnectionManager buildConnectionManager() {
-        final int maxConns = ObjectUtils.firstNonNull(
-                config.getMaximumConnections(),
-                DefaultsConfigContext.DEFAULT_MAX_CONNS);
-
         final ConnectionSocketFactory sslConnectionSocketFactory =
                 new MantaSSLConnectionSocketFactory(this.config);
 
@@ -334,10 +331,22 @@ public class MantaConnectionFactory implements Closeable {
         HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
                 buildHttpConnectionFactory();
 
+        final int connPoolTTL = ObjectUtils.firstNonNull(
+                config.getConnectionPoolTTLInSeconds(),
+                DefaultsConfigContext.DEFAULT_CONNECTION_POOL_TTL);
+
         final PoolingHttpClientConnectionManager poolingConnectionManager =
                 new PoolingHttpClientConnectionManager(socketFactoryRegistry,
                         connFactory,
-                        DNS_RESOLVER);
+                        null,
+                        DNS_RESOLVER,
+                        connPoolTTL,
+                        TimeUnit.SECONDS);
+
+        final int maxConns = ObjectUtils.firstNonNull(
+                config.getMaximumConnections(),
+                DefaultsConfigContext.DEFAULT_MAX_CONNS);
+
         poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
         poolingConnectionManager.setMaxTotal(maxConns);
         poolingConnectionManager.setDefaultSocketConfig(buildSocketConfig());

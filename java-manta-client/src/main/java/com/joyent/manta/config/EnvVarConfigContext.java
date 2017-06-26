@@ -95,7 +95,7 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY = "MANTA_TCP_SOCKET_TIMEOUT";
 
     /**
-     * Property key for looking up connection pool TTLs in seconds.
+     * Property key for looking up connection pool TTL.
      */
     public static final String MANTA_CONNECTION_POOL_TTL_ENV_KEY = "MANTA_CONNECTION_POOL_TTL";
 
@@ -169,7 +169,6 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY
     };
-
 
     static {
         // Sorts the properties so that we can do a binary search on them if needed
@@ -284,9 +283,9 @@ public class EnvVarConfigContext implements ConfigContext {
 
     @Override
     public Integer getConnectionPoolTTLInSeconds() {
-        String ttlString = getEnv(MANTA_CONNECTION_POOL_TTL_ENV_KEY);
+        String ttlValue = getEnv(MANTA_CONNECTION_POOL_TTL_ENV_KEY);
 
-        return MantaUtils.parseIntegerOrNull(ttlString);
+        return MantaUtils.parseIntegerOrNull(ttlValue);
     }
 
     @Override

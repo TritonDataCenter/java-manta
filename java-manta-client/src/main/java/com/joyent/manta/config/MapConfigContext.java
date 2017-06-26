@@ -98,7 +98,7 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_KEY = "manta.tcp_socket_timeout";
 
     /**
-     * Property key for looking up the connection pool TTL in seconds.
+     * Property key for looking up the connection pool TTL.
      */
     public static final String MANTA_CONNECTION_POOL_TTL_KEY = "manta.connection_pool_ttl";
 

@@ -131,18 +131,18 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * Sets the time in milliseconds to wait to see if a TCP socket has timed out.
      *
      * @see java.net.SocketOptions#SO_TIMEOUT
-     * @param tcpSocketTimeout time in milliseconds TODO: fix this thing
+     * @param tcpSocketTimeout time in milliseconds to wait to see if a TCP socket has timed out
      * @return the current instance of {@link T}
      */
     T setTcpSocketTimeout(Integer tcpSocketTimeout);
 
     /**
-     * Sets the time in seconds to hold on to DNS-resolved connections.
-     * TODO: poolingblah class
+     * Sets the time in seconds to keep persistent connections in the connection pool.
+     *
      * @param ttlTimeout time in seconds to keep connections from DNS resolution
      * @return the current instance of {@link T}
      */
-    T setConnectionPoolTTLInSeconds(Integer ttlTimeout);
+    T setConnectionPoolTTLInSeconds(Integer connectionPoolTTLInSeconds);
 
     /**
      * Sets if we verify the uploaded file's checksum against the server's

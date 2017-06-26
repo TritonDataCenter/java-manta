@@ -120,7 +120,7 @@ When set to true, this disables the use of native code libraries for cryptograph
 * `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
 Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
 * `manta.connection_pool_ttl` (**MANTA_CONNECTION_POOL_TTL**)
-TODO: MORE STUFF
+Time in seconds to keep persistent connections in the connection pool, `-1` means reuse connections indefinitely.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
 When set to true, the client calculates a MD5 checksum of the file being uploaded
 to Manta and then checks it against the result returned by Manta.

@@ -110,8 +110,8 @@ public interface ConfigContext {
     Integer getTcpSocketTimeout();
 
     /**
-     * @see org.apache.http. PoolingClient
-     * @return time in seconds to hold on to connections in the connection pool
+     * @see org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+     * @return Time in seconds to keep persistent connections in the connection pool.
      */
     Integer getConnectionPoolTTLInSeconds();
 

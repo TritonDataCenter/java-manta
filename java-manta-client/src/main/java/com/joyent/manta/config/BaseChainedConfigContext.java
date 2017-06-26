@@ -95,7 +95,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Integer tcpSocketTimeout;
 
     /**
-     * TODO: copy and edit
+     * Time in seconds to keep persistent connections in the connection pool.
      */
     private Integer connectionPoolTTLInSeconds;
 

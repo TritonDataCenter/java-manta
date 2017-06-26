@@ -122,7 +122,7 @@ public class ConfigContextMBean implements DynamicMBean {
                         true, this.isSettable, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_CONNECTION_POOL_TTL_KEY,
                         Integer.class.getName(),
-                        "", // TODO: another slightly different description
+                        "Time in seconds to keep persistent connections in the connection pool.",
                         true, this.isSettable, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY,
                         Boolean.class.getName(),

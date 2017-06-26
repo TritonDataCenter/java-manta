@@ -88,7 +88,8 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
 
     /**
-     * TODO: find a proper default TTL
+     * Time in seconds to keep persistent connections in the connection pool.
+     * -1 means indefinitely.
      */
     public static final int DEFAULT_CONNECTION_POOL_TTL = -1;
 
