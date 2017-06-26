@@ -219,13 +219,13 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final MantaHttpHeaders headers = new MantaHttpHeaders();
-        headers.setDurabilityLevel(4);
+        headers.setDurabilityLevel(3);
 
         mantaClient.put(path, TEST_DATA, headers);
         try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
             final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
             Assert.assertEquals(data, TEST_DATA);
-            Assert.assertEquals("4", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));
+            Assert.assertEquals("3", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));
             mantaClient.delete(gotObject.getPath());
         }
 

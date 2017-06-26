@@ -240,7 +240,7 @@ public class MantaHttpHeadersIT {
 
     @Test
     public void canSetDurability() throws IOException {
-        final int durability = 4;
+        final int durability = 3;
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setDurabilityLevel(durability);
 
