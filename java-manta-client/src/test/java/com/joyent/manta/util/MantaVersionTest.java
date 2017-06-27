@@ -12,6 +12,10 @@ import org.testng.annotations.Test;
 
 @Test
 public class MantaVersionTest {
+    public void canTestDummy() {
+        Assert.assertNotNull(null);
+    }
+
     public void canLoadVersion() {
         Assert.assertNotNull(MantaVersion.VERSION);
     }
