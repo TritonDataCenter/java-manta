@@ -507,6 +507,12 @@ public class MantaEncryptedObjectInputStreamTest {
         canReadByteRangeAllReadModes(cipherDetails, startPos, endPos);
     }
 
+    public void canReadByteRangeEndBytesNonOffsetAesCtr128() throws IOException {
+        SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+        int endPos = this.plaintextSize + cipherDetails.getAuthenticationTagOrHmacLengthInBytes() - 1;
+        canReadByteRangeAllReadModes(cipherDetails, 0, endPos);
+    }
+
 
     public void canCopyStreamWithLargeBufferBufferAuthenticatedAesCbc128() throws IOException {
          canCopyToOutputStreamWithLargeBuffer(AesCbcCipherDetails.INSTANCE_128_BIT, true);
@@ -961,15 +967,8 @@ public class MantaEncryptedObjectInputStreamTest {
         /* If the plaintext size specified is greater than the actual plaintext
          * size, we adjust it here. This is only for creating the expectation
          * that we compare our output to. */
-        final int endPositionExclusive;
+        final int endPositionExclusive = endPosInclusive + 1;
 
-        if (endPosInclusive + 1 > plaintextSize) {
-            endPositionExclusive = plaintextSize;
-        } else {
-            endPositionExclusive = endPosInclusive + 1;
-        }
-
-        boolean unboundedEnd = (endPositionExclusive >= plaintextSize || endPosInclusive < 0);
         byte[] expected = Arrays.copyOfRange(content, startPosInclusive, endPositionExclusive);
 
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
@@ -1001,9 +1000,6 @@ public class MantaEncryptedObjectInputStreamTest {
              * the binary of the actual object (even if the range went beyond). */
             long ciphertextByteRangeLength = Math.min(ciphertextRangeMaxBytes, ciphertextRangeRequestBytes);
 
-            if (unboundedEnd)
-                ciphertextByteRangeLength = ciphertextSize - ciphertextStart; // include MAC
-
             byte[] rangedBytes = new byte[(int)ciphertextByteRangeLength];
             randomAccessFile.read(rangedBytes);
 
@@ -1017,7 +1013,7 @@ public class MantaEncryptedObjectInputStreamTest {
                     false, (long)this.plaintextSize,
                          initialSkipBytes,
                          plaintextLength,
-                         unboundedEnd)) {
+                         false)) {
                 byte[] actual = new byte[expected.length];
                 readBytes.readAll(min, actual);
 
