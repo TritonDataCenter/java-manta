@@ -8,7 +8,6 @@
 package com.joyent.manta.exception;
 
 import com.joyent.manta.http.HttpHelper;
-import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 
@@ -71,6 +70,15 @@ public class MantaChecksumFailedException extends MantaIOException {
         super(cause);
     }
 
+    /**
+     * Builds a client exception object that is annotated with all of the
+     * relevant request and response debug information.
+     *
+     * @param message  The detail message (which is saved for later retrieval
+     *                 by the {@link #getMessage()} method)
+     * @param request  HTTP request object
+     * @param response HTTP response object
+     */
     public MantaChecksumFailedException(final String message, final HttpRequest request, final HttpResponse response) {
         super(message);
         HttpHelper.annotateContextedException(this, request, response);
