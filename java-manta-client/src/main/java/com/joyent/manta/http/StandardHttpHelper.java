@@ -342,6 +342,8 @@ public class StandardHttpHelper implements HttpHelper {
      *
      * @param entity null or the entity object
      * @param serverMd5 service side computed MD5 value
+     * @param request HTTP request object
+     * @param response HTTP response object
      * @throws MantaChecksumFailedException thrown if the MD5 values do not match
      */
     protected static void validateChecksum(final DigestedEntity entity,
