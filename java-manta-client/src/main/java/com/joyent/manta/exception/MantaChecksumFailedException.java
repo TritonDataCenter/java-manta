@@ -7,6 +7,11 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+
 /**
  * Exception thrown when the checksum for a file that is being uploaded doesn't
  * match the server-side generated checksum.
@@ -65,4 +70,10 @@ public class MantaChecksumFailedException extends MantaIOException {
     public MantaChecksumFailedException(final Throwable cause) {
         super(cause);
     }
+
+    public MantaChecksumFailedException(final String message, final HttpRequest request, final HttpResponse response) {
+        super(message);
+        HttpHelper.annotateContextedException(this, request, response);
+    }
+
 }
