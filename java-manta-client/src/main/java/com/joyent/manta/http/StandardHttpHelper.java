@@ -25,6 +25,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -208,6 +209,10 @@ public class StandardHttpHelper implements HttpHelper {
                 throw new MantaClientHttpResponseException(put, response,
                         put.getURI().getPath());
             }
+
+            if (validateUploadsEnabled()) {
+                validateChecksum(md5DigestedEntity, obj.getMd5Bytes(), put, response);
+            }
         }
 
         /* We set the content type on the result object from the entity
@@ -218,9 +223,6 @@ public class StandardHttpHelper implements HttpHelper {
             obj.setContentType(entity.getContentType().getValue());
         }
 
-        if (validateUploadsEnabled()) {
-            validateChecksum(md5DigestedEntity, obj.getMd5Bytes());
-        }
 
         return obj;
     }
@@ -340,10 +342,14 @@ public class StandardHttpHelper implements HttpHelper {
      *
      * @param entity null or the entity object
      * @param serverMd5 service side computed MD5 value
+     * @param request HTTP request object
+     * @param response HTTP response object
      * @throws MantaChecksumFailedException thrown if the MD5 values do not match
      */
     protected static void validateChecksum(final DigestedEntity entity,
-                                           final byte[] serverMd5)
+                                           final byte[] serverMd5,
+                                           final HttpRequest request,
+                                           final HttpResponse response)
             throws MantaChecksumFailedException {
         if (entity == null) {
             return;
@@ -358,9 +364,8 @@ public class StandardHttpHelper implements HttpHelper {
         final boolean areMd5sTheSame = Arrays.equals(serverMd5, clientMd5);
 
         if (!areMd5sTheSame) {
-            String msg = "Client calculated MD5 and server calculated "
-                    + "MD5 do not match";
-            MantaChecksumFailedException e = new MantaChecksumFailedException(msg);
+            String msg = "Client calculated MD5 and server calculated MD5 do not match";
+            MantaChecksumFailedException e = new MantaChecksumFailedException(msg, request, response);
             e.setContextValue("serverMd5", MantaUtils.byteArrayAsHexString(serverMd5));
             e.setContextValue("clientMd5", MantaUtils.byteArrayAsHexString(clientMd5));
 
