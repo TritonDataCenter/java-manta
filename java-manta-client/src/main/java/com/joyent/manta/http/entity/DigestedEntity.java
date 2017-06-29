@@ -83,6 +83,8 @@ public class DigestedEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream out) throws IOException {
+        digest.reset(); // reset the digest state in case we're in a retry
+
         // If our wrapped entity is backed by a buffer of some form
         // we can read easily read the whole buffer into our message digest.
         if (wrapped instanceof MemoryBackedEntity) {
