@@ -618,6 +618,14 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 LOGGER.info("Multipart upload [{}] for file [{}] from [{}] parts has completed",
                             upload.getId(), location.getValue(), numParts);
             }
+        } catch (MantaMultipartException | MantaClientHttpResponseException me) {
+            // Already annotated
+            throw me;
+        } catch (Exception e) {
+            String msg = "Error initiating multipart upload completion";
+            MantaMultipartException me = new MantaMultipartException(msg, e);
+            annotateException(me, post, null, path, jsonRequest);
+            throw me;
         }
     }
 
