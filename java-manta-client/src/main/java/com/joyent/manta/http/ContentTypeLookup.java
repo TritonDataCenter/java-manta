@@ -74,12 +74,23 @@ public final class ContentTypeLookup {
         String type =  ObjectUtils.firstNonNull(
                 // Use explicitly set headers if available
                 headerContentType,
-                // Probe using the JVM default detection method
-                Files.probeContentType(file.toPath()),
-                // Detect based on destination filename
+                // Detect based on destination and then source
+                // filename.  URLConnection uses a property list
+                // bundled with the JVM and is expected to be
+                // consistent on all platforms.  As implied by the
+                // method name, the contents of the file are not
+                // considered.
                 URLConnection.guessContentTypeFromName(filename),
-                // Detect based on source filename
-                URLConnection.guessContentTypeFromName(file.getName())
+                URLConnection.guessContentTypeFromName(file.getName()),
+                // Probe using the JVM default detection method.  The
+                // detection methods vary across platforms and may
+                // rely on /etc/mime.types or include native libraries
+                // such as libgio or libreal.  The contents of the
+                // file may be inspected.  This check is ordered last
+                // both for cross-platform consistency.  See
+                // https://github.com/joyent/java-manta/issues/276 for
+                // further context.
+                Files.probeContentType(file.toPath())
         );
 
         if (type == null) {
