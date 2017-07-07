@@ -133,7 +133,9 @@ public class EncryptionState {
         if (isLastPartAuthWritten()) {
             final String msg = "final CSE auth already written (complete called multiple times or "
                 + "parts below min size)";
-            throw new MantaMultipartException(new IllegalStateException(msg));
+            MantaMultipartException mme = new MantaMultipartException(new IllegalStateException(msg));
+            mme.setContextValue("lastPartNumber", getLastPartNumber());
+            throw mme;
         }
         ByteArrayOutputStream remainderStream = new ByteArrayOutputStream();
         getMultipartStream().setNext(remainderStream);
