@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="3.1" jmeter="3.1 r1770033">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan" enabled="true">
+      <stringProp name="TestPlan.comments"></stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="it_size" elementType="Argument">
+            <stringProp name="Argument.name">it_size</stringProp>
+            <stringProp name="Argument.value">${__P(size,2)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="depth_control" elementType="Argument">
+            <stringProp name="Argument.name">depth_control</stringProp>
+            <stringProp name="Argument.value">${__P(depth,7)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="thread_count" elementType="Argument">
+            <stringProp name="Argument.name">thread_count</stringProp>
+            <stringProp name="Argument.value">${__P(threads,1)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+    </TestPlan>
+    <hashTree>
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">/Users/DouglasAnderson/java_manta/requests.xml</stringProp>
+      </ResultCollector>
+      <hashTree/>
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp Thread Group" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <longProp name="ThreadGroup.start_time">1496682015000</longProp>
+        <longProp name="ThreadGroup.end_time">1496682015000</longProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Create Base Directory" enabled="true">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="Manta URL" elementType="Argument">
+                <stringProp name="Argument.name">Manta URL</stringProp>
+                <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="MANTA_USER" elementType="Argument">
+                <stringProp name="Argument.name">MANTA_USER</stringProp>
+                <stringProp name="Argument.value">douglas.anderson</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="depth" elementType="Argument">
+                <stringProp name="Argument.name">depth</stringProp>
+                <stringProp name="Argument.value">7</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="ThreadNumber" elementType="Argument">
+                <stringProp name="Argument.name">ThreadNumber</stringProp>
+                <stringProp name="Argument.value">${__threadNum}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="Iteration" elementType="Argument">
+                <stringProp name="Argument.name">Iteration</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="CurrentDepth" elementType="Argument">
+                <stringProp name="Argument.name">CurrentDepth</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="BaseDir" elementType="Argument">
+                <stringProp name="Argument.name">BaseDir</stringProp>
+                <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="isBaseDir" elementType="Argument">
+                <stringProp name="Argument.name">isBaseDir</stringProp>
+                <stringProp name="Argument.value">true</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">com.joyent.jmetersampler.CreateDirectory</stringProp>
+        </JavaSampler>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Getting Base Directory" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">baseDir</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$..baseDir</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <BeanShellAssertion guiclass="BeanShellAssertionGui" testclass="BeanShellAssertion" testname="Adding base directory as property" enabled="true">
+            <stringProp name="TestPlan.comments">The reasononing behind this is strange, variables only exist in the thread context. So we need to set a property.</stringProp>
+            <stringProp name="BeanShellAssertion.query">${__setProperty(baseDir,${baseDir})}</stringProp>
+            <stringProp name="BeanShellAssertion.filename"></stringProp>
+            <stringProp name="BeanShellAssertion.parameters"></stringProp>
+            <boolProp name="BeanShellAssertion.resetInterpreter">false</boolProp>
+          </BeanShellAssertion>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Main Test" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">${thread_count}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <longProp name="ThreadGroup.start_time">1496352692000</longProp>
+        <longProp name="ThreadGroup.end_time">1496352692000</longProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <BeanShellSampler guiclass="BeanShellSamplerGui" testclass="BeanShellSampler" testname="Resetting the base directory" enabled="true">
+          <stringProp name="BeanShellSampler.query">String directory = &quot;${__property(baseDir)}&quot;;
+vars.put(&quot;baseDir&quot;, directory);
+</stringProp>
+          <stringProp name="BeanShellSampler.filename"></stringProp>
+          <stringProp name="BeanShellSampler.parameters"></stringProp>
+          <boolProp name="BeanShellSampler.resetInterpreter">false</boolProp>
+        </BeanShellSampler>
+        <hashTree/>
+        <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="baseDir" elementType="Argument">
+              <stringProp name="Argument.name">baseDir</stringProp>
+              <stringProp name="Argument.value">${__property(baseDir)}</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+          </collectionProp>
+        </Arguments>
+        <hashTree/>
+        <BeanShellAssertion guiclass="BeanShellAssertionGui" testclass="BeanShellAssertion" testname="Adding base directory as property" enabled="false">
+          <stringProp name="TestPlan.comments">The reasononing behind this is strange, variables only exist in the thread context. So we need to set a property.</stringProp>
+          <stringProp name="BeanShellAssertion.query">${__setProperty(baseDir,${baseDir})}</stringProp>
+          <stringProp name="BeanShellAssertion.filename"></stringProp>
+          <stringProp name="BeanShellAssertion.parameters"></stringProp>
+          <boolProp name="BeanShellAssertion.resetInterpreter">false</boolProp>
+        </BeanShellAssertion>
+        <hashTree/>
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Upload Loop" enabled="true">
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+          <stringProp name="LoopController.loops">${it_size}</stringProp>
+        </LoopController>
+        <hashTree>
+          <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="Iteration Counter" enabled="true">
+            <stringProp name="CounterConfig.start">1</stringProp>
+            <stringProp name="CounterConfig.end">${it_size}</stringProp>
+            <stringProp name="CounterConfig.incr">1</stringProp>
+            <stringProp name="CounterConfig.name">iteration</stringProp>
+            <stringProp name="CounterConfig.format"></stringProp>
+            <boolProp name="CounterConfig.per_user">true</boolProp>
+            <boolProp name="CounterConfig.reset_on_tg_iteration">true</boolProp>
+          </CounterConfig>
+          <hashTree/>
+          <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Depth Loop" enabled="true">
+            <boolProp name="LoopController.continue_forever">true</boolProp>
+            <stringProp name="LoopController.loops">${depth_control}</stringProp>
+          </LoopController>
+          <hashTree>
+            <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="Depth Counter" enabled="true">
+              <stringProp name="CounterConfig.start">1</stringProp>
+              <stringProp name="CounterConfig.end">${depth_control}</stringProp>
+              <stringProp name="CounterConfig.incr">1</stringProp>
+              <stringProp name="CounterConfig.name">depth</stringProp>
+              <stringProp name="CounterConfig.format"></stringProp>
+              <boolProp name="CounterConfig.per_user">true</boolProp>
+              <boolProp name="CounterConfig.reset_on_tg_iteration">true</boolProp>
+            </CounterConfig>
+            <hashTree/>
+            <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Create Directory" enabled="true">
+              <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="Manta URL" elementType="Argument">
+                    <stringProp name="Argument.name">Manta URL</stringProp>
+                    <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="MANTA_USER" elementType="Argument">
+                    <stringProp name="Argument.name">MANTA_USER</stringProp>
+                    <stringProp name="Argument.value">douglas.anderson</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                    <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                    <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="depth" elementType="Argument">
+                    <stringProp name="Argument.name">depth</stringProp>
+                    <stringProp name="Argument.value">7</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="ThreadNumber" elementType="Argument">
+                    <stringProp name="Argument.name">ThreadNumber</stringProp>
+                    <stringProp name="Argument.value">${__threadNum}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="Iteration" elementType="Argument">
+                    <stringProp name="Argument.name">Iteration</stringProp>
+                    <stringProp name="Argument.value">${iteration}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="CurrentDepth" elementType="Argument">
+                    <stringProp name="Argument.name">CurrentDepth</stringProp>
+                    <stringProp name="Argument.value">${depth}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="BaseDir" elementType="Argument">
+                    <stringProp name="Argument.name">BaseDir</stringProp>
+                    <stringProp name="Argument.value">${baseDir}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                  <elementProp name="isBaseDir" elementType="Argument">
+                    <stringProp name="Argument.name">isBaseDir</stringProp>
+                    <stringProp name="Argument.value">false</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="classname">com.joyent.jmetersampler.CreateDirectory</stringProp>
+            </JavaSampler>
+            <hashTree>
+              <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Update Directory" enabled="true">
+                <stringProp name="JSONPostProcessor.referenceNames">baseDir</stringProp>
+                <stringProp name="JSONPostProcessor.jsonPathExprs">$..Directory</stringProp>
+                <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+                <boolProp name="JSONPostProcessor.compute_concat">true</boolProp>
+              </JSONPostProcessor>
+              <hashTree/>
+            </hashTree>
+          </hashTree>
+          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Upload Object" enabled="true">
+            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="Manta URL" elementType="Argument">
+                  <stringProp name="Argument.name">Manta URL</stringProp>
+                  <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="MANTA_USER" elementType="Argument">
+                  <stringProp name="Argument.name">MANTA_USER</stringProp>
+                  <stringProp name="Argument.value">douglas.anderson</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                  <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                  <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="size" elementType="Argument">
+                  <stringProp name="Argument.name">size</stringProp>
+                  <stringProp name="Argument.value">1024</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="id" elementType="Argument">
+                  <stringProp name="Argument.name">id</stringProp>
+                  <stringProp name="Argument.value">1</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="directory" elementType="Argument">
+                  <stringProp name="Argument.name">directory</stringProp>
+                  <stringProp name="Argument.value">${baseDir}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="iteration" elementType="Argument">
+                  <stringProp name="Argument.name">iteration</stringProp>
+                  <stringProp name="Argument.value">${iteration}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="classname">com.joyent.jmetersampler.CreateObject</stringProp>
+          </JavaSampler>
+          <hashTree/>
+          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Directoty Listing" enabled="true">
+            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="Manta URL" elementType="Argument">
+                  <stringProp name="Argument.name">Manta URL</stringProp>
+                  <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="MANTA_USER" elementType="Argument">
+                  <stringProp name="Argument.name">MANTA_USER</stringProp>
+                  <stringProp name="Argument.value">douglas.anderson</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                  <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                  <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="directory" elementType="Argument">
+                  <stringProp name="Argument.name">directory</stringProp>
+                  <stringProp name="Argument.value">${baseDir}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="filter" elementType="Argument">
+                  <stringProp name="Argument.name">filter</stringProp>
+                  <stringProp name="Argument.value"></stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="classname">com.joyent.jmetersampler.DirectoryListing</stringProp>
+          </JavaSampler>
+          <hashTree>
+            <BeanShellPostProcessor guiclass="TestBeanGUI" testclass="BeanShellPostProcessor" testname="BeanShell PostProcessor" enabled="true">
+              <stringProp name="filename"></stringProp>
+              <stringProp name="parameters"></stringProp>
+              <boolProp name="resetInterpreter">false</boolProp>
+              <stringProp name="script">String directory = &quot;${__property(baseDir)}&quot;;
+vars.put(&quot;baseDir&quot;, directory);
+</stringProp>
+            </BeanShellPostProcessor>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="3404310">obj-</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">2</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Debug" enabled="false">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <longProp name="ThreadGroup.start_time">1496956858000</longProp>
+        <longProp name="ThreadGroup.end_time">1496956858000</longProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <BeanShellSampler guiclass="BeanShellSamplerGui" testclass="BeanShellSampler" testname="Resetting the base directory" enabled="false">
+          <stringProp name="BeanShellSampler.query">String directory = &quot;${__property(baseDir)}&quot;;
+vars.put(&quot;baseDir&quot;, directory);
+</stringProp>
+          <stringProp name="BeanShellSampler.filename"></stringProp>
+          <stringProp name="BeanShellSampler.parameters"></stringProp>
+          <boolProp name="BeanShellSampler.resetInterpreter">false</boolProp>
+        </BeanShellSampler>
+        <hashTree/>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Directoty Listing" enabled="true">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="Manta URL" elementType="Argument">
+                <stringProp name="Argument.name">Manta URL</stringProp>
+                <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="MANTA_USER" elementType="Argument">
+                <stringProp name="Argument.name">MANTA_USER</stringProp>
+                <stringProp name="Argument.value">douglas.anderson</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="directory" elementType="Argument">
+                <stringProp name="Argument.name">directory</stringProp>
+                <stringProp name="Argument.value">/douglas.anderson/stor/</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="filter" elementType="Argument">
+                <stringProp name="Argument.name">filter</stringProp>
+                <stringProp name="Argument.value">2017</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">com.joyent.jmetersampler.DirectoryListing</stringProp>
+        </JavaSampler>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">directories</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$..result</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">-1</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+        <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="ForEach Controller" enabled="false">
+          <stringProp name="ForeachController.inputVal">directories</stringProp>
+          <stringProp name="ForeachController.returnVal">curDir</stringProp>
+          <boolProp name="ForeachController.useSeparator">true</boolProp>
+        </ForeachController>
+        <hashTree>
+          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request" enabled="true">
+            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="Manta URL" elementType="Argument">
+                  <stringProp name="Argument.name">Manta URL</stringProp>
+                  <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="MANTA_USER" elementType="Argument">
+                  <stringProp name="Argument.name">MANTA_USER</stringProp>
+                  <stringProp name="Argument.value">douglas.anderson</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                  <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                  <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="directory" elementType="Argument">
+                  <stringProp name="Argument.name">directory</stringProp>
+                  <stringProp name="Argument.value">${curDir}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="classname">com.joyent.jmetersampler.DeleteDirectory</stringProp>
+          </JavaSampler>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <PostThreadGroup guiclass="PostThreadGroupGui" testclass="PostThreadGroup" testname="cleanup" enabled="false">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <longProp name="ThreadGroup.start_time">1496956867000</longProp>
+        <longProp name="ThreadGroup.end_time">1496956867000</longProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </PostThreadGroup>
+      <hashTree>
+        <BeanShellSampler guiclass="BeanShellSamplerGui" testclass="BeanShellSampler" testname="Resetting the base directory" enabled="true">
+          <stringProp name="BeanShellSampler.query">String directory = &quot;${__property(baseDir)}&quot;;
+vars.put(&quot;baseDir&quot;, directory);
+</stringProp>
+          <stringProp name="BeanShellSampler.filename"></stringProp>
+          <stringProp name="BeanShellSampler.parameters"></stringProp>
+          <boolProp name="BeanShellSampler.resetInterpreter">false</boolProp>
+        </BeanShellSampler>
+        <hashTree/>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request" enabled="true">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="Manta URL" elementType="Argument">
+                <stringProp name="Argument.name">Manta URL</stringProp>
+                <stringProp name="Argument.value">https://eu-central.manta.samsungcloud.io/</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="MANTA_USER" elementType="Argument">
+                <stringProp name="Argument.name">MANTA_USER</stringProp>
+                <stringProp name="Argument.value">douglas.anderson</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="MANTA_KEY_ID" elementType="Argument">
+                <stringProp name="Argument.name">MANTA_KEY_ID</stringProp>
+                <stringProp name="Argument.value">SHA256:vyyDe0jZ+A9XiSvfbsDVrI9X6AdhSzNac33a9tIoq5g</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="directory" elementType="Argument">
+                <stringProp name="Argument.name">directory</stringProp>
+                <stringProp name="Argument.value">${baseDir}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">com.joyent.jmetersampler.DeleteDirectory</stringProp>
+        </JavaSampler>
+        <hashTree/>
+      </hashTree>
+      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">/Users/DouglasAnderson/java_manta/requests.xml</stringProp>
+      </ResultCollector>
+      <hashTree/>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
