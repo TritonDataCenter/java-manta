@@ -48,6 +48,13 @@
             <organization>Joyent</organization>
             <organizationUrl>joyent.com</organizationUrl>
         </developer>
+        <developer>
+            <name>Tomas Celaya</name>
+            <email>tjcelaya@joyent.com</email>
+            <organization>Joyent</organization>
+            <organizationUrl>joyent.com</organizationUrl>
+            <timezone>US/Pacific</timezone>
+        </developer>
     </developers>
     <contributors>
         <contributor>

@@ -444,10 +444,10 @@ public class EncryptedServerSideMultipartManagerIT {
             assert exception.getCause() instanceof IllegalStateException;
         }
         Assert.assertEquals(uploadedParts.size(), 1, "only first small upload should succeed");
-        multipart.validateThatThereAreSequentialPartNumbers(upload);
 
         // This "completes" but only uploads one part due to the previous exceptions
         multipart.complete(upload, uploadedParts);
+        Assert.assertEquals(mantaClient.getAsString(path), "Hello ");
     }
 
     public final void doubleCompleteFails() throws IOException {
@@ -461,6 +461,9 @@ public class EncryptedServerSideMultipartManagerIT {
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[] { part1 };
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
         multipart.complete(upload, partsStream);
+        try (MantaObjectInputStream in =  mantaClient.getAsInputStream(path)) {
+            Assert.assertEquals(IOUtils.toByteArray(in), content);
+        }
         Assert.assertThrows(IllegalStateException.class,
                             () -> {
                                 multipart.complete(upload, partsStream);
