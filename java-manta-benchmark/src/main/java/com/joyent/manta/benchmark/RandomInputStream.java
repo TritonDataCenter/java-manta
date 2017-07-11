@@ -50,4 +50,27 @@ public class RandomInputStream extends InputStream {
 
         return RandomUtils.nextInt(0, Integer.MAX_VALUE);
     }
+
+    @Override
+    public int read(final byte[] b, final int off, final int len) throws IOException {
+        if (count.get() >= maximumBytes) {
+            return EOF;
+        }
+
+        final int bytesToRead;
+
+        if (maximumBytes - count.get() >= len) {
+            bytesToRead = len;
+        } else {
+            bytesToRead = (int)(maximumBytes - count.get());
+        }
+
+        count.addAndGet(bytesToRead);
+
+        final byte[] randomBytes = RandomUtils.nextBytes(bytesToRead);
+
+        System.arraycopy(randomBytes, 0, b, off, bytesToRead);
+
+        return bytesToRead;
+    }
 }

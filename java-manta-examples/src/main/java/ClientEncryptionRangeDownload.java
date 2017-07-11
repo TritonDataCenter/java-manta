@@ -18,6 +18,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Scanner;
 
@@ -65,7 +66,7 @@ public class ClientEncryptionRangeDownload {
             headers.setByteRange(0L, 15L);
 
             try (InputStream is = client.getAsInputStream(mantaPath, headers);
-                 Scanner scanner = new Scanner(is)) {
+                 Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name())) {
 
                 while (scanner.hasNextLine()) {
                     System.out.println(scanner.nextLine());

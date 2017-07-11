@@ -2,6 +2,41 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+
+## [3.x.x] - XXXX-XX-XX
+### Changed
+ - The heuristics for guessing heuristics have been adjusted to give
+   [more consistent](https://github.com/joyent/java-manta/issues/276)
+   results across platforms.
+
+## [3.1.3] - 2017-06-29
+### Fixed
+ - [`Digest` not reset in DigestedEntity](https://github.com/joyent/java-manta/pull/280)
+   leading to `MantaChecksumFailedException` when the entity is reused during automatic retry.
+ - [MantaChecksumFailedException](https://github.com/joyent/java-manta/pull/275)
+   lacking exception context.
+
+## [3.1.2] - 2017-06-22
+### Fixed
+ - [`InputStream` left open in EncryptingEntity and EncryptingPartEntity](https://github.com/joyent/java-manta/pull/264)
+  leading to space from deleted files not being reclaimed until JVM shutdown.
+
+## [3.1.1] - 2017-06-14
+### Changed
+ - Added additional error context information for IOExceptions thrown
+   during read() in encrypted streams.
+### Fixed
+ - [MantaClient.move() does not support moving a file to a non-existent directory](https://github.com/joyent/java-manta/issues/256)
+   This fix optionally allows users to recursively create a destination directory 
+   structure on move(). This is useful for supporting third-party APIs/libraries
+   that use this pattern due to a S3 first design. 
+ - Resolve issue where
+   [MantaClient.getAsInputStream().close() throws MantaIOException](https://github.com/joyent/java-manta/issues/250)
+   for encrypted objects with trailing HMAC. Infrequently an issue could occur where
+   less bytes than requested were read and the stream was left in a bad state.
+   This would prevent the underlying connection from being returned to the connection pool.
+ - Exception contexts now [include SDK version.](https://github.com/joyent/java-manta/issues/254)
+
 ## [3.1.0] - 2017-06-07
 
 Several related URL encoding bugs have been fixed.  Objects with

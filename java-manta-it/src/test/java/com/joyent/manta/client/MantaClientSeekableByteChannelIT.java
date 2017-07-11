@@ -28,6 +28,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -77,7 +78,7 @@ public class MantaClientSeekableByteChannelIT {
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
 
-        final long expectedSize = TEST_DATA.getBytes().length;
+        final long expectedSize = TEST_DATA.getBytes(StandardCharsets.UTF_8).length;
 
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path)) {
             Assert.assertEquals(channel.size(), expectedSize,
@@ -92,7 +93,7 @@ public class MantaClientSeekableByteChannelIT {
         mantaClient.put(path, TEST_DATA);
 
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path)) {
-            String actual = new String(readAllBytes(channel));
+            String actual = new String(readAllBytes(channel), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, TEST_DATA, "Couldn't read the same bytes as written");
         }
     }
@@ -107,7 +108,7 @@ public class MantaClientSeekableByteChannelIT {
         final String expected = TEST_DATA.substring(position);
 
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path, position)) {
-            String actual = new String(readAllBytes(channel));
+            String actual = new String(readAllBytes(channel), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, expected, "Couldn't read the same bytes as written");
         }
     }
@@ -121,14 +122,15 @@ public class MantaClientSeekableByteChannelIT {
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path)) {
             ByteBuffer first5Bytes = ByteBuffer.allocate(5);
             channel.read(first5Bytes);
-            String firstPos = new String(first5Bytes.array());
+            String firstPos = new String(first5Bytes.array(), StandardCharsets.UTF_8);
             Assert.assertEquals(firstPos, TEST_DATA.substring(0, 5),
                     "Couldn't read the same bytes as written");
 
             try (SeekableByteChannel channel2 = channel.position(7L)) {
                 ByteBuffer seventhTo12thBytes = ByteBuffer.allocate(5);
                 channel2.read(seventhTo12thBytes);
-                String secondPos = new String(seventhTo12thBytes.array());
+                String secondPos = new String(seventhTo12thBytes.array(),
+                        StandardCharsets.UTF_8);
                 Assert.assertEquals(secondPos, TEST_DATA.substring(7, 12),
                         "Couldn't read the same bytes as written");
             }
@@ -237,7 +239,7 @@ public class MantaClientSeekableByteChannelIT {
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path);
              SeekableByteChannel position1 = channel.position(positionIndex)) {
 
-            String actual = new String(readAllBytes(position1));
+            String actual = new String(readAllBytes(position1), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, expectedPosition1,
                     "Couldn't read the same bytes as written to specified position");
         }
@@ -255,10 +257,10 @@ public class MantaClientSeekableByteChannelIT {
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path);
              SeekableByteChannel position1 = channel.position(positionIndex)) {
 
-            String actual = new String(readAllBytes(channel));
+            String actual = new String(readAllBytes(channel), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, TEST_DATA, "Couldn't read the same bytes as written");
 
-            String positionActual = new String(readAllBytes(position1));
+            String positionActual = new String(readAllBytes(position1), StandardCharsets.UTF_8);
             Assert.assertEquals(positionActual, expectedPosition1,
                     "Couldn't read the same bytes as written to specified position");
         }
@@ -280,14 +282,14 @@ public class MantaClientSeekableByteChannelIT {
              SeekableByteChannel position1 = channel.position(position1Index);
              SeekableByteChannel position2 = channel.position(position2Index)) {
 
-            String actual = new String(readAllBytes(channel));
+            String actual = new String(readAllBytes(channel), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, TEST_DATA, "Couldn't read the same bytes as written");
 
-            String position1Actual = new String(readAllBytes(position1));
+            String position1Actual = new String(readAllBytes(position1), StandardCharsets.UTF_8);
             Assert.assertEquals(position1Actual, expectedPosition1,
                     "Couldn't read the same bytes as written to specified position");
 
-            String position2Actual = new String(readAllBytes(position2));
+            String position2Actual = new String(readAllBytes(position2), StandardCharsets.UTF_8);
             Assert.assertEquals(position2Actual, expectedPosition2,
                     "Couldn't read the same bytes as written to specified position");
         }

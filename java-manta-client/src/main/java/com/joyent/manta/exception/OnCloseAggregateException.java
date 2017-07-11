@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.exception.ContextedRuntimeException;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -22,6 +23,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class OnCloseAggregateException extends ContextedRuntimeException {
     private static final long serialVersionUID = -593809028604170624L;
+
+    {
+        addContextValue("mantaSdkVersion", MantaVersion.VERSION);
+    }
 
     /**
      * Count of the number of exceptions that have been aggregated.

@@ -191,8 +191,8 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 byte[] decrypted = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
                         (int) Math.min(out.length, adjustedPlaintextLength));
 
-                String decryptedText = new String(decrypted);
-                String adjustedText = new String(adjustedPlaintext);
+                String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
+                String adjustedText = new String(adjustedPlaintext, StandardCharsets.UTF_8);
 
                 Assert.assertEquals(adjustedText, decryptedText,
                         "Random read output from ciphertext doesn't match expectation " +

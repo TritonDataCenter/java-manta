@@ -131,7 +131,7 @@ public class EncryptingPartEntity implements HttpEntity {
         final CountingOutputStream cout = new CountingOutputStream(cipherStream);
 
         try {
-            IOUtils.copy(getContent(), cout, BUFFER_SIZE);
+            IOUtils.copy(contentStream, cout, BUFFER_SIZE);
             cipherStream.flush();
             if (lastPartCallback != null) {
                 ByteArrayOutputStream remainderStream = lastPartCallback.call(cout.getByteCount());
@@ -141,6 +141,7 @@ public class EncryptingPartEntity implements HttpEntity {
             }
         } finally {
             IOUtils.closeQuietly(httpOut);
+            IOUtils.closeQuietly(contentStream);
         }
     }
 

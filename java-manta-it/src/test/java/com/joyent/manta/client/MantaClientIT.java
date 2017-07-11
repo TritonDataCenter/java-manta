@@ -12,6 +12,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
@@ -66,7 +67,7 @@ public class MantaClientIT {
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
@@ -168,7 +169,7 @@ public class MantaClientIT {
 
     @Test
     public final void testManyOperations() throws IOException {
-        String dir = String.format("%s/multiple", testPathPrefix);
+        String dir = testPathPrefix + "multiple";
         mantaClient.putDirectory(dir);
 
         for (int i = 0; i < 100; i++) {
@@ -218,13 +219,13 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final MantaHttpHeaders headers = new MantaHttpHeaders();
-        headers.setDurabilityLevel(4);
+        headers.setDurabilityLevel(3);
 
         mantaClient.put(path, TEST_DATA, headers);
         try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
             final String data = IOUtils.toString(gotObject, Charset.defaultCharset());
             Assert.assertEquals(data, TEST_DATA);
-            Assert.assertEquals("4", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));
+            Assert.assertEquals("3", gotObject.getHttpHeaders().getFirstHeaderStringValue("durability-level"));
             mantaClient.delete(gotObject.getPath());
         }
 
@@ -360,8 +361,8 @@ public class MantaClientIT {
         Assert.assertEquals(linkContent, testData);
     }
 
-    @Test
-    public final void canMoveFile() throws IOException {
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentPrecreatedDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
@@ -374,7 +375,45 @@ public class MantaClientIT {
         Assert.assertEquals(movedContent, TEST_DATA);
     }
 
-    @Test
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentUncreatedDirectoryCreationEnabled() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+
+        final String newPath = newDir + "this-is-a-new-name.txt";
+
+        mantaClient.move(path, newPath, true);
+        final String movedContent = mantaClient.getAsString(newPath);
+        Assert.assertEquals(movedContent, TEST_DATA);
+    }
+
+    @Test(groups = "move")
+    public final void canMoveFileToDifferentUncreatedDirectoryCreationDisabled() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        mantaClient.put(path, TEST_DATA);
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+
+        final String newPath = newDir + "this-is-a-new-name.txt";
+
+        boolean thrown = false;
+
+        try {
+            mantaClient.move(path, newPath, false);
+        } catch (MantaClientHttpResponseException e) {
+            String serverCode = e.getContextValues("serverCode").get(0).toString();
+
+            if (serverCode.equals(MantaErrorCode.DIRECTORY_DOES_NOT_EXIST_ERROR.getCode())) {
+                thrown = true;
+            }
+        }
+
+        Assert.assertTrue(thrown, "Expected exception [MantaClientHttpResponseException] wasn't thrown");
+    }
+
+    @Test(groups = "move")
     public final void canMoveEmptyDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -400,8 +439,7 @@ public class MantaClientIT {
             + path);
     }
 
-
-    public void moveDirectoryWithContents(final String source, final String destination) throws IOException {
+    private void moveDirectoryWithContents(final String source, final String destination) throws IOException {
         mantaClient.putDirectory(source);
 
         mantaClient.putDirectory(source + "dir1");
@@ -442,7 +480,6 @@ public class MantaClientIT {
                 + source);
     }
 
-
     @Test
     public final void canMoveDirectoryWithContents() throws IOException {
         final String name = "source-" + UUID.randomUUID().toString();
@@ -481,6 +518,7 @@ public class MantaClientIT {
         Assert.assertEquals(3, count.get());
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     @Test(expectedExceptions = MantaObjectException.class)
     public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -493,6 +531,7 @@ public class MantaClientIT {
         }
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     @Test(expectedExceptions = MantaClientHttpResponseException.class)
     public final void testListNonexistentDir() throws IOException {
         final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",
