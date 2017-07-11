@@ -20,6 +20,11 @@
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
             <version>3.1.4-SNAPSHOT</version>
+
+            <!-- If you add a dependency to java-manta-client that is shaded,
+                 you will have to add it as an exclusion below because the
+                 Maven enforcer plugin is simpleminded and it will detect
+                 the shaded class and the dependency jar as conflicting. -->
             <exclusions>
                 <exclusion>
                     <groupId>com.joyent.http-signature</groupId>
@@ -64,6 +69,10 @@
                 <exclusion>
                     <groupId>com.squareup.jnagmp</groupId>
                     <artifactId>bouncycastle-rsa</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.twmacinta</groupId>
+                    <artifactId>fast-md5</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -148,6 +157,11 @@
                     <groupId>junit</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.twmacinta</groupId>
+            <artifactId>fast-md5</artifactId>
+            <version>2.7.1</version>
         </dependency>
     </dependencies>
 </project>
