@@ -10,6 +10,10 @@ package com.joyent.manta.util;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.digests.SHA1Digest;
+import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.digests.SHA384Digest;
+import org.bouncycastle.crypto.digests.SHA512Digest;
 
 /**
  * Utility class for cloning Digest objects.
@@ -28,19 +32,20 @@ public final class DigestCloner extends AbstractCloner<Digest> {
 
     /**
      * @param original the source Digest to clone
+     *
      * @return a new Digest with the same state as the original
      */
     public static Digest clone(final Digest original) {
         if (original instanceof FastMD5Digest) {
-            return (FastMD5Digest) ((FastMD5Digest) original).copy();
-            // } else if (original instanceof SHA1Digest) {
-            //     return clone((SHA1Digest) original);
-            // } else if (original instanceof SHA256Digest) {
-            //     return clone((SHA256Digest) original);
-            // } else if (original instanceof SHA384Digest) {
-            //     return clone((SHA384Digest) original);
-            // } else if (original instanceof SHA512Digest) {
-            //     return clone((SHA512Digest) original);
+            return (Digest) ((FastMD5Digest) original).copy();
+        } else if (original instanceof SHA1Digest) {
+            return (Digest) ((SHA1Digest) original).copy();
+        } else if (original instanceof SHA256Digest) {
+            return (Digest) ((SHA256Digest) original).copy();
+        } else if (original instanceof SHA384Digest) {
+            return (Digest) ((SHA384Digest) original).copy();
+        } else if (original instanceof SHA512Digest) {
+            return (Digest) ((SHA512Digest) original).copy();
         }
 
         throw new NotImplementedException("Clone not implemented for type: " + original.getClass().getCanonicalName());
