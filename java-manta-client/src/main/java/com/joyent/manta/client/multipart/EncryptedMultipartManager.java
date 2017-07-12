@@ -277,8 +277,9 @@ public class EncryptedMultipartManager
                             }
                         }
                     });
+            final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
             encryptionState.setLastPartNumber(partNumber);
-            return wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
+            return part;
         } finally {
             encryptionState.getLock().unlock();
         }
