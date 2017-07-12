@@ -21,55 +21,12 @@
             <artifactId>java-manta-client</artifactId>
             <version>3.1.4-SNAPSHOT</version>
 
-            <!-- If you add a dependency to java-manta-client that is shaded,
-                 you will have to add it as an exclusion below because the
-                 Maven enforcer plugin is simpleminded and it will detect
-                 the shaded class and the dependency jar as conflicting. -->
+            <!-- If you add a dependency to java-manta-client that is shaded and
+                 not relocated, you will have to add it as an exclusion below
+                 because the Maven enforcer plugin is simpleminded and it will
+                 detect the shaded class and the dependency jar as conflicting.
+            -->
             <exclusions>
-                <exclusion>
-                    <groupId>com.joyent.http-signature</groupId>
-                    <artifactId>apache-http-client-signature</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-lang3</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-collections4</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-io</groupId>
-                    <artifactId>commons-io</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.uuid</groupId>
-                    <artifactId>java-uuid-generator</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-jsr310</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.squareup.jnagmp</groupId>
-                    <artifactId>bouncycastle-rsa</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>com.twmacinta</groupId>
                     <artifactId>fast-md5</artifactId>
@@ -130,6 +87,17 @@
             <artifactId>objenesis</artifactId>
             <version>${dependency.objenesis.version}</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- Fast-md5 is added in the provided scope because it is shaded and
+             not relocated. We don't want it to be transitively passed on as a
+             dependency, so it is used in the runtime scope.
+        -->
+        <dependency>
+            <groupId>com.twmacinta</groupId>
+            <artifactId>fast-md5</artifactId>
+            <version>${dependency.fast-md5.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- These dependencies are declared at the module level because we can not
