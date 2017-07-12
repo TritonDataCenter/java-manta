@@ -36,16 +36,24 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
      */
     public static final SupportedHmacsLookupMap INSTANCE = new SupportedHmacsLookupMap();
 
+    public enum Name {
+        HmacMD5,
+        HmacSHA1,
+        HmacSHA256,
+        HmacSHA384,
+        HmacSHA512
+    }
+
     /**
      * Package default constructor because interface is through {@link SupportedCipherDetails}.
      */
     private SupportedHmacsLookupMap() {
         super(MantaUtils.unmodifiableMap(
-                "HmacMD5", hmacSupplierByName("HmacMD5"),
-                "HmacSHA1", hmacSupplierByName("HmacSHA1"),
-                "HmacSHA256", hmacSupplierByName("HmacSHA256"),
-                "HmacSHA384", hmacSupplierByName("HmacSHA384"),
-                "HmacSHA512", hmacSupplierByName("HmacSHA512"))
+                Name.HmacMD5.name(), hmacSupplierByName(Name.HmacMD5.name()),
+                Name.HmacSHA1.name(), hmacSupplierByName(Name.HmacSHA1.name()),
+                Name.HmacSHA256.name(), hmacSupplierByName(Name.HmacSHA256.name()),
+                Name.HmacSHA384.name(), hmacSupplierByName(Name.HmacSHA384.name()),
+                Name.HmacSHA512.name(), hmacSupplierByName(Name.HmacSHA512.name()))
         );
     }
 
@@ -54,6 +62,7 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
      * new HMAC instance for every value of this map.
      *
      * @param algorithm algorithm to instantiate HMAC instance as
+     *
      * @return supplier wrapping getInstance call to get HMAC instance
      */
     private static Supplier<HMac> hmacSupplierByName(final String algorithm) {
@@ -80,6 +89,7 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
      * Finds the HMAC implementation name based on the passed object.
      *
      * @param hmac instance to find name for
+     *
      * @return the name of implementation used by the SDK
      */
     public static String hmacNameFromInstance(final HMac hmac) {
