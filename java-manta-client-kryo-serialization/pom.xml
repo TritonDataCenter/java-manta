@@ -158,10 +158,5 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>com.twmacinta</groupId>
-            <artifactId>fast-md5</artifactId>
-            <version>2.7.1</version>
-        </dependency>
     </dependencies>
 </project>

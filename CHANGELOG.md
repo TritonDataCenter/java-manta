@@ -8,6 +8,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - The heuristics for guessing heuristics have been adjusted to give
    [more consistent](https://github.com/joyent/java-manta/issues/276)
    results across platforms.
+### Fixed
+ - [`mvn integration-test site` fails enforce-ban-duplicate-classes](https://github.com/joyent/java-manta/issues/270)
 
 ## [3.1.3] - 2017-06-29
 ### Fixed
