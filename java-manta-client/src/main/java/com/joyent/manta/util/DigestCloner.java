@@ -14,10 +14,11 @@ import org.bouncycastle.crypto.Digest;
 /**
  * Utility class for cloning Digest objects.
  */
-public final class DigestCloner {
+public final class DigestCloner extends AbstractCloner<Digest> {
 
     @SuppressWarnings("checkstyle:JavadocMethod")
     private DigestCloner() {
+        super(Digest.class);
     }
 
     @SuppressWarnings("checkstyle:JavadocMethod")
@@ -31,7 +32,7 @@ public final class DigestCloner {
      */
     public static Digest clone(final Digest original) {
         if (original instanceof FastMD5Digest) {
-            return clone((FastMD5Digest) original);
+            return (FastMD5Digest) ((FastMD5Digest) original).copy();
             // } else if (original instanceof SHA1Digest) {
             //     return clone((SHA1Digest) original);
             // } else if (original instanceof SHA256Digest) {
