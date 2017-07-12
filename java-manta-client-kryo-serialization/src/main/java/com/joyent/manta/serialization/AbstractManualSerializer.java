@@ -8,6 +8,7 @@
 package com.joyent.manta.serialization;
 
 import com.esotericsoftware.kryo.Serializer;
+import com.joyent.manta.util.MantaReflectionUtils;
 
 import java.lang.reflect.Field;
 
@@ -74,7 +75,7 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @throws UnsupportedOperationException when the field isn't present
      */
     protected Field captureField(final String fieldName) {
-        final Field field = ReflectionUtils.getField(classReference, fieldName);
+        final Field field = MantaReflectionUtils.getField(classReference, fieldName);
 
         if (field == null) {
             String msg = String.format("No field [%s] found on object [%s]",
@@ -92,6 +93,6 @@ public abstract class AbstractManualSerializer<T> extends Serializer<T> {
      * @return new instance
      */
     protected T newInstance(final Object... params) {
-        return ReflectionUtils.newInstance(classReference, params);
+        return MantaReflectionUtils.newInstance(classReference, params);
     }
 }

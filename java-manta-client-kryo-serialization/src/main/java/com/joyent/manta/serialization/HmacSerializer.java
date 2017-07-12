@@ -11,6 +11,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
+import com.joyent.manta.util.MantaReflectionUtils;
 import com.twmacinta.util.FastMD5Digest;
 import com.twmacinta.util.MD5;
 import org.bouncycastle.crypto.Digest;
@@ -25,8 +26,8 @@ import org.bouncycastle.crypto.macs.HMac;
 
 import java.lang.reflect.Field;
 
-import static com.joyent.manta.serialization.ReflectionUtils.readField;
-import static com.joyent.manta.serialization.ReflectionUtils.writeField;
+import static com.joyent.manta.util.MantaReflectionUtils.readField;
+import static com.joyent.manta.util.MantaReflectionUtils.writeField;
 
 /**
  * Kryo serializer that deconstructs a BouncyCastle {@link HMac} instance
@@ -64,7 +65,7 @@ public class HmacSerializer extends AbstractManualSerializer<HMac> {
         kryo.register(HMac.class);
         kryo.register(FastMD5Digest.class);
         kryo.register(MD5.class);
-        Class<?> md5StateClass = ReflectionUtils.findClass("com.twmacinta.util.MD5State");
+        Class<?> md5StateClass = MantaReflectionUtils.findClass("com.twmacinta.util.MD5State");
         kryo.register(md5StateClass, new CompatibleFieldSerializer<>(kryo, md5StateClass));
         kryo.register(MD5Digest.class);
         kryo.register(SHA1Digest.class);
@@ -98,11 +99,11 @@ public class HmacSerializer extends AbstractManualSerializer<HMac> {
         final Class<GeneralDigest> digestClass = (Class<GeneralDigest>)kryo.readObject(input, Class.class);
 
         byte[] digestStateBytes = input.readBytes(input.readInt());
-        Digest digest = ReflectionUtils.newInstance(digestClass, new Object[] {digestStateBytes});
+        Digest digest = MantaReflectionUtils.newInstance(digestClass, new Object[] {digestStateBytes});
         byte[] ipadStateBytes = input.readBytes(input.readInt());
-        Digest ipadState = ReflectionUtils.newInstance(digestClass, new Object[] {ipadStateBytes});
+        Digest ipadState = MantaReflectionUtils.newInstance(digestClass, new Object[] {ipadStateBytes});
         byte[] opadStateBytes = input.readBytes(input.readInt());
-        Digest opadState = ReflectionUtils.newInstance(digestClass, new Object[] {opadStateBytes});
+        Digest opadState = MantaReflectionUtils.newInstance(digestClass, new Object[] {opadStateBytes});
 
         HMac hmac = new HMac(digest);
 

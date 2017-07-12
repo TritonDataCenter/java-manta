@@ -5,8 +5,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.serialization;
+package com.joyent.manta.util;
 
+import com.joyent.manta.exception.MantaReflectionException;
 import com.joyent.manta.util.MantaUtils;
 
 import java.lang.reflect.Constructor;
@@ -23,11 +24,11 @@ import java.util.Objects;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-final class ReflectionUtils {
+public final class MantaReflectionUtils {
     /**
      * Private constructor for utility class.
      */
-    private ReflectionUtils() {
+    private MantaReflectionUtils() {
     }
 
     /**
@@ -35,14 +36,14 @@ final class ReflectionUtils {
      *
      * @param className class name to look up
      * @return class instance
-     * @throws MantaClientSerializationException if class can't be found
+     * @throws MantaReflectionException if class can't be found
      */
-    static Class<?> findClass(final String className) {
+    public static Class<?> findClass(final String className) {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
             String msg = "Class not found in class path";
-            MantaClientSerializationException mcse = new MantaClientSerializationException(msg, e);
+            MantaReflectionException mcse = new MantaReflectionException(msg, e);
             mcse.setContextValue("className", className);
 
             throw mcse;
@@ -55,9 +56,9 @@ final class ReflectionUtils {
      *
      * @param className class name to look up
      * @return class instance or null if not found
-     * @throws MantaClientSerializationException if class can't be found
+     * @throws MantaReflectionException if class can't be found
      */
-    static Class<?> findClassOrNull(final String className) {
+    public static Class<?> findClassOrNull(final String className) {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
@@ -72,7 +73,7 @@ final class ReflectionUtils {
      * @param name name of field
      * @return reference to field or null if not found
      */
-    static Field getField(final Class<?> clazz, final String name) {
+    public static Field getField(final Class<?> clazz, final String name) {
         Objects.requireNonNull(clazz, "Class must not be null");
         Objects.requireNonNull(name, "Field name must not be null");
 
@@ -115,7 +116,7 @@ final class ReflectionUtils {
      * @param object object to read from
      * @return field's value
      */
-    static Object readField(final Field field, final Object object) {
+    public static Object readField(final Field field, final Object object) {
         Objects.requireNonNull(field, "Field must not be null");
         Objects.requireNonNull(object, "Object must not be null");
 
@@ -128,7 +129,7 @@ final class ReflectionUtils {
         } catch (IllegalAccessException e) {
             String msg = String.format("Error reading private field from [%s] class",
                     object.getClass().getName());
-            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
+            MantaReflectionException mcse = new MantaReflectionException(msg);
             mcse.setContextValue("field", field.getName());
             mcse.setContextValue("objectClass", object.getClass());
             throw mcse;
@@ -142,7 +143,7 @@ final class ReflectionUtils {
      * @param target target object
      * @param value object to write
      */
-    static void writeField(final Field field, final Object target, final Object value) {
+    public static void writeField(final Field field, final Object target, final Object value) {
         Objects.requireNonNull(field, "Field must not be null");
         Objects.requireNonNull(target, "Target must not be null");
 
@@ -155,7 +156,7 @@ final class ReflectionUtils {
         } catch (IllegalAccessException e) {
             String msg = String.format("Unable to write value [%s] to field [%s]",
                     value, field);
-            MantaClientSerializationException mcse = new MantaClientSerializationException(msg);
+            MantaReflectionException mcse = new MantaReflectionException(msg);
             mcse.setContextValue("field", field.getName());
             mcse.setContextValue("targetClass", target.getClass());
             if (value == null) {
@@ -176,7 +177,7 @@ final class ReflectionUtils {
      * @param objects an array of objects to read their class information from
      * @return an array of classes corresponding to each object or null on null input
      */
-    static Class<?>[] classesForObjects(final Object... objects) {
+    public static Class<?>[] classesForObjects(final Object... objects) {
         if (objects == null) {
             return null;
         }
@@ -204,7 +205,7 @@ final class ReflectionUtils {
      * @param <R> type of class to instantiate
      * @return new instance
      */
-    static <R> R newInstance(final Class<R> instanceClass,
+    public static <R> R newInstance(final Class<R> instanceClass,
                              final Object... params) {
         final Object[] actualParams;
 
@@ -222,7 +223,7 @@ final class ReflectionUtils {
             return constructor.newInstance(actualParams);
         } catch (ReflectiveOperationException e) {
             String msg = "Error instantiating class";
-            MantaClientSerializationException mcse = new MantaClientSerializationException(msg, e);
+            MantaReflectionException mcse = new MantaReflectionException(msg, e);
             mcse.setContextValue("instanceClass", instanceClass.getCanonicalName());
             mcse.setContextValue("params", MantaUtils.asString(types));
             throw mcse;

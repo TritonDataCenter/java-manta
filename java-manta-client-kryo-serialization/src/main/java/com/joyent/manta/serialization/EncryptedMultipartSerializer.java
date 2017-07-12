@@ -12,6 +12,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.joyent.manta.client.multipart.AbstractMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptionState;
+import com.joyent.manta.util.MantaReflectionUtils;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
@@ -27,9 +28,9 @@ import java.lang.reflect.Field;
  */
 public class EncryptedMultipartSerializer<WRAPPED extends AbstractMultipartUpload>
         extends FieldSerializer<EncryptedMultipartUpload<WRAPPED>> {
-    private Field encryptionStateField = ReflectionUtils.getField(
+    private Field encryptionStateField = MantaReflectionUtils.getField(
             EncryptedMultipartUpload.class, "encryptionState");
-    private Field encryptionContextField = ReflectionUtils.getField(
+    private Field encryptionContextField = MantaReflectionUtils.getField(
             EncryptionState.class, "encryptionContext");
 
     /**
