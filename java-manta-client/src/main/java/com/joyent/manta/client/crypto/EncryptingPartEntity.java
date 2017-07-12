@@ -89,7 +89,7 @@ public class EncryptingPartEntity implements HttpEntity {
 
     @Override
     public boolean isRepeatable() {
-        return wrapped.isRepeatable();
+        return false;
     }
 
     @Override

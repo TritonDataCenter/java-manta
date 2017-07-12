@@ -15,10 +15,12 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.test.util.FailingInputStream;
 import com.joyent.test.util.SpuriousIOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -501,25 +503,23 @@ public class EncryptedServerSideMultipartManagerIT {
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
-//
-//        Assert.assertThrows(IOException.class, () -> {
-//            // partial read
-//            multipart.uploadPart(upload, 2, content2BadInputStream);
-//        });
+
+        Assert.assertThrows(IOException.class, () -> {
+            // partial read of content2
+            InputStream content2BadInputStream = new FailingInputStream(new ByteArrayInputStream(content2), 128);
+            // TODO: pick a number greater than the largest encryption size
+            multipart.uploadPart(upload, 2, content2BadInputStream);
+        });
 
         final MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
         multipart.complete(upload, Arrays.stream(new MantaMultipartUploadTuple[]{part1, part2}));
 
-        final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            IOUtils.copy(in, out);
-            FileUtils.writeByteArrayToFile(new File("/Users/tomascelaya/sandbox/theFile.jpg.testcase.jpg"), out.toByteArray());
 
+        try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, out);
             AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
                     content, out.toByteArray());
         }
-
-        // the following line will throw an exception if there was an issue with HMAC authentication
-        in.close();
     }
 }
