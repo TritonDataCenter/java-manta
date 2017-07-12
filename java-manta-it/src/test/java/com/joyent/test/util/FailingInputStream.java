@@ -1,11 +1,14 @@
+/*
+ * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.test.util;
-
-import com.joyent.manta.util.NotThreadSafe;
-import sun.reflect.misc.ConstructorUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FailingInputStream extends InputStream {

@@ -36,6 +36,10 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
      */
     public static final SupportedHmacsLookupMap INSTANCE = new SupportedHmacsLookupMap();
 
+    /**
+     * Enum of supported HMac names.
+     */
+    @SuppressWarnings("checkstyle:JavadocVariable")
     public enum Name {
         HmacMD5,
         HmacSHA1,

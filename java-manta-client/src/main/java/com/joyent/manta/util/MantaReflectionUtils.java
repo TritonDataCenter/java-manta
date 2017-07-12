@@ -8,7 +8,6 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.exception.MantaReflectionException;
-import com.joyent.manta.util.MantaUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
