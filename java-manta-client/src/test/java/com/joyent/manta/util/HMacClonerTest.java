@@ -28,7 +28,7 @@ public class HMacClonerTest {
 
         final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(HmacMD5.name()).get();
         originalHmac.init(new KeyParameter(key.getEncoded()));
-        final HMac clonedHmac = HMacCloner.clone(originalHmac);
+        final HMac clonedHmac = new HMacCloner().clone(originalHmac);
         Assert.assertNotNull(clonedHmac);
 
         final byte[] inputData = RandomUtils.nextBytes(512);
