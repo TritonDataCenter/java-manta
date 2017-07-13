@@ -11,20 +11,20 @@ import java.lang.reflect.Field;
 
 /**
  * Abstract class providing reflection helper methods for use with
- * serialization.
+ * cloning.
  *
  * @param <T> type to clone
  */
-class AbstractCloner<T> {
+abstract class AbstractCloner<T> {
     /**
-     * Class to be serialized.
+     * Class to be cloned.
      */
     private Class<T> classReference;
 
     /**
-     * Creates a new serializer instance for the specified class.
+     * Creates a new cloner instance for the specified class.
      *
-     * @param classReference class to be serialized
+     * @param classReference class to be cloned
      */
     AbstractCloner(final Class<T> classReference) {
         this.classReference = classReference;
@@ -49,4 +49,5 @@ class AbstractCloner<T> {
         return field;
     }
 
+    public abstract T clone(T original);
 }
