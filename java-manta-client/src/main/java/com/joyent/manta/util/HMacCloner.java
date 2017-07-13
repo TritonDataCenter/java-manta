@@ -46,7 +46,7 @@ public class HMacCloner extends AbstractCloner<HMac> {
      */
     public HMac clone(final HMac original) {
         final Digest originalDigest = original.getUnderlyingDigest();
-        final Digest clonedDigest = DigestCloner.clone(originalDigest);
+        final Digest clonedDigest = new DigestCloner().clone(originalDigest);
 
         final Memoable ipadState = (Memoable) readField(ipadStateField, original);
         final Memoable opadState = (Memoable) readField(opadStateField, original);
