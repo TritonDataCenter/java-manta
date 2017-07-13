@@ -32,9 +32,9 @@ public class HMacCloner extends AbstractCloner<HMac> {
     private final Field opadStateField = captureField("opadState");
 
     /**
-     * Construct an HMacCloner
+     * Construct a HMacCloner.
      */
-    public HMacCloner() {
+    HMacCloner() {
         super(HMac.class);
     }
 
@@ -44,7 +44,7 @@ public class HMacCloner extends AbstractCloner<HMac> {
      * @param original the source HMac to clone
      * @return a new HMac with the same state as the original
      */
-    public HMac clone(final HMac original) {
+    HMac clone(final HMac original) {
         final Digest originalDigest = original.getUnderlyingDigest();
         final Digest clonedDigest = DigestCloner.clone(originalDigest);
 

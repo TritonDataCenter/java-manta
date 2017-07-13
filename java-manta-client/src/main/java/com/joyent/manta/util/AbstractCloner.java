@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.util;
 
 import java.lang.reflect.Field;
@@ -8,7 +15,7 @@ import java.lang.reflect.Field;
  *
  * @param <T> type to clone
  */
-public class AbstractCloner<T> {
+class AbstractCloner<T> {
     /**
      * Class to be serialized.
      */
@@ -19,7 +26,7 @@ public class AbstractCloner<T> {
      *
      * @param classReference class to be serialized
      */
-    public AbstractCloner(final Class<T> classReference) {
+    AbstractCloner(final Class<T> classReference) {
         this.classReference = classReference;
     }
 
@@ -27,10 +34,11 @@ public class AbstractCloner<T> {
      * Gets a reference to a field on an object.
      *
      * @param fieldName field to get
+     *
      * @return reference to an object's field
      * @throws UnsupportedOperationException when the field isn't present
      */
-    protected Field captureField(final String fieldName) {
+    Field captureField(final String fieldName) {
         final Field field = MantaReflectionUtils.getField(classReference, fieldName);
 
         if (field == null) {

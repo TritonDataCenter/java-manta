@@ -7,27 +7,20 @@
  */
 package com.joyent.manta.util;
 
-import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.digests.SHA1Digest;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.digests.SHA384Digest;
-import org.bouncycastle.crypto.digests.SHA512Digest;
+import org.bouncycastle.util.Memoable;
 
 /**
  * Utility class for cloning Digest objects.
  */
-public final class DigestCloner extends AbstractCloner<Digest> {
+final class DigestCloner extends AbstractCloner<Digest> {
 
-    @SuppressWarnings("checkstyle:JavadocMethod")
-    private DigestCloner() {
+    /**
+     * Construct a DigestCloner.
+     */
+    DigestCloner() {
         super(Digest.class);
-    }
-
-    @SuppressWarnings("checkstyle:JavadocMethod")
-    private static FastMD5Digest clone(final FastMD5Digest original) {
-        return new FastMD5Digest(original.getEncodedState());
     }
 
     /**
@@ -35,17 +28,9 @@ public final class DigestCloner extends AbstractCloner<Digest> {
      *
      * @return a new Digest with the same state as the original
      */
-    public static Digest clone(final Digest original) {
-        if (original instanceof FastMD5Digest) {
-            return (Digest) ((FastMD5Digest) original).copy();
-        } else if (original instanceof SHA1Digest) {
-            return (Digest) ((SHA1Digest) original).copy();
-        } else if (original instanceof SHA256Digest) {
-            return (Digest) ((SHA256Digest) original).copy();
-        } else if (original instanceof SHA384Digest) {
-            return (Digest) ((SHA384Digest) original).copy();
-        } else if (original instanceof SHA512Digest) {
-            return (Digest) ((SHA512Digest) original).copy();
+    static Digest clone(final Digest original) {
+        if (original instanceof Memoable) {
+            return (Digest) ((Memoable) original).copy();
         }
 
         throw new NotImplementedException("Clone not implemented for type: " + original.getClass().getCanonicalName());
