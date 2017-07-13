@@ -28,7 +28,7 @@ final class DigestCloner extends AbstractCloner<Digest> {
      *
      * @return a new Digest with the same state as the original
      */
-    static Digest clone(final Digest original) {
+    public Digest clone(final Digest original) {
         if (original instanceof Memoable) {
             return (Digest) ((Memoable) original).copy();
         }

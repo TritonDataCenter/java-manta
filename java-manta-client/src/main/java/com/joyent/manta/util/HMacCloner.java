@@ -44,7 +44,7 @@ public class HMacCloner extends AbstractCloner<HMac> {
      * @param original the source HMac to clone
      * @return a new HMac with the same state as the original
      */
-    HMac clone(final HMac original) {
+    public HMac clone(final HMac original) {
         final Digest originalDigest = original.getUnderlyingDigest();
         final Digest clonedDigest = DigestCloner.clone(originalDigest);
 
