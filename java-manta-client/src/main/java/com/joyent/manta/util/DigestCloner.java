@@ -14,25 +14,20 @@ import org.bouncycastle.util.Memoable;
 /**
  * Utility class for cloning Digest objects.
  */
-final class DigestCloner extends AbstractCloner<Digest> {
+public final class DigestCloner extends AbstractCloner<Digest> {
 
-    /**
-     * Construct a DigestCloner.
-     */
-    DigestCloner() {
-        super(Digest.class);
-    }
-
-    /**
-     * @param original the source Digest to clone
-     *
-     * @return a new Digest with the same state as the original
-     */
-    public Digest clone(final Digest original) {
-        if (original instanceof Memoable) {
-            return (Digest) ((Memoable) original).copy();
+    @Override
+    public Digest clone(final Digest source) {
+        if (source instanceof Memoable) {
+            return (Digest) ((Memoable) source).copy();
         }
 
-        throw new NotImplementedException("Clone not implemented for type: " + original.getClass().getCanonicalName());
+        throw new NotImplementedException("Clone not implemented for type: " + source.getClass().getCanonicalName());
+    }
+
+    public void overwrite(final Digest source, final Digest target) {
+        if (source instanceof Memoable && target instanceof Memoable) {
+            ((Memoable) target).reset(((Memoable) source).copy());
+        }
     }
 }

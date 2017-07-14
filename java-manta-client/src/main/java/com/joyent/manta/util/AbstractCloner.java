@@ -9,45 +9,42 @@ package com.joyent.manta.util;
 
 import java.lang.reflect.Field;
 
+import static org.apache.commons.lang3.reflect.FieldUtils.readField;
+import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
+
 /**
  * Abstract class providing reflection helper methods for use with
  * cloning.
  *
  * @param <T> type to clone
  */
-abstract class AbstractCloner<T> {
-    /**
-     * Class to be cloned.
-     */
-    private Class<T> classReference;
+public abstract class AbstractCloner<T> {
 
     /**
-     * Creates a new cloner instance for the specified class.
-     *
-     * @param classReference class to be cloned
+     * Generates a new {@code T} using values from {@code original}
+     * @param source the source of state to use
+     * @return a brand new {@code T}
      */
-    AbstractCloner(final Class<T> classReference) {
-        this.classReference = classReference;
+    public abstract T clone(final T source);
+
+    /**
+     * Overwrites the state of {@code target} with values from {@code source}.
+     *
+     * @param source the object from which to copy values
+     * @param target the object update with state from {@code source}
+     * @return
+     */
+    public abstract void overwrite(final T source, final T target);
+
+    /**
+     * Clones a single field from {@code source} to {@code target}.
+     *
+     * @param source the object from which to copy the value
+     * @param target the object update from {@code source}
+     * @param field the field to copy
+     * @throws IllegalAccessException
+     */
+    protected void cloneField(final Field field, final T source, final T target) throws IllegalAccessException {
+        writeField(field, target, readField(field, source, true));
     }
-
-    /**
-     * Gets a reference to a field on an object.
-     *
-     * @param fieldName field to get
-     *
-     * @return reference to an object's field
-     * @throws UnsupportedOperationException when the field isn't present
-     */
-    Field captureField(final String fieldName) {
-        final Field field = MantaReflectionUtils.getField(classReference, fieldName);
-
-        if (field == null) {
-            String msg = String.format("No field [%s] found on object [%s]", fieldName, classReference);
-            throw new UnsupportedOperationException(msg);
-        }
-
-        return field;
-    }
-
-    public abstract T clone(T original);
 }
