@@ -16,17 +16,18 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKey;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 
 public class CipherClonerTest {
     @Test
-    public void testCanCloneCipher() throws IOException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public void testCanCloneCipher()
+            throws IOException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         final SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         final byte[] iv = cipherDetails.generateIv();
@@ -42,10 +43,11 @@ public class CipherClonerTest {
         final CipherOutputStream originalCipherOutput = new CipherOutputStream(originalOutput, originalCipher);
         originalCipherOutput.write(inputData);
         originalCipherOutput.flush();
-        originalCipherOutput.close();
+        // close calls doFinal, but we want to leave originalCipher in an intermediate state
+        // originalCipherOutput.close();
 
         final ByteArrayOutputStream clonedOutput = new ByteArrayOutputStream();
-        final CipherOutputStream clonedCipherOutput = new CipherOutputStream(clonedOutput, originalCipher);
+        final CipherOutputStream clonedCipherOutput = new CipherOutputStream(clonedOutput, clonedCipher);
         clonedCipherOutput.write(inputData);
         clonedCipherOutput.flush();
         clonedCipherOutput.close();
