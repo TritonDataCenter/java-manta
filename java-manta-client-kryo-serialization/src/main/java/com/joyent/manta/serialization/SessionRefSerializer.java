@@ -10,13 +10,12 @@ package com.joyent.manta.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.joyent.manta.util.MantaReflectionUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
-import static com.joyent.manta.util.MantaReflectionUtils.getField;
-import static com.joyent.manta.util.MantaReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.getField;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
 
 /**
  * Serialization class that allows for (de)serialization of
@@ -31,7 +30,7 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
      */
     @SuppressWarnings("unchecked")
     private static final Class<Object> SESSION_REF_CLASS =
-            (Class<Object>) MantaReflectionUtils.findClass("sun.security.pkcs11.SessionRef");
+            (Class<Object>)ReflectionUtils.findClass("sun.security.pkcs11.SessionRef");
 
     private static final Field ID_FIELD = getField(SESSION_REF_CLASS, "id");
     private static final Field TOKEN_FIELD = getField(SESSION_REF_CLASS, "token");
@@ -66,7 +65,7 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
     @Override
     @SuppressWarnings("unchecked")
     public void write(final Kryo kryo, final Output output, final Object object) {
-        final long id = (long) MantaReflectionUtils.readField(ID_FIELD, object);
+        final long id = (long)ReflectionUtils.readField(ID_FIELD, object);
         output.writeVarLong(id, true);
         kryo.writeClassAndObject(output, readField(TOKEN_FIELD, object));
         kryo.writeClassAndObject(output, readField(REFERENT_FIELD, object));
@@ -89,9 +88,9 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
             constructor.setAccessible(true);
 
             Object instance = constructor.newInstance(referent, id, token);
-            MantaReflectionUtils.writeField(QUEUE_FIELD, instance, queue);
-            MantaReflectionUtils.writeField(NEXT_FIELD, instance, next);
-            MantaReflectionUtils.writeField(DISCOVERED_FIELD, instance, discovered);
+            ReflectionUtils.writeField(QUEUE_FIELD, instance, queue);
+            ReflectionUtils.writeField(NEXT_FIELD, instance, next);
+            ReflectionUtils.writeField(DISCOVERED_FIELD, instance, discovered);
             return instance;
         } catch (ReflectiveOperationException e) {
             String msg = "Error instantiating class";

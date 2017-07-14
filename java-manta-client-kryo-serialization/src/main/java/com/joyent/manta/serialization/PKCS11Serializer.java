@@ -10,7 +10,6 @@ package com.joyent.manta.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.joyent.manta.util.MantaReflectionUtils;
 import sun.security.pkcs11.wrapper.PKCS11;
 import sun.security.pkcs11.wrapper.PKCS11Exception;
 
@@ -27,7 +26,7 @@ public class PKCS11Serializer extends AbstractManualSerializer<PKCS11> {
     /**
      * Name of field that identifies the PKCS11 module.
      */
-    private static final Field MODULE_PATH_FIELD = MantaReflectionUtils
+    private static final Field MODULE_PATH_FIELD = ReflectionUtils
             .getField(PKCS11.class, "pkcs11ModulePath");
 
     /**
@@ -39,7 +38,7 @@ public class PKCS11Serializer extends AbstractManualSerializer<PKCS11> {
 
     @Override
     public void write(final Kryo kryo, final Output output, final PKCS11 object) {
-        Object modulePath = MantaReflectionUtils.readField(MODULE_PATH_FIELD,
+        Object modulePath = ReflectionUtils.readField(MODULE_PATH_FIELD,
                 object);
         output.writeString(modulePath.toString());
     }

@@ -23,9 +23,9 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.IdentityHashMap;
 
-import static com.joyent.manta.util.MantaReflectionUtils.findClass;
-import static com.joyent.manta.util.MantaReflectionUtils.readField;
-import static com.joyent.manta.util.MantaReflectionUtils.writeField;
+import static com.joyent.manta.serialization.ReflectionUtils.findClass;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
 
 /**
  * Kryo serializer that deconstructs a {@link Cipher} class and

@@ -17,7 +17,6 @@ import com.joyent.manta.client.multipart.EncryptionState;
 import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.client.multipart.ServerSideMultipartUpload;
 import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.util.MantaReflectionUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.testng.Assert;
@@ -51,7 +50,7 @@ public class EncryptedMultipartUploadSerializationHelperTest {
         final EncryptedMultipartUpload<ServerSideMultipartUpload> upload =
                 (EncryptedMultipartUpload<ServerSideMultipartUpload>)newUploadInstance(inner, encryptionState);
 
-        Field cipherStreamField = MantaReflectionUtils.getField(EncryptionState.class, "cipherStream");
+        Field cipherStreamField = ReflectionUtils.getField(EncryptionState.class, "cipherStream");
         MultipartOutputStream multipartStream = new MultipartOutputStream(cipherDetails.getBlockSizeInBytes());
         OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
                 multipartStream, encryptionContext);

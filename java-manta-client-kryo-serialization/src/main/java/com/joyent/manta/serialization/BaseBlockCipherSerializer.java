@@ -11,7 +11,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import com.joyent.manta.util.MantaReflectionUtils;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.AESFastEngine;
@@ -37,9 +36,9 @@ import javax.crypto.spec.RC5ParameterSpec;
 import java.lang.reflect.Field;
 import java.security.AlgorithmParameters;
 
-import static com.joyent.manta.util.MantaReflectionUtils.findClass;
-import static com.joyent.manta.util.MantaReflectionUtils.readField;
-import static com.joyent.manta.util.MantaReflectionUtils.writeField;
+import static com.joyent.manta.serialization.ReflectionUtils.findClass;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
 
 /**
  * Serializer that serializes the BouncyCastle base block cipher
@@ -98,7 +97,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         this.cipherField = captureField("cipher");
         this.digestField = captureField("digest");
         this.engineParamsField = captureField("engineParams");
-        this.engineProviderField = MantaReflectionUtils.getField(BaseBlockCipher.class, "engineProvider");
+        this.engineProviderField = ReflectionUtils.getField(BaseBlockCipher.class, "engineProvider");
         this.fixedIvField = captureField("fixedIv");
         this.helperField = captureField("helper");
         this.ivField = captureField("iv");
@@ -107,7 +106,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         this.ivSizeField = captureField("ivSize");
         this.keySizeInBitsField = captureField("keySizeInBits");
         this.modeNameField = captureField("modeName");
-        this.baseWrapCipherAvailableSpecsField =  MantaReflectionUtils.getField(
+        this.baseWrapCipherAvailableSpecsField =  ReflectionUtils.getField(
                 BaseWrapCipher.class, "availableSpecs");
         this.paddedField = captureField("padded");
         this.pbeAlgorithmField = captureField("pbeAlgorithm");

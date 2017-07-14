@@ -17,7 +17,6 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
 import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.util.MantaReflectionUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -32,7 +31,7 @@ import java.util.Base64;
 @Test
 public class EncryptionStateSerializerTest {
     private static final Field ENCRYPTION_CONTEXT_FIELD =
-            MantaReflectionUtils.getField(EncryptionState.class, "encryptionContext");
+            ReflectionUtils.getField(EncryptionState.class, "encryptionContext");
 
     private byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
     SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
@@ -60,7 +59,7 @@ public class EncryptionStateSerializerTest {
         try (Input input = new Input(serializedData)) {
             EncryptionState actual = kryo.readObject(input, EncryptionState.class);
             EncryptionContext actualEncryptionContext =
-                    (EncryptionContext) MantaReflectionUtils.readField(ENCRYPTION_CONTEXT_FIELD, actual);
+                    (EncryptionContext)ReflectionUtils.readField(ENCRYPTION_CONTEXT_FIELD, actual);
             actualEncryptionContext.setKey(secretKey);
 
             Assert.assertEquals(actual, encryptionState);
@@ -74,11 +73,11 @@ public class EncryptionStateSerializerTest {
         MultipartOutputStream multipartStream = new MultipartOutputStream(
                 cipherDetails.getBlockSizeInBytes());
 
-        Field multipartStreamField = MantaReflectionUtils.getField(EncryptionState.class,
+        Field multipartStreamField = ReflectionUtils.getField(EncryptionState.class,
                 "multipartStream");
-        Field cipherStreamField = MantaReflectionUtils.getField(EncryptionState.class,
+        Field cipherStreamField = ReflectionUtils.getField(EncryptionState.class,
                 "cipherStream");
-        Field lastPartAuthWrittenField = MantaReflectionUtils.getField(EncryptionState.class,
+        Field lastPartAuthWrittenField = ReflectionUtils.getField(EncryptionState.class,
                 "lastPartAuthWritten");
 
         try {

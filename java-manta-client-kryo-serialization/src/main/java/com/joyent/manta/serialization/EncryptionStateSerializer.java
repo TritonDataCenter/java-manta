@@ -19,7 +19,6 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
 import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.util.HmacOutputStream;
-import com.joyent.manta.util.MantaReflectionUtils;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.objenesis.instantiator.sun.MagicInstantiator;
@@ -31,8 +30,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.Objects;
 
-import static com.joyent.manta.util.MantaReflectionUtils.readField;
-import static com.joyent.manta.util.MantaReflectionUtils.writeField;
+import static com.joyent.manta.serialization.ReflectionUtils.readField;
+import static com.joyent.manta.serialization.ReflectionUtils.writeField;
 
 /**
  * Kryo serializer that deconstructs a {@link EncryptionState} class for serialization / deserialization.
@@ -101,13 +100,13 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
      * @return <code>CloseShieldOutputStream</code> class reference
      */
     private Class<?> findCloseShieldStreamClass() {
-        Class<?> unshadedCloseShieldStream = MantaReflectionUtils.findClassOrNull(
+        Class<?> unshadedCloseShieldStream = ReflectionUtils.findClassOrNull(
                 "org.apache.commons.io.output.CloseShieldOutputStream");
 
         if (unshadedCloseShieldStream != null) {
             return unshadedCloseShieldStream;
         } else {
-            return MantaReflectionUtils.findClassOrNull(
+            return ReflectionUtils.findClassOrNull(
                     "com.joyent.manta.org.apache.commons.io.output.CloseShieldOutputStream");
 
         }
