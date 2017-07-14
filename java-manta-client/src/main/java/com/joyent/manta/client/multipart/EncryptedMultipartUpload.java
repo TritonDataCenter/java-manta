@@ -32,6 +32,12 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
     private EncryptionState encryptionState;
 
     /**
+     * Object used to reset the state of encryption/authentication in case
+     * a part needs to be reuploaded.
+     */
+    private transient EncryptionStateRewinder encryptionStateRewinder;
+
+    /**
      * Private constructor used for serialization.
      */
     private EncryptedMultipartUpload() {
@@ -54,7 +60,7 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
                                     final EncryptionState encryptionState) {
         this.wrapped = wrapped;
         this.encryptionState = encryptionState;
-
+        this.encryptionStateRewinder = new EncryptionStateRewinder(encryptionState);
     }
 
     @Override
