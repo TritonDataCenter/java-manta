@@ -170,12 +170,6 @@
             <version>${dependency.urlbuilder.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>uk.com.robust-it</groupId>
-            <artifactId>cloning</artifactId>
-            <version>1.9.5</version>
-        </dependency>
-
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
