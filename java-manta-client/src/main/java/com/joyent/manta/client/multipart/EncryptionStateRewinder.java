@@ -11,7 +11,7 @@ import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.exception.MantaReflectionException;
 import com.joyent.manta.util.CipherCloner;
 import com.joyent.manta.util.Cloner;
-import com.joyent.manta.util.HMacCloner;
+import com.joyent.manta.util.HmacCloner;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.macs.HMac;
@@ -20,10 +20,22 @@ import javax.crypto.Cipher;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 
+/**
+ * Helper class for recording state of encryption and authentication state during in-progress MPU uploads.
+ * Used to enable retry of {@link EncryptedMultipartManager#uploadPart} in case of network failure.
+ */
 class EncryptionStateRewinder {
 
+    /**
+     * {@link EncryptionState} to make rewindable.
+     */
     private final EncryptionState encryptionState;
 
+    /**
+     * Whether or not separate authentication is in use.
+     * True indicates we need to back up HMAC state.
+     * False indicates the Cipher has built-in authentication.
+     */
     private final boolean usesHmac;
 
     /**
@@ -36,40 +48,69 @@ class EncryptionStateRewinder {
      */
     private Cipher savedCipher = null;
 
-    private static Field FIELD_HMACOUTPUTSTREAM_HMAC = FieldUtils.getField(HmacOutputStream.class, "hmac");
-    private static Field FIELD_ENCRYPTIONCONTEXT_CIPHER = FieldUtils.getField(EncryptionContext.class, "cipher");
+    /**
+     * Reference to {@link HmacOutputStream}'s {@link HMac} field.
+     */
+    private static final Field FIELD_HMACOUTPUTSTREAM_HMAC = FieldUtils.getField(HmacOutputStream.class, "hmac");
 
-    private Cloner<HMac> hmacCloner = new HMacCloner();
-    private Cloner<Cipher> cipherCloner = new CipherCloner();
+    /**
+     * Reference to {@link EncryptionContext}'s {@link Cipher} field.
+     */
+    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER = FieldUtils.getField(EncryptionContext.class, "cipher");
 
-    public EncryptionStateRewinder(final EncryptionState encryptionState) {
+    /**
+     * {@link HMac} cloning helper object.
+     */
+    private static final Cloner<HMac> CLONER_HMAC = new HmacCloner();
+
+    /**
+     * {@link Cipher} cloning helper object.
+     */
+    private static final Cloner<Cipher> CLONER_CIPHER = new CipherCloner();
+
+    /**
+     * Construct an EncryptionStateRewinder which can be used to rewind the state of the given {@link EncryptionState}.
+     *
+     * @param encryptionState object to extract state from (and potentially write back to)
+     */
+    EncryptionStateRewinder(final EncryptionState encryptionState) {
         this.encryptionState = encryptionState;
-        this.usesHmac = false == encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
+        this.usesHmac = !encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
     }
 
-    private void ensureDigestWrapsCipherStream(OutputStream cipherStream) {
+    /**
+     * Make sure the wrapping stream performs an HMAC digest and cast the needed type.
+     *
+     * @param cipherStream the encrypting stream which we are verifying is wrapped in an HMac digest
+     */
+    private HmacOutputStream ensureHmacWrapsCipherStream(final OutputStream cipherStream) {
         if (!cipherStream.getClass().equals(HmacOutputStream.class)) {
             final String message = "Cipher lacks authentication but OutputStream is not HmacOutputStream";
             throw new IllegalStateException(message);
         }
-    }
 
-    public void record() {
-        if (usesHmac) {
-            OutputStream cipherStream = encryptionState.getCipherStream();
-            ensureDigestWrapsCipherStream(cipherStream);
-            final HmacOutputStream digestStream = (HmacOutputStream) cipherStream;
-            savedHmac = hmacCloner.createClone(digestStream.getHmac());
-        }
-
-        savedCipher = cipherCloner.createClone(encryptionState.getEncryptionContext().getCipher());
+        return (HmacOutputStream) cipherStream;
     }
 
     /**
-     *
+     * Clones Cipher (and potentially HMAC) instances for future use.
+     * This should be called before data is streamed in uploadPart.
+     */
+    public void record() {
+        if (usesHmac) {
+            OutputStream cipherStream = encryptionState.getCipherStream();
+            final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(cipherStream);
+            savedHmac = CLONER_HMAC.createClone(digestStream.getHmac());
+        }
+
+        savedCipher = CLONER_CIPHER.createClone(encryptionState.getEncryptionContext().getCipher());
+    }
+
+    /**
+     * Restore the saved Cipher (and potentially HMAC) instances.
      */
     public void rewind() {
-        // TODO: do we care about repeated calls to rewind without calling record?
+        // NOTE: do we care about repeated calls to rewind without respective calls record?
 
         if (usesHmac) {
             if (savedHmac == null) {
@@ -77,8 +118,7 @@ class EncryptionStateRewinder {
             }
 
             OutputStream cipherStream = encryptionState.getCipherStream();
-            ensureDigestWrapsCipherStream(cipherStream);
-            final HmacOutputStream digestStream = ((HmacOutputStream) cipherStream);
+            final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(cipherStream);
 
             try {
                 FieldUtils.writeField(FIELD_HMACOUTPUTSTREAM_HMAC, digestStream, savedHmac, true);

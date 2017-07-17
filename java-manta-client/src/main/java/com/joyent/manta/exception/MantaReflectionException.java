@@ -8,14 +8,25 @@
 package com.joyent.manta.exception;
 
 public class MantaReflectionException extends MantaException {
+
+    /**
+     * @param message The exception message.
+     */
     public MantaReflectionException(final String message) {
         super(message);
     }
 
+    /**
+     * @param cause The exception cause.
+     */
     public MantaReflectionException(final Exception cause) {
         super(cause);
     }
 
+    /**
+     * @param message The exception message.
+     * @param cause The exception cause.
+     */
     public MantaReflectionException(final String message, final Exception cause) {
         super(message, cause);
     }

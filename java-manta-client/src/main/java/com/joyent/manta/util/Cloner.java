@@ -15,9 +15,10 @@ package com.joyent.manta.util;
 public interface Cloner<T> {
 
     /**
-     * Generates a new {@code T} using values from {@code original}
+     * Generates a new {@code T} using values from {@code original}.
+     *
      * @param source the source of state to use
      * @return a brand new {@code T}
      */
-    T createClone(final T source);
+    T createClone(T source);
 }

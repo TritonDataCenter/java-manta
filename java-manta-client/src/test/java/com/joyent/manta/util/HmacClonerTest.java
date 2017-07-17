@@ -19,7 +19,7 @@ import java.io.IOException;
 
 import static com.joyent.manta.client.crypto.SupportedHmacsLookupMap.Name;
 
-public class HMacClonerTest {
+public class HmacClonerTest {
 
     @Test
     public void testHMacStateCanBeClonedAfterInitializeAesCtr128AllHMacs() throws IOException {
@@ -152,7 +152,7 @@ public class HMacClonerTest {
 
         final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(hmacName.name()).get();
         originalHmac.init(new KeyParameter(key.getEncoded()));
-        final HMac clonedHmac = new HMacCloner().createClone(originalHmac);
+        final HMac clonedHmac = new HmacCloner().createClone(originalHmac);
 
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
         originalHmac.update(inputData, 0, inputData.length);
@@ -174,7 +174,7 @@ public class HMacClonerTest {
 
         final byte[] firstUpdate = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
         originalHmac.update(firstUpdate, 0, firstUpdate.length);
-        final HMac clonedHmac = new HMacCloner().createClone(originalHmac);
+        final HMac clonedHmac = new HmacCloner().createClone(originalHmac);
 
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
         originalHmac.update(inputData, 0, inputData.length);

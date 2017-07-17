@@ -13,12 +13,19 @@ import com.joyent.manta.exception.MantaEncryptionException;
 import javax.crypto.Cipher;
 import java.security.Provider;
 
+/**
+ * Utility class for cloning Cipher objects.
+ */
 public final class CipherCloner implements Cloner<Cipher> {
 
-    protected static com.rits.cloning.Cloner INSTANCE = new com.rits.cloning.Cloner();
+    /**
+     * Instance of object-cloning library that does deep generic cloning.
+     */
+    private static final com.rits.cloning.Cloner INSTANCE = new com.rits.cloning.Cloner();
 
     // TODO: configure Cloner so it knows about immutable properties
 
+    @Override
     public Cipher createClone(final Cipher source) {
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
         if (null != pkcs11Provider && pkcs11Provider.equals(source.getProvider())) {

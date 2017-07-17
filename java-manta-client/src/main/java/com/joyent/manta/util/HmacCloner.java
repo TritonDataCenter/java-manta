@@ -21,17 +21,17 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
 /**
  * Utility class for cloning HMac objects.
  */
-public final class HMacCloner implements Cloner<HMac> {
+public final class HmacCloner implements Cloner<HMac> {
 
     /**
      * Private field on {@link HMac} to query for ipad state.
      */
-    private static final Field ipadStateField = getField(HMac.class, "ipadState", true);
+    private static final Field FIELD_IPAD_STATE = getField(HMac.class, "ipadState", true);
 
     /**
      * Private field onf {@link HMac} to query for opad state.
      */
-    private static final Field opadStateField = getField(HMac.class, "opadState", true);
+    private static final Field FIELD_OPAD_STATE = getField(HMac.class, "opadState", true);
 
     @Override
     public HMac createClone(final HMac source) {
@@ -40,11 +40,11 @@ public final class HMacCloner implements Cloner<HMac> {
         final HMac cloned = new HMac(clonedDigest);
 
         try {
-            final Memoable ipadState = (Memoable) readField(ipadStateField, source, true);
-            final Memoable opadState = (Memoable) readField(opadStateField, source, true);
+            final Memoable ipadState = (Memoable) readField(FIELD_IPAD_STATE, source, true);
+            final Memoable opadState = (Memoable) readField(FIELD_OPAD_STATE, source, true);
 
-            writeField(ipadStateField, cloned, ipadState.copy());
-            writeField(opadStateField, cloned, opadState.copy());
+            writeField(FIELD_IPAD_STATE, cloned, ipadState.copy());
+            writeField(FIELD_OPAD_STATE, cloned, opadState.copy());
         } catch (IllegalAccessException e) {
             throw new MantaReflectionException(e);
         }
