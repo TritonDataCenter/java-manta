@@ -182,6 +182,12 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
     }
 
     @Override
+    public Cipher getBouncyCastleCipher() {
+        return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
+                ExternalSecurityProviderLoader.getBouncyCastleProvider());
+    }
+
+    @Override
     public HMac getAuthenticationHmac() {
         if (this.isAEADCipher) {
             return null;

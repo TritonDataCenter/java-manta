@@ -8,21 +8,27 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.exception.MantaEncryptionException;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
+import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Provider;
 
 public class CipherClonerTest {
     @Test
@@ -33,11 +39,11 @@ public class CipherClonerTest {
         final byte[] iv = cipherDetails.generateIv();
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
 
-        final Cipher originalCipher = cipherDetails.getCipher();
+        // notice we are specifically calling getBouncyCastleCipher()
+        final Cipher originalCipher = cipherDetails.getBouncyCastleCipher();
         originalCipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
-        // TODO: not a real clone yet
-        final Cipher clonedCipher = new CipherCloner().clone(originalCipher);
+        final Cipher clonedCipher = new CipherCloner().createClone(originalCipher);
 
         final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
         final CipherOutputStream originalCipherOutput = new CipherOutputStream(originalOutput, originalCipher);

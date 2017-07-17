@@ -11,7 +11,6 @@ import com.joyent.manta.client.crypto.*;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
@@ -153,7 +152,7 @@ public class HMacClonerTest {
 
         final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(hmacName.name()).get();
         originalHmac.init(new KeyParameter(key.getEncoded()));
-        final HMac clonedHmac = new HMacCloner().clone(originalHmac);
+        final HMac clonedHmac = new HMacCloner().createClone(originalHmac);
 
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
         originalHmac.update(inputData, 0, inputData.length);
@@ -175,7 +174,7 @@ public class HMacClonerTest {
 
         final byte[] firstUpdate = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
         originalHmac.update(firstUpdate, 0, firstUpdate.length);
-        final HMac clonedHmac = new HMacCloner().clone(originalHmac);
+        final HMac clonedHmac = new HMacCloner().createClone(originalHmac);
 
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
         originalHmac.update(inputData, 0, inputData.length);

@@ -17,17 +17,11 @@ import org.bouncycastle.util.Memoable;
 public final class DigestCloner extends AbstractCloner<Digest> {
 
     @Override
-    public Digest clone(final Digest source) {
+    public Digest createClone(final Digest source) {
         if (source instanceof Memoable) {
             return (Digest) ((Memoable) source).copy();
         }
 
         throw new NotImplementedException("Clone not implemented for type: " + source.getClass().getCanonicalName());
-    }
-
-    public void overwrite(final Digest source, final Digest target) {
-        if (source instanceof Memoable && target instanceof Memoable) {
-            ((Memoable) target).reset(((Memoable) source).copy());
-        }
     }
 }

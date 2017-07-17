@@ -34,26 +34,21 @@ public final class HMacCloner extends AbstractCloner<HMac> {
     private static final Field opadStateField = getField(HMac.class, "opadState", true);
 
     @Override
-    public HMac clone(final HMac source) {
+    public HMac createClone(final HMac source) {
         final Digest originalDigest = source.getUnderlyingDigest();
-        final Digest clonedDigest = new DigestCloner().clone(originalDigest);
+        final Digest clonedDigest = new DigestCloner().createClone(originalDigest);
         final HMac cloned = new HMac(clonedDigest);
 
-        overwrite(source, cloned);
-
-        return cloned;
-    }
-
-    @Override
-    public void overwrite(final HMac source, final HMac target) {
         try {
             final Memoable ipadState = (Memoable) readField(ipadStateField, source, true);
             final Memoable opadState = (Memoable) readField(opadStateField, source, true);
 
-            writeField(ipadStateField, target, ipadState.copy());
-            writeField(opadStateField, target, opadState.copy());
+            writeField(ipadStateField, cloned, ipadState.copy());
+            writeField(opadStateField, cloned, opadState.copy());
         } catch (IllegalAccessException e) {
             throw new MantaReflectionException(e);
         }
+
+        return cloned;
     }
 }
