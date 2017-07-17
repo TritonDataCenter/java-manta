@@ -170,6 +170,20 @@
             <version>${dependency.urlbuilder.version}</version>
         </dependency>
 
+        <!-- object cloning library for memoization of encryption state -->
+        <dependency>
+            <groupId>uk.com.robust-it</groupId>
+            <artifactId>cloning</artifactId>
+            <version>${dependency.cloner.version}</version>
+        </dependency>
+
+        <!-- object instantiation library, needed by uk.com.robust-it:cloning and the kryo module -->
+        <dependency>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+            <version>${dependency.objenesis.version}</version>
+        </dependency>
+
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
