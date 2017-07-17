@@ -8,17 +8,16 @@
 package com.joyent.manta.util;
 
 /**
- * Abstract class providing reflection helper methods for use with
- * cloning.
+ * Interface indicating a class which is designed to create fully independent clones.
  *
  * @param <T> type to clone
  */
-public abstract class AbstractCloner<T> {
+public interface Cloner<T> {
 
     /**
      * Generates a new {@code T} using values from {@code original}
      * @param source the source of state to use
      * @return a brand new {@code T}
      */
-    public abstract T createClone(final T source);
+    T createClone(final T source);
 }

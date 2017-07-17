@@ -14,7 +14,7 @@ import org.bouncycastle.util.Memoable;
 /**
  * Utility class for cloning Digest objects.
  */
-public final class DigestCloner extends AbstractCloner<Digest> {
+public final class DigestCloner implements Cloner<Digest> {
 
     @Override
     public Digest createClone(final Digest source) {

@@ -21,7 +21,7 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
 /**
  * Utility class for cloning HMac objects.
  */
-public final class HMacCloner extends AbstractCloner<HMac> {
+public final class HMacCloner implements Cloner<HMac> {
 
     /**
      * Private field on {@link HMac} to query for ipad state.

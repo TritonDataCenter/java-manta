@@ -9,14 +9,13 @@ package com.joyent.manta.util;
 
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.exception.MantaEncryptionException;
-import com.rits.cloning.Cloner;
 
 import javax.crypto.Cipher;
 import java.security.Provider;
 
-public final class CipherCloner extends AbstractCloner<Cipher> {
+public final class CipherCloner implements Cloner<Cipher> {
 
-    protected static Cloner INSTANCE = new Cloner();
+    protected static com.rits.cloning.Cloner INSTANCE = new com.rits.cloning.Cloner();
 
     // TODO: configure Cloner so it knows about immutable properties
 
