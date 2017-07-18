@@ -8,19 +8,40 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.exception.MantaMemoizationException;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
+import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
+import java.security.Provider;
 
 public class CipherClonerTest {
+
+    @Test
+    public void testRefusesToClonePKCS11Cipher() {
+        final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
+        if (pkcs11Provider == null) {
+            throw new SkipException("PKCS11 Security Provider not present.");
+        }
+
+        // verify that the default Cipher provider is PKCS11 when it is installed
+        // the assertThrows below depends on this behavior
+        Assert.assertSame(ExternalSecurityProviderLoader.getPreferredProvider(), pkcs11Provider);
+
+        Assert.assertThrows(MantaMemoizationException.class, () -> {
+            new CipherCloner().createClone(DefaultsConfigContext.DEFAULT_CIPHER.getCipher());
+        });
+    }
 
     @Test
     public void testCanCloneAesCtr128() throws Exception {
