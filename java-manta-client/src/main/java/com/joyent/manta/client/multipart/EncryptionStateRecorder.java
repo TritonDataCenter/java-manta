@@ -15,6 +15,7 @@ import com.joyent.manta.util.HmacCloner;
 import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.jcajce.io.CipherOutputStream;
 
 import javax.crypto.Cipher;
 import java.io.OutputStream;
@@ -57,10 +58,22 @@ public class EncryptionStateRecorder {
             FieldUtils.getField(HmacOutputStream.class, "hmac", true);
 
     /**
+     * Reference to {@link HmacOutputStream}'s {@link OutputStream} field.
+     */
+    private static final Field FIELD_HMACOUTPUTSTREAM_OUT =
+            FieldUtils.getField(HmacOutputStream.class, "out", true);
+
+    /**
      * Reference to {@link EncryptionContext}'s {@link Cipher} field.
      */
     private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER =
             FieldUtils.getField(EncryptionContext.class, "cipher", true);
+
+    /**
+     * Reference to {@link CipherOutputStream}'s {@link Cipher} field.
+     */
+    private static final Field FIELD_CIPHEROUTPUTSTREAM_CIPHER =
+            FieldUtils.getField(CipherOutputStream.class, "cipher", true);
 
     /**
      * {@link HMac} cloning helper object.
@@ -100,7 +113,7 @@ public class EncryptionStateRecorder {
      * Clones Cipher (and potentially HMAC) instances for future use.
      * This should be called before data is streamed in uploadPart.
      */
-    public void record() {
+    void record() {
         if (usesHmac) {
             OutputStream cipherStream = encryptionState.getCipherStream();
             final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(cipherStream);
@@ -114,30 +127,47 @@ public class EncryptionStateRecorder {
      * Restore the saved Cipher (and potentially HMAC) instances.
      */
     public void rewind() {
-        // NOTE: do we care about repeated calls to rewind without respective calls record?
+        final CipherOutputStream cipherStream;
 
         if (usesHmac) {
             if (savedHmac == null) {
                 throw new IllegalStateException("rewind called before record, No saved HMac available");
             }
 
-            OutputStream cipherStream = encryptionState.getCipherStream();
-            final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(cipherStream);
+            final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(encryptionState.getCipherStream());
 
             try {
                 FieldUtils.writeField(FIELD_HMACOUTPUTSTREAM_HMAC, digestStream, savedHmac, true);
             } catch (IllegalAccessException e) {
                 throw new MantaReflectionException("Failed to rewind HmacOutputStream's hmac", e);
             }
+
+            Object wrappedCipherStream;
+            try {
+                wrappedCipherStream = FieldUtils.readField(FIELD_HMACOUTPUTSTREAM_OUT, digestStream, true);
+            } catch (IllegalAccessException e) {
+                throw new MantaReflectionException("Failed to extract wrapped OutputStream", e);
+            }
+
+            if (!(wrappedCipherStream instanceof CipherOutputStream)) {
+                throw new MantaReflectionException("Expected HmacOutputStream to wrap CipherOutputStream, found: " +
+                        wrappedCipherStream.getClass().getCanonicalName());
+            }
+
+            cipherStream = (CipherOutputStream) wrappedCipherStream;
+        } else {
+            cipherStream = (CipherOutputStream) encryptionState.getCipherStream();
         }
 
         if (savedCipher == null) {
             throw new IllegalStateException("rewind called before record, No saved Cipher available");
         }
 
+        final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
+
         try {
-            final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
             FieldUtils.writeField(FIELD_ENCRYPTIONCONTEXT_CIPHER, encryptionContext, savedCipher, true);
+            FieldUtils.writeField(FIELD_CIPHEROUTPUTSTREAM_CIPHER, cipherStream, savedCipher, true);
         } catch (IllegalAccessException e) {
             throw new MantaReflectionException("Failed to rewind EncryptionContext's cipher", e);
         }
