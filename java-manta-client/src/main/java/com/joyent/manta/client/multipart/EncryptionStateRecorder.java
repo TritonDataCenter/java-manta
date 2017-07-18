@@ -53,12 +53,14 @@ public class EncryptionStateRecorder {
     /**
      * Reference to {@link HmacOutputStream}'s {@link HMac} field.
      */
-    private static final Field FIELD_HMACOUTPUTSTREAM_HMAC = FieldUtils.getField(HmacOutputStream.class, "hmac");
+    private static final Field FIELD_HMACOUTPUTSTREAM_HMAC =
+            FieldUtils.getField(HmacOutputStream.class, "hmac", true);
 
     /**
      * Reference to {@link EncryptionContext}'s {@link Cipher} field.
      */
-    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER = FieldUtils.getField(EncryptionContext.class, "cipher");
+    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER =
+            FieldUtils.getField(EncryptionContext.class, "cipher", true);
 
     /**
      * {@link HMac} cloning helper object.

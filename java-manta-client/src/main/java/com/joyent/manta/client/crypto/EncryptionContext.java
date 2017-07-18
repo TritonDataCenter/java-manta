@@ -63,7 +63,7 @@ public class EncryptionContext {
 
         this.key = key;
         this.cipherDetails = cipherDetails;
-        this.cipher = cipherDetails.getCipher();
+        this.cipher = cipherDetails.getBouncyCastleCipher();
         initializeCipher();
     }
 

@@ -8,7 +8,7 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
-import com.joyent.manta.exception.MantaEncryptionException;
+import com.joyent.manta.exception.MantaMemoizationException;
 
 import javax.crypto.Cipher;
 import java.security.Provider;
@@ -29,7 +29,7 @@ public final class CipherCloner implements Cloner<Cipher> {
     public Cipher createClone(final Cipher source) {
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
         if (null != pkcs11Provider && pkcs11Provider.equals(source.getProvider())) {
-            throw new MantaEncryptionException("Cannot create clone of PKCS11-backed Cipher.");
+            throw new MantaMemoizationException("Cannot create clone of PKCS11-backed Cipher.");
         }
 
         return INSTANCE.deepClone(source);
