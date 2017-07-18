@@ -8,33 +8,28 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
-import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
-import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.exception.MantaEncryptionException;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Provider;
 
 public class CipherClonerTest {
+
     @Test
-    public void testCanCloneCipher()
-            throws IOException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        final SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
+    public void testCanCloneAesCtr128() throws Exception {
+        canCloneCipher(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    private void canCloneCipher(final SupportedCipherDetails cipherDetails) throws Exception {
+        // TODO: paramaterize cipherDetails
+
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         final byte[] iv = cipherDetails.generateIv();
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
