@@ -14,14 +14,14 @@ public class MantaMemoizationException extends MantaEncryptionException {
     /**
      * @param message The error message.
      */
-    public MantaMemoizationException(String message) {
+    public MantaMemoizationException(final String message) {
         super(message);
     }
 
     /**
      * @param cause The cause of the exception.
      */
-    public MantaMemoizationException(Throwable cause) {
+    public MantaMemoizationException(final Throwable cause) {
         super(cause);
     }
 
@@ -29,7 +29,7 @@ public class MantaMemoizationException extends MantaEncryptionException {
      * @param message The error message.
      * @param cause   The cause.
      */
-    public MantaMemoizationException(String message, Throwable cause) {
+    public MantaMemoizationException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

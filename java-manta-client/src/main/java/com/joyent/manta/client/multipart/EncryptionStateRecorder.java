@@ -99,6 +99,7 @@ public class EncryptionStateRecorder {
      * Make sure the wrapping stream performs an HMAC digest and cast the needed type.
      *
      * @param cipherStream the encrypting stream which we are verifying is wrapped in an HMac digest
+     * @return the HmacOutputStream
      */
     private HmacOutputStream ensureHmacWrapsCipherStream(final OutputStream cipherStream) {
         if (!cipherStream.getClass().equals(HmacOutputStream.class)) {
@@ -150,8 +151,8 @@ public class EncryptionStateRecorder {
             }
 
             if (!(wrappedCipherStream instanceof CipherOutputStream)) {
-                throw new MantaReflectionException("Expected HmacOutputStream to wrap CipherOutputStream, found: " +
-                        wrappedCipherStream.getClass().getCanonicalName());
+                throw new MantaReflectionException("Expected HmacOutputStream to wrap CipherOutputStream, found: "
+                        + wrappedCipherStream.getClass().getCanonicalName());
             }
 
             cipherStream = (CipherOutputStream) wrappedCipherStream;

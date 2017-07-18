@@ -7,6 +7,9 @@
  */
 package com.joyent.manta.exception;
 
+/**
+ * Exception class for errors related to encryption state memoization.
+ */
 public class MantaReflectionException extends MantaException {
 
     /**

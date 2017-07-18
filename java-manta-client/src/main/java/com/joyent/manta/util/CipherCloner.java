@@ -23,8 +23,6 @@ public final class CipherCloner implements Cloner<Cipher> {
      */
     private static final com.rits.cloning.Cloner INSTANCE = new com.rits.cloning.Cloner();
 
-    // TODO: configure Cloner so it knows about immutable properties
-
     @Override
     public Cipher createClone(final Cipher source) {
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
