@@ -17,7 +17,6 @@ import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.multipart.EncryptionState;
-import com.joyent.manta.client.multipart.EncryptionStateRecorder;
 import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.util.HmacOutputStream;
 import org.bouncycastle.crypto.macs.HMac;
@@ -47,7 +46,6 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
     private Field multipartStreamField = captureField("multipartStream");
     private Field cipherStreamField = captureField("cipherStream");
     private Field lastPartAuthWrittenField = captureField("lastPartAuthWritten");
-    private Field encryptionStateRecorderField = captureField("encryptionStateRecorder");
 
     /**
      * Secret key to inject into encryption context.
@@ -188,8 +186,6 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
                 multipartStream, encryptionContext, hmac);
 
         writeField(cipherStreamField, encryptionState, cipherStream);
-
-        writeField(encryptionStateRecorderField, encryptionState, new EncryptionStateRecorder(encryptionState));
 
         return encryptionState;
     }
