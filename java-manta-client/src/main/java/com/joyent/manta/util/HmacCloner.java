@@ -29,7 +29,7 @@ public final class HmacCloner implements Cloner<HMac> {
     private static final Field FIELD_IPAD_STATE = getField(HMac.class, "ipadState", true);
 
     /**
-     * Private field onf {@link HMac} to query for opad state.
+     * Private field on {@link HMac} to query for opad state.
      */
     private static final Field FIELD_OPAD_STATE = getField(HMac.class, "opadState", true);
 

@@ -251,6 +251,7 @@ public class EncryptedMultipartManager
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
 
         encryptionState.getLock().lock();
+        upload.getRecorder().record();
         try {
             validatePartNumber(partNumber);
             if (encryptionState.getLastPartNumber() != -1) {
@@ -280,6 +281,10 @@ public class EncryptedMultipartManager
             final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
             encryptionState.setLastPartNumber(partNumber);
             return part;
+        } catch (Exception e) {
+            // rewind encryption state just in case any data made it to the stream
+            upload.getRecorder().rewind();
+            throw e;
         } finally {
             encryptionState.getLock().unlock();
         }

@@ -23,8 +23,10 @@ import java.lang.reflect.Field;
 /**
  * Helper class for recording state of encryption and authentication state during in-progress MPU uploads.
  * Used to enable retry of {@link EncryptedMultipartManager#uploadPart} in case of network failure.
+ * Like the <a href="https://sourcemaking.com/design_patterns/memento">Memento Pattern</a> but with less respect
+ * for encapsulation.
  */
-class EncryptionStateRewinder {
+public class EncryptionStateRecorder {
 
     /**
      * {@link EncryptionState} to make rewindable.
@@ -69,11 +71,11 @@ class EncryptionStateRewinder {
     private static final Cloner<Cipher> CLONER_CIPHER = new CipherCloner();
 
     /**
-     * Construct an EncryptionStateRewinder which can be used to rewind the state of the given {@link EncryptionState}.
+     * Construct an EncryptionStateRecorder which can be used to rewind the state of the given {@link EncryptionState}.
      *
      * @param encryptionState object to extract state from (and potentially write back to)
      */
-    EncryptionStateRewinder(final EncryptionState encryptionState) {
+    public EncryptionStateRecorder(final EncryptionState encryptionState) {
         this.encryptionState = encryptionState;
         this.usesHmac = !encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
     }
