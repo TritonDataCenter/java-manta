@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.util;
 
-import org.apache.commons.lang3.NotImplementedException;
+import com.joyent.manta.exception.MantaMemoizationException;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.util.Memoable;
 
@@ -22,6 +22,7 @@ public final class DigestCloner implements Cloner<Digest> {
             return (Digest) ((Memoable) source).copy();
         }
 
-        throw new NotImplementedException("Clone not implemented for type: " + source.getClass().getCanonicalName());
+        // we expect all Digest objects to implement Memoable
+        throw new MantaMemoizationException("Clone not implemented for type: " + source.getClass().getCanonicalName());
     }
 }
