@@ -500,21 +500,32 @@ public class EncryptedServerSideMultipartManagerIT {
     public final void canRetryUploadPart() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
+        final byte[] content = RandomUtils.nextBytes((2 * FIVE_MB) + 1024);
         final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
-        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, FIVE_MB + 1024);
+        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, (2 * FIVE_MB) + 1);
+        final byte[] content3 = Arrays.copyOfRange(content, (2 * FIVE_MB) + 1, (2 * FIVE_MB) + 1024);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
-        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
+        ArrayList<MantaMultipartUploadTuple> parts = new ArrayList<>(3);
 
         Assert.assertThrows(IOException.class, () -> {
-            // partial read of content2
-            InputStream content2BadInputStream = new FailingInputStream(new ByteArrayInputStream(content2), 512);
-            multipart.uploadPart(upload, 2, content2BadInputStream);
+            // partial read of content1
+            InputStream content1BadInputStream = new FailingInputStream(new ByteArrayInputStream(content1), 1024);
+            multipart.uploadPart(upload, 1, content1BadInputStream);
         });
 
-        final MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
-        multipart.complete(upload, Arrays.stream(new MantaMultipartUploadTuple[]{part1, part2}));
+        parts.add(multipart.uploadPart(upload, 1, content1));
+        parts.add(multipart.uploadPart(upload, 2, content2));
+
+        Assert.assertThrows(IOException.class, () -> {
+            // smaller partial read of content3
+            InputStream content3BadInputStream = new FailingInputStream(new ByteArrayInputStream(content3), 512);
+            multipart.uploadPart(upload, 3, content3BadInputStream);
+        });
+
+        parts.add(multipart.uploadPart(upload, 3, content3));
+
+        multipart.complete(upload, parts.stream());
 
         // auto-close of MantaEncryptedObjectInputStream validates authentication
         try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
