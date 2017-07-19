@@ -7,7 +7,9 @@
  */
 package com.joyent.manta.util;
 
+import com.joyent.manta.client.crypto.AesCbcCipherDetails;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -44,8 +46,48 @@ public class CipherClonerTest {
     }
 
     @Test
+    public void testCanCloneAesGcm128() throws Exception {
+        canCloneCipher(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void testCanCloneAesGcm192() throws Exception {
+        canCloneCipher(AesGcmCipherDetails.INSTANCE_192_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void testCanCloneAesGcm256() throws Exception {
+        canCloneCipher(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+
+    @Test
     public void testCanCloneAesCtr128() throws Exception {
         canCloneCipher(AesCtrCipherDetails.INSTANCE_128_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void testCanCloneAesCtr192() throws Exception {
+        canCloneCipher(AesCtrCipherDetails.INSTANCE_192_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void testCanCloneAesCtr256() throws Exception {
+        canCloneCipher(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    @Test
+    public void testCanCloneAesCbc128() throws Exception {
+        canCloneCipher(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void testCanCloneAesCbc192() throws Exception {
+        canCloneCipher(AesCbcCipherDetails.INSTANCE_192_BIT);
+    }
+
+    @Test(groups = {"unlimited-crypto"})
+    public void testCanCloneAesCbc256() throws Exception {
+        canCloneCipher(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
 
     private void canCloneCipher(final SupportedCipherDetails cipherDetails) throws Exception {
@@ -65,19 +107,18 @@ public class CipherClonerTest {
         final CipherOutputStream originalCipherOutput = new CipherOutputStream(originalOutput, originalCipher);
         originalCipherOutput.write(inputData);
         originalCipherOutput.flush();
-        // close calls doFinal, but we want to leave originalCipher in an intermediate state
-        // originalCipherOutput.close();
+        // we don't want to close originalCipherOutput because that would finalize originalCipher
+        // and allow it to be reused below
 
         final ByteArrayOutputStream clonedOutput = new ByteArrayOutputStream();
         final CipherOutputStream clonedCipherOutput = new CipherOutputStream(clonedOutput, clonedCipher);
         clonedCipherOutput.write(inputData);
         clonedCipherOutput.flush();
-        clonedCipherOutput.close();
 
         final byte[] originalEncrypted = originalOutput.toByteArray();
         final byte[] clonedEncrypted = clonedOutput.toByteArray();
 
-        Assert.assertEquals(inputData.length, originalEncrypted.length);
+        Assert.assertEquals(originalEncrypted.length, clonedEncrypted.length);
         AssertJUnit.assertArrayEquals(originalEncrypted, clonedEncrypted);
     }
 }

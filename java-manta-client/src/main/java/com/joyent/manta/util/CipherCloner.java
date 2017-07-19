@@ -23,6 +23,11 @@ public final class CipherCloner implements Cloner<Cipher> {
      */
     private static final com.rits.cloning.Cloner INSTANCE = new com.rits.cloning.Cloner();
 
+    static {
+        // omit deep-cloning of classes which don't hold cipher state
+        INSTANCE.dontCloneInstanceOf(Class.class, Provider.class);
+    }
+
     @Override
     public Cipher createClone(final Cipher source) {
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
