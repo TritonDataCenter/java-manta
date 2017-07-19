@@ -127,7 +127,7 @@ public class EncryptionStateRecorder {
     /**
      * Restore the saved Cipher (and potentially HMAC) instances.
      */
-    public void rewind() {
+    void rewind() {
         final CipherOutputStream cipherStream;
 
         if (usesHmac) {
