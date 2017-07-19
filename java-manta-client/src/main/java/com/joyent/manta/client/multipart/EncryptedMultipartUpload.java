@@ -92,6 +92,12 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
      * @return object used to record and rewind internal EncryptionState state
      */
     EncryptionStateRecorder getRecorder() {
+        // check for missing recorder in case we were a serialized instance
+        if (this.encryptionState != null && this.encryptionStateRecorder == null) {
+            encryptionStateRecorder = new EncryptionStateRecorder(encryptionState);
+            encryptionStateRecorder.record();
+        }
+
         return encryptionStateRecorder;
     }
 
