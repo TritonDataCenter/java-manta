@@ -15,7 +15,6 @@ import com.joyent.manta.client.crypto.EncryptingPartEntity;
 import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaMultipartException;
-import com.joyent.manta.exception.MantaMemoizationException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.lang3.Validate;
@@ -282,13 +281,12 @@ public class EncryptedMultipartManager
             final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
             encryptionState.setLastPartNumber(partNumber);
             return part;
-        } catch (MantaMemoizationException mmme) {
-            throw mmme;
-        } catch (Exception e) {
-            // rewind encryption state just in case any data made it to the stream
-            upload.getRecorder().rewind();
-            throw e;
         } finally {
+            if (encryptionState.getLastPartNumber() != partNumber) {
+                // we didn't make it past uploadPart, rewind EncryptionState
+                upload.getRecorder().rewind();
+            }
+
             encryptionState.getLock().unlock();
         }
     }

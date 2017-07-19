@@ -10,6 +10,7 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -508,17 +509,17 @@ public class EncryptedServerSideMultipartManagerIT {
 
         Assert.assertThrows(IOException.class, () -> {
             // partial read of content2
-            InputStream content2BadInputStream = new FailingInputStream(new ByteArrayInputStream(content2), 128);
-            // TODO: pick a number greater than the largest encryption size
+            InputStream content2BadInputStream = new FailingInputStream(new ByteArrayInputStream(content2), 512);
             multipart.uploadPart(upload, 2, content2BadInputStream);
         });
 
         final MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
         multipart.complete(upload, Arrays.stream(new MantaMultipartUploadTuple[]{part1, part2}));
 
-
+        // auto-close of MantaEncryptedObjectInputStream validates authentication
         try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
              final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Assert.assertTrue(in instanceof MantaEncryptedObjectInputStream);
             IOUtils.copy(in, out);
             AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
                     content, out.toByteArray());

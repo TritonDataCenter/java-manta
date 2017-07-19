@@ -132,7 +132,7 @@ public class EncryptionStateRecorder {
 
         if (usesHmac) {
             if (savedHmac == null) {
-                throw new IllegalStateException("rewind called before record, No saved HMac available");
+                throw new IllegalStateException("rewind called before record, no saved HMac available");
             }
 
             final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(encryptionState.getCipherStream());
@@ -161,7 +161,7 @@ public class EncryptionStateRecorder {
         }
 
         if (savedCipher == null) {
-            throw new IllegalStateException("rewind called before record, No saved Cipher available");
+            throw new IllegalStateException("rewind called before record, no saved Cipher available");
         }
 
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();

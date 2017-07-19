@@ -91,8 +91,6 @@ public class CipherClonerTest {
     }
 
     private void canCloneCipher(final SupportedCipherDetails cipherDetails) throws Exception {
-        // TODO: paramaterize cipherDetails
-
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         final byte[] iv = cipherDetails.generateIv();
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
