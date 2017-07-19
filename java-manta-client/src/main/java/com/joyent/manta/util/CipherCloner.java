@@ -25,6 +25,7 @@ public final class CipherCloner implements Cloner<Cipher> {
 
     static {
         // omit deep-cloning of classes which don't hold cipher state
+        // references will be copied directly instead of recursively cloned
         INSTANCE.dontCloneInstanceOf(Class.class, Provider.class);
     }
 
