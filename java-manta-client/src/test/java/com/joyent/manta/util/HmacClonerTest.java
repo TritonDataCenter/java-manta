@@ -7,7 +7,12 @@
  */
 package com.joyent.manta.util;
 
-import com.joyent.manta.client.crypto.*;
+import com.joyent.manta.client.crypto.AesCbcCipherDetails;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.AesGcmCipherDetails;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -17,140 +22,146 @@ import org.testng.annotations.Test;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 
-import static com.joyent.manta.client.crypto.SupportedHmacsLookupMap.Name;
-
 public class HmacClonerTest {
+
+    private static final String[] HMAC_NAMES = new String[] {
+            "HmacMD5",
+            "HmacSHA1",
+            "HmacSHA256",
+            "HmacSHA384",
+            "HmacSHA512",
+    };
 
     @Test
     public void testHMacStateCanBeClonedAfterInitializeAesCtr128AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterInitializeAesCtr192AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterInitializeAesCtr256AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
     public void testHMacStateCanBeClonedAfterInitializeAesGcm128AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterInitializeAesGcm192AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterInitializeAesGcm256AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
     public void testHMacStateCanBeClonedAfterInitializeAesCbc128AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterInitializeAesCbc192AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterInitializeAesCbc256AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
     public void testHMacStateCanBeClonedAfterUseAesCtr128AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterUse(AesCtrCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterUseAesCtr192AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterUseAesCtr256AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
     public void testHMacStateCanBeClonedAfterUseAesGcm128AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterUse(AesGcmCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterUseAesGcm192AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterUseAesGcm256AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
     public void testHMacStateCanBeClonedAfterUseAesCbc128AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterUse(AesCbcCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterUseAesCbc192AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
     public void testHMacStateCanBeClonedAfterUseAesCbc256AllHMacs() throws IOException {
-        for (Name hmacName : Name.values()) {
+        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
-    public void testHMacStateCanBeClonedAfterInitialization(SupportedCipherDetails cipherDetails, SupportedHmacsLookupMap.Name hmacName) {
+    private void testHMacStateCanBeClonedAfterInitialization(SupportedCipherDetails cipherDetails, final String hmacName) {
         final SecretKey key = SecretKeyUtils.generate(cipherDetails);
 
-        final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(hmacName.name()).get();
+        final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(hmacName).get();
         originalHmac.init(new KeyParameter(key.getEncoded()));
         final HMac clonedHmac = new HmacCloner().createClone(originalHmac);
 
@@ -166,10 +177,10 @@ public class HmacClonerTest {
         AssertJUnit.assertArrayEquals(originalComputed, clonedComputed);
     }
 
-    public void testHMacStateCanBeClonedAfterUse(SupportedCipherDetails cipherDetails, SupportedHmacsLookupMap.Name hmacName) {
+    private void testHMacStateCanBeClonedAfterUse(final SupportedCipherDetails cipherDetails, final String hmacName) {
         final SecretKey key = SecretKeyUtils.generate(cipherDetails);
 
-        final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(hmacName.name()).get();
+        final HMac originalHmac = SupportedHmacsLookupMap.INSTANCE.get(hmacName).get();
         originalHmac.init(new KeyParameter(key.getEncoded()));
 
         final byte[] firstUpdate = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
