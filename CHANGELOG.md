@@ -14,7 +14,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    library could cause file corruption. In case of a network error, the HTTP Client library would automatically
    retry certain requests (e.g. those backed by `File`s and `byte[]`). This causes `Digest` and `Cipher` state
    to include with partial content from a failed part in addition to the intended content. As a result of this fix,
-   all MPU operations are restricted to using BouncyCastle `Cipher` objects to allow deep-cloning.
+   all MPU operations are restricted to using BouncyCastle `Cipher` objects to allow deep-cloning, regardless of
+   whether or not libnss is installed.
 
 ## [3.1.3] - 2017-06-29
 ### Fixed
