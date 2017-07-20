@@ -37,6 +37,9 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
  */
 class EncryptionStateRecorder {
 
+    private EncryptionStateRecorder() {
+    }
+
     /**
      * Reference to {@link HmacOutputStream}'s {@link HMac} field.
      */
