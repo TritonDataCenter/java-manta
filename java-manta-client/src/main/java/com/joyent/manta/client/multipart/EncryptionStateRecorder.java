@@ -35,7 +35,7 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
  * to be called a specific points during the MPU process. This class holds none of its own state as as a result
  * all methods have been marked as {@code static}
  */
-class EncryptionStateRecorder {
+final class EncryptionStateRecorder {
 
     private EncryptionStateRecorder() {
     }
