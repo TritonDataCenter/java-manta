@@ -52,6 +52,12 @@ public class EncryptedMultipartManager
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartManager.class);
 
     /**
+     * Object used to reset the state of encryption/authentication in case
+     * a part needs to be reuploaded.
+     */
+    private static final EncryptionStateRecorder RECORDER = new EncryptionStateRecorder();
+
+    /**
      * Secret key used for encryption.
      */
     private final SecretKey secretKey;
@@ -249,6 +255,7 @@ public class EncryptedMultipartManager
 
         final EncryptionState encryptionState = upload.getEncryptionState();
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
+        EncryptionStateSnapshot snapshot = null;
 
         encryptionState.getLock().lock();
         try {
@@ -262,7 +269,7 @@ public class EncryptedMultipartManager
                 encryptionState.setCipherStream(EncryptingEntityHelper.makeCipherOutputForStream(
                         encryptionState.getMultipartStream(), encryptionContext));
             }
-            upload.getRecorder().record();
+            snapshot = RECORDER.record(encryptionState);
 
             final EncryptingPartEntity entity = new EncryptingPartEntity(
                     encryptionState.getCipherStream(),
@@ -282,9 +289,9 @@ public class EncryptedMultipartManager
             encryptionState.setLastPartNumber(partNumber);
             return part;
         } finally {
-            if (encryptionState.getLastPartNumber() != partNumber) {
-                // we didn't make it past uploadPart, rewind EncryptionState
-                upload.getRecorder().rewind();
+            if (encryptionState.getLastPartNumber() != partNumber && snapshot != null) {
+                // a snapshot was prepared but we didn't make it past uploadPart, rewind EncryptionState
+                RECORDER.rewind(encryptionState, snapshot);
             }
 
             encryptionState.getLock().unlock();
