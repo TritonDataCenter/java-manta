@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Package private class that contains the state of the encryption streaming
+ * Class that contains the state of the encryption streaming
  * ciphers used to encrypt multipart uploads.
  *
  * @author <a href="https://github.com/cburroughs/">Chris Burroughs</a>
