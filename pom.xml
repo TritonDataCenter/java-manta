@@ -11,7 +11,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>3.1.3-SNAPSHOT</version>
+    <version>3.1.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>java-manta</name>
@@ -47,6 +47,13 @@
             <name>Chris Borroughs</name>
             <organization>Joyent</organization>
             <organizationUrl>joyent.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Tomas Celaya</name>
+            <email>tjcelaya@joyent.com</email>
+            <organization>Joyent</organization>
+            <organizationUrl>joyent.com</organizationUrl>
+            <timezone>US/Pacific</timezone>
         </developer>
     </developers>
     <contributors>

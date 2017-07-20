@@ -61,6 +61,8 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
                         MantaMultipartException e = new MantaMultipartException(
                                 "Missing part of multipart upload");
                         e.setContextValue("missing_part", memo);
+                        e.setContextValue("uploadId",  upload.getId());
+                        e.setContextValue("path", upload.getPath());
                         throw e;
                     }
 

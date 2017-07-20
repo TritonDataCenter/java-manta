@@ -3,6 +3,19 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 
+## [3.x.x] - XXXX-XX-XX
+### Changed
+ - The heuristics for guessing heuristics have been adjusted to give
+   [more consistent](https://github.com/joyent/java-manta/issues/276)
+   results across platforms.
+
+## [3.1.3] - 2017-06-29
+### Fixed
+ - [`Digest` not reset in DigestedEntity](https://github.com/joyent/java-manta/pull/280)
+   leading to `MantaChecksumFailedException` when the entity is reused during automatic retry.
+ - [MantaChecksumFailedException](https://github.com/joyent/java-manta/pull/275)
+   lacking exception context.
+
 ## [3.1.2] - 2017-06-22
 ### Fixed
  - [`InputStream` left open in EncryptingEntity and EncryptingPartEntity](https://github.com/joyent/java-manta/pull/264)
