@@ -5,9 +5,16 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.x.x] - XXXX-XX-XX
 ### Changed
- - The heuristics for guessing heuristics have been adjusted to give
+ - The heuristics for guessing Content-Type have been adjusted to give
    [more consistent](https://github.com/joyent/java-manta/issues/276)
    results across platforms.
+### Fixed
+ - When using Client-side Encryption in combination with Multipart Uploads,
+   [automatic retries](https://github.com/joyent/java-manta/issues/284) triggered by the Apache HTTP
+   library could cause file corruption. In case of a network error, the HTTP Client library would automatically
+   retry certain requests (e.g. those backed by `File`s and `byte[]`). This causes `Digest` and `Cipher` state
+   to include with partial content from a failed part in addition to the intended content. As a result of this fix,
+   all MPU operations are restricted to using BouncyCastle `Cipher` objects to allow deep-cloning.
 
 ## [3.1.3] - 2017-06-29
 ### Fixed
