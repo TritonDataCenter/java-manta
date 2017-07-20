@@ -174,7 +174,7 @@
         <dependency>
             <groupId>uk.com.robust-it</groupId>
             <artifactId>cloning</artifactId>
-            <version>${dependency.cloner.version}</version>
+            <version>${dependency.cloning.version}</version>
         </dependency>
 
         <!-- object instantiation library, needed by uk.com.robust-it:cloning and the kryo module -->

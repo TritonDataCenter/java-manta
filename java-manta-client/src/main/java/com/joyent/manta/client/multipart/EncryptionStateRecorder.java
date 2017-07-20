@@ -101,7 +101,7 @@ class EncryptionStateRecorder {
 
     /**
      * Restore Cipher (and potentially HMAC) instances to a provided snapshot. We want to avoid
-     * producing a new EncryptionState for several reasons:
+     * producing a new EncryptionState for a few reasons:
      *
      * 1. The {@code ReentrantLock} in {@code EncryptionState} is used to synchronize access
      *    to internal encryption state, including the creation and restoration of snapshots (record and rewind).

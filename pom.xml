@@ -155,7 +155,7 @@
         <dependency.kryo.version>4.0.0</dependency.kryo.version>
         <dependency.objenesis.version>2.5.1</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
-        <dependency.cloner.version>1.9.5</dependency.cloner.version>
+        <dependency.cloning.version>1.9.5</dependency.cloning.version>
     </properties>
 
     <dependencies>
