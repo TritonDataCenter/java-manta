@@ -13,7 +13,7 @@ import javax.crypto.Cipher;
 import java.util.Objects;
 
 /**
- * Snapshots hold references to clones of stateful objects used in streaming encryption operations.
+ * This class holds references to clones of stateful objects used in streaming encryption operations.
  */
 class EncryptionStateSnapshot {
 
@@ -23,7 +23,7 @@ class EncryptionStateSnapshot {
     private final int lastPartNumber;
 
     /**
-     * Cloned HMAC state.
+     * Cloned HMAC state, may be null if Cipher provides Authenticated Encryption. See {@link EncryptionStateRecorder}.
      */
     private final HMac hmac;
 

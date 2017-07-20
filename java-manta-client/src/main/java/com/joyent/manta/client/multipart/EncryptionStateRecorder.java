@@ -100,13 +100,19 @@ class EncryptionStateRecorder {
     }
 
     /**
-     * Restore the saved Cipher (and potentially HMAC) instances.
+     * Restore Cipher (and potentially HMAC) instances to a provided snapshot. We want to avoid
+     * producing a new EncryptionState for several reasons:
+     *
+     * 1. The {@code ReentrantLock} in {@code EncryptionState} is used to synchronize access
+     *    to internal encryption state, including the creation and restoration of snapshots (record and rewind).
+     * 2. Interaction between CipherOutputStream and HmacOutputStream
+     *    makes it non-trivial construct a copy of an EncryptionState that is completely separate from the original.
      */
     public void rewind(final EncryptionState encryptionState, final EncryptionStateSnapshot snapshot) {
         Validate.notNull(snapshot.getCipher(),
                 "Snapshot cipher must not be null");
         Validate.isTrue(encryptionState.getLastPartNumber() == snapshot.getLastPartNumber(),
-                "Snapshot part number must equal encryption state");
+                "Snapshot part number must equal encryption state part number");
         final boolean usesHmac = !encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
 
         final CipherOutputStream cipherStream;
