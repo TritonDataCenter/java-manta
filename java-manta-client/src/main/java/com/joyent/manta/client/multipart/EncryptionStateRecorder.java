@@ -111,13 +111,15 @@ final class EncryptionStateRecorder {
      * producing a new EncryptionState for a few reasons:
      *
      * 1. The {@code ReentrantLock} in {@code EncryptionState} is used to synchronize access
-     *    to internal encryption state, including the creation and restoration of snapshots (record and rewind).
+     * to internal encryption state, including the creation and restoration of snapshots (record and rewind).
+     *
      * 2. Interaction between CipherOutputStream and HmacOutputStream
-     *    makes it non-trivial construct a copy of an EncryptionState that is completely separate from the original.
+     * makes it non-trivial construct a copy of an EncryptionState that is completely separate from the original.
      */
-    static void rewind(final EncryptionState encryptionState, final EncryptionStateSnapshot snapshot) {
+    static void rewind(final EncryptedMultipartUpload upload, final EncryptionStateSnapshot snapshot) {
         Validate.notNull(snapshot.getCipher(),
                 "Snapshot cipher must not be null");
+        final EncryptionState encryptionState = upload.getEncryptionState();
         Validate.isTrue(encryptionState.getLastPartNumber() == snapshot.getLastPartNumber(),
                 "Snapshot part number must equal encryption state part number");
         final boolean usesHmac = !encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
@@ -131,19 +133,31 @@ final class EncryptionStateRecorder {
             try {
                 writeField(FIELD_HMACOUTPUTSTREAM_HMAC, digestStream, snapshot.getHmac());
             } catch (IllegalAccessException e) {
-                throw new MantaReflectionException("Failed to overwrite HmacOutputStream's hmac", e);
+                final String message = String.format("Failed to overwrite HmacOutputStream's hmac while rewinding "
+                                + "encryption state for upload [%s] part [%s]",
+                        upload.getId(),
+                        snapshot.getLastPartNumber());
+                throw new MantaReflectionException(message, e);
             }
 
             Object wrappedCipherStream;
             try {
                 wrappedCipherStream = readField(FIELD_HMACOUTPUTSTREAM_OUT, digestStream);
             } catch (IllegalAccessException e) {
-                throw new MantaReflectionException("Failed to extract wrapped OutputStream", e);
+                final String message = String.format("Failed to extract wrapped OutputStream while rewinding "
+                                + "encryption state for upload [%s] part [%s]",
+                        upload.getId(),
+                        snapshot.getLastPartNumber());
+                throw new MantaReflectionException(message, e);
             }
 
             if (!(wrappedCipherStream instanceof CipherOutputStream)) {
-                throw new MantaReflectionException("Expected HmacOutputStream to wrap CipherOutputStream, found: "
-                        + wrappedCipherStream.getClass().getCanonicalName());
+                final String message = String.format("Expected HmacOutputStream to wrap CipherOutputStream "
+                                + "while rewinding encryption state for upload [%s] part [%s], found %s",
+                        upload.getId(),
+                        snapshot.getLastPartNumber(),
+                        wrappedCipherStream.getClass().getCanonicalName());
+                throw new MantaReflectionException(message);
             }
 
             cipherStream = (CipherOutputStream) wrappedCipherStream;
@@ -155,7 +169,11 @@ final class EncryptionStateRecorder {
             writeField(FIELD_ENCRYPTIONCONTEXT_CIPHER, encryptionState.getEncryptionContext(), snapshot.getCipher());
             writeField(FIELD_CIPHEROUTPUTSTREAM_CIPHER, cipherStream, snapshot.getCipher());
         } catch (IllegalAccessException e) {
-            throw new MantaReflectionException("Failed to overwrite EncryptionContext's cipher", e);
+            final String message = String.format("Failed to overwrite cipher while rewinding "
+                            + "encryption state for upload [%s] part [%s]",
+                    upload.getId(),
+                    snapshot.getLastPartNumber());
+            throw new MantaReflectionException(message, e);
         }
     }
 }

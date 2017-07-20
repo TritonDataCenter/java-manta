@@ -286,7 +286,7 @@ public class EncryptedMultipartManager
             } catch (Exception e) {
                 if (encryptionState.getLastPartNumber() != partNumber) {
                     // didn't make it to encryptionState.setLastPartNumber(partNumber)
-                    EncryptionStateRecorder.rewind(encryptionState, snapshot);
+                    EncryptionStateRecorder.rewind(upload, snapshot);
                 }
                 throw e;
             }
