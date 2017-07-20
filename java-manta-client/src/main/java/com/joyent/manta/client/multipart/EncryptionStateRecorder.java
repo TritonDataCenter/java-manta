@@ -30,6 +30,10 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
  * Used to enable retry of {@link EncryptedMultipartManager#uploadPart} in case of network failure.
  * Like the <a href="https://sourcemaking.com/design_patterns/memento">Memento Pattern</a> but with less respect
  * for encapsulation.
+ *
+ * This class and its methods are package-private because they rely on locking provided by EncryptionState and need
+ * to be called a specific points during the MPU process. This class holds none of its own state as as a result
+ * all methods have been marked as {@code static}
  */
 class EncryptionStateRecorder {
 
@@ -82,7 +86,7 @@ class EncryptionStateRecorder {
      * Clones Cipher (and potentially HMAC) instances for future use.
      * This should be called before data is streamed in uploadPart.
      */
-    public EncryptionStateSnapshot record(final EncryptionState encryptionState) {
+    static EncryptionStateSnapshot record(final EncryptionState encryptionState) {
         final HMac hmac;
 
         if (!encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher()) {
@@ -108,7 +112,7 @@ class EncryptionStateRecorder {
      * 2. Interaction between CipherOutputStream and HmacOutputStream
      *    makes it non-trivial construct a copy of an EncryptionState that is completely separate from the original.
      */
-    public void rewind(final EncryptionState encryptionState, final EncryptionStateSnapshot snapshot) {
+    static void rewind(final EncryptionState encryptionState, final EncryptionStateSnapshot snapshot) {
         Validate.notNull(snapshot.getCipher(),
                 "Snapshot cipher must not be null");
         Validate.isTrue(encryptionState.getLastPartNumber() == snapshot.getLastPartNumber(),

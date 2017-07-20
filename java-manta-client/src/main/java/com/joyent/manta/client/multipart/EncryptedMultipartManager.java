@@ -52,12 +52,6 @@ public class EncryptedMultipartManager
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartManager.class);
 
     /**
-     * Object used to reset the state of encryption/authentication in case
-     * a part needs to be reuploaded.
-     */
-    private static final EncryptionStateRecorder RECORDER = new EncryptionStateRecorder();
-
-    /**
      * Secret key used for encryption.
      */
     private final SecretKey secretKey;
@@ -255,7 +249,6 @@ public class EncryptedMultipartManager
 
         final EncryptionState encryptionState = upload.getEncryptionState();
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
-        EncryptionStateSnapshot snapshot = null;
 
         encryptionState.getLock().lock();
         try {
@@ -269,8 +262,8 @@ public class EncryptedMultipartManager
                 encryptionState.setCipherStream(EncryptingEntityHelper.makeCipherOutputForStream(
                         encryptionState.getMultipartStream(), encryptionContext));
             }
-            snapshot = RECORDER.record(encryptionState);
 
+            final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState);
             final EncryptingPartEntity entity = new EncryptingPartEntity(
                     encryptionState.getCipherStream(),
                     encryptionState.getMultipartStream(), sourceEntity,
@@ -285,15 +278,19 @@ public class EncryptedMultipartManager
                             }
                         }
                     });
-            final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
-            encryptionState.setLastPartNumber(partNumber);
-            return part;
-        } finally {
-            if (encryptionState.getLastPartNumber() != partNumber && snapshot != null) {
-                // a snapshot was prepared but we didn't make it past uploadPart, rewind EncryptionState
-                RECORDER.rewind(encryptionState, snapshot);
-            }
 
+            try {
+                final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
+                encryptionState.setLastPartNumber(partNumber);
+                return part;
+            } catch (Exception e) {
+                if (encryptionState.getLastPartNumber() != partNumber) {
+                    // didn't make it to encryptionState.setLastPartNumber(partNumber)
+                    EncryptionStateRecorder.rewind(encryptionState, snapshot);
+                }
+                throw e;
+            }
+        } finally {
             encryptionState.getLock().unlock();
         }
     }
