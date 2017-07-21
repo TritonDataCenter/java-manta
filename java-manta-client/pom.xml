@@ -252,6 +252,14 @@
                             <pattern>io.mikael.urlbuilder</pattern>
                             <shadedPattern>com.joyent.manta.io.mikael.urlbuilder</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>org.objenesis</pattern>
+                            <shadedPattern>com.joyent.manta.org.objenesis</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.rits</pattern>
+                            <shadedPattern>com.joyent.manta.com.rits</shadedPattern>
+                        </relocation>
                     </relocations>
                     <filters>
                         <!-- explicitly remove class that causes security concerns -->
