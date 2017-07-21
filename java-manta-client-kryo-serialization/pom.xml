@@ -101,6 +101,10 @@
                     <groupId>com.esotericsoftware</groupId>
                     <artifactId>minlog</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -114,13 +118,6 @@
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.objenesis</groupId>
-            <artifactId>objenesis</artifactId>
-            <version>${dependency.objenesis.version}</version>
-            <scope>compile</scope>
         </dependency>
 
         <!-- These dependencies are declared at the module level because we can not

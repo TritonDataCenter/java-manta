@@ -10,11 +10,13 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.test.util.FailingInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -29,6 +31,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -495,5 +498,47 @@ public class EncryptedServerSideMultipartManagerIT {
         MantaMultipartUploadTuple[] parts = new MantaMultipartUploadTuple[]{part1};
         Stream<MantaMultipartUploadTuple> partsStream = Arrays.stream(parts);
         multipart.complete(upload, partsStream);
+    }
+
+    public final void canRetryUploadPart() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        int part3Size = RandomUtils.nextInt(500, 1500);
+        LOGGER.info("Performing uploadPart retry test with part 3 size " + part3Size);
+        final byte[] content = RandomUtils.nextBytes((2 * FIVE_MB) + part3Size);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
+        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, (2 * FIVE_MB) + 1);
+        final byte[] content3 = Arrays.copyOfRange(content, (2 * FIVE_MB) + 1, (2 * FIVE_MB) + part3Size);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+        ArrayList<MantaMultipartUploadTuple> parts = new ArrayList<>(3);
+
+        Assert.assertThrows(IOException.class, () -> {
+            // partial read of content1
+            InputStream content1BadInputStream = new FailingInputStream(new ByteArrayInputStream(content1), 1024);
+            multipart.uploadPart(upload, 1, content1BadInputStream);
+        });
+
+        parts.add(multipart.uploadPart(upload, 1, content1));
+        parts.add(multipart.uploadPart(upload, 2, content2));
+
+        Assert.assertThrows(IOException.class, () -> {
+            // smaller partial read of content3
+            InputStream content3BadInputStream = new FailingInputStream(new ByteArrayInputStream(content3), 512);
+            multipart.uploadPart(upload, 3, content3BadInputStream);
+        });
+
+        parts.add(multipart.uploadPart(upload, 3, content3));
+
+        multipart.complete(upload, parts.stream());
+
+        // auto-close of MantaEncryptedObjectInputStream validates authentication
+        try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Assert.assertTrue(in instanceof MantaEncryptedObjectInputStream);
+            IOUtils.copy(in, out);
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+        }
     }
 }

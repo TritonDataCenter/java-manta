@@ -263,6 +263,7 @@ public class EncryptedMultipartManager
                         encryptionState.getMultipartStream(), encryptionContext));
             }
 
+            final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState, upload.getId());
             final EncryptingPartEntity entity = new EncryptingPartEntity(
                     encryptionState.getCipherStream(),
                     encryptionState.getMultipartStream(), sourceEntity,
@@ -277,8 +278,18 @@ public class EncryptedMultipartManager
                             }
                         }
                     });
-            encryptionState.setLastPartNumber(partNumber);
-            return wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
+
+            try {
+                final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
+                encryptionState.setLastPartNumber(partNumber);
+                return part;
+            } catch (Exception e) {
+                if (encryptionState.getLastPartNumber() != partNumber) {
+                    // didn't make it to encryptionState.setLastPartNumber(partNumber)
+                    EncryptionStateRecorder.rewind(encryptionState, snapshot);
+                }
+                throw e;
+            }
         } finally {
             encryptionState.getLock().unlock();
         }

@@ -54,7 +54,6 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
                                     final EncryptionState encryptionState) {
         this.wrapped = wrapped;
         this.encryptionState = encryptionState;
-
     }
 
     @Override

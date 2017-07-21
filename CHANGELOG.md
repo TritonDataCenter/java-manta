@@ -2,12 +2,18 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-
 ## [3.x.x] - XXXX-XX-XX
 ### Changed
- - The heuristics for guessing heuristics have been adjusted to give
+ - The heuristics for guessing Content-Type have been adjusted to give
    [more consistent](https://github.com/joyent/java-manta/issues/276)
    results across platforms.
+### Fixed
+ - When using encryption in combination with Multipart Uploads,
+   [automatic retries](https://github.com/joyent/java-manta/issues/284) triggered by the underlying HTTP
+   library could cause file corruption. In case of a network error automatically certain requests would be retried
+   transparently (e.g. those backed by `File`s and `byte[]` data). This caused authentication and encryption state
+   erroneously include the partial content from the initial request. As a result of this fix encrypted MPU operations
+   will utilize the BouncyCastle cryptography library even when libnss (PKCS#11) is installed.
 
 ## [3.1.3] - 2017-06-29
 ### Fixed
