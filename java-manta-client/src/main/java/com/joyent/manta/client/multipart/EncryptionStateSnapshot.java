@@ -11,11 +11,17 @@ import org.bouncycastle.crypto.macs.HMac;
 
 import javax.crypto.Cipher;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * This class holds references to clones of stateful objects used in streaming encryption operations.
  */
 class EncryptionStateSnapshot {
+
+    /**
+     * Transaction ID for multipart upload.
+     */
+    private final UUID uploadId;
 
     /**
      * Part number at time of snapshot.
@@ -33,24 +39,31 @@ class EncryptionStateSnapshot {
     private final Cipher cipher;
 
     /**
-     * @param cipher the cloned {@code Cipher}
-     * @param hmac the cloned {@code Cipher}
+     * @param uploadId the {@link EncryptedMultipartUpload} transaction ID
+     * @param lastPartNumber the lastPartNumber at the time of the snapshot
+     * @param cipher the cloned {@link Cipher}
+     * @param hmac the cloned {@link HMac}
      */
-    EncryptionStateSnapshot(final int lastPartNumber, final Cipher cipher, final HMac hmac) {
+    EncryptionStateSnapshot(final UUID uploadId, final int lastPartNumber, final Cipher cipher, final HMac hmac) {
+        this.uploadId = uploadId;
         this.lastPartNumber = lastPartNumber;
         this.cipher = cipher;
         this.hmac = hmac;
     }
 
-    public int getLastPartNumber() {
+    UUID getUploadId() {
+        return uploadId;
+    }
+
+    int getLastPartNumber() {
         return lastPartNumber;
     }
 
-    public Cipher getCipher() {
+    Cipher getCipher() {
         return cipher;
     }
 
-    public HMac getHmac() {
+    HMac getHmac() {
         return hmac;
     }
 

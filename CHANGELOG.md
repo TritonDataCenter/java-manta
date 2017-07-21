@@ -2,7 +2,6 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-
 ## [3.x.x] - XXXX-XX-XX
 ### Changed
  - The heuristics for guessing Content-Type have been adjusted to give

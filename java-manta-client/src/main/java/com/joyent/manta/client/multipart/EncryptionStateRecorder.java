@@ -20,6 +20,7 @@ import org.bouncycastle.jcajce.io.CipherOutputStream;
 import javax.crypto.Cipher;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.util.UUID;
 
 import static org.apache.commons.lang3.reflect.FieldUtils.getField;
 import static org.apache.commons.lang3.reflect.FieldUtils.readField;
@@ -89,7 +90,7 @@ final class EncryptionStateRecorder {
      * Clones Cipher (and potentially HMAC) instances for future use.
      * This should be called before data is streamed in uploadPart.
      */
-    static EncryptionStateSnapshot record(final EncryptionState encryptionState) {
+    static EncryptionStateSnapshot record(final EncryptionState encryptionState, final UUID uploadId) {
         final HMac hmac;
 
         if (!encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher()) {
@@ -103,7 +104,7 @@ final class EncryptionStateRecorder {
         final Cipher cipher =
                 CLONER_CIPHER.createClone(encryptionState.getEncryptionContext().getCipher());
 
-        return new EncryptionStateSnapshot(encryptionState.getLastPartNumber(), cipher, hmac);
+        return new EncryptionStateSnapshot(uploadId, encryptionState.getLastPartNumber(), cipher, hmac);
     }
 
     /**
@@ -116,10 +117,9 @@ final class EncryptionStateRecorder {
      * 2. Interaction between CipherOutputStream and HmacOutputStream
      * makes it non-trivial construct a copy of an EncryptionState that is completely separate from the original.
      */
-    static void rewind(final EncryptedMultipartUpload upload, final EncryptionStateSnapshot snapshot) {
+    static void rewind(final EncryptionState encryptionState, final EncryptionStateSnapshot snapshot) {
         Validate.notNull(snapshot.getCipher(),
                 "Snapshot cipher must not be null");
-        final EncryptionState encryptionState = upload.getEncryptionState();
         Validate.isTrue(encryptionState.getLastPartNumber() == snapshot.getLastPartNumber(),
                 "Snapshot part number must equal encryption state part number");
         final boolean usesHmac = !encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
@@ -135,7 +135,7 @@ final class EncryptionStateRecorder {
             } catch (IllegalAccessException e) {
                 final String message = String.format("Failed to overwrite HmacOutputStream's hmac while rewinding "
                                 + "encryption state for upload [%s] part [%s]",
-                        upload.getId(),
+                        snapshot.getUploadId(),
                         snapshot.getLastPartNumber());
                 throw new MantaReflectionException(message, e);
             }
@@ -146,7 +146,7 @@ final class EncryptionStateRecorder {
             } catch (IllegalAccessException e) {
                 final String message = String.format("Failed to extract wrapped OutputStream while rewinding "
                                 + "encryption state for upload [%s] part [%s]",
-                        upload.getId(),
+                        snapshot.getUploadId(),
                         snapshot.getLastPartNumber());
                 throw new MantaReflectionException(message, e);
             }
@@ -154,7 +154,7 @@ final class EncryptionStateRecorder {
             if (!(wrappedCipherStream instanceof CipherOutputStream)) {
                 final String message = String.format("Expected HmacOutputStream to wrap CipherOutputStream "
                                 + "while rewinding encryption state for upload [%s] part [%s], found %s",
-                        upload.getId(),
+                        snapshot.getUploadId(),
                         snapshot.getLastPartNumber(),
                         wrappedCipherStream.getClass().getCanonicalName());
                 throw new MantaReflectionException(message);
@@ -171,7 +171,7 @@ final class EncryptionStateRecorder {
         } catch (IllegalAccessException e) {
             final String message = String.format("Failed to overwrite cipher while rewinding "
                             + "encryption state for upload [%s] part [%s]",
-                    upload.getId(),
+                    snapshot.getUploadId(),
                     snapshot.getLastPartNumber());
             throw new MantaReflectionException(message, e);
         }

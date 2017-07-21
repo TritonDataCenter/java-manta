@@ -263,7 +263,7 @@ public class EncryptedMultipartManager
                         encryptionState.getMultipartStream(), encryptionContext));
             }
 
-            final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState);
+            final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState, upload.getId());
             final EncryptingPartEntity entity = new EncryptingPartEntity(
                     encryptionState.getCipherStream(),
                     encryptionState.getMultipartStream(), sourceEntity,
@@ -286,7 +286,7 @@ public class EncryptedMultipartManager
             } catch (Exception e) {
                 if (encryptionState.getLastPartNumber() != partNumber) {
                     // didn't make it to encryptionState.setLastPartNumber(partNumber)
-                    EncryptionStateRecorder.rewind(upload, snapshot);
+                    EncryptionStateRecorder.rewind(encryptionState, snapshot);
                 }
                 throw e;
             }
