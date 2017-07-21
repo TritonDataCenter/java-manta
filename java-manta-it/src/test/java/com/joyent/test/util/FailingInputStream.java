@@ -71,7 +71,7 @@ public class FailingInputStream extends InputStream {
 
     private void failAfterMinimum(final int next) throws SpuriousIOException {
         if (count.get() + next > minimumBytes) {
-            throw new SpuriousIOException("Random error");
+            throw new SpuriousIOException("Read failure after byte " + minimumBytes);
         }
     }
 }

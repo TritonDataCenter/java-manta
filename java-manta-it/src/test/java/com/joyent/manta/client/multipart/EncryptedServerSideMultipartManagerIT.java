@@ -503,10 +503,12 @@ public class EncryptedServerSideMultipartManagerIT {
     public final void canRetryUploadPart() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = RandomUtils.nextBytes((2 * FIVE_MB) + 1024);
+        int part3Size = RandomUtils.nextInt(500, 1500);
+        LOGGER.info("Performing uploadPart retry test with part 3 size " + part3Size);
+        final byte[] content = RandomUtils.nextBytes((2 * FIVE_MB) + part3Size);
         final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
         final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, (2 * FIVE_MB) + 1);
-        final byte[] content3 = Arrays.copyOfRange(content, (2 * FIVE_MB) + 1, (2 * FIVE_MB) + 1024);
+        final byte[] content3 = Arrays.copyOfRange(content, (2 * FIVE_MB) + 1, (2 * FIVE_MB) + part3Size);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
         ArrayList<MantaMultipartUploadTuple> parts = new ArrayList<>(3);
