@@ -9,13 +9,12 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    [more consistent](https://github.com/joyent/java-manta/issues/276)
    results across platforms.
 ### Fixed
- - When using Client-side Encryption in combination with Multipart Uploads,
-   [automatic retries](https://github.com/joyent/java-manta/issues/284) triggered by the Apache HTTP
-   library could cause file corruption. In case of a network error, the HTTP Client library would automatically
-   retry certain requests (e.g. those backed by `File`s and `byte[]`). This causes `Digest` and `Cipher` state
-   to include with partial content from a failed part in addition to the intended content. As a result of this fix,
-   all MPU operations are restricted to using BouncyCastle `Cipher` objects to allow deep-cloning, regardless of
-   whether or not libnss is installed.
+ - When using encryption in combination with Multipart Uploads,
+   [automatic retries](https://github.com/joyent/java-manta/issues/284) triggered by the underlying HTTP
+   library could cause file corruption. In case of a network error automatically certain requests would be retried
+   transparently (e.g. those backed by `File`s and `byte[]` data). This caused authentication and encryption state
+   erroneously include the partial content from the initial request. As a result of this fix encrypted MPU operations
+   will utilize the BouncyCastle cryptography library even when libnss (PKCS#11) is installed.
 
 ## [3.1.3] - 2017-06-29
 ### Fixed
