@@ -105,7 +105,7 @@ public class EncryptionStateRecorderTest {
         AssertJUnit.assertArrayEquals(content, originalDecrypted);
         AssertJUnit.assertArrayEquals(content, snapshotDecrypted);
 
-        // TODO: this test does not validate hmac cloning yet
+        // TODO: this test does not validate hmac cloning yet, that is currently only covered by HmacClonerTest
     }
 
     private void prepareEncryptionState(final EncryptionState state) {
