@@ -33,128 +33,74 @@ public class HmacClonerTest {
     };
 
     @Test
-    public void testHMacStateCanBeClonedAfterInitializeAesCtr128AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesCtr128AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_128_BIT, hmacName);
-        }
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterInitializeAesCtr192AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_192_BIT, hmacName);
-        }
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterInitializeAesCtr256AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_256_BIT, hmacName);
-        }
-    }
-
-    @Test
-    public void testHMacStateCanBeClonedAfterInitializeAesGcm128AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_128_BIT, hmacName);
-        }
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterInitializeAesGcm192AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_192_BIT, hmacName);
-        }
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterInitializeAesGcm256AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_256_BIT, hmacName);
-        }
-    }
-
-    @Test
-    public void testHMacStateCanBeClonedAfterInitializeAesCbc128AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_128_BIT, hmacName);
-        }
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterInitializeAesCbc192AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_192_BIT, hmacName);
-        }
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterInitializeAesCbc256AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
-            testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_256_BIT, hmacName);
-        }
-    }
-
-    @Test
-    public void testHMacStateCanBeClonedAfterUseAesCtr128AllHMacs() throws IOException {
-        for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterUse(AesCtrCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterUseAesCtr192AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesCtr192AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_192_BIT, hmacName);
+            testHMacStateCanBeClonedAfterUse(AesCtrCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterUseAesCtr256AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesCtr256AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCtrCipherDetails.INSTANCE_256_BIT, hmacName);
+            testHMacStateCanBeClonedAfterUse(AesCtrCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
-    public void testHMacStateCanBeClonedAfterUseAesGcm128AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesGcm128AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
+            testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_128_BIT, hmacName);
             testHMacStateCanBeClonedAfterUse(AesGcmCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterUseAesGcm192AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesGcm192AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_192_BIT, hmacName);
+            testHMacStateCanBeClonedAfterUse(AesGcmCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterUseAesGcm256AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesGcm256AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesGcmCipherDetails.INSTANCE_256_BIT, hmacName);
+            testHMacStateCanBeClonedAfterUse(AesGcmCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
     @Test
-    public void testHMacStateCanBeClonedAfterUseAesCbc128AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesCbc128AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
+            testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_128_BIT, hmacName);
             testHMacStateCanBeClonedAfterUse(AesCbcCipherDetails.INSTANCE_128_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterUseAesCbc192AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesCbc192AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_192_BIT, hmacName);
+            testHMacStateCanBeClonedAfterUse(AesCbcCipherDetails.INSTANCE_192_BIT, hmacName);
         }
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void testHMacStateCanBeClonedAfterUseAesCbc256AllHMacs() throws IOException {
+    public void testHMacStateCanBeClonedAesCbc256AllHMacs() throws IOException {
         for (String hmacName : HMAC_NAMES) {
             testHMacStateCanBeClonedAfterInitialization(AesCbcCipherDetails.INSTANCE_256_BIT, hmacName);
+            testHMacStateCanBeClonedAfterUse(AesCbcCipherDetails.INSTANCE_256_BIT, hmacName);
         }
     }
 
