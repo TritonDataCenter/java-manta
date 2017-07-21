@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.x.x] - XXXX-XX-XX
+## [3.1.4] - 2017-07-21
 ### Changed
  - The heuristics for guessing Content-Type have been adjusted to give
    [more consistent](https://github.com/joyent/java-manta/issues/276)
