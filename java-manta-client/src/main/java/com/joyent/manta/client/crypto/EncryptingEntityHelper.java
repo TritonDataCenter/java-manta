@@ -43,7 +43,7 @@ public final class EncryptingEntityHelper {
      * used. This allows us to support EtM authentication for ciphers/modes that
      * do not natively support authenticating encryption.
      *
-     * NOTE: The design of {@link com.joyent.manta.client.multipart.EncryptionStateRecorder}
+     * NOTE: The design of com.joyent.manta.client.multipart.EncryptionStateRecorder
      * is heavily coupled to this implementation! Changing how these streams are
      * wrapped requires changes to EncryptionStateRecorder!
      *
@@ -78,7 +78,7 @@ public final class EncryptingEntityHelper {
      * used. This allows us to support EtM authentication for ciphers/modes that
      * do not natively support authenticating encryption.
      *
-     * NOTE: The design of {@link com.joyent.manta.client.multipart.EncryptionStateRecorder}
+     * NOTE: The design of com.joyent.manta.client.multipart.EncryptionStateRecorder
      * is heavily coupled to this implementation! Changing how these streams are
      * wrapped requires changes to EncryptionStateRecorder!
      *

@@ -70,7 +70,7 @@ public interface SupportedCipherDetails {
 
     /**
      * In some cases we <em>need</em> the Cipher to live entirely in Java.
-     * See {@link com.joyent.manta.client.multipart.EncryptionStateRecorder}
+     * See com.joyent.manta.client.multipart.EncryptionStateRecorder
      *
      * @return a new instance of the associated cipher using the BouncyCastle provider
      */
