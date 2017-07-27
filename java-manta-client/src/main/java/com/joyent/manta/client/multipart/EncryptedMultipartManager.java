@@ -17,6 +17,7 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaServiceUnavailableRetryStrategy;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -52,11 +53,6 @@ public class EncryptedMultipartManager
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartManager.class);
-
-    /**
-     * Key for HttpContext setting indicating the request is an encrypted part upload.
-     */
-    public static final String CONTEXT_KEY_MPU_ENCRYPTED = "mpu.encrypted";
 
     /**
      * Secret key used for encryption.
@@ -395,7 +391,7 @@ public class EncryptedMultipartManager
         } else {
             ctx = new BasicHttpContext();
         }
-        ctx.setAttribute(CONTEXT_KEY_MPU_ENCRYPTED, true);
+        ctx.setAttribute(MantaServiceUnavailableRetryStrategy.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
         return ctx;
     }
 

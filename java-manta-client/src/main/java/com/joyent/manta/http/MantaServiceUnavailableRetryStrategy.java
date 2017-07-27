@@ -16,7 +16,6 @@ import org.apache.http.protocol.HttpContext;
 
 import java.time.Duration;
 
-import static com.joyent.manta.client.multipart.EncryptedMultipartManager.CONTEXT_KEY_MPU_ENCRYPTED;
 
 /**
  * Implementation of {@link org.apache.http.client.ServiceUnavailableRetryStrategy}
@@ -32,6 +31,11 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
     private static final int RETRY_INTERVAL = (int)Duration.ofSeconds(1).toMillis();
 
     /**
+     * Key for HttpContext setting indicating the request is an encrypted part upload.
+     */
+    public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE = "manta.retry.disable";
+
+    /**
      * Creates a new instance of the retry strategy configured using a
      * {@link ConfigContext} object.
      *
@@ -44,14 +48,12 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
 
     @Override
     public boolean retryRequest(final HttpResponse response, final int executionCount, final HttpContext context) {
-        final Object isEncryptedMPUPart = context.getAttribute(CONTEXT_KEY_MPU_ENCRYPTED);
+        final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
 
-        if (isEncryptedMPUPart instanceof Boolean
-                && (Boolean) isEncryptedMPUPart) {
+        if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
             return false;
         }
 
         return super.retryRequest(response, executionCount, context);
     }
-
 }
