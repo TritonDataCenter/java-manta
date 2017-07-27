@@ -18,7 +18,6 @@ import java.time.Duration;
 
 import static com.joyent.manta.http.MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
 
-
 /**
  * Implementation of {@link org.apache.http.client.ServiceUnavailableRetryStrategy}
  * customized for use with Manta.
