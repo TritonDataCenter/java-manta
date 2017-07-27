@@ -46,8 +46,7 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
     public boolean retryRequest(final HttpResponse response, final int executionCount, final HttpContext context) {
         final Object isEncryptedMPUPart = context.getAttribute(CONTEXT_KEY_MPU_ENCRYPTED);
 
-        if (isEncryptedMPUPart != null
-                && isEncryptedMPUPart instanceof Boolean
+        if (isEncryptedMPUPart instanceof Boolean
                 && (Boolean) isEncryptedMPUPart) {
             return false;
         }
