@@ -53,6 +53,9 @@ public class EncryptedMultipartManager
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedMultipartManager.class);
 
+    /**
+     * Key for HttpContext setting indicating the request is an encrypted part upload.
+     */
     public static final String CONTEXT_KEY_MPU_ENCRYPTED = "mpu.encrypted";
 
     /**
@@ -379,7 +382,13 @@ public class EncryptedMultipartManager
         return new EncryptionContext(this.secretKey, this.cipherDetails);
     }
 
-    private HttpContext buildRequestContext(HttpContext context) {
+    /**
+     * Creates or enhances a request context with the flag that indicates it's an encrypted part upload.
+     *
+     * @param context an existing HttpContext or null
+     * @return an HttpContext reflecting the use of encryption with a part upload
+     */
+    private HttpContext buildRequestContext(final HttpContext context) {
         final HttpContext ctx;
         if (context != null) {
             ctx = context;
