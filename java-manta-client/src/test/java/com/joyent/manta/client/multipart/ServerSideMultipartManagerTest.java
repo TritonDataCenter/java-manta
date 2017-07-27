@@ -124,10 +124,8 @@ public class ServerSideMultipartManagerTest {
     public void canUploadPartSuccess() throws IOException {
         final UUID uploadId = UUID.randomUUID();
         final String partsDirectory = "/test/uploads/a/abcdef";
-        String path = "/test/stor/object";
-
-
-        ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+        final String path = "/test/stor/object";
+        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
 
         final ServerSideMultipartManager mngr = buildMockManager(
                 new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
@@ -141,10 +139,8 @@ public class ServerSideMultipartManagerTest {
     public void canUploadPartValidatesResponseCode() throws IOException {
         final UUID uploadId = UUID.randomUUID();
         final String partsDirectory = "/test/uploads/a/abcdef";
-        String path = "/test/stor/object";
-
-        ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
-                uploadId, path, partsDirectory);
+        final String path = "/test/stor/object";
+        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
 
         final ServerSideMultipartManager mngr = buildMockManager(
                 new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_SERVICE_UNAVAILABLE, "Service Unavailable"),
