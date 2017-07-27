@@ -10,9 +10,13 @@ package com.joyent.manta.http;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.impl.client.DefaultServiceUnavailableRetryStrategy;
+import org.apache.http.protocol.HttpContext;
 
 import java.time.Duration;
+
+import static com.joyent.manta.client.multipart.EncryptedMultipartManager.CONTEXT_KEY_MPU_ENCRYPTED;
 
 /**
  * Implementation of {@link org.apache.http.client.ServiceUnavailableRetryStrategy}
@@ -37,4 +41,16 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
         super(ObjectUtils.firstNonNull(context.getRetries(), DefaultsConfigContext.DEFAULT_HTTP_RETRIES),
                 RETRY_INTERVAL);
     }
+
+    @Override
+    public boolean retryRequest(HttpResponse response, int executionCount, HttpContext context) {
+        final Object isEncryptedMPUPart = context.getAttribute(CONTEXT_KEY_MPU_ENCRYPTED);
+
+        if (isEncryptedMPUPart != null && (Boolean) isEncryptedMPUPart) {
+            return false;
+        }
+
+        return super.retryRequest(response, executionCount, context);
+    }
+
 }

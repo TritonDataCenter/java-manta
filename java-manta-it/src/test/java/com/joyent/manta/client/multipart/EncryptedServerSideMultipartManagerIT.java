@@ -15,11 +15,19 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaMultipartException;
+import com.joyent.manta.http.MantaApacheHttpClientContext;
+import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.FailingInputStream;
+import com.joyent.test.util.IndexedInterceptingCloseableHttpClient;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.http.HttpStatus;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.message.BasicStatusLine;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +42,10 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.FileInputStream;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +53,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -531,6 +543,64 @@ public class EncryptedServerSideMultipartManagerIT {
         parts.add(multipart.uploadPart(upload, 3, content3));
 
         multipart.complete(upload, parts.stream());
+
+        // auto-close of MantaEncryptedObjectInputStream validates authentication
+        try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Assert.assertTrue(in instanceof MantaEncryptedObjectInputStream);
+            IOUtils.copy(in, out);
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+        }
+    }
+
+    public final void willNotAutomaticallyRetryOn503() throws IOException, IllegalAccessException {
+        final EncryptedServerSideMultipartManager isolatedMultipart = new EncryptedServerSideMultipartManager(this.mantaClient);
+        final String path = testPathPrefix + UUID.randomUUID().toString();
+
+        // fields for reaching into multipart.wrapped.httpClient
+        final Field FIELD_SERVERSIDEMULTIPARTMANAGER_CONNECTION_CONTEXT
+                = FieldUtils.getField(ServerSideMultipartManager.class, "connectionContext", true);
+        final Field FIELD_ENCRYPTEDMULTIPARTMANAGER_WRAPPED
+                = FieldUtils.getField(EncryptedMultipartManager.class, "wrapped", true);
+        final Field FIELD_MANTAAPACHEHTTPCLIENTCONTEXT_HTTP_CLIENT
+                = FieldUtils.getField(MantaApacheHttpClientContext.class, "httpClient", true);
+
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB + RandomUtils.nextInt(500, 1500));
+        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
+        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, content.length);
+        final ArrayList<MantaMultipartUploadTuple> parts = new ArrayList<>(2);
+
+        final ServerSideMultipartManager wrappedManager =
+                (ServerSideMultipartManager) FieldUtils.readField(FIELD_ENCRYPTEDMULTIPARTMANAGER_WRAPPED, isolatedMultipart, true);
+
+        // swap the CloseableHttpClient with an intercepting wrapper
+        final MantaConnectionContext connectionContext =
+                (MantaConnectionContext) FieldUtils.readField(FIELD_SERVERSIDEMULTIPARTMANAGER_CONNECTION_CONTEXT, wrappedManager, true);
+        final IndexedInterceptingCloseableHttpClient interceptor =
+                new IndexedInterceptingCloseableHttpClient(connectionContext.getHttpClient());
+        FieldUtils.writeField(FIELD_MANTAAPACHEHTTPCLIENTCONTEXT_HTTP_CLIENT, connectionContext, interceptor, true);
+
+        // prepare a response for the interceptor to use
+        final CloseableHttpResponse fakeFailureResponse = mock(CloseableHttpResponse.class);
+        when(fakeFailureResponse.getStatusLine())
+                .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_SERVICE_UNAVAILABLE, "Service Unavailable"));
+
+        // only second request (first call to uploadPart below inside assertThrows) should fail
+        interceptor.setResponse(1, fakeFailureResponse);
+
+        // this is request 0
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> upload = isolatedMultipart.initiateUpload(path);
+
+        Assert.assertThrows(MantaMultipartException.class, () -> {
+            // this response should be intercepted with fakeFailureResponse
+            isolatedMultipart.uploadPart(upload, 1, content1);
+        });
+
+        parts.add(isolatedMultipart.uploadPart(upload, 1, content1));
+        parts.add(isolatedMultipart.uploadPart(upload, 2, content2));
+
+        isolatedMultipart.complete(upload, parts.stream());
 
         // auto-close of MantaEncryptedObjectInputStream validates authentication
         try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
