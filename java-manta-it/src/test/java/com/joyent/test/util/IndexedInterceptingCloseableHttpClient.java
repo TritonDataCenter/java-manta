@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.test.util;
 
 import org.apache.http.HttpHost;
@@ -13,9 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by tomascelaya on 7/26/17.
- */
 public class IndexedInterceptingCloseableHttpClient extends CloseableHttpClient {
 
     private final CloseableHttpClient wrapped;
@@ -29,7 +33,7 @@ public class IndexedInterceptingCloseableHttpClient extends CloseableHttpClient 
     }
 
     @Override
-    protected CloseableHttpResponse doExecute(HttpHost httpHost, HttpRequest httpRequest, HttpContext httpContext)
+    protected synchronized CloseableHttpResponse doExecute(HttpHost httpHost, HttpRequest httpRequest, HttpContext httpContext)
             throws IOException, ClientProtocolException {
 
         final int requestIdx = requestCount.getAndIncrement();
