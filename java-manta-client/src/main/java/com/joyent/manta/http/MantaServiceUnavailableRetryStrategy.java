@@ -16,6 +16,8 @@ import org.apache.http.protocol.HttpContext;
 
 import java.time.Duration;
 
+import static com.joyent.manta.http.MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
+
 
 /**
  * Implementation of {@link org.apache.http.client.ServiceUnavailableRetryStrategy}
@@ -29,11 +31,6 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
      * Hardcoded retry interval of 1 second.
      */
     private static final int RETRY_INTERVAL = (int)Duration.ofSeconds(1).toMillis();
-
-    /**
-     * Key for HttpContext setting indicating the request is an encrypted part upload.
-     */
-    public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE = "manta.retry.disable";
 
     /**
      * Creates a new instance of the retry strategy configured using a
