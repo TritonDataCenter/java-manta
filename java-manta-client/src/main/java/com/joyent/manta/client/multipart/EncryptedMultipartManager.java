@@ -17,9 +17,12 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestRetryHandler;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,7 +239,8 @@ public class EncryptedMultipartManager
     @Override
     protected MantaMultipartUploadPart uploadPart(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                   final int partNumber,
-                                                  final HttpEntity sourceEntity) throws IOException {
+                                                  final HttpEntity sourceEntity,
+                                                  final HttpContext context) throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
 
         if (!upload.canUpload()) {
@@ -249,6 +253,8 @@ public class EncryptedMultipartManager
 
         final EncryptionState encryptionState = upload.getEncryptionState();
         final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
+
+        final HttpContext ctx = buildRequestContext(context);
 
         encryptionState.getLock().lock();
         try {
@@ -280,7 +286,8 @@ public class EncryptedMultipartManager
                     });
 
             try {
-                final MantaMultipartUploadPart part = wrapped.uploadPart(upload.getWrapped(), partNumber, entity);
+                final MantaMultipartUploadPart part =
+                        wrapped.uploadPart(upload.getWrapped(), partNumber, entity, ctx);
                 encryptionState.setLastPartNumber(partNumber);
                 return part;
             } catch (Exception e) {
@@ -369,6 +376,23 @@ public class EncryptedMultipartManager
      */
     private EncryptionContext buildEncryptionContext() {
         return new EncryptionContext(this.secretKey, this.cipherDetails);
+    }
+
+    /**
+     * Creates or enhances a request context with the flag that indicates it's an encrypted part upload.
+     *
+     * @param context an existing HttpContext or null
+     * @return an HttpContext reflecting the use of encryption with a part upload
+     */
+    private HttpContext buildRequestContext(final HttpContext context) {
+        final HttpContext ctx;
+        if (context != null) {
+            ctx = context;
+        } else {
+            ctx = new BasicHttpContext();
+        }
+        ctx.setAttribute(MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
+        return ctx;
     }
 
     /**

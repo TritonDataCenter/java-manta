@@ -16,6 +16,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
+import org.apache.http.protocol.HttpContext;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -151,7 +152,7 @@ public class TestMultipartManager
         HttpEntity entity = new MantaInputStreamEntity(inputStream,
                 ContentType.APPLICATION_OCTET_STREAM);
 
-        return uploadPart(upload, partNumber, entity);
+        return uploadPart(upload, partNumber, entity, null);
     }
 
     @Override
@@ -166,7 +167,8 @@ public class TestMultipartManager
     @Override
     protected MantaMultipartUploadPart uploadPart(TestMultipartUpload upload,
                                                   int partNumber,
-                                                  HttpEntity entity) throws IOException {
+                                                  HttpEntity entity,
+                                                  HttpContext context) throws IOException {
         UUID partId = UUID.randomUUID();
         File part = new File(upload.getPartsPath() + File.separator + partNumber);
         File partIdFile = new File(part.getPath() + ".id");

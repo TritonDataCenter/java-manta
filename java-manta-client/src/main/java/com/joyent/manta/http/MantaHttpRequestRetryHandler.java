@@ -45,6 +45,11 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
             SSLException.class);
 
     /**
+     * Key for HttpContext setting indicating the request should NOT be retried under any circumstances.
+     */
+    public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE = "manta.retry.disable";
+
+    /**
      * Creates a new instance with the passed configuration.
      *
      * @param config configuration for retries
@@ -57,6 +62,12 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
     public boolean retryRequest(final IOException exception,
                                 final int executionCount,
                                 final HttpContext context) {
+        final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
+
+        if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
+            return false;
+        }
+
         if (logger.isDebugEnabled() && executionCount <= getRetryCount()) {
             String msg = String.format("Request failed, %d/%d retry.",
                     executionCount, getRetryCount());

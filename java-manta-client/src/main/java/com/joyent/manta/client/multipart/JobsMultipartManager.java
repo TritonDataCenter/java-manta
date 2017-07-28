@@ -33,6 +33,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -296,7 +297,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
     @Override
     MantaMultipartUploadPart uploadPart(final JobsMultipartUpload upload,
                                         final int partNumber,
-                                        final HttpEntity entity) throws IOException {
+                                        final HttpEntity entity,
+                                        final HttpContext context) throws IOException {
         Validate.notNull(upload, "Multipart upload object must not be null");
         Validate.notNull(entity, "Upload entity must not be null");
 
@@ -306,7 +308,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put)) {
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put, context)) {
             StatusLine statusLine = response.getStatusLine();
 
             final MantaObjectResponse objectResponse = new MantaObjectResponse(path,
