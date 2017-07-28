@@ -188,11 +188,12 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
      * how a multipart upload part is sent to Manta. The abstraction of
      * {@link MantaClient} is intended for users of the SDK and not necessarily
      * internal consumers, so additional customization of HTTP calls needs to
-     * be done by and its API is insufficient.</p>
+     * be done by a {@link MantaMultipartManager}.</p>
      *
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param entity Apache HTTP Client entity instance
+     * @param context additional request context, may be null
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
