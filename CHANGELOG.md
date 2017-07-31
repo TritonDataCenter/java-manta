@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.5] - YYYY-MM-DD
+## [3.1.5] - 2017-07-28
  - MPU retries still [causing file corruption](https://github.com/joyent/java-manta/issues/290)
    when server responds with 503 Service Unavailable. Apache HttpClient code path audited to ensure
    no other automatic retries can occur.
