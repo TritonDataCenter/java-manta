@@ -259,9 +259,13 @@ public class EncryptedMultipartManager
         encryptionState.getLock().lock();
         try {
             validatePartNumber(partNumber);
-            if (encryptionState.getLastPartNumber() != -1) {
-                Validate.isTrue(encryptionState.getLastPartNumber() + 1 == partNumber,
-                        "Encrypted MPU parts must be serial and sequential");
+            if (encryptionState.getLastPartNumber() != -1
+                    && encryptionState.getLastPartNumber() + 1 != partNumber) {
+                final String message = String.format(
+                        "Encrypted MPU parts must be serial and sequential, expected: %d, found: %d",
+                        encryptionState.getLastPartNumber() + 1,
+                        partNumber);
+                throw new MantaMultipartException(new IllegalStateException(message));
             } else {
                 encryptionState.setMultipartStream(new MultipartOutputStream(
                         encryptionContext.getCipherDetails().getBlockSizeInBytes()));
