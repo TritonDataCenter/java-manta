@@ -43,13 +43,25 @@ public class EncryptionContext {
     /**
      * Creates a new instance of an encryption context.
      *
-     * @param key secret key to initialize cipher with
+     * @param key           secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
      */
     public EncryptionContext(final SecretKey key,
                              final SupportedCipherDetails cipherDetails) {
-        @SuppressWarnings("MagicNumber")
-        final int keyBits = key.getEncoded().length << 3;
+        this(key, cipherDetails, null);
+    }
+
+    /**
+     * Creates a new instance of an encryption context.
+     *
+     * @param key           secret key to initialize cipher with
+     * @param cipherDetails cipher/mode properties object to create cipher object from
+     */
+    public EncryptionContext(final SecretKey key,
+                             final SupportedCipherDetails cipherDetails,
+                             final byte[] suppliedIv) {
+
+        @SuppressWarnings("MagicNumber") final int keyBits = key.getEncoded().length << 3;
 
         if (keyBits != cipherDetails.getKeyLengthBits()) {
             String msg = "Mismatch between algorithm definition and secret key size";
@@ -64,7 +76,7 @@ public class EncryptionContext {
         this.key = key;
         this.cipherDetails = cipherDetails;
         this.cipher = cipherDetails.getBouncyCastleCipher();
-        initializeCipher();
+        initializeCipher(suppliedIv);
     }
 
     public SecretKey getSecretKey() {
@@ -92,9 +104,9 @@ public class EncryptionContext {
      * Initializes the cipher with an IV (initialization vector), so that
      * the cipher is ready to be used to encrypt.
      */
-    private void initializeCipher() {
+    private void initializeCipher(final byte[] suppliedIv) {
         try {
-            byte[] iv = cipherDetails.generateIv();
+            final byte[] iv = suppliedIv != null ? suppliedIv : cipherDetails.generateIv();
             cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(

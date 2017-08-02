@@ -7,29 +7,42 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
+import com.joyent.manta.util.FailingOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.conn.EofSensorInputStream;
 import org.bouncycastle.jcajce.io.CipherInputStream;
+import org.mockito.Mockito;
 import org.testng.Assert;
+import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.function.Predicate;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 @Test
 public class EncryptingEntityTest {
@@ -62,6 +75,10 @@ public class EncryptingEntityTest {
         canCountBytesFromStreamWithUnknownLength(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
+    public void canSurviveNetworkFailuresInAesGcm() throws Exception {
+        canSurviveNetworkFailures(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
     /* AES-CTR-NoPadding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCtr() throws Exception {
@@ -76,6 +93,10 @@ public class EncryptingEntityTest {
         canCountBytesFromStreamWithUnknownLength(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
+    public void canSurviveNetworkFailuresInAesCtr() throws Exception {
+        canSurviveNetworkFailures(AesGcmCipherDetails.INSTANCE_128_BIT);
+    }
+
     /* AES-CBC-PKCS5Padding Tests */
 
     public void canEncryptAndDecryptToAndFromFileInAesCbc() throws Exception {
@@ -88,6 +109,10 @@ public class EncryptingEntityTest {
 
     public void canCountBytesFromStreamWithUnknownLengthInAesCbc() throws Exception {
         canCountBytesFromStreamWithUnknownLength(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    public void canSurviveNetworkFailuresInAesCbc() throws Exception {
+        canSurviveNetworkFailures(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     /* Test helper methods */
@@ -200,5 +225,89 @@ public class EncryptingEntityTest {
                     "Entity validation failed");
 
         }
+    }
+
+    private void canSurviveNetworkFailures(final SupportedCipherDetails cipherDetails) throws Exception {
+        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final String content = StringUtils.repeat('a', 150);
+        final ExposedStringEntity contentEntity = new ExposedStringEntity(
+                content,
+                StandardCharsets.UTF_8);
+
+        final ByteArrayOutputStream referenceEncrypted = new ByteArrayOutputStream(content.length());
+        {
+
+            final EncryptingEntity referenceEntity = new EncryptingEntity(
+                    secretKey,
+                    cipherDetails,
+                    contentEntity);
+
+            referenceEntity.writeTo(referenceEncrypted);
+            validateCiphertext(
+                    cipherDetails,
+                    secretKey,
+                    contentEntity.getBackingBuffer().array(),
+                    referenceEntity.getCipher().getIV(),
+                    referenceEncrypted.toByteArray());
+        }
+
+        final ByteArrayOutputStream retryEncrypted = new ByteArrayOutputStream(content.length());
+        final FailingOutputStream output = new FailingOutputStream(retryEncrypted, content.length() / 2);
+        {
+            final EncryptingEntity retryingEntity = new EncryptingEntity(
+                    secretKey,
+                    cipherDetails,
+                    contentEntity);
+
+            Assert.assertThrows(IOException.class, () -> {
+                retryingEntity.writeTo(output);
+            });
+
+            // clear the data written so we only see what makes it into the second request
+            retryEncrypted.reset();
+            output.setMinimumBytes(FailingOutputStream.NO_FAILURE);
+
+            retryingEntity.writeTo(output);
+            validateCiphertext(
+                    cipherDetails,
+                    secretKey,
+                    contentEntity.getBackingBuffer().array(),
+                    retryingEntity.getCipher().getIV(),
+                    retryEncrypted.toByteArray());
+        }
+    }
+
+    private void validateCiphertext(SupportedCipherDetails cipherDetails,
+                                    SecretKey secretKey,
+                                    byte[] plaintext,
+                                    byte[] iv,
+                                    byte[] ciphertext) throws IOException {
+        MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
+        responseHttpHeaders.setContentLength((long) ciphertext.length);
+
+        if (!cipherDetails.isAEADCipher()) {
+            responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
+                    SupportedHmacsLookupMap.hmacNameFromInstance(cipherDetails.getAuthenticationHmac()));
+        }
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_IV,
+                Base64.getEncoder().encodeToString(iv));
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
+                cipherDetails.getCipherId());
+
+        final MantaEncryptedObjectInputStream decryptingStream = new MantaEncryptedObjectInputStream(
+                new MantaObjectInputStream(
+                        new MantaObjectResponse("/path", responseHttpHeaders),
+                        Mockito.mock(CloseableHttpResponse.class),
+                        new EofSensorInputStream(
+                                new ByteArrayInputStream(ciphertext),
+                                null)),
+                cipherDetails,
+                secretKey,
+                true);
+
+        ByteArrayOutputStream decrypted = new ByteArrayOutputStream();
+        IOUtils.copy(decryptingStream, decrypted);
+        decryptingStream.close();
+        AssertJUnit.assertArrayEquals(plaintext, decrypted.toByteArray());
     }
 }

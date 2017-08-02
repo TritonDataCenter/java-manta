@@ -146,7 +146,9 @@ public class EncryptingEntity implements HttpEntity {
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
         this.encryptionContext = new EncryptionContext(
-                encryptionContext.getSecretKey(), encryptionContext.getCipherDetails());
+                encryptionContext.getSecretKey(),
+                encryptionContext.getCipherDetails(),
+                encryptionContext.getCipher().getIV());
 
         OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(
                 httpOut, encryptionContext);
