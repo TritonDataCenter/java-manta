@@ -56,12 +56,14 @@ public class EncryptionContext {
      *
      * @param key           secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
+     * @param suppliedIv    an existing IV to reuse
      */
     public EncryptionContext(final SecretKey key,
                              final SupportedCipherDetails cipherDetails,
                              final byte[] suppliedIv) {
 
-        @SuppressWarnings("MagicNumber") final int keyBits = key.getEncoded().length << 3;
+        @SuppressWarnings("MagicNumber")
+        final int keyBits = key.getEncoded().length << 3;
 
         if (keyBits != cipherDetails.getKeyLengthBits()) {
             String msg = "Mismatch between algorithm definition and secret key size";
@@ -103,10 +105,16 @@ public class EncryptionContext {
     /**
      * Initializes the cipher with an IV (initialization vector), so that
      * the cipher is ready to be used to encrypt.
+     * @param suppliedIv IV to use in case of a retry or test case, null indicates we should generate one
      */
     private void initializeCipher(final byte[] suppliedIv) {
         try {
-            final byte[] iv = suppliedIv != null ? suppliedIv : cipherDetails.generateIv();
+            final byte[] iv;
+            if (suppliedIv != null) {
+                iv = suppliedIv;
+            } else {
+                iv = cipherDetails.generateIv();
+            }
             cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(
