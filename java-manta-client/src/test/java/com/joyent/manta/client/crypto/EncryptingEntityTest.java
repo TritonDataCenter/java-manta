@@ -17,6 +17,8 @@ import com.joyent.manta.util.FailingOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -94,7 +96,7 @@ public class EncryptingEntityTest {
     }
 
     public void canSurviveNetworkFailuresInAesCtr() throws Exception {
-        canSurviveNetworkFailures(AesGcmCipherDetails.INSTANCE_128_BIT);
+        canSurviveNetworkFailures(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     /* AES-CBC-PKCS5Padding Tests */
@@ -112,7 +114,7 @@ public class EncryptingEntityTest {
     }
 
     public void canSurviveNetworkFailuresInAesCbc() throws Exception {
-        canSurviveNetworkFailures(AesGcmCipherDetails.INSTANCE_128_BIT);
+        canSurviveNetworkFailures(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     /* Test helper methods */
@@ -229,7 +231,7 @@ public class EncryptingEntityTest {
 
     private void canSurviveNetworkFailures(final SupportedCipherDetails cipherDetails) throws Exception {
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        final String content = StringUtils.repeat('a', 150);
+        final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
         final ExposedStringEntity contentEntity = new ExposedStringEntity(
                 content,
                 StandardCharsets.UTF_8);
