@@ -7,6 +7,12 @@
  */
 package com.joyent.manta.client.crypto;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaContentTypes;
@@ -67,7 +73,7 @@ public class EncryptingEntity implements HttpEntity {
     /**
      * Running state of the cipher used for encrypting the plaintext input.
      */
-    private final EncryptionContext encryptionContext;
+    private EncryptionContext encryptionContext;
 
     /**
      * Underlying entity that is being encrypted.
@@ -139,6 +145,9 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
+        this.encryptionContext = new EncryptionContext(
+                encryptionContext.getSecretKey(), encryptionContext.getCipherDetails());
+
         OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(
                 httpOut, encryptionContext);
         try {
