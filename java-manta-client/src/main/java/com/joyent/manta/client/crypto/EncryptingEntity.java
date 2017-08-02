@@ -7,12 +7,6 @@
  */
 package com.joyent.manta.client.crypto;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaContentTypes;
@@ -30,11 +24,11 @@ import org.bouncycastle.crypto.macs.HMac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 /**
  * {@link HttpEntity} implementation that wraps an entity and encrypts its

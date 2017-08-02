@@ -9,11 +9,11 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Objects;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 /**
  * Context class that contains a secret key, cipher/mode properties objects
@@ -58,7 +58,7 @@ public class EncryptionContext {
      * @param cipherDetails cipher/mode properties object to create cipher object from
      * @param suppliedIv    an existing IV to reuse
      */
-    public EncryptionContext(final SecretKey key,
+    EncryptionContext(final SecretKey key,
                              final SupportedCipherDetails cipherDetails,
                              final byte[] suppliedIv) {
 
