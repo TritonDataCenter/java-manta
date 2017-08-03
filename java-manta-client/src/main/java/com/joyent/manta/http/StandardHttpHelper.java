@@ -356,8 +356,9 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         if (serverMd5 == null || serverMd5.length == 0) {
-            LOGGER.warn("No cryptographic check performed by the server");
-            return;
+            final String msg = "Server calculated MD5 is missing";
+            final MantaChecksumFailedException e = new MantaChecksumFailedException(msg, request, response);
+            throw e;
         }
 
         final byte[] clientMd5 = entity.getDigest();
