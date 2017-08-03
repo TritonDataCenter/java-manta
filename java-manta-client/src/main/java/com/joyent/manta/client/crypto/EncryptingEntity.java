@@ -76,7 +76,10 @@ public class EncryptingEntity implements HttpEntity {
 
 
     /**
-     * Creates a new instance with an known stream size.
+     * Creates a new instance with an known stream size. We initialize an {@link EncryptionContext} here
+     * (even though it will be replaced at the beginning of {@link EncryptingEntity#writeTo(OutputStream)})
+     * in order to generate an IV for the header through {@link EncryptingEntity#getCipher()} and to allow
+     * usage of {@link EncryptingEntity#getContentLength()}
      *
      * @param key key to encrypt stream with
      * @param cipherDetails cipher to encrypt stream with
@@ -139,6 +142,11 @@ public class EncryptingEntity implements HttpEntity {
 
     @Override
     public void writeTo(final OutputStream httpOut) throws IOException {
+         /*
+          * Construct a fresh EncryptionContext each time we attempt to write out the entity.
+          * Calling encryptionContext.initializeCipher(getCipher().getIV()) from here would be ideal
+          * but is not compatible with AES-GCM
+          */
         this.encryptionContext = new EncryptionContext(
                 encryptionContext.getSecretKey(),
                 encryptionContext.getCipherDetails(),

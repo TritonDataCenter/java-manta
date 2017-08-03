@@ -9,6 +9,7 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
+import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Objects;
@@ -52,7 +53,10 @@ public class EncryptionContext {
     }
 
     /**
-     * Creates a new instance of an encryption context.
+     * Creates a new instance of an encryption context using an existing IV value. This
+     * is used in {@link EncryptingEntity} to ensure that the state of the underlying
+     * {@link Cipher} is unaffected by retries since {@link EncryptingEntity#writeTo(OutputStream)}
+     * may be called multiple times.
      *
      * @param key           secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
