@@ -38,6 +38,11 @@ class EncryptionStateSnapshot {
     private final OutputStream outputStream;
 
     /**
+     * EncryptionState's lastPartAuthWritten.
+     */
+    private final boolean lastPartAuthWritten;
+
+    /**
      * @param uploadId       the {@link EncryptedMultipartUpload} transaction ID
      * @param lastPartNumber the lastPartNumber at the time of the snapshot
      * @param outputStream   the cloned {@link OutputStream}
@@ -45,11 +50,13 @@ class EncryptionStateSnapshot {
     EncryptionStateSnapshot(final UUID uploadId,
                             final int lastPartNumber,
                             final Cipher cipher,
+                            final boolean lastPartAuthWritten,
                             final OutputStream outputStream) {
         this.uploadId = uploadId;
         this.lastPartNumber = lastPartNumber;
         this.cipher = cipher;
         this.outputStream = outputStream;
+        this.lastPartAuthWritten = lastPartAuthWritten;
     }
 
     UUID getUploadId() {
@@ -66,6 +73,10 @@ class EncryptionStateSnapshot {
 
     OutputStream getOutputStream() {
         return outputStream;
+    }
+
+    boolean getLastPartAuthWritten() {
+        return lastPartAuthWritten;
     }
 
     @Override

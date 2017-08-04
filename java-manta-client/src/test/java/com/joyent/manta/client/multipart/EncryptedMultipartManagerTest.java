@@ -39,8 +39,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.stream.Stream;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 import static org.mockito.Mockito.mock;
 

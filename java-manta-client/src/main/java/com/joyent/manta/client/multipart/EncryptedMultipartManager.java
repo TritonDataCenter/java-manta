@@ -272,7 +272,8 @@ public class EncryptedMultipartManager
             final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState, upload.getId());
             final EncryptingPartEntity entity = new EncryptingPartEntity(
                     encryptionState.getCipherStream(),
-                    encryptionState.getMultipartStream(), sourceEntity,
+                    encryptionState.getMultipartStream(),
+                    sourceEntity,
                     new EncryptingPartEntity.LastPartCallback() {
                         @Override
                         public ByteArrayOutputStream call(final long uploadedBytes) throws IOException {

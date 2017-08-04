@@ -67,6 +67,11 @@ final class EncryptionStateRecorder {
     private static final Field FIELD_ENCRYPTIONSTATE_CIPHERSTREAM = getField(EncryptionState.class, "cipherStream", true);
 
     /**
+     * Reference to {@link EncryptionState}'s {@code lastPartAuthWritten} field.
+     */
+    private static final Field FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN = getField(EncryptionState.class, "lastPartAuthWritten", true);
+
+    /**
      * {@link HMac} cloning helper object.
      */
     private static final Cloner<HMac> CLONER_HMAC = new HmacCloner();
@@ -108,15 +113,17 @@ final class EncryptionStateRecorder {
 
         final Cipher cipher = CLONER_CIPHER.createClone(encryptionState.getEncryptionContext().getCipher());
 
+        OutputStream outputStream = EncryptingEntityHelper.makeCipherOutputForStream(
+                encryptionState.getMultipartStream(),
+                encryptionState.getEncryptionContext().getCipherDetails(),
+                cipher,
+                hmac);
         return new EncryptionStateSnapshot(
                 uploadId,
                 encryptionState.getLastPartNumber(),
                 cipher,
-                EncryptingEntityHelper.makeCipherOutputForStream(
-                        encryptionState.getMultipartStream(),
-                        encryptionState.getEncryptionContext().getCipherDetails(),
-                        cipher,
-                        hmac));
+                encryptionState.isLastPartAuthWritten(),
+                outputStream);
     }
 
     /**
@@ -136,6 +143,7 @@ final class EncryptionStateRecorder {
         try {
             writeField(FIELD_ENCRYPTIONCONTEXT_CIPHER, encryptionState.getEncryptionContext(), snapshot.getCipher());
             writeField(FIELD_ENCRYPTIONSTATE_CIPHERSTREAM, encryptionState, snapshot.getOutputStream());
+            writeField(FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN, encryptionState, snapshot.getLastPartAuthWritten());
         } catch (IllegalAccessException e) {
             final String message = String.format("Failed to overwrite cipher while rewinding "
                             + "encryption state for upload [%s] part [%s]",
