@@ -291,6 +291,29 @@
                     </suiteXmlFiles>
                 </configuration>
             </plugin>
+
+            <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>integration-tests</id>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                            <phase>verify</phase>
+                            <configuration>
+                                <skip>${maven.integration.test.skip}</skip>
+                                <suiteXmlFiles>
+                                    <suiteXmlFile>${project.basedir}/src/integration/resources/testng-it.xml</suiteXmlFile>
+                                </suiteXmlFiles>
+                                <testSourceDirectory>${project.basedir}/src/integration</testSourceDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+            </plugin>
+
             <!-- Library that creates a properties file containing version info -->
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
