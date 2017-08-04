@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Java Manta Client Integration Test Suite" verbose="1">
+    <!-- This is commented out because it is an integration test and it doesn't
+         play nicely with unit test only runs in CI -->
+    <test name="Integration Test For Encrypted MPU">
+        <parameter name="usingEncryption" value="true"/>
+        <classes>
+            <class name="com.joyent.manta.client.multipart.EncryptedServersideMultipartManagerIT" />
+        </classes>
+    </test>
+</suite>
