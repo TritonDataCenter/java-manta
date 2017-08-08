@@ -9,11 +9,12 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
+import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Objects;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 /**
  * Context class that contains a secret key, cipher/mode properties objects
@@ -43,11 +44,28 @@ public class EncryptionContext {
     /**
      * Creates a new instance of an encryption context.
      *
-     * @param key secret key to initialize cipher with
+     * @param key           secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
      */
     public EncryptionContext(final SecretKey key,
                              final SupportedCipherDetails cipherDetails) {
+        this(key, cipherDetails, null);
+    }
+
+    /**
+     * Creates a new instance of an encryption context using an existing IV value. This
+     * is used in {@link EncryptingEntity} to ensure that the state of the underlying
+     * {@link Cipher} is unaffected by retries since {@link EncryptingEntity#writeTo(OutputStream)}
+     * may be called multiple times.
+     *
+     * @param key           secret key to initialize cipher with
+     * @param cipherDetails cipher/mode properties object to create cipher object from
+     * @param suppliedIv    an existing IV to reuse
+     */
+    EncryptionContext(final SecretKey key,
+                             final SupportedCipherDetails cipherDetails,
+                             final byte[] suppliedIv) {
+
         @SuppressWarnings("MagicNumber")
         final int keyBits = key.getEncoded().length << 3;
 
@@ -64,7 +82,7 @@ public class EncryptionContext {
         this.key = key;
         this.cipherDetails = cipherDetails;
         this.cipher = cipherDetails.getBouncyCastleCipher();
-        initializeCipher();
+        initializeCipher(suppliedIv);
     }
 
     public SecretKey getSecretKey() {
@@ -91,10 +109,16 @@ public class EncryptionContext {
     /**
      * Initializes the cipher with an IV (initialization vector), so that
      * the cipher is ready to be used to encrypt.
+     * @param suppliedIv IV to use in case of a retry or test case, null indicates we should generate one
      */
-    private void initializeCipher() {
+    private void initializeCipher(final byte[] suppliedIv) {
         try {
-            byte[] iv = cipherDetails.generateIv();
+            final byte[] iv;
+            if (suppliedIv != null) {
+                iv = suppliedIv;
+            } else {
+                iv = cipherDetails.generateIv();
+            }
             cipher.init(Cipher.ENCRYPT_MODE, this.key, cipherDetails.getEncryptionParameterSpec(iv));
         } catch (InvalidKeyException e) {
             MantaClientEncryptionException mcee = new MantaClientEncryptionException(
