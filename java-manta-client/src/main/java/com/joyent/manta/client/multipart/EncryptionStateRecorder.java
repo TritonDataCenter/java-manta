@@ -9,15 +9,20 @@ package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
+import com.joyent.manta.exception.MantaMemoizationException;
 import com.joyent.manta.exception.MantaReflectionException;
 import com.joyent.manta.util.CipherCloner;
 import com.joyent.manta.util.Cloner;
 import com.joyent.manta.util.HmacCloner;
 import com.joyent.manta.util.HmacOutputStream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.UUID;
@@ -112,18 +117,28 @@ final class EncryptionStateRecorder {
         }
 
         final Cipher cipher = CLONER_CIPHER.createClone(encryptionState.getEncryptionContext().getCipher());
+        final int bufferSize = encryptionState.getEncryptionContext().getCipherDetails().getBlockSizeInBytes();
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream(bufferSize);
+        try {
+            IOUtils.copy(new ByteArrayInputStream(encryptionState.getMultipartStream().getBuf().toByteArray()), buffer);
+        } catch (IOException e) {
+            throw new MantaMemoizationException("Failed to back up buffer while memoizing encryption state", e);
+        }
+        final MultipartOutputStream multipartStream = new MultipartOutputStream(bufferSize, buffer);
 
-        OutputStream outputStream = EncryptingEntityHelper.makeCipherOutputForStream(
-                encryptionState.getMultipartStream(),
+        final OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
+                multipartStream,
                 encryptionState.getEncryptionContext().getCipherDetails(),
                 cipher,
                 hmac);
+
         return new EncryptionStateSnapshot(
                 uploadId,
                 encryptionState.getLastPartNumber(),
-                cipher,
                 encryptionState.isLastPartAuthWritten(),
-                outputStream);
+                cipher,
+                cipherStream,
+                multipartStream);
     }
 
     /**
@@ -142,7 +157,7 @@ final class EncryptionStateRecorder {
 
         try {
             writeField(FIELD_ENCRYPTIONCONTEXT_CIPHER, encryptionState.getEncryptionContext(), snapshot.getCipher());
-            writeField(FIELD_ENCRYPTIONSTATE_CIPHERSTREAM, encryptionState, snapshot.getOutputStream());
+            writeField(FIELD_ENCRYPTIONSTATE_CIPHERSTREAM, encryptionState, snapshot.getCipherStream());
             writeField(FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN, encryptionState, snapshot.getLastPartAuthWritten());
         } catch (IllegalAccessException e) {
             final String message = String.format("Failed to overwrite cipher while rewinding "
@@ -151,5 +166,7 @@ final class EncryptionStateRecorder {
                     snapshot.getLastPartNumber());
             throw new MantaReflectionException(message, e);
         }
+
+        encryptionState.setMultipartStream(snapshot.getMultipartStream());
     }
 }

@@ -1,17 +1,27 @@
 package com.joyent.manta.client.multipart;
 
+import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptingPartEntity;
 import com.joyent.manta.client.crypto.EncryptionContext;
+import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.entity.ContentType;
+import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.DataProvider;
@@ -21,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
@@ -129,13 +140,17 @@ public class EncryptionStateRecorderTest {
             }
         };
 
-        prepareEncryptionState(state);
+        // prepare encryption state
+        state.setMultipartStream(
+                new MultipartOutputStream(
+                        state.getEncryptionContext().getCipherDetails().getBlockSizeInBytes()));
+        state.setCipherStream(
+                EncryptingEntityHelper.makeCipherOutputForStream(
+                        state.getMultipartStream(),
+                        state.getEncryptionContext()));
 
-        // final int inputSize = RandomUtils.nextInt(300, 600);
-        // final byte[] content = RandomUtils.nextBytes(inputSize);
-
-        final int inputSize = 200;
-        final byte[] content = StringUtils.repeat('a', inputSize).getBytes();
+        final int inputSize = RandomUtils.nextInt(300, 600);
+        final byte[] content = RandomUtils.nextBytes(inputSize);
         final HttpEntity sourceEntity = new ExposedByteArrayEntity(content, ContentType.APPLICATION_OCTET_STREAM);
 
         final EncryptingPartEntity originalEntity = new EncryptingPartEntity(
@@ -147,8 +162,6 @@ public class EncryptionStateRecorderTest {
         final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
 
         final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
-        final ByteArrayOutputStream retryOutput = new ByteArrayOutputStream();
-
         state.getLock().lock();
         originalEntity.writeTo(originalOutput);
         state.getLock().unlock();
@@ -162,36 +175,49 @@ public class EncryptionStateRecorderTest {
                 sourceEntity,
                 callback);
 
+        final ByteArrayOutputStream retryOutput = new ByteArrayOutputStream();
         state.getLock().lock();
         retryEntity.writeTo(retryOutput);
         state.getLock().unlock();
 
         // verify the parts encrypt to the same ciphertext
         final byte[] uploadedBytes = retryOutput.toByteArray();
-        AssertJUnit.assertArrayEquals(originalOutput.toByteArray(), uploadedBytes);
-        validateCiphertext(secretKey, cipherDetails, iv, content, uploadedBytes);
+
+        validateCiphertext(cipherDetails, secretKey, content, iv, uploadedBytes);
 
     }
 
-    private void validateCiphertext(SecretKey secretKey,
-                                    SupportedCipherDetails cipherDetails,
-                                    byte[] iv,
+    private void validateCiphertext(SupportedCipherDetails cipherDetails,
+                                    SecretKey secretKey,
                                     byte[] plaintext,
-                                    byte[] ciphertext) throws Exception {
-        final Cipher decryptCipher = cipherDetails.getCipher();
-        decryptCipher.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
-        final byte[] decrypted = decryptCipher.doFinal(ciphertext);
+                                    byte[] iv,
+                                    byte[] ciphertext) throws IOException {
+        MantaHttpHeaders responseHttpHeaders = new MantaHttpHeaders();
+        responseHttpHeaders.setContentLength((long) ciphertext.length);
 
-        AssertJUnit.assertArrayEquals(plaintext, decrypted);
-    }
+        if (!cipherDetails.isAEADCipher()) {
+            responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_HMAC_TYPE,
+                    SupportedHmacsLookupMap.hmacNameFromInstance(cipherDetails.getAuthenticationHmac()));
+        }
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_IV,
+                Base64.getEncoder().encodeToString(iv));
+        responseHttpHeaders.put(MantaHttpHeaders.ENCRYPTION_KEY_ID,
+                cipherDetails.getCipherId());
 
-    private void prepareEncryptionState(final EncryptionState state) {
-        state.setMultipartStream(
-                new MultipartOutputStream(
-                        state.getEncryptionContext().getCipherDetails().getBlockSizeInBytes()));
-        state.setCipherStream(
-                EncryptingEntityHelper.makeCipherOutputForStream(
-                        state.getMultipartStream(),
-                        state.getEncryptionContext()));
+        final MantaEncryptedObjectInputStream decryptingStream = new MantaEncryptedObjectInputStream(
+                new MantaObjectInputStream(
+                        new MantaObjectResponse("/path", responseHttpHeaders),
+                        Mockito.mock(CloseableHttpResponse.class),
+                        new EofSensorInputStream(
+                                new ByteArrayInputStream(ciphertext),
+                                null)),
+                cipherDetails,
+                secretKey,
+                true);
+
+        ByteArrayOutputStream decrypted = new ByteArrayOutputStream();
+        IOUtils.copy(decryptingStream, decrypted);
+        decryptingStream.close();
+        AssertJUnit.assertArrayEquals(plaintext, decrypted.toByteArray());
     }
 }

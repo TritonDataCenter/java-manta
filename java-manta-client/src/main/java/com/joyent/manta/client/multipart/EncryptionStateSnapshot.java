@@ -35,7 +35,9 @@ class EncryptionStateSnapshot {
     /**
      * OutputStream duplicated at time of snapshot.
      */
-    private final OutputStream outputStream;
+    private final OutputStream cipherStream;
+
+    private final MultipartOutputStream multipartStream;
 
     /**
      * EncryptionState's lastPartAuthWritten.
@@ -45,18 +47,20 @@ class EncryptionStateSnapshot {
     /**
      * @param uploadId       the {@link EncryptedMultipartUpload} transaction ID
      * @param lastPartNumber the lastPartNumber at the time of the snapshot
-     * @param outputStream   the cloned {@link OutputStream}
+     * @param cipherStream   the cloned {@link OutputStream}
      */
     EncryptionStateSnapshot(final UUID uploadId,
                             final int lastPartNumber,
-                            final Cipher cipher,
                             final boolean lastPartAuthWritten,
-                            final OutputStream outputStream) {
+                            final Cipher cipher,
+                            final OutputStream cipherStream,
+                            final MultipartOutputStream multipartStream) {
         this.uploadId = uploadId;
         this.lastPartNumber = lastPartNumber;
-        this.cipher = cipher;
-        this.outputStream = outputStream;
         this.lastPartAuthWritten = lastPartAuthWritten;
+        this.cipher = cipher;
+        this.cipherStream = cipherStream;
+        this.multipartStream = multipartStream;
     }
 
     UUID getUploadId() {
@@ -71,8 +75,12 @@ class EncryptionStateSnapshot {
         return cipher;
     }
 
-    OutputStream getOutputStream() {
-        return outputStream;
+    OutputStream getCipherStream() {
+        return cipherStream;
+    }
+
+    MultipartOutputStream getMultipartStream() {
+        return multipartStream;
     }
 
     boolean getLastPartAuthWritten() {
@@ -81,7 +89,7 @@ class EncryptionStateSnapshot {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uploadId, lastPartNumber, outputStream);
+        return Objects.hash(uploadId, lastPartNumber, cipherStream);
     }
 
     @Override
@@ -95,8 +103,9 @@ class EncryptionStateSnapshot {
         }
 
         final EncryptionStateSnapshot that = (EncryptionStateSnapshot) o;
+        // TODO: multipart
         return uploadId == that.uploadId
                 && lastPartNumber == that.lastPartNumber
-                && outputStream == that.outputStream;
+                && cipherStream == that.cipherStream;
     }
 }
