@@ -18,7 +18,6 @@ import com.joyent.manta.util.HmacOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.macs.HMac;
-import org.bouncycastle.jcajce.io.CipherOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,38 +42,29 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
  */
 final class EncryptionStateRecorder {
 
+    /**
+     * Private constructor for class only containing static methods.
+     */
     private EncryptionStateRecorder() {
     }
 
     /**
-     * Reference to {@link HmacOutputStream}'s {@link HMac} field.
+     * Reference to {@link EncryptionContext}'s {@link Cipher} field.
      */
-    private static final Field FIELD_HMACOUTPUTSTREAM_HMAC = getField(HmacOutputStream.class, "hmac", true);
-
-    /**
-     * Reference to {@link HmacOutputStream}'s {@link OutputStream} field.
-     */
-    private static final Field FIELD_HMACOUTPUTSTREAM_OUT = getField(HmacOutputStream.class, "out", true);
+    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER =
+            getField(EncryptionContext.class, "cipher", true);
 
     /**
      * Reference to {@link EncryptionContext}'s {@link Cipher} field.
      */
-    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER = getField(EncryptionContext.class, "cipher", true);
-
-    /**
-     * Reference to {@link CipherOutputStream}'s {@link Cipher} field.
-     */
-    private static final Field FIELD_CIPHEROUTPUTSTREAM_CIPHER = getField(CipherOutputStream.class, "cipher", true);
-
-    /**
-     * Reference to {@link EncryptionContext}'s {@link Cipher} field.
-     */
-    private static final Field FIELD_ENCRYPTIONSTATE_CIPHERSTREAM = getField(EncryptionState.class, "cipherStream", true);
+    private static final Field FIELD_ENCRYPTIONSTATE_CIPHERSTREAM =
+            getField(EncryptionState.class, "cipherStream", true);
 
     /**
      * Reference to {@link EncryptionState}'s {@code lastPartAuthWritten} field.
      */
-    private static final Field FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN = getField(EncryptionState.class, "lastPartAuthWritten", true);
+    private static final Field FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN =
+            getField(EncryptionState.class, "lastPartAuthWritten", true);
 
     /**
      * {@link HMac} cloning helper object.

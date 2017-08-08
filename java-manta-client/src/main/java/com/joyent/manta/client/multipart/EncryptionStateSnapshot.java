@@ -28,21 +28,24 @@ class EncryptionStateSnapshot {
     private final int lastPartNumber;
 
     /**
+     * EncryptionState's lastPartAuthWritten.
+     */
+    private final boolean lastPartAuthWritten;
+
+    /**
      * Cloned Cipher state.
      */
     private final Cipher cipher;
 
     /**
-     * OutputStream duplicated at time of snapshot.
+     * Encryption stream duplicated at time of snapshot.
      */
     private final OutputStream cipherStream;
 
-    private final MultipartOutputStream multipartStream;
-
     /**
-     * EncryptionState's lastPartAuthWritten.
+     * MultipartOutputStream duplicated at time of snapshot.
      */
-    private final boolean lastPartAuthWritten;
+    private final MultipartOutputStream multipartStream;
 
     /**
      * @param uploadId       the {@link EncryptedMultipartUpload} transaction ID
@@ -89,7 +92,7 @@ class EncryptionStateSnapshot {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uploadId, lastPartNumber, cipherStream);
+        return Objects.hash(uploadId, lastPartNumber, lastPartAuthWritten);
     }
 
     @Override
@@ -103,9 +106,8 @@ class EncryptionStateSnapshot {
         }
 
         final EncryptionStateSnapshot that = (EncryptionStateSnapshot) o;
-        // TODO: multipart
         return uploadId == that.uploadId
                 && lastPartNumber == that.lastPartNumber
-                && cipherStream == that.cipherStream;
+                && lastPartAuthWritten == that.lastPartAuthWritten;
     }
 }

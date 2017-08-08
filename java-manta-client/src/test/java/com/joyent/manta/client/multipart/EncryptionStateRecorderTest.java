@@ -10,13 +10,10 @@ import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
-import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
@@ -35,9 +32,6 @@ import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
-/**
- * Created by tomascelaya on 7/21/17.
- */
 public class EncryptionStateRecorderTest {
 
     @DataProvider(name = "supportedCiphersAndHmacs")
@@ -140,14 +134,7 @@ public class EncryptionStateRecorderTest {
             }
         };
 
-        // prepare encryption state
-        state.setMultipartStream(
-                new MultipartOutputStream(
-                        state.getEncryptionContext().getCipherDetails().getBlockSizeInBytes()));
-        state.setCipherStream(
-                EncryptingEntityHelper.makeCipherOutputForStream(
-                        state.getMultipartStream(),
-                        state.getEncryptionContext()));
+        prepareEncryptionState(state);
 
         final int inputSize = RandomUtils.nextInt(300, 600);
         final byte[] content = RandomUtils.nextBytes(inputSize);
@@ -187,6 +174,8 @@ public class EncryptionStateRecorderTest {
 
     }
 
+    // TEST UTILITY METHODS
+
     private void validateCiphertext(SupportedCipherDetails cipherDetails,
                                     SecretKey secretKey,
                                     byte[] plaintext,
@@ -220,4 +209,15 @@ public class EncryptionStateRecorderTest {
         decryptingStream.close();
         AssertJUnit.assertArrayEquals(plaintext, decrypted.toByteArray());
     }
+
+    private void prepareEncryptionState(final EncryptionState state) {
+        state.setMultipartStream(
+                new MultipartOutputStream(
+                        state.getEncryptionContext().getCipherDetails().getBlockSizeInBytes()));
+        state.setCipherStream(
+                EncryptingEntityHelper.makeCipherOutputForStream(
+                        state.getMultipartStream(),
+                        state.getEncryptionContext()));
+    }
+
 }
