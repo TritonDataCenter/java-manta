@@ -2,7 +2,9 @@ package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.crypto.AesCbcCipherDetails;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptingPartEntity;
 import com.joyent.manta.client.crypto.EncryptionContext;
@@ -11,12 +13,12 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -28,56 +30,47 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
 public class EncryptionStateRecorderTest {
 
-    @DataProvider(name = "supportedCiphersAndHmacs")
-    public Object[][] supportedCiphersAndHmacs() {
+    @DataProvider(name = "supportedCiphers")
+    public Object[][] supportedCiphers() {
         ArrayList<SupportedCipherDetails> ciphers = new ArrayList<>();
 
         // only AES/CTR is supported by MPU right now
-        // ciphers.add(AesGcmCipherDetails.INSTANCE_128_BIT);
-        // ciphers.add(AesGcmCipherDetails.INSTANCE_192_BIT);
-        // ciphers.add(AesGcmCipherDetails.INSTANCE_256_BIT);
+        // but we can test against all of them anyways
+        ciphers.add(AesGcmCipherDetails.INSTANCE_128_BIT);
+        ciphers.add(AesGcmCipherDetails.INSTANCE_192_BIT);
+        ciphers.add(AesGcmCipherDetails.INSTANCE_256_BIT);
         ciphers.add(AesCtrCipherDetails.INSTANCE_128_BIT);
         ciphers.add(AesCtrCipherDetails.INSTANCE_192_BIT);
         ciphers.add(AesCtrCipherDetails.INSTANCE_256_BIT);
-        // ciphers.add(AesCbcCipherDetails.INSTANCE_128_BIT);
-        // ciphers.add(AesCbcCipherDetails.INSTANCE_192_BIT);
-        // ciphers.add(AesCbcCipherDetails.INSTANCE_256_BIT);
-
-        ArrayList<String> hmacNames = new ArrayList<>();
-        hmacNames.add("HmacMD5");
-        hmacNames.add("HmacSHA1");
-        hmacNames.add("HmacSHA256");
-        hmacNames.add("HmacSHA384");
-        hmacNames.add("HmacSHA512");
+        ciphers.add(AesCbcCipherDetails.INSTANCE_128_BIT);
+        ciphers.add(AesCbcCipherDetails.INSTANCE_192_BIT);
+        ciphers.add(AesCbcCipherDetails.INSTANCE_256_BIT);
 
         ArrayList<Object[]> params = new ArrayList<>();
 
         for (SupportedCipherDetails cipher : ciphers) {
-            for (String hmacName : hmacNames) {
-                params.add(new Object[]{cipher, hmacName});
-            }
+            params.add(new Object[]{cipher});
         }
 
-
-        Object[][] arr = params.toArray(new Object[][]{});
-        return arr;
+        return params.toArray(new Object[][]{});
     }
 
-    @Test(dataProvider = "supportedCiphersAndHmacs")
-    public void testRecordAndRewindFirstPart(final SupportedCipherDetails cipherDetails, final String hmacName) throws Exception {
+    @Test(dataProvider = "supportedCiphers")
+    public void testRecordAndRewindFirstPart(final SupportedCipherDetails cipherDetails) throws Exception {
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         // cipher IV prepared in EncryptionContext constructor
         final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
         final EncryptionState state = new EncryptionState(ctx);
         final byte[] iv = ctx.getCipher().getIV();
 
-        prepareEncryptionState(state);
+        initializeEncryptionStateStreams(state);
 
         final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
         Assert.assertNotSame(snapshot.getCipher(), state.getEncryptionContext().getCipher());
@@ -119,62 +112,124 @@ public class EncryptionStateRecorderTest {
         // TODO: this test does not validate hmac cloning yet, that is currently only covered by HmacClonerTest
     }
 
-    @Test(dataProvider = "supportedCiphersAndHmacs")
-    public void testRecordAndRewindLastPartPartWithEntity(final SupportedCipherDetails cipherDetails, final String hmacName) throws Exception {
+    @Test(dataProvider = "supportedCiphers")
+    public void testRecordAndRewindSinglePartWithEntity(final SupportedCipherDetails cipherDetails) throws Exception {
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
-        final EncryptionState state = new EncryptionState(ctx);
         final byte[] iv = ctx.getCipher().getIV();
+        final EncryptionState state = new EncryptionState(ctx);
 
         // entity will always finalize encryption
-        final EncryptingPartEntity.LastPartCallback callback = new EncryptingPartEntity.LastPartCallback() {
+        final EncryptingPartEntity.LastPartCallback finalizingCallback = new EncryptingPartEntity.LastPartCallback() {
             @Override
             public ByteArrayOutputStream call(final long uploadedBytes) throws IOException {
                 return state.remainderAndLastPartAuth();
             }
         };
 
-        prepareEncryptionState(state);
+        initializeEncryptionStateStreams(state);
 
-        final int inputSize = RandomUtils.nextInt(300, 600);
+        final int inputSize = RandomUtils.nextInt(1000, 2000);
         final byte[] content = RandomUtils.nextBytes(inputSize);
-        final HttpEntity sourceEntity = new ExposedByteArrayEntity(content, ContentType.APPLICATION_OCTET_STREAM);
-
-        final EncryptingPartEntity originalEntity = new EncryptingPartEntity(
-                state.getCipherStream(),
-                state.getMultipartStream(),
-                sourceEntity,
-                callback);
 
         final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
 
-        final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
-        state.getLock().lock();
-        originalEntity.writeTo(originalOutput);
-        state.getLock().unlock();
+        final byte[] lostBytes = writeEncryptedBytePart(state, content, finalizingCallback);
 
         // rewind state so the next entity can use it
         EncryptionStateRecorder.rewind(state, snapshot);
 
-        final EncryptingPartEntity retryEntity = new EncryptingPartEntity(
-                state.getCipherStream(),
-                state.getMultipartStream(),
-                sourceEntity,
-                callback);
-
-        final ByteArrayOutputStream retryOutput = new ByteArrayOutputStream();
-        state.getLock().lock();
-        retryEntity.writeTo(retryOutput);
-        state.getLock().unlock();
+        final byte[] uploadedBytes = writeEncryptedBytePart(state, content, finalizingCallback);
 
         // verify the parts encrypt to the same ciphertext
-        final byte[] uploadedBytes = retryOutput.toByteArray();
+        AssertJUnit.assertArrayEquals(lostBytes, uploadedBytes);
 
+        // check original plaintext against uploaded ciphertext
         validateCiphertext(cipherDetails, secretKey, content, iv, uploadedBytes);
+    }
 
+    @Test(dataProvider = "supportedCiphers")
+    public void testRecordAndRewindMultipleParts(final SupportedCipherDetails cipherDetails) throws Exception {
+        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
+        final byte[] iv = ctx.getCipher().getIV();
+        final EncryptionState state = new EncryptionState(ctx);
+
+        // prepare part content
+        final int inputSize = RandomUtils.nextInt(1000, 2000);
+        final int partSize = Math.floorDiv(inputSize, 2);
+        final byte[] content = RandomUtils.nextBytes(inputSize);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, partSize);
+        final byte[] content2 = Arrays.copyOfRange(content, partSize, content.length);
+
+        initializeEncryptionStateStreams(state);
+
+        final byte[] firstUpload = writeEncryptedBytePart(state, content1, new EncryptingPartEntity.LastPartCallback() {
+            @Override
+            public ByteArrayOutputStream call(long uploadedBytes) throws IOException {
+                return new ByteArrayOutputStream();
+            }
+        });
+
+        final EncryptingPartEntity.LastPartCallback finalizingCallback = new EncryptingPartEntity.LastPartCallback() {
+            @Override
+            public ByteArrayOutputStream call(final long uploadedBytes) throws IOException {
+                return state.remainderAndLastPartAuth();
+            }
+        };
+
+        final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
+
+        final byte[] lastUpload = writeEncryptedBytePart(state, content2, finalizingCallback);
+
+        // attempting to resend the last part without rewinding should throw
+        Assert.expectThrows(IOException.class, () -> {
+           writeEncryptedBytePart(state, content2, finalizingCallback);
+        });
+
+        EncryptionStateRecorder.rewind(state, snapshot);
+
+        final byte[] lastRetryUpload = writeEncryptedBytePart(state, content2, finalizingCallback);
+
+        AssertJUnit.assertArrayEquals(lastUpload, lastRetryUpload);
+
+        final byte[] ciphertext = ArrayUtils.addAll(firstUpload, lastRetryUpload);
+        validateCiphertext(cipherDetails, secretKey, content, iv, ciphertext);
     }
 
     // TEST UTILITY METHODS
+
+    private void initializeEncryptionStateStreams(final EncryptionState state) {
+        state.setMultipartStream(
+                new MultipartOutputStream(
+                        state.getEncryptionContext().getCipherDetails().getBlockSizeInBytes()));
+        state.setCipherStream(
+                EncryptingEntityHelper.makeCipherOutputForStream(
+                        state.getMultipartStream(),
+                        state.getEncryptionContext()));
+    }
+
+    /**
+     * Create an {@link EncryptingPartEntity} using the provided {@link EncryptionState}, byte content and {@link EncryptingPartEntity.LastPartCallback}.
+     * The callback can be used to finalize encryption whenever necessary.
+     */
+    private byte[] writeEncryptedBytePart(EncryptionState state,
+                                          byte[] content,
+                                          EncryptingPartEntity.LastPartCallback callback) throws IOException {
+        final EncryptingPartEntity lastEntity = new EncryptingPartEntity(
+                state.getCipherStream(),
+                state.getMultipartStream(),
+                new ByteArrayEntity(content, ContentType.APPLICATION_OCTET_STREAM),
+                callback
+        );
+
+        final ByteArrayOutputStream lastOutput = new ByteArrayOutputStream();
+        state.getLock().lock();
+        lastEntity.writeTo(lastOutput);
+        state.getLock().unlock();
+
+        return lastOutput.toByteArray();
+    }
 
     private void validateCiphertext(SupportedCipherDetails cipherDetails,
                                     SecretKey secretKey,
@@ -208,16 +263,6 @@ public class EncryptionStateRecorderTest {
         IOUtils.copy(decryptingStream, decrypted);
         decryptingStream.close();
         AssertJUnit.assertArrayEquals(plaintext, decrypted.toByteArray());
-    }
-
-    private void prepareEncryptionState(final EncryptionState state) {
-        state.setMultipartStream(
-                new MultipartOutputStream(
-                        state.getEncryptionContext().getCipherDetails().getBlockSizeInBytes()));
-        state.setCipherStream(
-                EncryptingEntityHelper.makeCipherOutputForStream(
-                        state.getMultipartStream(),
-                        state.getEncryptionContext()));
     }
 
 }
