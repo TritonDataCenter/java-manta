@@ -157,19 +157,17 @@ public class EncryptionStateRecorderTest {
 
         // prepare part content
         final int inputSize = RandomUtils.nextInt(1000, 2000);
-        final int partSize = Math.floorDiv(inputSize, 2);
+        final int firstPartSize = RandomUtils.nextInt(500, 999);
+
         final byte[] content = RandomUtils.nextBytes(inputSize);
-        final byte[] content1 = Arrays.copyOfRange(content, 0, partSize);
-        final byte[] content2 = Arrays.copyOfRange(content, partSize, content.length);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, firstPartSize);
+        final byte[] content2 = Arrays.copyOfRange(content, firstPartSize, content.length);
 
         initializeEncryptionStateStreams(state);
 
-        final byte[] firstUpload = writeEncryptedBytePart(state, content1, new EncryptingPartEntity.LastPartCallback() {
-            @Override
-            public ByteArrayOutputStream call(long uploadedBytes) throws IOException {
-                return new ByteArrayOutputStream();
-            }
-        });
+        final byte[] firstUpload = writeEncryptedBytePart(state, content1, null);
+
+        final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
 
         final EncryptingPartEntity.LastPartCallback finalizingCallback = new EncryptingPartEntity.LastPartCallback() {
             @Override
@@ -178,13 +176,24 @@ public class EncryptionStateRecorderTest {
             }
         };
 
-        final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
-
         final byte[] lastUpload = writeEncryptedBytePart(state, content2, finalizingCallback);
 
         // attempting to resend the last part without rewinding should throw
-        Assert.expectThrows(IOException.class, () -> {
-           writeEncryptedBytePart(state, content2, finalizingCallback);
+        Assert.assertThrows(Exception.class, () -> {
+            /*
+            We are expecting a generic exception here because certain combinations of part sizes don't
+            actually result in writes making it all the way to the CloseShieldOutputStream and triggering an IOException.
+
+            In _most_ cases an IOException will be thrown when the CipherOutputStream attempts to write data to the
+            underlying CloseShieldOutputStream. In _some cases_ where the last part size is less than the cipher block size
+            (e.g. inputSize = 1000, firstPartSize = 990) calling CipherOutputStream#write does not actually result in any
+            bytes being written. We would expect an IOException to be thrown on `CipherOutputStream#flush` but
+            `ClosedOutputStream#flush` will always silently succeed. This has been reported to
+            Commons IO https://issues.apache.org/jira/browse/IO-546
+
+            Additionally, AES/GCM will throw `IllegalStateException: GCM cipher cannot be reused for encryption`
+             */
+            writeEncryptedBytePart(state, content2, finalizingCallback);
         });
 
         EncryptionStateRecorder.rewind(state, snapshot);
@@ -210,7 +219,8 @@ public class EncryptionStateRecorderTest {
     }
 
     /**
-     * Create an {@link EncryptingPartEntity} using the provided {@link EncryptionState}, byte content and {@link EncryptingPartEntity.LastPartCallback}.
+     * Create an {@link EncryptingPartEntity} using the provided {@link EncryptionState}, byte content and
+     * {@link EncryptingPartEntity.LastPartCallback}.
      * The callback can be used to finalize encryption whenever necessary.
      */
     private byte[] writeEncryptedBytePart(EncryptionState state,
