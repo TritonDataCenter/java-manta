@@ -26,12 +26,12 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 /**
  * Multipart upload manager class that wraps another {@link MantaMultipartManager}
@@ -318,19 +318,29 @@ public class EncryptedMultipartManager
                          final Stream<? extends MantaMultipartUploadTuple> partsStream)
             throws IOException {
         final EncryptionState encryptionState = upload.getEncryptionState();
-        final EncryptionContext encryptionContext = encryptionState.getEncryptionContext();
 
         encryptionState.getLock().lock();
         try {
             Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
-            if (!encryptionState.isLastPartAuthWritten()) {
-                ByteArrayOutputStream remainderStream = encryptionState.remainderAndLastPartAuth();
-                if (remainderStream.size() > 0) {
-                    MantaMultipartUploadPart finalPart = wrapped.uploadPart(upload.getWrapped(),
-                                                                            encryptionState.getLastPartNumber() + 1,
-                                                                            remainderStream.toByteArray());
-                    finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
+            final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState, upload.getId());
+            final int actualLastPartNumber = encryptionState.getLastPartNumber() + 1;
+            try {
+                if (!encryptionState.isLastPartAuthWritten()) {
+                    ByteArrayOutputStream remainderStream = encryptionState.remainderAndLastPartAuth();
+                    if (remainderStream.size() > 0) {
+                        MantaMultipartUploadPart finalPart = wrapped.uploadPart(upload.getWrapped(),
+                                actualLastPartNumber,
+                                remainderStream.toByteArray());
+                        encryptionState.setLastPartNumber(actualLastPartNumber);
+                        finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
+                    }
                 }
+            } catch (Exception e) {
+                if (encryptionState.getLastPartNumber() != actualLastPartNumber) {
+                    // didn't make it to encryptionState.setLastPartNumber(partNumber)
+                    EncryptionStateRecorder.rewind(encryptionState, snapshot);
+                }
+                throw e;
             }
 
             wrapped.complete(upload.getWrapped(), finalPartsStream);
