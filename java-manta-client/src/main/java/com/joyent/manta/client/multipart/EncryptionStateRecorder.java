@@ -111,11 +111,11 @@ final class EncryptionStateRecorder {
         final int bufferSize = encryptionState.getEncryptionContext().getCipherDetails().getBlockSizeInBytes();
 
         /*
-            NOTE: while the MultipartOutputStream buffer is generally only written to _during_ finalization and is
+            NOTE: While the MultipartOutputStream buffer is generally only written to _during_ finalization and is
             usually empty during calls to record(), there's no guarantee this buffer will never need to be copied.
             If any changes are made to MultipartOutputStream which result in data residing in that buffer between
-            calls to uploadPart method would continue to work as expected. Additionally the relatively small size of
-            these buffers means the performance impact should be negligible.
+            calls to uploadPart this method would continue to work as expected. Additionally the relatively small size
+            of these buffers means the performance impact should be negligible.
          */
         final ByteArrayOutputStream buffer = new ByteArrayOutputStream(bufferSize);
         try {
