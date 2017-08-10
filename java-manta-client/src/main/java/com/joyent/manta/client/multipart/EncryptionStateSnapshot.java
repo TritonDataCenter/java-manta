@@ -106,7 +106,7 @@ class EncryptionStateSnapshot {
         }
 
         final EncryptionStateSnapshot that = (EncryptionStateSnapshot) o;
-        return uploadId == that.uploadId
+        return Objects.equals(uploadId, that.uploadId)
                 && lastPartNumber == that.lastPartNumber
                 && lastPartAuthWritten == that.lastPartAuthWritten;
     }
