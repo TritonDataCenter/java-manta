@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.crypto.Cipher;
@@ -387,6 +388,22 @@ public class EncryptedMultipartManager
         return ctx;
     }
 
+    /**
+     * Call wrapped.uploadPart() and reset encryption state in case of failure. This consists of recording encryption
+     * state using {@link EncryptionStateRecorder#record(EncryptionState, UUID)}, delegating to the {@code wrapped}
+     * manager and calling {@link EncryptionStateRecorder#rewind(EncryptionState, EncryptionStateSnapshot)} in case any
+     * errors occur. We expect the wrapped manager to validate the response code and throw a
+     * {@link MantaMultipartException} in case an unexpected response code is returned.
+     *
+     * @param upload          multipart upload object
+     * @param partNumber      part number to identify relative location in final file
+     * @param httpContext     additional request context, may be null
+     * @param encryptionState encryption state that should be reset in case of error
+     * @param entity          Apache HTTP Client entity instance
+     * @return the successfully uploaded part
+     * @throws IOException in case of network errors, though MantaMultipartException will be thrown in
+     *                     case of invalid response code
+     */
     private MantaMultipartUploadPart uploadPartSafely(final EncryptedMultipartUpload<WRAPPED_UPLOAD> upload,
                                                       final int partNumber,
                                                       final HttpContext httpContext,
