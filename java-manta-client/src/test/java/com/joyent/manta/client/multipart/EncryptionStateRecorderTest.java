@@ -184,6 +184,8 @@ public class EncryptionStateRecorderTest {
             We are expecting a generic exception here because certain combinations of part sizes don't
             actually result in writes making it all the way to the CloseShieldOutputStream and triggering an IOException.
 
+            This has been reported upstream in https://issues.apache.org/jira/browse/IO-546
+
             In _most_ cases an IOException will be thrown when the CipherOutputStream attempts to write data to the
             underlying CloseShieldOutputStream. In _some cases_ where the last part size is less than the cipher block size
             (e.g. inputSize = 1000, firstPartSize = 990) calling CipherOutputStream#write does not actually result in any
