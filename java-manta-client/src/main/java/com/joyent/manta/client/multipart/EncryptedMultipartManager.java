@@ -18,6 +18,7 @@ import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.MantaHttpRequestRetryHandler;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -286,7 +287,7 @@ public class EncryptedMultipartManager
                             }
                         }
                     });
-            return uploadPartWithSnapshot(upload, partNumber, ctx, encryptionState, entity);
+            return uploadPartWithSnapshot(upload, partNumber, ctx, encryptionState, entity, null);
         } finally {
             encryptionState.getLock().unlock();
         }
@@ -311,7 +312,8 @@ public class EncryptedMultipartManager
         encryptionState.getLock().lock();
         try {
             Stream<? extends MantaMultipartUploadTuple> finalPartsStream = partsStream;
-
+            // we need to take a snapshot _before_ calling remainderAndLastPartAuth
+            final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState, upload.getId());
             if (!encryptionState.isLastPartAuthWritten()) {
                 ByteArrayOutputStream remainderStream = encryptionState.remainderAndLastPartAuth();
                 if (remainderStream.size() > 0) {
@@ -320,7 +322,8 @@ public class EncryptedMultipartManager
                             encryptionState.getLastPartNumber() + 1,
                             buildRequestContext(null),
                             encryptionState,
-                            new ByteArrayEntity(remainderStream.toByteArray()));
+                            new ByteArrayEntity(remainderStream.toByteArray()),
+                            snapshot);
                     finalPartsStream = Stream.concat(partsStream, Stream.of(finalPart));
                 }
             }
@@ -402,6 +405,7 @@ public class EncryptedMultipartManager
      * @param httpContext     additional request context, may be null
      * @param encryptionState encryption state that should be reset in case of error
      * @param entity          Apache HTTP Client entity instance
+     * @param suppliedSnapshot a snapshot provided by the caller, used by complete(EncryptedMultipartUpload, Stream)
      * @return the successfully uploaded part
      * @throws IOException in case of network errors, though MantaMultipartException will be thrown in
      *                     case of invalid response code
@@ -410,8 +414,13 @@ public class EncryptedMultipartManager
                                                             final int partNumber,
                                                             final HttpContext httpContext,
                                                             final EncryptionState encryptionState,
-                                                            final HttpEntity entity) throws IOException {
-        final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(encryptionState, upload.getId());
+                                                            final HttpEntity entity,
+                                                            final EncryptionStateSnapshot suppliedSnapshot)
+            throws IOException {
+        final EncryptionStateSnapshot snapshot = ObjectUtils.firstNonNull(
+                suppliedSnapshot,
+                EncryptionStateRecorder.record(encryptionState, upload.getId()));
+
         try {
             final MantaMultipartUploadPart part =
                     wrapped.uploadPart(upload.getWrapped(), partNumber, entity, httpContext);
