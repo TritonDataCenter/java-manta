@@ -48,7 +48,7 @@ public final class EncryptingEntityHelper {
      * is heavily coupled to this implementation! Changing how these streams are
      * wrapped requires changes to EncryptionStateRecorder!
      *
-     * @param httpOut output stream for writing to the HTTP network socket
+     * @param httpOut           output stream for writing to the HTTP network socket
      * @param encryptionContext current encryption running state
      * @return a new stream configured based on the parameters
      */
@@ -77,6 +77,25 @@ public final class EncryptingEntityHelper {
     }
 
     /**
+     * Compatibility method for allowing older versions of java-manta-client-kryo-serialization to call this class.
+     *
+     * @param httpOut           output stream for writing to the HTTP network socket
+     * @param encryptionContext current encryption running state
+     * @param hmac              current HMAC object with the current checksum state
+     * @return a new stream configured based on the parameters
+     */
+    public static OutputStream makeCipherOutputForStream(
+            final OutputStream httpOut,
+            final EncryptionContext encryptionContext,
+            final HMac hmac) {
+        return makeCipherOutputForStream(
+                httpOut,
+                encryptionContext.getCipherDetails(),
+                encryptionContext.getCipher(),
+                hmac);
+    }
+
+    /**
      * Creates a new {@link OutputStream} implementation that is backed directly
      * by a {@link CipherOutputStream} or a {@link HmacOutputStream} that wraps
      * a {@link CipherOutputStream} depending on the encryption cipher/mode being
@@ -87,10 +106,10 @@ public final class EncryptingEntityHelper {
      * is heavily coupled to this implementation! Changing how these streams are
      * wrapped requires changes to EncryptionStateRecorder!
      *
-     * @param httpOut output stream for writing to the HTTP network socket
-     * @param cipherDetails current encryption running state's cipher details
-     * @param cipher current encryption running state's cipher
-     * @param hmac current HMAC object with the current checksum state
+     * @param httpOut       output stream for writing to the HTTP network socket
+     * @param cipherDetails information about the method of encryption in use
+     * @param cipher        cipher to utilize for encrypting stream
+     * @param hmac          current HMAC object with the current checksum state
      * @return a new stream configured based on the parameters
      */
     public static OutputStream makeCipherOutputForStream(
