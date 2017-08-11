@@ -351,7 +351,7 @@ public class StandardHttpHelper implements HttpHelper {
                                            final HttpRequest request,
                                            final HttpResponse response)
             throws MantaChecksumFailedException {
-        Validate.notNull(entity, "Request body missing checksum");
+        Validate.notNull(entity, "Request body required");
 
         if (serverMd5 == null || serverMd5.length == 0) {
             final String msg = "Server calculated MD5 is missing";
