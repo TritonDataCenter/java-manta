@@ -7,23 +7,27 @@
  */
 package com.joyent.manta.client.multipart;
 
+import com.joyent.manta.client.crypto.EncryptingEntityHelper;
 import com.joyent.manta.client.crypto.EncryptionContext;
+import com.joyent.manta.exception.MantaMemoizationException;
 import com.joyent.manta.exception.MantaReflectionException;
 import com.joyent.manta.util.CipherCloner;
 import com.joyent.manta.util.Cloner;
 import com.joyent.manta.util.HmacCloner;
 import com.joyent.manta.util.HmacOutputStream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.crypto.macs.HMac;
-import org.bouncycastle.jcajce.io.CipherOutputStream;
 
-import javax.crypto.Cipher;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.UUID;
+import javax.crypto.Cipher;
 
 import static org.apache.commons.lang3.reflect.FieldUtils.getField;
-import static org.apache.commons.lang3.reflect.FieldUtils.readField;
 import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
 
 /**
@@ -38,28 +42,29 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
  */
 final class EncryptionStateRecorder {
 
+    /**
+     * Private constructor for class only containing static methods.
+     */
     private EncryptionStateRecorder() {
     }
 
     /**
-     * Reference to {@link HmacOutputStream}'s {@link HMac} field.
+     * Reference to {@link EncryptionContext}'s {@link Cipher} field.
      */
-    private static final Field FIELD_HMACOUTPUTSTREAM_HMAC = getField(HmacOutputStream.class, "hmac", true);
-
-    /**
-     * Reference to {@link HmacOutputStream}'s {@link OutputStream} field.
-     */
-    private static final Field FIELD_HMACOUTPUTSTREAM_OUT = getField(HmacOutputStream.class, "out", true);
+    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER =
+            getField(EncryptionContext.class, "cipher", true);
 
     /**
      * Reference to {@link EncryptionContext}'s {@link Cipher} field.
      */
-    private static final Field FIELD_ENCRYPTIONCONTEXT_CIPHER = getField(EncryptionContext.class, "cipher", true);
+    private static final Field FIELD_ENCRYPTIONSTATE_CIPHERSTREAM =
+            getField(EncryptionState.class, "cipherStream", true);
 
     /**
-     * Reference to {@link CipherOutputStream}'s {@link Cipher} field.
+     * Reference to {@link EncryptionState}'s {@code lastPartAuthWritten} field.
      */
-    private static final Field FIELD_CIPHEROUTPUTSTREAM_CIPHER = getField(CipherOutputStream.class, "cipher", true);
+    private static final Field FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN =
+            getField(EncryptionState.class, "lastPartAuthWritten", true);
 
     /**
      * {@link HMac} cloning helper object.
@@ -101,10 +106,38 @@ final class EncryptionStateRecorder {
             hmac = null;
         }
 
-        final Cipher cipher =
-                CLONER_CIPHER.createClone(encryptionState.getEncryptionContext().getCipher());
+        final Cipher cipher = CLONER_CIPHER.createClone(encryptionState.getEncryptionContext().getCipher());
 
-        return new EncryptionStateSnapshot(uploadId, encryptionState.getLastPartNumber(), cipher, hmac);
+        final int bufferSize = encryptionState.getEncryptionContext().getCipherDetails().getBlockSizeInBytes();
+
+        /*
+            NOTE: While the MultipartOutputStream buffer is generally only written to _during_ finalization and is
+            usually empty during calls to record(), there's no guarantee this buffer will never need to be copied.
+            If any changes are made to MultipartOutputStream which result in data residing in that buffer between
+            calls to uploadPart this method would continue to work as expected. Additionally the relatively small size
+            of these buffers means the performance impact should be negligible.
+         */
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream(bufferSize);
+        try {
+            IOUtils.copy(new ByteArrayInputStream(encryptionState.getMultipartStream().getBuf().toByteArray()), buffer);
+        } catch (IOException e) {
+            throw new MantaMemoizationException("Failed to back up buffer while memoizing encryption state", e);
+        }
+        final MultipartOutputStream multipartStream = new MultipartOutputStream(bufferSize, buffer);
+
+        final OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
+                multipartStream,
+                encryptionState.getEncryptionContext().getCipherDetails(),
+                cipher,
+                hmac);
+
+        return new EncryptionStateSnapshot(
+                uploadId,
+                encryptionState.getLastPartNumber(),
+                encryptionState.isLastPartAuthWritten(),
+                cipher,
+                cipherStream,
+                multipartStream);
     }
 
     /**
@@ -118,56 +151,13 @@ final class EncryptionStateRecorder {
      * makes it non-trivial construct a copy of an EncryptionState that is completely separate from the original.
      */
     static void rewind(final EncryptionState encryptionState, final EncryptionStateSnapshot snapshot) {
-        Validate.notNull(snapshot.getCipher(),
-                "Snapshot cipher must not be null");
         Validate.isTrue(encryptionState.getLastPartNumber() == snapshot.getLastPartNumber(),
                 "Snapshot part number must equal encryption state part number");
-        final boolean usesHmac = !encryptionState.getEncryptionContext().getCipherDetails().isAEADCipher();
-
-        final CipherOutputStream cipherStream;
-        if (usesHmac) {
-            Validate.notNull(snapshot.getHmac(), "Snapshot hmac must not be null");
-
-            final HmacOutputStream digestStream = ensureHmacWrapsCipherStream(encryptionState.getCipherStream());
-
-            try {
-                writeField(FIELD_HMACOUTPUTSTREAM_HMAC, digestStream, snapshot.getHmac());
-            } catch (IllegalAccessException e) {
-                final String message = String.format("Failed to overwrite HmacOutputStream's hmac while rewinding "
-                                + "encryption state for upload [%s] part [%s]",
-                        snapshot.getUploadId(),
-                        snapshot.getLastPartNumber());
-                throw new MantaReflectionException(message, e);
-            }
-
-            Object wrappedCipherStream;
-            try {
-                wrappedCipherStream = readField(FIELD_HMACOUTPUTSTREAM_OUT, digestStream);
-            } catch (IllegalAccessException e) {
-                final String message = String.format("Failed to extract wrapped OutputStream while rewinding "
-                                + "encryption state for upload [%s] part [%s]",
-                        snapshot.getUploadId(),
-                        snapshot.getLastPartNumber());
-                throw new MantaReflectionException(message, e);
-            }
-
-            if (!(wrappedCipherStream instanceof CipherOutputStream)) {
-                final String message = String.format("Expected HmacOutputStream to wrap CipherOutputStream "
-                                + "while rewinding encryption state for upload [%s] part [%s], found %s",
-                        snapshot.getUploadId(),
-                        snapshot.getLastPartNumber(),
-                        wrappedCipherStream.getClass().getCanonicalName());
-                throw new MantaReflectionException(message);
-            }
-
-            cipherStream = (CipherOutputStream) wrappedCipherStream;
-        } else {
-            cipherStream = (CipherOutputStream) encryptionState.getCipherStream();
-        }
 
         try {
             writeField(FIELD_ENCRYPTIONCONTEXT_CIPHER, encryptionState.getEncryptionContext(), snapshot.getCipher());
-            writeField(FIELD_CIPHEROUTPUTSTREAM_CIPHER, cipherStream, snapshot.getCipher());
+            writeField(FIELD_ENCRYPTIONSTATE_CIPHERSTREAM, encryptionState, snapshot.getCipherStream());
+            writeField(FIELD_ENCRYPTIONSTATE_LASTPARTAUTHWRITTEN, encryptionState, snapshot.getLastPartAuthWritten());
         } catch (IllegalAccessException e) {
             final String message = String.format("Failed to overwrite cipher while rewinding "
                             + "encryption state for upload [%s] part [%s]",
@@ -175,5 +165,7 @@ final class EncryptionStateRecorder {
                     snapshot.getLastPartNumber());
             throw new MantaReflectionException(message, e);
         }
+
+        encryptionState.setMultipartStream(snapshot.getMultipartStream());
     }
 }

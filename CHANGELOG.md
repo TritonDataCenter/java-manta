@@ -7,6 +7,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Potential file corruption caused by automatic retries as a result of
    [503 responses](https://github.com/joyent/java-manta/issues/295)
    when utilizing client-side encryption with regular PUT requests.
+ - MPU finalization meant it was impossible to retry last part in case of
+   [503 responses](https://github.com/joyent/java-manta/issues/297).
 
 ## [3.1.5] - 2017-07-28
 ### Fixed

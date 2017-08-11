@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
+import javax.crypto.Cipher;
 
 /**
  * Utility class that provides methods for cross-cutting encryption operations.
@@ -47,7 +48,7 @@ public final class EncryptingEntityHelper {
      * is heavily coupled to this implementation! Changing how these streams are
      * wrapped requires changes to EncryptionStateRecorder!
      *
-     * @param httpOut output stream for writing to the HTTP network socket
+     * @param httpOut           output stream for writing to the HTTP network socket
      * @param encryptionContext current encryption running state
      * @return a new stream configured based on the parameters
      */
@@ -68,7 +69,30 @@ public final class EncryptingEntityHelper {
             hmac.update(iv, 0, iv.length);
         }
 
-        return makeCipherOutputForStream(httpOut, encryptionContext, hmac);
+        return makeCipherOutputForStream(
+                httpOut,
+                encryptionContext.getCipherDetails(),
+                encryptionContext.getCipher(),
+                hmac);
+    }
+
+    /**
+     * Compatibility method for allowing older versions of java-manta-client-kryo-serialization to call this class.
+     *
+     * @param httpOut           output stream for writing to the HTTP network socket
+     * @param encryptionContext current encryption running state
+     * @param hmac              current HMAC object with the current checksum state
+     * @return a new stream configured based on the parameters
+     */
+    public static OutputStream makeCipherOutputForStream(
+            final OutputStream httpOut,
+            final EncryptionContext encryptionContext,
+            final HMac hmac) {
+        return makeCipherOutputForStream(
+                httpOut,
+                encryptionContext.getCipherDetails(),
+                encryptionContext.getCipher(),
+                hmac);
     }
 
     /**
@@ -82,13 +106,16 @@ public final class EncryptingEntityHelper {
      * is heavily coupled to this implementation! Changing how these streams are
      * wrapped requires changes to EncryptionStateRecorder!
      *
-     * @param httpOut output stream for writing to the HTTP network socket
-     * @param encryptionContext current encryption running state
-     * @param hmac current HMAC object with the current checksum state
+     * @param httpOut       output stream for writing to the HTTP network socket
+     * @param cipherDetails information about the method of encryption in use
+     * @param cipher        cipher to utilize for encrypting stream
+     * @param hmac          current HMAC object with the current checksum state
      * @return a new stream configured based on the parameters
      */
     public static OutputStream makeCipherOutputForStream(
-            final OutputStream httpOut, final EncryptionContext encryptionContext,
+            final OutputStream httpOut,
+            final SupportedCipherDetails cipherDetails,
+            final Cipher cipher,
             final HMac hmac) {
         /* We have to use a "close shield" here because when close() is called
          * on a CipherOutputStream() for two reasons:
@@ -101,14 +128,16 @@ public final class EncryptingEntityHelper {
          *    thereby corrupting the ciphertext. */
 
         final CloseShieldOutputStream noCloseOut = new CloseShieldOutputStream(httpOut);
-        final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, encryptionContext.getCipher());
+        final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, cipher);
         final OutputStream out;
 
-        Validate.notNull(encryptionContext.getCipherDetails(),
+        Validate.notNull(cipherDetails,
                 "Cipher details must not be null");
+        Validate.notNull(cipher,
+                "Cipher must not be null");
 
         // Things are a lot more simple if we are using AEAD
-        if (encryptionContext.getCipherDetails().isAEADCipher()) {
+        if (cipherDetails.isAEADCipher()) {
             out = cipherOut;
         } else {
             out = new HmacOutputStream(hmac, cipherOut);
