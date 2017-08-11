@@ -477,26 +477,25 @@ public class EncryptedServerSideMultipartManagerIT {
         final String path = testPathPrefix + UUID.randomUUID().toString();
 
         final EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
-        final EncryptedMultipartUpload<ServerSideMultipartUpload> uploadSpy = Mockito.spy(upload);
         final ArrayList<MantaMultipartUploadTuple> parts = new ArrayList<>(1);
 
         final byte[] content = RandomUtils.nextBytes(FIVE_MB + RandomUtils.nextInt(1, 1500));
 
         // a single part which is larger than the minimum size is the simplest way to trigger complete's finalization
-        parts.add(multipart.uploadPart(uploadSpy, 1, content));
+        parts.add(multipart.uploadPart(upload, 1, content));
 
         Assert.assertFalse(upload.getEncryptionState().isLastPartAuthWritten());
 
         // so this seems really silly, but it's the only way I can see of triggering an exception within complete's
         // attempt to write the final encryption bytes. it may seem stupid but actually uncovered an error
         // caused by refactoring
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> uploadSpy = Mockito.spy(upload);
         Mockito.when(uploadSpy.getWrapped())
                 .thenThrow(new RuntimeException("wat"))
                 .thenCallRealMethod();
 
-        Assert.assertThrows(RuntimeException.class, () -> {
-            multipart.complete(uploadSpy, parts.stream());
-        });
+        Assert.assertThrows(RuntimeException.class, () ->
+                multipart.complete(uploadSpy, parts.stream()));
 
         multipart.complete(uploadSpy, parts.stream());
 
