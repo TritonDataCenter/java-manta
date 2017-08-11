@@ -276,5 +276,4 @@ public class EncryptionStateRecorderTest {
         decryptingStream.close();
         AssertJUnit.assertArrayEquals(plaintext, decrypted.toByteArray());
     }
-
 }

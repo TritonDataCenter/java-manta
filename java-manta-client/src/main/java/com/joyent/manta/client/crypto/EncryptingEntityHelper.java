@@ -133,6 +133,8 @@ public final class EncryptingEntityHelper {
 
         Validate.notNull(cipherDetails,
                 "Cipher details must not be null");
+        Validate.notNull(cipher,
+                "Cipher must not be null");
 
         // Things are a lot more simple if we are using AEAD
         if (cipherDetails.isAEADCipher()) {
