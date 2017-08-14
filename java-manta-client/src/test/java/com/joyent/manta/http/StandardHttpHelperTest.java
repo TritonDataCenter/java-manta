@@ -35,9 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-/**
- * Created by tomascelaya on 8/11/17.
- */
 public class StandardHttpHelperTest {
 
     @Mock
@@ -186,7 +183,6 @@ public class StandardHttpHelperTest {
                 helper.httpPut("/path", null, new ByteArrayEntity(contentBytes), null));
     }
 
-
     @Test
     public void testHttpPutThrowsWhenChecksumRequestedButNotReturned() throws Exception {
         when(statusLine.getStatusCode())
@@ -203,5 +199,4 @@ public class StandardHttpHelperTest {
         Assert.assertThrows(MantaChecksumFailedException.class, () ->
                 helper.httpPut("/path", null, NoContentEntity.INSTANCE, null));
     }
-
 }
