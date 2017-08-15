@@ -34,9 +34,9 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.FileInputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -473,6 +473,42 @@ public class EncryptedServerSideMultipartManagerIT {
                             });
     }
 
+    public final void canRetryCompleteInCaseOfErrorDuringFinalPartUpload() throws IOException {
+        final String path = testPathPrefix + UUID.randomUUID().toString();
+
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+        final ArrayList<MantaMultipartUploadTuple> parts = new ArrayList<>(1);
+
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB + RandomUtils.nextInt(1, 1500));
+
+        // a single part which is larger than the minimum size is the simplest way to trigger complete's finalization
+        parts.add(multipart.uploadPart(upload, 1, content));
+
+        Assert.assertFalse(upload.getEncryptionState().isLastPartAuthWritten());
+
+        // so this seems really silly, but it's the only way I can see of triggering an exception within complete's
+        // attempt to write the final encryption bytes. it may seem stupid but actually uncovered an error
+        // caused by refactoring
+        final EncryptedMultipartUpload<ServerSideMultipartUpload> uploadSpy = Mockito.spy(upload);
+        Mockito.when(uploadSpy.getWrapped())
+                .thenThrow(new RuntimeException("wat"))
+                .thenCallRealMethod();
+
+        Assert.assertThrows(RuntimeException.class, () ->
+                multipart.complete(uploadSpy, parts.stream()));
+
+        multipart.complete(uploadSpy, parts.stream());
+
+        // auto-close of MantaEncryptedObjectInputStream validates authentication
+        try (final MantaObjectInputStream in = mantaClient.getAsInputStream(path);
+             final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Assert.assertTrue(in instanceof MantaEncryptedObjectInputStream);
+            IOUtils.copy(in, out);
+            AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
+                    content, out.toByteArray());
+        }
+    }
+
     public final void properlyClosesStreamsAfterUpload() throws IOException {
         final URL testResource = Thread.currentThread().getContextClassLoader().getResource(TEST_FILENAME);
         Assert.assertNotNull(testResource, "Test file missing");
@@ -504,7 +540,6 @@ public class EncryptedServerSideMultipartManagerIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         int part3Size = RandomUtils.nextInt(500, 1500);
-        LOGGER.info("Performing uploadPart retry test with part 3 size " + part3Size);
         final byte[] content = RandomUtils.nextBytes((2 * FIVE_MB) + part3Size);
         final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
         final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, (2 * FIVE_MB) + 1);

@@ -2,7 +2,19 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.1.x]
+### Fixed
+ - Potential file corruption caused by automatic retries as a result of
+   [503 responses](https://github.com/joyent/java-manta/issues/295)
+   when utilizing client-side encryption with regular PUT requests.
+ - MPU finalization meant it was impossible to retry last part in case of
+   [503 responses](https://github.com/joyent/java-manta/issues/297).
+ - Object content verification of standard PUT requests was being
+   skipped if the server [omitted the computed MD5](https://github.com/joyent/java-manta/issues/298)
+   from the response.
+
 ## [3.1.5] - 2017-07-28
+### Fixed
  - MPU retries still [causing file corruption](https://github.com/joyent/java-manta/issues/290)
    when server responds with 503 Service Unavailable. Apache HttpClient code path audited to ensure
    no other automatic retries can occur.
@@ -30,7 +42,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ## [3.1.2] - 2017-06-22
 ### Fixed
  - [`InputStream` left open in EncryptingEntity and EncryptingPartEntity](https://github.com/joyent/java-manta/pull/264)
-  leading to space from deleted files not being reclaimed until JVM shutdown.
+   leading to space from deleted files not being reclaimed until JVM shutdown.
 
 ## [3.1.1] - 2017-06-14
 ### Changed

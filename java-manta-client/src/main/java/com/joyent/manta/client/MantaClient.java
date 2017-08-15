@@ -1057,6 +1057,7 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
+        Validate.notNull(string, "String content must not be null");
         Validate.notNull(rawPath, "Path must not be null");
 
         String path = formatPath(rawPath);
