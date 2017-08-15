@@ -24,7 +24,7 @@ Tests which rely on Triton roles will require the creation of roles through the 
 | primary     | manta.it.role_primary     | MANTA_IT_ROLE_PRIMARY     |
 | secondary   | manta.it.role_secondary   | MANTA_IT_ROLE_SECONDARY   |
 
-# Integration Test Path
+## Integration Test Path
 Integration tests only touch paths under the integration test root path which is configurable using the `manta.it.path` system property or the `MANTA_IT_PATH` environment variable. The default behavior is to compute the base path based on the user's private folder, e.g. `/my.account/stor/java-manta-integration-tests`.
 
 # Running Tests
@@ -43,15 +43,16 @@ mvn test -DexcludedGroups=unlimited-crypto
 
 # Client-side Encryption Error Coverage Table
 
-The following table details the failure modes of the Client-side Encryption feature and the relevant test cases which address those failure modes.
+The following table details the failure modes of the Client-side Encryption feature and the relevant test cases which address those failure modes. Note that MD5 validation of MPU contents is not yet supported.
 
-| Scenario   | Write operation   | Failure mode       | Relevant test cases                                                                                                        |
-|----------- | ----------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------|
-| 1          | PUT               | Network error      | com.joyent.manta.client.crypto.EncryptingEntityTest#canBeWrittenIdempotently                                               |
-| 2          | PUT               | Invalid response   | com.joyent.manta.client.multipart.ServerSideMultipartManagerTest#canUploadPartValidatesResponseCode                        |
-| 3          | PUT               | Server MD5 invalid |                                                                                                                            |
-| 4          | MPU any part      | Network error      | com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT#canRetryUploadPart                                 |
-| 5          | MPU any part      | Invalid response   | com.joyent.manta.client.multipart.ServerSideMultipartManagerTest#canUploadPartValidatesResponseCode                        |
-| 6          | MPU last part     | Invalid response   | com.joyent.manta.client.multipart.EncryptionStateRecorderTest#testRecordAndRewindMultipleParts                             |
-| 7          | MPU commit        | Network error      |                                                                                                                            |
-| 8          | MPU commit        | Invalid response   | com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT#canRetryCompleteInCaseOfErrorDuringFinalPartUpload |
+| Scenario   | Write operation        | Failure mode       | Relevant test cases                                                                                                               |
+| ---------- | ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1          | PUT                    | Network error      | [`com.joyent.manta.client.crypto.EncryptingEntityTest#canBeWrittenIdempotently`](https://github.com/tjcelaya/java-manta/blob/b738b4e2ef97c3cca230da343ca98fe975db46ac/java-manta-client/src/test/java/com/joyent/manta/client/crypto/EncryptingEntityTest.java#L231)
+| 2          | PUT                    | Invalid response   | #1 and [`com.joyent.manta.http.StandardHttpHelperTest#testHttpPutValidatesResponseCodeAndThrowsWhenInvalid`](https://github.com/tjcelaya/java-manta/blob/9fd462d2c8fc10d6b4a20646667c37d339e38004/java-manta-client/src/test/java/com/joyent/manta/http/StandardHttpHelperTest.java#L97)
+| 3          | PUT                    | Server MD5 invalid | #1 and [`com.joyent.manta.http.StandardHttpHelperTest#testHttpPutChecksumsCompareDifferentlyFails`](https://github.com/tjcelaya/java-manta/blob/9fd462d2c8fc10d6b4a20646667c37d339e38004/java-manta-client/src/test/java/com/joyent/manta/http/StandardHttpHelperTest.java#L152)
+| 4          | MPU any part           | Network error      | [`com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT#canRetryUploadPart`](https://github.com/tjcelaya/java-manta/blob/5b5184ab3f95f7bbdda7a6ad840502493e85bcdd/java-manta-it/src/test/java/com/joyent/manta/client/multipart/EncryptedServerSideMultipartManagerIT.java#L503)
+| 5          | MPU any part           | Invalid response   | #4 and [`com.joyent.manta.client.multipart.ServerSideMultipartManagerTest#canUploadPartValidatesResponseCode`](https://github.com/tjcelaya/java-manta/blob/a1975e77c909e1d55264170af7139dde6bc9a52a/java-manta-client/src/test/java/com/joyent/manta/client/multipart/ServerSideMultipartManagerTest.java#L139)
+| 6          | MPU last part finalize | Network error      | duplicates #7
+| 6          | MPU last part finalize | Invalid response   | #4 abd [`com.joyent.manta.client.multipart.EncryptionStateRecorderTest#testRecordAndRewindMultipleParts`](https://github.com/tjcelaya/java-manta/blob/263e360e3a1a2817a5d056a9793ab0c064183811/java-manta-client/src/test/java/com/joyent/manta/client/multipart/EncryptionStateRecorderTest.java#L152)
+| 7          | MPU commit w/ finalize | Network error      | [`com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT#canRetryCompleteInCaseOfErrorDuringFinalPartUpload`](https://github.com/tjcelaya/java-manta/blob/263e360e3a1a2817a5d056a9793ab0c064183811/java-manta-it/src/test/java/com/joyent/manta/client/multipart/EncryptedServerSideMultipartManagerIT.java#L476)
+| 8          | MPU commit w/ finalize | Invalid response   | #5 and #7
