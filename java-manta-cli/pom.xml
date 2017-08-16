@@ -10,7 +10,7 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.1.6-SNAPSHOT</version>
+        <version>3.1.6</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,7 +21,7 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
-            <version>3.1.6-SNAPSHOT</version>
+            <version>3.1.6</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
