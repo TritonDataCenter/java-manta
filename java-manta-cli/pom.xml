@@ -39,6 +39,11 @@
             <artifactId>commons-lang3</artifactId>
             <version>${dependency.commons-lang.version}</version>
         </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>${dependency.picocli.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
