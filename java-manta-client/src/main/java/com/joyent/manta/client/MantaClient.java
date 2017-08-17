@@ -39,6 +39,7 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -205,7 +206,7 @@ public class MantaClient implements AutoCloseable {
         final KeyPair keyPair = keyPairFactory.createKeyPair();
 
         final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (config.disableNativeSignatures()) {
+        if (ObjectUtils.firstNonNull(config.disableNativeSignatures(), false)) {
             builder.providerCode("stdlib");
         }
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
