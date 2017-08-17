@@ -69,6 +69,14 @@ public interface SupportedCipherDetails {
     Cipher getCipher();
 
     /**
+     * In some cases we <em>need</em> the Cipher to live entirely in Java.
+     * See com.joyent.manta.client.multipart.EncryptionStateRecorder
+     *
+     * @return a new instance of the associated cipher using the BouncyCastle provider
+     */
+    Cipher getBouncyCastleCipher();
+
+    /**
      * Calculates the size of the output ciphertext based on the plaintext
      * size.
      *

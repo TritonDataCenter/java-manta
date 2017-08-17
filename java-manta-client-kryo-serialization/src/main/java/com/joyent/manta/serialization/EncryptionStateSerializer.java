@@ -183,7 +183,7 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
         final HMac hmac = kryo.readObjectOrNull(input, HMac.class);
 
         final OutputStream cipherStream = EncryptingEntityHelper.makeCipherOutputForStream(
-                multipartStream, encryptionContext, hmac);
+                multipartStream, encryptionContext.getCipherDetails(), encryptionContext.getCipher(), hmac);
 
         writeField(cipherStreamField, encryptionState, cipherStream);
 

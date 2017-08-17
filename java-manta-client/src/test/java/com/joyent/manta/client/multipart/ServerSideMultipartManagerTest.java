@@ -20,6 +20,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.config.TestConfigContext;
+import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.FakeCloseableHttpClient;
 import com.joyent.manta.http.MantaConnectionContext;
@@ -118,6 +119,39 @@ public class ServerSideMultipartManagerTest {
         }
 
         Assert.assertTrue(caught, "Expected exception was not caught");
+    }
+
+    public void canUploadPartSuccess() throws IOException {
+        final UUID uploadId = UUID.randomUUID();
+        final String partsDirectory = "/test/uploads/a/abcdef";
+        final String path = "/test/stor/object";
+        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+
+        final ServerSideMultipartManager mngr = buildMockManager(
+                new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
+                "");
+
+        final MantaMultipartUploadPart part = mngr.uploadPart(upload, 1, new byte[0]);
+
+        Assert.assertEquals(part.getObjectPath(), path);
+    }
+
+    public void canUploadPartValidatesResponseCode() throws IOException {
+        final UUID uploadId = UUID.randomUUID();
+        final String partsDirectory = "/test/uploads/a/abcdef";
+        final String path = "/test/stor/object";
+        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+
+        final ServerSideMultipartManager mngr = buildMockManager(
+                new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_SERVICE_UNAVAILABLE, "Service Unavailable"),
+                String.format(
+                        "{\"code\":\"%s\", \"message\":\"%s\"}",
+                        MantaErrorCode.SERVICE_UNAVAILABLE_ERROR.getCode(),
+                        "manta is unable to serve this request"));
+
+        Assert.assertThrows(MantaMultipartException.class, () -> {
+            mngr.uploadPart(upload, 1, new byte[0]);
+        });
     }
 
     public void canAbortMpu() throws IOException {

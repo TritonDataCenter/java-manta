@@ -351,13 +351,11 @@ public class StandardHttpHelper implements HttpHelper {
                                            final HttpRequest request,
                                            final HttpResponse response)
             throws MantaChecksumFailedException {
-        if (entity == null) {
-            return;
-        }
+        Validate.notNull(entity, "Request body required");
 
         if (serverMd5 == null || serverMd5.length == 0) {
-            LOGGER.warn("No cryptographic check performed by the server");
-            return;
+            final String msg = "Server calculated MD5 is missing";
+            throw new MantaChecksumFailedException(msg, request, response);
         }
 
         final byte[] clientMd5 = entity.getDigest();

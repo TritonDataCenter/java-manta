@@ -10,9 +10,13 @@ package com.joyent.manta.http;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.impl.client.DefaultServiceUnavailableRetryStrategy;
+import org.apache.http.protocol.HttpContext;
 
 import java.time.Duration;
+
+import static com.joyent.manta.http.MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
 
 /**
  * Implementation of {@link org.apache.http.client.ServiceUnavailableRetryStrategy}
@@ -36,5 +40,16 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
     public MantaServiceUnavailableRetryStrategy(final ConfigContext context) {
         super(ObjectUtils.firstNonNull(context.getRetries(), DefaultsConfigContext.DEFAULT_HTTP_RETRIES),
                 RETRY_INTERVAL);
+    }
+
+    @Override
+    public boolean retryRequest(final HttpResponse response, final int executionCount, final HttpContext context) {
+        final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
+
+        if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
+            return false;
+        }
+
+        return super.retryRequest(response, executionCount, context);
     }
 }

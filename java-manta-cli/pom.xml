@@ -10,7 +10,7 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.1.4-SNAPSHOT</version>
+        <version>3.1.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,7 +21,7 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
-            <version>3.1.4-SNAPSHOT</version>
+            <version>3.1.7-SNAPSHOT</version>
 
             <!-- If you add a dependency to java-manta-client that is shaded,
                  you will have to add it as an exclusion below because the
@@ -93,6 +93,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${dependency.commons-lang.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>${dependency.picocli.version}</version>
         </dependency>
     </dependencies>
 

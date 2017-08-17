@@ -37,7 +37,7 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
     public static final SupportedHmacsLookupMap INSTANCE = new SupportedHmacsLookupMap();
 
     /**
-     * Package default constructor because interface is through {@link SupportedCipherDetails}.
+     * Private constructor because interface is through {@link SupportedCipherDetails}.
      */
     private SupportedHmacsLookupMap() {
         super(MantaUtils.unmodifiableMap(

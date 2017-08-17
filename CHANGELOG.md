@@ -2,14 +2,36 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.1.x]
+### Fixed
+ - Potential file corruption caused by automatic retries as a result of
+   [503 responses](https://github.com/joyent/java-manta/issues/295)
+   when utilizing client-side encryption with regular PUT requests.
+ - MPU finalization meant it was impossible to retry last part in case of
+   [503 responses](https://github.com/joyent/java-manta/issues/297).
+ - Object content verification of standard PUT requests was being
+   skipped if the server [omitted the computed MD5](https://github.com/joyent/java-manta/issues/298)
+   from the response.
+ - [`mvn integration-test site` fails enforce-ban-duplicate-classes](https://github.com/joyent/java-manta/issues/270)
 
-## [3.x.x] - XXXX-XX-XX
+## [3.1.5] - 2017-07-28
+### Fixed
+ - MPU retries still [causing file corruption](https://github.com/joyent/java-manta/issues/290)
+   when server responds with 503 Service Unavailable. Apache HttpClient code path audited to ensure
+   no other automatic retries can occur.
+
+## [3.1.4] - 2017-07-21
 ### Changed
- - The heuristics for guessing heuristics have been adjusted to give
+ - The heuristics for guessing Content-Type have been adjusted to give
    [more consistent](https://github.com/joyent/java-manta/issues/276)
    results across platforms.
 ### Fixed
- - [`mvn integration-test site` fails enforce-ban-duplicate-classes](https://github.com/joyent/java-manta/issues/270)
+ - When using encryption in combination with Multipart Uploads,
+   [automatic retries](https://github.com/joyent/java-manta/issues/284) triggered by the underlying HTTP
+   library could cause file corruption. In case of a network error automatically certain requests would be retried
+   transparently (e.g. those backed by `File`s and `byte[]` data). This caused authentication and encryption state
+   erroneously include the partial content from the initial request. As a result of this fix encrypted MPU operations
+   will utilize the BouncyCastle cryptography library even when libnss (PKCS#11) is installed.
 
 ## [3.1.3] - 2017-06-29
 ### Fixed
@@ -21,7 +43,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ## [3.1.2] - 2017-06-22
 ### Fixed
  - [`InputStream` left open in EncryptingEntity and EncryptingPartEntity](https://github.com/joyent/java-manta/pull/264)
-  leading to space from deleted files not being reclaimed until JVM shutdown.
+   leading to space from deleted files not being reclaimed until JVM shutdown.
 
 ## [3.1.1] - 2017-06-14
 ### Changed

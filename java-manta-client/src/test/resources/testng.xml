@@ -45,6 +45,7 @@
             <class name="com.joyent.manta.client.multipart.MultipartOutputStreamTest" />
             <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerTest" />
             <class name="com.joyent.manta.client.multipart.TestMultipartManagerTest" />
+            <class name="com.joyent.manta.client.multipart.EncryptionStateRecorderTest" />
         </classes>
     </test>
     <test name="Encryption Tests">

@@ -17,6 +17,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
+import org.apache.http.protocol.HttpContext;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -99,7 +100,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
         HttpEntity entity = new ExposedStringEntity(contents,
                 ContentType.APPLICATION_OCTET_STREAM);
 
-        return uploadPart(upload, partNumber, entity);
+        return uploadPart(upload, partNumber, entity, null);
     }
 
     @Override
@@ -111,7 +112,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
         Validate.notNull(bytes, "Byte array must not be null");
 
         HttpEntity entity = new ExposedByteArrayEntity(bytes, ContentType.APPLICATION_OCTET_STREAM);
-        return uploadPart(upload, partNumber, entity);
+        return uploadPart(upload, partNumber, entity, null);
     }
 
     @Override
@@ -135,7 +136,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
         }
 
         HttpEntity entity = new FileEntity(file, ContentType.APPLICATION_OCTET_STREAM);
-        return uploadPart(upload, partNumber, entity);
+        return uploadPart(upload, partNumber, entity, null);
     }
 
     @Override
@@ -154,7 +155,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
         HttpEntity entity = new MantaInputStreamEntity(inputStream,
                 ContentType.APPLICATION_OCTET_STREAM);
 
-        return uploadPart(upload, partNumber, entity);
+        return uploadPart(upload, partNumber, entity, null);
     }
 
     @Override
@@ -174,7 +175,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
                     ContentType.APPLICATION_OCTET_STREAM);
         }
 
-        return uploadPart(upload, partNumber, entity);
+        return uploadPart(upload, partNumber, entity, null);
     }
 
     /**
@@ -187,17 +188,19 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
      * how a multipart upload part is sent to Manta. The abstraction of
      * {@link MantaClient} is intended for users of the SDK and not necessarily
      * internal consumers, so additional customization of HTTP calls needs to
-     * be done by and its API is insufficient.</p>
+     * be done by a {@link MantaMultipartManager}.</p>
      *
      * @param upload multipart upload object
      * @param partNumber part number to identify relative location in final file
      * @param entity Apache HTTP Client entity instance
+     * @param context additional request context, may be null
      * @return multipart single part object
      * @throws IOException thrown if there is a problem connecting to Manta
      */
     abstract PART uploadPart(UPLOAD upload,
                              int partNumber,
-                             HttpEntity entity) throws IOException;
+                             HttpEntity entity,
+                             HttpContext context) throws IOException;
 
     /**
      * <p>Uses reflection to read a private field from a {@link MantaClient}
