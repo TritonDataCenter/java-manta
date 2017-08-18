@@ -16,15 +16,8 @@ SDK for interacting with Joyent's Manta system.
 
 ### Requirements
 * [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
-* [Maven 3.3.x](https://maven.apache.org/)
-* [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html)
-
-#### CLI Requirements
-
-Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
- 1. Edit "$JAVA_HOME/jre/lib/security/java.security " Add an entry for BouncyCastle  
- `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
- 2. Copy bc*.jar to $JAVA_HOME/jre/lib/ext
+* [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) to
+  use Client-side Encryption features.
 
 ### Using Maven
 Add the latest java-manta dependency to your Maven `pom.xml`.
@@ -46,7 +39,7 @@ If you prefer to build from source, you'll also need
 [Maven](https://maven.apache.org/), and then invoke:
 
 ``` bash
-# mvn package
+$ mvn package
 ```
 
 Which will compile the jar to ./targets/java-manta-version.jar. You can then
@@ -57,7 +50,7 @@ If you want to skip running of the test suite, use the `-DskipTests` property.
 ## Configuration
 
 Configuration can be done through both system properties or environment variables, with the environment taking
-precedence over system properties. Listed below are the configuration options you'll need to get started.
+precedence over system properties. Listed below are the minimum configuration options you'll need to get started.
 
 | Default                              | System Property                    | Environment Variable           |
 |--------------------------------------|------------------------------------|--------------------------------|
@@ -72,29 +65,13 @@ The URL of the manta service endpoint to test against
 The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
 you will specify the account name as "user/subuser".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
-The fingerprint for the public key used to access the manta service.
+The fingerprint for the public key used to access the manta service. Can be retrieved using `ssh-keygen -l -f ${MANTA_KEY_PATH} -E md5 | cut -d' ' -f 2`
 * `manta.key_path` ( **MANTA_KEY_PATH**)
 The name of the file that will be loaded for the account used to access the manta service.
 
-Please refer to the [configuration documentation](/docs/CONFIGURING.md) for the full
+Please refer to the [configuration documentation](/INSTALL.md) for the full
 list of configuration options, which include retry and performance tuning in addition to encryption and authentication
 parameters.
-
-## Accounts, Usernames and Subusers
-Joyent's SmartDataCenter account implementation is such that you can have a
-subuser as a dependency upon a user. This is part of SmartDataCenter's [RBAC
-implementation](https://docs.joyent.com/public-cloud/rbac/users). A subuser
-is a user with a unique username that is joined with the account holder's
-username. Typically, this is in the format of "user/subuser".
-
-Within the Java Manta library, we refer to the account name as the entire
-string used to login - "user/subuser". When we use the term user it is in
-reference to the "user" portion of the account name and when we use the term
-subuser, it is in reference to the subuser portion of the account name.
-
-The notable exception is that in the configuration passed into the library,
-we have continued to use the terminology *Manta user* to refer to the
-account name because of historic compatibility concerns.
 
 ## Usage
 
@@ -126,70 +103,12 @@ useful functions for common use cases.
 * [Jobs using MantaClient](/java-manta-examples/src/main/java/JobsWithMantaClient.java)
 * [Jobs using MantaJobBuilder](/java-manta-examples/src/main/java/JobsWithMantaJobBuilder.java)
 
-For more examples, check the included [integration test module](/java-manta-it).
-
-### Server-side Multipart Upload
-
-Manta supports multipart upload for dividing large files into many smaller parts 
-and uploading them to Manta, where they can be assembled. The design for the 
-server-side multipart upload is specified in 
-[RFD 65](https://github.com/joyent/rfd/tree/master/rfd/0065). The Java SDK
-implements an interface to make using server-side multipart uploading 
-straightforward. The strategy to use for multipart upload is listed below.
-
-1. Create a `MantaClient` instance.
-2. Create an instance of `ServerSideMultipartManager` passing in the instance of
-   MantaClient to the constructor.
-3. Initiate an upload to the full path where the final object should be stored.
-4. Upload each part using the `ServerSideMultipartUpload` object created in the
-   previous step. The order that parts are uploaded does not matter,
-   what does matter is that each part has the appropriate part number specified.
-5. Execute `complete` to commit the parts to the object on the server. At this 
-   point the server will assemble the final object.
-
-An example application is provided in the **java-manta-examples** module, named
-[ServerMultipart](/java-manta-examples/src/main/java/ServerMultipart.java),
-to help illustrate the workflow.
-
-### Encrypted Multipart Upload
-
-When using client-side encryption with multipart upload there are some 
-additional restrictions imposed on the implementor of the SDK:
-
-* Uploaded parts must be uploaded in sequential order (e.g. part 1, 
-  part 2, ...).
-* Different parts can not be uploaded between different JVMs.
-* At this time only the cipher mode AES/CTR is supported.
-
-You will need to configure an instance of MantaClient using the
-settings you would for client-side encryption, namely setting
-`manta.client_encryption` to `true` and configuring the cipher and
-encryption key.  Additionally, you need to create an instance of
-`EncryptedServerSideMultipartManager`, which should be reused, for
-uploading the various file parts and assembling the final file.
-
-An example application is provided in the java-manta-examples module,
-named [ClientEncryptionServerMultipart](/java-manta-examples/src/main/java/ClientEncryptionServerMultipart.java),
-to help illustrate the workflow.
-
-## Subuser Difficulties
-
-If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
-Also, a common problem is that you haven't granted the subuser access to the
-path within Manta. Typically this is done via the
-[Manta CLI Tools](https://apidocs.joyent.com/manta/commands-reference.html)
-using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md).
-This can also be done by adding roles on the `MantaHttpHeaders` object.
-
-For example:
-
-```bash
-mchmod +subusername /user/stor/my_directory
-```
+For more examples, check the included [examples module](/java-manta-examples) and the
+[integration test module](/java-manta-it/src/test/java/com/joyent/manta/client).
 
 ## Contributions
 
-Contributions welcome! Please read the [CONTRIBUTING.md](/docs/CONTRIBUTING.md) document for details
+Contributions are welcome! Please read the [CONTRIBUTING.md](/docs/CONTRIBUTING.md) document for details
 on getting started.
 
 ### Testing
