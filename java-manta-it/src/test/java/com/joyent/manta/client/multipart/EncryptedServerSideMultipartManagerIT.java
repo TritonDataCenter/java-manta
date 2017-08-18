@@ -439,11 +439,11 @@ public class EncryptedServerSideMultipartManagerIT {
         for (int i = 1; i < parts.length; i++) {
             final int j = i;
             exception = Assert.expectThrows(MantaMultipartException.class,
-                                        () -> {
-                                            MantaMultipartUploadTuple uploaded = multipart.uploadPart(upload, j + 1, parts[j]);
-                                            uploadedParts.add(uploaded);
-                                        });
-            assert exception.getCause() instanceof IllegalStateException;
+                    () -> {
+                        MantaMultipartUploadTuple uploaded = multipart.uploadPart(upload, j + 1, parts[j]);
+                        uploadedParts.add(uploaded);
+                    });
+            Assert.assertTrue(exception.getCause() instanceof IllegalStateException);
         }
         Assert.assertEquals(uploadedParts.size(), 1, "only first small upload should succeed");
 
