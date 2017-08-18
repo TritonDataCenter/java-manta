@@ -18,7 +18,7 @@ import java.io.File;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public final class DefaultsConfigContext implements ConfigContext {
+public class DefaultsConfigContext implements ConfigContext {
     /**
      * The default Manta service endpoint - a public cloud endpoint.
      */
