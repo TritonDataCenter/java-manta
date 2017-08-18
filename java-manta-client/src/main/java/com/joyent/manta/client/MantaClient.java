@@ -14,7 +14,6 @@ import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.jobs.MantaJobBuilder;
 import com.joyent.manta.client.jobs.MantaJobError;
-import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
@@ -209,7 +208,7 @@ public class MantaClient implements AutoCloseable {
         final Signer.Builder builder = new Signer.Builder(keyPair);
         if (ObjectUtils.firstNonNull(
                 config.disableNativeSignatures(),
-                BaseChainedConfigContext.DEFAULT_CONFIG.disableNativeSignatures())) {
+                DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
             builder.providerCode("stdlib");
         }
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);

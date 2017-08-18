@@ -11,7 +11,6 @@ import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureConfigurator;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
-import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.ConfigContextMBean;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -166,7 +165,7 @@ public class MantaConnectionFactory implements Closeable {
         // If we have auth disabled, then we don't assign any signer classes
         if (ObjectUtils.firstNonNull(
                 config.noAuth(),
-                BaseChainedConfigContext.DEFAULT_CONFIG.noAuth())) {
+                DefaultsConfigContext.DEFAULT_NO_AUTH)) {
             this.signatureConfigurator = null;
             authScheme = null;
             this.signerThreadLocalRef = new WeakReference<>(null);

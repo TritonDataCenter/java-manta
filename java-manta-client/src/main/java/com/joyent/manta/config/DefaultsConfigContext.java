@@ -82,6 +82,16 @@ public final class DefaultsConfigContext implements ConfigContext {
           + "TLS_RSA_WITH_AES_128_CBC_SHA256";
 
     /**
+     * HTTP Signatures for authentication are enabled by default.
+     */
+    public static final boolean DEFAULT_NO_AUTH = false;
+
+    /**
+     * Usage of native extensions for http signatures is enabled by default.
+     */
+    public static final boolean DEFAULT_DISABLE_NATIVE_SIGNATURES = false;
+
+    /**
      * Default number of milliseconds to wait for a TCP socket's connection to
      * timeout.
      */
@@ -174,12 +184,12 @@ public final class DefaultsConfigContext implements ConfigContext {
 
     @Override
     public Boolean noAuth() {
-        return false;
+        return DEFAULT_NO_AUTH;
     }
 
     @Override
     public Boolean disableNativeSignatures() {
-        return false;
+        return DEFAULT_DISABLE_NATIVE_SIGNATURES;
     }
 
     @Override
