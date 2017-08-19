@@ -49,8 +49,8 @@ If you want to skip running of the test suite, use the `-DskipTests` property.
 
 ## Configuration
 
-Configuration can be done through both system properties or environment variables, with the environment taking
-precedence over system properties. Listed below are the minimum configuration options you'll need to get started.
+Configuration can be done through system properties or environment variables.
+Listed below are the most commonly used configuration options:
 
 | Default                              | System Property                    | Environment Variable           |
 |--------------------------------------|------------------------------------|--------------------------------|
@@ -65,12 +65,12 @@ The URL of the manta service endpoint to test against
 The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
 you will specify the account name as "user/subuser".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
-The fingerprint for the public key used to access the manta service. Can be retrieved using `ssh-keygen -l -f ${MANTA_KEY_PATH} -E md5 | cut -d' ' -f 2`
+The fingerprint for the public key used to access the manta service. Can be obtained using `ssh-keygen -l -f ${MANTA_KEY_PATH} -E md5 | cut -d' ' -f 2`
 * `manta.key_path` ( **MANTA_KEY_PATH**)
 The name of the file that will be loaded for the account used to access the manta service.
 
-Please refer to the [configuration documentation](/INSTALL.md) for the full
-list of configuration options, which include retry and performance tuning in addition to encryption and authentication
+Please refer to the [configuration documentation](/INSTALL.md#Configuration) for example code and the full
+list of configuration options which include retry and performance tuning in addition to encryption and authentication
 parameters.
 
 ## Usage
@@ -85,7 +85,7 @@ is intended to be used per Manta account. It is thread-safe and you should
 share one instance across multiple threads.
 
 For detailed usage instructions consult the provided JavaDoc and examples. The
-package JavaDoc can also be browsed online at [javadoc.io](https://javadoc.io/doc/com.joyent.manta/java-manta-client/)
+JavaDoc can also be browsed online at [javadoc.io](https://javadoc.io/doc/com.joyent.manta/java-manta-client/)
 
 ### General Examples
  
