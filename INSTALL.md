@@ -1,5 +1,11 @@
 # Installation
 
+## Requirements
+* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
+* [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) to
+  use Client-side Encryption with stronger ciphers (192/256-bit).
+* [Maven 3.3.x](https://maven.apache.org/) to contribute to the project.
+
 ### CLI Requirements
 
 Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
@@ -19,21 +25,21 @@ Add the latest java-manta-client dependency to your Maven `pom.xml`.
 ```
 
 Consult [Maven Central search](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.joyent.manta%22%20AND%20a%3A%22java-manta-client%22)
-for a list of all available versions.
+for a list of all available versions and dependency strings for other project types.
 
 Note: Users are expected to use the same version across sub-packages, e.g. using
 `com.joyent.manta:java-manta-client:3.0.0` with
 `com.joyent.manta:java-manta-client-kryo-serialization:3.1.0` is not supported.
 
-### From Source
+## From Source
 If you prefer to build from source, you'll also need
 [Maven](https://maven.apache.org/), and then invoke:
 
 ``` bash
-# mvn package
+$ mvn package
 ```
 
-Which will compile the jar to ./targets/java-manta-version.jar. You can then
+Which will compile the jar to ./targets/java-manta-${VERSION}.jar. You can then
 add it as a dependency to your Java project.
 
 If you want to skip running of the test suite, use the `-DskipTests` property.

@@ -14,15 +14,9 @@ SDK for interacting with Joyent's Manta system.
 
 ## Installation
 
-### Requirements
-* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
-* [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) to
-  use Client-side Encryption features.
+Java 1.8 is required. The main client module can be installed by adding the following dependency in Maven:
 
-### Using Maven
-Add the latest java-manta dependency to your Maven `pom.xml`.
-
-```xml
+```
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta-client</artifactId>
@@ -30,22 +24,8 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 </dependency>
 ```
 
-Note: Users are expected to use the same version across sub-packages, e.g. using
-`com.joyent.manta:java-manta-client:3.0.0` with
-`com.joyent.manta:java-manta-client-kryo-serialization:3.1.0` is not supported.
-
-### From Source
-If you prefer to build from source, you'll also need
-[Maven](https://maven.apache.org/), and then invoke:
-
-``` bash
-$ mvn package
-```
-
-Which will compile the jar to ./targets/java-manta-version.jar. You can then
-add it as a dependency to your Java project.
-
-If you want to skip running of the test suite, use the `-DskipTests` property.
+Please refer to the [installation documentation](/INSTALL.md) for more details about using stronger encryption modes
+or methods for improving encryption performance.
 
 ## Configuration
 
