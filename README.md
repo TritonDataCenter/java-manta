@@ -108,16 +108,16 @@ For more examples, check the included [examples module](/java-manta-examples) an
 
 ## Contributions
 
-Contributions are welcome! Please read the [CONTRIBUTING.md](/docs/CONTRIBUTING.md) document for details
+Contributions are welcome! Please read the [CONTRIBUTING.md](/CONTRIBUTING.md) document for details
 on getting started.
 
 ### Testing
 
-Please refer to the [testing documentation](/docs/TESTING.md).
+Please refer to the [testing documentation](/TESTING.md).
 
 ### Releasing
 
-Please refer to the [release documentation](/docs/RELEASING.md).
+Please refer to the [release documentation](/RELEASING.md).
 
 ### Bugs
 
