@@ -2,7 +2,9 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.x]
+## [3.1.7-SNAPSHOT] - Coming soon!
+
+## [3.1.6] - 2017-08-15
 ### Fixed
  - Potential file corruption caused by automatic retries as a result of
    [503 responses](https://github.com/joyent/java-manta/issues/295)
