@@ -13,6 +13,10 @@ Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a securi
  `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
  2. Copy bc*.jar to $JAVA_HOME/jre/lib/ext
 
+### Unlimited Encryption Requirements
+Using stronger encryption modes (192 and 256-bit) will require installation of the [Java Cryptography Extensions]
+(http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html).
+
 ### Using Maven
 Add the latest java-manta-client dependency to your Maven `pom.xml`.
 
@@ -164,7 +168,8 @@ ConfigContext config = new ChainedConfigContext(defaultConfig, customConfig);
 ## Client-side Encryption
 
 In order to enable client side encryption for downloading and decrypting encrypted files, please set the following
-system properties. Please consult the [Configuration]() for the corresponding environment variable.
+system properties. Please consult the [Configuration Parameters list](/INSTALL.md#Parameters) for the corresponding
+environment variable.
 
 - `manta.client_encryption` - set to `true`
 - `manta.encryption_key_bytes_base64` or `manta.encryption_key_bytes`
