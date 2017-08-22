@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.1.7-SNAPSHOT] - Coming soon!
+### Fixed
+ - NullPointerException as a result of some configuration parameters
+   [not being handled correctly unless explicity set](https://github.com/joyent/java-manta/issues/247).
+
 
 ## [3.1.6] - 2017-08-15
 ### Fixed

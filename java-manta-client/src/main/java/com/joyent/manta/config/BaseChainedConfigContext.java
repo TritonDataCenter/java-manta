@@ -312,8 +312,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     public void overwriteWithContext(final ConfigContext context) {
         /* If a default context is being used to overwrite after this
          * context has been initialized, then we want to be careful to not
-         * overwrite values that have already been set with defaults. */
-        boolean isDefaultContext = context instanceof DefaultsConfigContext;
+         * overwrite values that have already been set by non-default contexts. */
+        boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
 
         if (isDefaultContext) {
             overwriteWithDefaultContext((DefaultsConfigContext)context);
