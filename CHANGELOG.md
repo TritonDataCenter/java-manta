@@ -9,6 +9,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    when utilizing client-side encryption with regular PUT requests.
  - MPU finalization meant it was impossible to retry last part in case of
    [503 responses](https://github.com/joyent/java-manta/issues/297).
+ - Object content verification of standard PUT requests was being
+   skipped if the server [omitted the computed MD5](https://github.com/joyent/java-manta/issues/298)
+   from the response.
 
 ## [3.1.5] - 2017-07-28
 ### Fixed

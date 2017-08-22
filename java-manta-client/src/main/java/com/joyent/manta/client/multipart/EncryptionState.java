@@ -37,6 +37,11 @@ public class EncryptionState {
     private static final transient Logger LOGGER = LoggerFactory.getLogger(EncryptionState.class);
 
     /**
+     * Sentinel value for an EncryptionState which has not yet sent any parts.
+     */
+    static final int NOT_STARTED = -1;
+
+    /**
      * Encryption cipher state object.
      */
     private final EncryptionContext encryptionContext;
@@ -49,7 +54,7 @@ public class EncryptionState {
     /**
      * The number of the last part processed.
      */
-    private int lastPartNumber = -1;
+    private int lastPartNumber = NOT_STARTED;
 
     /**
      * The multipart stream that allows for attaching and detaching streams.

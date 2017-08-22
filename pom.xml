@@ -11,7 +11,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>3.1.6-SNAPSHOT</version>
+    <version>3.1.7-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>java-manta</name>
@@ -163,6 +163,7 @@
         <dependency.objenesis.version>2.5.1</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.5</dependency.cloning.version>
+        <dependency.picocli.version>0.9.8</dependency.picocli.version>
     </properties>
 
     <dependencies>
