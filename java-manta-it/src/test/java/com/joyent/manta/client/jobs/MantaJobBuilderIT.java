@@ -56,7 +56,8 @@ public class MantaJobBuilderIT {
 
         mantaClient = new MantaClient(config);
 
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+                config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

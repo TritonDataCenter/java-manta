@@ -7,8 +7,8 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
@@ -37,14 +37,22 @@ public class MantaClientDirectoriesIT {
 
     private String testPathPrefix;
 
+    private ConfigContext config;
+
+
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        String testPathBase = String.format("%s/stor/java-manta-integration-tests",
+                config.getMantaHomeDirectory());
+        testPathPrefix = String.format("%s/%s",
+                testPathBase, UUID.randomUUID());
+        mantaClient.putDirectory(testPathBase, true);
     }
 
     @AfterClass
@@ -57,7 +65,7 @@ public class MantaClientDirectoriesIT {
 
     @Test
     public void canCreateDirectory() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+        mantaClient.putDirectory(testPathPrefix);
 
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         boolean created = mantaClient.putDirectory(dir);

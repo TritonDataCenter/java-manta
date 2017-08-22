@@ -73,7 +73,8 @@ public class EncryptedJobsMultipartManagerIT {
         this.mantaClient = new MantaClient(config);
         this.multipart = new EncryptedJobsMultipartManager(this.mantaClient);
 
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+                config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

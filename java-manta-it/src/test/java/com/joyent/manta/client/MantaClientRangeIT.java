@@ -67,7 +67,8 @@ public class MantaClientRangeIT {
 
         mantaClient = new MantaClient(config);
         this.config = config;
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
+                config.getMantaHomeDirectory(), UUID.randomUUID());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
