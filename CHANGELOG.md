@@ -4,6 +4,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.1.7-SNAPSHOT] - Coming soon!
 ### Fixed
+ - MPU parts which were missing an ETag in their response were
+   [not treated as errors](https://github.com/joyent/java-manta/issues/305).
  - NullPointerException as a result of some configuration parameters
    [not being handled correctly unless explicity set](https://github.com/joyent/java-manta/issues/247).
 
