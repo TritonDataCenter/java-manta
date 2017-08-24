@@ -128,16 +128,19 @@ public class ServerSideMultipartManagerTest {
         final String partsDirectory = "/test/uploads/a/abcdef";
         final String path = "/test/stor/object";
         final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+        final String etag = UUID.randomUUID().toString();
 
         final ServerSideMultipartManager mngr = buildMockManager(
                 new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
                 "",
                 (response) -> when(response.getFirstHeader(HttpHeaders.ETAG))
-                        .thenReturn(new BasicHeader(HttpHeaders.ETAG, "1")));
+                        .thenReturn(new BasicHeader(HttpHeaders.ETAG, etag)));
 
         final MantaMultipartUploadPart part = mngr.uploadPart(upload, 1, new byte[0]);
 
         Assert.assertEquals(part.getObjectPath(), path);
+        Assert.assertEquals(part.getPartNumber(), 1);
+        Assert.assertEquals(part.getEtag(), etag);
     }
 
     public void canUploadPartValidatesResponseCode() throws IOException {
@@ -176,21 +179,6 @@ public class ServerSideMultipartManagerTest {
         });
 
         Assert.assertTrue(e.getMessage().contains("ETag missing from part response"));
-    }
-
-    public void canUploadPartSucceedsWithEtag() throws IOException {
-        final UUID uploadId = UUID.randomUUID();
-        final String partsDirectory = "/test/uploads/a/abcdef";
-        final String path = "/test/stor/object";
-        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
-
-        final ServerSideMultipartManager mngr = buildMockManager(
-                new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
-                "",
-                (response) -> when(response.getFirstHeader(HttpHeaders.ETAG))
-                        .thenReturn(new BasicHeader(HttpHeaders.ETAG, "1")));
-
-        mngr.uploadPart(upload, 1, new byte[0]);
     }
 
     public void canAbortMpu() throws IOException {
