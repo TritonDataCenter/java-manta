@@ -54,8 +54,8 @@ Configuration parameters can be set through either system properties or the envi
 flexible combination of parameters from different sources:
 
   - `StandardConfigContext` leaves all values unset and provides named setters
-  - `EnvVarConfigContext` reads values from environment variables (e.g. `MANTA_URL=value`)
-  - `SystemSettingsConfigContext` reads values from system properties (e.g. from flags `-Dmanta.url=value` or an `application.properties` file)
+  - `EnvVarConfigContext` reads values from environment variables (e.g. `export MANTA_URL=value`)
+  - `SystemSettingsConfigContext` reads values from system properties (e.g. from flags `-Dmanta.url=value` or a `.properties` file)
   - `ChainedConfigContext` allows the combination of multiple `ConfigContext`s
 
 ## Parameters
