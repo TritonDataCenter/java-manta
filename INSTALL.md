@@ -14,8 +14,8 @@ Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a securi
  2. Copy bc*.jar to $JAVA_HOME/jre/lib/ext
 
 ### Unlimited Encryption Requirements
-Using stronger encryption modes (192 and 256-bit) will require installation of the [Java Cryptography Extensions]
-(http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html).
+Using stronger encryption modes (192 and 256-bit) will require installation of the
+[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html).
 
 ### Using Maven
 Add the latest java-manta-client dependency to your Maven `pom.xml`.
