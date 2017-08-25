@@ -168,7 +168,7 @@ ConfigContext config = new ChainedConfigContext(defaultConfig, customConfig);
 ## Client-side Encryption
 
 In order to enable client side encryption for downloading and decrypting encrypted files, please set the following
-system properties. Please consult the [Configuration Parameters list](/INSTALL.md#Parameters) for the corresponding
+system properties. Please consult the [Configuration Parameters list](/INSTALL.md#parameters) for the corresponding
 environment variable.
 
 - `manta.client_encryption` - set to `true`

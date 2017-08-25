@@ -51,7 +51,7 @@ The fingerprint for the public key used to access the manta service. Can be obta
 * `manta.key_path` ( **MANTA_KEY_PATH**)
 The name of the file that will be loaded for the account used to access the manta service.
 
-Please refer to the [configuration documentation](/INSTALL.md#Configuration) for example code and the full
+Please refer to the [configuration documentation](/INSTALL.md#configuration) for example code and the full
 list of configuration options which include retry and performance tuning in addition to encryption and authentication
 parameters.
 
