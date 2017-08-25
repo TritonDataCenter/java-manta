@@ -43,8 +43,7 @@ public class MantaObjectOutputStreamIT {
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

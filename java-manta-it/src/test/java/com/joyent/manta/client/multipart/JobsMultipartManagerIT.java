@@ -67,8 +67,8 @@ public class JobsMultipartManagerIT {
 
         this.multipart = new JobsMultipartManager(this.mantaClient);
 
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

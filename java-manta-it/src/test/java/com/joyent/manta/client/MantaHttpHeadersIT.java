@@ -14,6 +14,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -45,6 +46,16 @@ public class MantaHttpHeadersIT {
 
     private String testPathPrefix;
 
+    private final String primaryRoleName = ObjectUtils.firstNonNull(
+            System.getenv("MANTA_IT_ROLE_PRIMARY"),
+            System.getProperty("manta.it.role_primary"),
+            "primary");
+
+    private final String secondaryRoleName = ObjectUtils.firstNonNull(
+            System.getenv("MANTA_IT_ROLE_SECONDARY"),
+            System.getProperty("manta.it.role_secondary"),
+            "secondary");
+
     @BeforeClass
     public void beforeClass() throws IOException {
 
@@ -52,8 +63,7 @@ public class MantaHttpHeadersIT {
         ConfigContext config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
@@ -82,7 +92,7 @@ public class MantaHttpHeadersIT {
     public void canSetSingleRoleTag() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
-        roles.add("manta");
+        roles.add(primaryRoleName);
         headers.setRoles(roles);
 
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
@@ -116,8 +126,8 @@ public class MantaHttpHeadersIT {
     public void canSetMultipleRoleTags() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
-        roles.add("manta");
-        roles.add("role2");
+        roles.add(primaryRoleName);
+        roles.add(secondaryRoleName);
         headers.setRoles(roles);
 
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
@@ -151,8 +161,8 @@ public class MantaHttpHeadersIT {
     public void canOverwriteRoleTags() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
-        roles.add("manta");
-        roles.add("role2");
+        roles.add(primaryRoleName);
+        roles.add(secondaryRoleName);
         headers.setRoles(roles);
 
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
@@ -203,8 +213,8 @@ public class MantaHttpHeadersIT {
     public void canClearRoles() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
-        roles.add("manta");
-        roles.add("role2");
+        roles.add(primaryRoleName);
+        roles.add(secondaryRoleName);
         headers.setRoles(roles);
 
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
