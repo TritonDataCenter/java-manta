@@ -25,9 +25,9 @@ Java 1.8 is required. The main client module can be installed by adding the foll
 ```
 
 Please refer to the [installation documentation](/INSTALL.md) for more details about the following topics:
- * [192-bit and 256-bit AES encryption requiring Java Cryptography Extensions](/INSTALL.md#Unlimited Encryption Requirements)
- * [PKCS#11 configuration for faster encryption using libnss](/INSTALL.md#Enabling libnss Support via PKCS11)
- * [Native implementation of MD5 calculations for faster digest operations](/INSTALL.md#Enabling Native FastMD5 Support)
+ * [192-bit and 256-bit AES encryption requiring Java Cryptography Extensions](/INSTALL.md#unlimited-encryption-requirements)
+ * [PKCS#11 configuration for faster encryption using libnss](/INSTALL.md#enabling-libnss-support-via-pkcs11)
+ * [Native implementation of MD5 calculations for faster digest operations](/INSTALL.md#enabling-native-fastmd5-support)
 
 ## Configuration
 
