@@ -43,7 +43,7 @@ If you prefer to build from source, you'll also need
 $ mvn package
 ```
 
-Which will compile the jar to ./targets/java-manta-${VERSION}.jar. You can then
+Which will compile the jar to `./targets/java-manta-${VERSION}.jar`. You can then
 add it as a dependency to your Java project.
 
 If you want to skip running of the test suite, use the `-DskipTests` property.
