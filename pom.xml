@@ -72,12 +72,12 @@
 
     <modules>
         <module>java-manta-client</module>
+        <module>java-manta-client-shaded</module>
         <module>java-manta-client-kryo-serialization</module>
         <module>java-manta-cli</module>
         <module>java-manta-it</module>
         <module>java-manta-benchmark</module>
         <module>java-manta-examples</module>
-        <module>java-manta-client-shaded</module>
     </modules>
 
     <scm>
