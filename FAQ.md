@@ -4,7 +4,7 @@
 
 `mvn test` will run unit tests while `mvn verify` will include integration tests and benchmarks.
 
-See the [installation documentation](/INSTALL.md) for setting up your environment and the
+See the [installation documentation](/USAGE.md) for setting up your environment and the
 [testing documentation](/TESTING.md) for additional notes about running the test suite.
 
 ## Does Manta support multipart uploads?

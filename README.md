@@ -25,10 +25,10 @@ be installed by adding the following dependency using [Maven 3.1.x](https://mave
 </dependency>
 ```
 
-Please refer to the [installation documentation](/INSTALL.md) for more details about the following topics:
- * [192-bit and 256-bit AES encryption requiring Java Cryptography Extensions](/INSTALL.md#unlimited-encryption-requirements)
- * [PKCS#11 configuration for faster encryption using libnss](/INSTALL.md#enabling-libnss-support-via-pkcs11)
- * [Native implementation of MD5 calculations for faster digest operations](/INSTALL.md#enabling-native-fastmd5-support)
+Please refer to the [installation documentation](/USAGE.md) for more details about the following topics:
+ * [192-bit and 256-bit AES encryption requiring Java Cryptography Extensions](/USAGE.md#unlimited-encryption-requirements)
+ * [PKCS#11 configuration for faster encryption using libnss](/USAGE.md#enabling-libnss-support-via-pkcs11)
+ * [Native implementation of MD5 calculations for faster digest operations](/USAGE.md#enabling-native-fastmd5-support)
 
 ## Configuration
 
@@ -52,7 +52,7 @@ The fingerprint for the public key used to access the manta service. Can be obta
 * `manta.key_path` ( **MANTA_KEY_PATH**)
 The name of the file that will be loaded for the account used to access the manta service.
 
-Please refer to the [configuration documentation](/INSTALL.md#configuration) for example code and the full
+Please refer to the [configuration documentation](/USAGE.md#configuration) for example code and the full
 list of configuration options which include retry and performance tuning in addition to encryption and authentication
 parameters.
 

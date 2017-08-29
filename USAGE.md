@@ -45,9 +45,6 @@ If you prefer to build from source, you'll also need
 $ mvn package
 ```
 
-Which will compile the jar to `./targets/java-manta-${VERSION}.jar`. You can then
-add it as a dependency to your Java project.
-
 If you want to skip running of the test suite use the `-DskipTests` property, e.g. `mvn -DskipTests package`.
 
 # Configuration
@@ -165,7 +162,7 @@ See the examples for a [typical configuration using defaults](/java-manta-exampl
 ## Client-side Encryption
 
 In order to enable client side encryption for downloading and decrypting encrypted files, please set the following
-system properties. Please consult the [Configuration Parameters list](/INSTALL.md#parameters) for the corresponding
+system properties. Please consult the [Configuration Parameters list](/USAGE.md#parameters) for the corresponding
 environment variable.
 
 - `manta.client_encryption` - set to `true`
