@@ -1,5 +1,15 @@
 # FAQ
 
+## What projects are using the Java Manta SDK?
+
+Some open source projects built on the SDK are listed [in the README](/README.md).
+
+## How else can I interact with manta?
+
+The [node-manta project](https://github.com/joyent/node-manta) provides access to Manta
+for JavaScript runtimes and offers a range of CLI commands like `mget` and `mput` which
+make it easy to interact with Manta.
+
 ## How do I run the test suite?
 
 `mvn test` will run unit tests while `mvn verify` will include integration tests and benchmarks.
