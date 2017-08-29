@@ -66,9 +66,7 @@ following:
   reason: argument mismatch; com.joyent.manta.org.apache.http.impl.client.CloseableHttpClient cannot be converted to org.apache.http.impl.client.CloseableHttpClient
 ```
 
-The current solution to this issue is to place the test inside
-`java-manta-client/src/integration` and make sure it's included by the
-relevant [testng configuration](/java-manta-client/src/integration/resources/testng-integration.xml).
+There is still work being done to provide a workaround for this situation.
 
 [Surefire](http://maven.apache.org/surefire/maven-surefire-plugin/) and
 [Failsafe](http://maven.apache.org/surefire/maven-failsafe-plugin/) plugins are
