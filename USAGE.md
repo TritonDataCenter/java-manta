@@ -293,10 +293,12 @@ To get a native library for your system, [download the library](http://www.twmac
 your system (hint: they are contained in the `./build/` directory). The easiest
 way to get up and running is to copy the library to a path that makes sense
 for your application and provide a path to the library using the `com.twmacinta.util.MD5.NATIVE_LIB_FILE` system
-property:
+property. For example, on amd64 architecture running linux and assuming the contents
+have been extracted to `/opt/myapp/lib` you would use the following invocation
+to run your application with native MD5 support:
 
 ```
-java -Dcom.twmacinta.util.MD5.NATIVE_LIB_FILE=/opt/myapp/lib/arch/linux_amd64/MD5.so -jar /opt/myapp/app.jar
+$ java -Dcom.twmacinta.util.MD5.NATIVE_LIB_FILE=/opt/myapp/lib/arch/linux_amd64/MD5.so -jar /opt/myapp/app.jar
 ```
 
 You can also place multiple files in a directory structure and have the FastMD5
