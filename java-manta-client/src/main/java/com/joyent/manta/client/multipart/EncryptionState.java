@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Package private class that contains the state of the encryption streaming
+ * Class that contains the state of the encryption streaming
  * ciphers used to encrypt multipart uploads.
  *
  * @author <a href="https://github.com/cburroughs/">Chris Burroughs</a>
@@ -35,6 +35,11 @@ public class EncryptionState {
      * Logger instance.
      */
     private static final transient Logger LOGGER = LoggerFactory.getLogger(EncryptionState.class);
+
+    /**
+     * Sentinel value for an EncryptionState which has not yet sent any parts.
+     */
+    static final int NOT_STARTED = -1;
 
     /**
      * Encryption cipher state object.
@@ -49,7 +54,7 @@ public class EncryptionState {
     /**
      * The number of the last part processed.
      */
-    private int lastPartNumber = -1;
+    private int lastPartNumber = NOT_STARTED;
 
     /**
      * The multipart stream that allows for attaching and detaching streams.

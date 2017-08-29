@@ -55,10 +55,6 @@ import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.DynamicMBean;
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -78,6 +74,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.management.DynamicMBean;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 /**
  * Factory class that creates instances of
@@ -160,15 +160,12 @@ public class MantaConnectionFactory implements Closeable {
 
         // Setup configurator helper
 
-        final boolean useNativeCodeToSign;
-
-        useNativeCodeToSign = config.disableNativeSignatures() == null
-                || !config.disableNativeSignatures();
-
         final HttpSignatureAuthScheme authScheme;
 
         // If we have auth disabled, then we don't assign any signer classes
-        if (config.noAuth()) {
+        if (ObjectUtils.firstNonNull(
+                config.noAuth(),
+                DefaultsConfigContext.DEFAULT_NO_AUTH)) {
             this.signatureConfigurator = null;
             authScheme = null;
             this.signerThreadLocalRef = new WeakReference<>(null);

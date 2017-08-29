@@ -37,6 +37,10 @@ Add the latest java-manta dependency to your Maven `pom.xml`.
 </dependency>
 ```
 
+Note: Users are expected to use the same version across sub-packages, e.g. using
+`com.joyent.manta:java-manta-client:3.0.0` with
+`com.joyent.manta:java-manta-client-kryo-serialization:3.1.0` is not supported.
+
 ### From Source
 If you prefer to build from source, you'll also need
 [Maven](https://maven.apache.org/), and then invoke:

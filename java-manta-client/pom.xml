@@ -12,11 +12,11 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.1.4-SNAPSHOT</version>
+        <version>3.1.7-SNAPSHOT</version>
     </parent>
 
     <artifactId>java-manta-client</artifactId>
-    <version>3.1.4-SNAPSHOT</version>
+    <version>3.1.7-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>java-manta-client</name>
@@ -170,6 +170,20 @@
             <version>${dependency.urlbuilder.version}</version>
         </dependency>
 
+        <!-- object cloning library for memoization of encryption state -->
+        <dependency>
+            <groupId>uk.com.robust-it</groupId>
+            <artifactId>cloning</artifactId>
+            <version>${dependency.cloning.version}</version>
+        </dependency>
+
+        <!-- object instantiation library, needed by uk.com.robust-it:cloning and the kryo module -->
+        <dependency>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+            <version>${dependency.objenesis.version}</version>
+        </dependency>
+
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
@@ -237,6 +251,14 @@
                         <relocation>
                             <pattern>io.mikael.urlbuilder</pattern>
                             <shadedPattern>com.joyent.manta.io.mikael.urlbuilder</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.objenesis</pattern>
+                            <shadedPattern>com.joyent.manta.org.objenesis</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.rits</pattern>
+                            <shadedPattern>com.joyent.manta.com.rits</shadedPattern>
                         </relocation>
                     </relocations>
                     <filters>

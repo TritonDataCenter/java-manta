@@ -7,8 +7,9 @@
  */
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +19,8 @@ import java.util.Scanner;
 public class SimpleClient {
 
     public static void main(String... args) throws IOException {
-        ConfigContext config = new StandardConfigContext()
+        ConfigContext config = new ChainedConfigContext(
+            new DefaultsConfigContext())
                 .setMantaURL("https://us-east.manta.joyent.com")
                 // If there is no subuser, then just use the account name
                 .setMantaUser("user/subuser")

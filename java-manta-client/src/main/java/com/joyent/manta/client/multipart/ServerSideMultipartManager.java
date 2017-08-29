@@ -41,6 +41,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
+import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -309,7 +310,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     @Override
     MantaMultipartUploadPart uploadPart(final ServerSideMultipartUpload upload,
                                         final int partNumber,
-                                        final HttpEntity entity)
+                                        final HttpEntity entity,
+                                        final HttpContext context)
             throws IOException {
         Validate.notNull(upload, "Upload state object must not be null");
         validatePartNumber(partNumber);
@@ -325,7 +327,17 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final HttpPut put = connectionFactory.put(putPath);
         put.setEntity(entity);
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put)) {
+        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put, context)) {
+
+            validateStatusCode(
+                    HttpStatus.SC_NO_CONTENT,
+                    response.getStatusLine().getStatusCode(),
+                    "Unable to upload part",
+                    put,
+                    response,
+                    null,
+                    null);
+
             Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
             final String etag;
 

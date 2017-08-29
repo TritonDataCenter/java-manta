@@ -39,6 +39,7 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -205,7 +206,9 @@ public class MantaClient implements AutoCloseable {
         final KeyPair keyPair = keyPairFactory.createKeyPair();
 
         final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (config.disableNativeSignatures()) {
+        if (ObjectUtils.firstNonNull(
+                config.disableNativeSignatures(),
+                DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
             builder.providerCode("stdlib");
         }
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
@@ -1057,6 +1060,7 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
+        Validate.notNull(string, "String content must not be null");
         Validate.notNull(rawPath, "Path must not be null");
 
         String path = formatPath(rawPath);
