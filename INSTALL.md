@@ -1,17 +1,19 @@
 # Installation
 
 ## Requirements
-* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or higher.
+* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html). Java 1.9 is not yet supported.
 * [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) to
   use Client-side Encryption with stronger ciphers (192/256-bit).
-* [Maven 3.3.x](https://maven.apache.org/) to contribute to the project.
+* [Maven 3.1.x](https://maven.apache.org/) to contribute to the project.
 
 ### CLI Requirements
 
 Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
  1. Edit "$JAVA_HOME/jre/lib/security/java.security " Add an entry for BouncyCastle
  `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
- 2. Copy bc*.jar to $JAVA_HOME/jre/lib/ext
+ 2. Download `bcprov-jdk15on-N.jar` and `bcpkix-jdk15on-N.jar` from the BouncyCastle releases page, where N is the
+ latest release version (158 at the time of writing).
+ 3. Copy the downloaded JARs to the JVM extensions folder: `cp bcprov-jdk15on-158.jar bcpkix-jdk15on-158.jar $JAVA_HOME/jre/lib/ext`
 
 ### Unlimited Encryption Requirements
 Using stronger encryption modes (192 and 256-bit) will require installation of the
@@ -46,7 +48,7 @@ $ mvn package
 Which will compile the jar to `./targets/java-manta-${VERSION}.jar`. You can then
 add it as a dependency to your Java project.
 
-If you want to skip running of the test suite, use the `-DskipTests` property.
+If you want to skip running of the test suite use the `-DskipTests` property, e.g. `mvn -DskipTests package`.
 
 # Configuration
 
@@ -56,40 +58,42 @@ flexible combination of parameters from different sources:
   - `StandardConfigContext` leaves all values unset and provides named setters
   - `EnvVarConfigContext` reads values from environment variables (e.g. `export MANTA_URL=value`)
   - `SystemSettingsConfigContext` reads values from system properties (e.g. from flags `-Dmanta.url=value` or a `.properties` file)
-  - `ChainedConfigContext` allows the combination of multiple `ConfigContext`s
+  - `ChainedConfigContext` allows the combination of multiple `ConfigContext` values
 
 ## Parameters
 
-| Default                              | System Property                    | Environment Variable           |
-|--------------------------------------|------------------------------------|--------------------------------|
-| https://us-east.manta.joyent.com:443 | manta.url                          | MANTA_URL                      |
-|                                      | manta.user                         | MANTA_USER                     |
-|                                      | manta.key_id                       | MANTA_KEY_ID                   |
-| $HOME/.ssh/id_rsa                    | manta.key_path                     | MANTA_KEY_PATH                 |
-|                                      | manta.key_content                  | MANTA_KEY_CONTENT              |
-|                                      | manta.password                     | MANTA_PASSWORD                 |
-| 20000                                | manta.timeout                      | MANTA_TIMEOUT                  |
-| 3 (6 for integration tests)          | manta.retries                      | MANTA_HTTP_RETRIES             |
-| 24                                   | manta.max_connections              | MANTA_MAX_CONNS                |
-| 4096                                 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         |
-| TLSv1.2                              | https.protocols                    | MANTA_HTTPS_PROTOCOLS          |
-| <value too big - see code>           | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            |
-| false                                | manta.no_auth                      | MANTA_NO_AUTH                  |
-| false                                | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           |
-| 10000                                | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       |
-| true                                 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           |
-| 16384                                | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       |
-| false                                | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        |
-|                                      | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |
-| AES128/CTR/NoPadding                 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     |
-| false                                | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    |
-| Mandatory                            | manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     |
-|                                      | manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |
-|                                      | manta.encryption_key_bytes         |                                |
-|                                      | manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |
+Below is a table of available configuration parameters followed by detailed descriptions of their usage.
+
+| System Property                    | Environment Variable           | Default                              |
+|------------------------------------|--------------------------------|--------------------------------------|
+| manta.url                          | MANTA_URL                      | https://us-east.manta.joyent.com:443 |
+| manta.user                         | MANTA_USER                     |                                      |
+| manta.key_id                       | MANTA_KEY_ID                   |                                      |
+| manta.key_path                     | MANTA_KEY_PATH                 | $HOME/.ssh/id_rsa                    |
+| manta.key_content                  | MANTA_KEY_CONTENT              |                                      |
+| manta.password                     | MANTA_PASSWORD                 |                                      |
+| manta.timeout                      | MANTA_TIMEOUT                  | 20000                                |
+| manta.retries                      | MANTA_HTTP_RETRIES             | 3 (6 for integration tests)          |
+| manta.max_connections              | MANTA_MAX_CONNS                | 24                                   |
+| manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         | 4096                                 |
+| https.protocols                    | MANTA_HTTPS_PROTOCOLS          | TLSv1.2                              |
+| https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) |
+| manta.no_auth                      | MANTA_NO_AUTH                  | false                                |
+| manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                |
+| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |
+| manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 |
+| manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |
+| manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |
+| manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |
+| manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |
+| manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    | false                                |
+| manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     | Mandatory                            |
+| manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |                                      |
+| manta.encryption_key_bytes         |                                |                                      |
+| manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |                                      |
 
 * `manta.url` ( **MANTA_URL** )
-The URL of the manta service endpoint to test against
+The URL of the Manta service endpoint.
 * `manta.user` ( **MANTA_USER** )
 The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
 you will specify the account name as "user/subuser".
@@ -155,15 +159,8 @@ non-null, then no other encryption key values can be non-null.
 The private key used to perform client-side encryption encoded as a base64 string.
 If this value is non-null, then no other encryption key values can be non-null.
 
-Below is an example of using all of the defaults and only setting the `manta.user` and `manta.key_id`.
-
-```java
-ConfigContext defaultConfig = new DefaultsConfigContext();
-ConfigContext customConfig = new StandardConfigContext()
-    .setMantaKeyId("d4:18:cc:34:43:a8:5a:aa:76:1c:35:36:ba:08:1e:aa")
-    .setMantaUser("test-user");
-ConfigContext config = new ChainedConfigContext(defaultConfig, customConfig);
-```
+See the examples for a [typical configuration using defaults](/java-manta-examples/src/main/java/SimpleClient.java) and another
+[configuration with client-side encryption enabled](/java-manta-examples/src/main/java/SimpleClientEncryption.java)
 
 ## Client-side Encryption
 
@@ -180,7 +177,9 @@ encryption.
 - `manta.encryption_algorithm`
 - `manta.encryption_key_id`
 
-Below is a table of each of the supported encryption algorithms and the features they provide.
+Below is a table of each of the supported encryption algorithms and the features they provide. Additional information
+about how these encryption modes differ is available [here](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation)
+and [here](https://security.stackexchange.com/questions/52665/which-is-the-best-cipher-mode-and-padding-mode-for-aes-encryption).
 
 | Algorithm                            | Range Requests                     | Authenticated Encryption       |
 |--------------------------------------|------------------------------------|--------------------------------|
@@ -198,8 +197,9 @@ Below is a table of each of the supported encryption algorithms and the features
 
 *Note* that all algorithms will honor the `manta.encryption_auth_mode` setting.
 
-*Note* that any non-authenticated encryption algorithm will have an HMAC generated to
-authenticate that ciphertext was not modified.
+*Note* that any non-authenticated encryption algorithm will have an
+[HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) generated to authenticate that ciphertext
+was not modified.
 
 *Note* each instance of a MantaClient will only support the encryption/decryption for the algorithm configured for that instance.
 
@@ -207,7 +207,7 @@ authenticate that ciphertext was not modified.
 
 #### Enabling libnss Support via PKCS11
 
-[Libnss](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS) can be used with
+[NSS](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS) can be used with
 [PKCS11](https://en.wikipedia.org/wiki/PKCS_11) to provide a native code interface for encryption
 functions. The SDK will detect if libnss is installed via PKCS11 and prefer it over
 the Legion of the Bouncy Castle library if it is available.
@@ -295,12 +295,11 @@ be loaded via JNI.
 To get a native library for your system, [download the library](http://www.twmacinta.com/myjava/fast_md5.php#download) and choose the share object library that is appropriate for
 your system (hint: they are contained in the `./build/` directory). The easiest
 way to get up and running is to copy the library to a path that makes sense
-for your application and then when you load your application pass the following
-Java system property to your application indicating the path to the native
-library:
+for your application and provide a path to the library using the `com.twmacinta.util.MD5.NATIVE_LIB_FILE` system
+property:
 
 ```
-java -Dcom.twmacinta.util.MD5.NATIVE_LIB_FILE=/opt/myapp/lib/arch/linux_amd64/MD5.so
+java -Dcom.twmacinta.util.MD5.NATIVE_LIB_FILE=/opt/myapp/lib/arch/linux_amd64/MD5.so -jar /opt/myapp/app.jar
 ```
 
 You can also place multiple files in a directory structure and have the FastMD5

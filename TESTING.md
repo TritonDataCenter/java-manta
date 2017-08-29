@@ -22,12 +22,12 @@ Tests specific to server-side MPU functionality will be automatically skipped
 if the server con does not support that capability.
 
 ## Roles
-Tests which rely on Triton roles will require the creation of roles through the
-Triton customer portal. The names of the roles used in the tests will be
-retrieved in the same fashion as standard configuration, first checking
-environment variables followed by system properties and finally expecting
-defaults to be defined. These tests will be skipped if it is determined that the
-roles do not exist.
+Tests which rely on [Triton roles](https://docs.joyent.com/public-cloud/rbac/roles)
+will require the creation of roles through the Triton customer portal. The names
+of the roles used in the tests will be retrieved in the same fashion as standard
+configuration, first checking environment variables followed by system properties
+and finally expecting defaults to be defined. These tests will be skipped if it
+is determined that the roles do not exist.
 
 | Default     | System Property           | Environment Variable      |
 |------------ | ------------------------- | --------------------------|
@@ -70,5 +70,7 @@ The current solution to this issue is to place the test inside
 `java-manta-client/src/integration` and make sure it's included by the
 relevant [testng configuration](/java-manta-client/src/integration/resources/testng-integration.xml).
 
-Surefire and Failsafe plugins are configured to look for TestNG configuration
+[Surefire](http://maven.apache.org/surefire/maven-surefire-plugin/) and
+[Failsafe](http://maven.apache.org/surefire/maven-failsafe-plugin/) plugins are
+configured to look for [TestNG](http://testng.org/doc/) configuration
 in their module's `resource` folders.

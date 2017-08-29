@@ -14,7 +14,8 @@ SDK for interacting with Joyent's Manta system.
 
 ## Installation
 
-Java 1.8 is required. The main client module can be installed by adding the following dependency in Maven:
+[Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is required. The main client module can
+be installed by adding the following dependency using [Maven 3.1.x](https://maven.apache.org/):
 
 ```
 <dependency>
@@ -87,6 +88,10 @@ useful functions for common use cases.
 
 For more examples, check the included [examples module](/java-manta-examples) and the
 [integration test module](/java-manta-it/src/test/java/com/joyent/manta/client).
+
+## FAQs
+
+Known edge cases and other topics are covered in [the FAQ](/FAQ.md).
 
 ## Contributions
 

@@ -4,26 +4,10 @@
 
 `mvn test` will run unit tests while `mvn verify` will include integration tests and benchmarks.
 
-See [the testing documentation](/TESTING.md) for additional notes about running the test suite.
+See the [installation documentation](/INSTALL.md) for setting up your environment and the
+[testing documentation](/TESTING.md) for additional notes about running the test suite.
 
-## How do Accounts/Usernames/Subusers differ?
-
-Joyent's SmartDataCenter account implementation is such that you can have a
-subuser as a dependency upon a user. This is part of SmartDataCenter's [RBAC
-implementation](https://docs.joyent.com/public-cloud/rbac/users). A subuser
-is a user with a unique username that is joined with the account holder's
-username. Typically, this is in the format of "user/subuser".
-
-Within the Java Manta library, we refer to the account name as the entire
-string used to login - "user/subuser". When we use the term user it is in
-reference to the "user" portion of the account name and when we use the term
-subuser, it is in reference to the subuser portion of the account name.
-
-The notable exception is that in the configuration passed into the library,
-we have continued to use the terminology *Manta user* to refer to the
-account name because of historic compatibility concerns.
-
-## Does Triton Object Storage (Manta) support Multipart Uploads?
+## Does Manta support multipart uploads?
 
 Newer versions of Manta support multipart upload for dividing large files into many smaller parts
 which are recombined server-side. The design for the server-side multipart upload is specified in
@@ -31,9 +15,8 @@ which are recombined server-side. The design for the server-side multipart uploa
 implements an interface to make using server-side multipart uploading
 straightforward. The strategy to use for multipart upload is listed below.
 
-1. Create a `MantaClient` instance.
-2. Create an instance of `ServerSideMultipartManager` passing in the instance of
-   MantaClient to the constructor.
+1. Create a `MantaClient`.
+2. Create a `ServerSideMultipartManager`.
 3. Initiate an upload to the full path where the final object should be stored.
 4. Upload each part using the `ServerSideMultipartUpload` object created in the
    previous step. The order that parts are uploaded does not matter,
@@ -45,7 +28,7 @@ An example application is provided in the **java-manta-examples** module, named
 [ServerMultipart](/java-manta-examples/src/main/java/ServerMultipart.java),
 to help illustrate the workflow.
 
-## How does Client-side Encryption interact with Multipart Uploads?
+## How does client-side encryption interact with multipart uploads?
 
 When using client-side encryption with multipart upload there are some
 additional restrictions imposed on the implementor of the SDK:
@@ -55,16 +38,36 @@ additional restrictions imposed on the implementor of the SDK:
 * Different parts can not be uploaded between different JVMs.
 * At this time only the cipher mode AES/CTR is supported.
 
-You will need to configure an instance of MantaClient using the
+You will need to configure a `MantaClient` using the
 settings you would for client-side encryption, namely setting
 `manta.client_encryption` to `true` and configuring the cipher and
-encryption key.  Additionally, you need to create an instance of
+encryption key.  Additionally, you need to create a
 `EncryptedServerSideMultipartManager`, which should be reused, for
 uploading the various file parts and assembling the final file.
 
 An example application is provided in the java-manta-examples module,
 named [ClientEncryptionServerMultipart](/java-manta-examples/src/main/java/ClientEncryptionServerMultipart.java),
 to help illustrate the workflow.
+
+## How do Accounts/Usernames/Subusers differ?
+
+Joyent's SmartDataCenter [Role-based Access Control (RBAC)
+implementation](https://docs.joyent.com/public-cloud/rbac/users)
+defines the following categories:
+
+ - Account: The group created for your company on Triton, managed by
+ a user (the account owner) and zero or more subusers.
+ - User: Users are login credentials that allow different people in your
+ organization to log in to your Joyent Cloud account. Generally, users
+ are account owners, but this term may be used for account owners and
+ in place of "subusers".
+ - Subuser: A subuser belongs to the account holder, who maintains control
+ of the subusers. This may be people in your organizations who belong to the
+ larger company account. Subusers have a unique username that is joined with
+ the account holder's username. This is in the format of "user/subuser".
+
+Within the Java Manta library, we refer to the identity used to login -
+"owner" or "owner/subuser" - as *user*, e.g `MANTA_USER` or `manta.user`.
 
 ## I'm experiencing issues with subusers, what's wrong?
 
