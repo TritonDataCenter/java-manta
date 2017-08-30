@@ -35,8 +35,27 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
-                    <minimizeJar>true</minimizeJar>
+                    <!--<minimizeJar>true</minimizeJar>-->
                     <artifactSet>
+                        <includes>
+                            <include>com.joyent.manta:*</include>
+                            <include>com.joyent.http-signature:apache-http-client-signature</include>
+                            <include>org.apache.httpcomponents:httpclient</include>
+                            <include>org.apache.commons:commons-lang3</include>
+                            <include>org.apache.commons:commons-collections4</include>
+                            <include>commons-io:commons-io</include>
+                            <include>commons-codec:commons-codec</include>
+                            <include>com.fasterxml.uuid:java-uuid-generator</include>
+                            <include>com.fasterxml.jackson.core:jackson-core</include>
+                            <include>com.fasterxml.jackson.core:jackson-databind</include>
+                            <include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
+                            <include>com.squareup.jnagmp:bouncycastle-rsa</include>
+                            <include>com.twmacinta:fast-md5</include>
+                            <include>org.slf4j:jcl-over-slf4j</include>
+                            <include>io.mikael:urlbuilder</include>
+                            <include>uk.com.robust-it:cloning</include>
+                            <include>org.objenesis:objenesis</include>
+                        </includes>
                         <excludes>
                             <exclude>com.google.code.findbugs:jsr305</exclude>
                             <exclude>junit:junit</exclude>
