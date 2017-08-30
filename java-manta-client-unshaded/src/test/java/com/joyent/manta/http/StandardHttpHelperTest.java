@@ -27,6 +27,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.mockito.Matchers.any;
@@ -165,7 +166,7 @@ public class StandardHttpHelperTest {
                     return response;
                 });
 
-        final byte[] contentBytes = StringUtils.repeat('a', 100).getBytes();
+        final byte[] contentBytes = StringUtils.repeat('a', 100).getBytes(StandardCharsets.UTF_8);
 
         when(response.getAllHeaders())
                 .thenReturn(new Header[]{
