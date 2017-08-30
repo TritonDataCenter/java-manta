@@ -72,7 +72,6 @@
 
     <modules>
         <module>java-manta-client</module>
-        <module>java-manta-client-shaded</module>
         <module>java-manta-client-kryo-serialization</module>
         <module>java-manta-cli</module>
         <module>java-manta-it</module>
