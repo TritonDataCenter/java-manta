@@ -18,12 +18,17 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EnvVarConfigContext;
 import com.joyent.manta.config.MapConfigContext;
+import com.joyent.manta.util.MantaUtils;;
 import com.joyent.manta.util.MantaVersion;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,6 +64,7 @@ import javax.crypto.spec.SecretKeySpec;
              MantaCLI.ListDir.class,
              MantaCLI.GetFile.class,
              MantaCLI.PutFile.class,
+             MantaCLI.ObjectInfo.class,
              MantaCLI.ValidateKey.class
          })
 // Documented through CLI annotations
@@ -264,33 +270,40 @@ public final class MantaCLI {
                          header = "Performs a download of file in Manta",
                          description = "Performs a download of file in Manta.")
     public static class GetFile extends MantaSubCommand {
+        @CommandLine.Option(names = {"-o", "--output"},
+                            description = "write output to <file> instead of stdout")
+        private String outputFileName;
+        @CommandLine.Option(names = {"-O", "--remote-name"},
+                            description = "write output to a file using remote object"
+                            + "name as filename")
+        private boolean inferOutputFileName = false;
+
         @CommandLine.Parameters(index = "0", description = "Object path in Manta to download")
         private String filePath;
 
         @Override
         public void run() {
-            final StringBuilder b = new StringBuilder();
-
-            b.append("Creating connection configuration").append(BR);
             ConfigContext config = buildConfig();
-            b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
-
-            b.append("Creating new connection object").append(BR);
             try (MantaClient client = new MantaClient(config)) {
-                b.append(INDENT).append(client).append(BR);
+                OutputStream out = System.out;
+                if (inferOutputFileName) {
+                    outputFileName = MantaUtils.lastItemInPath(filePath);
+                }
+                if (outputFileName != null) {
+                    out = new FileOutputStream(outputFileName);
+                }
 
-                b.append("Attempting GET request to: ").append(filePath).append(BR);
-                b.append("\nMetadata values: \n").append(client.get(filePath).getMetadata().toString());
-                b.append("\n\nPayload: \n");
+                InputStream objectStream = client.getAsInputStream(filePath);
+                IOUtils.copyLarge(objectStream, out);
+                objectStream.close();
 
-                String response = client.getAsString(filePath);
-                b.append(INDENT).append(response).append(BR);
-                b.append("Request was successful");
+                out.flush();
+                if (outputFileName != null) {
+                    out.close();
+                }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-
-            System.out.println(b.toString());
         }
     }
 
@@ -326,6 +339,25 @@ public final class MantaCLI {
             }
 
             System.out.println(b.toString());
+        }
+    }
+
+    @CommandLine.Command(name = "object-info",
+                         header = "show HTTP headers for a Manta object",
+                         description = "show HTTP headers for a Manta object.")
+    public static class ObjectInfo extends MantaSubCommand {
+        @CommandLine.Parameters(index = "0", description = "path in Manta to check")
+        private String mantaPath;
+
+        @Override
+        public void run() {
+            ConfigContext config = buildConfig();
+            try (MantaClient client = new MantaClient(config)) {
+                MantaObjectResponse response = client.head(mantaPath);
+                System.out.println(response.toString());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 
