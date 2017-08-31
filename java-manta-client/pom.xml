@@ -27,6 +27,31 @@
             <artifactId>java-manta-client-unshaded</artifactId>
             <version>3.1.7-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${dependency.bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>${dependency.bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.jnagmp</groupId>
+            <artifactId>bouncycastle-rsa</artifactId>
+            <version>${dependency.jnagmp.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcpkix-jdk15on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
