@@ -1,6 +1,5 @@
 package com.joyent.test.util;
 
-import com.joyent.manta.benchmark.RandomInputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

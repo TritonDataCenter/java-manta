@@ -39,15 +39,14 @@
                     <artifactSet>
                         <includes>
                             <include>com.joyent.manta:*</include>
-                            <include>com.joyent.http-signature:apache-http-client-signature</include>
-                            <include>org.apache.httpcomponents:httpclient</include>
+                            <include>com.joyent.http-signature:*</include>
+                            <include>org.apache.httpcomponents:*</include>
                             <include>org.apache.commons:commons-lang3</include>
                             <include>org.apache.commons:commons-collections4</include>
                             <include>commons-io:commons-io</include>
                             <include>commons-codec:commons-codec</include>
                             <include>com.fasterxml.uuid:java-uuid-generator</include>
-                            <include>com.fasterxml.jackson.core:jackson-core</include>
-                            <include>com.fasterxml.jackson.core:jackson-databind</include>
+                            <include>com.fasterxml.jackson.core:*</include>
                             <include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
                             <include>com.squareup.jnagmp:bouncycastle-rsa</include>
                             <include>com.twmacinta:fast-md5</include>
