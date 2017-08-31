@@ -4,7 +4,7 @@
 
 Some open source projects built on the SDK are listed [in the README](/README.md).
 
-## How else can I interact with manta?
+## How else can I interact with Manta?
 
 The [node-manta project](https://github.com/joyent/node-manta) provides access to Manta
 for JavaScript runtimes and offers a range of CLI commands like `mget` and `mput` which
@@ -16,6 +16,12 @@ make it easy to interact with Manta.
 
 See the [installation documentation](/USAGE.md) for setting up your environment and the
 [testing documentation](/TESTING.md) for additional notes about running the test suite.
+
+## I'm having issues with logging configuration, why don't logs show up?
+
+Some logging frameworks are affected by shading and your configuration will need to account for
+the modified package paths. See the [usage notes on logging](/USAGE.md#logging)
+for more info.
 
 ## Does Manta support multipart uploads?
 

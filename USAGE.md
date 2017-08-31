@@ -308,6 +308,19 @@ for getting are best described in the [FastMD5 Javadocs](http://www.twmacinta.co
 ### Logging
 
 The SDK utilizes [slf4j](http://www.slf4j.org/), and logging can be configured
-using a SLF4J implementation. Apache HTTP Client is bundled as a shaded artifact
-as well as an Apache Commons Logger adaptor to SLF4J so Apache HTTP Client logs
+using a SLF4J implementation. The `java-manta-client` artifact includes [Apache
+HTTP Client](https://hc.apache.org/httpcomponents-client-4.5.x/index.html) bundled
+as a shaded artifact as well as an [Apache Commons Logger adaptor to
+SLF4J](https://www.slf4j.org/legacy.html#jclOverSLF4J) so Apache HTTP Client logs
 will also be output via SLF4J.
+
+When configuring logging keep in mind the [package relocations](/java-manta-client/pom.xml#L100)
+being performed. Consumers which depend on `java-manta-client-unshaded` should use the package name
+as is, but consumers which depend on the shaded artifact (`java-manta-client`) should use the
+relocated package name. For example, if your project is using `ch.qos.logback:logback-classic`
+and you wish to debug the establishment and leasing of HTTP connections:
+
+| Dependency                    | Logback Logger Configuration                                                  |
+|-------------------------------|-------------------------------------------------------------------------------|
+| java-manta-client             | `<logger name="com.joyent.manta.org.apache.http.impl.conn" level="DEBUG" />`  |
+| java-manta-client-unshaded    | `<logger name="org.apache.http.impl.conn" level="DEBUG" />`                   |
