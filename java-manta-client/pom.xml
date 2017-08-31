@@ -89,6 +89,7 @@
                             <exclude>net.java.dev.jna:*</exclude>
                             <exclude>org.hamcrest:*</exclude>
                             <exclude>org.mockito:*</exclude>
+                            <exclude>commons-logging:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>
