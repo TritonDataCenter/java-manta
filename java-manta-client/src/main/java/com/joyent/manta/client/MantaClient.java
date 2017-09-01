@@ -1479,9 +1479,15 @@ public class MantaClient implements AutoCloseable {
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.SNAPLINK.getContentType());
         put.setHeader(HttpHeaders.LOCATION, objectPath);
 
-        httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
-                "PUT    {} -> {} response [{}] {} ",
-                objectPath, linkPath);
+        try {
+            httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
+                    "PUT    {} -> {} response [{}] {} ",
+                    objectPath, linkPath);
+        } catch (MantaIOException e) {
+            e.addContextValue("linkPath", linkPath);
+            e.addContextValue("objectPath", objectPath);
+            throw e;
+        }
     }
 
     /**
