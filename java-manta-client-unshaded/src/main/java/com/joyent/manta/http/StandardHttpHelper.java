@@ -30,6 +30,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -39,6 +41,8 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.FutureRequestExecutionService;
+import org.apache.http.impl.client.HttpRequestFutureTask;
 import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +51,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 /**
@@ -55,6 +61,7 @@ import java.util.function.Function;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class StandardHttpHelper implements HttpHelper {
+
     /**
      * Logger instance.
      */
@@ -76,6 +83,11 @@ public class StandardHttpHelper implements HttpHelper {
     private final boolean validateUploads;
 
     /**
+     * Coordinates HttpClient interaction with ExecutorService.
+     */
+    private final FutureRequestExecutionService requestExecutionService;
+
+    /**
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
@@ -89,6 +101,10 @@ public class StandardHttpHelper implements HttpHelper {
         this.connectionFactory = connectionFactory;
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
+
+        this.requestExecutionService = new FutureRequestExecutionService(
+                connectionContext.getHttpClient(),
+                Executors.newFixedThreadPool(config.getMaximumConnections()));
     }
 
     @Override
@@ -423,6 +439,15 @@ public class StandardHttpHelper implements HttpHelper {
                 logMessage, logParameters);
     }
 
+    private static class Handler implements ResponseHandler<HttpResponse> {
+        @Override
+        public HttpResponse handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+            return response;
+        }
+    }
+
+    private static final Handler HANDLER = new Handler();
+
     @Override
     public CloseableHttpResponse executeRequest(final HttpUriRequest request,
                                                 final Integer expectedStatusCode,
@@ -432,8 +457,18 @@ public class StandardHttpHelper implements HttpHelper {
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
-        CloseableHttpClient client = connectionContext.getHttpClient();
-        CloseableHttpResponse response = client.execute(request);
+        final HttpRequestFutureTask<HttpResponse> executingRequest = requestExecutionService.execute(request, null, HANDLER);
+
+        final HttpResponse response;
+        try {
+            response = executingRequest.get();
+        } catch (InterruptedException e) {
+            LOGGER.warn("interrupted exception!");
+            throw new IOException(e);
+        } catch (ExecutionException e) {
+            LOGGER.warn("execution exception!");
+            throw new IOException(e);
+        }
 
         try {
             StatusLine statusLine = response.getStatusLine();
@@ -449,10 +484,10 @@ public class StandardHttpHelper implements HttpHelper {
                         path);
             }
 
-            return response;
+            return (CloseableHttpResponse) response;
         } finally {
             if (closeResponse) {
-                IOUtils.closeQuietly(response);
+                IOUtils.closeQuietly((CloseableHttpResponse) response);
             }
         }
     }
@@ -553,6 +588,8 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public void close() throws Exception {
+        requestExecutionService.close();
+        LOGGER.warn("request pool closed");
         connectionContext.close();
     }
 }

@@ -2345,6 +2345,16 @@ public class MantaClient implements AutoCloseable {
 
         final List<Exception> exceptions = new ArrayList<>();
 
+        try {
+            httpHelper.close();
+        } catch (InterruptedException ie) {
+            /* Do nothing, but we won't capture the interrupted exception
+             * because even if we are interrupted, we want to close all open
+             * resources. */
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+
         /* We explicitly close all streams that may have been opened when
          * this class (MantaClient) is closed. This helps to alleviate problems
          * where resources haven't been closed properly. In particular, this
@@ -2364,16 +2374,6 @@ public class MantaClient implements AutoCloseable {
             } catch (Exception e) {
                 exceptions.add(e);
             }
-        }
-
-        try {
-            httpHelper.close();
-        } catch (InterruptedException ie) {
-            /* Do nothing, but we won't capture the interrupted exception
-             * because even if we are interrupted, we want to close all open
-             * resources. */
-        } catch (Exception e) {
-            exceptions.add(e);
         }
 
         try {

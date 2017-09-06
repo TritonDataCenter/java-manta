@@ -53,6 +53,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * Sets the general connection timeout for the Manta service.
      * @param timeout timeout in milliseconds
      * @return the current instance of {@link T}
+     * @see DefaultsConfigContext#DEFAULT_HTTP_TIMEOUT
      */
     T setTimeout(Integer timeout);
 
