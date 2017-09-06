@@ -25,11 +25,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +40,118 @@ import java.util.concurrent.TimeUnit;
 public class MantaClientCloseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientCloseTest.class);
+
+    private static boolean isSocketException(Exception e) {
+        if (e instanceof SocketException) {
+            LOGGER.error("downloader caught expected exception");
+            return true;
+        }
+
+        if (e instanceof IOException
+                && e.getCause() instanceof ExecutionException
+                && e.getCause().getCause() instanceof SocketException) {
+            LOGGER.error("downloader caught expected exception");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static class Downloader implements Runnable {
+
+        private final MantaClient client;
+        private final CountDownLatch latch;
+        private final Queue<Exception> exceptions;
+
+        private Downloader(final MantaClient client, final CountDownLatch latch, final Queue<Exception> exceptions) {
+            this.client = client;
+            this.latch = latch;
+            this.exceptions = exceptions;
+        }
+
+        @Override
+        public void run() {
+            Thread.currentThread().setName("downloader");
+            try {
+                final MantaObjectInputStream is = client.getAsInputStream("/arbitrary/path");
+                latch.countDown();
+                LOGGER.debug("downloader ready");
+                IOUtils.copy(is, NullOutputStream.NULL_OUTPUT_STREAM);
+            } catch (Exception e) {
+                if (isSocketException(e)) {
+                    return;
+                }
+
+                LOGGER.error("downloader failed unexpectedly" + e.getClass().getCanonicalName());
+                exceptions.add(e);
+            }
+        }
+    }
+
+    private static class Uploader implements Runnable {
+
+        private final MantaClient client;
+        private final CountDownLatch latch;
+        private final Queue<Exception> exceptions;
+
+        private Uploader(final MantaClient client, final CountDownLatch latch, final Queue<Exception> exceptions) {
+            this.client = client;
+            this.latch = latch;
+            this.exceptions = exceptions;
+        }
+
+        @Override
+        public void run() {
+            Thread.currentThread().setName("uploader");
+            try {
+                // implement an UnlatchingInputStream
+                final OutputStream mantaOut = client.putAsOutputStream("/arbitrary/path");
+                latch.countDown();
+                LOGGER.debug("uploader ready");
+                IOUtils.copy(new InfiniteInputStream(new byte[]{'a'}), mantaOut);
+            } catch (Exception e) {
+                if (isSocketException(e)) {
+                    return;
+                }
+
+                LOGGER.error("uploader failed unexpectedly" + e.getClass().getCanonicalName());
+                exceptions.add(e);
+            }
+        }
+    }
+
+    private static class Terminator implements Runnable {
+
+        private final MantaClient client;
+        private final CountDownLatch latch;
+        private final Queue<Exception> exceptions;
+
+        private Terminator(final MantaClient client, final CountDownLatch latch, final Queue<Exception> exceptions) {
+            this.client = client;
+            this.latch = latch;
+            this.exceptions = exceptions;
+        }
+
+        @Override
+        public void run() {
+            Thread.currentThread().setName("terminator");
+            try {
+                // wait for requests to be in-flight
+                LOGGER.debug("terminator waiting");
+                if (!latch.await(5, TimeUnit.SECONDS)) {
+                    exceptions.add(new IllegalStateException("terminator had to wait too long for other threads"));
+                    return;
+                }
+                LOGGER.debug("closing client");
+                client.close();
+            } catch (SocketException se) {
+                LOGGER.debug("terminator caught expected exception");
+            } catch (Exception e) {
+                LOGGER.error("terminator failed unexpectedly", e.getMessage());
+                exceptions.add(e);
+            }
+        }
+    }
 
     @Test
     public void testHttpServer() throws Exception {
@@ -86,57 +201,11 @@ public class MantaClientCloseTest {
 
         final ExecutorService pool = Executors.newFixedThreadPool(client.getContext().getMaximumConnections());
         final ConcurrentLinkedQueue<Exception> exceptions = new ConcurrentLinkedQueue<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(2);
 
-        final Runnable downloader = () -> {
-            Thread.currentThread().setName("downloader");
-            LOGGER.debug("downloader getting in the pool");
-            try {
-                final MantaObjectInputStream is = client.getAsInputStream("/arbitrary/path");
-                latch.countDown();
-                IOUtils.copy(is, NullOutputStream.NULL_OUTPUT_STREAM);
-            } catch (Exception e) {
-                // LOGGER.error("Exception Caught while getting thing", e.getMessage());
-                exceptions.add(e);
-                return;
-            }
-            exceptions.add(new IllegalStateException("shouldn't make it here"));
-        };
-
-        final Runnable uploader = () -> {
-            Thread.currentThread().setName("uploader");
-            LOGGER.debug("uploader getting in the pool");
-            try {
-                final OutputStream mantaOut = client.putAsOutputStream("/arbitrary/path");
-                latch.countDown();
-                IOUtils.copy(new InfiniteInputStream(new byte[]{'a'}), mantaOut);
-            } catch (Exception e) {
-                // LOGGER.error("Exception Caught while getting thing", e.getMessage());
-                exceptions.add(e);
-                return;
-            }
-            exceptions.add(new IllegalStateException("shouldn't make it here"));
-        };
-
-        final Runnable terminator = () -> {
-            Thread.currentThread().setName("terminator");
-            // wait for requests to be in-flight
-            try {
-                if (!latch.await(5, TimeUnit.SECONDS)) {
-                    exceptions.add(new IllegalStateException("terminator had to wait too long for other threads"));
-                    return;
-                }
-                client.close();
-                return;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            exceptions.add(new IllegalStateException("shouldn't make it here"));
-        };
-
-        pool.submit(downloader);
-        pool.submit(uploader);
-        pool.submit(terminator);
+        pool.submit(new Downloader(client, latch, exceptions));
+        pool.submit(new Uploader(client, latch, exceptions));
+        pool.submit(new Terminator(client, latch, exceptions));
 
         latch.await();
         LOGGER.debug("waiting for terminator");
@@ -148,13 +217,19 @@ public class MantaClientCloseTest {
         if (pool.awaitTermination(5, TimeUnit.SECONDS)) {
             LOGGER.debug("pool terminated within the expected time");
         } else {
-            Assert.fail("Forced to terminate worker pool");
+            // Assert.fail("Forced to terminate worker pool");
+            LOGGER.error("Forced to terminate worker pool");
         }
 
         final String exceptionMessage = "exception count: " + exceptions.size();
         LOGGER.debug(exceptionMessage);
         if (exceptions.isEmpty()) {
             return;
+        }
+
+        if (!client.isClosed()) {
+            client.closeQuietly();
+            Assert.fail("main thread had to close client");
         }
 
         final OnCloseAggregateException aggException = new OnCloseAggregateException();

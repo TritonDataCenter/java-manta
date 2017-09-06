@@ -30,7 +30,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -439,10 +438,26 @@ public class StandardHttpHelper implements HttpHelper {
                 logMessage, logParameters);
     }
 
-    private static class Handler implements ResponseHandler<HttpResponse> {
+    private static class Handler implements ResponseHandler<CloseableHttpResponse> {
         @Override
-        public HttpResponse handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
-            return response;
+        public CloseableHttpResponse handleResponse(HttpResponse response) throws IOException {
+            return (CloseableHttpResponse) response;
+        }
+    }
+
+    private static class CallbackHandler<C extends Function<CloseableHttpResponse, R>, R> implements ResponseHandler<CloseableHttpResponse> {
+
+        private final C callback;
+        private R result;
+
+        private CallbackHandler(C callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public CloseableHttpResponse handleResponse(HttpResponse response) throws IOException {
+            result = callback.apply((CloseableHttpResponse) response);
+            return (CloseableHttpResponse) response;
         }
     }
 
@@ -457,16 +472,14 @@ public class StandardHttpHelper implements HttpHelper {
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
-        final HttpRequestFutureTask<HttpResponse> executingRequest = requestExecutionService.execute(request, null, HANDLER);
+        final HttpRequestFutureTask<CloseableHttpResponse> executingRequest =
+                requestExecutionService.execute(request, null, HANDLER);
 
         final HttpResponse response;
         try {
             response = executingRequest.get();
-        } catch (InterruptedException e) {
-            LOGGER.warn("interrupted exception!");
-            throw new IOException(e);
-        } catch (ExecutionException e) {
-            LOGGER.warn("execution exception!");
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.warn("exception occurred during request execution!", e);
             throw new IOException(e);
         }
 
@@ -515,17 +528,33 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public <R> R executeRequest(final HttpUriRequest request,
-                                   final Integer expectedStatusCode,
-                                   final Function<CloseableHttpResponse, R> responseAction,
-                                   final boolean closeResponse,
-                                   final String logMessage,
-                                   final Object... logParameters)
+                                final Integer expectedStatusCode,
+                                final Function<CloseableHttpResponse, R> responseAction,
+                                final boolean closeResponse,
+                                final String logMessage,
+                                final Object... logParameters)
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
-        CloseableHttpClient client = connectionContext.getHttpClient();
+        final HttpRequestFutureTask<CloseableHttpResponse> executingRequest;
+        final CallbackHandler<Function<CloseableHttpResponse, R>, R> handler;
 
-        CloseableHttpResponse response = client.execute(request);
+        if (responseAction != null) {
+            handler = new CallbackHandler<>(responseAction);
+            executingRequest = requestExecutionService.execute(request, null, handler);
+        } else {
+            handler = null;
+            executingRequest = requestExecutionService.execute(request, null, HANDLER);
+        }
+
+        final CloseableHttpResponse response;
+        try {
+            response = executingRequest.get();
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.warn("exception occurred during request execution!", e);
+            throw new IOException(e);
+        }
+
         try {
             StatusLine statusLine = response.getStatusLine();
 
@@ -540,7 +569,7 @@ public class StandardHttpHelper implements HttpHelper {
             }
 
             if (responseAction != null) {
-                return responseAction.apply(response);
+                return handler.result;
             } else {
                 return null;
             }
