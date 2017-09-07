@@ -122,6 +122,10 @@
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
                             </suiteXmlFiles>
+                            <!-- Need to exclude the unshaded module from the test runner's classpath -->
+                            <classpathDependencyExcludes>
+                                <classpathDependencyExcludes>com.joyent.manta:java-manta-client-unshaded</classpathDependencyExcludes>
+                            </classpathDependencyExcludes>
                             <!-- uncomment to enable proxies with integration tests -->
                             <!--<systemPropertyVariables>-->
                                 <!--<https.proxyHost>localhost</https.proxyHost>-->

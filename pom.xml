@@ -198,17 +198,6 @@
                 <enabled>true</enabled>
             </releases>
         </repository>
-        <repository>
-            <id>repo.jenkins-ci.org</id>
-            <name>ci-jenkins</name>
-            <url>http://repo.jenkins-ci.org/public/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
     </repositories>
 
     <build>

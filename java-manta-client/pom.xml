@@ -56,11 +56,31 @@
 
     <build>
         <plugins>
+            <!-- there are no unit tests in this module, if we don't skip we'll encounter a NoClassDefFoundError -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
+            <!-- force creation of the empty JAR so that the shade plugin doesn't work on an already shaded JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
-                    <!--<minimizeJar>true</minimizeJar>-->
+                    <!-- minimizeJar would cause an empty JAR since there is no code in this module -->
+                    <minimizeJar>false</minimizeJar>
                     <artifactSet>
                         <includes>
                             <include>com.joyent.manta:*</include>
@@ -74,7 +94,7 @@
                             <include>com.fasterxml.jackson.core:*</include>
                             <include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
                             <include>com.squareup.jnagmp:bouncycastle-rsa</include>
-                            <include>com.twmacinta:fast-md5</include>
+                            <include>com.joyent.util:fast-md5</include>
                             <include>org.slf4j:jcl-over-slf4j</include>
                             <include>io.mikael:urlbuilder</include>
                             <include>uk.com.robust-it:cloning</include>

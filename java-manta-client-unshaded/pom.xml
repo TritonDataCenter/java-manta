@@ -139,7 +139,7 @@
 
         <!-- High speed MD5 implementation -->
         <dependency>
-            <groupId>com.twmacinta</groupId>
+            <groupId>com.joyent.util</groupId>
             <artifactId>fast-md5</artifactId>
             <version>${dependency.fast-md5.version}</version>
         </dependency>
