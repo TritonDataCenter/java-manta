@@ -56,16 +56,6 @@
 
     <build>
         <plugins>
-            <!-- there are no unit tests in this module, if we don't skip we'll encounter a NoClassDefFoundError -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-
             <!-- force creation of the empty JAR so that the shade plugin doesn't work on an already shaded JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
