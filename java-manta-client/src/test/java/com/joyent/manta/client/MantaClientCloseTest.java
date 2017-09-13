@@ -144,10 +144,17 @@ public class MantaClientCloseTest {
                 }
                 LOGGER.debug("closing client");
                 client.close();
-            } catch (SocketException se) {
-                LOGGER.debug("terminator caught expected exception");
+            } catch (OnCloseAggregateException aggE) {
+                // we should look through the close exceptions to see if anything weird occurred
+                for (Exception e : aggE.exceptions()) {
+                    if (!(e instanceof SocketException)) {
+                        exceptions.add(aggE);
+                        break;
+                    }
+                }
+
             } catch (Exception e) {
-                LOGGER.error("terminator failed unexpectedly", e.getMessage());
+                LOGGER.error("terminator failed unexpectedly", e);
                 exceptions.add(e);
             }
         }
@@ -217,8 +224,9 @@ public class MantaClientCloseTest {
         if (pool.awaitTermination(5, TimeUnit.SECONDS)) {
             LOGGER.debug("pool terminated within the expected time");
         } else {
-            // Assert.fail("Forced to terminate worker pool");
             LOGGER.error("Forced to terminate worker pool");
+            pool.shutdownNow();
+            Assert.fail("Forced to terminate worker pool");
         }
 
         final String exceptionMessage = "exception count: " + exceptions.size();

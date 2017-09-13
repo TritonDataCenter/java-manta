@@ -18,6 +18,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
+import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
@@ -30,7 +31,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
-import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -40,8 +40,6 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.FutureRequestExecutionService;
-import org.apache.http.impl.client.HttpRequestFutureTask;
 import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +48,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -82,9 +79,10 @@ public class StandardHttpHelper implements HttpHelper {
     private final boolean validateUploads;
 
     /**
-     * Coordinates HttpClient interaction with ExecutorService.
+     *
      */
-    private final FutureRequestExecutionService requestExecutionService;
+    private final Set<HttpUriRequest> pendingRequests
+            = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
 
     /**
      * Creates a new instance of the helper class.
@@ -100,10 +98,6 @@ public class StandardHttpHelper implements HttpHelper {
         this.connectionFactory = connectionFactory;
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
-
-        this.requestExecutionService = new FutureRequestExecutionService(
-                connectionContext.getHttpClient(),
-                Executors.newFixedThreadPool(config.getMaximumConnections()));
     }
 
     @Override
@@ -208,6 +202,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final CloseableHttpClient client = connectionContext.getHttpClient();
+        pendingRequests.add(put);
         final MantaObjectResponse obj;
 
         try (CloseableHttpResponse response = client.execute(put)) {
@@ -403,7 +398,7 @@ public class StandardHttpHelper implements HttpHelper {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
-
+        pendingRequests.add(request);
         CloseableHttpResponse response = client.execute(request);
         StatusLine statusLine = response.getStatusLine();
 
@@ -438,31 +433,6 @@ public class StandardHttpHelper implements HttpHelper {
                 logMessage, logParameters);
     }
 
-    private static class Handler implements ResponseHandler<CloseableHttpResponse> {
-        @Override
-        public CloseableHttpResponse handleResponse(HttpResponse response) throws IOException {
-            return (CloseableHttpResponse) response;
-        }
-    }
-
-    private static class CallbackHandler<C extends Function<CloseableHttpResponse, R>, R> implements ResponseHandler<CloseableHttpResponse> {
-
-        private final C callback;
-        private R result;
-
-        private CallbackHandler(C callback) {
-            this.callback = callback;
-        }
-
-        @Override
-        public CloseableHttpResponse handleResponse(HttpResponse response) throws IOException {
-            result = callback.apply((CloseableHttpResponse) response);
-            return (CloseableHttpResponse) response;
-        }
-    }
-
-    private static final Handler HANDLER = new Handler();
-
     @Override
     public CloseableHttpResponse executeRequest(final HttpUriRequest request,
                                                 final Integer expectedStatusCode,
@@ -472,16 +442,9 @@ public class StandardHttpHelper implements HttpHelper {
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
-        final HttpRequestFutureTask<CloseableHttpResponse> executingRequest =
-                requestExecutionService.execute(request, null, HANDLER);
-
-        final HttpResponse response;
-        try {
-            response = executingRequest.get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOGGER.warn("exception occurred during request execution!", e);
-            throw new IOException(e);
-        }
+        CloseableHttpClient client = connectionContext.getHttpClient();
+        pendingRequests.add(request);
+        CloseableHttpResponse response = client.execute(request);
 
         try {
             StatusLine statusLine = response.getStatusLine();
@@ -497,10 +460,10 @@ public class StandardHttpHelper implements HttpHelper {
                         path);
             }
 
-            return (CloseableHttpResponse) response;
+            return response;
         } finally {
             if (closeResponse) {
-                IOUtils.closeQuietly((CloseableHttpResponse) response);
+                IOUtils.closeQuietly(response);
             }
         }
     }
@@ -528,33 +491,17 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public <R> R executeRequest(final HttpUriRequest request,
-                                final Integer expectedStatusCode,
-                                final Function<CloseableHttpResponse, R> responseAction,
-                                final boolean closeResponse,
-                                final String logMessage,
-                                final Object... logParameters)
+                                   final Integer expectedStatusCode,
+                                   final Function<CloseableHttpResponse, R> responseAction,
+                                   final boolean closeResponse,
+                                   final String logMessage,
+                                   final Object... logParameters)
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
-        final HttpRequestFutureTask<CloseableHttpResponse> executingRequest;
-        final CallbackHandler<Function<CloseableHttpResponse, R>, R> handler;
-
-        if (responseAction != null) {
-            handler = new CallbackHandler<>(responseAction);
-            executingRequest = requestExecutionService.execute(request, null, handler);
-        } else {
-            handler = null;
-            executingRequest = requestExecutionService.execute(request, null, HANDLER);
-        }
-
-        final CloseableHttpResponse response;
-        try {
-            response = executingRequest.get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOGGER.warn("exception occurred during request execution!", e);
-            throw new IOException(e);
-        }
-
+        CloseableHttpClient client = connectionContext.getHttpClient();
+        pendingRequests.add(request);
+        CloseableHttpResponse response = client.execute(request);
         try {
             StatusLine statusLine = response.getStatusLine();
 
@@ -569,7 +516,7 @@ public class StandardHttpHelper implements HttpHelper {
             }
 
             if (responseAction != null) {
-                return handler.result;
+                return responseAction.apply(response);
             } else {
                 return null;
             }
@@ -617,8 +564,11 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public void close() throws Exception {
-        requestExecutionService.close();
-        LOGGER.warn("request pool closed");
+        pendingRequests.forEach((req) -> {
+            LOGGER.error("aborting request " + req.getMethod() + " " + req.getURI().getPath());
+            req.abort();
+        });
+
         connectionContext.close();
     }
 }

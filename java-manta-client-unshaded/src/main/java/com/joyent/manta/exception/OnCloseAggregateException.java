@@ -95,4 +95,14 @@ public class OnCloseAggregateException extends ContextedRuntimeException {
         String label = String.format("%03d_exception", count.incrementAndGet());
         setContextValue(label, ExceptionUtils.getStackTrace(e));
     }
+
+    public synchronized Exception[] exceptions() {
+        final int currentExceptionCount = count.get();
+        final Exception[] exceptions = new Exception[currentExceptionCount];
+        for (int i = 0; i < currentExceptionCount; i++) {
+            exceptions[i] = (Exception) getFirstContextValue(String.format("%03d_exception", i + 1));
+        }
+
+        return exceptions;
+    }
 }
