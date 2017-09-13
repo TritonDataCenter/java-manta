@@ -79,10 +79,9 @@ public class StandardHttpHelper implements HttpHelper {
     private final boolean validateUploads;
 
     /**
-     *
+     * The set of in-flight requests when fast client termination is enabled, or null.
      */
-    private final Set<HttpUriRequest> pendingRequests
-            = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
+    private final Set<HttpUriRequest> pendingRequests;
 
     /**
      * Creates a new instance of the helper class.
@@ -98,6 +97,12 @@ public class StandardHttpHelper implements HttpHelper {
         this.connectionFactory = connectionFactory;
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
+
+        if (config.isFastCloseEnabled()) {
+            this.pendingRequests = Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>());
+        } else {
+            this.pendingRequests = null;
+        }
     }
 
     @Override
@@ -564,10 +569,12 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public void close() throws Exception {
-        pendingRequests.forEach((req) -> {
-            LOGGER.error("aborting request " + req.getMethod() + " " + req.getURI().getPath());
-            req.abort();
-        });
+        if (pendingRequests != null) {
+            pendingRequests.forEach((req) -> {
+                LOGGER.error("aborting request " + req.getMethod() + " " + req.getURI().getPath());
+                req.abort();
+            });
+        }
 
         connectionContext.close();
     }

@@ -156,6 +156,15 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setUploadBufferSize(Integer size);
 
     /**
+     * Sets if we will keep track of in-flight requests so they can be forcibly terminated
+     * during client shutdown.
+     *
+     * @param fastCloseEnabled true to terminate quickly
+     * @return the current instance of {@link T}
+     */
+    T setFastCloseEnabled(Boolean fastCloseEnabled);
+
+    /**
      * Sets flag indicating when client-side encryption is enabled.
      *
      * @param clientEncryptionEnabled true if client-side encryption is enabled
@@ -295,6 +304,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 config.setClientEncryptionEnabled(MantaUtils.parseBooleanOrNull(value));
+                break;
+            case MapConfigContext.MANTA_FAST_CLOSE_KEY:
+            case EnvVarConfigContext.MANTA_FAST_CLOSE_ENV_KEY:
+                config.setFastCloseEnabled(MantaUtils.parseBooleanOrNull(value));
                 break;
             case MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY:
             case EnvVarConfigContext.MANTA_ENCRYPTION_KEY_ID_ENV_KEY:

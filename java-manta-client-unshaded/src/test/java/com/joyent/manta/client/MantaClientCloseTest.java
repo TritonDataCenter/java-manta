@@ -43,14 +43,12 @@ public class MantaClientCloseTest {
 
     private static boolean isSocketException(Exception e) {
         if (e instanceof SocketException) {
-            LOGGER.error("downloader caught expected exception");
             return true;
         }
 
         if (e instanceof IOException
                 && e.getCause() instanceof ExecutionException
                 && e.getCause().getCause() instanceof SocketException) {
-            LOGGER.error("downloader caught expected exception");
             return true;
         }
 

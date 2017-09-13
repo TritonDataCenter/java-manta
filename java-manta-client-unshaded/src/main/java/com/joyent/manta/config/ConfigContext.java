@@ -122,6 +122,11 @@ public interface ConfigContext {
     Integer getUploadBufferSize();
 
     /**
+     * @return true when fast client close (using request cancellation) is enabled.
+     */
+    Boolean isFastCloseEnabled();
+
+    /**
      * @return true when client-side encryption is enabled.
      */
     Boolean isClientEncryptionEnabled();
@@ -202,6 +207,7 @@ public interface ConfigContext {
         sb.append(", tcpSocketTimeout=").append(context.getTcpSocketTimeout());
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
+        sb.append(", fastCloseEnabled=").append(context.isFastCloseEnabled());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -458,6 +464,9 @@ public interface ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();
+            case MapConfigContext.MANTA_FAST_CLOSE_KEY:
+            case EnvVarConfigContext.MANTA_FAST_CLOSE_ENV_KEY:
+                return config.isFastCloseEnabled();
             case MapConfigContext.MANTA_VERIFY_UPLOADS_KEY:
             case EnvVarConfigContext.MANTA_VERIFY_UPLOADS_ENV_KEY:
                 return config.verifyUploads();

@@ -102,6 +102,16 @@ public class DefaultsConfigContext implements ConfigContext {
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
 
+    /**
+     * Fast client termination is disabled by default.
+     */
+    public static final boolean DEFAULT_FAST_CLOSE = false;
+
+    /**
+     * Client-side encryption is disabled by default.
+     */
+    public static final boolean DEFAULT_CLIENT_ENCRYPTION_ENABLED = false;
+
     static {
         // Don't even bother setting a default key path if it doesn't exist
         String defaultKeyPath = String.format("%s/.ssh/id_rsa",
@@ -208,8 +218,13 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Boolean isFastCloseEnabled() {
+        return DEFAULT_FAST_CLOSE;
+    }
+
+    @Override
     public Boolean isClientEncryptionEnabled() {
-        return false;
+        return DEFAULT_CLIENT_ENCRYPTION_ENABLED;
     }
 
     @Override

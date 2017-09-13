@@ -87,6 +87,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |
 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |
+| manta.fast_close                   | MANTA_FAST_CLOSE               | false                                |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |

@@ -74,7 +74,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
-import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -2337,7 +2336,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     @Override
-    public void close() throws SocketException {
+    public void close() {
         if (this.closed) {
             return;
         }
@@ -2346,6 +2345,7 @@ public class MantaClient implements AutoCloseable {
 
         final List<Exception> exceptions = new ArrayList<>();
 
+        // httpHelper.close() handles early request termination if it's enabled
         try {
             httpHelper.close();
         } catch (InterruptedException ie) {
@@ -2368,8 +2368,6 @@ public class MantaClient implements AutoCloseable {
                 }
 
                 closeable.close();
-            } catch (SocketException se) {
-                throw se;
             } catch (InterruptedException ie) {
                 /* Do nothing, but we won't capture the interrupted exception
                  * because even if we are interrupted, we want to close all open

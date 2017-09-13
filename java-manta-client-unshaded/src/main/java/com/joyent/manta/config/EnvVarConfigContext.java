@@ -105,6 +105,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY = "MANTA_UPLOAD_BUFFER_SIZE";
 
     /**
+     * Environment variable for fast client termination.
+     */
+    public static final String MANTA_FAST_CLOSE_ENV_KEY = "MANTA_FAST_CLOSE";
+
+    /**
      * Environment variable for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
@@ -156,12 +161,13 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
+            MANTA_FAST_CLOSE_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
             MANTA_ENCRYPTION_KEY_ID_ENV_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
-            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY
+            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_ENV_KEY,
     };
 
     static {
@@ -286,6 +292,11 @@ public class EnvVarConfigContext implements ConfigContext {
         String buffString = getEnv(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY);
 
         return MantaUtils.parseIntegerOrNull(buffString);
+    }
+
+    @Override
+    public Boolean isFastCloseEnabled() {
+        return MantaUtils.parseBooleanOrNull(getEnv(MANTA_FAST_CLOSE_ENV_KEY));
     }
 
     @Override
