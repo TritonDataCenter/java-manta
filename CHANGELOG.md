@@ -6,7 +6,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Fixed
  - NullPointerException as a result of some configuration parameters
    [not being handled correctly unless explicity set](https://github.com/joyent/java-manta/issues/247).
-
+### Changed
+ - Core library code has has been extracted from `java-manta-client` into a separate module named
+   `java-manta-client-unshaded` allowing users to incorporate the library into their project without bundled dependencies.
 
 ## [3.1.6] - 2017-08-15
 ### Fixed
