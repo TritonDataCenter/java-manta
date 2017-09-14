@@ -143,8 +143,8 @@ public final class EncryptingEntityHelper {
             out = new HmacOutputStream(hmac, cipherOut);
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Creating new OutputStream for multipart [{}]", out.getClass());
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Creating new OutputStream for multipart [{}]", out.getClass());
         }
 
         return out;

@@ -26,8 +26,6 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,6 +46,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -779,13 +779,9 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing decryption of [%s] as full read of stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading byte by byte");
         canDecryptEntireObject(cipherDetails, new SingleReads(), authenticate);
-        System.out.println(" Reading bytes by chunk");
         canDecryptEntireObject(cipherDetails, new ByteChunkReads(), authenticate);
-        System.out.println(" Reading bytes by chunks with offset");
         canDecryptEntireObject(cipherDetails, new ByteChunkOffsetReads(), authenticate);
-        System.out.println("---------------------------------");
     }
 
 
@@ -843,11 +839,8 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as full read of stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading byte by byte");
         willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new SingleReads());
-        System.out.println(" Reading bytes by chunk");
         willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ByteChunkReads());
-        System.out.println(" Reading bytes by chunks with offset");
         willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ByteChunkOffsetReads());
     }
 
@@ -862,7 +855,6 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as partial read of stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading only one byte and then closing");
         willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new PartialRead());
     }
 
@@ -875,7 +867,6 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
         canReadObject(cipherDetails, new ReadSkipReadSkip(), true);
     }
 
@@ -887,7 +878,6 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
         canReadObject(cipherDetails, new ReadSkipReadSkip(), false);
     }
 
@@ -907,7 +897,6 @@ public class MantaEncryptedObjectInputStreamTest {
             readBytes.readAll(min, actual);
 
             AssertJUnit.assertArrayEquals("Plaintext doesn't match decrypted data", plaintextBytes, actual);
-            System.out.println(" Plaintext matched decrypted data and authentication succeeded");
         } finally {
             min.close();
         }
@@ -923,7 +912,6 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading one byte, skipping 15, one byte, skipping 15");
         willThrowExceptionWhenCiphertextIsAltered(cipherDetails, new ReadSkipReadSkip());
     }
 
@@ -939,11 +927,8 @@ public class MantaEncryptedObjectInputStreamTest {
                         + "truncated stream\n",
                 cipherDetails.getCipherId());
 
-        System.out.println(" Reading byte by byte");
         canReadByteRange(cipherDetails, new SingleReads(), startPosInclusive, endPosInclusive);
-        System.out.println(" Reading bytes by chunk");
         canReadByteRange(cipherDetails, new ByteChunkReads(), startPosInclusive, endPosInclusive);
-        System.out.println(" Reading bytes by chunks with offset");
         canReadByteRange(cipherDetails, new ByteChunkOffsetReads(), startPosInclusive, endPosInclusive);
     }
 
@@ -1081,7 +1066,6 @@ public class MantaEncryptedObjectInputStreamTest {
             min.close();
         }  catch (MantaClientEncryptionCiphertextAuthenticationException e) {
             thrown = true;
-            System.out.printf(" Exception thrown: %s\n", e.getMessage());
         }
 
         Assert.assertTrue(thrown, "Ciphertext authentication exception wasn't thrown");

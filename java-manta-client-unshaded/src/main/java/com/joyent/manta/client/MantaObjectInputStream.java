@@ -185,8 +185,8 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
 
     @Override
     public void close() throws IOException {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Closing backingStream {} and response {}",
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Closing backingStream {} and response {}",
                     this.backingStream, httpResponse);
         }
 

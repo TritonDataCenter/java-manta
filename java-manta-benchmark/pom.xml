@@ -26,7 +26,7 @@
     <dependencies>
         <dependency>
             <groupId>com.joyent.manta</groupId>
-            <artifactId>java-manta-client</artifactId>
+            <artifactId>java-manta-client-unshaded</artifactId>
             <version>3.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -99,17 +99,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
-                <configuration>
-                    <skip>${maven.test.skip}</skip>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

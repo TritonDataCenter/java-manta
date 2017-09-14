@@ -169,8 +169,8 @@ public class EncryptingEntity implements HttpEntity {
                 Validate.isTrue(hmacBytes.length == hmacSize,
                         "HMAC actual bytes doesn't equal the number of bytes expected");
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("HMAC: {}", Hex.encodeHexString(hmacBytes));
                 }
 
                 httpOut.write(hmacBytes);

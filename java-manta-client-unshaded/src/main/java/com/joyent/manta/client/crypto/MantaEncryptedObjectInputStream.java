@@ -26,9 +26,6 @@ import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.AEADBadTagException;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
@@ -36,6 +33,9 @@ import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.function.Supplier;
+import javax.crypto.AEADBadTagException;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 /**
  * <p>An {@link InputStream} implementation that decrypts client-side encrypted
@@ -232,8 +232,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
 
         byte[] iv = Base64.getDecoder().decode(ivString);
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("IV: {}", Hex.encodeHexString(iv));
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("IV: {}", Hex.encodeHexString(iv));
         }
 
         final int mode = Cipher.DECRYPT_MODE;
@@ -731,8 +731,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             hmac.doFinal(checksum, 0);
             byte[] expected = readHmacFromEndOfStream();
 
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
             }
 
             if (super.getBackingStream().read() >= 0) {

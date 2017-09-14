@@ -4,7 +4,7 @@
 
 Some open source projects built on the SDK are listed [in the README](/README.md).
 
-## How else can I interact with manta?
+## How else can I interact with Manta?
 
 The [node-manta project](https://github.com/joyent/node-manta) provides access to Manta
 for JavaScript runtimes and offers a range of CLI commands like `mget` and `mput` which
@@ -16,6 +16,55 @@ make it easy to interact with Manta.
 
 See the [installation documentation](/USAGE.md) for setting up your environment and the
 [testing documentation](/TESTING.md) for additional notes about running the test suite.
+
+## I'm having issues with logging configuration, why don't logs show up?
+
+Some logging frameworks are affected by shading and your configuration will need to account for
+the modified package paths. See the [usage notes on logging](/USAGE.md#logging)
+for more info.
+
+## I'm experiencing issues with subusers, what's wrong?
+
+If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
+Also, a common problem is that you haven't granted the subuser access to the
+path within Manta. Typically this is done via the
+[Manta CLI Tools](https://apidocs.joyent.com/manta/commands-reference.html)
+using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md).
+This can also be done by adding roles on the `MantaHttpHeaders` object.
+
+For example:
+
+```bash
+mchmod +subusername /user/stor/my_directory
+```
+
+## Why does Maven report duplicate classes when combining `java-manta-client-unshaded` with `java-manta-client-kryo-serialization`?
+
+In order to provide compatibility between the client module and `java-manta-client-kryo-serialization`
+we've elected to structure our dependencies such that the serialization module depends on the shaded client
+module. This results in duplicate classes being encountered when the shaded client module is used in combination
+with the serialization module. This can be resolved by adding an `<exclusion>` to the serialization module
+dependency, e.g.:
+
+```xml
+    <dependency>
+        <groupId>com.joyent.manta</groupId>
+        <artifactId>java-manta-client-unshaded</artifactId>
+        <version>x.y.z</version>
+    </dependency>
+
+    <dependency>
+        <groupId>com.joyent.manta</groupId>
+        <artifactId>java-manta-client-kryo-serialization</artifactId>
+        <version>x.y.z</version>
+        <exclusions>
+            <exclusion>
+                <groupId>com.joyent.manta</groupId>
+                <artifactId>java-manta-client</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+```
 
 ## Does Manta support multipart uploads?
 
@@ -78,18 +127,3 @@ defines the following categories:
 
 Within the Java Manta library, we refer to the identity used to login -
 "owner" or "owner/subuser" - as *user*, e.g `MANTA_USER` or `manta.user`.
-
-## I'm experiencing issues with subusers, what's wrong?
-
-If you are using subusers, be sure to specify the Manta account name as `user/subuser`.
-Also, a common problem is that you haven't granted the subuser access to the
-path within Manta. Typically this is done via the
-[Manta CLI Tools](https://apidocs.joyent.com/manta/commands-reference.html)
-using the [`mchmod` command](https://github.com/joyent/node-manta/blob/master/docs/man/mchmod.md).
-This can also be done by adding roles on the `MantaHttpHeaders` object.
-
-For example:
-
-```bash
-mchmod +subusername /user/stor/my_directory
-```

@@ -8,7 +8,6 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
@@ -22,100 +21,18 @@
     <name>java-manta-client</name>
     <description>Java Manta Client</description>
 
-    <properties>
-        <!-- Dependency versions -->
-        <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
-    </properties>
-
     <dependencies>
-        <!-- Library for authenticating requests against Manta -->
         <dependency>
-            <groupId>com.joyent.http-signature</groupId>
-            <artifactId>apache-http-client-signature</artifactId>
-            <version>${dependency.http-client-signature.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- Library for making HTTP connections -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${dependency.apache-http-client.version}</version>
+            <groupId>com.joyent.manta</groupId>
+            <artifactId>java-manta-client-unshaded</artifactId>
+            <version>3.1.7-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
-
-        <!-- Apache Commons Lang for helpful utility functions -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${dependency.commons-lang.version}</version>
-        </dependency>
-
-        <!-- Library for enhanced collection types -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>${dependency.commons-collections.version}</version>
-        </dependency>
-
-        <!-- Apache Commons IO for helpful IO functions -->
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${dependency.commons-io.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>${dependency.commons-codec.version}</version>
-        </dependency>
-
-        <!-- Library for generating more robust UUIDs -->
-        <dependency>
-            <groupId>com.fasterxml.uuid</groupId>
-            <artifactId>java-uuid-generator</artifactId>
-            <version>${dependency.fasterxml-uuid}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- JSON processing libraries -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${dependency.jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${dependency.jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${dependency.jackson.version}</version>
-        </dependency>
-
-        <!-- Cryptography libraries -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
@@ -142,13 +59,6 @@
             </exclusions>
         </dependency>
 
-        <!-- High speed MD5 implementation -->
-        <dependency>
-            <groupId>com.twmacinta</groupId>
-            <artifactId>fast-md5</artifactId>
-            <version>${dependency.fast-md5.version}</version>
-        </dependency>
-
         <!-- Logging bridge that will be shaded to bridge between the Apache
              Commons Logging framework and SLF4J -->
         <dependency>
@@ -163,63 +73,43 @@
             </exclusions>
         </dependency>
 
-        <!-- url encoding utility -->
-        <dependency>
-            <groupId>io.mikael</groupId>
-            <artifactId>urlbuilder</artifactId>
-            <version>${dependency.urlbuilder.version}</version>
-        </dependency>
-
-        <!-- object cloning library for memoization of encryption state -->
-        <dependency>
-            <groupId>uk.com.robust-it</groupId>
-            <artifactId>cloning</artifactId>
-            <version>${dependency.cloning.version}</version>
-        </dependency>
-
-        <!-- object instantiation library, needed by uk.com.robust-it:cloning and the kryo module -->
-        <dependency>
-            <groupId>org.objenesis</groupId>
-            <artifactId>objenesis</artifactId>
-            <version>${dependency.objenesis.version}</version>
-        </dependency>
-
-        <!-- These dependencies are declared at the module level because we can not
-             inherit exclusions from the parent. -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${dependency.logback.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>${dependency.testng.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>junit</artifactId>
-                    <groupId>junit</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- force creation of the empty JAR so that the shade plugin doesn't work on an already shaded JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
-                    <minimizeJar>true</minimizeJar>
+                    <!-- minimizeJar would cause an empty JAR since there is no code in this module -->
+                    <minimizeJar>false</minimizeJar>
                     <artifactSet>
+                        <includes>
+                            <include>com.joyent.manta:*</include>
+                            <include>com.joyent.http-signature:*</include>
+                            <include>org.apache.httpcomponents:*</include>
+                            <include>org.apache.commons:commons-lang3</include>
+                            <include>org.apache.commons:commons-collections4</include>
+                            <include>commons-io:commons-io</include>
+                            <include>commons-codec:commons-codec</include>
+                            <include>com.fasterxml.uuid:java-uuid-generator</include>
+                            <include>com.fasterxml.jackson.core:*</include>
+                            <include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
+                            <include>com.joyent.util:fast-md5</include>
+                            <include>org.slf4j:jcl-over-slf4j</include>
+                            <include>io.mikael:urlbuilder</include>
+                            <include>uk.com.robust-it:cloning</include>
+                            <include>org.objenesis:objenesis</include>
+                        </includes>
                         <excludes>
                             <exclude>com.google.code.findbugs:jsr305</exclude>
                             <exclude>junit:junit</exclude>
@@ -229,6 +119,7 @@
                             <exclude>net.java.dev.jna:*</exclude>
                             <exclude>org.hamcrest:*</exclude>
                             <exclude>org.mockito:*</exclude>
+                            <exclude>commons-logging:*</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>
@@ -277,76 +168,6 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
-                <configuration>
-                    <skip>${maven.test.skip}</skip>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
-                </configuration>
-            </plugin>
-            <!-- Library that creates a properties file containing version info -->
-            <plugin>
-                <groupId>com.google.code.maven-replacer-plugin</groupId>
-                <artifactId>replacer</artifactId>
-                <version>${maven-replacer-plugin-plugin.version}</version>
-                <!-- We inject the version number and date before compile -->
-                <executions>
-                    <execution>
-                        <id>replace-version-info</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>replace</goal>
-                        </goals>
-                        <configuration>
-                            <basedir>${project.basedir}/src/main/java</basedir>
-                            <includes>
-                                <include>**/MantaVersion.java</include>
-                            </includes>
-                            <preserveDir>true</preserveDir>
-                            <replacements>
-                                <replacement>
-                                    <token>VERSION = ".*";</token>
-                                    <value>VERSION = "${project.version}";</value>
-                                </replacement>
-                                <replacement>
-                                    <token>DATE = Instant\..*;</token>
-                                    <value>DATE = Instant.parse("${maven.build.timestamp}");</value>
-                                </replacement>
-                            </replacements>
-                        </configuration>
-                    </execution>
-                    <!-- We revert the date before package so that we aren't constantly
-                         checking in different versions of this file. -->
-                    <execution>
-                        <id>revert-version-info</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>replace</goal>
-                        </goals>
-                        <configuration>
-                            <basedir>${project.basedir}/src/main/java</basedir>
-                            <includes>
-                                <include>**/MantaVersion.java</include>
-                            </includes>
-                            <preserveDir>true</preserveDir>
-                            <replacements>
-                                <replacement>
-                                    <token>VERSION = ".*";</token>
-                                    <value>VERSION = "${project.version}";</value>
-                                </replacement>
-                                <replacement>
-                                    <token>DATE = Instant\..*;</token>
-                                    <value>DATE = Instant.now();</value>
-                                </replacement>
-                            </replacements>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
