@@ -782,7 +782,6 @@ public class MantaEncryptedObjectInputStreamTest {
         canDecryptEntireObject(cipherDetails, new SingleReads(), authenticate);
         canDecryptEntireObject(cipherDetails, new ByteChunkReads(), authenticate);
         canDecryptEntireObject(cipherDetails, new ByteChunkOffsetReads(), authenticate);
-        System.out.println("---------------------------------");
     }
 
 
