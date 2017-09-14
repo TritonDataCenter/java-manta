@@ -52,6 +52,21 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- Logging bridge that will be shaded to bridge between the Apache
+             Commons Logging framework and SLF4J -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${dependency.slfj.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.slf4j</artifactId>
+                    <groupId>slf4j-api</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
     </dependencies>
 
     <build>

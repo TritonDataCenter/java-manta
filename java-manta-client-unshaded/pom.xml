@@ -43,10 +43,6 @@
             <version>${dependency.apache-http-client.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>commons-codec</groupId>
                     <artifactId>commons-codec</artifactId>
                 </exclusion>
@@ -142,20 +138,6 @@
             <groupId>com.joyent.util</groupId>
             <artifactId>fast-md5</artifactId>
             <version>${dependency.fast-md5.version}</version>
-        </dependency>
-
-        <!-- Logging bridge that will be shaded to bridge between the Apache
-             Commons Logging framework and SLF4J -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <version>${dependency.slfj.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>org.slf4j</artifactId>
-                    <groupId>slf4j-api</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- url encoding utility -->

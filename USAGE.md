@@ -37,6 +37,13 @@ Note: Users are expected to use the same version across sub-packages, e.g. using
 `com.joyent.manta:java-manta-client:3.0.0` with
 `com.joyent.manta:java-manta-client-kryo-serialization:3.1.0` is not supported.
 
+#### Minimizing bundled dependencies
+
+A separate artifact published as `java-manta-client-unshaded` can optionally be used in place of `java-manta-client` if
+users want precise control over dependency resolution. This is only recommended for users comfortable with
+debugging Maven dependency resolution and usage of [Maven Enforcer's Dependency Convergence
+Rule](http://maven.apache.org/enforcer/enforcer-rules/dependencyConvergence.html) is *strongly* encouraged.
+
 ## From Source
 If you prefer to build from source, you'll also need
 [Maven](https://maven.apache.org/), and then invoke:
@@ -308,9 +315,7 @@ for getting are best described in the [FastMD5 Javadocs](http://www.twmacinta.co
 ### Logging
 
 The SDK utilizes [slf4j](http://www.slf4j.org/), and logging can be configured
-using a SLF4J implementation. The `java-manta-client` artifact includes [Apache
-HTTP Client](https://hc.apache.org/httpcomponents-client-4.5.x/index.html) bundled
-as a shaded artifact as well as an [Apache Commons Logger adaptor to
+using a SLF4J implementation. The `java-manta-client` artifact includes an [Apache Commons Logger adaptor to
 SLF4J](https://www.slf4j.org/legacy.html#jclOverSLF4J) so Apache HTTP Client logs
 will also be output via SLF4J.
 
@@ -324,3 +329,7 @@ and you wish to debug the establishment and leasing of HTTP connections:
 |-------------------------------|-------------------------------------------------------------------------------|
 | java-manta-client             | `<logger name="com.joyent.manta.org.apache.http.impl.conn" level="DEBUG" />`  |
 | java-manta-client-unshaded    | `<logger name="org.apache.http.impl.conn" level="DEBUG" />`                   |
+
+Please note that the Commons Logger adaptor is not a dependency of `java-manta-client-unshaded` and it is the user's
+responsibility to add their own dependency if they wish to collect Apache HttpClient logs. For more information on log
+bridging in SLF4J please review [this page](https://www.slf4j.org/legacy.html).
