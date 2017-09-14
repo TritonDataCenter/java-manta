@@ -1,8 +1,0 @@
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Java Manta Client Test Suite" verbose="1">
-    <test name="Benchmark Unit Tests">
-        <classes>
-            <class name="com.joyent.manta.benchmark.RandomInputStreamTest" />
-        </classes>
-    </test>
-</suite>

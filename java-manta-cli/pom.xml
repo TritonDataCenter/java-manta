@@ -39,6 +39,24 @@
             <artifactId>commons-lang3</artifactId>
             <version>${dependency.commons-lang.version}</version>
         </dependency>
+        <!-- This dependency *should* be added via the dependency tree of
+             java-manta-client, but in practice when making an uber jar,
+             it isn't brought in. -->
+        <dependency>
+            <groupId>com.squareup.jnagmp</groupId>
+            <artifactId>bouncycastle-rsa</artifactId>
+            <version>${dependency.jnagmp.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcpkix-jdk15on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
