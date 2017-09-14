@@ -140,7 +140,6 @@ public class EncryptingPartEntity implements HttpEntity {
                 }
             }
         } finally {
-            IOUtils.closeQuietly(httpOut);
             IOUtils.closeQuietly(contentStream);
         }
     }
