@@ -580,8 +580,7 @@ public class EncryptedServerSideMultipartManagerIT {
     }
 
     public final void willFailToCreatePartWhenErrorOccursDuringUpload() throws Exception {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
+        final String path = testPathPrefix + UUID.randomUUID().toString();
         final byte[] content = RandomUtils.nextBytes(2048);
 
         EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
