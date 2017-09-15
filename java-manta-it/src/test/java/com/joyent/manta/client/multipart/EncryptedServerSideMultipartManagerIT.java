@@ -41,9 +41,9 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.assertEquals;
@@ -591,20 +591,15 @@ public class EncryptedServerSideMultipartManagerIT {
             multipart.uploadPart(upload, 1, new FailingInputStream(new ByteArrayInputStream(content), 1024));
         });
 
-        final String uploadDirectoryPath = mantaClient.getContext().getMantaHomeDirectory()
-                + "/uploads/" + upload.getId().toString().charAt(0)
-                + "/" + upload.getId();
-        System.err.println("listing upload directory " + uploadDirectoryPath);
+        // listing the directory immediately after MPU creation is likely to return no results
+        // this is being reported upstream
+        TimeUnit.SECONDS.sleep(1);
 
-        long partCount = 0;
-        try (final Stream<MantaObject> receivedParts = mantaClient.listObjects(uploadDirectoryPath)) {
-            Iterator<MantaObject> it = receivedParts.iterator();
-            while (it.hasNext()) {
-                it.next();
-                partCount++;
-            }
+        final long partCount;
+        try (final Stream<MantaObject> receivedParts = mantaClient.listObjects(upload.getWrapped().getPartsDirectory())) {
+            partCount = receivedParts.count();
         }
 
-        Assert.assertEquals(partCount, 0);
+        Assert.assertEquals(partCount, 0L);
     }
 }
