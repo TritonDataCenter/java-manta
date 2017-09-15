@@ -40,6 +40,14 @@ is configurable using the `manta.it.path` system property or the `MANTA_IT_PATH`
 environment variable. The default behavior is to compute the base path based on
 the user's private folder, e.g. `/my.account/stor/java-manta-integration-tests`.
 
+This is useful if you want to run a single test case using `-Dit.test=${TESTNAME}`
+and want the data created by that test to live in a specific directory. This also
+makes it possible to isolate entire runs of the test suite, e.g.
+
+```
+mvn verify -Dmanta.it.path="$MANTA_USER/stor/$(git rev-parse HEAD)"
+```
+
 # Running Tests
 
 Run `mvn verify` from the project root to run all tests. Some Maven goals will

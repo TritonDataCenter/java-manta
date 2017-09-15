@@ -99,6 +99,6 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
                 System.getProperty("manta.it.path"),
                 String.format("%s/stor/java-manta-integration-tests", config.getMantaHomeDirectory()));
 
-        return integrationTestBase + "/" + UUID.randomUUID();
+        return integrationTestBase + "/" + UUID.randomUUID() + "/";
     }
 }
