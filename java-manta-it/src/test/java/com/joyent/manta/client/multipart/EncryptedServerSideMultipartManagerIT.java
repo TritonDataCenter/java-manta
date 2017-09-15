@@ -9,6 +9,7 @@ package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
+import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
@@ -575,5 +576,30 @@ public class EncryptedServerSideMultipartManagerIT {
             AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
                     content, out.toByteArray());
         }
+    }
+
+    public final void willFailToCreatePartWhenErrorOccursDuringUpload() throws Exception {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] content = RandomUtils.nextBytes(2048);
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path);
+
+        Assert.assertThrows(IOException.class, () -> {
+            // partial read of content1
+            multipart.uploadPart(upload, 1, new FailingInputStream(new ByteArrayInputStream(content), 1024));
+        });
+
+        final String uploadDirectoryPath = mantaClient.getContext().getMantaHomeDirectory()
+                + "/uploads/" + upload.getId().toString().charAt(0)
+                + "/" + upload.getId();
+        System.err.println("listing upload directory " + uploadDirectoryPath);
+
+        final long partCount;
+        try (final Stream<MantaObject> receivedParts = mantaClient.listObjects(uploadDirectoryPath)) {
+            partCount = receivedParts.count();
+        }
+
+        Assert.assertEquals(partCount, 0);
     }
 }
