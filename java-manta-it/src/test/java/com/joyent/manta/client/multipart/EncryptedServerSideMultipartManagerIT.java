@@ -41,6 +41,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -595,9 +596,13 @@ public class EncryptedServerSideMultipartManagerIT {
                 + "/" + upload.getId();
         System.err.println("listing upload directory " + uploadDirectoryPath);
 
-        final long partCount;
+        long partCount = 0;
         try (final Stream<MantaObject> receivedParts = mantaClient.listObjects(uploadDirectoryPath)) {
-            partCount = receivedParts.count();
+            Iterator<MantaObject> it = receivedParts.iterator();
+            while (it.hasNext()) {
+                it.next();
+                partCount++;
+            }
         }
 
         Assert.assertEquals(partCount, 0);
