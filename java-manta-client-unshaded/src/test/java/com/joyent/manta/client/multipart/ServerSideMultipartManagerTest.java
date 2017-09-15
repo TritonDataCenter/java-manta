@@ -35,6 +35,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -48,6 +49,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.mock;
@@ -126,14 +128,19 @@ public class ServerSideMultipartManagerTest {
         final String partsDirectory = "/test/uploads/a/abcdef";
         final String path = "/test/stor/object";
         final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+        final String etag = UUID.randomUUID().toString();
 
         final ServerSideMultipartManager mngr = buildMockManager(
                 new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
-                "");
+                "",
+                (response) -> when(response.getFirstHeader(HttpHeaders.ETAG))
+                        .thenReturn(new BasicHeader(HttpHeaders.ETAG, etag)));
 
         final MantaMultipartUploadPart part = mngr.uploadPart(upload, 1, new byte[0]);
 
         Assert.assertEquals(part.getObjectPath(), path);
+        Assert.assertEquals(part.getPartNumber(), 1);
+        Assert.assertEquals(part.getEtag(), etag);
     }
 
     public void canUploadPartValidatesResponseCode() throws IOException {
@@ -152,6 +159,26 @@ public class ServerSideMultipartManagerTest {
         Assert.assertThrows(MantaMultipartException.class, () -> {
             mngr.uploadPart(upload, 1, new byte[0]);
         });
+    }
+
+    public void canUploadPartAndFailOnMissingEtag() throws IOException {
+        final UUID uploadId = UUID.randomUUID();
+        final String partsDirectory = "/test/uploads/a/abcdef";
+        final String path = "/test/stor/object";
+        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+
+        // while it isn't strictly necessary to configure the mock to return null, it's better to be explicit about
+        // what's being tested
+        final ServerSideMultipartManager mngr = buildMockManager(
+                new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
+                "",
+                (response) -> when(response.getFirstHeader(HttpHeaders.ETAG)).thenReturn(null));
+
+        final Exception e = Assert.expectThrows(MantaMultipartException.class, () -> {
+            mngr.uploadPart(upload, 1, new byte[0]);
+        });
+
+        Assert.assertTrue(e.getMessage().contains("ETag missing from part response"));
     }
 
     public void canAbortMpu() throws IOException {
@@ -384,6 +411,13 @@ public class ServerSideMultipartManagerTest {
     private ServerSideMultipartManager buildMockManager(final StatusLine statusLine,
                                                         final String responseBody)
             throws IOException {
+        return buildMockManager(statusLine, responseBody, null);
+    }
+
+    private ServerSideMultipartManager buildMockManager(final StatusLine statusLine,
+                                                        final String responseBody,
+                                                        final Consumer<CloseableHttpResponse> responseConfigCallback)
+            throws IOException {
         final ConfigContext config = testConfigContext();
 
         final KeyPair keyPair;
@@ -399,6 +433,10 @@ public class ServerSideMultipartManagerTest {
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
         when(response.getStatusLine()).thenReturn(statusLine);
+
+        if (responseConfigCallback != null) {
+            responseConfigCallback.accept(response);
+        }
 
         if (responseBody != null) {
             final BasicHttpEntity entity = new BasicHttpEntity();
@@ -441,6 +479,6 @@ public class ServerSideMultipartManagerTest {
 
         Assert.assertEquals(upload.getClass(), ServerSideMultipartUpload.class);
 
-        return (ServerSideMultipartUpload)upload;
+        return (ServerSideMultipartUpload) upload;
     }
 }
