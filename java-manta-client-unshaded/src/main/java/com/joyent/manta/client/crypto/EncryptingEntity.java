@@ -166,7 +166,6 @@ public class EncryptingEntity implements HttpEntity {
             final byte[] hmacBytes = new byte[hmacSize];
             hmac.doFinal(hmacBytes, 0);
 
-            // TODO: this test will NEVER fail since it's just checking hmacBytes.length which was initialized from hmacSize
             Validate.isTrue(hmacBytes.length == hmacSize,
                     "HMAC actual bytes doesn't equal the number of bytes expected");
 
