@@ -35,13 +35,12 @@
             <artifactId>java-manta-client-kryo-serialization</artifactId>
             <version>3.1.7-SNAPSHOT</version>
             <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.joyent.manta</groupId>
-            <artifactId>java-manta-benchmark</artifactId>
-            <version>3.1.7-SNAPSHOT</version>
-            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.joyent.manta</groupId>
+                    <artifactId>java-manta-client-unshaded</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -129,6 +128,10 @@
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
                             </suiteXmlFiles>
+                            <!-- Need to exclude the unshaded module from the test runner's classpath -->
+                            <classpathDependencyExcludes>
+                                <classpathDependencyExcludes>com.joyent.manta:java-manta-client-unshaded</classpathDependencyExcludes>
+                            </classpathDependencyExcludes>
                             <!-- uncomment to enable proxies with integration tests -->
                             <!--<systemPropertyVariables>-->
                                 <!--<https.proxyHost>localhost</https.proxyHost>-->

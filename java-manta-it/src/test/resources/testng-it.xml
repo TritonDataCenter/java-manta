@@ -1,5 +1,13 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Java Manta SDK Integration Test Suite" verbose="1">
+
+    <test name="Manta Client Integration Test Helper Class Tests">
+        <classes>
+            <class name="com.joyent.test.util.FailingInputStreamTest" />
+            <class name="com.joyent.test.util.RandomInputStreamTest" />
+        </classes>
+    </test>
+
     <test name="Manta Client Integration Tests [Unencrypted]">
         <groups>
             <run>
