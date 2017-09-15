@@ -9,6 +9,7 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedStringEntity;
@@ -17,11 +18,13 @@ import com.joyent.manta.util.FailingOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
+import org.apache.commons.io.input.BrokenInputStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
+import org.apache.http.entity.InputStreamEntity;
 import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -34,6 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -114,6 +118,89 @@ public class EncryptingEntityTest {
 
     public void canSurviveNetworkFailuresInAesCbc() throws Exception {
         canBeWrittenIdempotently(AesCbcCipherDetails.INSTANCE_128_BIT);
+    }
+
+    /* Cipher-generic tests */
+
+    private void canBeWrittenIdempotently(final SupportedCipherDetails cipherDetails) throws Exception {
+        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
+        final ExposedStringEntity contentEntity = new ExposedStringEntity(
+                content,
+                StandardCharsets.UTF_8);
+
+        final ByteArrayOutputStream referenceEncrypted = new ByteArrayOutputStream(content.length());
+        {
+
+            final EncryptingEntity referenceEntity = new EncryptingEntity(
+                    secretKey,
+                    cipherDetails,
+                    contentEntity);
+
+            referenceEntity.writeTo(referenceEncrypted);
+            validateCiphertext(
+                    cipherDetails,
+                    secretKey,
+                    contentEntity.getBackingBuffer().array(),
+                    referenceEntity.getCipher().getIV(),
+                    referenceEncrypted.toByteArray());
+        }
+
+        final ByteArrayOutputStream retryEncrypted = new ByteArrayOutputStream(content.length());
+        final FailingOutputStream output = new FailingOutputStream(retryEncrypted, content.length() / 2);
+        {
+            final EncryptingEntity retryingEntity = new EncryptingEntity(
+                    secretKey,
+                    cipherDetails,
+                    contentEntity);
+
+            Assert.assertThrows(IOException.class, () -> {
+                retryingEntity.writeTo(output);
+            });
+
+            // clear the data written so we only see what makes it into the second request
+            retryEncrypted.reset();
+            output.setMinimumBytes(FailingOutputStream.NO_FAILURE);
+
+            retryingEntity.writeTo(output);
+            validateCiphertext(
+                    cipherDetails,
+                    secretKey,
+                    contentEntity.getBackingBuffer().array(),
+                    retryingEntity.getCipher().getIV(),
+                    retryEncrypted.toByteArray());
+        }
+    }
+
+    public void doesNotCloseSuppliedOutputStreamWhenFailureOccurs() throws Exception {
+        final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
+        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
+        final ExposedStringEntity contentEntity = new ExposedStringEntity(
+                content,
+                StandardCharsets.UTF_8);
+
+        final EncryptingEntity encryptingEntity = new EncryptingEntity(
+                secretKey,
+                cipherDetails,
+                contentEntity);
+
+        final OutputStream output = Mockito.mock(OutputStream.class);
+        encryptingEntity.writeTo(output);
+        Mockito.verify(output, Mockito.never()).close();
+    }
+
+    public void doesNotCloseSuppliedOutputStreamWhenWrittenSuccessfully() throws Exception {
+        final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
+        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final EncryptingEntity encryptingEntity = new EncryptingEntity(
+                secretKey,
+                cipherDetails,
+                new InputStreamEntity(new BrokenInputStream(new IOException("bad input"))));
+
+        final OutputStream output = Mockito.mock(OutputStream.class);
+        Assert.assertThrows(IOException.class, () -> encryptingEntity.writeTo(output));
+        Mockito.verify(output, Mockito.never()).close();
     }
 
     /* Test helper methods */
@@ -225,56 +312,6 @@ public class EncryptingEntityTest {
             Assert.assertTrue(validator.test(actualBytes),
                     "Entity validation failed");
 
-        }
-    }
-
-    private void canBeWrittenIdempotently(final SupportedCipherDetails cipherDetails) throws Exception {
-        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
-        final ExposedStringEntity contentEntity = new ExposedStringEntity(
-                content,
-                StandardCharsets.UTF_8);
-
-        final ByteArrayOutputStream referenceEncrypted = new ByteArrayOutputStream(content.length());
-        {
-
-            final EncryptingEntity referenceEntity = new EncryptingEntity(
-                    secretKey,
-                    cipherDetails,
-                    contentEntity);
-
-            referenceEntity.writeTo(referenceEncrypted);
-            validateCiphertext(
-                    cipherDetails,
-                    secretKey,
-                    contentEntity.getBackingBuffer().array(),
-                    referenceEntity.getCipher().getIV(),
-                    referenceEncrypted.toByteArray());
-        }
-
-        final ByteArrayOutputStream retryEncrypted = new ByteArrayOutputStream(content.length());
-        final FailingOutputStream output = new FailingOutputStream(retryEncrypted, content.length() / 2);
-        {
-            final EncryptingEntity retryingEntity = new EncryptingEntity(
-                    secretKey,
-                    cipherDetails,
-                    contentEntity);
-
-            Assert.assertThrows(IOException.class, () -> {
-                retryingEntity.writeTo(output);
-            });
-
-            // clear the data written so we only see what makes it into the second request
-            retryEncrypted.reset();
-            output.setMinimumBytes(FailingOutputStream.NO_FAILURE);
-
-            retryingEntity.writeTo(output);
-            validateCiphertext(
-                    cipherDetails,
-                    secretKey,
-                    contentEntity.getBackingBuffer().array(),
-                    retryingEntity.getCipher().getIV(),
-                    retryEncrypted.toByteArray());
         }
     }
 
