@@ -75,8 +75,7 @@ public class JobsMultipartManagerIT {
     @AfterClass
     public void afterClass() throws IOException {
         if (this.mantaClient != null) {
-            // FIXME
-            //this.mantaClient.deleteRecursive(testPathPrefix);
+            this.mantaClient.deleteRecursive(testPathPrefix);
             this.mantaClient.closeWithWarning();
             this.multipart = null;
             this.mantaClient = null;
