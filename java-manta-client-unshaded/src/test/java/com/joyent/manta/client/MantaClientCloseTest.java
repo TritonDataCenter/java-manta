@@ -12,6 +12,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.ProxyInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.http.ConnectionClosedException;
+import org.apache.http.impl.execchain.RequestAbortedException;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +24,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.security.KeyPair;
@@ -49,6 +51,18 @@ public class MantaClientCloseTest {
         if (e instanceof IOException
                 && e.getCause() instanceof ExecutionException
                 && e.getCause().getCause() instanceof SocketException) {
+            return true;
+        }
+
+        if (e instanceof RequestAbortedException) {
+            return true;
+        }
+
+        if (e instanceof InterruptedIOException) {
+            return true;
+        }
+
+        if (e instanceof ConnectionClosedException) {
             return true;
         }
 
@@ -177,23 +191,27 @@ public class MantaClientCloseTest {
                     .toString());
             // block indefinitely
 
-            if (exchange.getRequestMethod().equalsIgnoreCase("post")) {
+            if (exchange.getRequestMethod().equalsIgnoreCase("PUT")) {
+                LOGGER.debug("Stub server received PUT, discarding infinitely");
                 exchange.sendResponseHeaders(201, 0);
+                IOUtils.copy(exchange.getRequestBody(), NullOutputStream.NULL_OUTPUT_STREAM);
+            }
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                LOGGER.error("Stub server received unexpected request method " + exchange.getRequestMethod());
+                exchange.getRequestBody().close();
+                exchange.getResponseBody().close();
                 exchange.close();
                 return;
             }
 
+            LOGGER.debug("Stub server received GET, writing infinitely");
             exchange.sendResponseHeaders(200, 0);
-            final OutputStream responseBody = exchange.getResponseBody();
-
             final InputStream response = new InfiniteInputStream(new byte[]{'a'});
-            while (true) {
-                IOUtils.copy(response, responseBody);
-            }
-
+            IOUtils.copy(response, exchange.getResponseBody());
         });
         server.start();
-        LOGGER.debug("started");
+        LOGGER.debug("Started stub server");
 
         final ImmutablePair<File, String> key = generatePrivateKey();
 
