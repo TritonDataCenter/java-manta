@@ -207,7 +207,11 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final CloseableHttpClient client = connectionContext.getHttpClient();
-        pendingRequests.add(put);
+
+        if (pendingRequests != null) {
+            pendingRequests.add(put);
+        }
+
         final MantaObjectResponse obj;
 
         try (CloseableHttpResponse response = client.execute(put)) {
@@ -403,7 +407,11 @@ public class StandardHttpHelper implements HttpHelper {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
-        pendingRequests.add(request);
+
+        if (pendingRequests != null) {
+            pendingRequests.add(request);
+        }
+
         CloseableHttpResponse response = client.execute(request);
         StatusLine statusLine = response.getStatusLine();
 
@@ -448,7 +456,11 @@ public class StandardHttpHelper implements HttpHelper {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
-        pendingRequests.add(request);
+
+        if (pendingRequests != null) {
+            pendingRequests.add(request);
+        }
+
         CloseableHttpResponse response = client.execute(request);
 
         try {
@@ -505,7 +517,12 @@ public class StandardHttpHelper implements HttpHelper {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
-        pendingRequests.add(request);
+
+        if (pendingRequests != null) {
+            pendingRequests.add(request);
+        }
+
+
         CloseableHttpResponse response = client.execute(request);
         try {
             StatusLine statusLine = response.getStatusLine();
@@ -571,7 +588,14 @@ public class StandardHttpHelper implements HttpHelper {
     public void close() throws Exception {
         if (pendingRequests != null) {
             pendingRequests.forEach((req) -> {
-                LOGGER.error("aborting request " + req.getMethod() + " " + req.getURI().getPath());
+                if (LOGGER.isWarnEnabled()) {
+                    final String message =
+                            String.format(
+                                    "aborting request %s %s",
+                                    req.getMethod(),
+                                    req.getURI().getPath());
+                    LOGGER.warn(message);
+                }
                 req.abort();
             });
         }

@@ -9,14 +9,13 @@ import com.joyent.manta.util.InfiniteInputStream;
 import com.sun.net.httpserver.HttpServer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.ProxyInputStream;
 import org.apache.commons.io.output.NullOutputStream;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -36,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MantaClientCloseTest {
 
@@ -69,7 +69,7 @@ public class MantaClientCloseTest {
 
         @Override
         public void run() {
-            Thread.currentThread().setName("downloader");
+            Thread.currentThread().setName("downloader-" + client.hashCode());
             try {
                 final MantaObjectInputStream is = client.getAsInputStream("/arbitrary/path");
                 latch.countDown();
@@ -80,7 +80,7 @@ public class MantaClientCloseTest {
                     return;
                 }
 
-                LOGGER.error("downloader failed unexpectedly" + e.getClass().getCanonicalName());
+                LOGGER.error("downloader failed unexpectedly ", e);
                 exceptions.add(e);
             }
         }
@@ -100,19 +100,24 @@ public class MantaClientCloseTest {
 
         @Override
         public void run() {
-            Thread.currentThread().setName("uploader");
+            Thread.currentThread().setName("uploader-" + client.hashCode());
             try {
-                // implement an UnlatchingInputStream
-                final OutputStream mantaOut = client.putAsOutputStream("/arbitrary/path");
-                latch.countDown();
-                LOGGER.debug("uploader ready");
-                IOUtils.copy(new InfiniteInputStream(new byte[]{'a'}), mantaOut);
+                final AtomicBoolean counted = new AtomicBoolean(false);
+                client.put("/arbitrary/path", new ProxyInputStream(new InfiniteInputStream(new byte[]{'a'})) {
+                    @Override
+                    protected void afterRead(int n) throws IOException {
+                        if (!counted.getAndSet(true)) {
+                            latch.countDown();
+                            LOGGER.debug("uploader ready");
+                        }
+                    }
+                });
             } catch (Exception e) {
                 if (isSocketException(e)) {
                     return;
                 }
 
-                LOGGER.error("uploader failed unexpectedly" + e.getClass().getCanonicalName());
+                LOGGER.error("uploader failed unexpectedly", e);
                 exceptions.add(e);
             }
         }
@@ -132,15 +137,15 @@ public class MantaClientCloseTest {
 
         @Override
         public void run() {
-            Thread.currentThread().setName("terminator");
+            Thread.currentThread().setName("terminator-" + client.hashCode());
             try {
                 // wait for requests to be in-flight
                 LOGGER.debug("terminator waiting");
+                latch.countDown();
                 if (!latch.await(5, TimeUnit.SECONDS)) {
-                    exceptions.add(new IllegalStateException("terminator had to wait too long for other threads"));
-                    return;
+                    throw new IllegalStateException("terminator had to wait too long for other threads");
                 }
-                LOGGER.debug("closing client");
+                LOGGER.debug("terminator closing client");
                 client.close();
             } catch (OnCloseAggregateException aggE) {
                 // we should look through the close exceptions to see if anything weird occurred
@@ -158,11 +163,11 @@ public class MantaClientCloseTest {
         }
     }
 
-    @Test
-    public void testHttpServer() throws Exception {
-        final int port = RandomUtils.nextInt(3000, 30000);
-        LOGGER.debug("using port: " + port);
-        final HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+    @Test(invocationCount = 100)
+    public void testFastCloseCausesExpectedExceptions() throws Exception {
+        final HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        LOGGER.debug("fast-close enabled test using port: " + server.getAddress().getPort());
+
         server.setExecutor(Executors.newFixedThreadPool(2));
         server.createContext("/", (exchange) -> {
             LOGGER.debug(new StringBuilder("HTTP request: ")
@@ -191,7 +196,6 @@ public class MantaClientCloseTest {
         LOGGER.debug("started");
 
         final ImmutablePair<File, String> key = generatePrivateKey();
-        final int timeoutSeconds = 5;
 
         final MantaClient client = new MantaClient(
                 new ChainedConfigContext(
@@ -200,45 +204,44 @@ public class MantaClientCloseTest {
                                 .setMantaUser("user")
                                 .setMantaKeyPath(key.left.getAbsolutePath())
                                 .setMantaKeyId(key.right)
-                                .setMantaURL("http://localhost:" + port)
-                                .setTimeout(timeoutSeconds * 1000)
-                                .setMaximumConnections(4)));
+                                .setMantaURL("http://localhost:" + server.getAddress().getPort())
+                                .setMaximumConnections(2)
+                                .setFastCloseEnabled(true)));
 
-        final ExecutorService pool = Executors.newFixedThreadPool(client.getContext().getMaximumConnections());
+        final ExecutorService pool = Executors.newFixedThreadPool(3);
         final ConcurrentLinkedQueue<Exception> exceptions = new ConcurrentLinkedQueue<>();
-        final CountDownLatch latch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(3);
 
         pool.submit(new Downloader(client, latch, exceptions));
         pool.submit(new Uploader(client, latch, exceptions));
         pool.submit(new Terminator(client, latch, exceptions));
 
         latch.await();
-        LOGGER.debug("waiting for terminator");
-        TimeUnit.SECONDS.sleep(5);
         LOGGER.debug("shutting down pool");
-
         pool.shutdown();
 
         if (pool.awaitTermination(5, TimeUnit.SECONDS)) {
             LOGGER.debug("pool terminated within the expected time");
         } else {
-            LOGGER.error("Forced to terminate worker pool");
+            LOGGER.info("Forced to terminate worker pool");
             pool.shutdownNow();
-            Assert.fail("Forced to terminate worker pool");
+            client.closeQuietly();
+            exceptions.add(new IllegalStateException("main thread was forced to terminate worker pool"));
         }
 
-        final String exceptionMessage = "exception count: " + exceptions.size();
+        final String exceptionMessage = "unexpected exception count: " + exceptions.size();
         LOGGER.debug(exceptionMessage);
         if (exceptions.isEmpty()) {
             return;
         }
 
+        final OnCloseAggregateException aggException = new OnCloseAggregateException();
+
         if (!client.isClosed()) {
             client.closeQuietly();
-            Assert.fail("main thread had to close client");
+            exceptions.add(new IllegalStateException("main thread had to close client"));
         }
 
-        final OnCloseAggregateException aggException = new OnCloseAggregateException();
         for (Exception e : exceptions) {
             aggException.aggregateException(e);
         }
@@ -246,25 +249,13 @@ public class MantaClientCloseTest {
         Assert.fail(exceptionMessage, aggException);
     }
 
-
-    @Test(dataProvider = "threadCounts")
-    public void testConcurrentClose(final int threadCount) throws NoSuchAlgorithmException, IOException, InterruptedException {
-    }
-
-
-    @DataProvider(name = "threadCounts")
-    public Object[][] threadCounts() {
-        return new Object[][]{
-                new Object[]{1},
-                new Object[]{10},
-                // new Object[] {100},
-                // new Object[] {1000},
-        };
-    }
-
-
-    private ImmutablePair<File, String> generatePrivateKey() throws NoSuchAlgorithmException, IOException {
-        final KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+    private ImmutablePair<File, String> generatePrivateKey() throws IOException {
+        final KeyPair keyPair;
+        try {
+            keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new RuntimeException(impossible); // "RSA" is always provided
+        }
 
         final File keyFile = File.createTempFile("private-key", "");
         FileUtils.forceDeleteOnExit(keyFile);
