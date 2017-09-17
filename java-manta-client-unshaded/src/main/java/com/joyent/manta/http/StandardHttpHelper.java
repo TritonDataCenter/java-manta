@@ -16,6 +16,7 @@ import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.exception.MantaRequestAbortedException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
@@ -232,6 +233,11 @@ public class StandardHttpHelper implements HttpHelper {
             if (validateUploadsEnabled()) {
                 validateChecksum(md5DigestedEntity, obj.getMd5Bytes(), put, response);
             }
+        } catch (Exception e) {
+            if (put.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
         }
 
         /* We set the content type on the result object from the entity
@@ -412,7 +418,16 @@ public class StandardHttpHelper implements HttpHelper {
             pendingRequests.add(request);
         }
 
-        CloseableHttpResponse response = client.execute(request);
+        final CloseableHttpResponse response;
+        try {
+            response = client.execute(request);
+        } catch (Exception e) {
+            if (request.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
+        }
+
         StatusLine statusLine = response.getStatusLine();
 
         if (LOGGER.isDebugEnabled() && logMessage != null) {
@@ -461,7 +476,15 @@ public class StandardHttpHelper implements HttpHelper {
             pendingRequests.add(request);
         }
 
-        CloseableHttpResponse response = client.execute(request);
+        final CloseableHttpResponse response;
+        try {
+            response = client.execute(request);
+        } catch (Exception e) {
+            if (request.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
+        }
 
         try {
             StatusLine statusLine = response.getStatusLine();
@@ -522,10 +545,10 @@ public class StandardHttpHelper implements HttpHelper {
             pendingRequests.add(request);
         }
 
-
-        CloseableHttpResponse response = client.execute(request);
+        CloseableHttpResponse response = null;
         try {
-            StatusLine statusLine = response.getStatusLine();
+            response = client.execute(request);
+            final StatusLine statusLine = response.getStatusLine();
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(logMessage, logParameters, statusLine.getStatusCode(),
@@ -542,8 +565,13 @@ public class StandardHttpHelper implements HttpHelper {
             } else {
                 return null;
             }
+        } catch (Exception e) {
+            if (request.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
         } finally {
-            if (closeResponse) {
+            if (closeResponse && response != null) {
                 IOUtils.closeQuietly(response);
             }
         }
@@ -582,6 +610,11 @@ public class StandardHttpHelper implements HttpHelper {
      */
     protected boolean validateUploadsEnabled() {
         return validateUploads;
+    }
+
+    @Override
+    public boolean isTrackingRequests() {
+        return pendingRequests != null;
     }
 
     @Override

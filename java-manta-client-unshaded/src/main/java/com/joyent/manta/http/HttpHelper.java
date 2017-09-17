@@ -292,6 +292,12 @@ public interface HttpHelper extends AutoCloseable {
             throws IOException;
 
     /**
+     * Whether or not this HttpHelper is prepared to terminate in-progress requests.
+     * @return true when keeping weak references to requests, false when disabled
+     */
+    boolean isTrackingRequests();
+
+    /**
      * Extracts the request id from a {@link HttpRequest} object.
      *
      * @param response HTTP request object

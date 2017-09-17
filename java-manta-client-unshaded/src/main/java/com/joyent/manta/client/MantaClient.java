@@ -2345,6 +2345,35 @@ public class MantaClient implements AutoCloseable {
 
         final List<Exception> exceptions = new ArrayList<>();
 
+        if (!httpHelper.isTrackingRequests()) {
+            /* We explicitly close all streams that may have been opened when
+             * this class (MantaClient) is closed. This helps to alleviate problems
+             * where resources haven't been closed properly. In particular, this
+             * is useful for the streamingIterator() method that returns an
+             * iterator that must be closed after consumption.
+             *
+             * This helpful stream close is performed unless the user has enabled
+             * fast client termination. In this case we will not make any attempt
+             * to clean up after the user, they are 100% responsible for freeing
+             * resources.
+             */
+            for (AutoCloseable closeable : danglingStreams) {
+                try {
+                    if (closeable == null) {
+                        continue;
+                    }
+
+                    closeable.close();
+                } catch (InterruptedException ie) {
+                /* Do nothing, but we won't capture the interrupted exception
+                 * because even if we are interrupted, we want to close all open
+                 * resources. */
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
+            }
+        }
+
         // httpHelper.close() handles early request termination if it's enabled
         try {
             httpHelper.close();
@@ -2354,27 +2383,6 @@ public class MantaClient implements AutoCloseable {
              * resources. */
         } catch (Exception e) {
             exceptions.add(e);
-        }
-
-        /* We explicitly close all streams that may have been opened when
-         * this class (MantaClient) is closed. This helps to alleviate problems
-         * where resources haven't been closed properly. In particular, this
-         * is useful for the streamingIterator() method that returns an
-         * iterator that must be closed after consumption. */
-        for (AutoCloseable closeable : danglingStreams) {
-            try {
-                if (closeable == null) {
-                    continue;
-                }
-
-                closeable.close();
-            } catch (InterruptedException ie) {
-                /* Do nothing, but we won't capture the interrupted exception
-                 * because even if we are interrupted, we want to close all open
-                 * resources. */
-            } catch (Exception e) {
-                exceptions.add(e);
-            }
         }
 
         try {

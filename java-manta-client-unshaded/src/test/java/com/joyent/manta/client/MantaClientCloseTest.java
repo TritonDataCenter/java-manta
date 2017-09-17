@@ -4,6 +4,7 @@ import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.exception.MantaRequestAbortedException;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.util.InfiniteInputStream;
 import com.sun.net.httpserver.HttpServer;
@@ -12,8 +13,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.ProxyInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.http.ConnectionClosedException;
-import org.apache.http.impl.execchain.RequestAbortedException;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +23,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.security.KeyPair;
@@ -33,7 +31,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -43,30 +40,12 @@ public class MantaClientCloseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientCloseTest.class);
 
-    private static boolean isSocketException(Exception e) {
-        if (e instanceof SocketException) {
-            return true;
+    private static boolean isExpectedException(Exception e) {
+        if (e instanceof MantaRequestAbortedException) {
+            LOGGER.error("FINALLY USEFUL: " + e.getCause().getClass().getSimpleName());
         }
 
-        if (e instanceof IOException
-                && e.getCause() instanceof ExecutionException
-                && e.getCause().getCause() instanceof SocketException) {
-            return true;
-        }
-
-        if (e instanceof RequestAbortedException) {
-            return true;
-        }
-
-        if (e instanceof InterruptedIOException) {
-            return true;
-        }
-
-        if (e instanceof ConnectionClosedException) {
-            return true;
-        }
-
-        return false;
+        return e instanceof SocketException || e instanceof MantaRequestAbortedException;
     }
 
     private static class Downloader implements Runnable {
@@ -90,7 +69,7 @@ public class MantaClientCloseTest {
                 LOGGER.debug("downloader ready");
                 IOUtils.copy(is, NullOutputStream.NULL_OUTPUT_STREAM);
             } catch (Exception e) {
-                if (isSocketException(e)) {
+                if (isExpectedException(e)) {
                     return;
                 }
 
@@ -127,7 +106,7 @@ public class MantaClientCloseTest {
                     }
                 });
             } catch (Exception e) {
-                if (isSocketException(e)) {
+                if (isExpectedException(e)) {
                     return;
                 }
 
@@ -164,7 +143,7 @@ public class MantaClientCloseTest {
             } catch (OnCloseAggregateException aggE) {
                 // we should look through the close exceptions to see if anything weird occurred
                 for (Exception e : aggE.exceptions()) {
-                    if (!(e instanceof SocketException)) {
+                    if (!isExpectedException(e)) {
                         exceptions.add(aggE);
                         break;
                     }
