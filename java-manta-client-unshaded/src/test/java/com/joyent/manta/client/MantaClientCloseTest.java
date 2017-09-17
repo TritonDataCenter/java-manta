@@ -161,7 +161,8 @@ public class MantaClientCloseTest {
         final HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
         LOGGER.debug("fast-close enabled test using port: " + server.getAddress().getPort());
 
-        server.setExecutor(Executors.newFixedThreadPool(2));
+        final ExecutorService serverPool = Executors.newFixedThreadPool(2);
+        server.setExecutor(serverPool);
         server.createContext("/", (exchange) -> {
             LOGGER.debug(new StringBuilder("HTTP request: ")
                     .append(exchange.getProtocol())
@@ -225,6 +226,9 @@ public class MantaClientCloseTest {
             client.closeQuietly();
             exceptions.add(new IllegalStateException("main thread was forced to terminate worker pool"));
         }
+
+        server.stop(1);
+        serverPool.shutdownNow();
 
         final String exceptionMessage = "unexpected exception count: " + exceptions.size();
         LOGGER.debug(exceptionMessage);
