@@ -10,7 +10,6 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
-import com.joyent.manta.http.MantaApacheHttpClientContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -47,8 +46,7 @@ public class MantaDirectoryListingIteratorIT {
         config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
         mantaClient.putDirectory(testPathPrefix, true);
 
         final KeyPairFactory keyPairFactory = new KeyPairFactory(config);

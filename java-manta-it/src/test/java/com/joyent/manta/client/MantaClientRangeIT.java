@@ -12,6 +12,7 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
@@ -67,9 +68,18 @@ public class MantaClientRangeIT {
 
         mantaClient = new MantaClient(config);
         this.config = config;
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
         mantaClient.putDirectory(testPathPrefix, true);
+    }
+
+    @AfterClass
+    public void afterClass() throws IOException {
+        if (mantaClient == null) {
+            return;
+        }
+
+        mantaClient.deleteRecursive(testPathPrefix);
+        mantaClient.closeWithWarning();
     }
 
     public final void canGetWithRangeHeader() throws IOException {

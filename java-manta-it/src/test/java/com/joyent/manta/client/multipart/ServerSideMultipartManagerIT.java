@@ -19,7 +19,6 @@ import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.SkipException;
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.assertEquals;
@@ -62,8 +60,7 @@ public class ServerSideMultipartManagerIT {
         }
 
         multipart = new ServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s/",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

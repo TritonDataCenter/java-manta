@@ -7,11 +7,15 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.crypto.*;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
-import javax.crypto.SecretKey;
 import java.util.Base64;
+import java.util.UUID;
+import javax.crypto.SecretKey;
 
 /**
  * {@link ConfigContext} implementation that loads
@@ -21,6 +25,7 @@ import java.util.Base64;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
+
     /**
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
@@ -86,5 +91,14 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
 
         return sysProp != null ? sysProp : envVar;
+    }
+
+    public static String generateBasePath(final ConfigContext config) {
+        final String integrationTestBase = ObjectUtils.firstNonNull(
+                System.getenv("MANTA_IT_PATH"),
+                System.getProperty("manta.it.path"),
+                String.format("%s/stor/java-manta-integration-tests", config.getMantaHomeDirectory()));
+
+        return integrationTestBase + "/" + UUID.randomUUID() + "/";
     }
 }
