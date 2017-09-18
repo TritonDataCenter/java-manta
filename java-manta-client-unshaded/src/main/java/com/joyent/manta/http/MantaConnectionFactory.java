@@ -393,6 +393,7 @@ public class MantaConnectionFactory implements Closeable {
                    .setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
         } else {
             LOGGER.info("Retry of failed requests is disabled");
+            builder.disableAutomaticRetries();
         }
 
         final HttpHost proxyHost = findProxyServer();
