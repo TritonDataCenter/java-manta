@@ -112,7 +112,180 @@
     </dependencies>
 
     <build>
+        <!-- To generate code coverage reports (of either unit or
+             integration tests) jacoco needs access to both the
+             original (pre-instrumentation) class files, and the
+             source code.
+             <http://www.jacoco.org/jacoco/trunk/doc/classids.html>
+             describes how jacoco keeps track of classes in further
+             detail.  There exist goals that can traverse a
+             multi-module project and aggregate this information from
+             the standard maven locations, but they are confounded by
+             the shading+relocation step.  The final classes shipped
+             in the client jar are *only* in the shaded client jar,
+             and not in target/classes.
+
+             To work around this and provide the necessary information
+             requires jumping through several hoops to act as if the
+             java-manta-client source files were part of the
+             integration test module:
+
+              * Add a new source location to java-manta-it to hold the
+              "upstream" .java files from java-manta-client
+              * Copy the source files there
+              * Make sure the source are removed when not needed so
+              they are never actually compiled.
+              * Unpack the final relocated class files so they are
+              available outside of just a jar.
+
+             This scheme depends on there being no "src/main" classes
+             in this integration test module.
+        -->
         <plugins>
+            <plugin>
+                <!-- This property is generated so we can refer to
+                     another module in a multi-module project without
+                     brittle relative paths. -->
+                <groupId>org.commonjava.maven.plugins</groupId>
+                <artifactId>directory-maven-plugin</artifactId>
+                <version>${maven-directory-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>directory-of-property</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <property>multi.module.root</property>
+                            <project>
+                                <groupId>com.joyent.manta</groupId>
+                                <artifactId>java-manta</artifactId>
+                            </project>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <!-- Remove src/shade-workaround after use.  This
+                         is for tidyness but not correctness.  Note
+                         that since this is bound to
+                         post-integration-test it will run when
+                         invoking verify, but not intgration-test -->
+                    <execution>
+                        <id>clean-shade-workaround-src-post</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>src/shade-workaround</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                    <!-- Ensure that src/shade-workaround is *always*
+                         removed before a compile phase runs.  This is
+                         for correctness. -->
+                    <execution>
+                        <id>clean-shade-workaround-src-pre</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>src/shade-workaround</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${maven-build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-shade-workaround-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/shade-workaround</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-maven-resources-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>copy-shade-workaround-src</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>src/shade-workaround</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${multi.module.root}/java-manta-client-unshaded/src/main/java</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- unpack the modified-by-relocation classes from
+                     the client jar -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven-build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>unpack-relocated-classes</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.joyent.manta</groupId>
+                                    <artifactId>java-manta-client</artifactId>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                    <includes>**/*.class</includes>
+                                    <excludes>com/joyent/manta/com/**,com/joyent/manta/org/**,com/joyent/manta/io/**,com/joyent/manta/http/signature/**</excludes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.joyent.manta</groupId>
+                                    <artifactId>java-manta-client-kryo-serialization</artifactId>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                    <includes>**/*.class</includes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
