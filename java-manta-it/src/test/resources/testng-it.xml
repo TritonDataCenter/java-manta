@@ -1,6 +1,10 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Java Manta SDK Integration Test Suite" verbose="1">
 
+    <listeners>
+        <listener class-name="com.joyent.test.util.MantaPathSuiteListener" />
+    </listeners>
+
     <test name="Manta Client Integration Test Helper Class Tests">
         <classes>
             <class name="com.joyent.test.util.FailingInputStreamTest" />
