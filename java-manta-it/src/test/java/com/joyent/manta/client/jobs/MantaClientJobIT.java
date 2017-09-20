@@ -57,16 +57,13 @@ public class MantaClientJobIT {
 
         mantaClient = new MantaClient(config);
 
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass
     public void cleanup() throws IOException {
-        if (mantaClient != null) {
-            mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeWithWarning();
-        }
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
     @Test

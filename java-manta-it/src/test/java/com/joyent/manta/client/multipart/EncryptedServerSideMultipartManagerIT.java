@@ -84,16 +84,13 @@ public class EncryptedServerSideMultipartManagerIT {
         }
 
         multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        if (mantaClient != null) {
-            mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeWithWarning();
-        }
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {

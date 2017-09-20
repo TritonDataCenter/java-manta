@@ -48,6 +48,10 @@ makes it possible to isolate entire runs of the test suite, e.g.
 mvn verify -Dmanta.it.path="$MANTA_USER/stor/$(git rev-parse HEAD)"
 ```
 
+By default integration tests cleanup after completion and delete the objects
+they created.  This can be disabled with the `manta.it.no_cleanup` system
+property or `MANTA_IT_NO_CLEANUP` environment variable.
+
 # Running Tests
 
 Run `mvn verify` from the project root to run all tests. Some Maven goals will
