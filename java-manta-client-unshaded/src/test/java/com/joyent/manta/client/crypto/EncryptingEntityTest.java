@@ -172,7 +172,7 @@ public class EncryptingEntityTest {
         }
     }
 
-    public void doesNotCloseSuppliedOutputStreamWhenFailureOccurs() throws Exception {
+    public void doesNotCloseSuppliedOutputStreamWhenWrittenSuccessfully() throws Exception {
         final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
@@ -190,7 +190,7 @@ public class EncryptingEntityTest {
         Mockito.verify(output, Mockito.never()).close();
     }
 
-    public void doesNotCloseSuppliedOutputStreamWhenWrittenSuccessfully() throws Exception {
+    public void doesNotCloseSuppliedOutputStreamWhenFailureOccurs() throws Exception {
         final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         final EncryptingEntity encryptingEntity = new EncryptingEntity(
