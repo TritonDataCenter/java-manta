@@ -781,9 +781,11 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException thrown when we are unable to list the directory over the network
      */
     public Stream<MantaObject> find(final String path) throws IOException {
+
         return listObjects(path).flatMap(obj -> {
             if (obj.isDirectory()) {
                 try {
+                    System.out.println("");
                     return Stream.concat(Stream.of(obj), find(obj.getPath()));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
