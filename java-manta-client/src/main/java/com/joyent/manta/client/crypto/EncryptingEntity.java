@@ -154,29 +154,26 @@ public class EncryptingEntity implements HttpEntity {
 
         OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(
                 httpOut, encryptionContext);
-        try {
-            copyContentToOutputStream(out);
-            /* We don't close quietly because we want the operation to fail if
-             * there is an error closing out the CipherOutputStream. */
-            out.close();
 
-            if (out instanceof HmacOutputStream) {
-                final HMac hmac = ((HmacOutputStream) out).getHmac();
-                final int hmacSize = hmac.getMacSize();
-                final byte[] hmacBytes = new byte[hmacSize];
-                hmac.doFinal(hmacBytes, 0);
+        copyContentToOutputStream(out);
+        /* We don't close quietly because we want the operation to fail if
+         * there is an error closing out the CipherOutputStream. */
+        out.close();
 
-                Validate.isTrue(hmacBytes.length == hmacSize,
-                        "HMAC actual bytes doesn't equal the number of bytes expected");
+        if (out instanceof HmacOutputStream) {
+            final HMac hmac = ((HmacOutputStream) out).getHmac();
+            final int hmacSize = hmac.getMacSize();
+            final byte[] hmacBytes = new byte[hmacSize];
+            hmac.doFinal(hmacBytes, 0);
 
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("HMAC: {}", Hex.encodeHexString(hmacBytes));
-                }
+            Validate.isTrue(hmacBytes.length == hmacSize,
+                    "HMAC actual bytes doesn't equal the number of bytes expected");
 
-                httpOut.write(hmacBytes);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("HMAC: {}", Hex.encodeHexString(hmacBytes));
             }
-        } finally {
-            IOUtils.closeQuietly(httpOut);
+
+            httpOut.write(hmacBytes);
         }
     }
 
