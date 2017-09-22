@@ -295,6 +295,8 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
         String path = formatPath(rawPath);
         LOG.debug("DELETE {}", path);
 
@@ -383,6 +385,8 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
         String path = formatPath(rawPath);
         final HttpResponse response = httpHelper.httpGet(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
@@ -405,6 +409,8 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectInputStream getAsInputStream(final String rawPath,
                                                    final MantaHttpHeaders requestHeaders)
             throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
         final String path = formatPath(rawPath);
         final HttpGet get = connectionFactory.get(path);
 
@@ -545,7 +551,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaSeekableByteChannel getSeekableByteChannel(
             final String rawPath, final long position) throws IOException {
-        Validate.notNull(rawPath, "Path must not be null");
+        Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
         return new MantaSeekableByteChannel(path, position,
@@ -565,7 +571,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaSeekableByteChannel getSeekableByteChannel(final String rawPath)
             throws IOException {
-        Validate.notNull(rawPath, "Path must not be null");
+        Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
         return new MantaSeekableByteChannel(path, this.connectionFactory,
@@ -636,7 +642,7 @@ public class MantaClient implements AutoCloseable {
     public URI getAsSignedURI(final String path, final String method,
                               final long expiresEpochSeconds)
             throws IOException {
-        Validate.notNull(path, "Path must be not be null");
+        Validate.notBlank(path, "Path must be not be blank");
 
         final String fullPath = String.format("%s%s", this.url, formatPath(path));
         final URI request = URI.create(fullPath);
@@ -876,7 +882,7 @@ public class MantaClient implements AutoCloseable {
                                    final long contentLength,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(source, "Input stream must not be null");
         final String path = formatPath(rawPath);
 
@@ -1031,7 +1037,7 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectOutputStream putAsOutputStream(final String rawPath,
                                                      final MantaHttpHeaders headers,
                                                      final MantaMetadata metadata) {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         final String path = formatPath(rawPath);
 
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
@@ -1060,8 +1066,8 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
+        Validate.notBlank(rawPath, "Path must not be blank");
         Validate.notNull(string, "String content must not be null");
-        Validate.notNull(rawPath, "Path must not be null");
 
         String path = formatPath(rawPath);
 
@@ -1198,7 +1204,7 @@ public class MantaClient implements AutoCloseable {
                                    final File file,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(file, "File must not be null");
         final String path = formatPath(rawPath);
 
@@ -1283,7 +1289,7 @@ public class MantaClient implements AutoCloseable {
                                    final byte[] bytes,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(bytes, "Byte array must not be null");
         final String path = formatPath(rawPath);
 
@@ -1339,6 +1345,7 @@ public class MantaClient implements AutoCloseable {
                                            final MantaHttpHeaders headers,
                                            final MantaMetadata metadata)
             throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(headers, "Headers must not be null");
         Validate.notNull(metadata, "Metadata must not be null");
 
@@ -1428,6 +1435,7 @@ public class MantaClient implements AutoCloseable {
     public void putDirectory(final String rawPath, final boolean recursive,
                              final MantaHttpHeaders headers)
             throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
 
         if (!recursive) {
             putDirectory(rawPath, headers);
@@ -1466,6 +1474,8 @@ public class MantaClient implements AutoCloseable {
     public void putSnapLink(final String rawLinkPath, final String rawObjectPath,
                             final MantaHttpHeaders headers)
             throws IOException {
+        Validate.notBlank(rawLinkPath, "rawLinkPath must not be blank");
+        Validate.notBlank(rawObjectPath, "rawObjectPath must not be blank");
         final String linkPath = formatPath(rawLinkPath);
         final String objectPath = formatPath(rawObjectPath);
 
