@@ -112,27 +112,27 @@ public class MantaClientFindIT {
             mantaClient.put(file, TEST_DATA, StandardCharsets.UTF_8);
         }
 
-        int totalObjects = level1Dirs.size() + level1Files.size() + level2Files.size();
+        List<String> allObjects = new LinkedList<>();
+        allObjects.addAll(level1Dirs);
+        allObjects.addAll(level1Files);
+        allObjects.addAll(level2Files);
+
+        final List<MantaObject> results;
 
         try (Stream<MantaObject> stream = mantaClient.find(testPathPrefix)) {
-            List<MantaObject> results = stream.collect(Collectors.toList());
+            results = stream.collect(Collectors.toList());
+        }
 
-            Assert.assertFalse(results.isEmpty(),
-                    "We should have many objects returned");
-            Assert.assertEquals(results.size(), totalObjects,
-                    "We should return exactly as many objects as added");
+        Assert.assertFalse(results.isEmpty(),
+                "We should have many objects returned");
+        Assert.assertEquals(results.size(), allObjects.size(),
+                "We should return exactly as many objects as added");
 
-            Stream<MantaObject> resultsStream = results.stream();
-
-            List<String> allObjects = new LinkedList<>();
-            allObjects.addAll(level1Dirs);
-            allObjects.addAll(level1Files);
-            allObjects.addAll(level2Files);
-
-            for (String dir : level1Dirs) {
-                Assert.assertEquals(
-                        resultsStream.filter(obj -> obj.getPath().equals(dir)).count(),
-                        1);
+        for (String expectedObject : allObjects) {
+            try (Stream<MantaObject> resultsStream = results.stream()) {
+                long count = resultsStream
+                        .filter(obj -> obj.getPath().equals(expectedObject)).count();
+                Assert.assertEquals(count, 1L);
             }
         }
     }
