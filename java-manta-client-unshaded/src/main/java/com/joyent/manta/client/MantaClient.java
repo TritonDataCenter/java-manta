@@ -762,6 +762,33 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
+     * <p>Finds all directories and files recursively under a given path. Since
+     * this method returns a {@link Stream}, consumers can add their own
+     * additional filtering based on path, object type or other criteria.</p>
+     *
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
+     * safe if other operations are performed on the directory structure while
+     * it is running.</p>
+     *
+     * @param path directory path
+     * @return A recursive {@link Stream} of {@link MantaObjectResponse} listing the contents of the directory.
+     * @throws IOException thrown when we are unable to list the directory over the network
+     */
+    public Stream<MantaObject> find(final String path) throws IOException {
+        return listObjects(path).flatMap(obj -> {
+            if (obj.isDirectory()) {
+                try {
+                    return Stream.concat(Stream.of(obj), find(obj.getPath()));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            } else {
+                return Stream.of(obj);
+            }
+        });
+    }
+
+    /**
      * Return a boolean indicating if a directory is empty.
      *
      * @param path directory path

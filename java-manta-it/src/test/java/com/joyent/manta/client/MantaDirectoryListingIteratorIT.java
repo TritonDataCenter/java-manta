@@ -9,7 +9,6 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.KeyPairFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -18,7 +17,6 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.security.KeyPair;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -36,21 +34,16 @@ public class MantaDirectoryListingIteratorIT {
 
     private String testPathPrefix;
 
-    private ConfigContext config;
-
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
-
-        final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
-        final KeyPair keyPair = keyPairFactory.createKeyPair();
     }
 
     @AfterClass
