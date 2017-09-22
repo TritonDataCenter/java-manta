@@ -119,7 +119,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                                          final HttpHelper httpHelper,
                                          final int pagingSize) {
         Validate.notNull(url, "URL must not be null");
-        Validate.notNull(path, "Path must not be null");
+        Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
 
         this.url = url;

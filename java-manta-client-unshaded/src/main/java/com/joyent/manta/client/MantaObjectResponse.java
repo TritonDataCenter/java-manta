@@ -118,7 +118,7 @@ public class MantaObjectResponse implements MantaObject {
      * Manta. i.e. "/user/stor/path/to/some/file/or/dir".
      */
     public MantaObjectResponse(final String path) {
-        Validate.notNull(path, "Path must not be null");
+        Validate.notBlank(path, "Path must not be blank");
 
         this.path = path;
         this.httpHeaders = new MantaHttpHeaders();
@@ -149,7 +149,7 @@ public class MantaObjectResponse implements MantaObject {
      */
     public MantaObjectResponse(final String path, final MantaHttpHeaders headers,
                                final MantaMetadata metadata) {
-        Validate.notNull(path, "Path must be not be null");
+        Validate.notBlank(path, "Path must be not be blank");
         Validate.notNull(headers, "Headers must not be null");
 
         this.path = path;

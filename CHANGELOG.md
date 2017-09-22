@@ -14,6 +14,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Setting `manta.retries`/`MANTA_HTTP_RETRIES` to 0 would print `Retry of failed requests is disabled` but
    leave the default Apache HttpClient [retry behavior](https://hc.apache.org/httpcomponents-client-4.5.x/tutorial/html/fundamentals.html#d5e316).
 ### Changed
+ - Validation of paths passed to `MantaClient` is now more consistently strict.
+   More useful errors should be thrown sooner for invalid paths, without any
+   change to valid requests.
  - Core library code has has been extracted from `java-manta-client` into a separate module named
    `java-manta-client-unshaded` allowing users to incorporate the library into their project without bundled dependencies.
 
