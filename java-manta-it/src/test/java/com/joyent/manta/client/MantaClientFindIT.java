@@ -28,10 +28,6 @@ import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
-/**
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @since 3.0.0
- */
 @Test
 public class MantaClientFindIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
