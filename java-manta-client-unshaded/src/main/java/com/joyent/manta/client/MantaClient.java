@@ -833,7 +833,11 @@ public class MantaClient implements AutoCloseable {
 
         /* Due to the way we concatenate the results will be quite out of order
          * if a consumer needs sorted results that is their responsibility. */
-        return Stream.concat(objectStream, dirStream);
+        final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
+
+        danglingStreams.add(stream);
+
+        return stream;
     }
 
     /**
