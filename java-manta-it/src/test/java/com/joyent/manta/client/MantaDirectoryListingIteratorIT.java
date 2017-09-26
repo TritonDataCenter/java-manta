@@ -9,7 +9,6 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.KeyPairFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -18,7 +17,6 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.security.KeyPair;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -48,9 +46,6 @@ public class MantaDirectoryListingIteratorIT {
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
         mantaClient.putDirectory(testPathPrefix, true);
-
-        final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
-        final KeyPair keyPair = keyPairFactory.createKeyPair();
     }
 
     @AfterClass

@@ -21,8 +21,8 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -91,7 +91,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     /**
      * Reference to the Apache HTTP Client HTTP request creation class.
      */
-    private final MantaConnectionFactory connectionFactory;
+    private final MantaHttpRequestFactory requestFactory;
 
     /**
      * Current connection context used for maintaining state between requests.
@@ -130,8 +130,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
          * multiple uploads. */
         this.connectionContext = readFieldFromMantaClient(
                 "connectionContext", mantaClient, MantaConnectionContext.class);
-        this.connectionFactory = readFieldFromMantaClient(
-                "connectionFactory", mantaClient, MantaConnectionFactory.class);
+        this.requestFactory = readFieldFromMantaClient(
+                "requestFactory", mantaClient, MantaHttpRequestFactory.class);
         @SuppressWarnings("unchecked")
         Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
                         "danglingStreams", mantaClient, Set.class);
@@ -143,12 +143,12 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * configuration and connection builder objects.
      *
      * @param config configuration context
-     * @param connectionFactory connection configuration and setup object
+     * @param requestFactory connection configuration and setup object
      * @param connectionContext connection execution object
      * @param mantaClient open Manta client instance
      */
     ServerSideMultipartManager(final ConfigContext config,
-                               final MantaConnectionFactory connectionFactory,
+                               final MantaHttpRequestFactory requestFactory,
                                final MantaConnectionContext connectionContext,
                                final MantaClient mantaClient) {
         super();
@@ -157,7 +157,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 "MantaClient must not be closed");
 
         this.config = config;
-        this.connectionFactory = connectionFactory;
+        this.requestFactory = requestFactory;
         this.connectionContext = connectionContext;
         this.mantaClient = mantaClient;
 
@@ -256,7 +256,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         final String postPath = uploadsPath();
-        final HttpPost post = connectionFactory.post(postPath);
+        final HttpPost post = requestFactory.post(postPath);
 
         final byte[] jsonRequest = createMpuRequestBody(path, metadata, headers);
         final HttpEntity entity = new ExposedByteArrayEntity(
@@ -325,7 +325,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final int adjustedPartNumber = partNumber - 1;
 
         final String putPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
-        final HttpPut put = connectionFactory.put(putPath);
+        final HttpPut put = requestFactory.put(putPath);
         put.setEntity(entity);
 
         try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put, context)) {
@@ -361,7 +361,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final int adjustedPartNumber = partNumber - 1;
 
         final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
-        final HttpGet get = connectionFactory.get(getPath);
+        final HttpGet get = requestFactory.get(getPath);
 
         final String objectPath;
 
@@ -395,7 +395,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         final String headPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
-        final HttpHead head = connectionFactory.head(headPath);
+        final HttpHead head = requestFactory.head(headPath);
 
         final String etag;
 
@@ -440,7 +440,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         final String getPath = partsDirectory + SEPARATOR + "state";
-        final HttpGet get = connectionFactory.get(getPath);
+        final HttpGet get = requestFactory.get(getPath);
 
         final int expectedStatusCode = HttpStatus.SC_OK;
 
@@ -544,7 +544,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         Validate.notNull(upload, "Upload state object must not be null");
 
         final String postPath = upload.getPartsDirectory() + SEPARATOR + "abort";
-        final HttpPost post = connectionFactory.post(postPath);
+        final HttpPost post = requestFactory.post(postPath);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
@@ -596,7 +596,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String path = upload.getPath();
         final String postPath = upload.getPartsDirectory();
-        final HttpPost post = connectionFactory.post(postPath + "/commit");
+        final HttpPost post = requestFactory.post(postPath + "/commit");
 
         final byte[] jsonRequest;
         final int numParts;

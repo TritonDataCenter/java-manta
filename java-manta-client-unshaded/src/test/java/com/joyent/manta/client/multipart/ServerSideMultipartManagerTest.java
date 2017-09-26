@@ -24,8 +24,8 @@ import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.FakeCloseableHttpClient;
 import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
@@ -216,11 +216,11 @@ public class ServerSideMultipartManagerTest {
 
     public void canCreateMpuRequestBodyJson() throws IOException {
         final ConfigContext config = mock(ConfigContext.class);
-        final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
+        final MantaHttpRequestFactory requestFactory = mock(MantaHttpRequestFactory.class);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final MantaClient client = mock(MantaClient.class);
         final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
+                config, requestFactory, connectionContext, client);
 
         final String path = "/user/stor/object";
 
@@ -233,11 +233,11 @@ public class ServerSideMultipartManagerTest {
 
     public void canCreateMpuRequestBodyJsonWithHeaders() throws IOException {
         final ConfigContext config = mock(ConfigContext.class);
-        final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
+        final MantaHttpRequestFactory requestFactory = mock(MantaHttpRequestFactory.class);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final MantaClient client = mock(MantaClient.class);
         final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
+                config, requestFactory, connectionContext, client);
 
         final String path = "/user/stor/object";
         final MantaHttpHeaders headers = new MantaHttpHeaders();
@@ -277,11 +277,11 @@ public class ServerSideMultipartManagerTest {
 
     public void canCreateMpuRequestBodyJsonWithHeadersAndMetadata() throws IOException {
         final ConfigContext config = mock(ConfigContext.class);
-        final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
+        final MantaHttpRequestFactory requestFactory = mock(MantaHttpRequestFactory.class);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final MantaClient client = mock(MantaClient.class);
         final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
+                config, requestFactory, connectionContext, client);
 
         final String path = "/user/stor/object";
         final MantaHttpHeaders headers = new MantaHttpHeaders();
@@ -428,7 +428,7 @@ public class ServerSideMultipartManagerTest {
         }
         final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keyPair));
 
-        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
+        final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(config.getMantaURL());
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
@@ -450,7 +450,7 @@ public class ServerSideMultipartManagerTest {
 
         final MantaClient client = mock(MantaClient.class);
         return new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
+                config, requestFactory, connectionContext, client);
     }
 
     private ServerSideMultipartUpload initiateUploadWithAllParams(final String path,

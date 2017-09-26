@@ -24,8 +24,8 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -114,7 +114,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Reference to the Apache HTTP Client HTTP request creation class.
      */
-    private final MantaConnectionFactory connectionFactory;
+    private final MantaHttpRequestFactory requestFactory;
 
     /**
      * Current connection context used for maintaining state between requests.
@@ -153,8 +153,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
         this.mantaClient = mantaClient;
         this.connectionContext = readFieldFromMantaClient(
                 "connectionContext", mantaClient, MantaConnectionContext.class);
-        this.connectionFactory = readFieldFromMantaClient(
-                "connectionFactory", mantaClient, MantaConnectionFactory.class);
+        this.requestFactory = readFieldFromMantaClient(
+                "requestFactory", mantaClient, MantaHttpRequestFactory.class);
         this.resolvedMultipartUploadDirectory =
                 mantaClient.getContext().getMantaHomeDirectory()
                 + SEPARATOR + MULTIPART_DIRECTORY;
@@ -303,7 +303,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(entity, "Upload entity must not be null");
 
         final String path = multipartPath(upload.getId(), partNumber);
-        final HttpPut put = connectionFactory.put(path);
+        final HttpPut put = requestFactory.put(path);
         put.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;

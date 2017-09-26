@@ -96,6 +96,7 @@ public class EncryptedHttpHelperTest {
             throws Exception {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
+        MantaHttpRequestFactory requestFactory = mock(MantaHttpRequestFactory.class);
         StandardConfigContext config = new StandardConfigContext();
 
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
@@ -105,12 +106,12 @@ public class EncryptedHttpHelperTest {
                 .setEncryptionAlgorithm(cipherDetails.getCipherId());
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
-                connectionContext, connectionFactory, config);
+                connectionContext, requestFactory, config);
 
         URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
 
-        when(connectionFactory.head(any())).thenReturn(new HttpHead(uri));
-        when(connectionFactory.get(any())).thenReturn(new HttpGet(uri));
+        when(requestFactory.head(any())).thenReturn(new HttpHead(uri));
+        when(requestFactory.get(any())).thenReturn(new HttpGet(uri));
 
         CloseableHttpResponse fakeResponse = mock(CloseableHttpResponse.class);
         StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,

@@ -114,13 +114,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
-     * @param connectionFactory instance used for building requests to Manta
+     * @param requestFactory instance used for building requests to Manta
      * @param config configuration context object
      */
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
-                                final MantaConnectionFactory connectionFactory,
+                                final MantaHttpRequestFactory requestFactory,
                                 final ConfigContext config) {
-        super(connectionContext, connectionFactory, config);
+        super(connectionContext, requestFactory, config);
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");
@@ -374,7 +374,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             final String path = request.getURI().getPath();
 
             // Forward on all headers to the HEAD request
-            HttpHead head = getConnectionFactory().head(path);
+            final HttpHead head = getRequestFactory().head(path);
             head.setHeaders(request.getAllHeaders());
             head.removeHeaders(HttpHeaders.RANGE);
 
@@ -929,7 +929,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                                               final MantaMetadata metadata,
                                               final MantaObjectResponse response) throws IOException {
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
-        HttpPut put = getConnectionFactory().put(path, pairs);
+        HttpPut put = getRequestFactory().put(path, pairs);
         metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                 String.valueOf(encryptingEntity.getOriginalLength()));
 
@@ -941,8 +941,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         put.setHeaders(updateHeaders.asApacheHttpHeaders());
         put.setEntity(NoContentEntity.INSTANCE);
 
-        CloseableHttpClient client = getConnectionContext().getHttpClient();
-        CloseableHttpResponse originalContentLengthUpdateResponse = client.execute(put);
+        final CloseableHttpClient client = getConnectionContext().getHttpClient();
+        final CloseableHttpResponse originalContentLengthUpdateResponse = client.execute(put);
         IOUtils.closeQuietly(originalContentLengthUpdateResponse);
 
         StatusLine statusLine = originalContentLengthUpdateResponse.getStatusLine();
