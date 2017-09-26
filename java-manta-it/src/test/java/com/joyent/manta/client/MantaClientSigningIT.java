@@ -52,17 +52,13 @@ public class MantaClientSigningIT {
         config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format("%s/stor/%s/",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, null);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        if (mantaClient != null) {
-            mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeWithWarning();
-        }
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
     @Test

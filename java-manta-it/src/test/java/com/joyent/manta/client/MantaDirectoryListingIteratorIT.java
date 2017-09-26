@@ -34,26 +34,21 @@ public class MantaDirectoryListingIteratorIT {
 
     private String testPathPrefix;
 
-    private ConfigContext config;
-
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        if (mantaClient != null) {
-            mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeWithWarning();
-        }
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
     @Test

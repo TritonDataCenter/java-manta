@@ -172,7 +172,6 @@ public class EncryptedMultipartManager
                                                                    final MantaMetadata mantaMetadata,
                                                                    final MantaHttpHeaders httpHeaders)
             throws IOException {
-        Validate.notNull(path, "Path to object must not be null");
         Validate.notBlank(path, "Path to object must not be blank");
 
         final MantaMetadata metadata;
