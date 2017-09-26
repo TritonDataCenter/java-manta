@@ -16,9 +16,9 @@ public class MantaRequestAbortedException extends MantaIOException {
     /**
      * Wrap another exception in this class.
      *
-     * @param e the cause
+     * @param cause the cause
      */
-    public MantaRequestAbortedException(Exception e) {
-        super(e);
+    public MantaRequestAbortedException(final Exception cause) {
+        super(cause);
     }
 }
