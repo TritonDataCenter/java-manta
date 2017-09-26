@@ -7,12 +7,15 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.MBeanable;
+import com.joyent.manta.client.MantaMBeanSupervisor;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 
 import java.io.File;
 import java.net.URI;
@@ -27,7 +30,7 @@ import java.util.List;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public interface ConfigContext {
+public interface ConfigContext extends MBeanable {
     /**
      * @return Manta service endpoint.
      */
@@ -161,6 +164,13 @@ public interface ConfigContext {
      * @return private encryption key data (can't be used if private key path is not null)
      */
     byte[] getEncryptionPrivateKeyBytes();
+
+    /** {@inheritDoc} */
+    @Override
+    default void createExposedMBean(final MantaMBeanSupervisor beanSupervisor) {
+        Validate.notNull(beanSupervisor, "MantaMBeanSupervisor must not be null");
+        beanSupervisor.expose(new ConfigContextMBean(this));
+    }
 
     /**
      * Extracts the home directory based on the Manta account name.

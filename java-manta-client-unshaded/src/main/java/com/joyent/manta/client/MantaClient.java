@@ -164,6 +164,11 @@ public class MantaClient implements AutoCloseable {
             = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
 
     /**
+     * Signing object used for authentication and signed URL generation.
+     */
+    private final ThreadLocalSigner signer;
+
+    /**
      * Instance used to generate Manta signed URIs.
      */
     private final UriSigner uriSigner;
@@ -177,6 +182,11 @@ public class MantaClient implements AutoCloseable {
      * Connection factory instance used for building requests to Manta.
      */
     private final MantaConnectionFactory connectionFactory;
+
+    /**
+     * MBean supervisor.
+     */
+    private final MantaMBeanSupervisor beanSupervisor;
 
     /* We preform some sanity checks against the JVM in order to determine if
      * we can actually run on the platform. */
@@ -211,7 +221,7 @@ public class MantaClient implements AutoCloseable {
                 DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
             builder.providerCode("stdlib");
         }
-        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
+        this.signer = new ThreadLocalSigner(builder);
 
         this.connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
@@ -225,6 +235,11 @@ public class MantaClient implements AutoCloseable {
         }
 
         this.uriSigner = new UriSigner(this.config, keyPair, signer);
+
+        this.beanSupervisor = new MantaMBeanSupervisor();
+
+        this.config.createExposedMBean(beanSupervisor);
+        this.connectionFactory.createExposedMBean(beanSupervisor);
     }
 
     /**
@@ -251,6 +266,8 @@ public class MantaClient implements AutoCloseable {
         this.config = config;
         this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
 
+        this.signer = signer;
+
         this.connectionFactory = connectionFactory;
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
 
@@ -263,6 +280,8 @@ public class MantaClient implements AutoCloseable {
         }
 
         this.uriSigner = new UriSigner(this.config, keyPair, signer);
+
+        this.beanSupervisor = null;
     }
 
     /**
@@ -2463,6 +2482,21 @@ public class MantaClient implements AutoCloseable {
             connectionFactory.close();
         } catch (Exception e) {
             exceptions.add(e);
+        }
+
+        // Deregister associated MBeans
+        try {
+            beanSupervisor.close();
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+
+        /* We clear all thread local instances of the signer class so that
+         * there are no dangling thread-local variables when the connection
+         * factory is closed (typically when MantaClient is closed).
+         */
+        if (this.signer != null) {
+            this.signer.clearAll();
         }
 
         if (!exceptions.isEmpty()) {
