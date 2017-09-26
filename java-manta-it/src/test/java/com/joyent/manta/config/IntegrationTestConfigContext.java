@@ -7,11 +7,18 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.crypto.*;
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
-import javax.crypto.SecretKey;
+import java.io.IOException;
 import java.util.Base64;
+import java.util.UUID;
+import javax.crypto.SecretKey;
+
 
 /**
  * {@link ConfigContext} implementation that loads
@@ -21,6 +28,9 @@ import java.util.Base64;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
+
+    private static String suiteRunId = UUID.randomUUID().toString();
+
     /**
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
@@ -87,4 +97,30 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
 
         return sysProp != null ? sysProp : envVar;
     }
+
+    public static String generateSuiteBasePath(final ConfigContext config) {
+        final String integrationTestBase = ObjectUtils.firstNonNull(
+                System.getenv("MANTA_IT_PATH"),
+                System.getProperty("manta.it.path"),
+                String.format("%s/stor/java-manta-integration-tests/%s/",
+                              config.getMantaHomeDirectory(),
+                              suiteRunId));
+        return integrationTestBase;
+    }
+
+
+    public static String generateBasePath(final ConfigContext config, final String testBaseName) {
+        return generateSuiteBasePath(config) + testBaseName + "/";
+    }
+
+    public static void cleanupTestDirectory(final MantaClient mantaClient, final String testPathPrefix) throws IOException {
+        if (!Boolean.valueOf(ObjectUtils.firstNonNull(System.getenv("MANTA_IT_NO_CLEANUP"),
+                                                      System.getProperty("manta.it.no_cleanup"))) &&
+            mantaClient != null) {
+            mantaClient.deleteRecursive(testPathPrefix);
+            mantaClient.closeWithWarning();
+        }
+
+    }
+
 }

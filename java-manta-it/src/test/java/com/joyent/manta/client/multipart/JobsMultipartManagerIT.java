@@ -67,20 +67,13 @@ public class JobsMultipartManagerIT {
 
         this.multipart = new JobsMultipartManager(this.mantaClient);
 
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        if (this.mantaClient != null) {
-            // FIXME
-            //this.mantaClient.deleteRecursive(testPathPrefix);
-            this.mantaClient.closeWithWarning();
-            this.multipart = null;
-            this.mantaClient = null;
-        }
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {

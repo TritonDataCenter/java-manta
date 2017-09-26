@@ -27,12 +27,12 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.security.Provider;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
+import javax.crypto.SecretKey;
 
 import static org.testng.Assert.fail;
 
@@ -69,17 +69,13 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
         }
 
         multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = String.format("%s/stor/java-manta-integration-tests/%s",
-                config.getMantaHomeDirectory(), UUID.randomUUID());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        if (mantaClient != null) {
-            mantaClient.deleteRecursive(testPathPrefix);
-            mantaClient.closeWithWarning();
-        }
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
     public final void canResumeUploadWithByteArrayAndMultipleParts() throws Exception {

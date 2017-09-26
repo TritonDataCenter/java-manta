@@ -25,6 +25,7 @@ import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -229,7 +230,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                                                     final MantaMetadata mantaMetadata,
                                                     final MantaHttpHeaders httpHeaders)
             throws IOException {
-        Validate.notNull(path, "Path to object must not be null");
         Validate.notBlank(path, "Path to object must not be blank");
 
         final MantaMetadata metadata;
@@ -339,15 +339,15 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                     null);
 
             Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
-            final String etag;
 
-            if (etagHeader != null) {
-                etag = etagHeader.getValue();
-            } else {
-                etag = null;
+            if (etagHeader == null || StringUtils.isEmpty(etagHeader.getValue())) {
+                final MantaMultipartException mme =
+                        new MantaMultipartException("ETag missing from part response");
+                HttpHelper.annotateContextedException(mme, put, response);
+                throw mme;
             }
 
-            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etag);
+            return new MantaMultipartUploadPart(partNumber, upload.getPath(), etagHeader.getValue());
         }
     }
 

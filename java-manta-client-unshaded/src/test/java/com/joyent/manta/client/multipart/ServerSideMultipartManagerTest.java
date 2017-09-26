@@ -26,6 +26,7 @@ import com.joyent.manta.http.FakeCloseableHttpClient;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
@@ -35,6 +36,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicStatusLine;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -48,6 +50,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.mock;
@@ -126,14 +129,19 @@ public class ServerSideMultipartManagerTest {
         final String partsDirectory = "/test/uploads/a/abcdef";
         final String path = "/test/stor/object";
         final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+        final String etag = UUID.randomUUID().toString();
 
         final ServerSideMultipartManager mngr = buildMockManager(
                 new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
-                "");
+                "",
+                (response) -> when(response.getFirstHeader(HttpHeaders.ETAG))
+                        .thenReturn(new BasicHeader(HttpHeaders.ETAG, etag)));
 
         final MantaMultipartUploadPart part = mngr.uploadPart(upload, 1, new byte[0]);
 
         Assert.assertEquals(part.getObjectPath(), path);
+        Assert.assertEquals(part.getPartNumber(), 1);
+        Assert.assertEquals(part.getEtag(), etag);
     }
 
     public void canUploadPartValidatesResponseCode() throws IOException {
@@ -152,6 +160,26 @@ public class ServerSideMultipartManagerTest {
         Assert.assertThrows(MantaMultipartException.class, () -> {
             mngr.uploadPart(upload, 1, new byte[0]);
         });
+    }
+
+    public void canUploadPartAndFailOnMissingEtag() throws IOException {
+        final UUID uploadId = UUID.randomUUID();
+        final String partsDirectory = "/test/uploads/a/abcdef";
+        final String path = "/test/stor/object";
+        final ServerSideMultipartUpload upload = new ServerSideMultipartUpload(uploadId, path, partsDirectory);
+
+        // while it isn't strictly necessary to configure the mock to return null, it's better to be explicit about
+        // what's being tested
+        final ServerSideMultipartManager mngr = buildMockManager(
+                new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content"),
+                "",
+                (response) -> when(response.getFirstHeader(HttpHeaders.ETAG)).thenReturn(null));
+
+        final Exception e = Assert.expectThrows(MantaMultipartException.class, () -> {
+            mngr.uploadPart(upload, 1, new byte[0]);
+        });
+
+        Assert.assertTrue(e.getMessage().contains("ETag missing from part response"));
     }
 
     public void canAbortMpu() throws IOException {
@@ -342,40 +370,11 @@ public class ServerSideMultipartManagerTest {
     // TEST UTILITY METHODS
 
     private SettableConfigContext<BaseChainedConfigContext> testConfigContext() {
-        final String privateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
-                "MIIEpQIBAAKCAQEA1lPONrT34W2VPlltA76E2JUX/8+Et7PiMiRNWAyrATLG7aRA\n" +
-                "8iZ5A8o/aQMyexp+xgXoJIh18LmJ1iV8zqnr4TPXD2iPO92fyHWPu6P+qn0uw2Hu\n" +
-                "ZZ0IvHHYED+fqxm7jz2ZjnfZl5Bz73ctjRF+77rPgOhhfv4KAc1d9CDsC+lHTqbp\n" +
-                "ngufCYI4UWrnYoQ2JVXvEL9D5dMlHg0078qfh2cPg5xMOiOYobZeWqflV1Ue5I1Y\n" +
-                "owNqiFzIDmBK0TKhnv+qQVNfMnNLJBYlYyGd0DUOJs8os5yivtuQXOhLZ0zLiTqK\n" +
-                "JVjNJLzlcciqUf97Btm2enEHJ/khMFhrmoTQFQIDAQABAoIBAQCdc//grN4WHD0y\n" +
-                "CtxNjd9mhVGWOsvTcTFRiN3RO609OiJuXubffmgU4rXm3dRuH67Wp2w9uop6iLO8\n" +
-                "QNoJsUd6sGzkAvqHDm/eAo/PV9E1SrXaD83llJHgbvo+JZ+VQVhLCQQQZ/fQouyp\n" +
-                "FbK/GgVY9LKQjydg9hw/6rGFMdJ3hFZVFqYFUhNpQKpczi6/lI/UIGcBhF3+8s/0\n" +
-                "KMrz2PcCQFixlUFtBYXQHarOctxJDX7indchX08buwPqSv4YBBDLHUZkkMWomI/P\n" +
-                "NjRDRyqnxvI03lHVfdbDzoPMxklJlHF68fkmp8NFLegnCBM8K0ae65Vk61b3oF9X\n" +
-                "3eD6JtAZAoGBAPo/oBaJlA0GbQoJmULj6YqcQ2JKbUJtu7LP//8Gss47po4uqh6n\n" +
-                "9vneKEpYYxuH5MXNsqtinmSQQMkE4UXoJSxJvnXNVAMQa3kUd0UgZSHjqWWgauDj\n" +
-                "BjLQRpy9evef7VzTYx0xqEfAprsXxAoy0KXYN8gwgMC6MQgfZuFBgtxLAoGBANtA\n" +
-                "1SVN/4wqrz4C8rpx7oZarHcMmGLiFF5OpKXlq1JY+U8IJ+WxMId3TI4h/h6OQGth\n" +
-                "NJzQqFCS9H3a5EmqoNXHsLVXiKtG40+OzphSf9Y/NU7FtKanFWjfZl1ihhran1Fc\n" +
-                "42jzN34EMM7Wm8p6HUK5qiDSCF+Ck0Lupud+WIkfAoGAXREOg3M0+UcbhDEfq23B\n" +
-                "bAhDUymkyqCuvoh2hyzBkMtEXPpj0DTdN/3z8/o9GX8HiLzAJtbtWy7+uQO0l+AG\n" +
-                "+xqN15e+F8mifowq8y1iDyFw3Ve0h+BGbN1idWZOdgsnJm+DG9dc4xp1p3zmLnjJ\n" +
-                "efQYgr3vFD3qgD/Vbg6EEVMCgYEAnNfaIh+T6Y83YWL2hI2wFgiTS26FLGeSLoyP\n" +
-                "l+WeEwB3CCRLdjK1BpM+/oYupWkZiDc3Td6uKUWXBNkrac9X0tZRAMinie7h+S2t\n" +
-                "eKW7sWXyGnGv82+fDzCQp8ktKdSvF6MdQxyJ2+nfiHdZZxTIDc2HeIcHWlusQLs8\n" +
-                "RmnJp/0CgYEA8AUV7K2KNRcwfuB1UjqhvlaqgiGixrItacGgnMQJ2cRSRSq2fZTm\n" +
-                "eXxT9ugZ/9J9D4JTYZgdABnKvDjgbJMH9w8Nxr+kn/XZKNDzc1z0iJYwvyBOc1+e\n" +
-                "prHvy4y+bCc0kLjCNQW4+/pVTWe1w8Mp63Vhdn+fO+wUGT3DTJGIXkU=\n" +
-                "-----END RSA PRIVATE KEY-----";
-
-        final String fingerprint = "ac:95:92:ff:88:f7:3d:cd:ba:23:7b:54:44:21:60:02";
 
         StandardConfigContext settable = new StandardConfigContext();
         settable.setMantaUser("test");
-        settable.setMantaKeyId(fingerprint);
-        settable.setPrivateKeyContent(privateKey);
+        settable.setMantaKeyId(UnitTestConstants.FINGERPRINT);
+        settable.setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY);
         settable.setEncryptionKeyId("unit-test-key");
 
         return new TestConfigContext(settable);
@@ -383,6 +382,13 @@ public class ServerSideMultipartManagerTest {
 
     private ServerSideMultipartManager buildMockManager(final StatusLine statusLine,
                                                         final String responseBody)
+            throws IOException {
+        return buildMockManager(statusLine, responseBody, null);
+    }
+
+    private ServerSideMultipartManager buildMockManager(final StatusLine statusLine,
+                                                        final String responseBody,
+                                                        final Consumer<CloseableHttpResponse> responseConfigCallback)
             throws IOException {
         final ConfigContext config = testConfigContext();
 
@@ -399,6 +405,10 @@ public class ServerSideMultipartManagerTest {
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
         when(response.getStatusLine()).thenReturn(statusLine);
+
+        if (responseConfigCallback != null) {
+            responseConfigCallback.accept(response);
+        }
 
         if (responseBody != null) {
             final BasicHttpEntity entity = new BasicHttpEntity();
@@ -441,6 +451,6 @@ public class ServerSideMultipartManagerTest {
 
         Assert.assertEquals(upload.getClass(), ServerSideMultipartUpload.class);
 
-        return (ServerSideMultipartUpload)upload;
+        return (ServerSideMultipartUpload) upload;
     }
 }

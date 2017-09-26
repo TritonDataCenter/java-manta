@@ -25,7 +25,6 @@ public class MantaInputStreamEntity extends InputStreamEntity {
      *
      * @param instream input stream
      * @throws IllegalArgumentException if {@code instream} is {@code null}
-     * @since 4.3
      */
     public MantaInputStreamEntity(final InputStream instream) {
         super(instream);
@@ -49,7 +48,6 @@ public class MantaInputStreamEntity extends InputStreamEntity {
      * @param instream    input stream
      * @param contentType content type
      * @throws IllegalArgumentException if {@code instream} is {@code null}
-     * @since 4.3
      */
     public MantaInputStreamEntity(final InputStream instream, final ContentType contentType) {
         super(instream, contentType);
@@ -60,7 +58,6 @@ public class MantaInputStreamEntity extends InputStreamEntity {
      * @param length      of the input stream, {@code -1} if unknown
      * @param contentType for specifying the {@code Content-Type} header, may be {@code null}
      * @throws IllegalArgumentException if {@code instream} is {@code null}
-     * @since 4.2
      */
     public MantaInputStreamEntity(final InputStream instream, final long length,
                                   final ContentType contentType) {

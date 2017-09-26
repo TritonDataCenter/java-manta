@@ -40,7 +40,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -95,6 +94,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -295,6 +295,8 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If an HTTP status code {@literal > 300} is returned.
      */
     public void delete(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
         String path = formatPath(rawPath);
         LOG.debug("DELETE {}", path);
 
@@ -383,6 +385,8 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
         String path = formatPath(rawPath);
         final HttpResponse response = httpHelper.httpGet(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
@@ -405,6 +409,8 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectInputStream getAsInputStream(final String rawPath,
                                                    final MantaHttpHeaders requestHeaders)
             throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
         final String path = formatPath(rawPath);
         final HttpGet get = connectionFactory.get(path);
 
@@ -545,7 +551,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaSeekableByteChannel getSeekableByteChannel(
             final String rawPath, final long position) throws IOException {
-        Validate.notNull(rawPath, "Path must not be null");
+        Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
         return new MantaSeekableByteChannel(path, position,
@@ -565,7 +571,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaSeekableByteChannel getSeekableByteChannel(final String rawPath)
             throws IOException {
-        Validate.notNull(rawPath, "Path must not be null");
+        Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
         return new MantaSeekableByteChannel(path, this.connectionFactory,
@@ -636,7 +642,7 @@ public class MantaClient implements AutoCloseable {
     public URI getAsSignedURI(final String path, final String method,
                               final long expiresEpochSeconds)
             throws IOException {
-        Validate.notNull(path, "Path must be not be null");
+        Validate.notBlank(path, "Path must be not be blank");
 
         final String fullPath = String.format("%s%s", this.url, formatPath(path));
         final URI request = URI.create(fullPath);
@@ -714,47 +720,120 @@ public class MantaClient implements AutoCloseable {
             }
         }
 
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
         Stream<Map<String, Object>> backingStream =
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                        itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
+                        itr, additionalCharacteristics), true);
 
-        Stream<MantaObject> stream = backingStream.map(item -> {
-            String name = Objects.toString(item.get("name"));
-            String mtime = Objects.toString(item.get("mtime"));
-            String type = Objects.toString(item.get("type"));
-            Validate.notNull(name, "File name must not be null");
-            String objPath = String.format("%s%s%s",
-                    StringUtils.removeEnd(path, SEPARATOR),
-                    SEPARATOR,
-                    StringUtils.removeStart(name, SEPARATOR));
-            MantaHttpHeaders headers = new MantaHttpHeaders();
-            headers.setLastModified(mtime);
+        Stream<MantaObject> stream = backingStream.map(MantaObjectConversionFunction.INSTANCE);
 
-            if (type.equals("directory")) {
-                headers.setContentType(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
-            } else {
-                headers.setContentType(ContentType.APPLICATION_OCTET_STREAM.toString());
-            }
+        danglingStreams.add(stream);
 
-            if (item.containsKey("etag")) {
-                headers.setETag(Objects.toString(item.get("etag")));
-            }
+        return stream;
+    }
 
-            if (item.containsKey("size")) {
-                long size = Long.parseLong(Objects.toString(item.get("size")));
-                headers.setContentLength(size);
-            }
+    /**
+     * <p>Finds all directories and files recursively under a given path. Since
+     * this method returns a {@link Stream}, consumers can add their own
+     * additional filtering based on path, object type or other criteria.</p>
+     *
+     * <p>This method will make each request to each subdirectory in parallel.
+     * Parallelism settings are set by JDK system property:
+     * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
+     *
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
+     * safe if other operations are performed on the directory structure while
+     * it is running.</p>
+     *
+     * @param path directory path
+     * @return A recursive unsorted {@link Stream} of {@link MantaObject}
+     *         instances representing the contents of all subdirectories.
+     * @throws IOException thrown when we are unable to list the directory over the network
+     */
+    public Stream<MantaObject> find(final String path) {
+        return find(path, null);
+    }
 
-            if (item.containsKey("durability")) {
-                String durabilityString = Objects.toString(item.get("durability"));
-                if (durabilityString != null) {
-                    int durability = Integer.parseInt(durabilityString);
-                    headers.setDurabilityLevel(durability);
+    /**
+     * <p>Finds all directories and files recursively under a given path. Since
+     * this method returns a {@link Stream}, consumers can add their own
+     * additional filtering based on path, object type or other criteria.</p>
+     *
+     * <p>This method will make each request to each subdirectory in parallel.
+     * Parallelism settings are set by JDK system property:
+     * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
+     *
+     * <p>When using a filter with this method, if the filter matches a directory,
+     * then all subdirectory results for that directory will be excluded. If you
+     * want to perform a match against all results, then use {@link #find(String)}
+     * and then filter on the stream returned.</p>
+     *
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
+     * safe if other operations are performed on the directory structure while
+     * it is running.</p>
+     *
+     * @param path directory path
+     * @param filter predicate class used to filter all results returned
+     * @return A recursive unsorted {@link Stream} of {@link MantaObject}
+     *         instances representing the contents of all subdirectories.
+     * @throws IOException thrown when we are unable to list the directory over the network
+     */
+    public Stream<MantaObject> find(final String path,
+                                    final Predicate<? super MantaObject> filter) {
+        /* We read directly from the iterator here to reduce the total stack
+         * frames and to reduce the amount of abstraction to a minimum.
+         *
+         * Within this loop, we store all of the objects found in memory so
+         * that we can later query find() methods for the directory objects
+         * in parallel. */
+        final Stream.Builder<MantaObject> objectBuilder = Stream.builder();
+        final Stream.Builder<MantaObject> dirBuilder = Stream.builder();
+
+        try (MantaDirectoryListingIterator itr = streamingIterator(path)) {
+            while (itr.hasNext()) {
+                final Map<String, Object> item = itr.next();
+                final MantaObject obj = MantaObjectConversionFunction.INSTANCE.apply(item);
+
+                /* We take a predicate as a method parameter because it allows
+                 * us to filter at the highest level within this iterator. If
+                 * we just passed the stream as is back to the user, then
+                 * they would have to filter the results *after* all of the
+                 * HTTP requests were made. This way the filter can help limit
+                 * the total number of HTTP requests made to Manta. */
+                if (filter == null || filter.test(obj)) {
+                    objectBuilder.accept(obj);
+
+                    if (obj.isDirectory()) {
+                        dirBuilder.accept(obj);
+                    }
                 }
             }
+        }
 
-            return new MantaObjectResponse(formatPath(objPath), headers);
-        });
+        /* All objects within this directory should be included in the results,
+         * so we have a stream stored here that will later be concatenated. */
+        final Stream<MantaObject> objectStream = objectBuilder.build();
+
+        /* Directories are processed in parallel because it is the only unit
+         * within our abstractions that can be properly done in parallel.
+         * MantaDirectoryListingIterator forces all paging of directory
+         * listings to be sequential requests. However, it works fine to
+         * run multiple MantaDirectoryListingIterator instances per request.
+         * That is exactly what we are doing here using streams which is
+         * allowing us to do the recursive calls in a lazy fashion.
+         *
+         * From a HTTP request perspective, this means that only the listing for
+         * this current highly directory is performed and no other listing
+         * will be performed until the stream is read.
+         */
+        final Stream<MantaObject> dirStream = dirBuilder.build()
+                .parallel().flatMap(obj -> find(obj.getPath(), filter));
+
+        /* Due to the way we concatenate the results will be quite out of order
+         * if a consumer needs sorted results that is their responsibility. */
+        final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
 
         danglingStreams.add(stream);
 
@@ -876,7 +955,7 @@ public class MantaClient implements AutoCloseable {
                                    final long contentLength,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(source, "Input stream must not be null");
         final String path = formatPath(rawPath);
 
@@ -1031,7 +1110,7 @@ public class MantaClient implements AutoCloseable {
     public MantaObjectOutputStream putAsOutputStream(final String rawPath,
                                                      final MantaHttpHeaders headers,
                                                      final MantaMetadata metadata) {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         final String path = formatPath(rawPath);
 
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
@@ -1060,8 +1139,8 @@ public class MantaClient implements AutoCloseable {
                                    final String string,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
+        Validate.notBlank(rawPath, "Path must not be blank");
         Validate.notNull(string, "String content must not be null");
-        Validate.notNull(rawPath, "Path must not be null");
 
         String path = formatPath(rawPath);
 
@@ -1198,7 +1277,7 @@ public class MantaClient implements AutoCloseable {
                                    final File file,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(file, "File must not be null");
         final String path = formatPath(rawPath);
 
@@ -1283,7 +1362,7 @@ public class MantaClient implements AutoCloseable {
                                    final byte[] bytes,
                                    final MantaHttpHeaders headers,
                                    final MantaMetadata metadata) throws IOException {
-        Validate.notNull(rawPath, "rawPath must not be null");
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(bytes, "Byte array must not be null");
         final String path = formatPath(rawPath);
 
@@ -1339,6 +1418,7 @@ public class MantaClient implements AutoCloseable {
                                            final MantaHttpHeaders headers,
                                            final MantaMetadata metadata)
             throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
         Validate.notNull(headers, "Headers must not be null");
         Validate.notNull(metadata, "Metadata must not be null");
 
@@ -1428,6 +1508,7 @@ public class MantaClient implements AutoCloseable {
     public void putDirectory(final String rawPath, final boolean recursive,
                              final MantaHttpHeaders headers)
             throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
 
         if (!recursive) {
             putDirectory(rawPath, headers);
@@ -1466,6 +1547,8 @@ public class MantaClient implements AutoCloseable {
     public void putSnapLink(final String rawLinkPath, final String rawObjectPath,
                             final MantaHttpHeaders headers)
             throws IOException {
+        Validate.notBlank(rawLinkPath, "rawLinkPath must not be blank");
+        Validate.notBlank(rawObjectPath, "rawObjectPath must not be blank");
         final String linkPath = formatPath(rawLinkPath);
         final String objectPath = formatPath(rawObjectPath);
 

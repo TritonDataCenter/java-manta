@@ -119,7 +119,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                                          final HttpHelper httpHelper,
                                          final int pagingSize) {
         Validate.notNull(url, "URL must not be null");
-        Validate.notNull(path, "Path must not be null");
+        Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
 
         this.url = url;
@@ -226,6 +226,11 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             final String name = Objects.toString(lookup.get("name"));
 
             Validate.notNull(name, "Name must not be null in JSON input");
+
+            /* Explicitly set the path of the object here so that we don't need
+             * to create a new instance of MantaObjectConversionFunction per
+             * object being read. */
+            lookup.put("path", path);
 
             this.lastMarker = name;
 

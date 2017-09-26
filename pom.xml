@@ -135,9 +135,14 @@
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
         <maven-exec-plugin.version>1.4.0</maven-exec-plugin.version>
-        <maven-jacoco-plugin.version>0.7.8</maven-jacoco-plugin.version>
+        <maven-jacoco-plugin.version>0.7.9</maven-jacoco-plugin.version>
         <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
         <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
+        <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
+        <maven-directory-maven-plugin.version>0.2</maven-directory-maven-plugin.version>
+        <maven-build-helper-maven-plugin.version>3.0.0</maven-build-helper-maven-plugin.version>
+        <maven-maven-resources-plugin.version>3.0.2</maven-maven-resources-plugin.version>
+        <maven-build-helper-maven-plugin.version>3.0.0</maven-build-helper-maven-plugin.version>
 
         <!-- Maven plugin dependency versions -->
         <maven-plexus-compiler-javac-errorprone.version>2.8.2</maven-plexus-compiler-javac-errorprone.version>
@@ -436,17 +441,40 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${maven-jacoco-plugin.version}</version>
                 <executions>
+                    <!-- unit test coverage-->
                     <execution>
+                        <id>pre-unit-test</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>report</id>
-                        <phase>prepare-package</phase>
+                        <id>unit-test-report</id>
+                        <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <!-- integration test coverage-->
+                    <execution>
+                        <id>pre-integration-test</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                        <configuration>
+                            <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>integration-test-report</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>report-integration</goal>
+                        </goals>
+                        <configuration>
+                            <dataFileIncludes>**/jacoco-it.exec</dataFileIncludes>
+                            <outputDirectory>${project.reporting.outputDirectory}/jacoco-it</outputDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
