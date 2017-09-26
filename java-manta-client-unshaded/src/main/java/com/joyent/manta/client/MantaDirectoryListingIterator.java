@@ -227,6 +227,11 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
             Validate.notNull(name, "Name must not be null in JSON input");
 
+            /* Explicitly set the path of the object here so that we don't need
+             * to create a new instance of MantaObjectConversionFunction per
+             * object being read. */
+            lookup.put("path", path);
+
             this.lastMarker = name;
 
             return lookup;

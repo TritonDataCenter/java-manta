@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.1.7-SNAPSHOT] - Coming soon!
+### Added
+ - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87). 
 ### Fixed
  - Clarify version history of `MantaInputStreamEntity`
  - MPU parts which were missing an ETag in their response were
