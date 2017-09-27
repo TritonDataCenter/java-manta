@@ -19,6 +19,10 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    change to valid requests.
  - Core library code has has been extracted from `java-manta-client` into a separate module named
    `java-manta-client-unshaded` allowing users to incorporate the library into their project without bundled dependencies.
+ - Constructor signatures for `StandardHttpHelper`, `EncryptionHttpHelper`, and `MantaSeekableByteChannel`
+   have been modified to accept a `MantaHttpRequestFactory` instead of a `MantaConnectionFactory`.
+   Most users should not be impacted by this but advanced users should review their usages of these "internal"
+   classes.
 
 ## [3.1.6] - 2017-08-15
 ### Fixed

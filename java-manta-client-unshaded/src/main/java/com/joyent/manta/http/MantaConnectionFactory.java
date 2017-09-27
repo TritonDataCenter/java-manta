@@ -76,6 +76,10 @@ import javax.management.ObjectName;
  * {@link org.apache.http.client.HttpClient} configured for use with
  * HTTP signature based authentication.
  *
+ * Note: This class used to contain convenience methods for building
+ * {@link org.apache.http.client.methods.HttpUriRequest} objects, those have been moved
+ * to {@link MantaHttpRequestFactory}.
+ *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
