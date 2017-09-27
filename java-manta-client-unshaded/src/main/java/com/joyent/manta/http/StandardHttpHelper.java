@@ -23,6 +23,7 @@ import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -99,7 +100,7 @@ public class StandardHttpHelper implements HttpHelper {
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
 
-        if (config.isFastCloseEnabled()) {
+        if (BooleanUtils.isTrue(config.isFastCloseEnabled())) {
             this.pendingRequests = Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>());
         } else {
             this.pendingRequests = null;
