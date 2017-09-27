@@ -21,6 +21,13 @@ import javax.management.ObjectName;
 
 /**
  * Helper class for keeping track of MBeans associated with a {@link MantaClient}.
+ *
+ * Note: The purpose of SUPERVISOR_COUNT is to avoid {@link ObjectName} collisions. Every instance of
+ * this class will have a unique index associated with it that will be used to register the MBeans it receives.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @since 3.1.7
  */
 public class MantaMBeanSupervisor implements AutoCloseable {
 

@@ -7,13 +7,20 @@
  */
 package com.joyent.manta.client;
 
+import javax.management.DynamicMBean;
+
 /**
  * Interface for objects that can make themselves available as MBeans.
+ *
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @since 3.1.7
  */
 public interface MBeanable {
 
     /**
-     * Provide a bean to the {@link MantaMBeanSupervisor} that represents this object.
+     * Provide an MBean to the {@link MantaMBeanSupervisor} that represents this object for
+     * registration in JMX. Closing the supervisor will deregister the MBean. Implementations are expected
+     * to call {@link MantaMBeanSupervisor#expose(DynamicMBean)}.
      *
      * @param supervisor the {@link MantaMBeanSupervisor} in charge of
      *                   registering and deregistering the representative bean

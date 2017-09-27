@@ -73,6 +73,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -166,7 +167,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * Signing object used for authentication and signed URL generation.
      */
-    private final ThreadLocalSigner signer;
+    private final WeakReference<ThreadLocalSigner> signerRef;
 
     /**
      * Instance used to generate Manta signed URIs.
@@ -221,7 +222,8 @@ public class MantaClient implements AutoCloseable {
                 DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
             builder.providerCode("stdlib");
         }
-        this.signer = new ThreadLocalSigner(builder);
+        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
+        this.signerRef = new WeakReference<>(signer);
 
         this.connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
@@ -266,7 +268,7 @@ public class MantaClient implements AutoCloseable {
         this.config = config;
         this.home = ConfigContext.deriveHomeDirectoryFromUser(account);
 
-        this.signer = signer;
+        this.signerRef = new WeakReference<>(signer);
 
         this.connectionFactory = connectionFactory;
         this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
@@ -2495,8 +2497,9 @@ public class MantaClient implements AutoCloseable {
          * there are no dangling thread-local variables when the connection
          * factory is closed (typically when MantaClient is closed).
          */
-        if (this.signer != null) {
-            this.signer.clearAll();
+        final ThreadLocalSigner signer = this.signerRef.get();
+        if (signer != null) {
+            signer.clearAll();
         }
 
         if (!exceptions.isEmpty()) {
