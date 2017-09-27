@@ -144,6 +144,9 @@ public class MantaConnectionFactory implements Closeable, MBeanable {
                 DefaultsConfigContext.DEFAULT_NO_AUTH);
 
         if (!authDisabled) {
+            Validate.notNull(keyPair, "KeyPair must not be null if authentication is enabled");
+            Validate.notNull(signer, "Signer must not be null if authentication is enabled");
+
             // pass true directly to the constructor because auth is enabled
             final HttpRequestInterceptor authInterceptor = new HttpSignatureRequestInterceptor(
                             new HttpSignatureAuthScheme(keyPair, signer),
