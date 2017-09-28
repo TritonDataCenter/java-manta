@@ -480,8 +480,8 @@ public class MantaConnectionFactory implements Closeable {
      *
      * @return a request factory pointed at the same url as {@code this}
      */
-    MantaHttpRequestFactory buildRequestFactory() {
-        return new MantaHttpRequestFactory(config);
+    ConfigContext getConfig() {
+        return config;
     }
 
     @Override

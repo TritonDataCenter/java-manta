@@ -173,11 +173,6 @@ public class MantaClient implements AutoCloseable {
      */
     private final MantaConnectionContext connectionContext;
 
-    /**
-     * Connection factory instance used for building requests to Manta.
-     */
-    private final MantaConnectionFactory connectionFactory;
-
     /* We preform some sanity checks against the JVM in order to determine if
      * we can actually run on the platform. */
     static {
@@ -210,8 +205,7 @@ public class MantaClient implements AutoCloseable {
         }
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
 
-        this.connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
-        this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
+        this.connectionContext = new MantaApacheHttpClientContext(new MantaConnectionFactory(config, keyPair, signer));
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, config);
@@ -243,8 +237,7 @@ public class MantaClient implements AutoCloseable {
         this.config = config;
         this.home = ConfigContext.deriveHomeDirectoryFromUser(config.getMantaUser());
 
-        this.connectionFactory = connectionFactory;
-        this.connectionContext = new MantaApacheHttpClientContext(this.connectionFactory);
+        this.connectionContext = new MantaApacheHttpClientContext(connectionFactory);
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, config);
@@ -2448,7 +2441,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         try {
-            connectionFactory.close();
+            connectionContext.close();
         } catch (Exception e) {
             exceptions.add(e);
         }

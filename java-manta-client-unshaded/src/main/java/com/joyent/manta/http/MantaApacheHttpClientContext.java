@@ -29,6 +29,11 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     private final CloseableHttpClient httpClient;
 
     /**
+     * Connection pool is owned by the creating {@link MantaConnectionFactory}.
+     */
+    private final MantaConnectionFactory connectionFactory;
+
+    /**
      * HTTP request creation object.
      */
     private final MantaHttpRequestFactory requestFactory;
@@ -36,32 +41,15 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     /**
      * Creates a new instance using the passed in factory class.
      *
-     * REMINDER: Remove {@link MantaConnectionFactory#buildRequestFactory()} along with this constructor.
-     *
      * @param connectionFactory factory class that creates configured connections
      */
-    @Deprecated
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory) {
         Validate.notNull(connectionFactory,
                 "Connection factory must not be null");
 
+        this.connectionFactory = connectionFactory;
+        this.requestFactory = new MantaHttpRequestFactory(connectionFactory.getConfig());
         this.httpClient = connectionFactory.createConnection();
-        this.requestFactory = connectionFactory.buildRequestFactory();
-    }
-
-    /**
-     * Creates a new instance using the passed in factories.
-     *
-     * @param connectionFactory factory class that creates configured connections
-     * @param requestFactory factory class for creating requests
-     */
-    public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory,
-                                        final MantaHttpRequestFactory requestFactory) {
-        Validate.notNull(connectionFactory,
-                "Connection factory must not be null");
-
-        this.httpClient = connectionFactory.createConnection();
-        this.requestFactory = requestFactory;
     }
 
     @Override
@@ -78,6 +66,7 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     public void close() throws IOException {
         MDC.remove(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
 
+        connectionFactory.close();
         httpClient.close();
     }
 }

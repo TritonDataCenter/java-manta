@@ -543,6 +543,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
     }
 
+    @Override
     public MantaConnectionContext getConnectionContext() {
         return connectionContext;
     }
