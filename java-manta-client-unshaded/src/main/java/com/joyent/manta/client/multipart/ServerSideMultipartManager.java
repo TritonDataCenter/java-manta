@@ -20,9 +20,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
-import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -91,12 +89,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
     /**
      * Current connection context used for maintaining state between requests.
      */
-    private final MantaConnectionContext connectionContext;
-
-    /**
-     * Instance used for preparing requests.
-     */
-    private final MantaHttpRequestFactory requestFactory;
+    private final HttpHelper httpHelper;
 
     /**
      * Reference to an open client.
@@ -128,9 +121,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
          * Using reflection here, shouldn't be a big performance hit because
          * you would typically create one manager instance and reuse it for
          * multiple uploads. */
-        this.connectionContext = readFieldFromMantaClient(
-                "connectionContext", mantaClient, MantaConnectionContext.class);
-        this.requestFactory = new MantaHttpRequestFactory(config);
+        this.httpHelper = readFieldFromMantaClient(
+                "httpHelper", mantaClient, HttpHelper.class);
 
         @SuppressWarnings("unchecked")
         Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
@@ -143,11 +135,10 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * configuration and connection builder objects.
      *
      * @param config configuration context
-     * @param connectionContext connection execution object
      * @param mantaClient open Manta client instance
      */
     ServerSideMultipartManager(final ConfigContext config,
-                               final MantaConnectionContext connectionContext,
+                               final HttpHelper httpHelper,
                                final MantaClient mantaClient) {
         super();
 
@@ -155,9 +146,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 "MantaClient must not be closed");
 
         this.config = config;
-        this.connectionContext = connectionContext;
         this.mantaClient = mantaClient;
-        this.requestFactory = new MantaHttpRequestFactory(config);
+        this.httpHelper = httpHelper;
 
         @SuppressWarnings("unchecked")
         Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
@@ -253,7 +243,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         final String postPath = uploadsPath();
-        final HttpPost post = requestFactory.post(postPath);
+        final HttpPost post = httpHelper.getRequestFactory().post(postPath);
 
         final byte[] jsonRequest = createMpuRequestBody(path, metadata, headers);
         final HttpEntity entity = new ExposedByteArrayEntity(
@@ -262,7 +252,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_CREATED;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(post)) {
             StatusLine statusLine = response.getStatusLine();
 
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
@@ -322,10 +312,10 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final int adjustedPartNumber = partNumber - 1;
 
         final String putPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
-        final HttpPut put = requestFactory.put(putPath);
+        final HttpPut put = httpHelper.getRequestFactory().put(putPath);
         put.setEntity(entity);
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put, context)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(put, context)) {
 
             validateStatusCode(
                     HttpStatus.SC_NO_CONTENT,
@@ -358,13 +348,13 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final int adjustedPartNumber = partNumber - 1;
 
         final String getPath = upload.getPartsDirectory() + SEPARATOR + "state";
-        final HttpGet get = requestFactory.get(getPath);
+        final HttpGet get = httpHelper.getRequestFactory().get(getPath);
 
         final String objectPath;
 
         final int expectedStatusCode = HttpStatus.SC_OK;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(get)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to get status for multipart upload", get,
@@ -392,11 +382,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         final String headPath = upload.getPartsDirectory() + SEPARATOR + adjustedPartNumber;
-        final HttpHead head = requestFactory.head(headPath);
+        final HttpHead head = httpHelper.getRequestFactory().head(headPath);
 
         final String etag;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(head)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(head)) {
             StatusLine statusLine = response.getStatusLine();
 
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -437,11 +427,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         }
 
         final String getPath = partsDirectory + SEPARATOR + "state";
-        final HttpGet get = requestFactory.get(getPath);
+        final HttpGet get = httpHelper.getRequestFactory().get(getPath);
 
         final int expectedStatusCode = HttpStatus.SC_OK;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(get)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(get)) {
             StatusLine statusLine = response.getStatusLine();
 
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -541,11 +531,11 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         Validate.notNull(upload, "Upload state object must not be null");
 
         final String postPath = upload.getPartsDirectory() + SEPARATOR + "abort";
-        final HttpPost post = requestFactory.post(postPath);
+        final HttpPost post = httpHelper.getRequestFactory().post(postPath);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(post)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to abort multipart upload", post,
@@ -593,7 +583,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String path = upload.getPath();
         final String postPath = upload.getPartsDirectory();
-        final HttpPost post = requestFactory.post(postPath + "/commit");
+        final HttpPost post = httpHelper.getRequestFactory().post(postPath + "/commit");
 
         final byte[] jsonRequest;
         final int numParts;
@@ -615,7 +605,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_CREATED;
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(post)) {
+        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(post)) {
             StatusLine statusLine = response.getStatusLine();
 
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),

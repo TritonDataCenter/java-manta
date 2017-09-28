@@ -65,6 +65,9 @@ public class StandardHttpHelper implements HttpHelper {
      */
     private final MantaConnectionContext connectionContext;
 
+    /**
+     * Factory used for request creation.
+     */
     private final MantaHttpRequestFactory requestFactory;
 
     /**

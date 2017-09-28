@@ -21,8 +21,10 @@ import com.joyent.manta.config.TestConfigContext;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.FakeCloseableHttpClient;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
@@ -384,8 +386,12 @@ public class ServerSideMultipartManagerTest {
         final CloseableHttpClient fakeClient = new FakeCloseableHttpClient(response);
         when(connectionContext.getHttpClient()).thenReturn(fakeClient);
 
+        final HttpHelper httpHelper = mock(HttpHelper.class);
+        when(httpHelper.getConnectionContext()).thenReturn(connectionContext);
+        when(httpHelper.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(config));
+
         final MantaClient client = mock(MantaClient.class);
-        return new ServerSideMultipartManager(config, connectionContext, client);
+        return new ServerSideMultipartManager(config, httpHelper, client);
     }
 
     private ServerSideMultipartUpload initiateUploadWithAllParams(final String path,
