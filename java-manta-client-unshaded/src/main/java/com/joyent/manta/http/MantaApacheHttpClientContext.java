@@ -34,11 +34,6 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     private final MantaConnectionFactory connectionFactory;
 
     /**
-     * HTTP request creation object.
-     */
-    private final MantaHttpRequestFactory requestFactory;
-
-    /**
      * Creates a new instance using the passed in factory class.
      *
      * @param connectionFactory factory class that creates configured connections
@@ -48,18 +43,12 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
                 "Connection factory must not be null");
 
         this.connectionFactory = connectionFactory;
-        this.requestFactory = new MantaHttpRequestFactory(connectionFactory.getConfig());
         this.httpClient = connectionFactory.createConnection();
     }
 
     @Override
     public CloseableHttpClient getHttpClient() {
         return httpClient;
-    }
-
-    @Override
-    public MantaHttpRequestFactory getRequestFactory() {
-        return requestFactory;
     }
 
     @Override

@@ -25,6 +25,7 @@ import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -116,6 +117,11 @@ public class JobsMultipartManager extends AbstractMultipartManager
     private final MantaConnectionContext connectionContext;
 
     /**
+     * HTTP request creation object.
+     */
+    private final MantaHttpRequestFactory requestFactory;
+
+    /**
      * Full path on Manta to the upload directory.
      */
     private final String resolvedMultipartUploadDirectory;
@@ -147,11 +153,12 @@ public class JobsMultipartManager extends AbstractMultipartManager
         this.mantaClient = mantaClient;
         this.connectionContext = readFieldFromMantaClient(
                 "connectionContext", mantaClient, MantaConnectionContext.class);
+        this.requestFactory = new MantaHttpRequestFactory(mantaClient.getContext());
         this.resolvedMultipartUploadDirectory =
                 mantaClient.getContext().getMantaHomeDirectory()
                 + SEPARATOR + MULTIPART_DIRECTORY;
         @SuppressWarnings("unchecked")
-        Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
+        final Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
                         "danglingStreams", mantaClient, Set.class);
         this.danglingStreams = dangling;
     }
@@ -295,7 +302,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(entity, "Upload entity must not be null");
 
         final String path = multipartPath(upload.getId(), partNumber);
-        final HttpPut put = connectionContext.getRequestFactory().put(path);
+        final HttpPut put = requestFactory.put(path);
         put.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;

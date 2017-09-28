@@ -389,7 +389,7 @@ public class MantaSeekableByteChannel extends InputStream
             return responseStream.get();
         }
 
-        final HttpUriRequest request = httpHelper.getConnectionContext().getRequestFactory().get(path);
+        final HttpUriRequest request = httpHelper.getRequestFactory().get(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
         // Set byte range requested via HTTP range header

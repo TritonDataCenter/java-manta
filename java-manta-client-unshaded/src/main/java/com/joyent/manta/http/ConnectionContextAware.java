@@ -13,7 +13,7 @@ package com.joyent.manta.http;
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */
-interface ConnectionContextAware {
+interface HttpConnectionAware {
 
     /**
      * Retrieve the attached {@link MantaConnectionContext}.
@@ -21,4 +21,10 @@ interface ConnectionContextAware {
      * @return the context
      */
     MantaConnectionContext getConnectionContext();
+
+    /**
+     * HTTP Request creation object.
+     * @return request creation object for use with the above connection
+     */
+    MantaHttpRequestFactory getRequestFactory();
 }

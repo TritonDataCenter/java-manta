@@ -386,7 +386,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             final String path = request.getURI().getPath();
 
             // Forward on all headers to the HEAD request
-            final HttpHead head = getConnectionContext().getRequestFactory().head(path);
+            final HttpHead head = getRequestFactory().head(path);
             head.setHeaders(request.getAllHeaders());
             head.removeHeaders(HttpHeaders.RANGE);
 
@@ -941,7 +941,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                                               final MantaMetadata metadata,
                                               final MantaObjectResponse response) throws IOException {
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
-        HttpPut put = getConnectionContext().getRequestFactory().put(path, pairs);
+        HttpPut put = getRequestFactory().put(path, pairs);
         metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                 String.valueOf(encryptingEntity.getOriginalLength()));
 

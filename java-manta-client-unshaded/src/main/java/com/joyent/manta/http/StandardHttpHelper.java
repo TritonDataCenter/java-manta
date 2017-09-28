@@ -65,6 +65,8 @@ public class StandardHttpHelper implements HttpHelper {
      */
     private final MantaConnectionContext connectionContext;
 
+    private final MantaHttpRequestFactory requestFactory;
+
     /**
      * Flag toggling the checksum verification of uploaded files.
      */
@@ -78,6 +80,7 @@ public class StandardHttpHelper implements HttpHelper {
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final ConfigContext config) {
         this.connectionContext = connectionContext;
+        this.requestFactory = new MantaHttpRequestFactory(config);
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
     }
@@ -93,9 +96,7 @@ public class StandardHttpHelper implements HttpHelper {
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaConnectionFactory connectionFactory,
                               final ConfigContext config) {
-        this.connectionContext = connectionContext;
-        this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
-                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
+        this(connectionContext, config);
     }
 
     @Override
@@ -104,7 +105,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         LOGGER.debug("HEAD   {}", path);
 
-        final HttpHead head = connectionContext.getRequestFactory().head(path);
+        final HttpHead head = requestFactory.head(path);
         return executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
     }
 
@@ -114,7 +115,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         LOGGER.debug("GET    {}", path);
 
-        final HttpGet get = connectionContext.getRequestFactory().get(path);
+        final HttpGet get = requestFactory.get(path);
         return executeAndCloseRequest(get, "GET    {} response [{}] {} ");
     }
 
@@ -124,7 +125,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         LOGGER.debug("DELETE {}", path);
 
-        final HttpDelete delete = connectionContext.getRequestFactory().delete(path);
+        final HttpDelete delete = requestFactory.delete(path);
         return executeAndCloseRequest(delete, "DELETE {} response [{}] {} ");
     }
 
@@ -149,7 +150,7 @@ public class StandardHttpHelper implements HttpHelper {
             httpHeaders = headers;
         }
 
-        final HttpPost post = connectionContext.getRequestFactory().post(path);
+        final HttpPost post = requestFactory.post(path);
         post.setHeaders(httpHeaders.asApacheHttpHeaders());
 
         if (entity != null) {
@@ -182,7 +183,7 @@ public class StandardHttpHelper implements HttpHelper {
             httpHeaders.putAll(metadata);
         }
 
-        final HttpPut put = connectionContext.getRequestFactory().put(path);
+        final HttpPut put = requestFactory.put(path);
         put.setHeaders(httpHeaders.asApacheHttpHeaders());
 
         final DigestedEntity md5DigestedEntity;
@@ -243,7 +244,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
 
-        HttpPut put = connectionContext.getRequestFactory().put(path, pairs);
+        HttpPut put = requestFactory.put(path, pairs);
         put.setHeaders(headers.asApacheHttpHeaders());
         put.setEntity(NoContentEntity.INSTANCE);
 
@@ -546,6 +547,11 @@ public class StandardHttpHelper implements HttpHelper {
     @Override
     public MantaConnectionContext getConnectionContext() {
         return connectionContext;
+    }
+
+    @Override
+    public MantaHttpRequestFactory getRequestFactory() {
+        return requestFactory;
     }
 
     /**

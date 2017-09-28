@@ -130,7 +130,6 @@ public class EncryptedHttpHelperTest {
         when(fakeResponse.getEntity()).thenReturn(fakeEntity);
 
         when(connectionContext.getHttpClient()).thenReturn(new FakeCloseableHttpClient(fakeResponse));
-        when(connectionContext.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(DEFAULT_MANTA_URL));
 
         return httpHelper;
     }
