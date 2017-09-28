@@ -28,20 +28,41 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      */
     private final CloseableHttpClient httpClient;
 
+    private final MantaHttpRequestFactory requestFactory;
+
     /**
      * Creates a new instance using the passed in factory class.
+     *
+     * REMINDER: Remove {@link MantaConnectionFactory#buildRequestFactory()} along with this constructor.
+     *
      * @param connectionFactory factory class that creates configured connections
      */
+    @Deprecated
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory) {
         Validate.notNull(connectionFactory,
                 "Connection factory must not be null");
 
         this.httpClient = connectionFactory.createConnection();
+        this.requestFactory = connectionFactory.buildRequestFactory();
+    }
+
+    public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory,
+                                        final MantaHttpRequestFactory requestFactory) {
+        Validate.notNull(connectionFactory,
+                "Connection factory must not be null");
+
+        this.httpClient = connectionFactory.createConnection();
+        this.requestFactory = requestFactory;
     }
 
     @Override
     public CloseableHttpClient getHttpClient() {
         return httpClient;
+    }
+
+    @Override
+    public MantaHttpRequestFactory getRequestFactory() {
+        return requestFactory;
     }
 
     @Override

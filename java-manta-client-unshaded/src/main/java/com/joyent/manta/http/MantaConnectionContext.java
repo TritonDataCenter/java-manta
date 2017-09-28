@@ -22,4 +22,10 @@ public interface MantaConnectionContext extends AutoCloseable {
      * @return connection object to Manta
      */
     CloseableHttpClient getHttpClient();
+
+    /**
+     * HTTP Request creation object
+     * @return request creation object for use with the above connection
+     */
+    MantaHttpRequestFactory getRequestFactory();
 }

@@ -105,8 +105,7 @@ public class EncryptedHttpHelperTest {
                 .setEncryptionPrivateKeyBytes(SecretKeyUtils.generate(cipherDetails).getEncoded())
                 .setEncryptionAlgorithm(cipherDetails.getCipherId());
 
-        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
-                connectionContext, requestFactory, config);
+        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, config);
 
         URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
 

@@ -46,8 +46,6 @@ public class StandardHttpHelperTest {
 
     private BaseChainedConfigContext config;
 
-    private final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory("");
-
     @BeforeMethod
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
@@ -75,7 +73,7 @@ public class StandardHttpHelperTest {
                 .thenReturn("No Content");
 
         config.setVerifyUploads(false);
-        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, requestFactory, config);
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
 
         final MantaObjectResponse put =
                 helper.httpPut("/path", null, NoContentEntity.INSTANCE, null);
@@ -91,7 +89,7 @@ public class StandardHttpHelperTest {
         when(statusLine.getReasonPhrase())
                 .thenReturn("OK");
 
-        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, requestFactory, config);
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
 
         Assert.assertThrows(MantaClientHttpResponseException.class, () ->
                 helper.httpPut("/path", null, NoContentEntity.INSTANCE, null));
@@ -127,7 +125,7 @@ public class StandardHttpHelperTest {
                                 Base64.getEncoder().encodeToString(checksumBytes))
                 });
 
-        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, requestFactory, config);
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
 
         // it's the default but let's just be explicit
         config.setVerifyUploads(true);
@@ -164,7 +162,7 @@ public class StandardHttpHelperTest {
                                 "YmFzZTY0Cg==") // "base64" encoded in base64
                 });
 
-        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, requestFactory, config);
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
 
         // it's the default but let's just be explicit
         config.setVerifyUploads(true);
@@ -181,7 +179,7 @@ public class StandardHttpHelperTest {
         when(statusLine.getReasonPhrase())
                 .thenReturn("No Content");
 
-        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, requestFactory, config);
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
 
         // it's the default but let's just be explicit
         config.setVerifyUploads(true);

@@ -28,7 +28,6 @@ import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
@@ -191,10 +190,7 @@ public class EncryptedMultipartManagerTest {
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
-        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
-                connectionContext,
-                new MantaHttpRequestFactory(config),
-                config);
+        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, config);
 
         return new EncryptedMultipartManager<>(secretKey, cipherDetails,
                 httpHelper, testManager);

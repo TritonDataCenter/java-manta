@@ -9,8 +9,8 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.MantaHttpRequestFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -79,23 +79,24 @@ public class MantaSeekableByteChannel extends InputStream
     /**
      * Connection factory instance used for building requests to Manta.
      */
-    private final MantaHttpRequestFactory requestFactory;
+    private final MantaConnectionFactory connectionFactory;
 
     /**
      * Creates a new instance of a read-only seekable byte channel.
      *
      * @param path path of the object on the Manta API
      * @param position starting position in bytes from the start of the file
-     * @param requestFactory object for building requests to Manta
+     * @param connectionFactory connection factory instance used for building requests to Manta
      * @param httpHelper helper class providing useful HTTP functions
      */
+    @Deprecated
     public MantaSeekableByteChannel(final String path,
                                     final long position,
-                                    final MantaHttpRequestFactory requestFactory,
+                                    final MantaConnectionFactory connectionFactory,
                                     final HttpHelper httpHelper) {
         this.path = path;
         this.position = new AtomicLong(position);
-        this.requestFactory = requestFactory;
+        this.connectionFactory = null;
         this.httpHelper = httpHelper;
         this.requestRef = new AtomicReference<>();
         this.responseStream = new AtomicReference<>();
@@ -105,13 +106,14 @@ public class MantaSeekableByteChannel extends InputStream
      * Creates a new instance of a read-only seekable byte channel.
      *
      * @param path path of the object on the Manta API
-     * @param requestFactory object for building requests to Manta
+     * @param connectionFactory connection factory instance used for building requests to Manta
      * @param httpHelper helper class providing useful HTTP functions
      */
+    @Deprecated
     public MantaSeekableByteChannel(final String path,
-                                    final MantaHttpRequestFactory requestFactory,
+                                    final MantaConnectionFactory connectionFactory,
                                     final HttpHelper httpHelper) {
-        this(path, 0L, requestFactory, httpHelper);
+        this(path, 0L, connectionFactory, httpHelper);
     }
 
     /**
@@ -122,20 +124,73 @@ public class MantaSeekableByteChannel extends InputStream
      * @param responseStream reference to existing HTTP response
      * @param path path of the object on the Manta API
      * @param position starting position in bytes from the start of the file
-     * @param requestFactory object for building requests to Manta
+     * @param connectionFactory connection factory instance used for building requests to Manta
+     * @param httpHelper helper class providing useful HTTP functions
+     */
+    @Deprecated
+    protected MantaSeekableByteChannel(final AtomicReference<HttpUriRequest> requestRef,
+                                       final AtomicReference<MantaObjectInputStream> responseStream,
+                                       final String path,
+                                       final AtomicLong position,
+                                       final MantaConnectionFactory connectionFactory,
+                                       final HttpHelper httpHelper) {
+        this.requestRef = requestRef;
+        this.responseStream = responseStream;
+        this.path = path;
+        this.position = position;
+        this.connectionFactory = null;
+        this.httpHelper = httpHelper;
+    }
+
+    /**
+     * Creates a new instance of a read-only seekable byte channel.
+     *
+     * @param path path of the object on the Manta API
+     * @param position starting position in bytes from the start of the file
+     * @param httpHelper helper class providing useful HTTP functions
+     */
+    public MantaSeekableByteChannel(final String path,
+                                    final long position,
+                                    final HttpHelper httpHelper) {
+        this.path = path;
+        this.position = new AtomicLong(position);
+        this.connectionFactory = null;
+        this.httpHelper = httpHelper;
+        this.requestRef = new AtomicReference<>();
+        this.responseStream = new AtomicReference<>();
+    }
+
+    /**
+     * Creates a new instance of a read-only seekable byte channel.
+     *
+     * @param path path of the object on the Manta API
+     * @param httpHelper helper class providing useful HTTP functions
+     */
+    public MantaSeekableByteChannel(final String path,
+                                    final HttpHelper httpHelper) {
+        this(path, 0L, httpHelper);
+    }
+
+    /**
+     * Constructor used for creating a new instance of a read-only seekable byte
+     * channel from within this class. This is used when position() is called.
+     *
+     * @param requestRef reference to existing HTTP request
+     * @param responseStream reference to existing HTTP response
+     * @param path path of the object on the Manta API
+     * @param position starting position in bytes from the start of the file
      * @param httpHelper helper class providing useful HTTP functions
      */
     protected MantaSeekableByteChannel(final AtomicReference<HttpUriRequest> requestRef,
                                        final AtomicReference<MantaObjectInputStream> responseStream,
                                        final String path,
                                        final AtomicLong position,
-                                       final MantaHttpRequestFactory requestFactory,
                                        final HttpHelper httpHelper) {
         this.requestRef = requestRef;
         this.responseStream = responseStream;
         this.path = path;
         this.position = position;
-        this.requestFactory = requestFactory;
+        this.connectionFactory = null;
         this.httpHelper = httpHelper;
     }
 
@@ -266,7 +321,7 @@ public class MantaSeekableByteChannel extends InputStream
                 new AtomicReference<>(),
                 path,
                 new AtomicLong(newPosition),
-                requestFactory,
+                connectionFactory,
                 httpHelper);
     }
 
@@ -344,7 +399,7 @@ public class MantaSeekableByteChannel extends InputStream
             return responseStream.get();
         }
 
-        final HttpUriRequest request = requestFactory.get(path);
+        final HttpUriRequest request = httpHelper.getConnectionContext().getRequestFactory().get(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
         // Set byte range requested via HTTP range header

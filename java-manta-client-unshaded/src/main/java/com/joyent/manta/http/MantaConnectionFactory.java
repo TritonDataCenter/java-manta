@@ -474,6 +474,16 @@ public class MantaConnectionFactory implements Closeable {
         return httpClientBuilder.build();
     }
 
+    /**
+     * package-private method for building a {@link MantaHttpRequestFactory} from this object's
+     * config. Should be removed with the deprecated constructor for {@link MantaApacheHttpClientContext}.
+     *
+     * @return a request factory pointed at the same url as {@code this}
+     */
+    MantaHttpRequestFactory buildRequestFactory() {
+        return new MantaHttpRequestFactory(config);
+    }
+
     @Override
     public void close() throws IOException {
         if (this.connectionManager != null) {

@@ -54,16 +54,11 @@ import java.util.function.Function;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class StandardHttpHelper implements HttpHelper {
+public class StandardHttpHelper implements HttpHelper, ConnectionContextAware {
     /**
      * Logger instance.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardHttpHelper.class);
-
-    /**
-     * Reference to the Apache HTTP Client HTTP request creation class.
-     */
-    private final MantaHttpRequestFactory requestFactory;
 
     /**
      * Current connection context used for maintaining state between requests.
@@ -77,16 +72,28 @@ public class StandardHttpHelper implements HttpHelper {
 
     /**
      * Creates a new instance of the helper class.
-     *
      * @param connectionContext saved context used between requests to the Manta client
-     * @param requestFactory instance used for building requests to Manta
      * @param config configuration context object
      */
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
-                              final MantaHttpRequestFactory requestFactory,
                               final ConfigContext config) {
         this.connectionContext = connectionContext;
-        this.requestFactory = requestFactory;
+        this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
+                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
+    }
+
+    /**
+     * Creates a new instance of the helper class.
+     *
+     * @param connectionContext saved context used between requests to the Manta client
+     * @param connectionFactory instance used for building requests to Manta
+     * @param config configuration context object
+     */
+    @Deprecated
+    public StandardHttpHelper(final MantaConnectionContext connectionContext,
+                              final MantaConnectionFactory connectionFactory,
+                              final ConfigContext config) {
+        this.connectionContext = connectionContext;
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
     }
@@ -97,7 +104,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         LOGGER.debug("HEAD   {}", path);
 
-        final HttpHead head = requestFactory.head(path);
+        final HttpHead head = connectionContext.getRequestFactory().head(path);
         return executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
     }
 
@@ -107,7 +114,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         LOGGER.debug("GET    {}", path);
 
-        final HttpGet get = requestFactory.get(path);
+        final HttpGet get = connectionContext.getRequestFactory().get(path);
         return executeAndCloseRequest(get, "GET    {} response [{}] {} ");
     }
 
@@ -117,7 +124,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         LOGGER.debug("DELETE {}", path);
 
-        final HttpDelete delete = requestFactory.delete(path);
+        final HttpDelete delete = connectionContext.getRequestFactory().delete(path);
         return executeAndCloseRequest(delete, "DELETE {} response [{}] {} ");
     }
 
@@ -142,7 +149,7 @@ public class StandardHttpHelper implements HttpHelper {
             httpHeaders = headers;
         }
 
-        final HttpPost post = requestFactory.post(path);
+        final HttpPost post = connectionContext.getRequestFactory().post(path);
         post.setHeaders(httpHeaders.asApacheHttpHeaders());
 
         if (entity != null) {
@@ -175,7 +182,7 @@ public class StandardHttpHelper implements HttpHelper {
             httpHeaders.putAll(metadata);
         }
 
-        final HttpPut put = requestFactory.put(path);
+        final HttpPut put = connectionContext.getRequestFactory().put(path);
         put.setHeaders(httpHeaders.asApacheHttpHeaders());
 
         final DigestedEntity md5DigestedEntity;
@@ -236,7 +243,7 @@ public class StandardHttpHelper implements HttpHelper {
 
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
 
-        HttpPut put = requestFactory.put(path, pairs);
+        HttpPut put = connectionContext.getRequestFactory().put(path, pairs);
         put.setHeaders(headers.asApacheHttpHeaders());
         put.setEntity(NoContentEntity.INSTANCE);
 
@@ -536,11 +543,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
     }
 
-    protected MantaHttpRequestFactory getRequestFactory() {
-        return requestFactory;
-    }
-
-    protected MantaConnectionContext getConnectionContext() {
+    public MantaConnectionContext getConnectionContext() {
         return connectionContext;
     }
 

@@ -48,10 +48,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +62,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.SecretKey;
 
 /**
  * {@link HttpHelper} implementation that transparently handles client-side
@@ -110,17 +110,29 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      */
     private final SupportedCipherDetails cipherDetails;
 
+
+    /**
+     * Creates a new instance of the helper class.
+     *  @param connectionContext saved context used between requests to the Manta client
+     * @param config configuration context object
+     */
+    public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
+                                final ConfigContext config) {
+        this(connectionContext, null, config);
+    }
+
     /**
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
-     * @param requestFactory instance used for building requests to Manta
+     * @param connectionFactory instance used for building requests to Manta
      * @param config configuration context object
      */
+    @Deprecated
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
-                                final MantaHttpRequestFactory requestFactory,
+                                final MantaConnectionFactory connectionFactory,
                                 final ConfigContext config) {
-        super(connectionContext, requestFactory, config);
+        super(connectionContext, config);
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");
@@ -374,7 +386,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             final String path = request.getURI().getPath();
 
             // Forward on all headers to the HEAD request
-            final HttpHead head = getRequestFactory().head(path);
+            final HttpHead head = getConnectionContext().getRequestFactory().head(path);
             head.setHeaders(request.getAllHeaders());
             head.removeHeaders(HttpHeaders.RANGE);
 
@@ -929,7 +941,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                                               final MantaMetadata metadata,
                                               final MantaObjectResponse response) throws IOException {
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
-        HttpPut put = getRequestFactory().put(path, pairs);
+        HttpPut put = getConnectionContext().getRequestFactory().put(path, pairs);
         metadata.put(MantaHttpHeaders.ENCRYPTION_PLAINTEXT_CONTENT_LENGTH,
                 String.valueOf(encryptingEntity.getOriginalLength()));
 
