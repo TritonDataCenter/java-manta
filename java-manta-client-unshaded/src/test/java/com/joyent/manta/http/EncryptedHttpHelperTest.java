@@ -20,7 +20,6 @@ import org.apache.http.HttpVersion;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHeader;
@@ -33,7 +32,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -95,8 +93,7 @@ public class EncryptedHttpHelperTest {
     private static EncryptionHttpHelper fakeEncryptionHttpHelper(String path)
             throws Exception {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
-        MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
-        MantaHttpRequestFactory requestFactory = mock(MantaHttpRequestFactory.class);
+
         StandardConfigContext config = new StandardConfigContext();
 
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
@@ -108,9 +105,6 @@ public class EncryptedHttpHelperTest {
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, config);
 
         URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
-
-        when(requestFactory.head(any())).thenReturn(new HttpHead(uri));
-        when(requestFactory.get(any())).thenReturn(new HttpGet(uri));
 
         CloseableHttpResponse fakeResponse = mock(CloseableHttpResponse.class);
         StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,
@@ -136,6 +130,7 @@ public class EncryptedHttpHelperTest {
         when(fakeResponse.getEntity()).thenReturn(fakeEntity);
 
         when(connectionContext.getHttpClient()).thenReturn(new FakeCloseableHttpClient(fakeResponse));
+        when(connectionContext.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(DEFAULT_MANTA_URL));
 
         return httpHelper;
     }

@@ -23,6 +23,7 @@ import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.FakeCloseableHttpClient;
 import com.joyent.manta.http.MantaConnectionContext;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
@@ -364,8 +365,10 @@ public class ServerSideMultipartManagerTest {
                                                         final Consumer<CloseableHttpResponse> responseConfigCallback)
             throws IOException {
         final ConfigContext config = testConfigContext();
-
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
+
+        when(connectionContext.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(config));
+
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
         when(response.getStatusLine()).thenReturn(statusLine);

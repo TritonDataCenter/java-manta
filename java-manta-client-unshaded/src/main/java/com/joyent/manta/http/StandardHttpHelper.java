@@ -54,7 +54,7 @@ import java.util.function.Function;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public class StandardHttpHelper implements HttpHelper, ConnectionContextAware {
+public class StandardHttpHelper implements HttpHelper {
     /**
      * Logger instance.
      */

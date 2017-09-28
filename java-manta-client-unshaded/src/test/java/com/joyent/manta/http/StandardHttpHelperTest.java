@@ -54,6 +54,9 @@ public class StandardHttpHelperTest {
         when(connCtx.getHttpClient())
                 .thenReturn(client);
 
+        when(connCtx.getRequestFactory())
+                .thenReturn(new MantaHttpRequestFactory(config));
+
         when(client.execute(any()))
                 .thenReturn(response);
 
