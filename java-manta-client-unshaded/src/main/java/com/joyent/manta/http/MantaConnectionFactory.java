@@ -10,7 +10,7 @@ package com.joyent.manta.http;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
-import com.joyent.manta.client.MBeanable;
+import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.MantaMBeanSupervisor;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -78,7 +78,7 @@ import java.util.List;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class MantaConnectionFactory implements Closeable, MBeanable {
+public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Logger instance.
      */

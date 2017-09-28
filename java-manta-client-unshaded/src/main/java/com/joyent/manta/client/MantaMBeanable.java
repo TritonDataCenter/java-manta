@@ -15,7 +15,7 @@ import javax.management.DynamicMBean;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
-public interface MBeanable {
+public interface MantaMBeanable {
 
     /**
      * Provide an MBean to the {@link MantaMBeanSupervisor} that represents this object for

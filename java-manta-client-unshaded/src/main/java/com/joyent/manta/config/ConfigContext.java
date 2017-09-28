@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MBeanable;
+import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.MantaMBeanSupervisor;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-public interface ConfigContext extends MBeanable {
+public interface ConfigContext extends MantaMBeanable {
     /**
      * @return Manta service endpoint.
      */
