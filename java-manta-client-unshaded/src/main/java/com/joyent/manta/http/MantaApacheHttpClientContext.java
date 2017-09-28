@@ -55,7 +55,7 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     public void close() throws IOException {
         MDC.remove(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
 
-        connectionFactory.close();
         httpClient.close();
+        connectionFactory.close();
     }
 }
