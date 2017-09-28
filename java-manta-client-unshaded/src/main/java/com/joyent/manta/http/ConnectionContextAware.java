@@ -16,7 +16,7 @@ package com.joyent.manta.http;
 interface ConnectionContextAware {
 
     /**
-     * Retrieve the attached {@link MantaConnectionContext}
+     * Retrieve the attached {@link MantaConnectionContext}.
      *
      * @return the context
      */

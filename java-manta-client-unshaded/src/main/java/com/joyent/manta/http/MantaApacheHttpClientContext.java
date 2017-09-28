@@ -28,6 +28,9 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      */
     private final CloseableHttpClient httpClient;
 
+    /**
+     * HTTP request creation object.
+     */
     private final MantaHttpRequestFactory requestFactory;
 
     /**
@@ -46,6 +49,12 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
         this.requestFactory = connectionFactory.buildRequestFactory();
     }
 
+    /**
+     * Creates a new instance using the passed in factories.
+     *
+     * @param connectionFactory factory class that creates configured connections
+     * @param requestFactory factory class for creating requests
+     */
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory,
                                         final MantaHttpRequestFactory requestFactory) {
         Validate.notNull(connectionFactory,
