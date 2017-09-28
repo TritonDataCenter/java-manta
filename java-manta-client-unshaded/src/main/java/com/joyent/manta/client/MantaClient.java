@@ -169,7 +169,7 @@ public class MantaClient implements AutoCloseable {
     private final UriSigner uriSigner;
 
     /**
-     * Object containing saved context used between requests to the Manta client.
+     * Object which holds the connection to manta and the associated request factory.
      */
     private final MantaConnectionContext connectionContext;
 
@@ -2436,12 +2436,6 @@ public class MantaClient implements AutoCloseable {
             /* Do nothing, but we won't capture the interrupted exception
              * because even if we are interrupted, we want to close all open
              * resources. */
-        } catch (Exception e) {
-            exceptions.add(e);
-        }
-
-        try {
-            connectionContext.close();
         } catch (Exception e) {
             exceptions.add(e);
         }
