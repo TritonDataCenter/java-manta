@@ -77,11 +77,6 @@ public class MantaSeekableByteChannel extends InputStream
     private final AtomicReference<MantaObjectInputStream> responseStream;
 
     /**
-     * Connection factory instance used for building requests to Manta.
-     */
-    private final MantaConnectionFactory connectionFactory;
-
-    /**
      * Creates a new instance of a read-only seekable byte channel.
      *
      * @param path path of the object on the Manta API
@@ -96,7 +91,6 @@ public class MantaSeekableByteChannel extends InputStream
                                     final HttpHelper httpHelper) {
         this.path = path;
         this.position = new AtomicLong(position);
-        this.connectionFactory = null;
         this.httpHelper = httpHelper;
         this.requestRef = new AtomicReference<>();
         this.responseStream = new AtomicReference<>();
@@ -138,7 +132,6 @@ public class MantaSeekableByteChannel extends InputStream
         this.responseStream = responseStream;
         this.path = path;
         this.position = position;
-        this.connectionFactory = null;
         this.httpHelper = httpHelper;
     }
 
@@ -154,7 +147,6 @@ public class MantaSeekableByteChannel extends InputStream
                                     final HttpHelper httpHelper) {
         this.path = path;
         this.position = new AtomicLong(position);
-        this.connectionFactory = null;
         this.httpHelper = httpHelper;
         this.requestRef = new AtomicReference<>();
         this.responseStream = new AtomicReference<>();
@@ -190,7 +182,6 @@ public class MantaSeekableByteChannel extends InputStream
         this.responseStream = responseStream;
         this.path = path;
         this.position = position;
-        this.connectionFactory = null;
         this.httpHelper = httpHelper;
     }
 
@@ -321,7 +312,6 @@ public class MantaSeekableByteChannel extends InputStream
                 new AtomicReference<>(),
                 path,
                 new AtomicLong(newPosition),
-                connectionFactory,
                 httpHelper);
     }
 
