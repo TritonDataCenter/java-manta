@@ -165,7 +165,14 @@ public class MantaClient implements AutoCloseable {
             = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
 
     /**
-     * Signing object used for authentication and signed URL generation.
+     * Signing object used for authentication and signed URL generation. We wrap it in a {@link WeakReference}
+     * to avoid memory leaks which can occur when {@link ThreadLocal} objects are used inside of
+     * an application container.
+     *
+     * @see <a href="https://plumbr.eu/blog/locked-threads/how-to-shoot-yourself-in-foot-with-threadlocals">How to
+     * shoot yourself in the foot with ThreadLocals
+     *     </a>
+     * @see <a href="https://blog.codecentric.de/en/2008/09/a-threadlocal-memory-leak/">A ThreadLocal Memory Leak</a>
      */
     private final WeakReference<ThreadLocalSigner> signerRef;
 
