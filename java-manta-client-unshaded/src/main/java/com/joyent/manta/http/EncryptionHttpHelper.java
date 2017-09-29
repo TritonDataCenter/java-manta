@@ -116,9 +116,11 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      *  @param connectionContext saved context used between requests to the Manta client
      * @param config configuration context object
      */
+    @Deprecated
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
+                                final MantaConnectionFactory connectionFactory,
                                 final ConfigContext config) {
-        this(connectionContext, null, config);
+        this(connectionContext, config);
     }
 
     /**
@@ -128,9 +130,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param connectionFactory instance used for building requests to Manta
      * @param config configuration context object
      */
-    @Deprecated
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
-                                final MantaConnectionFactory connectionFactory,
                                 final ConfigContext config) {
         super(connectionContext, config);
 
