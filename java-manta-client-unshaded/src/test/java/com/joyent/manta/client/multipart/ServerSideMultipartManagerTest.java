@@ -32,6 +32,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -49,6 +50,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -366,8 +368,6 @@ public class ServerSideMultipartManagerTest {
                                                         final Consumer<CloseableHttpResponse> responseConfigCallback)
             throws IOException {
         final ConfigContext config = testConfigContext();
-        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
-
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
         when(response.getStatusLine()).thenReturn(statusLine);
@@ -383,12 +383,14 @@ public class ServerSideMultipartManagerTest {
             when(response.getEntity()).thenReturn(entity);
         }
 
+        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final CloseableHttpClient fakeClient = new FakeCloseableHttpClient(response);
         when(connectionContext.getHttpClient()).thenReturn(fakeClient);
 
         final HttpHelper httpHelper = mock(HttpHelper.class);
         when(httpHelper.getConnectionContext()).thenReturn(connectionContext);
         when(httpHelper.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(config));
+        when(httpHelper.executeRequest(any(HttpUriRequest.class), any())).thenReturn(response);
 
         final MantaClient client = mock(MantaClient.class);
         return new ServerSideMultipartManager(config, httpHelper, client);
