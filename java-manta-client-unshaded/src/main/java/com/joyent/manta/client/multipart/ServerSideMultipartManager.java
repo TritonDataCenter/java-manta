@@ -40,6 +40,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,13 +247,12 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final HttpPost post = httpHelper.getRequestFactory().post(postPath);
 
         final byte[] jsonRequest = createMpuRequestBody(path, metadata, headers);
-        final HttpEntity entity = new ExposedByteArrayEntity(
-                jsonRequest, ContentType.APPLICATION_JSON);
+        final HttpEntity entity = new ExposedByteArrayEntity(jsonRequest, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_CREATED;
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(post)) {
+        try (CloseableHttpResponse response = httpHelper.executeRequest(post, null)) {
             StatusLine statusLine = response.getStatusLine();
 
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
@@ -315,7 +315,8 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final HttpPut put = httpHelper.getRequestFactory().put(putPath);
         put.setEntity(entity);
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(put, context)) {
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
+        try (CloseableHttpResponse response = httpClient.execute(put, context)) {
 
             validateStatusCode(
                     HttpStatus.SC_NO_CONTENT,
@@ -354,7 +355,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_OK;
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(get)) {
+        try (CloseableHttpResponse response = httpHelper.executeRequest(get, null)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to get status for multipart upload", get,
@@ -386,7 +387,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String etag;
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(head)) {
+        try (CloseableHttpResponse response = httpHelper.executeRequest(head, null)) {
             StatusLine statusLine = response.getStatusLine();
 
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -431,7 +432,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_OK;
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(get)) {
+        try (CloseableHttpResponse response = httpHelper.executeRequest(get, null)) {
             StatusLine statusLine = response.getStatusLine();
 
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -535,7 +536,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(post)) {
+        try (CloseableHttpResponse response = httpHelper.executeRequest(post, null)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to abort multipart upload", post,
@@ -605,7 +606,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final int expectedStatusCode = HttpStatus.SC_CREATED;
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(post)) {
+        try (CloseableHttpResponse response = httpHelper.executeRequest(post, null)) {
             StatusLine statusLine = response.getStatusLine();
 
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),

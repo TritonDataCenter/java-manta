@@ -31,6 +31,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -298,8 +299,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
         put.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = httpHelper.getConnectionContext().getHttpClient().execute(put, context)) {
+        try (CloseableHttpResponse response = httpClient.execute(put, context)) {
             StatusLine statusLine = response.getStatusLine();
 
             final MantaObjectResponse objectResponse = new MantaObjectResponse(path,
