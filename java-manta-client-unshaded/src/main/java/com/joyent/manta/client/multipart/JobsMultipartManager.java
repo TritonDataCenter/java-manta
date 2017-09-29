@@ -23,8 +23,6 @@ import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.HttpHelper;
-import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.Validate;
@@ -33,6 +31,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,14 +111,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
     private final Set<AutoCloseable> danglingStreams;
 
     /**
-     * Reference to the Apache HTTP Client HTTP request creation class.
+     * Reference to the Apache HTTP Client context and request creation helper.
      */
-    private final MantaConnectionFactory connectionFactory;
-
-    /**
-     * Current connection context used for maintaining state between requests.
-     */
-    private final MantaConnectionContext connectionContext;
+    private final HttpHelper httpHelper;
 
     /**
      * Full path on Manta to the upload directory.
@@ -151,15 +145,13 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(mantaClient, "Manta client object must not be null");
 
         this.mantaClient = mantaClient;
-        this.connectionContext = readFieldFromMantaClient(
-                "connectionContext", mantaClient, MantaConnectionContext.class);
-        this.connectionFactory = readFieldFromMantaClient(
-                "connectionFactory", mantaClient, MantaConnectionFactory.class);
+        this.httpHelper = readFieldFromMantaClient(
+                "httpHelper", mantaClient, HttpHelper.class);
         this.resolvedMultipartUploadDirectory =
                 mantaClient.getContext().getMantaHomeDirectory()
                 + SEPARATOR + MULTIPART_DIRECTORY;
         @SuppressWarnings("unchecked")
-        Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
+        final Set<AutoCloseable> dangling = (Set<AutoCloseable>)readFieldFromMantaClient(
                         "danglingStreams", mantaClient, Set.class);
         this.danglingStreams = dangling;
     }
@@ -303,12 +295,13 @@ public class JobsMultipartManager extends AbstractMultipartManager
         Validate.notNull(entity, "Upload entity must not be null");
 
         final String path = multipartPath(upload.getId(), partNumber);
-        final HttpPut put = connectionFactory.put(path);
+        final HttpPut put = httpHelper.getRequestFactory().put(path);
         put.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = connectionContext.getHttpClient().execute(put, context)) {
+        try (CloseableHttpResponse response = httpClient.execute(put, context)) {
             StatusLine statusLine = response.getStatusLine();
 
             final MantaObjectResponse objectResponse = new MantaObjectResponse(path,

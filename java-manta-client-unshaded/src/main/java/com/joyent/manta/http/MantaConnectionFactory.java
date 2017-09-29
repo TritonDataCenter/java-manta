@@ -25,12 +25,6 @@ import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -62,7 +56,6 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Arrays;
@@ -74,6 +67,10 @@ import javax.management.DynamicMBean;
  * Factory class that creates instances of
  * {@link org.apache.http.client.HttpClient} configured for use with
  * HTTP signature based authentication.
+ *
+ * Note: This class used to contain convenience methods for building
+ * {@link org.apache.http.client.methods.HttpUriRequest} objects, those have been moved
+ * to {@link MantaHttpRequestFactory}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
@@ -298,56 +295,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     }
 
     /**
-     * Creates a {@link Credentials} instance based on the stored
-     * {@link ConfigContext}.
-     *
-     * @return credentials for Manta
-     */
-    protected Credentials createCredentials() {
-        final String user = config.getMantaUser();
-        Validate.notNull(user, "User must not be null");
-
-        return new UsernamePasswordCredentials(user, null);
-    }
-
-    /**
-     * Derives Manta URI for a given path.
-     *
-     * @param path full path
-     * @return full URI as string of resource
-     */
-    protected String uriForPath(final String path) {
-        Validate.notNull(path, "Path must not be null");
-
-        if (path.startsWith("/")) {
-            return String.format("%s%s", config.getMantaURL(), path);
-        } else {
-            return String.format("%s/%s", config.getMantaURL(), path);
-        }
-    }
-
-    /**
-     * Derives Manta URI for a given path with the passed query
-     * parameters.
-     *
-     * @param path full path
-     * @param params query parameters to add to the URI
-     * @return full URI as string of resource
-     */
-    protected String uriForPath(final String path, final List<NameValuePair> params) {
-        Validate.notNull(path, "Path must not be null");
-        Validate.notNull(params, "Params must not be null");
-
-        try {
-            final URIBuilder uriBuilder = new URIBuilder(uriForPath(path));
-            uriBuilder.addParameters(params);
-            return uriBuilder.build().toString();
-        } catch (URISyntaxException e) {
-            throw new ConfigurationException(String.format("Invalid path in URI: %s", path));
-        }
-    }
-
-    /**
      * Finds the host of the proxy server that was configured as part of the
      * JVM settings.
      *
@@ -397,98 +344,13 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     }
 
     /**
-     * Convenience method used for building DELETE operations.
-     * @param path path to resource
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
+     * package-private method for building a {@link MantaHttpRequestFactory} from this object's
+     * config. Should be removed with the deprecated constructor for {@link MantaApacheHttpClientContext}.
+     *
+     * @return a request factory pointed at the same url as {@code this}
      */
-    public HttpDelete delete(final String path) {
-        return new HttpDelete(uriForPath(path));
-    }
-
-    /**
-     * Convenience method used for building DELETE operations.
-     * @param path path to resource
-     * @param params list of query parameters to use in operation
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpDelete delete(final String path, final List<NameValuePair> params) {
-        return new HttpDelete(uriForPath(path, params));
-    }
-
-    /**
-     * Convenience method used for building GET operations.
-     * @param path path to resource
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpGet get(final String path) {
-        return new HttpGet(uriForPath(path));
-    }
-
-    /**
-     * Convenience method used for building GET operations.
-     * @param path path to resource
-     * @param params list of query parameters to use in operation
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpGet get(final String path, final List<NameValuePair> params) {
-        return new HttpGet(uriForPath(path, params));
-    }
-
-    /**
-     * Convenience method used for building HEAD operations.
-     * @param path path to resource
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpHead head(final String path) {
-        return new HttpHead(uriForPath(path));
-    }
-
-    /**
-     * Convenience method used for building HEAD operations.
-     * @param path path to resource
-     * @param params list of query parameters to use in operation
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpHead head(final String path, final List<NameValuePair> params) {
-        return new HttpHead(uriForPath(path, params));
-    }
-
-    /**
-     * Convenience method used for building POST operations.
-     * @param path path to resource
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpPost post(final String path) {
-        return new HttpPost(uriForPath(path));
-    }
-
-    /**
-     * Convenience method used for building POST operations.
-     * @param path path to resource
-     * @param params list of query parameters to use in operation
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpPost post(final String path, final List<NameValuePair> params) {
-        return new HttpPost(uriForPath(path, params));
-    }
-
-    /**
-     * Convenience method used for building PUT operations.
-     * @param path path to resource
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpPut put(final String path) {
-        return new HttpPut(uriForPath(path));
-    }
-
-    /**
-     * Convenience method used for building PUT operations.
-     * @param path path to resource
-     * @param params list of query parameters to use in operation
-     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
-     */
-    public HttpPut put(final String path, final List<NameValuePair> params) {
-        return new HttpPut(uriForPath(path, params));
+    ConfigContext getConfig() {
+        return config;
     }
 
     @Override

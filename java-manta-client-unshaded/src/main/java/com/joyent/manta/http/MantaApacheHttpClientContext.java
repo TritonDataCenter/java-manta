@@ -29,13 +29,20 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     private final CloseableHttpClient httpClient;
 
     /**
+     * Connection pool is owned by the creating {@link MantaConnectionFactory}.
+     */
+    private final MantaConnectionFactory connectionFactory;
+
+    /**
      * Creates a new instance using the passed in factory class.
+     *
      * @param connectionFactory factory class that creates configured connections
      */
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory) {
         Validate.notNull(connectionFactory,
                 "Connection factory must not be null");
 
+        this.connectionFactory = connectionFactory;
         this.httpClient = connectionFactory.createConnection();
     }
 
@@ -49,5 +56,6 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
         MDC.remove(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
 
         httpClient.close();
+        connectionFactory.close();
     }
 }
