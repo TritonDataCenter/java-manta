@@ -56,6 +56,9 @@ class MantaMBeanSupervisor implements AutoCloseable {
      */
     private final int idx;
 
+    /**
+     * Flag indicating if the supervisor has been "closed" (i.e. beans deregistered)
+     */
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
