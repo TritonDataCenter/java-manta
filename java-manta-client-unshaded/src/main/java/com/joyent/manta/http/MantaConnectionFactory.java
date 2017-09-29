@@ -11,7 +11,6 @@ import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.client.MantaMBeanable;
-import com.joyent.manta.client.MantaMBeanSupervisor;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
@@ -21,9 +20,9 @@ import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
@@ -69,6 +68,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import javax.management.DynamicMBean;
 
 /**
  * Factory class that creates instances of
@@ -492,14 +492,12 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     }
 
     @Override
-    public void createExposedMBean(final MantaMBeanSupervisor beanSupervisor) {
-        Validate.notNull(beanSupervisor, "MantaMBeanSupervisor must not be null");
-
+    public DynamicMBean toMBean() {
         if (!(connectionManager instanceof PoolingHttpClientConnectionManager)) {
-            return;
+            return null;
         }
 
-        beanSupervisor.expose(new PoolStatsMBean((PoolingHttpClientConnectionManager) connectionManager));
+        return new PoolStatsMBean((PoolingHttpClientConnectionManager) connectionManager);
     }
 
     @Override

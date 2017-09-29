@@ -8,14 +8,12 @@
 package com.joyent.manta.config;
 
 import com.joyent.manta.client.MantaMBeanable;
-import com.joyent.manta.client.MantaMBeanSupervisor;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 
 import java.io.File;
 import java.net.URI;
@@ -23,6 +21,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import javax.management.DynamicMBean;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -167,9 +166,8 @@ public interface ConfigContext extends MantaMBeanable {
 
     /** {@inheritDoc} */
     @Override
-    default void createExposedMBean(final MantaMBeanSupervisor beanSupervisor) {
-        Validate.notNull(beanSupervisor, "MantaMBeanSupervisor must not be null");
-        beanSupervisor.expose(new ConfigContextMBean(this));
+    default DynamicMBean toMBean() {
+        return new ConfigContextMBean(this);
     }
 
     /**

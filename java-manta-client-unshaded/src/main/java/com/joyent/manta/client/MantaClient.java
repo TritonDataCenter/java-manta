@@ -247,8 +247,8 @@ public class MantaClient implements AutoCloseable {
 
         this.beanSupervisor = new MantaMBeanSupervisor();
 
-        this.config.createExposedMBean(beanSupervisor);
-        this.connectionFactory.createExposedMBean(beanSupervisor);
+        beanSupervisor.expose(this.config);
+        beanSupervisor.expose(connectionFactory);
     }
 
     /**

@@ -18,12 +18,9 @@ import javax.management.DynamicMBean;
 public interface MantaMBeanable {
 
     /**
-     * Provide an MBean to the {@link MantaMBeanSupervisor} that represents this object for
-     * registration in JMX. Closing the supervisor will deregister the MBean. Implementations are expected
-     * to call {@link MantaMBeanSupervisor#expose(DynamicMBean)}.
+     * Provide an MBean that represents this object for registration in JMX.
      *
-     * @param supervisor the {@link MantaMBeanSupervisor} in charge of
-     *                   registering and deregistering the representative bean
+     * @return The {@link DynamicMBean} that represents {@code this}
      */
-    void createExposedMBean(MantaMBeanSupervisor supervisor);
+    DynamicMBean toMBean();
 }

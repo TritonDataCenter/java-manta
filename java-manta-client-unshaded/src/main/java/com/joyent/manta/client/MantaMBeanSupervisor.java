@@ -30,7 +30,7 @@ import javax.management.ObjectName;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
-public class MantaMBeanSupervisor implements AutoCloseable {
+class MantaMBeanSupervisor implements AutoCloseable {
 
     @SuppressWarnings("JavaDocVariable")
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaMBeanSupervisor.class);
@@ -70,11 +70,21 @@ public class MantaMBeanSupervisor implements AutoCloseable {
      * Attempts to create an {@link ObjectName} for a {@link DynamicMBean} and register it with the platform's
      * {@link MBeanServer}.
      *
-     * @param bean the bean to attempt to register
+     * @param beanable the bean to attempt to register
      */
-    public void expose(final DynamicMBean bean) {
+    void expose(final MantaMBeanable beanable) {
         if (closed.get()) {
             throw new IllegalStateException("Cannot register MBeans, supervisor has been closed");
+        }
+
+        final DynamicMBean bean = beanable.toMBean();
+
+        if (bean == null) {
+            if (LOGGER.isWarnEnabled()) {
+                LOGGER.warn("MantaMBeanable object returned null");
+            }
+
+            return;
         }
 
         final ObjectName name;
@@ -94,11 +104,11 @@ public class MantaMBeanSupervisor implements AutoCloseable {
     }
 
     /**
-     * Prepare the supervisor for reuse
+     * Prepare the supervisor for reuse.
      *
      * @throws Exception if an exception is thrown by {@link #close()}
      */
-    public void reset() throws Exception {
+    void reset() throws Exception {
         if (!beans.isEmpty()) {
             close();
         }
