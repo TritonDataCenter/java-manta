@@ -10,8 +10,6 @@ package com.joyent.manta.client.multipart;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.joyent.http.signature.Signer;
-import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectMapper;
@@ -23,9 +21,10 @@ import com.joyent.manta.config.TestConfigContext;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.FakeCloseableHttpClient;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
@@ -33,6 +32,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -43,9 +43,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,6 +50,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -216,13 +214,6 @@ public class ServerSideMultipartManagerTest {
     }
 
     public void canCreateMpuRequestBodyJson() throws IOException {
-        final ConfigContext config = mock(ConfigContext.class);
-        final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
-        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
-        final MantaClient client = mock(MantaClient.class);
-        final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
-
         final String path = "/user/stor/object";
 
         final byte[] json = ServerSideMultipartManager.createMpuRequestBody(path, null, null);
@@ -233,13 +224,6 @@ public class ServerSideMultipartManagerTest {
     }
 
     public void canCreateMpuRequestBodyJsonWithHeaders() throws IOException {
-        final ConfigContext config = mock(ConfigContext.class);
-        final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
-        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
-        final MantaClient client = mock(MantaClient.class);
-        final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
-
         final String path = "/user/stor/object";
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
@@ -277,13 +261,6 @@ public class ServerSideMultipartManagerTest {
     }
 
     public void canCreateMpuRequestBodyJsonWithHeadersAndMetadata() throws IOException {
-        final ConfigContext config = mock(ConfigContext.class);
-        final MantaConnectionFactory connectionFactory = mock(MantaConnectionFactory.class);
-        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
-        final MantaClient client = mock(MantaClient.class);
-        final ServerSideMultipartManager manager = new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
-
         final String path = "/user/stor/object";
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
@@ -391,17 +368,6 @@ public class ServerSideMultipartManagerTest {
                                                         final Consumer<CloseableHttpResponse> responseConfigCallback)
             throws IOException {
         final ConfigContext config = testConfigContext();
-
-        final KeyPair keyPair;
-        try {
-            keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-        } catch (GeneralSecurityException e) {
-            throw new AssertionError(e);
-        }
-        final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keyPair));
-
-        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
-        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 
         when(response.getStatusLine()).thenReturn(statusLine);
@@ -417,12 +383,17 @@ public class ServerSideMultipartManagerTest {
             when(response.getEntity()).thenReturn(entity);
         }
 
+        final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
         final CloseableHttpClient fakeClient = new FakeCloseableHttpClient(response);
         when(connectionContext.getHttpClient()).thenReturn(fakeClient);
 
+        final HttpHelper httpHelper = mock(HttpHelper.class);
+        when(httpHelper.getConnectionContext()).thenReturn(connectionContext);
+        when(httpHelper.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(config));
+        when(httpHelper.executeRequest(any(HttpUriRequest.class), any())).thenReturn(response);
+
         final MantaClient client = mock(MantaClient.class);
-        return new ServerSideMultipartManager(
-                config, connectionFactory, connectionContext, client);
+        return new ServerSideMultipartManager(config, httpHelper, client);
     }
 
     private ServerSideMultipartUpload initiateUploadWithAllParams(final String path,
