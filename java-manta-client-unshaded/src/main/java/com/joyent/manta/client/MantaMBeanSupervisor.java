@@ -11,8 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.DynamicMBean;
@@ -63,7 +63,7 @@ public class MantaMBeanSupervisor implements AutoCloseable {
      */
     MantaMBeanSupervisor() {
         idx = SUPERVISOR_COUNT.incrementAndGet();
-        beans = new WeakHashMap<>();
+        beans = new HashMap<>(2);
     }
 
     /**
