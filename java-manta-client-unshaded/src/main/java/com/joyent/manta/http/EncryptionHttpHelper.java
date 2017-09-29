@@ -113,7 +113,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
     /**
      * Creates a new instance of the helper class.
-     *  @param connectionContext saved context used between requests to the Manta client
+     * @param connectionContext saved context used between requests to the Manta client
+     * @param connectionFactory instance used for building requests to Manta
      * @param config configuration context object
      */
     @Deprecated
@@ -127,7 +128,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
-     * @param connectionFactory instance used for building requests to Manta
      * @param config configuration context object
      */
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
