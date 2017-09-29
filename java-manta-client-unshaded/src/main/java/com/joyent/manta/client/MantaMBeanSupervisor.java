@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
@@ -55,6 +56,8 @@ public class MantaMBeanSupervisor implements AutoCloseable {
      */
     private final int idx;
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
     /**
      * Create a new supervisor that will own an index and a set of beans.
      */
@@ -70,6 +73,10 @@ public class MantaMBeanSupervisor implements AutoCloseable {
      * @param bean the bean to attempt to register
      */
     public void expose(final DynamicMBean bean) {
+        if (closed.get()) {
+            throw new IllegalStateException("Cannot register MBeans, supervisor has been closed");
+        }
+
         final ObjectName name;
         try {
             name = new ObjectName(String.format(FMT_MBEAN_OBJECT_NAME, bean.getClass().getSimpleName(), idx));
@@ -87,21 +94,40 @@ public class MantaMBeanSupervisor implements AutoCloseable {
     }
 
     /**
+     * Prepare the supervisor for reuse
+     *
+     * @throws Exception if an exception is thrown by {@link #close()}
+     */
+    public void reset() throws Exception {
+        if (!beans.isEmpty()) {
+            close();
+        }
+
+        closed.set(false);
+    }
+
+    /**
      * Deregisters the beans stored in {@code this.beans} so
      * that they are no longer visible via JMX.
      */
     @Override
     public void close() throws Exception {
+        if (closed.get()) {
+            return;
+        }
+
+        closed.set(true);
+
         final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
         for (final Map.Entry<ObjectName, DynamicMBean> bean : beans.entrySet()) {
             try {
                 server.unregisterMBean(bean.getKey());
             } catch (final JMException e) {
-                String msg = String.format("Error deregistering [%s] MBean in JMX",
-                        bean.getKey());
-                LOGGER.warn(msg, e);
+                LOGGER.warn(String.format("Error deregistering [%s] MBean in JMX", bean.getKey()), e);
             }
         }
+
+        beans.clear();
     }
 }
