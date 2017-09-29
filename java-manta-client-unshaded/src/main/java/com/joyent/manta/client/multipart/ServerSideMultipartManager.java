@@ -251,8 +251,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         post.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_CREATED;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = httpHelper.executeRequest(post, null)) {
+        try (CloseableHttpResponse response = httpClient.execute(post)) {
             StatusLine statusLine = response.getStatusLine();
 
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
@@ -354,8 +355,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final String objectPath;
 
         final int expectedStatusCode = HttpStatus.SC_OK;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = httpHelper.executeRequest(get, null)) {
+        try (CloseableHttpResponse response = httpClient.execute(get)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to get status for multipart upload", get,
@@ -387,7 +389,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
         final String etag;
 
-        try (CloseableHttpResponse response = httpHelper.executeRequest(head, null)) {
+        try (CloseableHttpResponse response = httpClient.execute(head)) {
             StatusLine statusLine = response.getStatusLine();
 
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -431,8 +433,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final HttpGet get = httpHelper.getRequestFactory().get(getPath);
 
         final int expectedStatusCode = HttpStatus.SC_OK;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = httpHelper.executeRequest(get, null)) {
+        try (CloseableHttpResponse response = httpClient.execute(get)) {
             StatusLine statusLine = response.getStatusLine();
 
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -535,8 +538,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         final HttpPost post = httpHelper.getRequestFactory().post(postPath);
 
         final int expectedStatusCode = HttpStatus.SC_NO_CONTENT;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = httpHelper.executeRequest(post, null)) {
+        try (CloseableHttpResponse response = httpClient.execute(post)) {
             StatusLine statusLine = response.getStatusLine();
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
                     "Unable to abort multipart upload", post,
@@ -605,8 +609,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         post.setEntity(entity);
 
         final int expectedStatusCode = HttpStatus.SC_CREATED;
+        final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
 
-        try (CloseableHttpResponse response = httpHelper.executeRequest(post, null)) {
+        try (CloseableHttpResponse response = httpClient.execute(post)) {
             StatusLine statusLine = response.getStatusLine();
 
             validateStatusCode(expectedStatusCode, statusLine.getStatusCode(),
