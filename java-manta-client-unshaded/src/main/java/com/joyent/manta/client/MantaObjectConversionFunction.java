@@ -10,7 +10,6 @@ package com.joyent.manta.client;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
-import org.apache.http.entity.ContentType;
 
 import java.util.Map;
 import java.util.Objects;
@@ -34,10 +33,10 @@ public class MantaObjectConversionFunction implements Function<Map<String, Objec
 
     @Override
     public MantaObject apply(final Map<String, Object> item) {
-        String name = Objects.toString(item.get("name"));
-        String mtime = Objects.toString(item.get("mtime"));
-        String type = Objects.toString(item.get("type"));
-        Validate.notNull(name, "File name must not be null");
+        String name = Validate.notNull(item.get("name"), "Filename is null").toString();
+        String mtime = Validate.notNull(item.get("mtime"), "Modification time is null").toString();
+        String type = Validate.notNull(item.get("type"), "File type is null").toString();
+
         String objPath = String.format("%s%s%s",
                 StringUtils.removeEnd(item.get("path").toString(), SEPARATOR),
                 SEPARATOR,
@@ -45,10 +44,14 @@ public class MantaObjectConversionFunction implements Function<Map<String, Objec
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setLastModified(mtime);
 
-        if (type.equals(MantaObject.MANTA_OBJECT_TYPE_DIRECTORY)) {
+        /* We look for contentType explicitly because it is being added to Manta
+         * in a future version and this property may not be available on all
+         * Manta installs for quite some time. */
+        if (item.containsKey("contentType")) {
+            String contentType = Objects.toString(item.get("contentType"), null);
+            headers.setContentType(contentType);
+        } else if (type.equals(MantaObject.MANTA_OBJECT_TYPE_DIRECTORY)) {
             headers.setContentType(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
-        } else {
-            headers.setContentType(ContentType.APPLICATION_OCTET_STREAM.toString());
         }
 
         if (item.containsKey("etag")) {
@@ -66,6 +69,12 @@ public class MantaObjectConversionFunction implements Function<Map<String, Objec
                 int durability = Integer.parseInt(durabilityString);
                 headers.setDurabilityLevel(durability);
             }
+        }
+
+        // This property may not be available on all Manta installs for quite some time
+        if (item.containsKey("contentMD5")) {
+            String contentMD5 = Objects.toString(item.get("contentMD5"), null);
+            headers.setContentMD5(contentMD5);
         }
 
         return new MantaObjectResponse(formatPath(objPath), headers);
