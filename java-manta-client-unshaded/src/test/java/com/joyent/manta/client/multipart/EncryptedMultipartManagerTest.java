@@ -190,7 +190,7 @@ public class EncryptedMultipartManagerTest {
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
-        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, connectionFactory, config);
+        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, config);
 
         return new EncryptedMultipartManager<>(secretKey, cipherDetails,
                 httpHelper, testManager);

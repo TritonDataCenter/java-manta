@@ -39,7 +39,7 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public interface HttpHelper extends AutoCloseable {
+public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
     /**
      * Executes a HTTP HEAD against the remote Manta API.
      *
