@@ -269,7 +269,7 @@ public class MantaClient implements AutoCloseable {
 
         this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
-        this.beanSupervisor = null;
+        this.beanSupervisor = new MantaMBeanSupervisor();
     }
 
     /**
