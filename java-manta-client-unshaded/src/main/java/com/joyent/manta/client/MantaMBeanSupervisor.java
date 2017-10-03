@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -117,6 +118,10 @@ class MantaMBeanSupervisor implements AutoCloseable {
         }
 
         closed.set(false);
+    }
+
+    Map<ObjectName, DynamicMBean> getBeans() {
+        return Collections.unmodifiableMap(beans);
     }
 
     /**
