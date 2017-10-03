@@ -57,7 +57,6 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.security.KeyPair;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -357,7 +356,9 @@ public class MantaConnectionFactory implements Closeable {
                 config.getTimeout(),
                 DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
 
-        final long requestTimeout = Duration.ofSeconds(1L).toMillis();
+        final int connectionRequestTimeout = ObjectUtils.firstNonNull(
+                config.getConnectionRequestTimeout(),
+                DefaultsConfigContext.DEFAULT_CONNECTION_REQUEST_TIMEOUT);
 
         final String userAgent = String.format(
                 "Java-Manta-SDK/%s (Java/%s/%s)",
@@ -368,7 +369,7 @@ public class MantaConnectionFactory implements Closeable {
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
                 .setSocketTimeout(timeout)
-                .setConnectionRequestTimeout((int)requestTimeout)
+                .setConnectionRequestTimeout(connectionRequestTimeout)
                 .setContentCompressionEnabled(true)
                 .build();
 

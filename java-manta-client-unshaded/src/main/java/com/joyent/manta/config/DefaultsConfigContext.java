@@ -98,6 +98,11 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
 
     /**
+     * Default connection timeout is 1 seconds (1000 ms).
+     */
+    public static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 1000;
+
+    /**
      * Default size of pre-streaming upload buffer (16K).
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
@@ -195,6 +200,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getTcpSocketTimeout() {
         return DEFAULT_TCP_SOCKET_TIMEOUT;
+    }
+
+    @Override
+    public Integer getConnectionRequestTimeout() {
+        return DEFAULT_CONNECTION_REQUEST_TIMEOUT;
     }
 
     @Override

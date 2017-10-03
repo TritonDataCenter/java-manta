@@ -98,6 +98,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_KEY = "manta.tcp_socket_timeout";
 
     /**
+     * Property key for connection request timeout.
+     */
+    public static final String MANTA_CONNECTION_REQUEST_TIMEOUT_KEY = "manta.connection_request_timeout";
+
+    /**
      * Property key for enabling the checksum verification of uploaded files.
      */
     public static final String MANTA_VERIFY_UPLOADS_KEY = "manta.verify_uploads";
@@ -168,6 +173,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
             MANTA_VERIFY_UPLOADS_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
+            MANTA_CONNECTION_REQUEST_TIMEOUT_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_KEY_ID_KEY,
@@ -326,6 +332,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Integer getConnectionRequestTimeout() {
+        Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_CONNECTION_REQUEST_TIMEOUT_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY));
     }
 
     @Override

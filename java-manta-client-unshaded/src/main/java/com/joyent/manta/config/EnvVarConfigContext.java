@@ -105,6 +105,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY = "MANTA_UPLOAD_BUFFER_SIZE";
 
     /**
+     * Environment variable for connection request timeout.
+     */
+    public static final String MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY = "MANTA_CONNECTION_REQUEST_TIMEOUT";
+
+    /**
      * Environment variable for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
@@ -154,6 +159,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
+            MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY,
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
@@ -273,6 +279,11 @@ public class EnvVarConfigContext implements ConfigContext {
         String timeoutString = getEnv(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY);
 
         return MantaUtils.parseIntegerOrNull(timeoutString);
+    }
+
+    @Override
+    public Integer getConnectionRequestTimeout() {
+        return MantaUtils.parseIntegerOrNull(getEnv(MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY));
     }
 
     @Override
