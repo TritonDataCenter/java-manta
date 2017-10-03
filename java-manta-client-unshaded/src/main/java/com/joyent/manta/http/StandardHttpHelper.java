@@ -16,11 +16,14 @@ import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.exception.MantaRequestAbortedException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
+import com.joyent.manta.util.ConcurrentWeakIdentityHashMap;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -47,6 +50,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -55,6 +59,7 @@ import java.util.function.Function;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class StandardHttpHelper implements HttpHelper {
+
     /**
      * Logger instance.
      */
@@ -76,6 +81,11 @@ public class StandardHttpHelper implements HttpHelper {
     private final boolean validateUploads;
 
     /**
+     * The set of in-flight requests when fast client termination is enabled, or null.
+     */
+    private final Set<HttpUriRequest> pendingRequests;
+
+    /**
      * Creates a new instance of the helper class.
      * @param connectionContext saved context used between requests to the Manta client
      * @param config configuration context object
@@ -86,6 +96,12 @@ public class StandardHttpHelper implements HttpHelper {
         this.requestFactory = new MantaHttpRequestFactory(config);
         this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
                 DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
+
+        if (BooleanUtils.isTrue(config.isFastCloseEnabled())) {
+            this.pendingRequests = Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>());
+        } else {
+            this.pendingRequests = null;
+        }
     }
 
     /**
@@ -204,6 +220,11 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final CloseableHttpClient client = connectionContext.getHttpClient();
+
+        if (pendingRequests != null) {
+            pendingRequests.add(put);
+        }
+
         final MantaObjectResponse obj;
 
         try (CloseableHttpResponse response = client.execute(put)) {
@@ -224,6 +245,11 @@ public class StandardHttpHelper implements HttpHelper {
             if (validateUploadsEnabled()) {
                 validateChecksum(md5DigestedEntity, obj.getMd5Bytes(), put, response);
             }
+        } catch (Exception e) {
+            if (put.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
         }
 
         /* We set the content type on the result object from the entity
@@ -400,7 +426,20 @@ public class StandardHttpHelper implements HttpHelper {
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
-        CloseableHttpResponse response = client.execute(request);
+        if (pendingRequests != null) {
+            pendingRequests.add(request);
+        }
+
+        final CloseableHttpResponse response;
+        try {
+            response = client.execute(request);
+        } catch (Exception e) {
+            if (request.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
+        }
+
         StatusLine statusLine = response.getStatusLine();
 
         if (LOGGER.isDebugEnabled() && logMessage != null) {
@@ -444,7 +483,20 @@ public class StandardHttpHelper implements HttpHelper {
         Validate.notNull(request, "Request object must not be null");
 
         CloseableHttpClient client = connectionContext.getHttpClient();
-        CloseableHttpResponse response = client.execute(request);
+
+        if (pendingRequests != null) {
+            pendingRequests.add(request);
+        }
+
+        final CloseableHttpResponse response;
+        try {
+            response = client.execute(request);
+        } catch (Exception e) {
+            if (request.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
+        }
 
         try {
             StatusLine statusLine = response.getStatusLine();
@@ -501,9 +553,14 @@ public class StandardHttpHelper implements HttpHelper {
 
         CloseableHttpClient client = connectionContext.getHttpClient();
 
-        CloseableHttpResponse response = client.execute(request);
+        if (pendingRequests != null) {
+            pendingRequests.add(request);
+        }
+
+        CloseableHttpResponse response = null;
         try {
-            StatusLine statusLine = response.getStatusLine();
+            response = client.execute(request);
+            final StatusLine statusLine = response.getStatusLine();
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(logMessage, logParameters, statusLine.getStatusCode(),
@@ -520,8 +577,13 @@ public class StandardHttpHelper implements HttpHelper {
             } else {
                 return null;
             }
+        } catch (Exception e) {
+            if (request.isAborted()) {
+                throw new MantaRequestAbortedException(e);
+            }
+            throw e;
         } finally {
-            if (closeResponse) {
+            if (closeResponse && response != null) {
                 IOUtils.closeQuietly(response);
             }
         }
@@ -565,7 +627,26 @@ public class StandardHttpHelper implements HttpHelper {
     }
 
     @Override
+    public boolean isTrackingRequests() {
+        return pendingRequests != null;
+    }
+
+    @Override
     public void close() throws Exception {
+        if (pendingRequests != null) {
+            pendingRequests.forEach((req) -> {
+                if (LOGGER.isWarnEnabled()) {
+                    final String message =
+                            String.format(
+                                    "aborting request %s %s",
+                                    req.getMethod(),
+                                    req.getURI().getPath());
+                    LOGGER.warn(message);
+                }
+                req.abort();
+            });
+        }
+
         connectionContext.close();
     }
 }

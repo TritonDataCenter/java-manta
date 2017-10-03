@@ -10,6 +10,9 @@ package com.joyent.manta.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.Objects;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -23,9 +26,6 @@ import javax.management.MBeanNotificationInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
-import java.lang.ref.WeakReference;
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Class providing real-time information on the connection pool statistics
@@ -128,6 +128,10 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "The size of pre-streaming upload buffers",
                         true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_FAST_CLOSE_KEY,
+                        Boolean.class.getName(),
+                        "Flag indicating fast client termination is enabled",
+                        true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
                         Boolean.class.getName(),
                         "Flag indicating client-side encryption is enabled",

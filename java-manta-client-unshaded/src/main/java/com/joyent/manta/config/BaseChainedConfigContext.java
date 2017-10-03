@@ -107,6 +107,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Integer uploadBufferSize;
 
     /**
+     * Flag indicating the client should forcibly terminate in-flight requests when it is shut down.
+     */
+    private Boolean fastCloseEnabled;
+
+    /**
      * Flag indicating when client-side encryption is enabled.
      */
     private Boolean clientEncryptionEnabled;
@@ -303,6 +308,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return encryptionPrivateKeyBytes;
     }
 
+    @Override
+    public Boolean isFastCloseEnabled() {
+        return fastCloseEnabled;
+    }
+
     /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
@@ -395,6 +405,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.getUploadBufferSize() != null) {
             this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (context.isFastCloseEnabled() != null) {
+            this.fastCloseEnabled = context.isFastCloseEnabled();
         }
 
         if (context.isClientEncryptionEnabled() != null) {
@@ -495,6 +509,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.uploadBufferSize == null) {
             this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (this.fastCloseEnabled == null) {
+            this.fastCloseEnabled = context.isFastCloseEnabled();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -660,6 +678,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setFastCloseEnabled(final Boolean fastCloseEnabled) {
+        this.fastCloseEnabled = fastCloseEnabled;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setUploadBufferSize(final Integer size) {
         this.uploadBufferSize = size;
 
@@ -753,6 +778,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
+                && Objects.equals(fastCloseEnabled, that.fastCloseEnabled)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
@@ -768,7 +794,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, tcpSocketTimeout,
-                verifyUploads, uploadBufferSize,
+                verifyUploads, uploadBufferSize, fastCloseEnabled,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,

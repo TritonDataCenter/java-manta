@@ -108,6 +108,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_UPLOAD_BUFFER_SIZE_KEY = "manta.upload_buffer_size";
 
     /**
+     * Property key for fast client termination.
+     */
+    public static final String MANTA_FAST_CLOSE_KEY = "manta.fast_close";
+
+    /**
      * Property key for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
@@ -168,6 +173,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
             MANTA_VERIFY_UPLOADS_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
+            MANTA_FAST_CLOSE_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_KEY_ID_KEY,
@@ -175,7 +181,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
             MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY,
-            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY
+            MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY,
     };
 
     static {
@@ -348,6 +354,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY));
+    }
+
+    @Override
+    public Boolean isFastCloseEnabled() {
+        Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_FAST_CLOSE_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_FAST_CLOSE_ENV_KEY));
     }
 
     @Override

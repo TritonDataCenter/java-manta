@@ -9,6 +9,9 @@
     </appender>
 
     <logger name="com.joyent" level="debug" />
+    <logger name="org.apache.http.wire" level="warn" />
+    <logger name="org.apache.http.headers" level="warn" />
+    <logger name="org.apache.http.impl" level="warn" />
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
