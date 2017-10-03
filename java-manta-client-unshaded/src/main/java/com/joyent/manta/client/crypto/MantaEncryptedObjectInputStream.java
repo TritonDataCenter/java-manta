@@ -818,7 +818,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         }
 
         Long plaintextSize = super.getContentLength();
-        Validate.notNull("Content-length header wasn't set by server");
+        Validate.notNull(plaintextSize, "Content-length header wasn't set by server");
         return this.cipherDetails.plaintextSize(plaintextSize);
     }
 }
