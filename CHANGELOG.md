@@ -4,15 +4,18 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.1.7-SNAPSHOT] - Coming soon!
 ### Added
- - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87). 
+ - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87).
+ - Support for reading content-type and content-md5 header information from 
+ directory listings  
 ### Fixed
  - Clarify version history of `MantaInputStreamEntity`
  - MPU parts which were missing an ETag in their response were
    [not treated as errors](https://github.com/joyent/java-manta/issues/305).
  - NullPointerException as a result of some configuration parameters
-   [not being handled correctly unless explicity set](https://github.com/joyent/java-manta/issues/247).
+   [not being handled correctly unless explicitly set](https://github.com/joyent/java-manta/issues/247).
  - Setting `manta.retries`/`MANTA_HTTP_RETRIES` to 0 would print `Retry of failed requests is disabled` but
    leave the default Apache HttpClient [retry behavior](https://hc.apache.org/httpcomponents-client-4.5.x/tutorial/html/fundamentals.html#d5e316).
+ - [Content type is set for file object in directory listing when it isn't available](https://github.com/joyent/java-manta/issues/341)
 ### Changed
  - Validation of paths passed to `MantaClient` is now more consistently strict.
    More useful errors should be thrown sooner for invalid paths, without any

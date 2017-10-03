@@ -96,7 +96,6 @@ public class PoolStatsMBean implements DynamicMBean {
      */
     private final WeakReference<PoolingHttpClientConnectionManager> connectionManagerRef;
 
-
     /**
      * Creates a new MBean instance backed by the passed connection manager.
      * @param connectionManager instance to get statistics from
