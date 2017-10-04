@@ -28,6 +28,7 @@ import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
 import com.joyent.manta.http.MantaConnectionFactory;
+import com.joyent.manta.http.MantaConnectionFactoryConfigurator;
 import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.StandardHttpHelper;
@@ -236,18 +237,14 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Creates a new instance of the Manta client with the specified connection factory.
-     * This method is typically used by unit tests to inject connection factory
-     * customizations so we can simulate different network events.
+     * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a larger
+     * degree of customization at the cost of
      *
      * @param config The configuration context that provides all of the configuration values
-     * @param keyPair cryptographic signing key pair used for HTTP signatures
-     * @param connectionFactory connection factory instance used to tune connection settings
+     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory
      */
-    MantaClient(final ConfigContext config,
-                final KeyPair keyPair,
-                final MantaConnectionFactory connectionFactory,
-                final ThreadLocalSigner signer) {
+    public MantaClient(final ConfigContext config,
+                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
@@ -256,10 +253,24 @@ public class MantaClient implements AutoCloseable {
         this.config = config;
         this.home = ConfigContext.deriveHomeDirectoryFromUser(config.getMantaUser());
 
+        final KeyPair keyPair = new KeyPairFactory(config).createKeyPair();
+
+        final Signer.Builder builder = new Signer.Builder(keyPair);
+        if (ObjectUtils.firstNonNull(
+                config.disableNativeSignatures(),
+                DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
+            builder.providerCode("stdlib");
+        }
+        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
         this.signerRef = new WeakReference<>(signer);
 
-        final MantaApacheHttpClientContext connectionContext =
-                new MantaApacheHttpClientContext(connectionFactory);
+        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
+                config,
+                keyPair,
+                signer,
+                connectionFactoryConfigurator);
+
+        final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, config);

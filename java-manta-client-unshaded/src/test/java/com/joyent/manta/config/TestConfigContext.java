@@ -7,7 +7,16 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.http.signature.KeyFingerprinter;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URL;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
 /**
@@ -96,5 +105,31 @@ public class TestConfigContext extends BaseChainedConfigContext {
         }
 
         return testConfig;
+    }
+
+    public static ImmutablePair<KeyPair, ChainedConfigContext> generateKeyPairBackedConfig() {
+        final KeyPair keyPair;
+        try {
+            keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        } catch (final NoSuchAlgorithmException impossible) {
+            throw new Error(impossible); // "RSA" is always provided
+        }
+
+        final String keyContent;
+        try (final StringWriter content = new StringWriter();
+             final JcaPEMWriter writer = new JcaPEMWriter(content)) {
+
+            writer.writeObject(keyPair.getPrivate());
+            writer.flush();
+            keyContent = content.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return new ImmutablePair<>(
+                keyPair,
+                (ChainedConfigContext) new ChainedConfigContext(DEFAULT_CONFIG)
+                        .setMantaKeyId(KeyFingerprinter.md5Fingerprint(keyPair))
+                        .setPrivateKeyContent(keyContent));
     }
 }
