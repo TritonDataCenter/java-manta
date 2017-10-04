@@ -112,6 +112,11 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getTcpSocketTimeout();
 
     /**
+     * @return number of milliseconds to wait for a connection from the pool
+     */
+    Integer getConnectionRequestTimeout();
+
+    /**
      * @return true when we verify the uploaded file's checksum against the
      *         server's checksum (MD5)
      */
@@ -208,6 +213,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
         sb.append(", tcpSocketTimeout=").append(context.getTcpSocketTimeout());
+        sb.append(", connectionRequestTimeout=").append(context.getConnectionRequestTimeout());
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
@@ -255,6 +261,14 @@ public interface ConfigContext extends MantaMBeanable {
 
         if (config.getTimeout() != null && config.getTimeout() < 0) {
             failureMessages.add("Manta timeout must be 0 or greater");
+        }
+
+        if (config.getTcpSocketTimeout() != null && config.getTcpSocketTimeout() < 0) {
+            failureMessages.add("Manta tcp socket timeout must be 0 or greater");
+        }
+
+        if (config.getConnectionRequestTimeout() != null && config.getConnectionRequestTimeout() < 0) {
+            failureMessages.add("Manta connection request timeout must be 0 or greater");
         }
 
         if (config.noAuth() != null && !config.noAuth()) {
@@ -463,6 +477,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
                 return config.getTcpSocketTimeout();
+            case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:
+                return config.getConnectionRequestTimeout();
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();

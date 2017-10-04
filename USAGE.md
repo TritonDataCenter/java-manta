@@ -85,6 +85,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.no_auth                      | MANTA_NO_AUTH                  | false                                |
 | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                |
 | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |
+| manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |
 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |
@@ -131,6 +132,8 @@ only really useful when you are running the library as part of a Manta job.
 When set to true, this disables the use of native code libraries for cryptography.
 * `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
 Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
+* `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
+Time in milliseconds to wait for a connection from the connection pool.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
 When set to true, the client calculates a MD5 checksum of the file being uploaded
 to Manta and then checks it against the result returned by Manta.

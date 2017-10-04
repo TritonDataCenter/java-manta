@@ -6,7 +6,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Added
  - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87).
  - Support for reading content-type and content-md5 header information from 
- directory listings  
+   directory listings
+ - Added [connection request timeout](https://github.com/joyent/java-manta/issues/347)
+   configuration parameter: `manta.connection_request_timeout` / `MANTA_CONNECTION_REQUEST_TIMEOUT`
 ### Fixed
  - Clarify version history of `MantaInputStreamEntity`
  - MPU parts which were missing an ETag in their response were

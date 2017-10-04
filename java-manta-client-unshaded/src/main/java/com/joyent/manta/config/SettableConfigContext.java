@@ -137,6 +137,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setTcpSocketTimeout(Integer tcpSocketTimeout);
 
     /**
+     * Sets the number of milliseconds to wait for a connection from the pool.
+     *
+     * @param connectionRequestTimeout milliseconds to wait for a connection
+     * @return the current instance of {@link T}
+     */
+    T setConnectionRequestTimeout(Integer connectionRequestTimeout);
+
+    /**
      * Sets if we verify the uploaded file's checksum against the server's
      * checksum (MD5).
      *
@@ -294,6 +302,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 config.setClientEncryptionEnabled(MantaUtils.parseBooleanOrNull(value));
+                break;
+            case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:
+                config.setConnectionRequestTimeout(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY:
             case EnvVarConfigContext.MANTA_ENCRYPTION_KEY_ID_ENV_KEY:

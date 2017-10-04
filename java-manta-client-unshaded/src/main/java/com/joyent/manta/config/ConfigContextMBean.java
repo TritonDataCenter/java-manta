@@ -10,6 +10,9 @@ package com.joyent.manta.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.Objects;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -23,9 +26,6 @@ import javax.management.MBeanNotificationInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
-import java.lang.ref.WeakReference;
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Class providing real-time information on the connection pool statistics
@@ -120,6 +120,10 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "Time in milliseconds to wait to see if a TCP socket has timed out",
                         true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY,
+                        Integer.class.getName(),
+                        "Time in milliseconds to wait for a connection from the pool",
+                        true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY,
                         Boolean.class.getName(),
                         "Flag indicating the checksum verification of uploaded files is enabled",
