@@ -129,6 +129,9 @@ public class TestConfigContext extends BaseChainedConfigContext {
         return new ImmutablePair<>(
                 keyPair,
                 (ChainedConfigContext) new ChainedConfigContext(DEFAULT_CONFIG)
+                        // we need to unset the key path in case one exists at ~/.ssh/id_rsa
+                        // see the static initializer in DefaultsConfigContext
+                        .setMantaKeyPath(null)
                         .setMantaKeyId(KeyFingerprinter.md5Fingerprint(keyPair))
                         .setPrivateKeyContent(keyContent));
     }
