@@ -107,7 +107,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
         return testConfig;
     }
 
-    public static ImmutablePair<KeyPair, ChainedConfigContext> generateKeyPairBackedConfig() {
+    public static ImmutablePair<KeyPair, BaseChainedConfigContext> generateKeyPairBackedConfig() {
         final KeyPair keyPair;
         try {
             keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
@@ -126,13 +126,13 @@ public class TestConfigContext extends BaseChainedConfigContext {
             throw new RuntimeException(e);
         }
 
-        return new ImmutablePair<>(
-                keyPair,
-                (ChainedConfigContext) new ChainedConfigContext(DEFAULT_CONFIG)
-                        // we need to unset the key path in case one exists at ~/.ssh/id_rsa
-                        // see the static initializer in DefaultsConfigContext
-                        .setMantaKeyPath(null)
-                        .setMantaKeyId(KeyFingerprinter.md5Fingerprint(keyPair))
-                        .setPrivateKeyContent(keyContent));
+        final BaseChainedConfigContext config = new ChainedConfigContext(DEFAULT_CONFIG)
+                // we need to unset the key path in case one exists at ~/.ssh/id_rsa
+                // see the static initializer in DefaultsConfigContext
+                .setMantaKeyPath(null)
+                .setPrivateKeyContent(keyContent)
+                .setMantaKeyId(KeyFingerprinter.md5Fingerprint(keyPair));
+
+        return new ImmutablePair<>(keyPair, config);
     }
 }

@@ -4,7 +4,6 @@ import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.config.BaseChainedConfigContext;
-import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpRequestInterceptor;
@@ -44,7 +43,7 @@ public class MantaConnectionFactoryTest {
     @BeforeMethod
     public void setUp() throws IOException {
         MockitoAnnotations.initMocks(this);
-        final ImmutablePair<KeyPair, ChainedConfigContext> keypairAndConfig = TestConfigContext.generateKeyPairBackedConfig();
+        final ImmutablePair<KeyPair, BaseChainedConfigContext> keypairAndConfig = TestConfigContext.generateKeyPairBackedConfig();
         final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keypairAndConfig.left).providerCode("stdlib"));
         authContext = new ImmutablePair<>(keypairAndConfig.left, signer);
         config = keypairAndConfig.right
