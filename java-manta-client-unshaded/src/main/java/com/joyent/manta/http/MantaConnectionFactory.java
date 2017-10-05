@@ -126,9 +126,9 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config  configuration of the connection parameters
-     * @param keyPair cryptographic signing key pair used for HTTP signatures
-     * @param signer  Signer configured to use the given keyPair
+     * @param config    configuration of the connection parameters
+     * @param keyPair   cryptographic signing key pair used for HTTP signatures
+     * @param signer    Signer configured to use the given keyPair
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
@@ -143,10 +143,11 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     }
 
     /**
+     * Create a new instance based on a shared {@link HttpClientBuilder} and {@link HttpClientConnectionManager}.
      *
-     * @param config configuration of the connection parameters
-     * @param keyPair cryptographic signing key pair used for HTTP signatures
-     * @param signer Signer configured to use the given keyPair
+     * @param config                        configuration of the connection parameters
+     * @param keyPair                       cryptographic signing key pair used for HTTP signatures
+     * @param signer                        Signer configured to use the given keyPair
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
     public MantaConnectionFactory(final ConfigContext config,

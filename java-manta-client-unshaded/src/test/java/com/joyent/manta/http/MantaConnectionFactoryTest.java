@@ -30,15 +30,17 @@ import static org.mockito.Mockito.verify;
 @Test
 public class MantaConnectionFactoryTest {
 
-    private BaseChainedConfigContext config;
-
-    private ImmutablePair<KeyPair, ThreadLocalSigner> authContext;
-
     @Mock
     private HttpClientConnectionManager manager;
 
     @Mock
     private HttpClientBuilder builder;
+
+    private BaseChainedConfigContext config;
+
+    private ImmutablePair<KeyPair, ThreadLocalSigner> authContext;
+
+    private MantaConnectionFactory connectionFactory;
 
     @BeforeMethod
     public void setUp() throws IOException {
@@ -53,8 +55,14 @@ public class MantaConnectionFactoryTest {
     }
 
     @AfterMethod
-    public void tearDown() {
+    public void tearDown() throws IOException {
         Mockito.validateMockitoUsage();
+
+        if (connectionFactory == null) {
+            return;
+        }
+
+        connectionFactory.close();
     }
 
     /*
@@ -66,7 +74,7 @@ public class MantaConnectionFactoryTest {
      */
 
     public void willShutdownCreatedConnectionManager() throws IOException {
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
         final CloseableHttpClient client = connectionFactory.createConnection();
 
         connectionFactory.close();
@@ -78,16 +86,16 @@ public class MantaConnectionFactoryTest {
     }
 
     public void willSkipConnectionManagerShutdownWhenFactoryClosesAndManagerIsShared() throws IOException {
-        MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
         connectionFactory.close();
         verify(manager, never()).shutdown();
     }
 
     public void willConfigureClientToUseProvidedManager() throws IOException {
-        MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
         final HttpClientConnectionManager configuredManager =
                 (HttpClientConnectionManager) Whitebox.getInternalState(builder, "connManager");
@@ -95,8 +103,9 @@ public class MantaConnectionFactoryTest {
         Assert.assertEquals(manager, configuredManager);
     }
 
-    public void willAttachAuthInterceptorToInternallyConstructedClient() {
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+    @SuppressWarnings("unchecked")
+    public void willAttachAuthInterceptorToInternallyConstructedClient() throws IOException {
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
 
         final HttpClientBuilder internallyCreatedBuilder =
                 (HttpClientBuilder) Whitebox.getInternalState(connectionFactory, "httpClientBuilder");
@@ -113,11 +122,13 @@ public class MantaConnectionFactoryTest {
         }
 
         Assert.assertTrue(foundAuthInterceptor);
+        connectionFactory.close();
     }
 
+    @SuppressWarnings("unchecked")
     public void willAttachAuthInterceptorToProvidedClient() {
-        MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
         final LinkedList<HttpRequestInterceptor> interceptors =
                 (LinkedList<HttpRequestInterceptor>) Whitebox.getInternalState(builder, "requestLast");
@@ -136,7 +147,7 @@ public class MantaConnectionFactoryTest {
     public void willActuallyDisableRetriesOnInternallyConstructedBuilderWhenSetToZero() throws IOException {
         config.setRetries(0);
 
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
 
         final HttpClientBuilder internallyCreatedBuilder =
                 (HttpClientBuilder) Whitebox.getInternalState(connectionFactory, "httpClientBuilder");
@@ -147,8 +158,8 @@ public class MantaConnectionFactoryTest {
     public void willActuallyDisableRetriesOnProvidedBuilderWhenSetToZero() throws IOException {
         config.setRetries(0);
 
-        MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
         Assert.assertTrue((Boolean) Whitebox.getInternalState(builder, "automaticRetriesDisabled"));
     }
@@ -156,7 +167,7 @@ public class MantaConnectionFactoryTest {
     public void willAttachInternalRetryHandlersToInternalBuilder() throws IOException {
         config.setRetries(1);
 
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
 
         final HttpClientBuilder internallyCreatedBuilder =
                 (HttpClientBuilder) Whitebox.getInternalState(connectionFactory, "httpClientBuilder");
@@ -171,8 +182,8 @@ public class MantaConnectionFactoryTest {
     public void willAttachInternalRetryHandlersToProvidedBuilder() throws IOException {
         config.setRetries(1);
 
-        MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
-        MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(manager, builder);
+        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
         final Object retryHandler = Whitebox.getInternalState(builder, "retryHandler");
         final Object serviceUnavailStrategy = Whitebox.getInternalState(builder, "serviceUnavailStrategy");
