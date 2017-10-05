@@ -144,7 +144,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
                            final int partNumber,
                            final InputStream inputStream)
             throws IOException {
-        Validate.notNull("InputStream must not be null");
+        Validate.notNull(inputStream, "InputStream must not be null");
 
         if (inputStream.getClass().equals(FileInputStream.class)) {
             final FileInputStream fin = (FileInputStream)inputStream;
@@ -163,7 +163,7 @@ abstract class AbstractMultipartManager<UPLOAD extends MantaMultipartUpload,
                            final int partNumber,
                            final long contentLength,
                            final InputStream inputStream) throws IOException {
-        Validate.notNull("InputStream must not be null");
+        Validate.notNull(inputStream, "InputStream must not be null");
 
         HttpEntity entity;
 

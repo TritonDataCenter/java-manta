@@ -97,7 +97,7 @@ public class MantaJobBuilder {
      * @return a fluent interface providing job management options
      */
     public Run lookupJob(final UUID jobId) {
-        Validate.notNull("Job id must not be null");
+        Validate.notNull(jobId, "Job id must not be null");
 
         return new MantaJobBuilder.Run(this, jobId);
     }

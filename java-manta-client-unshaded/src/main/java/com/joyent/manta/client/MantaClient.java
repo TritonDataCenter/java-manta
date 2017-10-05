@@ -2009,7 +2009,7 @@ public class MantaClient implements AutoCloseable {
             }
         }
 
-        Validate.notNull("Job returned must not be null");
+        Validate.notNull(job, "Job returned must not be null");
         return job;
     }
 
