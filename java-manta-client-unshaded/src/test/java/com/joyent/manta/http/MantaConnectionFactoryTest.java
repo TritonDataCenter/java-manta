@@ -51,18 +51,20 @@ public class MantaConnectionFactoryTest {
         config = keypairAndConfig.right
                 .setMantaURL("https://localhost")
                 .setMantaUser("user");
-        ;
     }
 
     @AfterMethod
     public void tearDown() throws IOException {
         Mockito.validateMockitoUsage();
 
-        if (connectionFactory == null) {
-            return;
+        if (connectionFactory != null) {
+            connectionFactory.close();
         }
 
-        connectionFactory.close();
+        // clear references to signer
+        connectionFactory = null;   // references builder which has auth interceptor
+        authContext = null;         // directly references signer
+        builder = null;             // might have an auth interceptor
     }
 
     /*

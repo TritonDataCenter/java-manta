@@ -107,6 +107,13 @@ public class TestConfigContext extends BaseChainedConfigContext {
         return testConfig;
     }
 
+    /**
+     * Some test cases need a direct reference to a KeyPair along with it's associated config. Manually calling
+     * KeyPairFactory with a half-baked config can get cumbersome, so let's build a ConfigContext which has
+     * everything ready and supplies the relevant KeyPair.
+     *
+     * @return the generated keypair and a config which uses a serialized version of that keypair
+     */
     public static ImmutablePair<KeyPair, BaseChainedConfigContext> generateKeyPairBackedConfig() {
         final KeyPair keyPair;
         try {
