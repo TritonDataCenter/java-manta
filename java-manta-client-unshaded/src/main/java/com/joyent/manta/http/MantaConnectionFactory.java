@@ -131,13 +131,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer) {
-        Validate.notNull(config, "Configuration context must not be null");
-
-        this.config = config;
-        this.connectionManager = buildConnectionManager();
-        this.httpClientBuilder = createStandardBuilder();
-        this.connectionManagerShared = false;
-        configureHttpClientBuilderDefaults(keyPair, signer);
+        this(config, keyPair, signer, null);
     }
 
     /**
@@ -156,9 +150,17 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         Validate.notNull(connectionFactoryConfigurator, "Connection factory configuration must not be null");
 
         this.config = config;
-        this.connectionManager = connectionFactoryConfigurator.getConnectionManager();
-        this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
-        this.connectionManagerShared = true;
+
+        if (connectionFactoryConfigurator != null) {
+            this.connectionManager = connectionFactoryConfigurator.getConnectionManager();
+            this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
+            this.connectionManagerShared = true;
+        } else {
+            this.connectionManager = buildConnectionManager();
+            this.httpClientBuilder = createStandardBuilder();
+            this.connectionManagerShared = false;
+        }
+
         configureHttpClientBuilderDefaults(keyPair, signer);
     }
 

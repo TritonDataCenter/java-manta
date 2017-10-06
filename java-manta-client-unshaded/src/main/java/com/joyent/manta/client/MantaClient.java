@@ -39,7 +39,6 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -199,41 +198,9 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values.
      */
     public MantaClient(final ConfigContext config) {
-        dumpConfig(config);
-
-        ConfigContext.validate(config);
-
-        this.config = config;
-        this.url = config.getMantaURL();
-        this.home = ConfigContext.deriveHomeDirectoryFromUser(config.getMantaUser());
-
-        final KeyPair keyPair = new KeyPairFactory(config).createKeyPair();
-
-        final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (ObjectUtils.firstNonNull(
-                config.disableNativeSignatures(),
-                DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
-            builder.providerCode("stdlib");
-        }
-        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
-        this.signerRef = new WeakReference<>(signer);
-
-        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
-        final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
-
-        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-            this.httpHelper = new EncryptionHttpHelper(connectionContext, config);
-        } else {
-            this.httpHelper = new StandardHttpHelper(connectionContext, config);
-        }
-
-        this.uriSigner = new UriSigner(this.config, keyPair, signer);
-
-        this.beanSupervisor = new MantaMBeanSupervisor();
-
-        beanSupervisor.expose(this.config);
-        beanSupervisor.expose(connectionFactory);
+        this(config, null);
     }
+
 
     /**
      * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
@@ -251,13 +218,12 @@ public class MantaClient implements AutoCloseable {
         this.url = config.getMantaURL();
         this.config = config;
         this.home = ConfigContext.deriveHomeDirectoryFromUser(config.getMantaUser());
+        this.beanSupervisor = new MantaMBeanSupervisor();
 
         final KeyPair keyPair = new KeyPairFactory(config).createKeyPair();
 
         final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (ObjectUtils.firstNonNull(
-                config.disableNativeSignatures(),
-                DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
+        if (BooleanUtils.isTrue(config.disableNativeSignatures())) {
             builder.providerCode("stdlib");
         }
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
@@ -274,13 +240,20 @@ public class MantaClient implements AutoCloseable {
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, config);
         } else {
+
             this.httpHelper = new StandardHttpHelper(connectionContext, config);
         }
 
         this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
-        this.beanSupervisor = new MantaMBeanSupervisor();
+        beanSupervisor.expose(this.config);
+        beanSupervisor.expose(connectionFactory);
     }
+
+    /* ======================================================================
+     * Constructor Helpers
+     * ====================================================================== */
+
 
     /**
      * Dumps the configuration that is used to load a {@link MantaClient} if
@@ -303,6 +276,10 @@ public class MantaClient implements AutoCloseable {
             System.out.println("========================================");
         }
     }
+
+    /* ======================================================================
+     * Object Access
+     * ====================================================================== */
 
     /**
      * Deletes an object from Manta.
@@ -2422,6 +2399,11 @@ public class MantaClient implements AutoCloseable {
         danglingStreams.add(stream);
         return stream;
     }
+
+
+    /* ======================================================================
+     * Lifecyle Methods
+     * ====================================================================== */
 
     /**
      * Flag indicating if the client is closed or is in the process of being
