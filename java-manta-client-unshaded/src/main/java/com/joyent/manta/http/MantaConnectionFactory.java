@@ -58,7 +58,6 @@ import java.net.URI;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import javax.management.DynamicMBean;
 
@@ -88,11 +87,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Default HTTP headers to send to all requests to Manta.
      */
-    public static final Collection<? extends Header> HEADERS =
-            Collections.unmodifiableList(
-                Arrays.asList(
-                        new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
-                        new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")));
+    private static final Collection<? extends Header> HEADERS = Arrays.asList(
+            new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
+            new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
+    );
 
     /**
      * User Agent string identifying Manta Client and Java version.
