@@ -52,7 +52,6 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
      * method.
      *
      * {@inheritDoc}
-     *
      */
     @Override
     protected HttpResponse doSendRequest(final HttpRequest request,
