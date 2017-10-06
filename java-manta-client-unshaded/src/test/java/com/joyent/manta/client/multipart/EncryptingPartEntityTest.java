@@ -15,8 +15,9 @@ import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.http.entity.ExposedStringEntity;
 import org.apache.commons.io.input.BrokenInputStream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.text.CharacterPredicates;
+import org.apache.commons.text.RandomStringGenerator;
 import org.apache.http.entity.InputStreamEntity;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -43,6 +44,11 @@ public class EncryptingPartEntityTest {
                 }
             };
 
+    private static final RandomStringGenerator STRING_GENERATOR =
+            new RandomStringGenerator.Builder()
+                    .filteredBy(CharacterPredicates.LETTERS)
+                    .build();
+
     @BeforeMethod
     public void setup() throws Exception {
         final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
@@ -59,7 +65,7 @@ public class EncryptingPartEntityTest {
 
     public void doesNotCloseSuppliedOutputStreamWhenFailureOccurs() throws Exception {
         final ExposedStringEntity contentEntity = new ExposedStringEntity(
-                RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500)),
+                STRING_GENERATOR.generate(RandomUtils.nextInt(500, 1500)),
                 StandardCharsets.UTF_8);
 
         final EncryptingPartEntity encryptingPartEntity = new EncryptingPartEntity(

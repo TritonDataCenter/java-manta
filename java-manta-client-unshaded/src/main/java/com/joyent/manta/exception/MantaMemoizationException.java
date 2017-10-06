@@ -11,6 +11,9 @@ package com.joyent.manta.exception;
  * Exception class for errors related to encryption state memoization.
  */
 public class MantaMemoizationException extends MantaEncryptionException {
+
+    private static final long serialVersionUID = 5416151858078164147L;
+
     /**
      * @param message The error message.
      */

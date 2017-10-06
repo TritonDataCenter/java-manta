@@ -26,6 +26,8 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,8 +48,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -752,7 +752,7 @@ public class MantaEncryptedObjectInputStreamTest {
             }
 
             final int skipSize = 15;
-            totalRead += in.skip(skipSize);
+            totalRead += Math.toIntExact(in.skip(skipSize));
 
             if ((lastRead = in.read()) == -1) {
                 return -1;
@@ -760,7 +760,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 target[totalRead++] = (byte)lastRead;
             }
 
-            totalRead += in.skip(skipSize);
+            totalRead += Math.toIntExact(in.skip(skipSize));
 
             return totalRead;
         }
@@ -966,7 +966,7 @@ public class MantaEncryptedObjectInputStreamTest {
          * size of the plaintext. */
         ByteRangeConversion ranges = cipherDetails.translateByteRange(startPosInclusive, endPosInclusive);
         long ciphertextStart = ranges.getCiphertextStartPositionInclusive();
-        long plaintextLength = (endPosInclusive - startPosInclusive) + 1;
+        long plaintextLength = ((long)(endPosInclusive - startPosInclusive)) + 1L;
 
         /* Here, we simulate being passed only a subset of the total bytes of
          * a file - just like how the output of a HTTP range request would be

@@ -16,6 +16,9 @@ package com.joyent.manta.exception;
  * @since 3.1.7
  */
 public class MantaNoHttpResponseException extends MantaIOException {
+
+    private static final long serialVersionUID = -8445041694257893001L;
+
     /**
      * Constructs an instance with {@code null}
      * as its error detail message.

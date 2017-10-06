@@ -19,7 +19,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <dependency.jmh.version>1.17.5</dependency.jmh.version>
+        <dependency.jmh.version>1.19</dependency.jmh.version>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 
@@ -49,6 +49,17 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${dependency.commons-io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${dependency.commons-text.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

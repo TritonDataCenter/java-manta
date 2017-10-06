@@ -12,6 +12,8 @@ package com.joyent.manta.exception;
  */
 public class MantaReflectionException extends MantaException {
 
+    private static final long serialVersionUID = 8476251230398493965L;
+
     /**
      * @param message The exception message.
      */
