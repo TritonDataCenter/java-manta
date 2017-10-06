@@ -310,7 +310,10 @@ public class MantaObjectOutputStream extends OutputStream {
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
-            MantaIOException mioe = new MantaIOException(e);
+            /* We wrap the cause because the stack trace for the
+             * ExecutionException offers nothing useful and is just a wrapper
+             * for exceptions that are thrown within a Future. */
+            MantaIOException mioe = new MantaIOException(e.getCause());
 
             if (this.objectResponse != null) {
                 final String requestId = this.objectResponse.getHeaderAsString(

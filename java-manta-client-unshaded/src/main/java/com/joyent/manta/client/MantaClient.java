@@ -22,6 +22,7 @@ import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaJobException;
+import com.joyent.manta.exception.MantaNoHttpResponseException;
 import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.http.ContentTypeLookup;
 import com.joyent.manta.http.EncryptionHttpHelper;
@@ -1756,7 +1757,7 @@ public class MantaClient implements AutoCloseable {
             try {
                 return httpHelper.executeAndCloseRequest(post,
                         jobIdFunction, "POST   {} response [{}] {} ", path);
-            } catch (NoHttpResponseException e) {
+            } catch (NoHttpResponseException | MantaNoHttpResponseException e) {
                 lastException = e;
                 LOG.warn("Error posting createJob. Retrying.", e);
             }
