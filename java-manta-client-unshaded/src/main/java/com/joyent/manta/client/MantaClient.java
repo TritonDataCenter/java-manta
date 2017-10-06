@@ -135,11 +135,14 @@ public class MantaClient implements AutoCloseable {
     /**
      * Flag indicating if the client instance has been closed.
      */
-    protected volatile boolean closed = false;
+    private volatile boolean closed = false;
 
     /**
      * Library configuration context reference.
+     *
+     * PERHAPS: use a package-private setter instead of protected?
      */
+    @SuppressWarnings("VisibilityModifier")
     protected ConfigContext config;
 
     /**

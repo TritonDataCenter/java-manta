@@ -17,12 +17,17 @@ import com.joyent.manta.exception.MantaException;
  */
 public class MantaLazyConfigurationException extends MantaException {
 
-    /** {@inheritDoc} */
+    /**
+     * @param cause The exception cause.
+     */
     public MantaLazyConfigurationException(final Throwable cause) {
         super(cause);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param message The exception message.
+     * @param cause The exception cause.
+     */
     public MantaLazyConfigurationException(final String message, final Exception cause) {
         super(message, cause);
     }

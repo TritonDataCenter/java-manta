@@ -24,6 +24,9 @@ import java.util.Objects;
  */
 public class AuthenticationConfigurator {
 
+    /**
+     * Private object for locking.
+     */
     private final Object configureLock = new Object();
 
     /**
@@ -50,9 +53,6 @@ public class AuthenticationConfigurator {
      * Reference to signing object built from {@link #keyPair}.
      */
     private ThreadLocalSigner signer;
-
-    public AuthenticationConfigurator() {
-    }
 
     /**
      * Build an AuthenticationConfigurator from an existing {@link ConfigContext}.
