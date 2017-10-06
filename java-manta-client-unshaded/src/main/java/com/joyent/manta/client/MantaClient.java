@@ -299,6 +299,9 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
+    String getUrl() {
+        return this.url;
+    }
 
     String getHome() {
         return home;
@@ -685,10 +688,6 @@ public class MantaClient implements AutoCloseable {
         final URI request = URI.create(fullPath);
 
         return getUriSigner().signURI(request, method, expiresEpochSeconds);
-    }
-
-    String getUrl() {
-        return this.url;
     }
 
     /**

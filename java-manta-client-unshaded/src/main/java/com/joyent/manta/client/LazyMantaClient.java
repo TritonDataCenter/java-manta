@@ -163,6 +163,23 @@ public final class LazyMantaClient extends MantaClient {
         return lazyHttpHelper;
     }
 
+    @Override
+    UriSigner getUriSigner() {
+        if (reconfigure.contains(MantaClientComponent.SIGN)) {
+            lazyUriSigner = null;
+            auth.configure(config);
+            reconfigure.remove(MantaClientComponent.SIGN);
+        }
+
+        if (lazyUriSigner == null) {
+            lazyUriSigner = new UriSigner(config, auth.getKeyPair(), auth.getSigner());
+        }
+
+        return lazyUriSigner;
+    }
+
+    // INTERNAL STATE MANAGEMENT
+
     /**
      * Clean up the existing {@link HttpHelper} so a new one can be created. Sets the helper reference
      * to {@code null} so that the {@link AuthenticationConfigurator}'s
@@ -201,20 +218,5 @@ public final class LazyMantaClient extends MantaClient {
         }
 
         return new StandardHttpHelper(connectionContext, config);
-    }
-
-    @Override
-    UriSigner getUriSigner() {
-        if (reconfigure.contains(MantaClientComponent.SIGN)) {
-            lazyUriSigner = null;
-            auth.configure(config);
-            reconfigure.remove(MantaClientComponent.SIGN);
-        }
-
-        if (lazyUriSigner == null) {
-            lazyUriSigner = new UriSigner(config, auth.getKeyPair(), auth.getSigner());
-        }
-
-        return lazyUriSigner;
     }
 }
