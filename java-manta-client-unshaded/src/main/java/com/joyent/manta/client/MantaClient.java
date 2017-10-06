@@ -218,7 +218,6 @@ public class MantaClient implements AutoCloseable {
         this(config, null);
     }
 
-
     /**
      * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
      * degree of customization at the cost of more involvement from the consumer.
@@ -252,6 +251,8 @@ public class MantaClient implements AutoCloseable {
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
         this.signerRef = new WeakReference<>(signer);
 
+        this.uriSigner = new UriSigner(this.config, keyPair, signer);
+
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,
                 keyPair,
@@ -266,7 +267,6 @@ public class MantaClient implements AutoCloseable {
             this.httpHelper = new StandardHttpHelper(connectionContext, config);
         }
 
-        this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
         beanSupervisor.expose(this.config);
         beanSupervisor.expose(connectionFactory);
