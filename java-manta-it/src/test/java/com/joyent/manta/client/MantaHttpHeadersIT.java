@@ -19,6 +19,8 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -57,12 +59,12 @@ public class MantaHttpHeadersIT {
             "secondary");
 
     @BeforeClass
-    public void beforeClass() throws IOException {
-
+    @Parameters({"usingEncryption", "lazy"})
+    public void beforeClass(@Optional Boolean lazy) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
 
-        mantaClient = new MantaClient(config);
+        mantaClient = MantaClientFactory.build(config, lazy);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }

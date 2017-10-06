@@ -31,7 +31,7 @@ public class UriSigner {
     /**
      * Manta configuration object.
      */
-    private final ConfigContext config;
+    private final String user;
 
     /**
      * HTTP signature generator instance.
@@ -51,7 +51,7 @@ public class UriSigner {
      * @param signer Signer configured to work with the the given keyPair
      */
     public UriSigner(final ConfigContext config, final KeyPair keyPair, final ThreadLocalSigner signer) {
-        this.config = config;
+        this.user = config.getMantaUser();
         this.keyPair = keyPair;
         this.signer = signer;
     }
@@ -80,7 +80,7 @@ public class UriSigner {
         final String charset = "UTF-8";
         final String algorithm = signer.get().getHttpHeaderAlgorithm().toUpperCase();
         final String keyId = String.format("/%s/keys/%s",
-                                           config.getMantaUser(),
+                                           user,
                                            KeyFingerprinter.md5Fingerprint(keyPair));
 
         final String keyIdEncoded = URLEncoder.encode(keyId, charset);
@@ -97,8 +97,7 @@ public class UriSigner {
         StringBuilder request = new StringBuilder();
         final byte[] sigBytes = sigText.toString().getBytes(
                 StandardCharsets.UTF_8);
-        final byte[] signed = signer.get().sign(config.getMantaUser(),
-                                                keyPair, sigBytes);
+        final byte[] signed = signer.get().sign(user, keyPair, sigBytes);
         final String encoded = new String(Base64.encode(signed), charset);
         final String urlEncoded = URLEncoder.encode(encoded, charset);
 

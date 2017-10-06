@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;

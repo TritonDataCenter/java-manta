@@ -43,13 +43,11 @@ public class MantaClientErrorIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-
+    @Parameters({"usingEncryption", "lazy"})
+    public void beforeClass(@Optional Boolean usingEncryption, @Optional Boolean lazy) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(usingEncryption);
-
-        mantaClient = new MantaClient(config);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        mantaClient = MantaClientFactory.build(config, lazy);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
