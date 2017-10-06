@@ -12,6 +12,7 @@ import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.config.TestConfigContext;
+import com.joyent.manta.exception.MantaNoHttpResponseException;
 import com.joyent.manta.http.MantaConnectionFactory;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -125,7 +126,7 @@ public class MantaClientConnectionFailuresIT {
         boolean thrown = false;
         try {
             mantaClient.head(testPathPrefix);
-        } catch (NoHttpResponseException e) {
+        } catch (NoHttpResponseException | MantaNoHttpResponseException e) {
             thrown = true;
         } finally {
             mantaClient.closeWithWarning();

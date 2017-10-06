@@ -48,6 +48,7 @@ import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.DynamicMBean;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -58,7 +59,6 @@ import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import javax.management.DynamicMBean;
 
 /**
  * Factory class that creates instances of
@@ -271,6 +271,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManagerShared(false)
+                .setRequestExecutor(new MantaHttpRequestExecutor())
                 .setConnectionBackoffStrategy(new DefaultBackoffStrategy());
 
         if (config.getRetries() > 0) {
