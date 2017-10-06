@@ -147,8 +147,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                                   final ThreadLocalSigner signer,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
         Validate.notNull(config, "Configuration context must not be null");
-        Validate.notNull(connectionFactoryConfigurator, "Connection factory configuration must not be null");
-
         this.config = config;
 
         if (connectionFactoryConfigurator != null) {
