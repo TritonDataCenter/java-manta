@@ -19,6 +19,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    leave the default Apache HttpClient [retry behavior](https://hc.apache.org/httpcomponents-client-4.5.x/tutorial/html/fundamentals.html#d5e316).
  - [Content type is set for file object in directory listing when it isn't available](https://github.com/joyent/java-manta/issues/341)
  - [Fixes validation guard clauses that are not validating anything](https://github.com/joyent/java-manta/issues/346)
+ - [MDC logging of the load balancer address now logs the proper address](https://github.com/joyent/java-manta/issues/266)
 ### Changed
  - Validation of paths passed to `MantaClient` is now more consistently strict.
    More useful errors should be thrown sooner for invalid paths, without any
