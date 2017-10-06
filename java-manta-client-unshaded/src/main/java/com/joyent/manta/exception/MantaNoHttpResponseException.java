@@ -36,15 +36,16 @@ public class MantaNoHttpResponseException extends MantaIOException {
     /**
      * Constructs an instance with the specified detail message
      * and cause.
-     * <p>
-     * <p> Note that the detail message associated with {@code cause} is
+     *
+     * <p>Note that the detail message associated with {@code cause} is
      * <i>not</i> automatically incorporated into this exception's detail
-     * message.
+     * message.</p>
      *
      * @param message The detail message (which is saved for later retrieval
      *                by the {@link #getMessage()} method)
-     * @param cause   The cause (which is saved for later retrieval by the
-     *                {@link #getCause()} method).  (A null value is permitted,
+     * @param cause The cause (which is saved for later retrieval by the
+     *              {@link #getCause()} method).  (A null value is permitted,
+     *              and indicates that the cause is nonexistent or unknown.)
      */
     public MantaNoHttpResponseException(final String message, final Throwable cause) {
         super(message, cause);
