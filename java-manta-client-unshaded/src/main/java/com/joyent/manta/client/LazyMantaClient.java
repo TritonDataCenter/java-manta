@@ -12,21 +12,33 @@ import org.apache.commons.lang3.BooleanUtils;
 
 import java.util.EnumSet;
 
+/**
+ * A lazily-initializing MantaClient. Users are expected to pass a
+ * {@link com.joyent.manta.config.SettableConfigContext} and notify the client of changes by
+ * calling {@link #reconfigure()}. Relevant derived components will check whether they need to rebuild
+ * themselves.
+ *
+ * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @since 3.1.7
+ */
 public class LazyMantaClient extends MantaClient {
-
-    private final Object configureLock = new Object();
 
     private final AuthenticationConfigurator auth;
 
     private final MantaConnectionFactoryConfigurator connectionConfig;
 
+    /**
+     * MBean supervisor.
+     */
+    private final MantaMBeanSupervisor lazyBeanSupervisor;
+
     private enum  MantaClientComponent {
         AUTH,
         HTTP,
-        SIGNING,
+        SIGN,
     }
 
-    private volatile EnumSet<MantaClientComponent> reconfigureRequired;
+    private volatile EnumSet<MantaClientComponent> reconfigure;
 
     /**
      * The instance of the http helper class used to simplify creating requests.
@@ -38,11 +50,6 @@ public class LazyMantaClient extends MantaClient {
      */
     private UriSigner lazyUriSigner;
 
-    /**
-     * MBean supervisor.
-     */
-    private MantaMBeanSupervisor lazyBeanSupervisor;
-
     public LazyMantaClient(final ConfigContext config) {
         this(config, null);
     }
@@ -53,19 +60,29 @@ public class LazyMantaClient extends MantaClient {
         this.auth = new AuthenticationConfigurator();
         this.connectionConfig = connectionConfig;
         this.lazyBeanSupervisor = new MantaMBeanSupervisor();
-        this.reconfigureRequired = EnumSet.allOf(MantaClientComponent.class);
+        this.reconfigure = EnumSet.allOf(MantaClientComponent.class);
     }
 
-
+    /**
+     * Tell the client it needs to start rebuilding components
+     *
+     * @throws Exception
+     */
     public void reconfigure() throws Exception {
-        reconfigureRequired = EnumSet.allOf(MantaClientComponent.class);
+        reconfigure = EnumSet.allOf(MantaClientComponent.class);
         lazyBeanSupervisor.reset();
     }
 
+    @Override
+    String getUrl() {
+        return config.getMantaURL();
+    }
+
+    @Override
     String getHome() {
-        if (!reconfigureRequired.isEmpty() && reconfigureRequired.contains(MantaClientComponent.AUTH)) {
+        if (reconfigure.contains(MantaClientComponent.AUTH)) {
             auth.configure(config);
-            reconfigureRequired.remove(MantaClientComponent.AUTH);
+            reconfigure.remove(MantaClientComponent.AUTH);
         }
 
         return auth.getHome();
@@ -73,10 +90,12 @@ public class LazyMantaClient extends MantaClient {
 
     @Override
     HttpHelper getHttpHelper() {
-        if (!reconfigureRequired.isEmpty() && reconfigureRequired.contains(MantaClientComponent.HTTP)) {
+        if (reconfigure.contains(MantaClientComponent.AUTH)
+                || reconfigure.contains(MantaClientComponent.HTTP)) {
             clearHttpHelper();
             auth.configure(config);
-            reconfigureRequired.remove(MantaClientComponent.HTTP);
+            reconfigure.remove(MantaClientComponent.AUTH);
+            reconfigure.remove(MantaClientComponent.HTTP);
         }
 
         if (lazyHttpHelper == null) {
@@ -116,10 +135,10 @@ public class LazyMantaClient extends MantaClient {
 
     @Override
     UriSigner getUriSigner() {
-        if (!reconfigureRequired.isEmpty() && reconfigureRequired.contains(MantaClientComponent.AUTH)) {
+        if (reconfigure.contains(MantaClientComponent.SIGN)) {
             lazyUriSigner = null;
             auth.configure(config);
-            reconfigureRequired.remove(MantaClientComponent.AUTH);
+            reconfigure.remove(MantaClientComponent.SIGN);
         }
 
         if (lazyUriSigner == null) {
