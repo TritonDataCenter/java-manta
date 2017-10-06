@@ -194,6 +194,19 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
+     * Private constructor for lazy client.
+     */
+    MantaClient() {
+        url = "";
+        httpHelper = null;
+        home = "";
+        config = null;
+        signerRef = null;
+        uriSigner = null;
+        beanSupervisor = null;
+    }
+
+    /**
      * Creates a new instance of a Manta client.
      *
      * @param config The configuration context that provides all of the configuration values.
@@ -562,7 +575,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
-        return new MantaSeekableByteChannel(path, position, httpHelper);
+        return new MantaSeekableByteChannel(path, position, getHttpHelper());
     }
 
     /**
@@ -581,7 +594,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
-        return new MantaSeekableByteChannel(path, httpHelper);
+        return new MantaSeekableByteChannel(path, getHttpHelper());
     }
 
     /**
@@ -650,10 +663,14 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         Validate.notBlank(path, "Path must be not be blank");
 
-        final String fullPath = String.format("%s%s", this.url, formatPath(path));
+        final String fullPath = String.format("%s%s", getUrl(), formatPath(path));
         final URI request = URI.create(fullPath);
 
         return uriSigner.signURI(request, method, expiresEpochSeconds);
+    }
+
+    private String getUrl() {
+        return this.url;
     }
 
     /**
@@ -692,7 +709,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaDirectoryListingIterator streamingIterator(final String path, final int pagingSize) {
         MantaDirectoryListingIterator itr =
-            new MantaDirectoryListingIterator(this.url, path, httpHelper, pagingSize);
+            new MantaDirectoryListingIterator(getUrl(), path, getHttpHelper(), pagingSize);
         danglingStreams.add(itr);
         return itr;
     }
@@ -1123,7 +1140,7 @@ public class MantaClient implements AutoCloseable {
                 path, ContentType.APPLICATION_OCTET_STREAM);
 
         MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
-                this.httpHelper, headers, metadata, contentType);
+                getHttpHelper(), headers, metadata, contentType);
 
         danglingStreams.add(stream);
 
@@ -2123,8 +2140,8 @@ public class MantaClient implements AutoCloseable {
     public Stream<UUID> getAllJobIds() {
         final String path = String.format("%s/jobs", home);
 
-        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(this.url,
-                path, httpHelper, MAX_RESULTS);
+        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(getUrl(),
+                path, getHttpHelper(), MAX_RESULTS);
 
         danglingStreams.add(itr);
 

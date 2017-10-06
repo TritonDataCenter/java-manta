@@ -23,9 +23,13 @@ import java.io.File;
 @Test
 public class MantaClientValidationTest {
 
-    private MantaClient client;
+    protected MantaClient client;
 
-    private MantaClient makeTestClient () {
+    protected MantaClient buildClient(final ConfigContext config) {
+        return new MantaClient(config);
+    }
+
+    protected MantaClient makeTestClient() {
         final ConfigContext overwrite = new StandardConfigContext()
                 .setMantaUser("phantomtest")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
@@ -34,7 +38,7 @@ public class MantaClientValidationTest {
 
         try {
             System.setProperty("manta.dontValidateConfig", "true");
-            return new MantaClient(config);
+            return buildClient(config);
         } finally {
             System.setProperty("manta.dontValidateConfig", "false");
         }

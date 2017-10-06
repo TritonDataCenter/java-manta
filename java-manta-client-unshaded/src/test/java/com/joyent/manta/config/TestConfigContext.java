@@ -8,6 +8,7 @@
 package com.joyent.manta.config;
 
 import com.joyent.http.signature.KeyFingerprinter;
+import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 
@@ -27,6 +28,15 @@ import java.util.Properties;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class TestConfigContext extends BaseChainedConfigContext {
+
+    public TestConfigContext() {
+        super(new StandardConfigContext()
+                .setMantaURL("http://localhost")
+                .setMantaUser("username")
+                .setMantaKeyId(UnitTestConstants.FINGERPRINT)
+                .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY));
+    }
+
     /**
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
