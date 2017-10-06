@@ -199,7 +199,6 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values.
      */
     public MantaClient(final ConfigContext config) {
-
         dumpConfig(config);
 
         ConfigContext.validate(config);
@@ -237,8 +236,8 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a larger
-     * degree of customization at the cost of
+     * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
+     * degree of customization at the cost of more involvement from the consumer.
      *
      * @param config The configuration context that provides all of the configuration values
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory
