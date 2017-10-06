@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
@@ -22,13 +23,9 @@ import java.io.File;
 @Test
 public class MantaClientValidationTest {
 
-    protected MantaClient client;
+    private MantaClient client;
 
-    protected MantaClient buildClient(final ConfigContext config) {
-        return new MantaClient(config);
-    }
-
-    protected MantaClient makeTestClient() {
+    private MantaClient makeTestClient () {
         final ConfigContext overwrite = new StandardConfigContext()
                 .setMantaUser("phantomtest")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
@@ -37,7 +34,7 @@ public class MantaClientValidationTest {
 
         try {
             System.setProperty("manta.dontValidateConfig", "true");
-            return buildClient(config);
+            return new MantaClient(config);
         } finally {
             System.setProperty("manta.dontValidateConfig", "false");
         }
