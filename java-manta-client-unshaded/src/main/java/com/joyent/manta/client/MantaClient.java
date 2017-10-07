@@ -241,12 +241,7 @@ public class MantaClient implements AutoCloseable {
 
         this.beanSupervisor = new MantaMBeanSupervisor();
 
-        /* We choose the small of the maximum number of connections minus two or
-         * the number of available processors as the size of our fork join pool
-         * for find() parallelism. */
-        final int parallelism = Math.min(config.getMaximumConnections() - 2,
-                Runtime.getRuntime().availableProcessors());
-        this.findForkJoinPool = new ForkJoinPool(parallelism);
+        this.findForkJoinPool = FindForkJoinPoolFactory.getInstance(config);
 
         beanSupervisor.expose(this.config);
         beanSupervisor.expose(connectionFactory);
@@ -288,12 +283,7 @@ public class MantaClient implements AutoCloseable {
 
         this.beanSupervisor = new MantaMBeanSupervisor();
 
-        /* We choose the small of the maximum number of connections minus two or
-         * the number of available processors as the size of our fork join pool
-         * for find() parallelism. */
-        final int parallelism = Math.min(config.getMaximumConnections() - 2,
-                Runtime.getRuntime().availableProcessors());
-        this.findForkJoinPool = new ForkJoinPool(parallelism);
+        this.findForkJoinPool = FindForkJoinPoolFactory.getInstance(config);
     }
 
     /**
