@@ -9,6 +9,11 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    directory listings
  - Added [connection request timeout](https://github.com/joyent/java-manta/issues/347)
    configuration parameter: `manta.connection_request_timeout` / `MANTA_CONNECTION_REQUEST_TIMEOUT`
+ - `MantaClient` will now accept an externally-created `HttpClientBuilder` and `HttpClientConnectionManager` in order to
+   allow for customization now available through standard configuration parameters. Users are expected to provide a
+   `MantaConnectionFactoryConfigurator` containing their custom instances to the
+   `MantaClient(ConfigContext, MantaConnectionFactoryConfigurator)` constructor. Users are recommended to continue
+   relying on the `ConfigContext`-only constructor.
 ### Fixed
  - Clarify version history of `MantaInputStreamEntity`
  - MPU parts which were missing an ETag in their response were

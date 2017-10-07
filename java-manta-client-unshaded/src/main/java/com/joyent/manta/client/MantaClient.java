@@ -207,6 +207,12 @@ public class MantaClient implements AutoCloseable {
      * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
      * degree of customization at the cost of more involvement from the consumer.
      *
+     * Users opting into advanced configuration (i.e. not passing {@code null} as the second parameter)
+     * should be comfortable with the internals of {@link CloseableHttpClient} and accept that we can only make a
+     * best effort to support all possible use-cases. For example, uses may pass in a
+     * {@link org.apache.http.impl.conn.BasicHttpClientConnectionManager} and effectively make the client
+     * single-threaded by eliminating the connection pool. Bug or feature? You decide!
+     *
      * @param config The configuration context that provides all of the configuration values
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory
      */
