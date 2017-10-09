@@ -401,12 +401,12 @@ public class MantaClient implements AutoCloseable {
                             break;
                         }
 
-                        /* If we get a directory not empty error we sleep exponentially
-                         * more per each retry in the hopes that the subdirectory
+                        /* If we get a directory not empty error we sleep
+                         * every retry in the hopes that the subdirectory
                          * objects have been deleted by another process. */
                         if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
                             try {
-                                Thread.sleep(Math.min(1000, 10 ^ i));
+                                Thread.sleep(config.getTcpSocketTimeout());
                             } catch (InterruptedException ie) {
                                 Thread.currentThread().interrupt();
                                 break;
