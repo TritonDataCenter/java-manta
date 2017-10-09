@@ -54,6 +54,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
@@ -361,6 +362,27 @@ public class MantaClient implements AutoCloseable {
                             if (!e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
                                 throw new UncheckedIOException(e);
                             }
+                        /* This exception can be thrown if the parallelism value
+                         * isn't tuned for the findForkJoinPool in relation to
+                         * the amount of bandwidth available. Essentially, the
+                         * processing thread is waiting too long for a new
+                         * connection from the pool. If this is thrown too often,
+                         * the maximum number of connections can be increased,
+                         * the ConnectionRequestTimeout can be increased, or
+                         * the fork join pool parallelism value can be
+                         * decreased.
+                         * Below we cope with this problem, by skipping the
+                         * deletion of the object and letting it
+                         * get deleted later in the loop when there is less
+                         * contention on the connection pool.
+                         */
+                        } catch (ConnectionPoolTimeoutException e ) {
+                            if (LOG.isDebugEnabled()) {
+                                String msg = e.getMessage()
+                                        + " for deleting object {}";
+                                LOG.debug(msg, obj.getPath());
+                                return obj;
+                            }
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -405,13 +427,6 @@ public class MantaClient implements AutoCloseable {
                          * every retry in the hopes that the subdirectory
                          * objects have been deleted by another process. */
                         if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
-                            try {
-                                Thread.sleep(config.getTcpSocketTimeout());
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                                break;
-                            }
-
                             // We loop and try it again
                             continue;
                         }
