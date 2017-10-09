@@ -335,15 +335,18 @@ public class MantaClient implements AutoCloseable {
         LOG.debug("DELETE {} [recursive]", path);
 
         /* We repetitively run the find() -> delete() stream operation and check
-         * the diretory targeted for deletion's result count because we have to
-         * deal with unpredictable directory contents changes and occasional
+         * the diretory targeted for deletion by attempting to delete it this
+         * deals with unpredictable directory contents changes and occasional
          * delays in Manta where it will return from a file delete operation,
          * but the parent directory still can't be deleted because the metadata
          * for the file object is still in such a state that the parent
          * directory is not marked as empty.
          */
-        long objectsInCurrentPath = 1;
-        while (objectsInCurrentPath > 0) {
+        int loops = 0;
+
+        while (true) {
+            loops++;
+
             /* Initially, we delete only the file objects returned from the
              * stream because we don't care what order they are in. */
             Stream<MantaObject> toDelete = find(path)
@@ -362,24 +365,34 @@ public class MantaClient implements AutoCloseable {
                             throw new UncheckedIOException(e);
                         }
 
+                        obj.getHttpHeaders().put("deleted", true);
+
                         return obj;
                     })
-                    /* We filter to only the directories because in theory,
-                     * there should be no files left. */
-                    .filter(MantaObject::isDirectory)
-                    /* We then sort the directory with the deepest directories
-                     * in the filesystem hierarchy first, so that we can delete
-                     * subdirectories before parent directories.*/
+                    /* We then sort the directories (and remaining files) with
+                     * the deepest paths in the filesystem hierarchy first, so
+                     * that we can delete subdirectories and files before
+                     * the parent directories.*/
                     .sorted(MantaObjectDepthComparator.INSTANCE);
-            /* We go through every directory and attempt to delete it even though
-             * that operation may not be immediately successful. */
+
+            /* We go through every remaining directory and file attempt to
+             * delete it even though that operation may not be immediately
+             * successful. */
             toDelete.forEach(obj -> {
                 for (int i = 0; i < config.getRetries(); i++) {
                     try {
+                        /* Don't bother deleting the file if it was marked as
+                         * deleted from the map step. */
+                        if (obj.getHttpHeaders().containsKey("deleted")) {
+                            break;
+                        }
+
+                        /* If a file snuck in, we will delete it here. Typically
+                         * this should be an empty directory. */
                         delete(obj.getPath());
 
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Finished deleting path {}", obj.getPath());
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("Finished deleting path {}", obj.getPath());
                         }
                         break;
                     } catch (MantaClientHttpResponseException e) {
@@ -410,28 +423,30 @@ public class MantaClient implements AutoCloseable {
                 }
             });
 
-            /* For each iteration of this loop, we get the total result size
-             * of the directory to be deleted. If it is non-zero, then our
-             * directory still has stuff in it and we need to repeat this
-             * process. */
+            /* For each iteration of this loop, we attempt to delete the parent
+             * path. If all subdirectories and files have been deleted, then
+             * this operation will succeed.
+             */
             try {
-                Long results = get(path).getHttpHeaders().getResultSetSize();
-                if (results == null) {
-                    objectsInCurrentPath = 0L;
-                } else {
-                    objectsInCurrentPath = results;
-                }
+                delete(path);
+                break;
             } catch (MantaClientHttpResponseException e) {
                 // Somehow our current path has been deleted, so our work is done
                 if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
-                    return;
+                    break;
+                } else if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
+                    continue;
                 }
+
+                MantaIOException mioe = new MantaIOException("Unable to delete path", e);
+                mioe.setContextValue("path", path);
+
+                throw mioe;
             }
         }
 
-        delete(path);
-
-        LOG.debug("Finished deleting path {}", path);
+        LOG.debug("Finished deleting path {}. It took {} loops to delete recursively",
+                path, loops);
     }
 
     /**
