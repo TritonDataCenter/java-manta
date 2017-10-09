@@ -104,7 +104,7 @@ public class MantaConnectionFactoryTest {
         verify(manager, never()).shutdown();
     }
 
-    public void willConfigureClientToUseProvidedManager() throws IOException {
+    public void willNotChangeConfiguredManager() throws IOException {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
