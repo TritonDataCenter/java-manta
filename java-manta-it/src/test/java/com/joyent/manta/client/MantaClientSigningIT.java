@@ -54,7 +54,7 @@ public class MantaClientSigningIT {
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext();
 
-        mantaClient = MantaClientFactory.build(config, lazy);
+        mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, null);
     }

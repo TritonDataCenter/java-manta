@@ -14,8 +14,6 @@ import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -38,11 +36,10 @@ public class MantaClientDirectoriesIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"lazy"})
-    public void beforeClass(@Optional Boolean lazy) throws IOException {
+    public void beforeClass() throws IOException {
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
-        mantaClient = MantaClientFactory.build(config, lazy);
+        mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
     }
 

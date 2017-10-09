@@ -59,12 +59,12 @@ public class MantaHttpHeadersIT {
             "secondary");
 
     @BeforeClass
-    @Parameters({"usingEncryption", "lazy"})
-    public void beforeClass(@Optional Boolean lazy) throws IOException {
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
 
-        mantaClient = MantaClientFactory.build(config, lazy);
+        mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }

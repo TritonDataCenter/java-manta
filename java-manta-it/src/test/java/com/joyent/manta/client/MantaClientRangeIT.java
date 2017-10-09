@@ -55,8 +55,8 @@ public class MantaClientRangeIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption", "lazy"})
-    public void beforeClass(@Optional Boolean usingEncryption, @Optional Boolean lazy) throws IOException {
+    @Parameters({"usingEncryption"})
+    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
 
@@ -65,7 +65,7 @@ public class MantaClientRangeIT {
             config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
         }
 
-        mantaClient = MantaClientFactory.build(config, lazy);
+        mantaClient = new MantaClient(config);
         this.config = config;
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
