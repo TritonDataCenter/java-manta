@@ -336,3 +336,11 @@ and you wish to debug the establishment and leasing of HTTP connections:
 Please note that the Commons Logger adaptor is not a dependency of `java-manta-client-unshaded` and it is the user's
 responsibility to add their own dependency if they wish to collect Apache HttpClient logs. For more information on log
 bridging in SLF4J please review [this page](https://www.slf4j.org/legacy.html).
+
+### Customizing the client further
+
+It is possible to supply an `HttpClientBuilder` in order to further customize the behavior of a `MantaClient` instance.
+Users leveraging this feature should be comfortable with the internals of the Apache HttpClient library and
+familiarity with the
+[`MantaConnectionFactory`](/java-manta-client-unshaded/src/main/java/com/joyent/manta/http/MantaConnectionFactory.java)
+class is recommended.

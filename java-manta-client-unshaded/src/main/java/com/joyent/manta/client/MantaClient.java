@@ -247,7 +247,6 @@ public class MantaClient implements AutoCloseable {
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, config);
         } else {
-
             this.httpHelper = new StandardHttpHelper(connectionContext, config);
         }
 
@@ -2406,7 +2405,6 @@ public class MantaClient implements AutoCloseable {
         danglingStreams.add(stream);
         return stream;
     }
-
 
     /* ======================================================================
      * Lifecyle Methods
