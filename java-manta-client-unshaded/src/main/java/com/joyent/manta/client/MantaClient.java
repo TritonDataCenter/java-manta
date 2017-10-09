@@ -209,7 +209,7 @@ public class MantaClient implements AutoCloseable {
      *
      * Users opting into advanced configuration (i.e. not passing {@code null} as the second parameter)
      * should be comfortable with the internals of {@link CloseableHttpClient} and accept that we can only make a
-     * best effort to support all possible use-cases. For example, uses may pass in a
+     * best effort to support all possible use-cases. For example, uses may pass in a builder which is wired to a
      * {@link org.apache.http.impl.conn.BasicHttpClientConnectionManager} and effectively make the client
      * single-threaded by eliminating the connection pool. Bug or feature? You decide!
      *
