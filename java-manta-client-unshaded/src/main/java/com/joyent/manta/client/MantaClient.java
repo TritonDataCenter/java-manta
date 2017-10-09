@@ -376,7 +376,7 @@ public class MantaClient implements AutoCloseable {
                          * get deleted later in the loop when there is less
                          * contention on the connection pool.
                          */
-                        } catch (ConnectionPoolTimeoutException e ) {
+                        } catch (ConnectionPoolTimeoutException e) {
                             if (LOG.isDebugEnabled()) {
                                 String msg = e.getMessage()
                                         + " for deleting object {}";
