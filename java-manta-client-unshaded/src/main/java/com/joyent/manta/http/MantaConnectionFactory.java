@@ -117,11 +117,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     private final HttpClientConnectionManager connectionManager;
 
     /**
-     * Flag indicating if we created the {@link #connectionManager} ourselves and are responsible for shutting it down.
-     */
-    private final boolean connectionManagerShared;
-
-    /**
      * Create new instance using the passed configuration.
      *
      * @param config    configuration of the connection parameters
@@ -150,13 +145,11 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         this.config = config;
 
         if (connectionFactoryConfigurator != null) {
-            this.connectionManager = connectionFactoryConfigurator.getConnectionManager();
+            this.connectionManager = null;
             this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
-            this.connectionManagerShared = true;
         } else {
             this.connectionManager = buildConnectionManager();
             this.httpClientBuilder = createStandardBuilder();
-            this.connectionManagerShared = false;
         }
 
         configureHttpClientBuilderDefaults(keyPair, signer);
@@ -311,8 +304,13 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             httpClientBuilder.disableAutomaticRetries();
         }
 
+        // attach the connection manager if it was created by us
+        // users providing a custom HttpClientBuilder are expected to wire this up themselves
+        if (this.connectionManager != null) {
+            httpClientBuilder.setConnectionManager(this.connectionManager);
+        }
+
         httpClientBuilder.setDefaultHeaders(HEADERS);
-        httpClientBuilder.setConnectionManager(this.connectionManager);
         httpClientBuilder.addInterceptorFirst(new RequestIdInterceptor());
 
         if (BooleanUtils.isNotTrue(config.noAuth())) {
@@ -388,7 +386,8 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
     @Override
     public void close() throws IOException {
-        if (connectionManager == null || connectionManagerShared) {
+        if (connectionManager == null) {
+            // user provided their own connectionManager in the httpClientBuilder
             return;
         }
 

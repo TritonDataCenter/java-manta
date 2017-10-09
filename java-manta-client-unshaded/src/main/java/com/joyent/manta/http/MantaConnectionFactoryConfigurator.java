@@ -25,31 +25,18 @@ public class MantaConnectionFactoryConfigurator {
     private final HttpClientBuilder httpClientBuilder;
 
     /**
-     * An existing {@link HttpClientConnectionManager} to use with the {@link #httpClientBuilder}.
-     */
-    private final HttpClientConnectionManager connectionManager;
-
-    /**
      * Packages together an externally-configured {@link HttpClientBuilder} and {@link HttpClientConnectionManager}
      * for use with the {@link com.joyent.manta.client.MantaClient} through a {@link MantaConnectionFactory}.
      *
-     * @param connectionManager the connection manager
      * @param httpClientBuilder the client builder
      */
-    public MantaConnectionFactoryConfigurator(final HttpClientConnectionManager connectionManager,
-                                              final HttpClientBuilder httpClientBuilder) {
-        Validate.notNull(connectionManager, "HttpClientConnectionManager must not be null");
+    public MantaConnectionFactoryConfigurator(final HttpClientBuilder httpClientBuilder) {
         Validate.notNull(httpClientBuilder, "HttpClientBuilder must not be null");
 
-        this.connectionManager = connectionManager;
         this.httpClientBuilder = httpClientBuilder;
     }
 
     HttpClientBuilder getHttpClientBuilder() {
         return httpClientBuilder;
-    }
-
-    HttpClientConnectionManager getConnectionManager() {
-        return connectionManager;
     }
 }
