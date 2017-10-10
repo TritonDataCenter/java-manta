@@ -55,13 +55,14 @@ public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    protected MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    protected String testPathPrefix;
+    private String testPathPrefix;
 
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 

@@ -10,7 +10,9 @@ package com.joyent.manta.config;
 import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -41,8 +43,8 @@ public class TestConfigContext extends BaseChainedConfigContext {
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
      *
-     * @param context additional context to layer on top
-     * @param properties properties to load into context
+     * @param context                additional context to layer on top
+     * @param properties             properties to load into context
      * @param includeEnvironmentVars flag indicated if we include the environment into the context
      */
     public TestConfigContext(ConfigContext context, Properties properties,
@@ -65,7 +67,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
      *
-     * @param context additional context to layer on top
+     * @param context    additional context to layer on top
      * @param properties properties to load into context
      */
     public TestConfigContext(ConfigContext context, Properties properties) {
@@ -117,6 +119,10 @@ public class TestConfigContext extends BaseChainedConfigContext {
         return testConfig;
     }
 
+    public static ImmutablePair<KeyPair, BaseChainedConfigContext> generateKeyPairBackedConfig() {
+        return generateKeyPairBackedConfig(null);
+    }
+
     /**
      * Some test cases need a direct reference to a KeyPair along with it's associated config. Manually calling
      * KeyPairFactory with a half-baked config can get cumbersome, so let's build a ConfigContext which has
@@ -124,7 +130,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
      *
      * @return the generated keypair and a config which uses a serialized version of that keypair
      */
-    public static ImmutablePair<KeyPair, BaseChainedConfigContext> generateKeyPairBackedConfig() {
+    public static ImmutablePair<KeyPair, BaseChainedConfigContext> generateKeyPairBackedConfig(final String passphrase) {
         final KeyPair keyPair;
         try {
             keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
@@ -132,11 +138,23 @@ public class TestConfigContext extends BaseChainedConfigContext {
             throw new Error(impossible); // "RSA" is always provided
         }
 
+        final Object keySerializer;
+        if (passphrase != null) {
+            try {
+                keySerializer = new JcaMiscPEMGenerator(
+                        keyPair.getPrivate(),
+                        new JcePEMEncryptorBuilder("AES-128-CBC").build(passphrase.toCharArray()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            keySerializer = keyPair.getPrivate();
+        }
+
         final String keyContent;
         try (final StringWriter content = new StringWriter();
              final JcaPEMWriter writer = new JcaPEMWriter(content)) {
-
-            writer.writeObject(keyPair.getPrivate());
+            writer.writeObject(keySerializer);
             writer.flush();
             keyContent = content.toString();
         } catch (IOException e) {
@@ -149,6 +167,10 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setMantaKeyPath(null)
                 .setPrivateKeyContent(keyContent)
                 .setMantaKeyId(KeyFingerprinter.md5Fingerprint(keyPair));
+
+        if (passphrase != null) {
+            config.setPassword(passphrase);
+        }
 
         return new ImmutablePair<>(keyPair, config);
     }

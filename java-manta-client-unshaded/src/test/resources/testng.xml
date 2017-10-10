@@ -19,6 +19,7 @@
             <class name="com.joyent.manta.config.SystemSettingsConfigContextTest" />
             <class name="com.joyent.manta.config.TestConfigContextTest" />
             <class name="com.joyent.manta.config.ConfigContextTest" />
+            <class name="com.joyent.manta.client.AuthenticationConfiguratorTest" />
         </classes>
     </test>
     <test name="Collection Tests">

@@ -25,16 +25,16 @@
     </test>
 
     <test name="Manta Client Integration Tests [Unencrypted, Lazy]">
-        <parameter name="lazy" value="true"/>
+        <parameter name="lazyMantaClient" value="true"/>
         <groups>
             <run>
                 <exclude name="encrypted"/>
             </run>
         </groups>
-        <packages>
-            <package name="com.joyent.manta.client.*" />
-            <package name="com.joyent.manta.client.multipart.*" />
-        </packages>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
+        </classes>
     </test>
 
     <!-- We run many of the integration tests over again using client-side encryption -->

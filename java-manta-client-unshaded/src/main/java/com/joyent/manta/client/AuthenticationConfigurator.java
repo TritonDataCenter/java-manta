@@ -5,19 +5,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.config;
+package com.joyent.manta.client;
 
 import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.KeyPairFactory;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.Validate;
 
 import java.security.KeyPair;
 import java.util.Objects;
 
 /**
  * Object for tracking configuration changes related to authentication and recreating dependent objects as needed.
+ * This class lives in the client package because so that its getters can be package-private. It is
+ * designed to ease client initialization and acts as a bridge configuration values and runtime authentication
+ * objects like the {@link ThreadLocalSigner} which needs careful lifecycle management.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
@@ -28,6 +31,11 @@ public class AuthenticationConfigurator {
      * Private object for locking.
      */
     private final Object configureLock = new Object();
+
+    /**
+     * The {@link ConfigContext} to track for changes.
+     */
+    private final ConfigContext config;
 
     /**
      * Hashcode of last observed authentication-related configuration values.
@@ -60,40 +68,37 @@ public class AuthenticationConfigurator {
      * @param config configuration context from which to extract values
      */
     public AuthenticationConfigurator(final ConfigContext config) {
-        configure(config);
+        this.config = config;
+        reload();
     }
 
     /**
-     * words.
-     *
-     * @param newConfig the updated (or a completely different) config
+     * Check the configuration for authentication-related changes.
      */
-    public void configure(final ConfigContext newConfig) {
-        Validate.notNull(newConfig, "Configuration must not be null");
+    public void reload() {
         synchronized (configureLock) {
-            username = null;
-            home = null;
-            keyPair = null;
-            signer = null;
-
-            final int newFingerprint = calculateAuthParamsFingerprint(newConfig);
+            final int newFingerprint = calculateAuthParamsFingerprint(config);
 
             if (newFingerprint == parametersFingerprint) {
                 return;
             }
 
-            doConfigure(newConfig);
+            username = null;
+            home = null;
+            keyPair = null;
+            signer = null;
+
+            doLoad();
             parametersFingerprint = newFingerprint;
         }
     }
 
     /**
      * Internal method for updating authentication parameters and derived objects.
-     *
-     * @param config ConfigContext to use as a source of data
      */
-    private void doConfigure(final ConfigContext config) {
+    private void doLoad() {
         username = config.getMantaUser();
+        home = ConfigContext.deriveHomeDirectoryFromUser(username);
 
         if (BooleanUtils.isNotFalse(config.noAuth())) {
             keyPair = null;
@@ -104,28 +109,27 @@ public class AuthenticationConfigurator {
         keyPair = new KeyPairFactory(config).createKeyPair();
 
         final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (ObjectUtils.firstNonNull(
-                config.disableNativeSignatures(),
-                DefaultsConfigContext.DEFAULT_DISABLE_NATIVE_SIGNATURES)) {
+        if (BooleanUtils.isTrue(config.disableNativeSignatures())) {
+            // DefaultConfigContext#DEFAULT_DISABLE_NATIVE_SIGNATURES is false
             builder.providerCode("stdlib");
         }
 
         signer = new ThreadLocalSigner(builder);
     }
 
-    public String getUsername() {
+    String getUsername() {
         return username;
     }
 
-    public String getHome() {
+    String getHome() {
         return home;
     }
 
-    public KeyPair getKeyPair() {
+    KeyPair getKeyPair() {
         return keyPair;
     }
 
-    public ThreadLocalSigner getSigner() {
+    ThreadLocalSigner getSigner() {
         return signer;
     }
 
@@ -141,6 +145,8 @@ public class AuthenticationConfigurator {
                 config.getPassword(),
                 config.getMantaKeyId(),
                 config.getMantaKeyPath(),
+                config.getPrivateKeyContent(),
+                config.disableNativeSignatures(),
                 config.noAuth());
     }
 }
