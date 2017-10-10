@@ -7,7 +7,16 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.http.signature.KeyFingerprinter;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URL;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
 /**
@@ -96,5 +105,41 @@ public class TestConfigContext extends BaseChainedConfigContext {
         }
 
         return testConfig;
+    }
+
+    /**
+     * Some test cases need a direct reference to a KeyPair along with it's associated config. Manually calling
+     * KeyPairFactory with a half-baked config can get cumbersome, so let's build a ConfigContext which has
+     * everything ready and supplies the relevant KeyPair.
+     *
+     * @return the generated keypair and a config which uses a serialized version of that keypair
+     */
+    public static ImmutablePair<KeyPair, BaseChainedConfigContext> generateKeyPairBackedConfig() {
+        final KeyPair keyPair;
+        try {
+            keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        } catch (final NoSuchAlgorithmException impossible) {
+            throw new Error(impossible); // "RSA" is always provided
+        }
+
+        final String keyContent;
+        try (final StringWriter content = new StringWriter();
+             final JcaPEMWriter writer = new JcaPEMWriter(content)) {
+
+            writer.writeObject(keyPair.getPrivate());
+            writer.flush();
+            keyContent = content.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        final BaseChainedConfigContext config = new ChainedConfigContext(DEFAULT_CONFIG)
+                // we need to unset the key path in case one exists at ~/.ssh/id_rsa
+                // see the static initializer in DefaultsConfigContext
+                .setMantaKeyPath(null)
+                .setPrivateKeyContent(keyContent)
+                .setMantaKeyId(KeyFingerprinter.md5Fingerprint(keyPair));
+
+        return new ImmutablePair<>(keyPair, config);
     }
 }
