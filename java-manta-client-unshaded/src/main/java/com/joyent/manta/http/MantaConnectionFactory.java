@@ -15,6 +15,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaVersion;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -118,36 +119,40 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config        configuration of the connection parameters
-     * @param keyPair       cryptographic signing key pair used for HTTP signatures
-     * @param signer        Signer configured to use the given keyPair
+     * @param config    configuration of the connection parameters
+     * @param keyPair   cryptographic signing key pair used for HTTP signatures
+     * @param signer    Signer configured to use the given keyPair
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer) {
-        Validate.notNull(config, "Configuration context must not be null");
+        this(config, keyPair, signer, null);
+    }
 
+    /**
+     * Create a new instance based on a shared {@link HttpClientBuilder} and {@link HttpClientConnectionManager}.
+     *
+     * @param config                        configuration of the connection parameters
+     * @param keyPair                       cryptographic signing key pair used for HTTP signatures
+     * @param signer                        Signer configured to use the given keyPair
+     * @param connectionFactoryConfigurator existing HttpClient objects to reuse
+     */
+    public MantaConnectionFactory(final ConfigContext config,
+                                  final KeyPair keyPair,
+                                  final ThreadLocalSigner signer,
+                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        Validate.notNull(config, "Configuration context must not be null");
         this.config = config;
 
-        this.connectionManager = buildConnectionManager();
-
-        this.httpClientBuilder = createBuilder();
-
-        final boolean authDisabled = ObjectUtils.firstNonNull(
-                config.noAuth(),
-                DefaultsConfigContext.DEFAULT_NO_AUTH);
-
-        if (!authDisabled) {
-            Validate.notNull(keyPair, "KeyPair must not be null if authentication is enabled");
-            Validate.notNull(signer, "Signer must not be null if authentication is enabled");
-
-            // pass true directly to the constructor because auth is enabled
-            final HttpRequestInterceptor authInterceptor = new HttpSignatureRequestInterceptor(
-                            new HttpSignatureAuthScheme(keyPair, signer),
-                            new UsernamePasswordCredentials(config.getMantaUser(), null),
-                            true);
-            this.httpClientBuilder.addInterceptorLast(authInterceptor);
+        if (connectionFactoryConfigurator != null) {
+            this.connectionManager = null;
+            this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
+        } else {
+            this.connectionManager = buildConnectionManager();
+            this.httpClientBuilder = createStandardBuilder();
         }
+
+        configureHttpClientBuilderDefaults(keyPair, signer);
     }
 
     /**
@@ -186,6 +191,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
     /**
      * Builds and configures a {@link ConnectionConfig} instance.
+     *
      * @return fully configured instance
      */
     protected ConnectionConfig buildConnectionConfig() {
@@ -204,7 +210,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      *
      * @return fully configured connection manager
      */
-    protected PoolingHttpClientConnectionManager buildConnectionManager() {
+    protected HttpClientConnectionManager buildConnectionManager() {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -241,7 +247,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      *
      * @return configured instance
      */
-    protected HttpClientBuilder createBuilder() {
+    protected HttpClientBuilder createStandardBuilder() {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -264,7 +270,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         final HttpClientBuilder builder = HttpClients.custom()
                 .disableAuthCaching()
                 .disableCookieManagement()
-                .setDefaultHeaders(HEADERS)
                 .setUserAgent(USER_AGENT)
                 .setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
                 .setMaxConnTotal(maxConns)
@@ -274,24 +279,51 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .setRequestExecutor(new MantaHttpRequestExecutor())
                 .setConnectionBackoffStrategy(new DefaultBackoffStrategy());
 
-        if (config.getRetries() > 0) {
-            builder.setRetryHandler(new MantaHttpRequestRetryHandler(config))
-                   .setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
-        } else {
-            LOGGER.info("Retry of failed requests is disabled");
-            builder.disableAutomaticRetries();
-        }
-
         final HttpHost proxyHost = findProxyServer();
 
         if (proxyHost != null) {
             builder.setProxy(proxyHost);
         }
 
-        builder.addInterceptorFirst(new RequestIdInterceptor());
-        builder.setConnectionManager(this.connectionManager);
-
         return builder;
+    }
+
+    /**
+     * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
+     *
+     * @param keyPair the keypair to use with signature authentication
+     * @param signer  Signer configured to use the given keyPair
+     */
+    private void configureHttpClientBuilderDefaults(final KeyPair keyPair,
+                                                    final ThreadLocalSigner signer) {
+        if (config.getRetries() > 0) {
+            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config));
+            httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
+        } else {
+            LOGGER.info("Retry of failed requests is disabled");
+            httpClientBuilder.disableAutomaticRetries();
+        }
+
+        // attach the connection manager if it was created by us
+        // users providing a custom HttpClientBuilder are expected to wire this up themselves
+        if (this.connectionManager != null) {
+            httpClientBuilder.setConnectionManager(this.connectionManager);
+        }
+
+        httpClientBuilder.setDefaultHeaders(HEADERS);
+        httpClientBuilder.addInterceptorFirst(new RequestIdInterceptor());
+
+        if (BooleanUtils.isNotTrue(config.noAuth())) {
+            Validate.notNull(keyPair, "KeyPair must not be null if authentication is enabled");
+            Validate.notNull(signer, "Signer must not be null if authentication is enabled");
+
+            // pass true directly to the constructor because auth is enabled
+            final HttpRequestInterceptor authInterceptor = new HttpSignatureRequestInterceptor(
+                    new HttpSignatureAuthScheme(keyPair, signer),
+                    new UsernamePasswordCredentials(config.getMantaUser(), null),
+                    true);
+            this.httpClientBuilder.addInterceptorLast(authInterceptor);
+        }
     }
 
     /**
@@ -343,16 +375,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         return httpClientBuilder.build();
     }
 
-    /**
-     * package-private method for building a {@link MantaHttpRequestFactory} from this object's
-     * config. Should be removed with the deprecated constructor for {@link MantaApacheHttpClientContext}.
-     *
-     * @return a request factory pointed at the same url as {@code this}
-     */
-    ConfigContext getConfig() {
-        return config;
-    }
-
     @Override
     public DynamicMBean toMBean() {
         if (!(connectionManager instanceof PoolingHttpClientConnectionManager)) {
@@ -365,8 +387,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     @Override
     public void close() throws IOException {
         if (connectionManager == null) {
+            // user provided their own connectionManager in the httpClientBuilder
             return;
         }
+
         connectionManager.shutdown();
     }
 }
