@@ -225,7 +225,6 @@ public class MantaClient implements AutoCloseable {
         this.url = config.getMantaURL();
         this.config = config;
         this.home = ConfigContext.deriveHomeDirectoryFromUser(config.getMantaUser());
-        this.beanSupervisor = new MantaMBeanSupervisor();
 
         final KeyPair keyPair = new KeyPairFactory(config).createKeyPair();
 
@@ -252,6 +251,7 @@ public class MantaClient implements AutoCloseable {
 
         this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
+        this.beanSupervisor = new MantaMBeanSupervisor();
         beanSupervisor.expose(this.config);
         beanSupervisor.expose(connectionFactory);
     }
