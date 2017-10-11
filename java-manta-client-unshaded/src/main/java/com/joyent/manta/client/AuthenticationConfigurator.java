@@ -25,7 +25,7 @@ import java.util.Objects;
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */
-public class AuthenticationConfigurator {
+public class AuthenticationConfigurator implements AutoCloseable {
 
     /**
      * Private object for locking.
@@ -148,5 +148,18 @@ public class AuthenticationConfigurator {
                 config.getPrivateKeyContent(),
                 config.disableNativeSignatures(),
                 config.noAuth());
+    }
+
+    @Override
+    public void close() throws Exception {
+        username = null;
+        home = null;
+        keyPair = null;
+
+        if (signer != null) {
+            signer.clearAll();
+        }
+
+        signer = null;
     }
 }

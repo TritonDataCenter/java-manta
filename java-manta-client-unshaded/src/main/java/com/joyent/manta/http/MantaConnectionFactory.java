@@ -316,11 +316,14 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         if (BooleanUtils.isNotTrue(config.noAuth())) {
             Validate.notNull(keyPair, "KeyPair must not be null if authentication is enabled");
             Validate.notNull(signer, "Signer must not be null if authentication is enabled");
+            final String user = Validate.notBlank(
+                    config.getMantaUser(),
+                    "User must be set if authentication is enabled");
 
             // pass true directly to the constructor because auth is enabled
             final HttpRequestInterceptor authInterceptor = new HttpSignatureRequestInterceptor(
                     new HttpSignatureAuthScheme(keyPair, signer),
-                    new UsernamePasswordCredentials(config.getMantaUser(), null),
+                    new UsernamePasswordCredentials(user, null),
                     true);
             this.httpClientBuilder.addInterceptorLast(authInterceptor);
         }

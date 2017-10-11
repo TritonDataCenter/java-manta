@@ -8,6 +8,7 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.OnCloseAggregateException;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaApacheHttpClientContext;
@@ -52,7 +53,7 @@ public final class LazyMantaClient extends MantaClient {
     /**
      * Internal component categories.
      */
-    private enum  MantaClientComponent {
+    private enum MantaClientComponent {
         /**
          * The {@link AuthenticationConfigurator} and {@link HttpHelper} both derive their state from
          * the <a href="https://github.com/joyent/java-manta/USAGE.md#configuration-sections">
@@ -79,7 +80,6 @@ public final class LazyMantaClient extends MantaClient {
      * value has been cached.
      *
      * PERHAPS: this should be wrapped in an {@link AtomicReference}?
-     *
      */
     private volatile EnumSet<MantaClientComponent> reload;
 
@@ -108,7 +108,7 @@ public final class LazyMantaClient extends MantaClient {
      * components. If provided the {@link MantaConnectionFactoryConfigurator} will be passed on to a
      * {@link MantaConnectionFactory} when the {@link HttpHelper} is being rebuilt.
      *
-     * @param config the {@link ConfigContext} to track
+     * @param config           the {@link ConfigContext} to track
      * @param connectionConfig customized connection objects to use when creating the {@link HttpHelper}, or null
      */
     public LazyMantaClient(final ConfigContext config,
@@ -132,11 +132,15 @@ public final class LazyMantaClient extends MantaClient {
 
     @Override
     String getUrl() {
+        ensureClientNotClosed();
+
         return config.getMantaURL();
     }
 
     @Override
     String getHome() {
+        ensureClientNotClosed();
+
         if (reload.contains(MantaClientComponent.AUTH)) {
             auth.reload();
             reload.remove(MantaClientComponent.AUTH);
@@ -147,6 +151,8 @@ public final class LazyMantaClient extends MantaClient {
 
     @Override
     HttpHelper getHttpHelper() {
+        ensureClientNotClosed();
+
         if (reload.contains(MantaClientComponent.AUTH)
                 || reload.contains(MantaClientComponent.HTTP)) {
             clearHttpHelper();
@@ -164,6 +170,8 @@ public final class LazyMantaClient extends MantaClient {
 
     @Override
     UriSigner getUriSigner() {
+        ensureClientNotClosed();
+
         if (reload.contains(MantaClientComponent.SIGN)) {
             lazyUriSigner = null;
             auth.reload();
@@ -217,5 +225,64 @@ public final class LazyMantaClient extends MantaClient {
         }
 
         return new StandardHttpHelper(connectionContext, config);
+    }
+
+    // LIFECYCLE METHODS
+
+    /**
+     * Closed clients have cleaned up resources and should no longer be used.
+     */
+    private void ensureClientNotClosed() {
+        if (isClosed()) {
+            throw new IllegalStateException("Client is closed");
+        }
+    }
+
+    @Override
+    public void close() {
+        if (isClosed()) {
+            return;
+        }
+
+        OnCloseAggregateException aggregateException;
+        try {
+            super.close();
+            aggregateException = null;
+        } catch (OnCloseAggregateException aggException) {
+            aggregateException = aggException;
+        }
+
+        try {
+            clearHttpHelper();
+        } catch (MantaLazyConfigurationException e) {
+            if (aggregateException == null) {
+                aggregateException = new OnCloseAggregateException();
+            }
+            aggregateException.aggregateException(e);
+        }
+
+        lazyUriSigner = null;
+
+        try {
+            lazyBeanSupervisor.close();
+        } catch (Exception e) {
+            if (aggregateException == null) {
+                aggregateException = new OnCloseAggregateException();
+            }
+            aggregateException.aggregateException(e);
+        }
+
+        try {
+            auth.close();
+        } catch (Exception e) {
+            if (aggregateException == null) {
+                aggregateException = new OnCloseAggregateException();
+            }
+            aggregateException.aggregateException(e);
+        }
+
+        if (aggregateException != null) {
+            throw aggregateException;
+        }
     }
 }

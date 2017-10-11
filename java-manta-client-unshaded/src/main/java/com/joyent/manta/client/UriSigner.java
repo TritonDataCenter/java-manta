@@ -51,9 +51,9 @@ public class UriSigner {
      * @param signer Signer configured to work with the the given keyPair
      */
     public UriSigner(final ConfigContext config, final KeyPair keyPair, final ThreadLocalSigner signer) {
-        this.user = config.getMantaUser();
-        this.keyPair = keyPair;
-        this.signer = signer;
+        this.user = Validate.notNull(config.getMantaUser(), "User must not be null");
+        this.keyPair = Validate.notNull(keyPair, "KeyPair must not be null");
+        this.signer = Validate.notNull(signer, "Signer must not be null");
     }
 
     /**

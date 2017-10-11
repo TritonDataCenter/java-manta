@@ -201,10 +201,10 @@ public class MantaClient implements AutoCloseable {
      */
     MantaClient() {
         url = "";
-        httpHelper = null;
         home = "";
+        httpHelper = null;
         config = null;
-        signerRef = null;
+        signerRef = new WeakReference<>(null);
         uriSigner = null;
         beanSupervisor = null;
     }
@@ -2484,7 +2484,9 @@ public class MantaClient implements AutoCloseable {
         }
 
         try {
-            getHttpHelper().close();
+            if (httpHelper != null) {
+                httpHelper.close();
+            }
         } catch (InterruptedException ie) {
             /* Do nothing, but we won't capture the interrupted exception
              * because even if we are interrupted, we want to close all open
@@ -2495,7 +2497,9 @@ public class MantaClient implements AutoCloseable {
 
         // Deregister associated MBeans
         try {
-            beanSupervisor.close();
+            if (beanSupervisor != null) {
+                beanSupervisor.close();
+            }
         } catch (Exception e) {
             exceptions.add(e);
         }
