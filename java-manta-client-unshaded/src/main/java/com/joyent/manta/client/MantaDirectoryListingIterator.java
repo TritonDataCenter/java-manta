@@ -9,8 +9,6 @@ package com.joyent.manta.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
@@ -209,13 +207,6 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             try {
                 selectReader();
                 return !finished.get();
-            } catch (MantaClientHttpResponseException e) {
-                if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
-                    finished.set(true);
-                    return false;
-                } else {
-                    throw new UncheckedIOException(e);
-                }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
