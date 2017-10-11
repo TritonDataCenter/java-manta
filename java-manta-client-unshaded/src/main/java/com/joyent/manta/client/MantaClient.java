@@ -326,12 +326,9 @@ public class MantaClient implements AutoCloseable {
 
         /* We repetitively run the find() -> delete() stream operation and check
          * the diretory targeted for deletion by attempting to delete it this
-         * deals with unpredictable directory contents changes and occasional
-         * delays in Manta where it will return from a file delete operation,
-         * but the parent directory still can't be deleted because the metadata
-         * for the file object is still in such a state that the parent
-         * directory is not marked as empty.
-         */
+         * deals with unpredictable directory contents changes that are a result
+         * or concurrent modifications to the contents of the directory path to
+         * be deleted. */
         int loops = 0;
 
         while (true) {
@@ -412,15 +409,20 @@ public class MantaClient implements AutoCloseable {
                             break;
                         }
 
-                        /* If we get a directory not empty error we sleep
-                         * every retry in the hopes that the subdirectory
-                         * objects have been deleted by another process. */
+                        /* If we get a directory not empty error we try again
+                         * hoping that the next iteration will clean up any
+                         * remaining files. */
                         if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
-                            // We loop and try it again
                             continue;
                         }
 
                         throw new UncheckedIOException(e);
+                    } catch (ConnectionPoolTimeoutException e) {
+                        if (LOG.isDebugEnabled()) {
+                            String msg = e.getMessage()
+                                    + " for deleting object {}";
+                            LOG.debug(msg, obj.getPath());
+                        }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -2547,6 +2549,13 @@ public class MantaClient implements AutoCloseable {
         // Deregister associated MBeans
         try {
             beanSupervisor.close();
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+
+        // Shut down the ForkJoinPool that may be executing find() operations
+        try {
+            findForkJoinPool.shutdownNow();
         } catch (Exception e) {
             exceptions.add(e);
         }
