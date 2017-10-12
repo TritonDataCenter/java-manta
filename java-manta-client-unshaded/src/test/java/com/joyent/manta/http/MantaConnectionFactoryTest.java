@@ -104,7 +104,7 @@ public class MantaConnectionFactoryTest {
         verify(manager, never()).shutdown();
     }
 
-    public void willNotChangeConfiguredManager() throws Exception {
+    public void willConfigureClientToUseProvidedManager() throws IOException, ReflectiveOperationException {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
@@ -115,7 +115,7 @@ public class MantaConnectionFactoryTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void willAttachAuthInterceptorToInternallyConstructedClient() throws Exception {
+    public void willAttachAuthInterceptorToInternallyConstructedClient() throws IOException, ReflectiveOperationException {
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
 
         final HttpClientBuilder internallyCreatedBuilder =
@@ -137,7 +137,7 @@ public class MantaConnectionFactoryTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void willAttachAuthInterceptorToProvidedClient() throws Exception {
+    public void willAttachAuthInterceptorToProvidedClient() throws ReflectiveOperationException {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
@@ -156,7 +156,8 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue(foundAuthInterceptor);
     }
 
-    public void willActuallyDisableRetriesOnInternallyConstructedBuilderWhenSetToZero() throws Exception {
+    public void willActuallyDisableRetriesOnInternallyConstructedBuilderWhenSetToZero()
+            throws IOException, ReflectiveOperationException {
         config.setRetries(0);
 
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
@@ -167,7 +168,7 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue((Boolean) FieldUtils.readField(internallyCreatedBuilder, "automaticRetriesDisabled", true));
     }
 
-    public void willActuallyDisableRetriesOnProvidedBuilderWhenSetToZero() throws Exception {
+    public void willActuallyDisableRetriesOnProvidedBuilderWhenSetToZero() throws IOException, ReflectiveOperationException {
         config.setRetries(0);
 
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
@@ -177,7 +178,7 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue((Boolean) FieldUtils.readField(factoryInternalBuilder, "automaticRetriesDisabled", true));
     }
 
-    public void willAttachInternalRetryHandlersToInternalBuilder() throws Exception {
+    public void willAttachInternalRetryHandlersToInternalBuilder() throws IOException, ReflectiveOperationException {
         config.setRetries(1);
 
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
@@ -192,7 +193,7 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue(serviceUnavailStrategy instanceof MantaServiceUnavailableRetryStrategy);
     }
 
-    public void willAttachInternalRetryHandlersToProvidedBuilder() throws Exception {
+    public void willAttachInternalRetryHandlersToProvidedBuilder() throws IOException, ReflectiveOperationException {
         config.setRetries(1);
 
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
@@ -201,7 +202,6 @@ public class MantaConnectionFactoryTest {
         final Object factoryInternalBuilder = FieldUtils.readField(connectionFactory, "httpClientBuilder", true);
         final Object retryHandler = FieldUtils.readField(factoryInternalBuilder, "retryHandler", true);
         final Object serviceUnavailStrategy = FieldUtils.readField(factoryInternalBuilder, "serviceUnavailStrategy", true);
-
 
         Assert.assertTrue(retryHandler instanceof MantaHttpRequestRetryHandler);
         Assert.assertTrue(serviceUnavailStrategy instanceof MantaServiceUnavailableRetryStrategy);

@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -47,9 +46,7 @@ public class MantaObjectMapper extends ObjectMapper {
                 .without(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES);
         setConfig(deserializationConfig);
 
-        SerializationConfig serializationConfig = getSerializationConfig()
-                .with(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS)
-                .without(SerializationFeature.WRITE_NULL_MAP_VALUES);
+        SerializationConfig serializationConfig = getSerializationConfig();
         setConfig(serializationConfig);
 
         setSerializationInclusion(JsonInclude.Include.NON_NULL);

@@ -19,8 +19,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.input.BrokenInputStream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.text.CharacterPredicates;
+import org.apache.commons.text.RandomStringGenerator;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
@@ -31,6 +32,8 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,11 +49,14 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.function.Predicate;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 @Test
 public class EncryptingEntityTest {
+    private static final RandomStringGenerator STRING_GENERATOR =
+            new RandomStringGenerator.Builder()
+                    .filteredBy(CharacterPredicates.LETTERS)
+                    .build();
+
     /* Constructor Tests */
 
     @Test(expectedExceptions = MantaClientEncryptionException.class)
@@ -124,7 +130,7 @@ public class EncryptingEntityTest {
 
     private void canBeWrittenIdempotently(final SupportedCipherDetails cipherDetails) throws Exception {
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
+        final String content = STRING_GENERATOR.generate(RandomUtils.nextInt(500, 1500));
         final ExposedStringEntity contentEntity = new ExposedStringEntity(
                 content,
                 StandardCharsets.UTF_8);
@@ -175,7 +181,7 @@ public class EncryptingEntityTest {
     public void doesNotCloseSuppliedOutputStreamWhenWrittenSuccessfully() throws Exception {
         final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
         final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        final String content = RandomStringUtils.randomAlphanumeric(RandomUtils.nextInt(500, 1500));
+        final String content = STRING_GENERATOR.generate(RandomUtils.nextInt(500, 1500));
         final ExposedStringEntity contentEntity = new ExposedStringEntity(
                 content,
                 StandardCharsets.UTF_8);

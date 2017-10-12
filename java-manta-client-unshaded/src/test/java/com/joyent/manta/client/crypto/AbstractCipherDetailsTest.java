@@ -46,9 +46,9 @@ public abstract class AbstractCipherDetailsTest {
         final long ciphertextSize;
 
         if (cipherDetails.isAEADCipher()) {
-            ciphertextSize = ciphertext.length;
+            ciphertextSize = (long)ciphertext.length;
         } else {
-            ciphertextSize = ciphertext.length + cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+            ciphertextSize = (long)(ciphertext.length + cipherDetails.getAuthenticationTagOrHmacLengthInBytes());
         }
 
         long calculatedCiphertextSize = cipherDetails.ciphertextSize(plaintext.length);
