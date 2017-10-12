@@ -32,6 +32,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class LazyMantaClient extends MantaClient {
 
     /**
+     * The configuration object to use when building components.
+     */
+    private final ConfigContext configTracked;
+
+    /**
      * Configuration manager concerned with maintaining the {@link java.security.KeyPair} and
      * {@link com.joyent.http.signature.ThreadLocalSigner} objects needed for the {@link HttpHelper}
      * and {@link UriSigner} components.
@@ -113,7 +118,8 @@ public final class LazyMantaClient extends MantaClient {
      */
     public LazyMantaClient(final ConfigContext config,
                            final MantaConnectionFactoryConfigurator connectionConfig) {
-        setContext(config);
+        super();
+        this.configTracked = config;
         this.auth = new AuthenticationConfigurator(config);
         this.connectionConfig = connectionConfig;
         this.lazyBeanSupervisor = new MantaMBeanSupervisor();
@@ -128,6 +134,11 @@ public final class LazyMantaClient extends MantaClient {
     public void reload() throws Exception {
         reload = EnumSet.allOf(MantaClientComponent.class);
         lazyBeanSupervisor.reset();
+    }
+
+    @Override
+    public ConfigContext getContext() {
+        return configTracked;
     }
 
     @Override

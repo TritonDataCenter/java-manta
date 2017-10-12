@@ -155,7 +155,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * Library configuration context reference.
      */
-    private ConfigContext config;
+    private final ConfigContext config;
 
     /**
      * Collection of all of the {@link AutoCloseable} objects that will need to be
@@ -304,10 +304,6 @@ public class MantaClient implements AutoCloseable {
       */
     public ConfigContext getContext() {
         return this.config;
-    }
-
-    void setContext(final ConfigContext context) {
-        this.config = context;
     }
 
     String getUrl() {
@@ -1013,7 +1009,7 @@ public class MantaClient implements AutoCloseable {
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM);
 
-        final int preLoadSize = config.getUploadBufferSize();
+        final int preLoadSize = getContext().getUploadBufferSize();
         final HttpEntity entity;
 
         /* We don't know how big the stream is, so we read N bytes from it and
@@ -1779,10 +1775,10 @@ public class MantaClient implements AutoCloseable {
 
         final int retries;
 
-        if (config.getRetries() == null) {
+        if (getContext().getRetries() == null) {
             retries = DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
         } else {
-            retries = config.getRetries();
+            retries = getContext().getRetries();
         }
 
         IOException lastException = new IOException("Never thrown. Report me as a bug.");
