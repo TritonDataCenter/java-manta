@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
@@ -107,7 +107,7 @@ public class StandardHttpHelperTest {
         when(client.execute(any()))
                 .then((invocationOnMock) -> {
                     // checksum is calculated as entity is written to network
-                    final HttpPut request = invocationOnMock.getArgumentAt(0, HttpPut.class);
+                    final HttpPut request = invocationOnMock.getArgument(0);
                     request.getEntity().writeTo(NullOutputStream.NULL_OUTPUT_STREAM);
                     return response;
                 });
@@ -148,7 +148,7 @@ public class StandardHttpHelperTest {
         when(client.execute(any()))
                 .then((invocationOnMock) -> {
                     // checksum is calculated as entity is written to network
-                    final HttpPut request = invocationOnMock.getArgumentAt(0, HttpPut.class);
+                    final HttpPut request = invocationOnMock.getArgument(0);
                     request.getEntity().writeTo(NullOutputStream.NULL_OUTPUT_STREAM);
                     return response;
                 });

@@ -103,7 +103,7 @@ public final class AesCbcCipherDetails extends AbstractAesCipherDetails {
         final boolean hasIV) {
 
         if (plaintextSize <= 0) {
-            return blockBytes + tagOrHmacBytes;
+            return (long)blockBytes + tagOrHmacBytes;
         }
 
         long calculatedContentLength = plaintextSize;

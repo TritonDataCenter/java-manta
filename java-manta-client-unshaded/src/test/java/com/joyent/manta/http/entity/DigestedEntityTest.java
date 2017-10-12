@@ -8,7 +8,8 @@
 package com.joyent.manta.http.entity;
 
 import com.twmacinta.util.FastMD5Digest;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.text.CharacterPredicates;
+import org.apache.commons.text.RandomStringGenerator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -18,9 +19,13 @@ import java.util.Arrays;
 
 @Test
 public class DigestedEntityTest {
+    private static final RandomStringGenerator STRING_GENERATOR =
+            new RandomStringGenerator.Builder()
+                    .filteredBy(CharacterPredicates.LETTERS)
+                    .build();
 
     public void testWriteToProducesReliableDigest() throws Exception {
-        String content = RandomStringUtils.randomAlphanumeric(100);
+        String content = STRING_GENERATOR.generate(100);
         DigestedEntity entity = new DigestedEntity(
                 new ExposedStringEntity(content, StandardCharsets.UTF_8),
                 new FastMD5Digest());

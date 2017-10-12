@@ -28,6 +28,7 @@ import java.util.function.Function;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
+@SuppressWarnings("JavaLangClash") // Suppress false positive with error prone compiler
 public class LookupMap<String, V> implements Map<String, V>  {
     /**
      /**

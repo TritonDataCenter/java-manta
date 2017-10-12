@@ -17,7 +17,8 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.text.CharacterPredicates;
+import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,6 +95,14 @@ public final class Benchmark {
      * Size of object in bytes or number of directories.
      */
     private static int sizeInBytesOrNoOfDirs;
+
+    /**
+     * Random string generator instance for generating test data.
+     */
+    private static final RandomStringGenerator STRING_GENERATOR =
+            new RandomStringGenerator.Builder()
+                    .filteredBy(CharacterPredicates.LETTERS)
+                    .build();
 
     /**
      * Use the main method and not the constructor.
@@ -454,7 +463,7 @@ public final class Benchmark {
 
         for (int i = 0; i < diretoryCount; i++) {
             path.append(MantaClient.SEPARATOR)
-                .append(RandomStringUtils.randomAlphabetic(2));
+                .append(STRING_GENERATOR.generate(2));
         }
 
         final long start = System.nanoTime();

@@ -13,7 +13,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
-import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
 import org.bouncycastle.crypto.modes.GCMBlockCipher;
 import org.bouncycastle.crypto.modes.SICBlockCipher;
@@ -124,6 +123,7 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
      *
      * @param kryo Kryo instance
      */
+    @SuppressWarnings("deprecation")
     private void registerClasses(final Kryo kryo) {
         final Class<?> bufferedGenericBlockCipherClass = findClass(
                 "org.bouncycastle.jcajce.provider.symmetric.util.BaseBlockCipher$BufferedGenericBlockCipher");
@@ -134,8 +134,8 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         final Class<?> aeadGenericBlockCipherClass = findClass(
                 "org.bouncycastle.jcajce.provider.symmetric.util.BaseBlockCipher$AEADGenericBlockCipher");
 
-        kryo.register(AESFastEngine.class, new CompatibleFieldSerializer<>(
-                kryo, AESFastEngine.class));
+        kryo.register(org.bouncycastle.crypto.engines.AESFastEngine.class, new CompatibleFieldSerializer<>(
+                kryo, org.bouncycastle.crypto.engines.AESFastEngine.class));
         kryo.register(AESEngine.class, new CompatibleFieldSerializer<>(
                 kryo, AESEngine.class));
         kryo.register(BufferedBlockCipher.class);
