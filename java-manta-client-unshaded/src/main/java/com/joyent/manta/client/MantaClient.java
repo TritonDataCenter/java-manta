@@ -138,17 +138,14 @@ public class MantaClient implements AutoCloseable {
     private volatile boolean closed = false;
 
     /**
-     * Library configuration context reference.
-     *
-     * PERHAPS: use a package-private setter instead of protected?
-     */
-    @SuppressWarnings("VisibilityModifier")
-    protected ConfigContext config;
-
-    /**
      * A string representation of the manta service endpoint URL.
      */
     private final String url;
+
+    /**
+     * The instance of the http helper class used to simplify creating requests.
+     */
+    private final HttpHelper httpHelper;
 
     /**
      * The home directory of the account.
@@ -156,9 +153,9 @@ public class MantaClient implements AutoCloseable {
     private final String home;
 
     /**
-     * The instance of the http helper class used to simplify creating requests.
+     * Library configuration context reference.
      */
-    private final HttpHelper httpHelper;
+    private ConfigContext config;
 
     /**
      * Collection of all of the {@link AutoCloseable} objects that will need to be
@@ -251,7 +248,6 @@ public class MantaClient implements AutoCloseable {
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
         this.signerRef = new WeakReference<>(signer);
 
-        this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,
@@ -267,6 +263,7 @@ public class MantaClient implements AutoCloseable {
             this.httpHelper = new StandardHttpHelper(connectionContext, config);
         }
 
+        this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
         beanSupervisor.expose(this.config);
         beanSupervisor.expose(connectionFactory);
@@ -299,20 +296,28 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
+    ConfigContext getConfig() {
+        return this.config;
+    }
+
+    void setConfig(final ConfigContext config) {
+        this.config = config;
+    }
+
     String getUrl() {
         return this.url;
     }
 
     String getHome() {
-        return home;
+        return this.home;
     }
 
     HttpHelper getHttpHelper() {
-        return httpHelper;
+        return this.httpHelper;
     }
 
     UriSigner getUriSigner() {
-        return uriSigner;
+        return this.uriSigner;
     }
 
     /**

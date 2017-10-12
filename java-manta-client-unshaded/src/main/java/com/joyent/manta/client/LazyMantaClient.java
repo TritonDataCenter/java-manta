@@ -75,7 +75,7 @@ public final class LazyMantaClient extends MantaClient {
 
     /**
      * Set of internal components which need to be dynamically reloaded.
-     * Calling {@link #reconfigure()} will cause this set to be filled with all values of the enum.
+     * Calling {@link #reload()} will cause this set to be filled with all values of the enum.
      * Getters will subsequently remove their component from the {@link EnumSet} once the new
      * value has been cached.
      *
@@ -113,7 +113,7 @@ public final class LazyMantaClient extends MantaClient {
      */
     public LazyMantaClient(final ConfigContext config,
                            final MantaConnectionFactoryConfigurator connectionConfig) {
-        this.config = config;
+        setConfig(config);
         this.auth = new AuthenticationConfigurator(config);
         this.connectionConfig = connectionConfig;
         this.lazyBeanSupervisor = new MantaMBeanSupervisor();
@@ -134,7 +134,7 @@ public final class LazyMantaClient extends MantaClient {
     String getUrl() {
         ensureClientNotClosed();
 
-        return config.getMantaURL();
+        return getConfig().getMantaURL();
     }
 
     @Override
@@ -179,7 +179,7 @@ public final class LazyMantaClient extends MantaClient {
         }
 
         if (lazyUriSigner == null) {
-            lazyUriSigner = new UriSigner(config, auth.getKeyPair(), auth.getSigner());
+            lazyUriSigner = new UriSigner(getConfig(), auth.getKeyPair(), auth.getSigner());
         }
 
         return lazyUriSigner;
@@ -214,17 +214,17 @@ public final class LazyMantaClient extends MantaClient {
     @SuppressWarnings("AvoidInlineConditionals")
     private HttpHelper buildHttpHelper() {
         final MantaConnectionFactory connectionFactory = connectionConfig != null
-                ? new MantaConnectionFactory(config, auth.getKeyPair(), auth.getSigner(), connectionConfig)
-                : new MantaConnectionFactory(config, auth.getKeyPair(), auth.getSigner());
+                ? new MantaConnectionFactory(getConfig(), auth.getKeyPair(), auth.getSigner(), connectionConfig)
+                : new MantaConnectionFactory(getConfig(), auth.getKeyPair(), auth.getSigner());
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
 
         lazyBeanSupervisor.expose(connectionFactory);
 
-        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-            return new EncryptionHttpHelper(connectionContext, config);
+        if (BooleanUtils.isTrue(getConfig().isClientEncryptionEnabled())) {
+            return new EncryptionHttpHelper(connectionContext, getConfig());
         }
 
-        return new StandardHttpHelper(connectionContext, config);
+        return new StandardHttpHelper(connectionContext, getConfig());
     }
 
     // LIFECYCLE METHODS
