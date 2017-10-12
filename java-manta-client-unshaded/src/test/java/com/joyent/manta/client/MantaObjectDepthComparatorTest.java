@@ -8,14 +8,14 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.http.MantaContentTypes;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.nio.file.Paths;
+import java.util.*;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static org.mockito.Mockito.mock;
@@ -23,7 +23,8 @@ import static org.mockito.Mockito.when;
 
 @Test
 public class MantaObjectDepthComparatorTest {
-    public void verifyOrdering() {
+
+    public void verifyOrderingWithSmallDataSet() {
         List<MantaObject> objects = new ArrayList<>();
         List<MantaObject> dirs = dirObjects(12);
 
@@ -34,37 +35,68 @@ public class MantaObjectDepthComparatorTest {
 
         Collections.shuffle(objects);
 
-        Collections.sort(objects, MantaObjectDepthComparator.INSTANCE);
+        objects.sort(MantaObjectDepthComparator.INSTANCE);
 
-//        System.out.println(StringUtils.join(objects, "\n"));
+        assertOrdering(objects);
+    }
 
-        String[] actual = objects.stream()
-                .filter(MantaObject::isDirectory)
-                .map(MantaObject::toString)
-                .toArray(String[]::new);
+    public void verifyOrderingWithSmallDataSetAndEmptyDirectories() {
+        List<MantaObject> objects = new ArrayList<>();
+        List<MantaObject> dirs = dirObjects(12);
 
-        String[] expected = new String[] {
-                "[F] /user/stor/ggg/ggg/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/ggg/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/ggg/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/ggg/ggg/dddd.json",
-                "[D] /user/stor/ggg/ggg/ggg/ggg",
-                "[F] /user/stor/ggg/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/ggg/dddd.json",
-                "[D] /user/stor/ggg/ggg/ggg",
-                "[F] /user/stor/ggg/ggg/dddd.json",
-                "[F] /user/stor/ggg/dddd.json",
-                "[F] /user/stor/ggg/dddd.json",
-                "[F] /user/stor/ggg/dddd.json",
-                "[D] /user/stor/ggg/ggg",
-                "[D] /user/stor/ggg"
-        };
+        for (MantaObject dir : dirs) {
+            objects.add(dir);
+            objects.addAll(fileObjects(dir, 3));
+            objects.add(mockDirectory(dir.getPath() + MantaClient.SEPARATOR + "empty-dir"));
+        }
 
-        Assert.assertEquals(actual, expected, "Objects were not sorted "
-                + "in their expected order. Actual sorting:\n" +
-                StringUtils.join(objects, "\n"));
+        Collections.shuffle(objects);
+
+        objects.sort(MantaObjectDepthComparator.INSTANCE);
+
+        assertOrdering(objects);
+    }
+
+    public void verifyOrderingWithMoreSubdirectoriesDataSet() {
+        List<MantaObject> objects = new ArrayList<>();
+        List<MantaObject> dirs = dirObjects(29);
+
+        for (MantaObject dir : dirs) {
+            objects.add(dir);
+            objects.addAll(fileObjects(dir, 24));
+
+            MantaObject subdir = mockDirectory(dir.getPath()
+                    + MantaClient.SEPARATOR + "subdir");
+            objects.add(subdir);
+            objects.addAll(fileObjects(subdir, 3));
+        }
+
+        Collections.shuffle(objects);
+
+        objects.sort(MantaObjectDepthComparator.INSTANCE);
+
+        assertOrdering(objects);
+    }
+
+    private static void assertOrdering(final List<MantaObject> sorted) {
+        Set<String> parentDirs = new LinkedHashSet<>();
+        int index = 0;
+
+        for (MantaObject obj : sorted) {
+            if (obj.isDirectory()) {
+                parentDirs.remove(obj.getPath());
+            } else {
+                String fileParentDir = Paths.get(obj.getPath()).getParent().toString();
+
+                Assert.assertFalse(parentDirs.contains(fileParentDir),
+                        "Parent directory path was returned before file path. "
+                                + "Index [" + index + "] was out of order. "
+                                + "Actual sorting:\n" +
+                                StringUtils.join(sorted, "\n"));
+            }
+
+            index++;
+        }
     }
 
     private static List<MantaObject> fileObjects(final MantaObject dirObject, final int number) {
@@ -93,16 +125,20 @@ public class MantaObjectDepthComparatorTest {
 
         for (int i = 3; i <= depth; i++) {
             path.append(SEPARATOR).append(StringUtils.repeat((char)(97 + depth + i), 3));
-
-            final MantaObject object = mock(MantaObject.class);
-            when(object.getType()).thenReturn(MantaObject.MANTA_OBJECT_TYPE_DIRECTORY);
-            when(object.getContentType()).thenReturn(MantaContentTypes.DIRECTORY_LIST.toString());
-            when(object.getPath()).thenReturn(path.toString());
-            when(object.toString()).thenReturn("[D] " + path.toString());
+            MantaObject object = mockDirectory(path);
             objects.add(object);
         }
 
         return objects;
     }
 
+    private static MantaObject mockDirectory(final Object path) {
+        final MantaObject object = mock(MantaObject.class);
+        when(object.getType()).thenReturn(MantaObject.MANTA_OBJECT_TYPE_DIRECTORY);
+        when(object.getContentType()).thenReturn(MantaContentTypes.DIRECTORY_LIST.toString());
+        when(object.getPath()).thenReturn(path.toString());
+        when(object.toString()).thenReturn("[D] " + path.toString());
+
+        return object;
+    }
 }
