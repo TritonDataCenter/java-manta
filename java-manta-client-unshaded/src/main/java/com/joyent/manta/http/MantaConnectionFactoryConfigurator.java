@@ -21,10 +21,13 @@ import org.apache.http.impl.client.HttpClientBuilder;
 public class MantaConnectionFactoryConfigurator {
 
     /**
-     * Servlet-container-compatible cloner. Since {@link HttpClientBuilder} is a big mutable bucket of
+     * Unfortunately we need a cloner since {@link HttpClientBuilder} is a big mutable bucket of
      * settings we need to isolate changes to the initially-provided builder from modifications
-     * we make ourselves. Unless we perform a shallow-clone modifications from one client instance
-     * can persist. For example:
+     * we make ourselves. Unless we perform a "deep" clone modifications from one client instance
+     * can persist. In reality we don't need to deep-clone anything other than the interceptor lists
+     * since those are the only fields modified by {@link MantaConnectionFactory} when a custom
+     * {@link HttpClientBuilder} is supplied using this class.
+     * For example:
      *
      * <ol>
      * <li>{@link HttpClientBuilder} with custom interceptors
@@ -41,6 +44,8 @@ public class MantaConnectionFactoryConfigurator {
      * <li>Signature interceptor from initial instantiation is kept in addition to new
      * signature interceptor configured with the correct key.</li>
      * </ol>
+     *
+     * {@see LazyMantaClientTest#canReloadHttpHelperRepeatedlyWithoutLeakingInterceptors}
      */
     private static final HttpClientBuilderCloner CLONER = new HttpClientBuilderCloner();
 
@@ -62,6 +67,6 @@ public class MantaConnectionFactoryConfigurator {
     }
 
     HttpClientBuilder getHttpClientBuilder() {
-        return CLONER.createClone(httpClientBuilder);
+        return CLONER.createClone(this.httpClientBuilder);
     }
 }

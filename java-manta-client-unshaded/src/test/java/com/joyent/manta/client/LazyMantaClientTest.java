@@ -48,7 +48,6 @@ public class LazyMantaClientTest {
 
     @BeforeMethod
     public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
         final ImmutablePair<KeyPair, BaseChainedConfigContext> keyPairAndConfig =
                 TestConfigContext.generateKeyPairBackedConfig();
         keyPair = keyPairAndConfig.left;
@@ -63,10 +62,6 @@ public class LazyMantaClientTest {
         config = null;
     }
 
-    @AfterClass
-    public void afterClass() throws Exception {
-        TimeUnit.MINUTES.sleep(10);
-    }
 
     public void canBeInstantiatedAndClosedWithInvalidConfiguration() throws Exception {
         // required parameters are null
