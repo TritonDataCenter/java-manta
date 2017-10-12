@@ -113,7 +113,7 @@ public final class LazyMantaClient extends MantaClient {
      */
     public LazyMantaClient(final ConfigContext config,
                            final MantaConnectionFactoryConfigurator connectionConfig) {
-        setConfig(config);
+        setContext(config);
         this.auth = new AuthenticationConfigurator(config);
         this.connectionConfig = connectionConfig;
         this.lazyBeanSupervisor = new MantaMBeanSupervisor();
@@ -134,7 +134,7 @@ public final class LazyMantaClient extends MantaClient {
     String getUrl() {
         ensureClientNotClosed();
 
-        return getConfig().getMantaURL();
+        return getContext().getMantaURL();
     }
 
     @Override
@@ -179,7 +179,7 @@ public final class LazyMantaClient extends MantaClient {
         }
 
         if (lazyUriSigner == null) {
-            lazyUriSigner = new UriSigner(getConfig(), auth.getKeyPair(), auth.getSigner());
+            lazyUriSigner = new UriSigner(getContext(), auth.getKeyPair(), auth.getSigner());
         }
 
         return lazyUriSigner;
@@ -214,17 +214,17 @@ public final class LazyMantaClient extends MantaClient {
     @SuppressWarnings("AvoidInlineConditionals")
     private HttpHelper buildHttpHelper() {
         final MantaConnectionFactory connectionFactory = connectionConfig != null
-                ? new MantaConnectionFactory(getConfig(), auth.getKeyPair(), auth.getSigner(), connectionConfig)
-                : new MantaConnectionFactory(getConfig(), auth.getKeyPair(), auth.getSigner());
+                ? new MantaConnectionFactory(getContext(), auth.getKeyPair(), auth.getSigner(), connectionConfig)
+                : new MantaConnectionFactory(getContext(), auth.getKeyPair(), auth.getSigner());
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
 
         lazyBeanSupervisor.expose(connectionFactory);
 
-        if (BooleanUtils.isTrue(getConfig().isClientEncryptionEnabled())) {
-            return new EncryptionHttpHelper(connectionContext, getConfig());
+        if (BooleanUtils.isTrue(getContext().isClientEncryptionEnabled())) {
+            return new EncryptionHttpHelper(connectionContext, getContext());
         }
 
-        return new StandardHttpHelper(connectionContext, getConfig());
+        return new StandardHttpHelper(connectionContext, getContext());
     }
 
     // LIFECYCLE METHODS

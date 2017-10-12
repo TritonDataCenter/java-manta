@@ -30,5 +30,7 @@ public interface Cloner<T> {
  * @param <T> type to clone
  */
 interface ShallowCloner<T> extends Cloner<T> {
+
+    @Override
     T createClone(T source);
 }

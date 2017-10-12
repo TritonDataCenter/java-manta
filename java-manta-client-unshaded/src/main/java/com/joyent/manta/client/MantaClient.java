@@ -306,8 +306,8 @@ public class MantaClient implements AutoCloseable {
         return this.config;
     }
 
-    void setContext(final ConfigContext config) {
-        this.config = config;
+    void setContext(final ConfigContext context) {
+        this.config = context;
     }
 
     String getUrl() {

@@ -17,6 +17,8 @@ import com.joyent.manta.exception.MantaException;
  */
 public class MantaLazyConfigurationException extends MantaException {
 
+    private static final long serialVersionUID = 1560801372813448965L;
+
     /**
      * @param cause The exception cause.
      */

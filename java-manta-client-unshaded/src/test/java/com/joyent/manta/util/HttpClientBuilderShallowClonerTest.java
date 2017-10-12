@@ -80,8 +80,8 @@ public class HttpClientBuilderShallowClonerTest {
     }
 
     private void canCloneInterceptorList(final Object extraInterceptor, final String interceptAction) throws Exception {
-        final LinkedList originalInterceptFirst = (LinkedList) FieldUtils.readField(httpClientBuilder, interceptAction + "First", true);
-        final LinkedList originalInterceptLast = (LinkedList) FieldUtils.readField(httpClientBuilder, interceptAction + "Last", true);
+        final LinkedList<?> originalInterceptFirst = (LinkedList<?>) FieldUtils.readField(httpClientBuilder, interceptAction + "First", true);
+        final LinkedList<?> originalInterceptLast = (LinkedList<?>) FieldUtils.readField(httpClientBuilder, interceptAction + "Last", true);
 
         final HttpClientBuilder clonedBuilder = cloner.createClone(httpClientBuilder);
 
@@ -95,8 +95,8 @@ public class HttpClientBuilderShallowClonerTest {
             throw new Exception("Unexpected interceptor type: " + extraInterceptor.getClass().getCanonicalName());
         }
 
-        final LinkedList clonedInterceptFirst = (LinkedList) FieldUtils.readField(clonedBuilder, interceptAction + "First", true);
-        final LinkedList clonedInterceptLast = (LinkedList) FieldUtils.readField(clonedBuilder, interceptAction + "Last", true);
+        final LinkedList<?> clonedInterceptFirst = (LinkedList<?>) FieldUtils.readField(clonedBuilder, interceptAction + "First", true);
+        final LinkedList<?> clonedInterceptLast = (LinkedList<?>) FieldUtils.readField(clonedBuilder, interceptAction + "Last", true);
 
         Assert.assertEquals(originalInterceptFirst.size(), 1);
         Assert.assertEquals(originalInterceptLast.size(), 1);
