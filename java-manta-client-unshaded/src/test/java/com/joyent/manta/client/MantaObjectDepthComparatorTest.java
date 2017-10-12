@@ -8,6 +8,7 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.http.MantaContentTypes;
+import com.sun.source.tree.AssertTree;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -84,6 +85,12 @@ public class MantaObjectDepthComparatorTest {
 
         for (MantaObject obj : sorted) {
             if (obj.isDirectory()) {
+                String parentDir = Paths.get(obj.getPath()).getParent().toString();
+
+                Assert.assertFalse(parentDirs.contains(parentDir),
+                        "The parent of this directory was encountered before "
+                            + "this directory [index=" + index + "].");
+
                 parentDirs.remove(obj.getPath());
             } else {
                 String fileParentDir = Paths.get(obj.getPath()).getParent().toString();
