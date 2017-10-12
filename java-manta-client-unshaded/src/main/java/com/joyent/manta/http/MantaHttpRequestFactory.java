@@ -18,7 +18,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.message.BasicHeader;
 
@@ -67,7 +66,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpDelete delete(final String path) {
         final HttpDelete request = new HttpDelete(uriForPath(path));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -79,7 +78,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpDelete delete(final String path, final List<NameValuePair> params) {
         final HttpDelete request = new HttpDelete(uriForPath(path, params));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -90,7 +89,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpGet get(final String path) {
         final HttpGet request = new HttpGet(uriForPath(path));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -102,7 +101,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpGet get(final String path, final List<NameValuePair> params) {
         final HttpGet request = new HttpGet(uriForPath(path, params));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -113,7 +112,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpHead head(final String path) {
         final HttpHead request = new HttpHead(uriForPath(path));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -125,7 +124,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpHead head(final String path, final List<NameValuePair> params) {
         final HttpHead request = new HttpHead(uriForPath(path, params));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -136,7 +135,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPost post(final String path) {
         final HttpPost request = new HttpPost(uriForPath(path));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -148,7 +147,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPost post(final String path, final List<NameValuePair> params) {
         final HttpPost request = new HttpPost(uriForPath(path, params));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -159,7 +158,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPut put(final String path) {
         final HttpPut request = new HttpPut(uriForPath(path));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -171,7 +170,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPut put(final String path, final List<NameValuePair> params) {
         final HttpPut request = new HttpPut(uriForPath(path, params));
-        attachDefaultHeaders(request);
+        request.setHeaders(HEADERS);
         return request;
     }
 
@@ -210,17 +209,5 @@ public class MantaHttpRequestFactory {
         } catch (final URISyntaxException e) {
             throw new ConfigurationException(String.format("Invalid path in URI: %s", path));
         }
-    }
-
-    /**
-     * Attach default headers ourselves so that we don't clash with
-     * {@link org.apache.http.impl.client.HttpClientBuilder#setDefaultHeaders(java.util.Collection)}.
-     *
-     * @param request the request object to attach headers to
-     * @return
-     */
-    protected HttpUriRequest attachDefaultHeaders(final HttpUriRequest request) {
-        request.setHeaders(HEADERS);
-        return request;
     }
 }
