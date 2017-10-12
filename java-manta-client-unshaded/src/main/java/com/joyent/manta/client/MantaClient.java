@@ -370,13 +370,7 @@ public class MantaClient implements AutoCloseable {
                          */
                         } catch (ConnectionPoolTimeoutException e) {
                             responseTimeouts.incrementAndGet();
-
-                            if (LOG.isDebugEnabled()) {
-                                String msg = e.getMessage()
-                                        + " for deleting object {}";
-                                LOG.debug(msg, obj.getPath());
-                                return obj;
-                            }
+                            LOG.debug("{} for deleting object {}", e.getMessage(), obj.getPath());
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -407,9 +401,8 @@ public class MantaClient implements AutoCloseable {
                          * this should be an empty directory. */
                         delete(obj.getPath());
 
-                        if (LOG.isTraceEnabled()) {
-                            LOG.trace("Finished deleting path {}", obj.getPath());
-                        }
+                        LOG.trace("Finished deleting path {}", obj.getPath());
+
                         break;
                     } catch (MantaClientHttpResponseException e) {
                         // If the directory has already gone, we are good to go
@@ -427,12 +420,7 @@ public class MantaClient implements AutoCloseable {
                         throw new UncheckedIOException(e);
                     } catch (ConnectionPoolTimeoutException e) {
                         responseTimeouts.incrementAndGet();
-
-                        if (LOG.isDebugEnabled()) {
-                            String msg = e.getMessage()
-                                    + " for deleting object {}";
-                            LOG.debug(msg, obj.getPath());
-                        }
+                        LOG.debug("{} for deleting object {}", e.getMessage(), obj.getPath());
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -460,12 +448,7 @@ public class MantaClient implements AutoCloseable {
                 throw mioe;
             }  catch (ConnectionPoolTimeoutException e) {
                 responseTimeouts.incrementAndGet();
-
-                if (LOG.isDebugEnabled()) {
-                    String msg = e.getMessage()
-                            + " for deleting root object {}";
-                    LOG.debug(msg, path);
-                }
+                LOG.debug("{} for deleting root object {}", e.getMessage(), path);
             }
         }
 
