@@ -102,6 +102,11 @@ public final class HttpClientBuilderCloner implements Cloner<HttpClientBuilder> 
 
             for (final Field f : FIELDS_CLONE_COLLECTION) {
                 final LinkedList sourceList = (LinkedList) readField(f, source, true);
+
+                if (sourceList == null) {
+                    continue;
+                }
+
                 final LinkedList targetList = new LinkedList();
 
                 targetList.addAll(sourceList);

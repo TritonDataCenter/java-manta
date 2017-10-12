@@ -141,8 +141,9 @@ public class MantaConnectionFactoryTest {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
+        final Object factoryInternalBuilder = Whitebox.getInternalState(connectionFactory, "httpClientBuilder");
         final LinkedList<HttpRequestInterceptor> interceptors =
-                (LinkedList<HttpRequestInterceptor>) Whitebox.getInternalState(builder, "requestLast");
+                (LinkedList<HttpRequestInterceptor>) Whitebox.getInternalState(factoryInternalBuilder, "requestLast");
 
         boolean foundAuthInterceptor = false;
         for (final HttpRequestInterceptor requestInterceptor : interceptors) {
@@ -172,7 +173,8 @@ public class MantaConnectionFactoryTest {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
-        Assert.assertTrue((Boolean) Whitebox.getInternalState(builder, "automaticRetriesDisabled"));
+        final Object factoryInternalBuilder = Whitebox.getInternalState(connectionFactory, "httpClientBuilder");
+        Assert.assertTrue((Boolean) Whitebox.getInternalState(factoryInternalBuilder, "automaticRetriesDisabled"));
     }
 
     public void willAttachInternalRetryHandlersToInternalBuilder() throws IOException {
@@ -196,8 +198,9 @@ public class MantaConnectionFactoryTest {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
 
-        final Object retryHandler = Whitebox.getInternalState(builder, "retryHandler");
-        final Object serviceUnavailStrategy = Whitebox.getInternalState(builder, "serviceUnavailStrategy");
+        final Object factoryInternalBuilder = Whitebox.getInternalState(connectionFactory, "httpClientBuilder");
+        final Object retryHandler = Whitebox.getInternalState(factoryInternalBuilder, "retryHandler");
+        final Object serviceUnavailStrategy = Whitebox.getInternalState(factoryInternalBuilder, "serviceUnavailStrategy");
 
 
         Assert.assertTrue(retryHandler instanceof MantaHttpRequestRetryHandler);

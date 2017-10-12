@@ -171,7 +171,7 @@ public class LazyMantaClientTest {
         httpClientBuilder.addInterceptorLast(
                 (HttpResponseInterceptor) (request, context) -> System.out.println("res end"));
 
-        int interceptorCount = countInterceptors(httpClientBuilder);
+        final int interceptorCount = countInterceptors(httpClientBuilder);
 
         Assert.assertEquals(interceptorCount, 4);
 
