@@ -10,13 +10,17 @@ package com.joyent.manta.http;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.message.BasicHeader;
 
 import java.net.URISyntaxException;
 import java.util.List;
@@ -26,6 +30,14 @@ import java.util.List;
  * a.k.a. {@link org.apache.http.client.methods.HttpUriRequest}.
  */
 public class MantaHttpRequestFactory {
+
+    /**
+     * Default HTTP headers to send to all requests to Manta.
+     */
+    private static final Header[] HEADERS = {
+            new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
+            new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
+    };
 
     /**
      * Base URL for requests.
@@ -54,7 +66,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpDelete delete(final String path) {
-        return new HttpDelete(uriForPath(path));
+        final HttpDelete request = new HttpDelete(uriForPath(path));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -64,7 +78,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpDelete delete(final String path, final List<NameValuePair> params) {
-        return new HttpDelete(uriForPath(path, params));
+        final HttpDelete request = new HttpDelete(uriForPath(path, params));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -73,7 +89,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpGet get(final String path) {
-        return new HttpGet(uriForPath(path));
+        final HttpGet request = new HttpGet(uriForPath(path));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -83,7 +101,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpGet get(final String path, final List<NameValuePair> params) {
-        return new HttpGet(uriForPath(path, params));
+        final HttpGet request = new HttpGet(uriForPath(path, params));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -92,7 +112,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpHead head(final String path) {
-        return new HttpHead(uriForPath(path));
+        final HttpHead request = new HttpHead(uriForPath(path));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -102,7 +124,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpHead head(final String path, final List<NameValuePair> params) {
-        return new HttpHead(uriForPath(path, params));
+        final HttpHead request = new HttpHead(uriForPath(path, params));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -111,7 +135,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpPost post(final String path) {
-        return new HttpPost(uriForPath(path));
+        final HttpPost request = new HttpPost(uriForPath(path));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -121,7 +147,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpPost post(final String path, final List<NameValuePair> params) {
-        return new HttpPost(uriForPath(path, params));
+        final HttpPost request = new HttpPost(uriForPath(path, params));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -130,7 +158,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpPut put(final String path) {
-        return new HttpPut(uriForPath(path));
+        final HttpPut request = new HttpPut(uriForPath(path));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -140,7 +170,9 @@ public class MantaHttpRequestFactory {
      * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
      */
     public HttpPut put(final String path, final List<NameValuePair> params) {
-        return new HttpPut(uriForPath(path, params));
+        final HttpPut request = new HttpPut(uriForPath(path, params));
+        attachDefaultHeaders(request);
+        return request;
     }
 
     /**
@@ -178,5 +210,17 @@ public class MantaHttpRequestFactory {
         } catch (final URISyntaxException e) {
             throw new ConfigurationException(String.format("Invalid path in URI: %s", path));
         }
+    }
+
+    /**
+     * Attach default headers ourselves so that we don't clash with
+     * {@link org.apache.http.impl.client.HttpClientBuilder#setDefaultHeaders(java.util.Collection)}.
+     *
+     * @param request the request object to attach headers to
+     * @return
+     */
+    protected HttpUriRequest attachDefaultHeaders(final HttpUriRequest request) {
+        request.setHeaders(HEADERS);
+        return request;
     }
 }

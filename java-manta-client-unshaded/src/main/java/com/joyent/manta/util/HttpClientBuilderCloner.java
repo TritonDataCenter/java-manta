@@ -48,7 +48,7 @@ public final class HttpClientBuilderCloner implements Cloner<HttpClientBuilder> 
     /**
      * Fields which should be "deep" cloned at just a single level.
      */
-    private static final List<Field> FIELDS_CLONE_COLLECTION = new ArrayList<>();
+    private static final List<Field> FIELDS_CLONE_LIST = new ArrayList<>();
 
     static {
         Class<?> httpClientBuilderClass = null;
@@ -78,7 +78,7 @@ public final class HttpClientBuilderCloner implements Cloner<HttpClientBuilder> 
 
         for (final Field f : FieldUtils.getAllFields(httpClientBuilderClass)) {
             if (manuallyCopiedFields.contains(f.getName())) {
-                FIELDS_CLONE_COLLECTION.add(f);
+                FIELDS_CLONE_LIST.add(f);
             } else {
                 FIELDS_CLONE_DIRECT.add(f);
             }
@@ -100,18 +100,22 @@ public final class HttpClientBuilderCloner implements Cloner<HttpClientBuilder> 
                 writeField(f, target, readField(f, source, true), true);
             }
 
-            for (final Field f : FIELDS_CLONE_COLLECTION) {
-                final LinkedList sourceList = (LinkedList) readField(f, source, true);
+            for (final Field f : FIELDS_CLONE_LIST) {
+                final Object sourceCollection = readField(f, source, true);
 
-                if (sourceList == null) {
+                if (sourceCollection != null && !(sourceCollection instanceof LinkedList)) {
+                    throw new MantaReflectionException(
+                            "Unexpected collection when cloning HttpClientBuilder: "
+                                    + sourceCollection.getClass().getSimpleName());
+                }
+
+                if (sourceCollection == null) {
                     continue;
                 }
 
-                final LinkedList targetList = new LinkedList();
-
-                targetList.addAll(sourceList);
-
-                writeField(f, target, targetList, true);
+                final LinkedList targetCollection = new LinkedList();
+                targetCollection.addAll((LinkedList) sourceCollection);
+                writeField(f, target, targetCollection, true);
             }
         } catch (final ReflectiveOperationException e) {
             throw new MantaReflectionException("Unable to copy HttpClientBuilder field", e);

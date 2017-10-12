@@ -18,8 +18,6 @@ import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -45,7 +43,6 @@ import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
 import org.apache.http.impl.io.DefaultHttpResponseParserFactory;
-import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +54,6 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.security.KeyPair;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -83,14 +78,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Default DNS resolver for all connections to the Manta.
      */
     private static final DnsResolver DNS_RESOLVER = new ShufflingDnsResolver();
-
-    /**
-     * Default HTTP headers to send to all requests to Manta.
-     */
-    private static final Collection<? extends Header> HEADERS = Arrays.asList(
-            new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
-            new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
-    );
 
     /**
      * User Agent string identifying Manta Client and Java version.
@@ -291,6 +278,8 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
      *
+     *
+     *
      * @param keyPair the keypair to use with signature authentication
      * @param signer  Signer configured to use the given keyPair
      */
@@ -310,7 +299,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             httpClientBuilder.setConnectionManager(this.connectionManager);
         }
 
-        httpClientBuilder.setDefaultHeaders(HEADERS);
         httpClientBuilder.addInterceptorFirst(new RequestIdInterceptor());
 
         if (BooleanUtils.isNotTrue(config.noAuth())) {

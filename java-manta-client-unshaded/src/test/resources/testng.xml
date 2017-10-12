@@ -10,6 +10,9 @@
         <packages>
             <package name="com.joyent.manta.http.*" />
         </packages>
+        <classes>
+            <class name="com.joyent.manta.client.LazyMantaClientTest" />
+        </classes>
     </test>
     <test name="Configuration Context Tests">
         <groups>
