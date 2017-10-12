@@ -98,6 +98,7 @@ import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -331,6 +332,11 @@ public class MantaClient implements AutoCloseable {
          * be deleted. */
         int loops = 0;
 
+        /* We record the number of request timeouts where we were unable to get
+         * a HTTP connection from the pool in order to provide feedback to the
+         * consumer of the SDK so that they can better tune their settings.*/
+        final AtomicInteger responseTimeouts = new AtomicInteger(0);
+
         while (true) {
             loops++;
 
@@ -363,6 +369,8 @@ public class MantaClient implements AutoCloseable {
                          * contention on the connection pool.
                          */
                         } catch (ConnectionPoolTimeoutException e) {
+                            responseTimeouts.incrementAndGet();
+
                             if (LOG.isDebugEnabled()) {
                                 String msg = e.getMessage()
                                         + " for deleting object {}";
@@ -418,6 +426,8 @@ public class MantaClient implements AutoCloseable {
 
                         throw new UncheckedIOException(e);
                     } catch (ConnectionPoolTimeoutException e) {
+                        responseTimeouts.incrementAndGet();
+
                         if (LOG.isDebugEnabled()) {
                             String msg = e.getMessage()
                                     + " for deleting object {}";
@@ -448,11 +458,27 @@ public class MantaClient implements AutoCloseable {
                 mioe.setContextValue("path", path);
 
                 throw mioe;
+            }  catch (ConnectionPoolTimeoutException e) {
+                responseTimeouts.incrementAndGet();
+
+                if (LOG.isDebugEnabled()) {
+                    String msg = e.getMessage()
+                            + " for deleting root object {}";
+                    LOG.debug(msg, path);
+                }
             }
         }
 
         LOG.debug("Finished deleting path {}. It took {} loops to delete recursively",
                 path, loops);
+
+        if (responseTimeouts.get() > 0) {
+            LOG.info("Request timeouts were hit [%d] times when attempting to delete "
+                    + "recursively. You may want to adjust the Manta SDK request "
+                    + "timeout config setting, the Manta SDK maximum connections "
+                    + "setting, or the Java system property "
+                    + "[java.util.concurrent.ForkJoinPool.common.parallelism].");
+        }
     }
 
     /**
