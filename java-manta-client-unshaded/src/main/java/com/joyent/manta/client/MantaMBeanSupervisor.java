@@ -143,7 +143,6 @@ class MantaMBeanSupervisor implements AutoCloseable {
                 server.unregisterMBean(bean.getKey());
             } catch (final JMException e) {
                 LOGGER.warn(String.format("Error deregistering [%s] MBean in JMX", bean.getKey()), e);
-                throw e;
             }
         }
 

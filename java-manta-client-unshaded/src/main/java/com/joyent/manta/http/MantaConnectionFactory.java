@@ -278,7 +278,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
      *
-     *
+     * NOTICE: Changes to this method can impact the functionality of
+     * {@link com.joyent.manta.util.HttpClientBuilderCloner} and ultimately
+     * {@link com.joyent.manta.client.LazyMantaClient}. Since we've limited our configuration of
+     * externally-provided instances to just retry handlers and interceptors the cloner can be kept relatively simple.
      *
      * @param keyPair the keypair to use with signature authentication
      * @param signer  Signer configured to use the given keyPair
