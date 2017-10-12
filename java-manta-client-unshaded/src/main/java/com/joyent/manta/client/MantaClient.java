@@ -296,11 +296,17 @@ public class MantaClient implements AutoCloseable {
         }
     }
 
-    ConfigContext getConfig() {
+    /**
+      * Method that returns the configuration context used to
+      * instantiate the MantaClient instance.
+      *
+      * @return instance of the configuration context used to construct this client
+      */
+    public ConfigContext getContext() {
         return this.config;
     }
 
-    void setConfig(final ConfigContext config) {
+    void setContext(final ConfigContext config) {
         this.config = config;
     }
 
@@ -1735,16 +1741,6 @@ public class MantaClient implements AutoCloseable {
         });
 
         deleteRecursive(source);
-    }
-
-    /**
-      * Method that returns the configuration context used to
-      * instantiate the MantaClient instance.
-      *
-      * @return instance of the configuration context used to construct this client
-      */
-    public ConfigContext getContext() {
-        return this.config;
     }
 
     /* ======================================================================
