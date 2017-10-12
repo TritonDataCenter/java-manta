@@ -25,10 +25,13 @@ import static org.apache.commons.lang3.reflect.FieldUtils.writeField;
  * This is only really necessary when {@link com.joyent.manta.http.MantaConnectionFactoryConfigurator}
  * is used in combination with {@link com.joyent.manta.client.LazyMantaClient}.
  *
+ * Care is taken to create separate instances of mutable lists in {@link HttpClientBuilder} but otherwise
+ * deep cloning is avoided.
+ *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */
-public final class HttpClientBuilderCloner implements Cloner<HttpClientBuilder> {
+public final class HttpClientBuilderShallowCloner implements ShallowCloner<HttpClientBuilder> {
 
     /**
      * Class name when caller depends on plain artifact.

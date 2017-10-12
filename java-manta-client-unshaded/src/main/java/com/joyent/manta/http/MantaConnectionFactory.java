@@ -14,6 +14,7 @@ import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.util.HttpClientBuilderShallowCloner;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -279,7 +280,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
      *
      * NOTICE: Changes to this method can impact the functionality of
-     * {@link com.joyent.manta.util.HttpClientBuilderCloner} and ultimately
+     * {@link HttpClientBuilderShallowCloner} and ultimately
      * {@link com.joyent.manta.client.LazyMantaClient}. Since we've limited our configuration of
      * externally-provided instances to just retry handlers and interceptors the cloner can be kept relatively simple.
      *

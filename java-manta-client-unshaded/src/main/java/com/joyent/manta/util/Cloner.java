@@ -22,3 +22,11 @@ public interface Cloner<T> {
      */
     T createClone(T source);
 }
+
+/**
+ * Interface for cloners which intentionally perform targeted shallow clones, e.g. creates a new array in
+ * cloned objects which hold the same contents as the original instance's array.
+ */
+interface ShallowCloner<T> extends Cloner<T> {
+    T createClone(T source);
+}

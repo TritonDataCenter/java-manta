@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.util.HttpClientBuilderCloner;
+import com.joyent.manta.util.HttpClientBuilderShallowCloner;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -47,7 +47,7 @@ public class MantaConnectionFactoryConfigurator {
      *
      * {@see LazyMantaClientTest#canReloadHttpHelperRepeatedlyWithoutLeakingInterceptors}
      */
-    private static final HttpClientBuilderCloner CLONER = new HttpClientBuilderCloner();
+    private static final HttpClientBuilderShallowCloner CLONER = new HttpClientBuilderShallowCloner();
 
     /**
      * An existing {@link HttpClientBuilder} to further configure.
