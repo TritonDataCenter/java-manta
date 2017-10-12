@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.util.HttpClientBuilderCloner;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -18,6 +19,30 @@ import org.apache.http.impl.client.HttpClientBuilder;
  * @since 3.1.7
  */
 public class MantaConnectionFactoryConfigurator {
+
+    /**
+     * Servlet-container-compatible cloner. Since {@link HttpClientBuilder} is a big mutable bucket of
+     * settings we need to isolate changes to the initially-provided builder from modifications
+     * we make ourselves. Unless we perform a shallow-clone modifications from one client instance
+     * can persist. For example:
+     *
+     * <ol>
+     * <li>{@link HttpClientBuilder} with custom interceptors
+     * provided to {@link com.joyent.manta.client.LazyMantaClient}</li>
+     *
+     * <li>Request is made, {@link HttpHelper} instantiated with
+     * {@link com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor}</li>
+     *
+     * <li>Request fails because of invalid key, {@link com.joyent.manta.config.ConfigContext}
+     * updated to use valid key</li>
+     *
+     * <li>User triggers client reload and makes a new request.</li>
+     *
+     * <li>Signature interceptor from initial instantiation is kept in addition to new
+     * signature interceptor configured with the correct key.</li>
+     * </ol>
+     */
+    private static final HttpClientBuilderCloner CLONER = new HttpClientBuilderCloner();
 
     /**
      * An existing {@link HttpClientBuilder} to further configure.
@@ -37,6 +62,6 @@ public class MantaConnectionFactoryConfigurator {
     }
 
     HttpClientBuilder getHttpClientBuilder() {
-        return httpClientBuilder;
+        return CLONER.createClone(httpClientBuilder);
     }
 }
