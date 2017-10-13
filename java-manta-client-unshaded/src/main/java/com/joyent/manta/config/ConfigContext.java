@@ -68,7 +68,9 @@ public interface ConfigContext extends MantaMBeanable {
     /**
      * @return String of home directory based on Manta username.
      */
-    String getMantaHomeDirectory();
+    default String getMantaHomeDirectory() {
+        return deriveHomeDirectoryFromUser(getMantaUser());
+    }
 
     /**
      * @return Number of HTTP retries to perform on failure.

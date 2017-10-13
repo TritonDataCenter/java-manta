@@ -241,11 +241,6 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public String getMantaHomeDirectory() {
-        return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
-    }
-
-    @Override
     public Integer getTimeout() {
         Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TIMEOUT_KEY));
 
