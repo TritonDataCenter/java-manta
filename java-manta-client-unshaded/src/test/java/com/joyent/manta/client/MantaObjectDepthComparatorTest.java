@@ -8,8 +8,6 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.http.MantaContentTypes;
-import com.sun.source.tree.AssertTree;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.testng.Assert;
