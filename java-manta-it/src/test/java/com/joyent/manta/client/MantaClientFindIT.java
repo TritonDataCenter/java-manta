@@ -225,13 +225,17 @@ public class MantaClientFindIT {
 
         // We start with i=currentDepth because we are already currentDepth levels deep
         for (int i = currentDepth; i < depth; i++) {
-            path.append(UUID.randomUUID() + SEPARATOR);
+            path.append(UUID.randomUUID()).append(SEPARATOR);
             mantaClient.putDirectory(path.toString());
             String file = path + String.format("subdirectory-file-%d.txt", i);
             mantaClient.put(file, TEST_DATA, StandardCharsets.UTF_8);
         }
 
-        mantaClient.find(path.toString());
+        Stream<MantaObject> objects = mantaClient.find(path.toString());
+        objects.forEach(object -> {});
+
+        /* This test just makes sure that we can run to a deep directory depth
+         * without throwing an exception. */
     }
 
     /**

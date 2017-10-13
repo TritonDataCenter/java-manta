@@ -388,7 +388,7 @@ public class MantaClient implements AutoCloseable {
             /* We go through every remaining directory and file attempt to
              * delete it even though that operation may not be immediately
              * successful. */
-            toDelete.forEach(obj -> {
+            toDelete.forEachOrdered(obj -> {
                 for (int i = 0; i < config.getRetries(); i++) {
                     try {
                         /* Don't bother deleting the file if it was marked as
