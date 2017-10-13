@@ -11,8 +11,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.HttpHelper;
+import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -178,6 +180,18 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
             // We read one line to clear it because it is our marker
             br.readLine();
+        }
+
+        /* If this is an empty directory, we just mark us as done right here
+         * so that no other methods need to do any extra work. */
+        Header resultsHeader = currentResponse.getFirstHeader(MantaHttpHeaders.RESULT_SET_SIZE);
+        if (resultsHeader != null) {
+            String results = resultsHeader.getValue();
+
+            if (results.equals("0")) {
+                finished.set(true);
+                return;
+            }
         }
 
         nextLine.set(br.readLine());

@@ -21,9 +21,10 @@
             <class name="com.joyent.manta.config.ConfigContextTest" />
         </classes>
     </test>
-    <test name="Collection Tests">
+    <test name="Collection and Comparator Tests">
         <classes>
             <class name="com.joyent.manta.client.MantaMetadataTest" />
+            <class name="com.joyent.manta.client.MantaObjectDepthComparatorTest" />
         </classes>
     </test>
     <test name="Exception Tests">
