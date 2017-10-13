@@ -1241,8 +1241,14 @@ public class MantaClient implements AutoCloseable {
                 ContentType.APPLICATION_OCTET_STREAM);
 
         /* We remove the content-type from the headers, because
-         * it will be automatically from the entity. Adding it twice
-         * can confuse our contract. */
+         * it will be automatically from the string specific entity.
+         * This operation is specific to ExposedStringEntity instances or
+         * org.apache.http.entity.String entity objects and not other
+         * entity objects because strings by their very nature need to
+         * have a character set specified in order to convert them
+         * to a binary representation.
+         *
+         * Adding it twice can confuse our contract. */
         if (headers != null) {
             headers.remove(HttpHeaders.CONTENT_TYPE);
         }
