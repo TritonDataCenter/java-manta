@@ -7,11 +7,13 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.exception.MantaClientException;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
+import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpRequest;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -21,6 +23,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.message.BasicHeader;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 
@@ -38,25 +41,37 @@ public class MantaHttpRequestFactory {
             new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
     };
 
+    private static final RequestIdInterceptor INTERCEPTOR_REQUEST_ID = new RequestIdInterceptor();
+
+    private final AuthenticationConfigurator authConfig;
+
     /**
-     * Base URL for requests.
+     * Interceptor for signing requests than can dynamically react to modifications in the provided configuration.
      */
+    private final DynamicHttpSignatureRequestInterceptor authInterceptor;
+
     private final String url;
 
     /**
-     * Build a new request factory based on a config's URL.
-     * @param config the config from which to extract a URL
+     * Build a new request factory based on an {@link AuthenticationConfigurator}.
+     *
+     * @param authConfig the config from which to extract base a base URL and to provide to the interceptor
      */
-    public MantaHttpRequestFactory(final ConfigContext config) {
-        this(config.getMantaURL());
+    public MantaHttpRequestFactory(final AuthenticationConfigurator authConfig) {
+        this.authConfig = Validate.notNull(authConfig, "AuthenticationConfigurator must not be null");
+        this.authInterceptor = new DynamicHttpSignatureRequestInterceptor(authConfig);
+        this.url = null;
     }
 
     /**
-     * Create an instance of the request factory based on the provided url.
+     * Create an instance of the request factory based on the provided url and no authentication.
+     *
      * @param url the base url
      */
     public MantaHttpRequestFactory(final String url) {
-        this.url = url;
+        this.authConfig = null;
+        this.authInterceptor = null;
+        this.url = Validate.notNull(url, "URL must not be null");;
     }
 
     /**
@@ -66,7 +81,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpDelete delete(final String path) {
         final HttpDelete request = new HttpDelete(uriForPath(path));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -78,7 +93,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpDelete delete(final String path, final List<NameValuePair> params) {
         final HttpDelete request = new HttpDelete(uriForPath(path, params));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -89,7 +104,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpGet get(final String path) {
         final HttpGet request = new HttpGet(uriForPath(path));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -101,7 +116,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpGet get(final String path, final List<NameValuePair> params) {
         final HttpGet request = new HttpGet(uriForPath(path, params));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -112,7 +127,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpHead head(final String path) {
         final HttpHead request = new HttpHead(uriForPath(path));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -124,7 +139,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpHead head(final String path, final List<NameValuePair> params) {
         final HttpHead request = new HttpHead(uriForPath(path, params));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -135,7 +150,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPost post(final String path) {
         final HttpPost request = new HttpPost(uriForPath(path));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -147,7 +162,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPost post(final String path, final List<NameValuePair> params) {
         final HttpPost request = new HttpPost(uriForPath(path, params));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -158,7 +173,7 @@ public class MantaHttpRequestFactory {
      */
     public HttpPut put(final String path) {
         final HttpPut request = new HttpPut(uriForPath(path));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
     }
 
@@ -170,8 +185,22 @@ public class MantaHttpRequestFactory {
      */
     public HttpPut put(final String path, final List<NameValuePair> params) {
         final HttpPut request = new HttpPut(uriForPath(path, params));
-        request.setHeaders(HEADERS);
+        prepare(request);
         return request;
+    }
+
+    private void prepare(final HttpRequest request) {
+        request.setHeaders(HEADERS);
+
+        try {
+            INTERCEPTOR_REQUEST_ID.process(request, null);
+
+            if (authInterceptor != null) {
+                authInterceptor.process(request, null);
+            }
+        } catch (HttpException | IOException e) {
+            throw new MantaClientException("Failed to prepare request", e);
+        }
     }
 
     /**
@@ -183,11 +212,22 @@ public class MantaHttpRequestFactory {
     protected String uriForPath(final String path) {
         Validate.notNull(path, "Path must not be null");
 
+        final String format;
         if (path.startsWith("/")) {
-            return String.format("%s%s", this.url, path);
+            format = "%s%s";
         } else {
-            return String.format("%s/%s", this.url, path);
+            format = "%s/%s";
         }
+
+
+        final String baseURL;
+        if (authConfig != null) {
+            baseURL = authConfig.getURL();
+        } else {
+            baseURL = url;
+        }
+
+        return String.format(format, baseURL, path);
     }
 
     /**

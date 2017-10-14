@@ -102,7 +102,10 @@ public class EncryptedHttpHelperTest {
                 .setEncryptionPrivateKeyBytes(SecretKeyUtils.generate(cipherDetails).getEncoded())
                 .setEncryptionAlgorithm(cipherDetails.getCipherId());
 
-        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, config);
+        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
+                connectionContext,
+                new MantaHttpRequestFactory(config.getMantaURL()),
+                config);
 
         URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
 

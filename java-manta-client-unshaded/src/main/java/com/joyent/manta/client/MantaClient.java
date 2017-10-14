@@ -8,15 +8,12 @@
 package com.joyent.manta.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.joyent.http.signature.Signer;
-import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.jobs.MantaJobBuilder;
 import com.joyent.manta.client.jobs.MantaJobError;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaException;
@@ -24,6 +21,7 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaJobException;
 import com.joyent.manta.exception.MantaNoHttpResponseException;
 import com.joyent.manta.exception.OnCloseAggregateException;
+import com.joyent.manta.http.AuthenticationConfigurator;
 import com.joyent.manta.http.ContentTypeLookup;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.HttpHelper;
@@ -32,6 +30,7 @@ import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaConnectionFactoryConfigurator;
 import com.joyent.manta.http.MantaContentTypes;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.http.StandardHttpHelper;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import com.joyent.manta.http.entity.ExposedStringEntity;
@@ -73,7 +72,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
-import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -81,7 +79,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
@@ -138,24 +135,16 @@ public class MantaClient implements AutoCloseable {
     private volatile boolean closed = false;
 
     /**
-     * A string representation of the manta service endpoint URL.
-     */
-    private final String url;
-
-    /**
      * The instance of the http helper class used to simplify creating requests.
      */
     private final HttpHelper httpHelper;
 
     /**
-     * The home directory of the account.
-     */
-    private final String home;
-
-    /**
      * Library configuration context reference.
      */
     private final ConfigContext config;
+
+    private final AuthenticationConfigurator authConfig;
 
     /**
      * Collection of all of the {@link AutoCloseable} objects that will need to be
@@ -163,23 +152,6 @@ public class MantaClient implements AutoCloseable {
      */
     private final Set<AutoCloseable> danglingStreams
             = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
-
-    /**
-     * Signing object used for authentication and signed URL generation. We wrap it in a {@link WeakReference}
-     * to avoid memory leaks which can occur when {@link ThreadLocal} objects are used inside of
-     * an application container.
-     *
-     * @see <a href="https://plumbr.eu/blog/locked-threads/how-to-shoot-yourself-in-foot-with-threadlocals">How to
-     * shoot yourself in the foot with ThreadLocals
-     *     </a>
-     * @see <a href="https://blog.codecentric.de/en/2008/09/a-threadlocal-memory-leak/">A ThreadLocal Memory Leak</a>
-     */
-    private final WeakReference<ThreadLocalSigner> signerRef;
-
-    /**
-     * Instance used to generate Manta signed URIs.
-     */
-    private final UriSigner uriSigner;
 
     /**
      * MBean supervisor.
@@ -191,19 +163,6 @@ public class MantaClient implements AutoCloseable {
     static {
         LOG.debug("Preferred Security Provider: {}",
                 ExternalSecurityProviderLoader.getPreferredProvider());
-    }
-
-    /**
-     * Private constructor for lazy client.
-     */
-    MantaClient() {
-        url = "";
-        home = "";
-        httpHelper = null;
-        config = null;
-        signerRef = new WeakReference<>(null);
-        uriSigner = null;
-        beanSupervisor = null;
     }
 
     /**
@@ -234,35 +193,21 @@ public class MantaClient implements AutoCloseable {
 
         ConfigContext.validate(config);
 
-        this.url = config.getMantaURL();
         this.config = config;
-        this.home = ConfigContext.deriveHomeDirectoryFromUser(config.getMantaUser());
-
-        final KeyPair keyPair = new KeyPairFactory(config).createKeyPair();
-
-        final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (BooleanUtils.isTrue(config.disableNativeSignatures())) {
-            builder.providerCode("stdlib");
-        }
-        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
-        this.signerRef = new WeakReference<>(signer);
-
+        this.authConfig = new AuthenticationConfigurator(config);
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,
-                keyPair,
-                signer,
                 connectionFactoryConfigurator);
 
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
+        final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.authConfig);
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-            this.httpHelper = new EncryptionHttpHelper(connectionContext, config);
+            this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
         } else {
-            this.httpHelper = new StandardHttpHelper(connectionContext, config);
+            this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
         }
-
-        this.uriSigner = new UriSigner(this.config, keyPair, signer);
 
         this.beanSupervisor = new MantaMBeanSupervisor();
         beanSupervisor.expose(this.config);
@@ -272,7 +217,6 @@ public class MantaClient implements AutoCloseable {
     /* ======================================================================
      * Constructor Helpers
      * ====================================================================== */
-
 
     /**
      * Dumps the configuration that is used to load a {@link MantaClient} if
@@ -306,22 +250,6 @@ public class MantaClient implements AutoCloseable {
         return this.config;
     }
 
-    String getUrl() {
-        return this.url;
-    }
-
-    String getHome() {
-        return this.home;
-    }
-
-    HttpHelper getHttpHelper() {
-        return this.httpHelper;
-    }
-
-    UriSigner getUriSigner() {
-        return this.uriSigner;
-    }
-
     /**
      * Flag indicating if the client is closed or is in the process of being
      * closed.
@@ -349,7 +277,7 @@ public class MantaClient implements AutoCloseable {
         String path = formatPath(rawPath);
         LOG.debug("DELETE {}", path);
 
-        getHttpHelper().httpDelete(path);
+        this.httpHelper.httpDelete(path);
     }
 
     /**
@@ -437,7 +365,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "rawPath must not be blank");
 
         String path = formatPath(rawPath);
-        final HttpResponse response = getHttpHelper().httpGet(path);
+        final HttpResponse response = this.httpHelper.httpGet(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
         return new MantaObjectResponse(path, headers);
     }
@@ -461,10 +389,8 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "rawPath must not be blank");
 
         final String path = formatPath(rawPath);
-        final HttpGet get = getHttpHelper().getRequestFactory().get(path);
-
-        MantaObjectInputStream stream = getHttpHelper().httpRequestAsInputStream(get,
-                requestHeaders);
+        final HttpGet get = this.httpHelper.getRequestFactory().get(path);
+        final MantaObjectInputStream stream = this.httpHelper.httpRequestAsInputStream(get, requestHeaders);
 
         danglingStreams.add(stream);
 
@@ -603,7 +529,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
-        return new MantaSeekableByteChannel(path, position, getHttpHelper());
+        return new MantaSeekableByteChannel(path, position, this.httpHelper);
     }
 
     /**
@@ -622,7 +548,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "Path must not be blank");
         String path = formatPath(rawPath);
 
-        return new MantaSeekableByteChannel(path, getHttpHelper());
+        return new MantaSeekableByteChannel(path, this.httpHelper);
     }
 
     /**
@@ -691,10 +617,11 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         Validate.notBlank(path, "Path must be not be blank");
 
-        final String fullPath = String.format("%s%s", getUrl(), formatPath(path));
+        final String fullPath = String.format("%s%s", config.getMantaURL(), formatPath(path));
         final URI request = URI.create(fullPath);
+        final UriSigner uriSigner = new UriSigner(authConfig);
 
-        return getUriSigner().signURI(request, method, expiresEpochSeconds);
+        return uriSigner.signURI(request, method, expiresEpochSeconds);
     }
 
     /**
@@ -709,7 +636,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "Path must not be empty nor null");
 
         String path = formatPath(rawPath);
-        final HttpResponse response = getHttpHelper().httpHead(path);
+        final HttpResponse response = this.httpHelper.httpHead(path);
         final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
         return new MantaObjectResponse(path, headers);
     }
@@ -733,7 +660,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaDirectoryListingIterator streamingIterator(final String path, final int pagingSize) {
         MantaDirectoryListingIterator itr =
-            new MantaDirectoryListingIterator(getUrl(), path, getHttpHelper(), pagingSize);
+            new MantaDirectoryListingIterator(config.getMantaURL(), path, this.httpHelper, pagingSize);
         danglingStreams.add(itr);
         return itr;
     }
@@ -1009,7 +936,7 @@ public class MantaClient implements AutoCloseable {
         final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
                 ContentType.APPLICATION_OCTET_STREAM);
 
-        final int preLoadSize = getContext().getUploadBufferSize();
+        final int preLoadSize = config.getUploadBufferSize();
         final HttpEntity entity;
 
         /* We don't know how big the stream is, so we read N bytes from it and
@@ -1052,7 +979,7 @@ public class MantaClient implements AutoCloseable {
             }
         }
 
-        return getHttpHelper().httpPut(path, headers, entity, metadata);
+        return this.httpHelper.httpPut(path, headers, entity, metadata);
     }
 
     /**
@@ -1160,11 +1087,17 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "rawPath must not be blank");
         final String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
-                path, ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
+                headers,
+                path,
+                ContentType.APPLICATION_OCTET_STREAM);
 
-        MantaObjectOutputStream stream = new MantaObjectOutputStream(path,
-                getHttpHelper(), headers, metadata, contentType);
+        MantaObjectOutputStream stream = new MantaObjectOutputStream(
+                path,
+                this.httpHelper,
+                headers,
+                metadata,
+                contentType);
 
         danglingStreams.add(stream);
 
@@ -1210,7 +1143,7 @@ public class MantaClient implements AutoCloseable {
             entity = new ExposedStringEntity(string, contentType);
         }
 
-        return getHttpHelper().httpPut(path, headers, entity, metadata);
+        return this.httpHelper.httpPut(path, headers, entity, metadata);
     }
 
     /**
@@ -1345,7 +1278,7 @@ public class MantaClient implements AutoCloseable {
 
         final HttpEntity entity = new FileEntity(file, contentType);
 
-        return getHttpHelper().httpPut(path, headers, entity, metadata);
+        return this.httpHelper.httpPut(path, headers, entity, metadata);
     }
 
     /**
@@ -1418,7 +1351,7 @@ public class MantaClient implements AutoCloseable {
 
         final HttpEntity entity = new ExposedByteArrayEntity(bytes, contentType);
 
-        return getHttpHelper().httpPut(path, headers, entity, metadata);
+        return this.httpHelper.httpPut(path, headers, entity, metadata);
     }
 
     /**
@@ -1477,7 +1410,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         String path = formatPath(rawPath);
-        return getHttpHelper().httpPutMetadata(path, headers, metadata);
+        return this.httpHelper.httpPutMetadata(path, headers, metadata);
     }
 
     /**
@@ -1509,7 +1442,7 @@ public class MantaClient implements AutoCloseable {
 
         LOG.debug("PUT    {} [directory]", path);
 
-        final HttpPut put = getHttpHelper().getRequestFactory().put(path);
+        final HttpPut put = this.httpHelper.getRequestFactory().put(path);
 
         final MantaHttpHeaders headers;
 
@@ -1522,7 +1455,7 @@ public class MantaClient implements AutoCloseable {
         put.setHeaders(headers.asApacheHttpHeaders());
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.DIRECTORY_LIST.getContentType());
 
-        HttpResponse response = getHttpHelper().executeAndCloseRequest(put,
+        HttpResponse response = this.httpHelper.executeAndCloseRequest(put,
                 HttpStatus.SC_NO_CONTENT,
                 "PUT    {} response [{}] {} ");
 
@@ -1600,7 +1533,7 @@ public class MantaClient implements AutoCloseable {
         final String objectPath = formatPath(rawObjectPath);
 
         LOG.debug("PUT    {} -> {} [snaplink]", objectPath, linkPath);
-        final HttpPut put = getHttpHelper().getRequestFactory().put(linkPath);
+        final HttpPut put = this.httpHelper.getRequestFactory().put(linkPath);
 
         if (headers != null) {
             put.setHeaders(headers.asApacheHttpHeaders());
@@ -1609,7 +1542,7 @@ public class MantaClient implements AutoCloseable {
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.SNAPLINK.getContentType());
         put.setHeader(HttpHeaders.LOCATION, objectPath);
 
-        getHttpHelper().executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
+        this.httpHelper.executeAndCloseRequest(put, HttpStatus.SC_NO_CONTENT,
                 "PUT    {} -> {} response [{}] {} ",
                 objectPath, linkPath);
     }
@@ -1754,14 +1687,14 @@ public class MantaClient implements AutoCloseable {
     public UUID createJob(final MantaJob job) throws IOException {
         Validate.notNull(job, "Manta job must not be null");
 
-        String path = formatPath(String.format("%s/jobs", getHome()));
+        String path = formatPath(String.format("%s/jobs", config.getMantaHomeDirectory()));
         ObjectMapper mapper = MantaObjectMapper.INSTANCE;
         byte[] json = mapper.writeValueAsBytes(job);
 
         HttpEntity entity = new ExposedByteArrayEntity(json,
                 ContentType.APPLICATION_JSON);
 
-        HttpPost post = getHttpHelper().getRequestFactory().post(path);
+        HttpPost post = this.httpHelper.getRequestFactory().post(path);
         post.setEntity(entity);
 
         Function<CloseableHttpResponse, UUID> jobIdFunction = response -> {
@@ -1775,10 +1708,10 @@ public class MantaClient implements AutoCloseable {
 
         final int retries;
 
-        if (getContext().getRetries() == null) {
+        if (config.getRetries() == null) {
             retries = DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
         } else {
-            retries = getContext().getRetries();
+            retries = config.getRetries();
         }
 
         IOException lastException = new IOException("Never thrown. Report me as a bug.");
@@ -1786,7 +1719,7 @@ public class MantaClient implements AutoCloseable {
         // if retries are set to zero, we always execute at least once
         for (int count = 0; count < retries || count == 0; count++) {
             try {
-                return getHttpHelper().executeAndCloseRequest(post,
+                return this.httpHelper.executeAndCloseRequest(post,
                         jobIdFunction, "POST   {} response [{}] {} ", path);
             } catch (NoHttpResponseException | MantaNoHttpResponseException e) {
                 lastException = e;
@@ -1861,13 +1794,13 @@ public class MantaClient implements AutoCloseable {
                                     final HttpEntity entity)
             throws IOException {
 
-        String path = String.format("%s/jobs/%s/live/in", getHome(), jobId);
+        String path = String.format("%s/jobs/%s/live/in", config.getMantaHomeDirectory(), jobId);
 
-        HttpPost post = getHttpHelper().getRequestFactory().post(path);
+        HttpPost post = this.httpHelper.getRequestFactory().post(path);
         post.setHeader(HttpHeaders.CONTENT_ENCODING, "chunked");
         post.setEntity(entity);
 
-        getHttpHelper().executeAndCloseRequest(post, "POST   {} response [{}] {} ");
+        this.httpHelper.executeAndCloseRequest(post, "POST   {} response [{}] {} ");
     }
 
     /**
@@ -1882,10 +1815,10 @@ public class MantaClient implements AutoCloseable {
      */
     public Stream<String> getJobInputs(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
-        String path = String.format("%s/jobs/%s/live/in", getHome(), jobId);
+        String path = String.format("%s/jobs/%s/live/in", config.getMantaHomeDirectory(), jobId);
 
-        HttpGet get = getHttpHelper().getRequestFactory().get(path);
-        HttpResponse response = getHttpHelper().executeRequest(get,
+        HttpGet get = this.httpHelper.getRequestFactory().get(path);
+        HttpResponse response = this.httpHelper.executeRequest(get,
                 "GET    {} response [{}] {} ");
         return responseAsStream(response);
     }
@@ -1899,9 +1832,9 @@ public class MantaClient implements AutoCloseable {
      */
     public boolean endJobInput(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
-        String path = String.format("%s/jobs/%s/live/in/end", getHome(), jobId);
+        String path = String.format("%s/jobs/%s/live/in/end", config.getMantaHomeDirectory(), jobId);
 
-        HttpResponse response = getHttpHelper().httpPost(path);
+        HttpResponse response = this.httpHelper.httpPost(path);
         StatusLine statusLine = response.getStatusLine();
 
         // We expect a return value of 202 when the cancel request was accepted
@@ -1925,9 +1858,9 @@ public class MantaClient implements AutoCloseable {
     public boolean cancelJob(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
         String path = String.format("%s/jobs/%s/live/cancel",
-                getHome(), jobId);
+                config.getMantaHomeDirectory(), jobId);
 
-        HttpResponse response = getHttpHelper().httpPost(path);
+        HttpResponse response = this.httpHelper.httpPost(path);
         StatusLine statusLine = response.getStatusLine();
 
         // We expect a return value of 202 when the cancel request was accepted
@@ -1946,10 +1879,10 @@ public class MantaClient implements AutoCloseable {
     public MantaJob getJob(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
         final String livePath = String.format("%s/jobs/%s/live/status",
-                getHome(), jobId);
+                config.getMantaHomeDirectory(), jobId);
 
-        final CloseableHttpClient client = getHttpHelper().getConnectionContext().getHttpClient();
-        final HttpUriRequest initialRequest = getHttpHelper().getRequestFactory().get(livePath);
+        final CloseableHttpClient client = this.httpHelper.getConnectionContext().getHttpClient();
+        final HttpUriRequest initialRequest = this.httpHelper.getRequestFactory().get(livePath);
         MantaJob job;
         HttpEntity entity;
 
@@ -1963,9 +1896,9 @@ public class MantaClient implements AutoCloseable {
             // status of the job just like the CLI mjob utility.
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 final String archivePath = String.format("%s/jobs/%s/job.json",
-                        getHome(), jobId);
+                        config.getMantaHomeDirectory(), jobId);
 
-                final HttpUriRequest archiveRequest = getHttpHelper().getRequestFactory().get(archivePath);
+                final HttpUriRequest archiveRequest = this.httpHelper.getRequestFactory().get(archivePath);
 
                 // We close the request that was previously opened, because it
                 // didn't have what we need.
@@ -2152,10 +2085,13 @@ public class MantaClient implements AutoCloseable {
      * @return a stream with all of the job IDs (actually all that Manta will give us)
      */
     public Stream<UUID> getAllJobIds() {
-        final String path = String.format("%s/jobs", getHome());
+        final String path = String.format("%s/jobs", config.getMantaHomeDirectory());
 
-        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(getUrl(),
-                path, getHttpHelper(), MAX_RESULTS);
+        final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
+                config.getMantaURL(),
+                path,
+                this.httpHelper,
+                MAX_RESULTS);
 
         danglingStreams.add(itr);
 
@@ -2234,10 +2170,10 @@ public class MantaClient implements AutoCloseable {
             params = Collections.emptyList();
         }
 
-        final String path = formatPath(String.format("%s/jobs", getHome()));
-        final HttpGet get = getHttpHelper().getRequestFactory().get(path, params);
+        final String path = formatPath(String.format("%s/jobs", config.getMantaHomeDirectory()));
+        final HttpGet get = this.httpHelper.getRequestFactory().get(path, params);
 
-        final HttpResponse response = getHttpHelper().executeRequest(get,
+        final HttpResponse response = this.httpHelper.executeRequest(get,
                 "GET    {} response [{}] {} ");
         final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
         final Stream<String> responseStream = responseAsStream(response);
@@ -2280,10 +2216,10 @@ public class MantaClient implements AutoCloseable {
      */
     public Stream<String> getJobOutputs(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
-        String path = String.format("%s/jobs/%s/live/out", getHome(), jobId);
+        String path = String.format("%s/jobs/%s/live/out", config.getMantaHomeDirectory(), jobId);
 
-        HttpGet get = getHttpHelper().getRequestFactory().get(path);
-        HttpResponse response = getHttpHelper().executeRequest(get,
+        HttpGet get = this.httpHelper.getRequestFactory().get(path);
+        HttpResponse response = this.httpHelper.executeRequest(get,
                 "GET    {} response [{}] {} ");
         return responseAsStream(response);
     }
@@ -2363,10 +2299,10 @@ public class MantaClient implements AutoCloseable {
     public Stream<String> getJobFailures(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        String path = String.format("%s/jobs/%s/live/fail", getHome(), jobId);
+        String path = String.format("%s/jobs/%s/live/fail", config.getMantaHomeDirectory(), jobId);
 
-        final HttpGet get = getHttpHelper().getRequestFactory().get(path);
-        final HttpResponse response = getHttpHelper().executeRequest(get,
+        final HttpGet get = this.httpHelper.getRequestFactory().get(path);
+        final HttpResponse response = this.httpHelper.executeRequest(get,
                 "GET    {} response [{}] {} ");
 
         return responseAsStream(response);
@@ -2386,10 +2322,10 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaJobError> getJobErrors(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        final String path = String.format("%s/jobs/%s/live/err", getHome(), jobId);
+        final String path = String.format("%s/jobs/%s/live/err", config.getMantaHomeDirectory(), jobId);
 
-        final HttpGet get = getHttpHelper().getRequestFactory().get(path);
-        final HttpResponse response = getHttpHelper().executeRequest(get,
+        final HttpGet get = this.httpHelper.getRequestFactory().get(path);
+        final HttpResponse response = this.httpHelper.executeRequest(get,
                 "GET    {} response [{}] {} ");
         final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
@@ -2481,9 +2417,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         try {
-            if (httpHelper != null) {
-                httpHelper.close();
-            }
+            httpHelper.close();
         } catch (InterruptedException ie) {
             /* Do nothing, but we won't capture the interrupted exception
              * because even if we are interrupted, we want to close all open
@@ -2494,20 +2428,15 @@ public class MantaClient implements AutoCloseable {
 
         // Deregister associated MBeans
         try {
-            if (beanSupervisor != null) {
-                beanSupervisor.close();
-            }
+            beanSupervisor.close();
         } catch (Exception e) {
             exceptions.add(e);
         }
 
-        /* We clear all thread local instances of the signer class so that
-         * there are no dangling thread-local variables when the connection
-         * factory is closed (typically when MantaClient is closed).
-         */
-        final ThreadLocalSigner signer = this.signerRef.get();
-        if (signer != null) {
-            signer.clearAll();
+        try {
+            authConfig.close();
+        } catch (final Exception e) {
+            exceptions.add(e);
         }
 
         if (!exceptions.isEmpty()) {

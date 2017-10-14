@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
 import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
@@ -28,11 +28,6 @@ import java.util.Objects;
 public class AuthenticationConfigurator implements AutoCloseable {
 
     /**
-     * Private object for locking.
-     */
-    private final Object configureLock = new Object();
-
-    /**
      * The {@link ConfigContext} to track for changes.
      */
     private final ConfigContext config;
@@ -41,16 +36,6 @@ public class AuthenticationConfigurator implements AutoCloseable {
      * Hashcode of last observed authentication-related configuration values.
      */
     private int parametersFingerprint;
-
-    /**
-     * Copy of configured username.
-     */
-    private String username;
-
-    /**
-     * Home directory derived from username (which might be a subuser).
-     */
-    private String home;
 
     /**
      * Reference to loaded KeyPair.
@@ -75,21 +60,18 @@ public class AuthenticationConfigurator implements AutoCloseable {
     /**
      * Check the configuration for authentication-related changes.
      */
-    public void reload() {
-        synchronized (configureLock) {
-            final int newFingerprint = calculateAuthParamsFingerprint(config);
+    public synchronized void reload() {
+        final int newFingerprint = calculateAuthParamsFingerprint(config);
 
-            if (newFingerprint == parametersFingerprint) {
-                return;
-            }
+        if (newFingerprint == parametersFingerprint) {
+            return;
+        }
 
-            username = null;
-            home = null;
-            keyPair = null;
-            signer = null;
+        keyPair = null;
+        signer = null;
 
+        if (BooleanUtils.isNotFalse(config.noAuth())) {
             doLoad();
-            parametersFingerprint = newFingerprint;
         }
     }
 
@@ -97,9 +79,6 @@ public class AuthenticationConfigurator implements AutoCloseable {
      * Internal method for updating authentication parameters and derived objects.
      */
     private void doLoad() {
-        username = config.getMantaUser();
-        home = ConfigContext.deriveHomeDirectoryFromUser(username);
-
         if (BooleanUtils.isNotFalse(config.noAuth())) {
             keyPair = null;
             signer = null;
@@ -117,19 +96,23 @@ public class AuthenticationConfigurator implements AutoCloseable {
         signer = new ThreadLocalSigner(builder);
     }
 
-    String getUsername() {
-        return username;
+    public String getURL() {
+        return config.getMantaURL();
     }
 
-    String getHome() {
-        return home;
+    public String getUsername() {
+        return config.getMantaUser();
     }
 
-    KeyPair getKeyPair() {
+    public Boolean authenticationDisabled() {
+        return config.noAuth();
+    }
+
+    public KeyPair getKeyPair() {
         return keyPair;
     }
 
-    ThreadLocalSigner getSigner() {
+    public ThreadLocalSigner getSigner() {
         return signer;
     }
 
@@ -141,7 +124,6 @@ public class AuthenticationConfigurator implements AutoCloseable {
      */
     private static int calculateAuthParamsFingerprint(final ConfigContext config) {
         return Objects.hash(
-                config.getMantaUser(),
                 config.getPassword(),
                 config.getMantaKeyId(),
                 config.getMantaKeyPath(),
@@ -152,8 +134,6 @@ public class AuthenticationConfigurator implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        username = null;
-        home = null;
         keyPair = null;
 
         if (signer != null) {

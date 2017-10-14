@@ -10,9 +10,10 @@ package com.joyent.manta.client;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
+import com.joyent.manta.http.AuthenticationConfigurator;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.text.RandomStringGenerator;
 import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
@@ -31,6 +32,11 @@ import java.security.KeyPair;
 @Test
 public class AuthenticationConfiguratorTest {
 
+    private static final RandomStringGenerator STRING_GENERATOR =
+            new RandomStringGenerator.Builder()
+                    .withinRange((int) 'a', (int) 'z')
+                    .build();
+
     private BaseChainedConfigContext config;
 
     @BeforeMethod
@@ -45,54 +51,13 @@ public class AuthenticationConfiguratorTest {
     public void tearDown() throws Exception {
     }
 
-    public void canSkipReloadIfNothingRelevantChanges() throws IOException {
-        final AuthenticationConfigurator authConfig = new AuthenticationConfigurator(config);
-        final KeyPair keyPairBeforeReload = authConfig.getKeyPair();
-        final ThreadLocalSigner signerBeforeReload = authConfig.getSigner();
-        Assert.assertNotNull(keyPairBeforeReload);
-        Assert.assertNotNull(signerBeforeReload);
-
-        // change an unrelated setting
-        config.setHttpBufferSize(1);
-
-        // reload config, this should not do anything at all
-        authConfig.reload();
-
-        // derived objects unchanged
-        Assert.assertSame(keyPairBeforeReload, authConfig.getKeyPair());
-        Assert.assertSame(signerBeforeReload, authConfig.getSigner());
-    }
-
-    public void lacksFineGrainedReloading() throws IOException {
-        // this test is here to document the fact that reloading is all-or-nothing
-        final AuthenticationConfigurator authConfig = new AuthenticationConfigurator(config);
-        final KeyPair keyPairBeforeReload = authConfig.getKeyPair();
-        Assert.assertNotNull(keyPairBeforeReload);
-
-        config.setMantaUser("admin");
-
-        authConfig.reload();
-
-        Assert.assertNotSame(keyPairBeforeReload, authConfig.getKeyPair());
-
-        // same key
-        AssertJUnit.assertArrayEquals(
-                keyPairBeforeReload.getPrivate().getEncoded(),
-                authConfig.getKeyPair().getPrivate().getEncoded());
-    }
-
     // PERHAPS: split this out into several tests since they're all pretty self-contained?
     public void canMonitorRelevantFieldsInConfig() throws IOException {
         final AuthenticationConfigurator authConfig = new AuthenticationConfigurator(config);
         final KeyPair currentKeyPair = authConfig.getKeyPair();
 
-        // username
-        config.setMantaUser("newuser");
-        authConfig.reload();
-        differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
-
         // failure to reload when encrypting the key with a password
-        final String attachingPassphrase = RandomStringUtils.randomAlphanumeric(16);
+        final String attachingPassphrase = STRING_GENERATOR.generate(16);
         try (final StringWriter contentWriter = new StringWriter();
              final JcaPEMWriter pemWriter = new JcaPEMWriter(contentWriter)) {
             final Object keySerializer = new JcaMiscPEMGenerator(
@@ -102,14 +67,6 @@ public class AuthenticationConfiguratorTest {
             pemWriter.flush();
             config.setPrivateKeyContent(contentWriter.getBuffer().toString());
         }
-
-        final Throwable encryptedCastException = Assert.expectThrows(
-                ClassCastException.class,
-                authConfig::reload);
-
-        Assert.assertTrue(
-                encryptedCastException.getMessage().contains(
-                        "PEMEncryptedKeyPair cannot be cast to org.bouncycastle.openssl.PEMKeyPair"));
 
         // password
         config.setPassword(attachingPassphrase);
@@ -122,7 +79,6 @@ public class AuthenticationConfiguratorTest {
         FileUtils.writeStringToFile(keyFile, config.getPrivateKeyContent(), StandardCharsets.UTF_8);
         config.setPrivateKeyContent(null);
         config.setMantaKeyPath(keyFile.getAbsolutePath());
-        authConfig.reload();
         differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
 
         // key id

@@ -121,7 +121,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
                                 final MantaConnectionFactory connectionFactory,
                                 final ConfigContext config) {
-        this(connectionContext, config);
+        this(
+                connectionContext,
+                new MantaHttpRequestFactory(new AuthenticationConfigurator(config)),
+                config);
     }
 
     /**
@@ -131,8 +134,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param config configuration context object
      */
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
+                                final MantaHttpRequestFactory requestFactory,
                                 final ConfigContext config) {
-        super(connectionContext, config);
+        super(connectionContext, requestFactory, config);
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");

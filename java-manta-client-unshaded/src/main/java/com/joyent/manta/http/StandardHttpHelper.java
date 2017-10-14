@@ -71,22 +71,9 @@ public class StandardHttpHelper implements HttpHelper {
     private final MantaHttpRequestFactory requestFactory;
 
     /**
-     * Flag toggling the checksum verification of uploaded files.
+     * Configuration to check for upload validation.
      */
-    private final boolean validateUploads;
-
-    /**
-     * Creates a new instance of the helper class.
-     * @param connectionContext saved context used between requests to the Manta client
-     * @param config configuration context object
-     */
-    public StandardHttpHelper(final MantaConnectionContext connectionContext,
-                              final ConfigContext config) {
-        this.connectionContext = connectionContext;
-        this.requestFactory = new MantaHttpRequestFactory(config);
-        this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
-                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
-    }
+    private final ConfigContext config;
 
     /**
      * Creates a new instance of the helper class.
@@ -99,7 +86,55 @@ public class StandardHttpHelper implements HttpHelper {
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaConnectionFactory connectionFactory,
                               final ConfigContext config) {
-        this(connectionContext, config);
+        this(
+                connectionContext,
+                new MantaHttpRequestFactory(new AuthenticationConfigurator(config)),
+                config);
+    }
+
+    /**
+     * Create a new instance which reads
+     *
+     * @param connectionContext
+     * @param config
+     */
+    StandardHttpHelper(final MantaConnectionContext connectionContext,
+                       final ConfigContext config) {
+        this.connectionContext = connectionContext;
+        this.requestFactory = new MantaHttpRequestFactory(config.getMantaURL());
+        this.config = config;
+    }
+
+    /**
+     * Creates a new instance of the helper class.
+     * @param connectionContext saved context used between requests to the Manta client
+     * @param config configuration context object
+     */
+    public StandardHttpHelper(final MantaConnectionContext connectionContext,
+                              final MantaHttpRequestFactory requestFactory,
+                              final ConfigContext config) {
+        this.connectionContext = connectionContext;
+        this.requestFactory = requestFactory;
+        this.config = config;
+    }
+
+    @Override
+    public MantaConnectionContext getConnectionContext() {
+        return connectionContext;
+    }
+
+    @Override
+    public MantaHttpRequestFactory getRequestFactory() {
+        return requestFactory;
+    }
+
+    /**
+     * @return true if we are validating MD5 checksums against the Manta Computed-MD5 header
+     */
+    protected boolean validateUploadsEnabled() {
+        return ObjectUtils.firstNonNull(
+                config.verifyUploads(),
+                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
     }
 
     @Override
@@ -545,23 +580,6 @@ public class StandardHttpHelper implements HttpHelper {
         } else {
             return code != expectedStatusCode;
         }
-    }
-
-    @Override
-    public MantaConnectionContext getConnectionContext() {
-        return connectionContext;
-    }
-
-    @Override
-    public MantaHttpRequestFactory getRequestFactory() {
-        return requestFactory;
-    }
-
-    /**
-     * @return true if we are validating MD5 checksums against the Manta Computed-MD5 header
-     */
-    protected boolean validateUploadsEnabled() {
-        return validateUploads;
     }
 
     @Override

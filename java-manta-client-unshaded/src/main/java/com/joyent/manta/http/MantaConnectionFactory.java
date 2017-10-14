@@ -8,20 +8,14 @@
 package com.joyent.manta.http;
 
 import com.joyent.http.signature.ThreadLocalSigner;
-import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
-import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
-import com.joyent.manta.util.HttpClientBuilderShallowCloner;
 import com.joyent.manta.util.MantaVersion;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.Registry;
@@ -108,13 +102,42 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Create new instance using the passed configuration.
      *
      * @param config    configuration of the connection parameters
+     */
+    public MantaConnectionFactory(final ConfigContext config) {
+        this(config, null);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config    configuration of the connection parameters
+     */
+    public MantaConnectionFactory(final ConfigContext config,
+                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this.config = Validate.notNull(config, "Configuration context must not be null");
+
+        if (connectionFactoryConfigurator != null) {
+            this.connectionManager = null;
+            this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
+        } else {
+            this.connectionManager = buildConnectionManager();
+            this.httpClientBuilder = createStandardBuilder();
+        }
+
+        configureHttpClientBuilderDefaults();
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config    configuration of the connection parameters
      * @param keyPair   cryptographic signing key pair used for HTTP signatures
      * @param signer    Signer configured to use the given keyPair
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer) {
-        this(config, keyPair, signer, null);
+        this(config, null);
     }
 
     /**
@@ -125,22 +148,12 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * @param signer                        Signer configured to use the given keyPair
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
+    @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
-        Validate.notNull(config, "Configuration context must not be null");
-        this.config = config;
-
-        if (connectionFactoryConfigurator != null) {
-            this.connectionManager = null;
-            this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
-        } else {
-            this.connectionManager = buildConnectionManager();
-            this.httpClientBuilder = createStandardBuilder();
-        }
-
-        configureHttpClientBuilderDefaults(keyPair, signer);
+        this(config, connectionFactoryConfigurator);
     }
 
     /**
@@ -278,17 +291,8 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
-     *
-     * NOTICE: Changes to this method can impact the functionality of
-     * {@link HttpClientBuilderShallowCloner} and ultimately
-     * {@link com.joyent.manta.client.LazyMantaClient}. Since we've limited our configuration of
-     * externally-provided instances to just retry handlers and interceptors the cloner can be kept relatively simple.
-     *
-     * @param keyPair the keypair to use with signature authentication
-     * @param signer  Signer configured to use the given keyPair
      */
-    private void configureHttpClientBuilderDefaults(final KeyPair keyPair,
-                                                    final ThreadLocalSigner signer) {
+    private void configureHttpClientBuilderDefaults() {
         if (config.getRetries() > 0) {
             httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config));
             httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
@@ -301,23 +305,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         // users providing a custom HttpClientBuilder are expected to wire this up themselves
         if (this.connectionManager != null) {
             httpClientBuilder.setConnectionManager(this.connectionManager);
-        }
-
-        httpClientBuilder.addInterceptorFirst(new RequestIdInterceptor());
-
-        if (BooleanUtils.isNotTrue(config.noAuth())) {
-            Validate.notNull(keyPair, "KeyPair must not be null if authentication is enabled");
-            Validate.notNull(signer, "Signer must not be null if authentication is enabled");
-            final String user = Validate.notBlank(
-                    config.getMantaUser(),
-                    "User must be set if authentication is enabled");
-
-            // pass true directly to the constructor because auth is enabled
-            final HttpRequestInterceptor authInterceptor = new HttpSignatureRequestInterceptor(
-                    new HttpSignatureAuthScheme(keyPair, signer),
-                    new UsernamePasswordCredentials(user, null),
-                    true);
-            this.httpClientBuilder.addInterceptorLast(authInterceptor);
         }
     }
 
