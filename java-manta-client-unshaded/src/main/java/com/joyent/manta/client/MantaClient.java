@@ -16,6 +16,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaJobException;
@@ -52,6 +53,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
@@ -91,12 +93,14 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.joyent.manta.exception.MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR;
 import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
@@ -158,6 +162,13 @@ public class MantaClient implements AutoCloseable {
      */
     private final MantaMBeanSupervisor beanSupervisor;
 
+    /**
+     * ForkJoinPool used specifically for find() operations because we want
+     * to make sure that the number of concurrent threads will not exceed
+     * the maximum number of available connections.
+     */
+    private final ForkJoinPool findForkJoinPool;
+
     /* We preform some sanity checks against the JVM in order to determine if
      * we can actually run on the platform. */
     static {
@@ -212,6 +223,8 @@ public class MantaClient implements AutoCloseable {
         this.beanSupervisor = new MantaMBeanSupervisor();
         beanSupervisor.expose(this.config);
         beanSupervisor.expose(connectionFactory);
+
+        this.findForkJoinPool = FindForkJoinPoolFactory.getInstance(config);
     }
 
     /* ======================================================================
@@ -290,66 +303,143 @@ public class MantaClient implements AutoCloseable {
     public void deleteRecursive(final String path) throws IOException {
         LOG.debug("DELETE {} [recursive]", path);
 
-        try {
-            this.delete(path);
-            LOG.debug("Finished deleting path {}", path);
-            return;
-        } catch (MantaClientHttpResponseException e) {
-            /* In the case of the directory not being empty, we let
-             * that error case go uncaught and pass through
-             * because it is in fact a directory with files. */
-            if (!e.getServerCode().equals(DIRECTORY_NOT_EMPTY_ERROR)) {
-                throw e;
-            }
-        }
+        /* We repetitively run the find() -> delete() stream operation and check
+         * the diretory targeted for deletion by attempting to delete it this
+         * deals with unpredictable directory contents changes that are a result
+         * or concurrent modifications to the contents of the directory path to
+         * be deleted. */
+        int loops = 0;
 
-        try (Stream<MantaObject> objects = this.listObjects(path)) {
-            objects.forEach(obj -> {
-                try {
-                    if (obj.isDirectory()) {
-                        this.deleteRecursive(obj.getPath());
-                    } else {
-                        this.delete(obj.getPath());
+        /* We record the number of request timeouts where we were unable to get
+         * a HTTP connection from the pool in order to provide feedback to the
+         * consumer of the SDK so that they can better tune their settings.*/
+        final AtomicInteger responseTimeouts = new AtomicInteger(0);
+
+        while (true) {
+            loops++;
+
+            /* Initially, we delete only the file objects returned from the
+             * stream because we don't care what order they are in. */
+            Stream<MantaObject> toDelete = find(path)
+                    .map(obj -> {
+                        if (obj.isDirectory()) {
+                            return obj;
+                        }
+
+                        try {
+                            delete(obj.getPath());
+                        } catch (MantaClientHttpResponseException e) {
+                            if (!e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                                throw new UncheckedIOException(e);
+                            }
+                        /* This exception can be thrown if the parallelism value
+                         * isn't tuned for the findForkJoinPool in relation to
+                         * the amount of bandwidth available. Essentially, the
+                         * processing thread is waiting too long for a new
+                         * connection from the pool. If this is thrown too often,
+                         * the maximum number of connections can be increased,
+                         * the ConnectionRequestTimeout can be increased, or
+                         * the fork join pool parallelism value can be
+                         * decreased.
+                         * Below we cope with this problem, by skipping the
+                         * deletion of the object and letting it
+                         * get deleted later in the loop when there is less
+                         * contention on the connection pool.
+                         */
+                        } catch (ConnectionPoolTimeoutException e) {
+                            responseTimeouts.incrementAndGet();
+                            LOG.debug("{} for deleting object {}", e.getMessage(), obj.getPath());
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+
+                        obj.getHttpHeaders().put("deleted", true);
+
+                        return obj;
+                    })
+                    /* We then sort the directories (and remaining files) with
+                     * the deepest paths in the filesystem hierarchy first, so
+                     * that we can delete subdirectories and files before
+                     * the parent directories.*/
+                    .sorted(MantaObjectDepthComparator.INSTANCE);
+
+            /* We go through every remaining directory and file attempt to
+             * delete it even though that operation may not be immediately
+             * successful. */
+            toDelete.forEachOrdered(obj -> {
+                for (int i = 0; i < config.getRetries(); i++) {
+                    try {
+                        /* Don't bother deleting the file if it was marked as
+                         * deleted from the map step. */
+                        if (obj.getHttpHeaders().containsKey("deleted")) {
+                            break;
+                        }
+
+                        /* If a file snuck in, we will delete it here. Typically
+                         * this should be an empty directory. */
+                        delete(obj.getPath());
+
+                        LOG.trace("Finished deleting path {}", obj.getPath());
+
+                        break;
+                    } catch (MantaClientHttpResponseException e) {
+                        // If the directory has already gone, we are good to go
+                        if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                            break;
+                        }
+
+                        /* If we get a directory not empty error we try again
+                         * hoping that the next iteration will clean up any
+                         * remaining files. */
+                        if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
+                            continue;
+                        }
+
+                        throw new UncheckedIOException(e);
+                    } catch (ConnectionPoolTimeoutException e) {
+                        responseTimeouts.incrementAndGet();
+                        LOG.debug("{} for deleting object {}", e.getMessage(), obj.getPath());
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
                 }
             });
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
 
-        /* Once we have deleted all of the sub objects of this directory, let's
-         * make sure that all of the sub objects were in fact actually deleted -
-         * you know because distributed systems...
-         */
-        boolean pathExists = existsAndIsAccessible(path);
-
-        if (!pathExists) {
-            LOG.debug("Path {} doesn't exist. Finished.", path);
-            return;
-        }
-
-        try {
-            this.delete(path);
-        } catch (MantaClientHttpResponseException e) {
-            // Directory wasn't empty
-            if (e.getServerCode().equals(DIRECTORY_NOT_EMPTY_ERROR)) {
-                try {
-                    final int waitTime = 400;
-                    Thread.sleep(waitTime);
-                    LOG.warn("First attempt to delete directory failed, retrying");
-                    // Re-attempt to delete the directory
-                    this.deleteRecursive(path);
-                } catch (InterruptedException ie) {
-                    // We don't need to do anything, just exit
+            /* For each iteration of this loop, we attempt to delete the parent
+             * path. If all subdirectories and files have been deleted, then
+             * this operation will succeed.
+             */
+            try {
+                delete(path);
+                break;
+            } catch (MantaClientHttpResponseException e) {
+                // Somehow our current path has been deleted, so our work is done
+                if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                    break;
+                } else if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
+                    continue;
                 }
-            } else {
-                throw e;
+
+                MantaIOException mioe = new MantaIOException("Unable to delete path", e);
+                mioe.setContextValue("path", path);
+
+                throw mioe;
+            }  catch (ConnectionPoolTimeoutException e) {
+                responseTimeouts.incrementAndGet();
+                LOG.debug("{} for deleting root object {}", e.getMessage(), path);
             }
         }
 
-        LOG.debug("Finished deleting path {}", path);
+        LOG.debug("Finished deleting path {}. It took {} loops to delete recursively",
+                path, loops);
+
+        if (responseTimeouts.get() > 0) {
+            LOG.info("Request timeouts were hit [%d] times when attempting to delete "
+                    + "recursively. You may want to adjust the Manta SDK request "
+                    + "timeout config setting, the Manta SDK maximum connections "
+                    + "setting, or the Java system property "
+                    + "[java.util.concurrent.ForkJoinPool.common.parallelism].");
+        }
     }
 
     /**
@@ -724,7 +814,6 @@ public class MantaClient implements AutoCloseable {
      * @param path directory path
      * @return A recursive unsorted {@link Stream} of {@link MantaObject}
      *         instances representing the contents of all subdirectories.
-     * @throws IOException thrown when we are unable to list the directory over the network
      */
     public Stream<MantaObject> find(final String path) {
         return find(path, null);
@@ -752,7 +841,6 @@ public class MantaClient implements AutoCloseable {
      * @param filter predicate class used to filter all results returned
      * @return A recursive unsorted {@link Stream} of {@link MantaObject}
      *         instances representing the contents of all subdirectories.
-     * @throws IOException thrown when we are unable to list the directory over the network
      */
     public Stream<MantaObject> find(final String path,
                                     final Predicate<? super MantaObject> filter) {
@@ -802,16 +890,23 @@ public class MantaClient implements AutoCloseable {
          * this current highly directory is performed and no other listing
          * will be performed until the stream is read.
          */
-        final Stream<MantaObject> dirStream = dirBuilder.build()
-                .parallel().flatMap(obj -> find(obj.getPath(), filter));
+        try {
+            final Stream<MantaObject> dirStream = findForkJoinPool.submit(() ->
+                    dirBuilder.build().parallel().flatMap(obj -> find(obj.getPath(), filter))).get();
 
         /* Due to the way we concatenate the results will be quite out of order
          * if a consumer needs sorted results that is their responsibility. */
-        final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
+            final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
 
-        danglingStreams.add(stream);
+            danglingStreams.add(stream);
 
-        return stream;
+            return stream;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Stream.empty();
+        } catch (ExecutionException e) {
+            throw new MantaException(e.getCause());
+        }
     }
 
     /**
@@ -1129,8 +1224,14 @@ public class MantaClient implements AutoCloseable {
                 ContentType.APPLICATION_OCTET_STREAM);
 
         /* We remove the content-type from the headers, because
-         * it will be automatically from the entity. Adding it twice
-         * can confuse our contract. */
+         * it will be automatically from the string specific entity.
+         * This operation is specific to ExposedStringEntity instances or
+         * org.apache.http.entity.String entity objects and not other
+         * entity objects because strings by their very nature need to
+         * have a character set specified in order to convert them
+         * to a binary representation.
+         *
+         * Adding it twice can confuse our contract. */
         if (headers != null) {
             headers.remove(HttpHeaders.CONTENT_TYPE);
         }
@@ -2436,6 +2537,13 @@ public class MantaClient implements AutoCloseable {
         try {
             authConfig.close();
         } catch (final Exception e) {
+            exceptions.add(e);
+        }
+
+        // Shut down the ForkJoinPool that may be executing find() operations
+        try {
+            findForkJoinPool.shutdownNow();
+        } catch (Exception e) {
             exceptions.add(e);
         }
 
