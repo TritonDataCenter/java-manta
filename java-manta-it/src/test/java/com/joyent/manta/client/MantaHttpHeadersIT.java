@@ -19,8 +19,6 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -59,8 +57,8 @@ public class MantaHttpHeadersIT {
             "secondary");
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    public void beforeClass() throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
 

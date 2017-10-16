@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.client.AuthenticationConfigurator;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
@@ -111,21 +110,28 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      */
     private final SupportedCipherDetails cipherDetails;
 
-
     /**
      * Creates a new instance of the helper class.
      * @param connectionContext saved context used between requests to the Manta client
-     * @param connectionFactory instance used for building requests to Manta
+     * @param connectionFactory ignored
      * @param config configuration context object
      */
     @Deprecated
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
                                 final MantaConnectionFactory connectionFactory,
                                 final ConfigContext config) {
-        this(
-                connectionContext,
-                new MantaHttpRequestFactory(new AuthenticationConfigurator(config)),
-                config);
+        this(connectionContext, config);
+    }
+
+
+    /**
+     * Creates a new instance of the helper class.
+     * @param connectionContext saved context used between requests to the Manta client
+     * @param config configuration context object
+     */
+    EncryptionHttpHelper(final MantaConnectionContext connectionContext,
+                         final ConfigContext config) {
+        this(connectionContext, new MantaHttpRequestFactory(config.getMantaURL()), config);
     }
 
     /**

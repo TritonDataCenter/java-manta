@@ -43,7 +43,7 @@ public class UriSigner {
      */
     @Deprecated
     public UriSigner(final ConfigContext config, final KeyPair keyPair, final ThreadLocalSigner signer) {
-        this(new AuthenticationConfigurator(config).reload());
+        this(new AuthenticationConfigurator(config));
     }
 
     /**

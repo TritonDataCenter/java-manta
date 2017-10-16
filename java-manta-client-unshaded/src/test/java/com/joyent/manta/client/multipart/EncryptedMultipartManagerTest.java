@@ -7,8 +7,6 @@
  */
 package com.joyent.manta.client.multipart;
 
-import com.joyent.http.signature.Signer;
-import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectMapper;
@@ -26,7 +24,6 @@ import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.MantaConnectionContext;
-import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.MantaHttpRequestFactory;
 import com.joyent.manta.util.UnitTestConstants;
@@ -44,9 +41,6 @@ import org.testng.annotations.Test;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -180,20 +174,12 @@ public class EncryptedMultipartManagerTest {
 
     private EncryptedMultipartManager<TestMultipartManager, TestMultipartUpload> buildManager() {
         ConfigContext config = testConfigContext(secretKey);
-        final KeyPair keyPair;
-        try {
-            keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-        } catch (GeneralSecurityException e) {
-            throw new AssertionError(e);
-        }
-        final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keyPair));
 
-        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(config, keyPair, signer);
         final MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
                 connectionContext,
-                new MantaHttpRequestFactory(config.getMantaURL()),
+                new MantaHttpRequestFactory(UnitTestConstants.UNIT_TEST_URL),
                 config);
 
         return new EncryptedMultipartManager<>(secretKey, cipherDetails,

@@ -24,7 +24,6 @@ import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -49,8 +48,7 @@ public class ServerSideMultipartManagerIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"lazyMantaClient"})
-    public void beforeClass(final @org.testng.annotations.Optional Boolean lazyMantaClient) throws IOException {
+    public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();

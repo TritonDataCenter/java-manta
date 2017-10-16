@@ -61,6 +61,11 @@ public class StandardHttpHelper implements HttpHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardHttpHelper.class);
 
     /**
+     * Configuration to check for upload validation.
+     */
+    private final ConfigContext config;
+
+    /**
      * Current connection context used for maintaining state between requests.
      */
     private final MantaConnectionContext connectionContext;
@@ -71,15 +76,10 @@ public class StandardHttpHelper implements HttpHelper {
     private final MantaHttpRequestFactory requestFactory;
 
     /**
-     * Configuration to check for upload validation.
-     */
-    private final ConfigContext config;
-
-    /**
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
-     * @param connectionFactory instance used for building requests to Manta
+     * @param connectionFactory ignored
      * @param config configuration context object
      */
     @Deprecated
@@ -90,20 +90,21 @@ public class StandardHttpHelper implements HttpHelper {
     }
 
     /**
-     * Create a new instance of the HttpHelper which uses a regular configuration context.
+     * Create a new instance of the HttpHelper which expects a static configuration since the request factory
+     * does not have access to an {@link com.joyent.manta.client.AuthenticationConfigurator}.
      *
      * @param connectionContext connection object
      * @param config configuration context object
      */
     StandardHttpHelper(final MantaConnectionContext connectionContext,
                        final ConfigContext config) {
+        this.config = config;
         this.connectionContext = connectionContext;
         this.requestFactory = new MantaHttpRequestFactory(config.getMantaURL());
-        this.config = config;
     }
 
     /**
-     * Creates a new instance of the helper class.
+     * Creates a new instance of the helper class which can use a potentially-dynamic {@link MantaHttpRequestFactory}.
      *
      * @param connectionContext connection object
      * @param requestFactory instance used for building requests to Manta
@@ -112,9 +113,9 @@ public class StandardHttpHelper implements HttpHelper {
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaHttpRequestFactory requestFactory,
                               final ConfigContext config) {
-        this.connectionContext = connectionContext;
-        this.requestFactory = requestFactory;
-        this.config = config;
+        this.config = Validate.notNull(config, "ConfigContext must not be null");
+        this.connectionContext = Validate.notNull(connectionContext, "MantaConnectionContext must not be null");
+        this.requestFactory = Validate.notNull(requestFactory, "MantaHttpRequestFactory must not be null");
     }
 
     @Override

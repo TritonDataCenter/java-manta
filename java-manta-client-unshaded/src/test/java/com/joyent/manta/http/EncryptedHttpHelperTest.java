@@ -96,7 +96,6 @@ public class EncryptedHttpHelperTest {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
         StandardConfigContext config = new StandardConfigContext();
-        config.setMantaURL(UnitTestConstants.UNIT_TEST_URL);
 
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
 
@@ -106,7 +105,7 @@ public class EncryptedHttpHelperTest {
 
         EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
                 connectionContext,
-                new MantaHttpRequestFactory(config.getMantaURL()),
+                new MantaHttpRequestFactory(UnitTestConstants.UNIT_TEST_URL),
                 config);
 
         URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);

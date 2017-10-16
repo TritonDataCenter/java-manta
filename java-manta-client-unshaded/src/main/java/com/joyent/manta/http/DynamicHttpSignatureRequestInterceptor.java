@@ -18,15 +18,25 @@ import org.apache.http.protocol.HttpContext;
 import java.io.IOException;
 
 /**
+ * Request interceptor which can read potentially-changing authentication configuration from a
+ * {@link AuthenticationConfigurator}.
  *
+ * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @since 3.1.7
  */
 class DynamicHttpSignatureRequestInterceptor implements HttpRequestInterceptor {
 
     /**
-     *
+     * The auth context from which to read the {@link HttpSignatureAuthScheme} and
+     * {@link org.apache.http.auth.Credentials}.
      */
     private final AuthenticationConfigurator authConfig;
 
+    /**
+     * Create an interceptor which will read authentication objects from a dynamic configuration.
+     *
+     * @param authConfig authentication context
+     */
     DynamicHttpSignatureRequestInterceptor(final AuthenticationConfigurator authConfig) {
         this.authConfig = authConfig;
     }

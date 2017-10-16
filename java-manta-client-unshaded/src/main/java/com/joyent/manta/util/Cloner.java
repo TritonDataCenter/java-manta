@@ -23,14 +23,3 @@ public interface Cloner<T> {
     T createClone(T source);
 }
 
-/**
- * Interface for cloners which intentionally perform targeted shallow clones, e.g. creates a new array in
- * cloned objects which hold the same contents as the original instance's array.
- *
- * @param <T> type to clone
- */
-interface ShallowCloner<T> extends Cloner<T> {
-
-    @Override
-    T createClone(T source);
-}

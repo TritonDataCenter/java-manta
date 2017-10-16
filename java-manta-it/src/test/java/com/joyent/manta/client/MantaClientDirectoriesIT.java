@@ -39,6 +39,7 @@ public class MantaClientDirectoriesIT {
     public void beforeClass() throws IOException {
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
+
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
     }

@@ -37,6 +37,6 @@ public class MantaConnectionFactoryConfigurator {
     }
 
     HttpClientBuilder getHttpClientBuilder() {
-        return this.httpClientBuilder;
+        return httpClientBuilder;
     }
 }

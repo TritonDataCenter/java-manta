@@ -234,7 +234,6 @@ public class MantaHttpRequestFactory {
             format = "%s/%s";
         }
 
-
         final String baseURL;
         if (authConfig != null) {
             baseURL = authConfig.getURL();
