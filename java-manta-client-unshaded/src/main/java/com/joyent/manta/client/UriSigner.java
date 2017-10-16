@@ -10,7 +10,7 @@ package com.joyent.manta.client;
 import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.http.AuthenticationConfigurator;
+import com.joyent.manta.client.AuthenticationConfigurator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.util.encoders.Base64;

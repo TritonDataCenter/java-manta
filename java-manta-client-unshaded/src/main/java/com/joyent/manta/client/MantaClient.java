@@ -22,7 +22,6 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaJobException;
 import com.joyent.manta.exception.MantaNoHttpResponseException;
 import com.joyent.manta.exception.OnCloseAggregateException;
-import com.joyent.manta.http.AuthenticationConfigurator;
 import com.joyent.manta.http.ContentTypeLookup;
 import com.joyent.manta.http.EncryptionHttpHelper;
 import com.joyent.manta.http.HttpHelper;
@@ -182,7 +181,16 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values.
      */
     public MantaClient(final ConfigContext config) {
-        this(config, null);
+        this(config, null, null);
+    }
+
+    public MantaClient(final AuthenticationConfigurator authConfig) {
+        this(authConfig.getContext(), authConfig, null);
+    }
+
+    public MantaClient(final AuthenticationConfigurator authConfig,
+                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this(authConfig.getContext(), authConfig, connectionFactoryConfigurator);
     }
 
     /**
@@ -198,14 +206,24 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory
      */
-    public MantaClient(final ConfigContext config,
-                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+    MantaClient(final ConfigContext config,
+                final AuthenticationConfigurator authConfig,
+                final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
-
         this.config = config;
-        this.authConfig = new AuthenticationConfigurator(config);
+
+        // We don't want .equals, we want to make sure it's actually the same object
+        Validate.isTrue(authConfig == null || authConfig.getContext() == config,
+                "AuthenticationConfigurator must match ConfigContext if it is provided.");
+
+        if (authConfig != null) {
+            this.authConfig = authConfig;
+            this.authConfig.reload();
+        } else {
+            this.authConfig = new AuthenticationConfigurator(config);
+        }
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,

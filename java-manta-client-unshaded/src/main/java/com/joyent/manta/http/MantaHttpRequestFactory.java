@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.client.AuthenticationConfigurator;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.exception.MantaClientException;
 import org.apache.commons.lang3.Validate;

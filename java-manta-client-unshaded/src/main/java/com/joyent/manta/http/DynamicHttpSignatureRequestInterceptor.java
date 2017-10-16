@@ -8,6 +8,7 @@
 package com.joyent.manta.http;
 
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
+import com.joyent.manta.client.AuthenticationConfigurator;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;

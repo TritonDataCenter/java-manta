@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.http;
+package com.joyent.manta.client;
 
 import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
@@ -67,12 +67,18 @@ public class AuthenticationConfigurator implements AutoCloseable {
             return;
         }
 
-        keyPair = null;
+        if (signer != null) {
+            signer.clearAll();
+        }
         signer = null;
+        keyPair = null;
 
-        if (BooleanUtils.isNotFalse(config.noAuth())) {
+
+        if (BooleanUtils.isNotTrue(config.noAuth())) {
             doLoad();
         }
+
+        parametersFingerprint = newFingerprint;
     }
 
     /**
@@ -80,8 +86,6 @@ public class AuthenticationConfigurator implements AutoCloseable {
      */
     private void doLoad() {
         if (BooleanUtils.isNotFalse(config.noAuth())) {
-            keyPair = null;
-            signer = null;
             return;
         }
 
@@ -141,5 +145,9 @@ public class AuthenticationConfigurator implements AutoCloseable {
         }
 
         signer = null;
+    }
+
+    public ConfigContext getContext() {
+        return config;
     }
 }

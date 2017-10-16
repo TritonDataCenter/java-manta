@@ -10,7 +10,6 @@ package com.joyent.manta.client;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
-import com.joyent.manta.http.AuthenticationConfigurator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.text.RandomStringGenerator;
@@ -55,6 +54,7 @@ public class AuthenticationConfiguratorTest {
     public void canMonitorRelevantFieldsInConfig() throws IOException {
         final AuthenticationConfigurator authConfig = new AuthenticationConfigurator(config);
         final KeyPair currentKeyPair = authConfig.getKeyPair();
+        Assert.assertNotNull(currentKeyPair);
 
         // failure to reload when encrypting the key with a password
         final String attachingPassphrase = STRING_GENERATOR.generate(16);

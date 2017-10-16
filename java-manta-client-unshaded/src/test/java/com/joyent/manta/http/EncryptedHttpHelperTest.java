@@ -13,6 +13,7 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
@@ -95,6 +96,7 @@ public class EncryptedHttpHelperTest {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
         StandardConfigContext config = new StandardConfigContext();
+        config.setMantaURL(UnitTestConstants.UNIT_TEST_URL);
 
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
 

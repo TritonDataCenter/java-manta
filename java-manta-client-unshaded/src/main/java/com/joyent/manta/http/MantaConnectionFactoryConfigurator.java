@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.util.HttpClientBuilderShallowCloner;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -19,35 +18,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
  * @since 3.1.7
  */
 public class MantaConnectionFactoryConfigurator {
-
-    /**
-     * Unfortunately we need a cloner since {@link HttpClientBuilder} is a big mutable bucket of
-     * settings we need to isolate changes to the initially-provided builder from modifications
-     * we make ourselves. Unless we perform a "deep" clone modifications from one client instance
-     * can persist. In reality we don't need to deep-clone anything other than the interceptor lists
-     * since those are the only fields modified by {@link MantaConnectionFactory} when a custom
-     * {@link HttpClientBuilder} is supplied using this class.
-     * For example:
-     *
-     * <ol>
-     * <li>{@link HttpClientBuilder} with custom interceptors
-     * provided to {@link com.joyent.manta.client.LazyMantaClient}</li>
-     *
-     * <li>Request is made, {@link HttpHelper} instantiated with
-     * {@link com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor}</li>
-     *
-     * <li>Request fails because of invalid key, {@link com.joyent.manta.config.ConfigContext}
-     * updated to use valid key</li>
-     *
-     * <li>User triggers client reload and makes a new request.</li>
-     *
-     * <li>Signature interceptor from initial instantiation is kept in addition to new
-     * signature interceptor configured with the correct key.</li>
-     * </ol>
-     *
-     * {@see LazyMantaClientTest#canReloadHttpHelperRepeatedlyWithoutLeakingInterceptors}
-     */
-    private static final HttpClientBuilderShallowCloner CLONER = new HttpClientBuilderShallowCloner();
 
     /**
      * An existing {@link HttpClientBuilder} to further configure.
@@ -67,6 +37,6 @@ public class MantaConnectionFactoryConfigurator {
     }
 
     HttpClientBuilder getHttpClientBuilder() {
-        return CLONER.createClone(this.httpClientBuilder);
+        return this.httpClientBuilder;
     }
 }
