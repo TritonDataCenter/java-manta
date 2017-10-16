@@ -13,39 +13,34 @@ import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.protocol.HttpContext;
 
 import java.io.IOException;
 
+/**
+ *
+ */
 class DynamicHttpSignatureRequestInterceptor implements HttpRequestInterceptor {
 
+    /**
+     *
+     */
     private final AuthenticationConfigurator authConfig;
-
-    private HttpSignatureAuthScheme authScheme;
 
     DynamicHttpSignatureRequestInterceptor(final AuthenticationConfigurator authConfig) {
         this.authConfig = authConfig;
     }
 
-    Credentials getCredentials() {
-        return new UsernamePasswordCredentials(authConfig.getUsername(), null);
-    }
-
-    HttpSignatureAuthScheme getAuthScheme() {
-        return new HttpSignatureAuthScheme(null, null);
-    }
-
     @Override
     public void process(final HttpRequest request, final HttpContext context)
             throws HttpException, IOException {
-        if (authConfig.authenticationDisabled()) {
+        if (authConfig.isAuthenticationDisabled()) {
             return;
         }
 
         final long start = System.nanoTime();
-        final Header authorization = getAuthScheme().authenticate(getCredentials(), request, context);
+        final HttpSignatureAuthScheme authScheme = authConfig.getAuthScheme();
+        final Header authorization = authScheme.authenticate(authConfig.getCredentials(), request, context);
         final long end = System.nanoTime();
 
         request.setHeader(authorization);

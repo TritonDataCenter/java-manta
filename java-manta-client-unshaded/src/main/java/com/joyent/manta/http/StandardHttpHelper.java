@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.client.AuthenticationConfigurator;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
@@ -87,17 +86,14 @@ public class StandardHttpHelper implements HttpHelper {
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaConnectionFactory connectionFactory,
                               final ConfigContext config) {
-        this(
-                connectionContext,
-                new MantaHttpRequestFactory(new AuthenticationConfigurator(config)),
-                config);
+        this(connectionContext, config);
     }
 
     /**
-     * Create a new instance which reads
+     * Create a new instance of the HttpHelper which uses a regular configuration context.
      *
-     * @param connectionContext
-     * @param config
+     * @param connectionContext connection object
+     * @param config configuration context object
      */
     StandardHttpHelper(final MantaConnectionContext connectionContext,
                        final ConfigContext config) {
@@ -108,7 +104,9 @@ public class StandardHttpHelper implements HttpHelper {
 
     /**
      * Creates a new instance of the helper class.
-     * @param connectionContext saved context used between requests to the Manta client
+     *
+     * @param connectionContext connection object
+     * @param requestFactory instance used for building requests to Manta
      * @param config configuration context object
      */
     public StandardHttpHelper(final MantaConnectionContext connectionContext,

@@ -147,6 +147,9 @@ public class MantaClient implements AutoCloseable {
      */
     private final ConfigContext config;
 
+    /**
+     * Object responsible for maintaining objects derived from authentication parameters.
+     */
     private final AuthenticationConfigurator authConfig;
 
     /**
@@ -184,10 +187,22 @@ public class MantaClient implements AutoCloseable {
         this(config, null, null);
     }
 
+    /**
+     * Creates a client based on authentication context and the embedded config context.
+     *
+     * @param authConfig authentication configuration from which to read all configuration values
+     */
     public MantaClient(final AuthenticationConfigurator authConfig) {
         this(authConfig.getContext(), authConfig, null);
     }
 
+    /**
+     * Creates a client based on authentication context and embedded config context, along with a potentially-null
+     * configuration for {@link MantaConnectionFactory}.
+     *
+     * @param authConfig authentication configuration from which to read all configuration values
+     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
+     */
     public MantaClient(final AuthenticationConfigurator authConfig,
                        final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
         this(authConfig.getContext(), authConfig, connectionFactoryConfigurator);
@@ -204,7 +219,8 @@ public class MantaClient implements AutoCloseable {
      * single-threaded by eliminating the connection pool. Bug or feature? You decide!
      *
      * @param config The configuration context that provides all of the configuration values
-     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory
+     * @param authConfig Authentication configuration helper which must rely on the passed ConfigContext (or null)
+     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
      */
     MantaClient(final ConfigContext config,
                 final AuthenticationConfigurator authConfig,
@@ -220,10 +236,10 @@ public class MantaClient implements AutoCloseable {
 
         if (authConfig != null) {
             this.authConfig = authConfig;
-            this.authConfig.reload();
         } else {
             this.authConfig = new AuthenticationConfigurator(config);
         }
+        this.authConfig.reload();
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,

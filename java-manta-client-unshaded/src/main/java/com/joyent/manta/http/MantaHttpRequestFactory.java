@@ -35,15 +35,21 @@ import java.util.List;
 public class MantaHttpRequestFactory {
 
     /**
-     * Default HTTP headers to send to all requests to Manta.
+     * Default HTTP headers to attach to all requests.
      */
     private static final Header[] HEADERS = {
             new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
             new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
     };
 
+    /**
+     * Interceptor which attaches unique IDs to requests.
+     */
     private static final RequestIdInterceptor INTERCEPTOR_REQUEST_ID = new RequestIdInterceptor();
 
+    /**
+     * Configuration helper to provide to {@link #authInterceptor} and from which to read a base URL.
+     */
     private final AuthenticationConfigurator authConfig;
 
     /**
@@ -51,6 +57,9 @@ public class MantaHttpRequestFactory {
      */
     private final DynamicHttpSignatureRequestInterceptor authInterceptor;
 
+    /**
+     * The base url when {@link AuthenticationConfigurator} is not provided.
+     */
     private final String url;
 
     /**
@@ -72,7 +81,7 @@ public class MantaHttpRequestFactory {
     public MantaHttpRequestFactory(final String url) {
         this.authConfig = null;
         this.authInterceptor = null;
-        this.url = Validate.notNull(url, "URL must not be null");;
+        this.url = Validate.notNull(url, "URL must not be null");
     }
 
     /**
@@ -190,6 +199,11 @@ public class MantaHttpRequestFactory {
         return request;
     }
 
+    /**
+     * Apply default headers and interceptors to the new request.
+     *
+     * @param request request object to prepare
+     */
     private void prepare(final HttpRequest request) {
         request.setHeaders(HEADERS);
 

@@ -10,7 +10,6 @@ package com.joyent.manta.client;
 import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.client.AuthenticationConfigurator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.util.encoders.Base64;
@@ -30,10 +29,13 @@ import java.security.KeyPair;
  */
 public class UriSigner {
 
+    /**
+     * Authentication Helper which provides objects needed for signing.
+     */
     private final AuthenticationConfigurator authConfig;
 
     /**
-     * Creates a new instance.
+     * DEPRECATED: Creates an instance based on a new authentication context.
      *
      * @param config Manta configuration context
      * @param keyPair cryptographic key pair used to sign URIs
@@ -41,10 +43,15 @@ public class UriSigner {
      */
     @Deprecated
     public UriSigner(final ConfigContext config, final KeyPair keyPair, final ThreadLocalSigner signer) {
-        this(new AuthenticationConfigurator(config));
+        this(new AuthenticationConfigurator(config).reload());
     }
 
-    public UriSigner(final AuthenticationConfigurator authConfig) {
+    /**
+     * Creates a new instance. This constructor is package-private because this class is being made package private.
+     *
+     * @param authConfig Manta authentication context
+     */
+    UriSigner(final AuthenticationConfigurator authConfig) {
         this.authConfig = authConfig;
     }
 

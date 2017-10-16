@@ -9,9 +9,12 @@ package com.joyent.manta.client;
 
 import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.KeyPairFactory;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 
 import java.security.KeyPair;
 import java.util.Objects;
@@ -48,6 +51,16 @@ public class AuthenticationConfigurator implements AutoCloseable {
     private ThreadLocalSigner signer;
 
     /**
+     * Credentials object used for authenticating requests.
+     */
+    private Credentials credentials;
+
+    /**
+     * Strategy object for generating headers when generating authenticated requests.
+     */
+    private HttpSignatureAuthScheme authScheme;
+
+    /**
      * Build an AuthenticationConfigurator from an existing {@link ConfigContext}.
      *
      * @param config configuration context from which to extract values
@@ -58,13 +71,16 @@ public class AuthenticationConfigurator implements AutoCloseable {
     }
 
     /**
-     * Check the configuration for authentication-related changes.
+     * Check the configuration for authentication-related changes. Clean up old authentication objects which might
+     * still exist and load new instances.
+     *
+     * @return this after reload
      */
-    public synchronized void reload() {
+    public synchronized AuthenticationConfigurator reload() {
         final int newFingerprint = calculateAuthParamsFingerprint(config);
 
         if (newFingerprint == parametersFingerprint) {
-            return;
+            return this;
         }
 
         if (signer != null) {
@@ -72,13 +88,16 @@ public class AuthenticationConfigurator implements AutoCloseable {
         }
         signer = null;
         keyPair = null;
-
+        credentials = null;
+        authScheme = null;
 
         if (BooleanUtils.isNotTrue(config.noAuth())) {
             doLoad();
         }
 
         parametersFingerprint = newFingerprint;
+
+        return this;
     }
 
     /**
@@ -98,6 +117,8 @@ public class AuthenticationConfigurator implements AutoCloseable {
         }
 
         signer = new ThreadLocalSigner(builder);
+        credentials = new UsernamePasswordCredentials(config.getMantaUser(), null);
+        authScheme = new HttpSignatureAuthScheme(keyPair, signer);
     }
 
     public String getURL() {
@@ -108,15 +129,32 @@ public class AuthenticationConfigurator implements AutoCloseable {
         return config.getMantaUser();
     }
 
-    public Boolean authenticationDisabled() {
+    /**
+     * Whether or not the user KeyPair (and signer) are loaded.
+     *
+     * @return current authentication setting
+     */
+    public Boolean isAuthenticationDisabled() {
         return config.noAuth();
     }
 
-    public KeyPair getKeyPair() {
+    public Credentials getCredentials() {
+        return credentials;
+    }
+
+    public HttpSignatureAuthScheme getAuthScheme() {
+        return authScheme;
+    }
+
+    ConfigContext getContext() {
+        return config;
+    }
+
+    KeyPair getKeyPair() {
         return keyPair;
     }
 
-    public ThreadLocalSigner getSigner() {
+    ThreadLocalSigner getSigner() {
         return signer;
     }
 
@@ -145,9 +183,5 @@ public class AuthenticationConfigurator implements AutoCloseable {
         }
 
         signer = null;
-    }
-
-    public ConfigContext getContext() {
-        return config;
     }
 }

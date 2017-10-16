@@ -41,7 +41,6 @@ import org.apache.http.impl.io.DefaultHttpResponseParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.DynamicMBean;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -50,6 +49,7 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.security.KeyPair;
 import java.util.List;
+import javax.management.DynamicMBean;
 
 /**
  * Factory class that creates instances of
@@ -102,38 +102,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Create new instance using the passed configuration.
      *
      * @param config    configuration of the connection parameters
-     */
-    public MantaConnectionFactory(final ConfigContext config) {
-        this(config, null);
-    }
-
-    /**
-     * Create new instance using the passed configuration.
-     *
-     * @param config    configuration of the connection parameters
-     */
-    public MantaConnectionFactory(final ConfigContext config,
-                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
-        this.config = Validate.notNull(config, "Configuration context must not be null");
-
-        if (connectionFactoryConfigurator != null) {
-            this.connectionManager = null;
-            this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
-        } else {
-            this.connectionManager = buildConnectionManager();
-            this.httpClientBuilder = createStandardBuilder();
-        }
-
-        configureHttpClientBuilderDefaults();
-    }
-
-    /**
-     * Create new instance using the passed configuration.
-     *
-     * @param config    configuration of the connection parameters
      * @param keyPair   cryptographic signing key pair used for HTTP signatures
      * @param signer    Signer configured to use the given keyPair
      */
+    @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer) {
@@ -154,6 +126,36 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                                   final ThreadLocalSigner signer,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
         this(config, connectionFactoryConfigurator);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config configuration of the connection parameters
+     */
+    public MantaConnectionFactory(final ConfigContext config) {
+        this(config, null);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config configuration of the connection parameters
+     * @param connectionFactoryConfigurator existing HttpClient objects to reuse
+     */
+    public MantaConnectionFactory(final ConfigContext config,
+                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this.config = Validate.notNull(config, "Configuration context must not be null");
+
+        if (connectionFactoryConfigurator != null) {
+            this.connectionManager = null;
+            this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
+        } else {
+            this.connectionManager = buildConnectionManager();
+            this.httpClientBuilder = createStandardBuilder();
+        }
+
+        configureHttpClientBuilderDefaults();
     }
 
     /**
