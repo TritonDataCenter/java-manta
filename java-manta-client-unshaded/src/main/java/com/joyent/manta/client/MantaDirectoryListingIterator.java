@@ -57,11 +57,6 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     private final int pagingSize;
 
     /**
-     * Base Manta URL that all paths are appended to.
-     */
-    private final String url;
-
-    /**
      * Path to directory in which we will iterate through its contents.
      */
     private final String path;
@@ -111,20 +106,32 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     /**
      * Create a new instance of a directory list iterator.
      *
-     * @param url base Manta URL that all paths are appended to
+     * @param url ignored
      * @param path path to directory in which we will iterate through its contents
      * @param httpHelper HTTP request helper class
      * @param pagingSize size of result set requested against the Manta API (2-1024).
      */
+    @Deprecated
     public MantaDirectoryListingIterator(final String url,
                                          final String path,
                                          final HttpHelper httpHelper,
                                          final int pagingSize) {
-        Validate.notNull(url, "URL must not be null");
+        this(path, httpHelper, pagingSize);
+    }
+
+    /**
+     * Create a new instance of a directory list iterator.
+     *
+     * @param path path to directory in which we will iterate through its contents
+     * @param httpHelper HTTP request helper class
+     * @param pagingSize size of result set requested against the Manta API (2-1024).
+     */
+    public MantaDirectoryListingIterator(final String path,
+                                         final HttpHelper httpHelper,
+                                         final int pagingSize) {
         Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
 
-        this.url = url;
         this.path = path;
         this.httpHelper = httpHelper;
 
@@ -146,7 +153,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     private synchronized void selectReader() throws IOException {
         if (lastMarker == null) {
             String query = String.format("?limit=%d", pagingSize);
-            final HttpGet request = httpHelper.getRequestFactory().get(url + formatPath(path) + query);
+            final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
             IOUtils.closeQuietly(currentResponse);
             currentResponse = httpHelper.executeRequest(request, null);
@@ -165,7 +172,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
         } else {
             String query = String.format("?limit=%d&marker=%s",
                     pagingSize, URLEncoder.encode(lastMarker, "UTF-8"));
-            final HttpGet request = httpHelper.getRequestFactory().get(url + formatPath(path) + query);
+            final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
             IOUtils.closeQuietly(br);
             IOUtils.closeQuietly(currentResponse);
