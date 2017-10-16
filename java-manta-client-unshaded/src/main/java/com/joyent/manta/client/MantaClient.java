@@ -239,7 +239,6 @@ public class MantaClient implements AutoCloseable {
         } else {
             this.authConfig = new AuthenticationConfigurator(config);
         }
-        this.authConfig.reload();
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,
