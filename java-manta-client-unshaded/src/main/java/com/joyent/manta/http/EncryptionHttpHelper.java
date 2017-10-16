@@ -399,7 +399,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             // Forward on all headers to the HEAD request
             final HttpHead head = getRequestFactory().head(path);
-            head.setHeaders(request.getAllHeaders());
+            MantaHttpRequestFactory.addHeaders(head, request.getAllHeaders());
             head.removeHeaders(HttpHeaders.RANGE);
 
             HttpResponse headResponse = super.executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");

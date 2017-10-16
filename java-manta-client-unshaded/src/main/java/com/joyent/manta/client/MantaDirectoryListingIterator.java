@@ -146,11 +146,10 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     private synchronized void selectReader() throws IOException {
         if (lastMarker == null) {
             String query = String.format("?limit=%d", pagingSize);
-            String uri = url + formatPath(path) + query;
-            HttpGet get = new HttpGet(uri);
+            final HttpGet request = httpHelper.getRequestFactory().get(url + formatPath(path) + query);
 
             IOUtils.closeQuietly(currentResponse);
-            currentResponse = httpHelper.executeRequest(get, null);
+            currentResponse = httpHelper.executeRequest(request, null);
             HttpEntity entity = currentResponse.getEntity();
             String contentType = entity.getContentType().getValue();
 
@@ -166,13 +165,12 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
         } else {
             String query = String.format("?limit=%d&marker=%s",
                     pagingSize, URLEncoder.encode(lastMarker, "UTF-8"));
-            String uri = url + formatPath(path) + query;
-            HttpGet get = new HttpGet(uri);
+            final HttpGet request = httpHelper.getRequestFactory().get(url + formatPath(path) + query);
 
             IOUtils.closeQuietly(br);
             IOUtils.closeQuietly(currentResponse);
 
-            currentResponse = httpHelper.executeRequest(get, null);
+            currentResponse = httpHelper.executeRequest(request, null);
             HttpEntity entity = currentResponse.getEntity();
             Reader streamReader = new InputStreamReader(entity.getContent(),
                     StandardCharsets.UTF_8.name());

@@ -14,6 +14,7 @@ import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpMessage;
 import org.apache.http.HttpRequest;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpDelete;
@@ -215,6 +216,20 @@ public class MantaHttpRequestFactory {
             }
         } catch (HttpException | IOException e) {
             throw new MantaClientException("Failed to prepare request", e);
+        }
+    }
+
+    /**
+     * Add headers to an {@link org.apache.http.client.methods.HttpUriRequest} without clobbering defaults
+     * and authentication.
+     *
+     * @param httpMessage request to attach headers to
+     * @param headers headers to attach
+     */
+    public static void addHeaders(final HttpMessage httpMessage, final Header... headers) {
+        Validate.notNull(httpMessage, "HttpMessage must not be null");
+        for (final Header header : headers) {
+            httpMessage.addHeader(header);
         }
     }
 

@@ -189,7 +189,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final HttpPost post = requestFactory.post(path);
-        post.setHeaders(httpHeaders.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(post, httpHeaders.asApacheHttpHeaders());
 
         if (entity != null) {
             post.setEntity(entity);
@@ -222,7 +222,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final HttpPut put = requestFactory.put(path);
-        put.setHeaders(httpHeaders.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(put, httpHeaders.asApacheHttpHeaders());
 
         final DigestedEntity md5DigestedEntity;
 
@@ -283,7 +283,7 @@ public class StandardHttpHelper implements HttpHelper {
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
 
         HttpPut put = requestFactory.put(path, pairs);
-        put.setHeaders(headers.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
         put.setEntity(NoContentEntity.INSTANCE);
 
         try (CloseableHttpResponse response = executeRequest(
@@ -312,7 +312,7 @@ public class StandardHttpHelper implements HttpHelper {
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
         if (requestHeaders != null) {
-            request.setHeaders(requestHeaders.asApacheHttpHeaders());
+            MantaHttpRequestFactory.addHeaders(request, requestHeaders.asApacheHttpHeaders());
         }
 
         final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {

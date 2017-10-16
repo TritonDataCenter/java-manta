@@ -1581,7 +1581,8 @@ public class MantaClient implements AutoCloseable {
             headers = rawHeaders;
         }
 
-        put.setHeaders(headers.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
+
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.DIRECTORY_LIST.getContentType());
 
         HttpResponse response = httpHelper.executeAndCloseRequest(put,
@@ -1665,7 +1666,7 @@ public class MantaClient implements AutoCloseable {
         final HttpPut put = httpHelper.getRequestFactory().put(linkPath);
 
         if (headers != null) {
-            put.setHeaders(headers.asApacheHttpHeaders());
+            MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
         }
 
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.SNAPLINK.getContentType());
