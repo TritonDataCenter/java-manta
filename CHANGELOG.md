@@ -14,8 +14,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    `MantaConnectionFactoryConfigurator` containing their custom instance to the
    `MantaClient(ConfigContext, MantaConnectionFactoryConfigurator)` constructor. Constructor documentation
    explains the benefits and trade offs.
- - New subclass of `MantaClient` which supports
-   [dynamically-reloading configuration state](https://github.com/joyent/java-manta/issues/311): `LazyMantaClient`
+ - `MantaClient` now allows for modification of authentication parameters by
+   [dynamically-reloading configuration state](https://github.com/joyent/java-manta/issues/311). `AuthenticationConfigurator` can
+   be used to wrap the desired configuration and provides a method to update derived objects atomically.
 ### Fixed
  - Clarify version history of `MantaInputStreamEntity`
  - MPU parts which were missing an ETag in their response were
