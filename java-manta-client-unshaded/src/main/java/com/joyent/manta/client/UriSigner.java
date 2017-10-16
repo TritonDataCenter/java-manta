@@ -82,7 +82,7 @@ public class UriSigner {
         final String algorithm = signer.get().getHttpHeaderAlgorithm().toUpperCase();
         final String keyId = String.format(
                 "/%s/keys/%s",
-                authConfig.getUsername(),
+                authConfig.getContext().getMantaUser(),
                 KeyFingerprinter.md5Fingerprint(authConfig.getKeyPair()));
 
         final String keyIdEncoded = URLEncoder.encode(keyId, charset);

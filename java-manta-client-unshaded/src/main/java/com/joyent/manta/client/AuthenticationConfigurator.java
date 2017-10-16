@@ -125,12 +125,8 @@ public class AuthenticationConfigurator implements AutoCloseable {
         return config.getMantaURL();
     }
 
-    public String getUsername() {
-        return config.getMantaUser();
-    }
-
     /**
-     * Whether or not the user KeyPair (and signer) are loaded.
+     * Whether or not the authentication objects should be loaded.
      *
      * @return current authentication setting
      */
@@ -166,6 +162,7 @@ public class AuthenticationConfigurator implements AutoCloseable {
      */
     private static int calculateAuthParamsFingerprint(final ConfigContext config) {
         return Objects.hash(
+                config.getMantaUser(),
                 config.getPassword(),
                 config.getMantaKeyId(),
                 config.getMantaKeyPath(),
