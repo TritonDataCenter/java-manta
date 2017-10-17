@@ -102,24 +102,24 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `Authentica
 * `manta.url` ( **MANTA_URL** )
     The URL of the Manta service endpoint.
 * `manta.user` ( **MANTA_USER** )
-The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
+    The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
     you will specify the account name as "user/subuser".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
     The fingerprint for the public key used to access the manta service. Can be retrieved using `ssh-keygen -l -f ${MANTA_KEY_PATH} -E md5 | cut -d' ' -f 2`
 * `manta.key_path` ( **MANTA_KEY_PATH**)
     The name of the file that will be loaded for the account used to access the manta service.
 * `manta.key_content` ( **MANTA_KEY_CONTENT**)
-The content of the private key as a string. This is an alternative to `manta.key_path`. Both
+    The content of the private key as a string. This is an alternative to `manta.key_path`. Both
     `manta.key_path` and can't be specified at the same time `manta.key_content`.
 * `manta.password` ( **MANTA_PASSWORD**)
     The password associated with the key specified. This is optional and not normally needed.
 * `manta.no_auth` (**MANTA_NO_AUTH**)
-When set to true, this disables HTTP Signature authentication entirely. This is
+    When set to true, this disables HTTP Signature authentication entirely. This is
     only really useful when you are running the library as part of a Manta job.
 * `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
     When set to true, this disables the use of native code libraries for cryptography.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
-When set to true, the client calculates a MD5 checksum of the file being uploaded
+    When set to true, the client calculates a MD5 checksum of the file being uploaded
     to Manta and then checks it against the result returned by Manta.
 * `manta.timeout` ( **MANTA_TIMEOUT**)
     The number of milliseconds to wait after a request was made to Manta before failing.
@@ -128,8 +128,8 @@ When set to true, the client calculates a MD5 checksum of the file being uploade
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
     The maximum number of open HTTP connections to the Manta API.
 * `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
-The size of the buffer to allocate when processing streaming HTTP data. This sets the value
-used by Apache HTTP Client `SessionInputBufferImpl` implementation. Ranges from 1024-16384
+    The size of the buffer to allocate when processing streaming HTTP data. This sets the value
+    used by Apache HTTP Client `SessionInputBufferImpl` implementation. Ranges from 1024-16384
     are acceptable depending on your average object size and streaming needs.
 * `https.protocols` (**MANTA_HTTPS_PROTOCOLS**)
     A comma delimited list of TLS protocols.
@@ -140,16 +140,16 @@ used by Apache HTTP Client `SessionInputBufferImpl` implementation. Ranges from 
 * `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
     Time in milliseconds to wait for a connection from the connection pool.
 * `manta.upload_buffer_size` (**MANTA_UPLOAD_BUFFER_SIZE**)
-The initial amount of bytes to attempt to load into memory when uploading a stream. If the
-entirety of the stream fits within the number of bytes of this value, then the
+    The initial amount of bytes to attempt to load into memory when uploading a stream. If the
+    entirety of the stream fits within the number of bytes of this value, then the
     contents of the buffer are directly uploaded to Manta in a retryable form.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
-Unique ID of the client-side encryption key being used. It must be in US-ASCII
+    Unique ID of the client-side encryption key being used. It must be in US-ASCII
     using only printable characters and with no whitespace.
 * `manta.encryption_algorithm` (**MANTA_ENCRYPTION_ALGORITHM**)
-The client-side encryption algorithm used to encrypt and decrypt data. Valid
+    The client-side encryption algorithm used to encrypt and decrypt data. Valid
     values are listed in [SupportedCipherDetails](java-manta-client/src/main/java/com/joyent/manta/client/crypto/SupportedCipherDetails.java#L26).
 * `manta.permit_unencrypted_downloads` (**MANTA_UNENCRYPTED_DOWNLOADS**)
     Boolean indicating that unencrypted files can be downloaded when client-side
@@ -162,7 +162,7 @@ The client-side encryption algorithm used to encrypt and decrypt data. Valid
     location of the private key used to perform client-side encryption. If this value is
     non-null, then no other encryption key values can be non-null.
 * `manta.encryption_key_bytes`
-The private key used to perform client-side encryption as a byte array. If this value is
+    The private key used to perform client-side encryption as a byte array. If this value is
     non-null, then no other encryption key values can be non-null.
 * `manta.encryption_key_bytes_base64` (**MANTA_ENCRYPTION_KEY_BYTES**)
     The private key used to perform client-side encryption encoded as a base64 string.
