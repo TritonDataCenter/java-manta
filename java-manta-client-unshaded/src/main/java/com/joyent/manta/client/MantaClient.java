@@ -783,7 +783,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaDirectoryListingIterator streamingIterator(final String path, final int pagingSize) {
         MantaDirectoryListingIterator itr =
-            new MantaDirectoryListingIterator(config.getMantaURL(), path, httpHelper, pagingSize);
+            new MantaDirectoryListingIterator(path, httpHelper, pagingSize);
         danglingStreams.add(itr);
         return itr;
     }
@@ -2218,7 +2218,6 @@ public class MantaClient implements AutoCloseable {
         final String path = String.format("%s/jobs", config.getMantaHomeDirectory());
 
         final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
-                config.getMantaURL(),
                 path,
                 httpHelper,
                 MAX_RESULTS);
