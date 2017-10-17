@@ -7,15 +7,14 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.text.RandomStringGenerator;
-import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
@@ -24,12 +23,11 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 
 @Test
-public class AuthenticationConfiguratorTest {
+public class AuthAwareConfigContextTest {
 
     private static final RandomStringGenerator STRING_GENERATOR =
             new RandomStringGenerator.Builder()
@@ -52,48 +50,32 @@ public class AuthenticationConfiguratorTest {
 
     // PERHAPS: split this out into several tests since they're all pretty self-contained?
     public void canMonitorRelevantFieldsInConfig() throws IOException {
-        final AuthenticationConfigurator authConfig = new AuthenticationConfigurator(config);
+        final AuthAwareConfigContext authConfig = new AuthAwareConfigContext(config);
         final KeyPair currentKeyPair = authConfig.getKeyPair();
         Assert.assertNotNull(currentKeyPair);
-
-        // failure to reload when encrypting the key with a password
-        final String attachingPassphrase = STRING_GENERATOR.generate(16);
-        try (final StringWriter contentWriter = new StringWriter();
-             final JcaPEMWriter pemWriter = new JcaPEMWriter(contentWriter)) {
-            final Object keySerializer = new JcaMiscPEMGenerator(
-                    currentKeyPair.getPrivate(),
-                    new JcePEMEncryptorBuilder("AES-128-CBC").build(attachingPassphrase.toCharArray()));
-            pemWriter.writeObject(keySerializer);
-            pemWriter.flush();
-            config.setPrivateKeyContent(contentWriter.getBuffer().toString());
-        }
-
-        // password
-        config.setPassword(attachingPassphrase);
-        authConfig.reload();
-        differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
 
         // key file (move key content to a file)
         final File keyFile = File.createTempFile("private-key", "");
         FileUtils.forceDeleteOnExit(keyFile);
-        FileUtils.writeStringToFile(keyFile, config.getPrivateKeyContent(), StandardCharsets.UTF_8);
-        config.setPrivateKeyContent(null);
-        config.setMantaKeyPath(keyFile.getAbsolutePath());
+        FileUtils.writeStringToFile(keyFile, authConfig.getPrivateKeyContent(), StandardCharsets.UTF_8);
+        authConfig.setPrivateKeyContent(null);
+        authConfig.setMantaKeyPath(keyFile.getAbsolutePath());
+        authConfig.reload();
         differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
 
         // key id
-        config.setMantaKeyId("MD5:" + config.getMantaKeyId());
+        authConfig.setMantaKeyId("MD5:" + KeyFingerprinter.md5Fingerprint(authConfig.getKeyPair()));
         authConfig.reload();
         differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
 
         // disable native signatures
         final ThreadLocalSigner currentSigner = authConfig.getSigner();
-        config.setDisableNativeSignatures(true);
+        authConfig.setDisableNativeSignatures(true);
         authConfig.reload();
         Assert.assertNotSame(currentSigner, authConfig.getSigner());
 
         // disable auth entirely
-        config.setNoAuth(true);
+        authConfig.setNoAuth(true);
         authConfig.reload();
         Assert.assertNull(authConfig.getKeyPair());
     }

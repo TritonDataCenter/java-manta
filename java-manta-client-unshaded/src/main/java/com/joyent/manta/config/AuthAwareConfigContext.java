@@ -5,13 +5,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.config;
 
 import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.KeyPairFactory;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -21,19 +19,15 @@ import java.util.Objects;
 
 /**
  * Object for tracking configuration changes related to authentication and recreating dependent objects as needed.
- * This class lives in the client package because so that its getters can be package-private. It is
- * designed to ease client initialization and acts as a bridge configuration values and runtime authentication
+ * It combines the users' configuration with the derived runtime objects needed to authenticate requests.
  * objects like the {@link ThreadLocalSigner} which needs careful lifecycle management.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */
-public class AuthenticationConfigurator implements AutoCloseable {
-
-    /**
-     * The {@link ConfigContext} to track for changes.
-     */
-    private final ConfigContext config;
+public class AuthAwareConfigContext
+        extends StandardConfigContext
+        implements AutoCloseable {
 
     /**
      * Hashcode of last observed authentication-related configuration values.
@@ -61,12 +55,12 @@ public class AuthenticationConfigurator implements AutoCloseable {
     private HttpSignatureAuthScheme authScheme;
 
     /**
-     * Build an AuthenticationConfigurator from an existing {@link ConfigContext}.
+     * Build an AuthAwareConfigContext from an existing {@link ConfigContext}.
      *
      * @param config configuration context from which to extract values
      */
-    public AuthenticationConfigurator(final ConfigContext config) {
-        this.config = config;
+    public AuthAwareConfigContext(final ConfigContext config) {
+        overwriteWithContext(config);
         reload();
     }
 
@@ -76,8 +70,8 @@ public class AuthenticationConfigurator implements AutoCloseable {
      *
      * @return this after reload
      */
-    public synchronized AuthenticationConfigurator reload() {
-        final int newFingerprint = calculateAuthParamsFingerprint(config);
+    public synchronized AuthAwareConfigContext reload() {
+        final int newFingerprint = calculateAuthParamsFingerprint(this);
 
         if (newFingerprint == parametersFingerprint) {
             return this;
@@ -91,7 +85,7 @@ public class AuthenticationConfigurator implements AutoCloseable {
         credentials = null;
         authScheme = null;
 
-        if (BooleanUtils.isNotTrue(config.noAuth())) {
+        if (BooleanUtils.isNotTrue(noAuth())) {
             doLoad();
         }
 
@@ -104,53 +98,56 @@ public class AuthenticationConfigurator implements AutoCloseable {
      * Internal method for updating authentication parameters and derived objects.
      */
     private void doLoad() {
-        if (BooleanUtils.isNotFalse(config.noAuth())) {
+        if (BooleanUtils.isNotFalse(noAuth())) {
             return;
         }
 
-        keyPair = new KeyPairFactory(config).createKeyPair();
+        keyPair = new KeyPairFactory(this).createKeyPair();
 
         final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (BooleanUtils.isTrue(config.disableNativeSignatures())) {
+        if (BooleanUtils.isTrue(disableNativeSignatures())) {
             // DefaultConfigContext#DEFAULT_DISABLE_NATIVE_SIGNATURES is false
             builder.providerCode("stdlib");
         }
 
         signer = new ThreadLocalSigner(builder);
-        credentials = new UsernamePasswordCredentials(config.getMantaUser(), null);
+        credentials = new UsernamePasswordCredentials(getMantaUser(), null);
         authScheme = new HttpSignatureAuthScheme(keyPair, signer);
     }
 
-    public String getURL() {
-        return config.getMantaURL();
-    }
-
     /**
-     * Whether or not the authentication objects should be loaded.
+     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
      *
-     * @return current authentication setting
+     * @return the credentials used to sign requests
      */
-    public Boolean isAuthenticationDisabled() {
-        return config.noAuth();
-    }
-
     public Credentials getCredentials() {
         return credentials;
     }
 
+    /**
+     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     *
+     * @return the auth scheme which does request signing
+     */
     public HttpSignatureAuthScheme getAuthScheme() {
         return authScheme;
     }
 
-    ConfigContext getContext() {
-        return config;
-    }
-
-    KeyPair getKeyPair() {
+    /**
+     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     *
+     * @return the keypair used to sign requests
+     */
+    public KeyPair getKeyPair() {
         return keyPair;
     }
 
-    ThreadLocalSigner getSigner() {
+    /**
+     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     *
+     * @return the object used to sign requests
+     */
+    public ThreadLocalSigner getSigner() {
         return signer;
     }
 

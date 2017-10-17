@@ -8,7 +8,7 @@
 package com.joyent.manta.http;
 
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
-import com.joyent.manta.client.AuthenticationConfigurator;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -19,7 +19,7 @@ import java.io.IOException;
 
 /**
  * Request interceptor which can read potentially-changing authentication configuration from a
- * {@link AuthenticationConfigurator}.
+ * {@link AuthAwareConfigContext}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
@@ -30,21 +30,21 @@ class DynamicHttpSignatureRequestInterceptor implements HttpRequestInterceptor {
      * The auth context from which to read the {@link HttpSignatureAuthScheme} and
      * {@link org.apache.http.auth.Credentials}.
      */
-    private final AuthenticationConfigurator authConfig;
+    private final AuthAwareConfigContext authConfig;
 
     /**
      * Create an interceptor which will read authentication objects from a dynamic configuration.
      *
      * @param authConfig authentication context
      */
-    DynamicHttpSignatureRequestInterceptor(final AuthenticationConfigurator authConfig) {
+    DynamicHttpSignatureRequestInterceptor(final AuthAwareConfigContext authConfig) {
         this.authConfig = authConfig;
     }
 
     @Override
     public void process(final HttpRequest request, final HttpContext context)
             throws HttpException, IOException {
-        if (authConfig.isAuthenticationDisabled()) {
+        if (authConfig.noAuth()) {
             return;
         }
 

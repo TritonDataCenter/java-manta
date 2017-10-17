@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.client.AuthenticationConfigurator;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.exception.MantaClientException;
 import org.apache.commons.lang3.Validate;
@@ -51,7 +51,7 @@ public class MantaHttpRequestFactory {
     /**
      * Configuration helper to provide to {@link #authInterceptor} and from which to read a base URL.
      */
-    private final AuthenticationConfigurator authConfig;
+    private final AuthAwareConfigContext authConfig;
 
     /**
      * Interceptor for signing requests than can dynamically react to modifications in the provided configuration.
@@ -59,17 +59,17 @@ public class MantaHttpRequestFactory {
     private final DynamicHttpSignatureRequestInterceptor authInterceptor;
 
     /**
-     * The base url when {@link AuthenticationConfigurator} is not provided.
+     * The base url when {@link AuthAwareConfigContext} is not provided.
      */
     private final String url;
 
     /**
-     * Build a new request factory based on an {@link AuthenticationConfigurator}.
+     * Build a new request factory based on an {@link AuthAwareConfigContext}.
      *
      * @param authConfig the config from which to extract base a base URL and to provide to the interceptor
      */
-    public MantaHttpRequestFactory(final AuthenticationConfigurator authConfig) {
-        this.authConfig = Validate.notNull(authConfig, "AuthenticationConfigurator must not be null");
+    public MantaHttpRequestFactory(final AuthAwareConfigContext authConfig) {
+        this.authConfig = Validate.notNull(authConfig, "AuthAwareConfigContext must not be null");
         this.authInterceptor = new DynamicHttpSignatureRequestInterceptor(authConfig);
         this.url = null;
     }
@@ -251,7 +251,7 @@ public class MantaHttpRequestFactory {
 
         final String baseURL;
         if (authConfig != null) {
-            baseURL = authConfig.getURL();
+            baseURL = authConfig.getMantaURL();
         } else {
             baseURL = url;
         }

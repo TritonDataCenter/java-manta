@@ -9,6 +9,7 @@ package com.joyent.manta.client;
 
 import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -32,7 +33,7 @@ public class UriSigner {
     /**
      * Authentication Helper which provides objects needed for signing.
      */
-    private final AuthenticationConfigurator authConfig;
+    private final AuthAwareConfigContext authConfig;
 
     /**
      * DEPRECATED: Creates an instance based on a new authentication context.
@@ -43,7 +44,7 @@ public class UriSigner {
      */
     @Deprecated
     public UriSigner(final ConfigContext config, final KeyPair keyPair, final ThreadLocalSigner signer) {
-        this(new AuthenticationConfigurator(config));
+        this(new AuthAwareConfigContext(config));
     }
 
     /**
@@ -51,7 +52,7 @@ public class UriSigner {
      *
      * @param authConfig Manta authentication context
      */
-    UriSigner(final AuthenticationConfigurator authConfig) {
+    UriSigner(final AuthAwareConfigContext authConfig) {
         this.authConfig = authConfig;
     }
 
@@ -82,7 +83,7 @@ public class UriSigner {
         final String algorithm = signer.get().getHttpHeaderAlgorithm().toUpperCase();
         final String keyId = String.format(
                 "/%s/keys/%s",
-                authConfig.getContext().getMantaUser(),
+                authConfig.getMantaUser(),
                 KeyFingerprinter.md5Fingerprint(authConfig.getKeyPair()));
 
         final String keyIdEncoded = URLEncoder.encode(keyId, charset);

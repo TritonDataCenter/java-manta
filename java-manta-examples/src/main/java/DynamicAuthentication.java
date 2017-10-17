@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import com.joyent.manta.client.AuthenticationConfigurator;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -28,7 +28,7 @@ public class DynamicAuthentication {
                 .setMantaUser("user/subuser")
                 .setNoAuth(true);
 
-        AuthenticationConfigurator authConfig = new AuthenticationConfigurator(config);
+        AuthAwareConfigContext authConfig = new AuthAwareConfigContext(config);
 
         try (MantaClient client = new MantaClient(authConfig)) {
 
@@ -53,12 +53,12 @@ public class DynamicAuthentication {
             authConfig.reload();
 
             // Load file into memory as a string directly from Manta
-            String data = client.getAsString(publicFile);
-            System.out.println(data);
+            String publicData = client.getAsString(publicFile);
+            System.out.println(publicData);
 
             // Load a file in the private home folder
-            String data = client.getAsString(privateFile);
-            System.out.println(data);
+            String privateData = client.getAsString(privateFile);
+            System.out.println(privateData);
         }
     }
 }

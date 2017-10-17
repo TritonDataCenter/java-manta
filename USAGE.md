@@ -97,7 +97,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.encryption_key_bytes         |                                |                                      |                          |
 | manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |                                      |                          |
 
-Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthenticationConfigurator`.
+Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareConfigContext` class.
 
 * `manta.url` ( **MANTA_URL** )
     The URL of the Manta service endpoint.
@@ -350,10 +350,11 @@ class is recommended.
 ### Modifying configuration after client instantiation
 
 Some configuration parameters can be updated in the `ConfigContext` after the client has already been constructed.
-Instead of directly providing a `ConfigContext` users can instead supply a `AuthenticationConfigurator` to the `MantaClient`
+Instead of directly providing a `ConfigContext` users can instead supply a `AuthAwareConfigContext` to the `MantaClient`
 constructor which can be programmatically updated using its `reload()` method. Because the `MantaClient` can be used in a
-multithreaded fashion, users should be careful to await termination of in-flight requests in before triggering authentication reload.
-Users should be aware that it is also possible to construct a `MantaClient` instance using an incomplete configuration when utilizing an `AuthenticationConfigurator`.
+multi-threaded fashion, users should be careful to await termination of in-flight requests in before triggering authentication reload.
+Users should be aware that it is also possible to construct a `MantaClient` instance using an incomplete configuration when utilizing
+an `AuthAwareConfigContext` by disabling authentication until a private key can be set.
 Concurrently updating configuration values while requests are still pending can lead to errors and unpredictable results.
 See the [Dynamic Authentication example](/java-manta-examples/src/main/java/DynamicAuthentication.java) and
 [this test case](/java-manta-it/src/test/java/com/joyent/manta/client/MantaClientAuthenticationChangeIT) for example usage.

@@ -8,6 +8,7 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -43,9 +44,7 @@ import java.util.stream.Collectors;
 @Test
 public class MantaClientAuthenticationChangeIT {
 
-    private IntegrationTestConfigContext config;
-
-    private AuthenticationConfigurator authConfig;
+    private AuthAwareConfigContext config;
 
     private MantaClient mantaClient;
 
@@ -56,9 +55,8 @@ public class MantaClientAuthenticationChangeIT {
     @BeforeClass
     public void beforeClass() throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext();
-        authConfig = new AuthenticationConfigurator(config);
-        mantaClient = new MantaClient(authConfig);
+        config = new AuthAwareConfigContext(new IntegrationTestConfigContext());
+        mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
 
         // stash authentication parameters so we can restore them between test methods
@@ -96,18 +94,18 @@ public class MantaClientAuthenticationChangeIT {
             config.setMantaKeyPath(backupConfig.getMantaKeyPath());
         }
 
-        authConfig.reload();
+        config.reload();
     }
 
     @AfterClass
     public void afterClass() throws Exception {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
-        authConfig.close();
+        config.close();
     }
 
     public void canDisableAuthAndStillAccessPublicObjects() throws Exception {
         final String home = config.getMantaHomeDirectory();
-        Assert.assertNotNull(authConfig.getKeyPair());
+        Assert.assertNotNull(config.getKeyPair());
 
         final List<String> homeListing = mantaClient.listObjects(home)
                 .map(MantaObject::getPath)
@@ -117,9 +115,9 @@ public class MantaClientAuthenticationChangeIT {
         Assert.assertTrue(homeListing.contains(home + "/public"));
 
         config.setNoAuth(true);
-        authConfig.reload();
+        config.reload();
 
-        Assert.assertNull(authConfig.getKeyPair());
+        Assert.assertNull(config.getKeyPair());
 
         mantaClient.head(home + "/public");
 
@@ -130,14 +128,14 @@ public class MantaClientAuthenticationChangeIT {
         Assert.assertEquals(HttpStatus.SC_FORBIDDEN, forbidden.getStatusCode());
 
         config.setNoAuth(false);
-        authConfig.reload();
+        config.reload();
 
         mantaClient.head(home + "/stor");
     }
 
     public void canMigrateKeyAndContinueAccessingPrivateObjects() throws Exception {
         final boolean usingPath = config.getMantaKeyPath() != null;
-        final KeyPair initialKeyPair = authConfig.getKeyPair();
+        final KeyPair initialKeyPair = config.getKeyPair();
 
         final String testFile = testPathPrefix + UUID.randomUUID();
         final byte[] testContent = RandomUtils.nextBytes(RandomUtils.nextInt(500, 1500));
@@ -145,9 +143,9 @@ public class MantaClientAuthenticationChangeIT {
         mantaClient.put(testFile, testContent);
 
         // swap key location and make sure a new KeyPair is being used
-        swapKeyLocation(authConfig, usingPath);
-        authConfig.reload();
-        final KeyPair swappedLocationKeyPair = authConfig.getKeyPair();
+        swapKeyLocation(config, usingPath);
+        config.reload();
+        final KeyPair swappedLocationKeyPair = config.getKeyPair();
         Assert.assertNotNull(swappedLocationKeyPair);
         Assert.assertNotSame(initialKeyPair, swappedLocationKeyPair);
 
@@ -158,7 +156,7 @@ public class MantaClientAuthenticationChangeIT {
 
     public void canTogglePasswordOnKeyAndContinueAccessingPrivateObjects() throws Exception {
         final boolean usingPassword = config.getPassword() != null;
-        final KeyPair initialKeyPair = authConfig.getKeyPair();
+        final KeyPair initialKeyPair = config.getKeyPair();
 
         final String testFile = testPathPrefix + UUID.randomUUID();
         final byte[] testContent = RandomUtils.nextBytes(RandomUtils.nextInt(500, 1500));
@@ -168,20 +166,20 @@ public class MantaClientAuthenticationChangeIT {
 
         // move the key to key content if it's path-based so we don't serialize a password-protected key without its password
         if (config.getMantaKeyPath() != null) {
-            swapKeyLocation(authConfig, true);
+            swapKeyLocation(config, true);
         }
 
         if (usingPassword) {
-            swapKeyContentPasswordness(authConfig, null);
+            swapKeyContentPasswordness(config, null);
         } else {
             final String randomPassword = UUID.randomUUID().toString();
-            swapKeyContentPasswordness(authConfig, randomPassword);
+            swapKeyContentPasswordness(config, randomPassword);
         }
 
-        // swapKeyLocation(authConfig, false);
+        // swapKeyLocation(config, false);
 
-        authConfig.reload();
-        final KeyPair swappedLocationKeyPair = authConfig.getKeyPair();
+        config.reload();
+        final KeyPair swappedLocationKeyPair = config.getKeyPair();
         Assert.assertNotNull(swappedLocationKeyPair);
         Assert.assertNotSame(initialKeyPair, swappedLocationKeyPair);
 
@@ -190,12 +188,11 @@ public class MantaClientAuthenticationChangeIT {
         AssertJUnit.assertArrayEquals(testContent, retrievedContent);
     }
 
-    private static void swapKeyLocation(final AuthenticationConfigurator authConfig, final boolean fromPathToContent) throws IOException {
-        final IntegrationTestConfigContext config = (IntegrationTestConfigContext) authConfig.getContext();
+    private static void swapKeyLocation(final AuthAwareConfigContext config, final boolean fromPathToContent) throws IOException {
 
         if (fromPathToContent) {
             // move key to MANTA_KEY_CONTENT
-            final String keyContent = FileUtils.readFileToString(new File(authConfig.getContext().getMantaKeyPath()), StandardCharsets.UTF_8);
+            final String keyContent = FileUtils.readFileToString(new File(config.getMantaKeyPath()), StandardCharsets.UTF_8);
             config.setMantaKeyPath(null);
             config.setPrivateKeyContent(keyContent);
             return;
@@ -209,13 +206,12 @@ public class MantaClientAuthenticationChangeIT {
         config.setMantaKeyPath(tempKey.toString());
     }
 
-    private static void swapKeyContentPasswordness(final AuthenticationConfigurator authConfig, final String password) throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
-        Validate.isTrue(authConfig.getContext().getMantaKeyPath() == null, "Key path should be null when toggling key content password");
-        Validate.notBlank(authConfig.getContext().getPrivateKeyContent(), "Key content should not be null");
-        final IntegrationTestConfigContext config = (IntegrationTestConfigContext) authConfig.getContext();
+    private static void swapKeyContentPasswordness(final AuthAwareConfigContext config, final String password) throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
+        Validate.isTrue(config.getMantaKeyPath() == null, "Key path should be null when toggling key content password");
+        Validate.notBlank(config.getPrivateKeyContent(), "Key content should not be null");
 
         if (password == null) {
-            Validate.notNull(authConfig.getContext().getPassword(), "Password removal requested but no password attached");
+            Validate.notNull(config.getPassword(), "Password removal requested but no password attached");
 
             // removing password
             throw new AssertionError("Not yet implemented");
@@ -224,42 +220,19 @@ public class MantaClientAuthenticationChangeIT {
         // adding password
 
         // make sure the KeyPair is loaded before we try to serialize it with the provided password
-        Assert.assertNotNull(authConfig.getKeyPair());
+        Assert.assertNotNull(config.getKeyPair());
 
-        final String keyAlgo = authConfig.getKeyPair().getPrivate().getAlgorithm();
+        final String keyAlgo = config.getKeyPair().getPrivate().getAlgorithm();
 
-        if (keyAlgo.equals("EC") || keyAlgo.equals("ECDSA")) {
-            if (ExternalSecurityProviderLoader.getPkcs11Provider() != null) {
-                throw new SkipException("libnss corrupts private keys when serializing them with passphrases. Please run the test suite with an RSA key");
-            }
-            // final PrivateKeyInfo keyInfo = PrivateKeyInfo.getInstance(authConfig.getKeyPair().getPrivate().getEncoded());
-            //
-            // final String type = "EC PRIVATE KEY";
-            //
-            // byte[] encoding = keyInfo.parsePrivateKey().toASN1Primitive().getEncoded();
-            //
-            // String dekAlgName = Strings.toUpperCase(encryptor.getAlgorithm());
-            // byte[] iv = encryptor.getIV();
-            //
-            // byte[] encData = encryptor.encrypt(encoding);          <------------ only generates 48 bytes instead of 128 libnss is enabled
-            //
-            // List headers = new ArrayList(2);
-            //
-            // headers.add(new PemHeader("Proc-Type", "4,ENCRYPTED"));
-            // headers.add(new PemHeader("DEK-Info", dekAlgName + "," + getHexEncoded(iv)));
-            //
-            // final PemObject actualPem = new PemObject(type, headers, encData);
-            // final PemObject pem = keySerializer.generate();
-            //
-            // Assert.assertTrue(50 < actualPem.getContent().length);
-            // Assert.assertTrue(50 < pem.getContent().length);
-        } else if (keyAlgo.equals("RSA")) {
+        // we can only reliably password-protect a keypair if libnss is disabled OR it's an RSA key, otherwise just skip
+        if (ExternalSecurityProviderLoader.getPkcs11Provider() == null || keyAlgo.equals("RSA")) {
             try (final StringWriter contentWriter = new StringWriter();
                  final JcaPEMWriter pemWriter = new JcaPEMWriter(contentWriter)) {
 
                 final JcaMiscPEMGenerator keySerializer = new JcaMiscPEMGenerator(
-                        authConfig.getKeyPair().getPrivate().getEncoded(),
+                        config.getKeyPair().getPrivate(),
                         new JcePEMEncryptorBuilder("AES-128-CBC")
+                                .setProvider("BC")
                                 .build(password.toCharArray()));
 
                 pemWriter.writeObject(keySerializer);
@@ -268,7 +241,10 @@ public class MantaClientAuthenticationChangeIT {
                 config.setPrivateKeyContent(contentWriter.getBuffer().toString());
             }
         } else {
-            throw new AssertionError("Unknown key algorithm, cannot passphrase");
+            throw new SkipException(
+                    String.format("Unsupported parameters for attaching passphrase: libnss enabled %s, key algorithm: %s",
+                            ExternalSecurityProviderLoader.getPkcs11Provider() != null,
+                            keyAlgo));
         }
 
         config.setPassword(password);

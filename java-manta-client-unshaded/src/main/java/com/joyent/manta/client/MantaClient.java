@@ -12,6 +12,7 @@ import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
 import com.joyent.manta.client.jobs.MantaJobBuilder;
 import com.joyent.manta.client.jobs.MantaJobError;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -143,14 +144,9 @@ public class MantaClient implements AutoCloseable {
     private final HttpHelper httpHelper;
 
     /**
-     * Library configuration context reference.
+     * Library configuration context reference which can load derived authentication state.
      */
-    private final ConfigContext config;
-
-    /**
-     * Object responsible for maintaining objects derived from authentication parameters.
-     */
-    private final AuthenticationConfigurator authConfig;
+    private final AuthAwareConfigContext config;
 
     /**
      * Collection of all of the {@link AutoCloseable} objects that will need to be
@@ -184,28 +180,7 @@ public class MantaClient implements AutoCloseable {
      * @param config The configuration context that provides all of the configuration values.
      */
     public MantaClient(final ConfigContext config) {
-        this(config, null, null);
-    }
-
-    /**
-     * Creates a client based on authentication context and the embedded config context.
-     *
-     * @param authConfig authentication configuration from which to read all configuration values
-     */
-    public MantaClient(final AuthenticationConfigurator authConfig) {
-        this(authConfig.getContext(), authConfig, null);
-    }
-
-    /**
-     * Creates a client based on authentication context and embedded config context, along with a potentially-null
-     * configuration for {@link MantaConnectionFactory}.
-     *
-     * @param authConfig authentication configuration from which to read all configuration values
-     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
-     */
-    public MantaClient(final AuthenticationConfigurator authConfig,
-                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
-        this(authConfig.getContext(), authConfig, connectionFactoryConfigurator);
+        this(config, null);
     }
 
     /**
@@ -219,25 +194,18 @@ public class MantaClient implements AutoCloseable {
      * single-threaded by eliminating the connection pool. Bug or feature? You decide!
      *
      * @param config The configuration context that provides all of the configuration values
-     * @param authConfig Authentication configuration helper which must rely on the passed ConfigContext (or null)
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
      */
-    MantaClient(final ConfigContext config,
-                final AuthenticationConfigurator authConfig,
+    public MantaClient(final ConfigContext config,
                 final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
-        this.config = config;
 
-        // We don't want .equals, we want to make sure it's actually the same object
-        Validate.isTrue(authConfig == null || authConfig.getContext() == config,
-                "AuthenticationConfigurator must match ConfigContext if it is provided.");
-
-        if (authConfig != null) {
-            this.authConfig = authConfig;
+        if (config instanceof AuthAwareConfigContext) {
+            this.config = (AuthAwareConfigContext) config;
         } else {
-            this.authConfig = new AuthenticationConfigurator(config);
+            this.config = new AuthAwareConfigContext(config);
         }
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
@@ -245,7 +213,7 @@ public class MantaClient implements AutoCloseable {
                 connectionFactoryConfigurator);
 
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
-        final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.authConfig);
+        final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
@@ -742,7 +710,7 @@ public class MantaClient implements AutoCloseable {
 
         final String fullPath = String.format("%s%s", config.getMantaURL(), formatPath(path));
         final URI request = URI.create(fullPath);
-        final UriSigner uriSigner = new UriSigner(authConfig);
+        final UriSigner uriSigner = new UriSigner(config);
 
         return uriSigner.signURI(request, method, expiresEpochSeconds);
     }
@@ -2563,7 +2531,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         try {
-            authConfig.close();
+            config.close();
         } catch (final Exception e) {
             exceptions.add(e);
         }

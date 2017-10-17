@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
@@ -91,7 +92,7 @@ public class StandardHttpHelper implements HttpHelper {
 
     /**
      * Create a new instance of the HttpHelper which expects a static configuration since the request factory
-     * does not have access to an {@link com.joyent.manta.client.AuthenticationConfigurator}.
+     * does not have access to an {@link AuthAwareConfigContext}.
      *
      * @param connectionContext connection object
      * @param config configuration context object
