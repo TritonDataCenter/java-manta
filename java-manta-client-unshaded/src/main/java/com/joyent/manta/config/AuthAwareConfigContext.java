@@ -116,7 +116,8 @@ public class AuthAwareConfigContext
     }
 
     /**
-     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     * This getter is public as a result of package organization.
+     * Users are strongly discouraged from directly interacting with this object.
      *
      * @return the credentials used to sign requests
      */
@@ -125,7 +126,8 @@ public class AuthAwareConfigContext
     }
 
     /**
-     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     * This getter is public as a result of package organization.
+     * Users are strongly discouraged from directly interacting with this object.
      *
      * @return the auth scheme which does request signing
      */
@@ -134,7 +136,8 @@ public class AuthAwareConfigContext
     }
 
     /**
-     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     * This getter is public as a result of package organization.
+     * Users are strongly discouraged from directly interacting with this object.
      *
      * @return the keypair used to sign requests
      */
@@ -143,7 +146,8 @@ public class AuthAwareConfigContext
     }
 
     /**
-     * This getter is public as a result of package organization. Users are strongly discouraged from directly interacting with this object.
+     * This getter is public as a result of package organization.
+     * Users are strongly discouraged from directly interacting with this object.
      *
      * @return the object used to sign requests
      */
