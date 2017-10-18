@@ -108,6 +108,12 @@
             </exclusions>
         </dependency>
 
+         <dependency>
+             <groupId>org.objenesis</groupId>
+             <artifactId>objenesis</artifactId>
+             <version>${dependency.objenesis.version}</version>
+         </dependency>
+
         <dependency>
             <groupId>com.dorkbox</groupId>
             <artifactId>MinLog-SLF4J</artifactId>
