@@ -63,10 +63,12 @@ public class EncryptedServerSideMultipartManagerIT {
     private String testPathPrefix;
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@org.testng.annotations.Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "encryptionCipher"})
+    public void beforeClass(final @org.testng.annotations.Optional Boolean usingEncryption,
+                            final @org.testng.annotations.Optional String encryptionCipher) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
 
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");

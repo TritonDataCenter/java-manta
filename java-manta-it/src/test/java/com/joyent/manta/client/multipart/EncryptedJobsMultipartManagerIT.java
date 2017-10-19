@@ -61,10 +61,12 @@ public class EncryptedJobsMultipartManagerIT {
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "encryptionCipher"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String encryptionCipher) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
 
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");

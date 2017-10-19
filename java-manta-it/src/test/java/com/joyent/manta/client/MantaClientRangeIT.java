@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
-@Test
+@Test(groups = {"encryptable"})
 public class MantaClientRangeIT {
     private static final String TEST_DATA =
             "A SERGEANT OF THE LAW, wary and wise, " +
@@ -55,11 +55,12 @@ public class MantaClientRangeIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "encryptionCipher"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String encryptionCipher) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
 
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {

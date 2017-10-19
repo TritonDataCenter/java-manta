@@ -24,6 +24,7 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
@@ -53,10 +54,12 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
     private ConfigContext config;
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@org.testng.annotations.Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "encryptionCipher"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String encryptionCipher) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
-        this.config = new IntegrationTestConfigContext(usingEncryption);
+        this.config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
 
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");

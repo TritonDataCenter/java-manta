@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
-@Test
+@Test(groups = {"encryptable"})
 public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -36,11 +36,12 @@ public class MantaObjectOutputStreamIT {
     private String testPathPrefix;
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "encryptionCipher"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String encryptionCipher) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());

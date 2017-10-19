@@ -37,7 +37,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = { "seekable" })
+@Test(groups = { "seekable", "encryptable" })
 public class MantaClientSeekableByteChannelIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -47,11 +47,12 @@ public class MantaClientSeekableByteChannelIT {
 
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "encryptionCipher"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String encryptionCipher) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
 
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
