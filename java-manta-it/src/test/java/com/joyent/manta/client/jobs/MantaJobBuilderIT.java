@@ -30,8 +30,7 @@ import java.util.stream.Collectors;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = "jobs",
-      dependsOnGroups = "jobs")
+@Test(groups = "jobs")
 public class MantaJobBuilderIT {
     private static final String TEST_DATA =
               "line 01 aa\n"

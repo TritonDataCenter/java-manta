@@ -78,7 +78,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
             context.setEncryptionPrivateKeyBytes(key.getEncoded());
 
             System.out.printf(
-                    "Integration test encryption enabled: %s" +
+                    "Integration test encryption enabled: %s\n" +
                     "Unique secret key used for test (base64):\n%s\n",
                     cipherDetails.getCipherId(),
                     Base64.getEncoder().encodeToString(key.getEncoded()));
