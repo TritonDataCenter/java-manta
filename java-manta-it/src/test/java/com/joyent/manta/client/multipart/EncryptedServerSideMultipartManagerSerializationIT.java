@@ -17,13 +17,13 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.serialization.EncryptedMultipartUploaSerializationHelper;
+import com.joyent.test.util.EncryptionAwareIT;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -37,9 +37,9 @@ import javax.crypto.SecretKey;
 
 import static org.testng.Assert.fail;
 
-@Test(groups = { "encrypted" })
+@Test(groups = { "encrypted", "multipart" })
 @SuppressWarnings("Duplicates")
-public class EncryptedServerSideMultipartManagerSerializationIT {
+public class EncryptedServerSideMultipartManagerSerializationIT extends EncryptionAwareIT {
     private static final Logger LOGGER = LoggerFactory.getLogger
             (EncryptedServerSideMultipartManagerSerializationIT.class);
     private MantaClient mantaClient;
@@ -53,10 +53,10 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
     private ConfigContext config;
 
-    @BeforeClass()
     @Parameters({"usingEncryption", "encryptionCipher"})
-    public void beforeClass(final @Optional Boolean usingEncryption,
-                            final @Optional String encryptionCipher) throws IOException {
+    public EncryptedServerSideMultipartManagerSerializationIT(final @Optional Boolean usingEncryption,
+                                                              final @Optional String encryptionCipher) throws IOException {
+        setEncryptionParameters(usingEncryption, encryptionCipher);
 
         // Let TestNG configuration take precedence over environment variables
         this.config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);

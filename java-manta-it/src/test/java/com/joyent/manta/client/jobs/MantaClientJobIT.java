@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = { "job" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
+@Test(groups = { "jobs" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClientJobIT.class);
 

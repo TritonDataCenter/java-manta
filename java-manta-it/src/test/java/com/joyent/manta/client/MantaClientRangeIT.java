@@ -7,13 +7,17 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.*;
+import com.joyent.manta.config.BaseChainedConfigContext;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.test.util.EncryptionAwareIT;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -24,7 +28,7 @@ import java.nio.charset.Charset;
 import java.util.UUID;
 
 @Test(groups = {"encryptable"})
-public class MantaClientRangeIT {
+public class MantaClientRangeIT extends EncryptionAwareIT {
     private static final String TEST_DATA =
             "A SERGEANT OF THE LAW, wary and wise, " +
             "That often had y-been at the Parvis, <26> " +
@@ -49,15 +53,15 @@ public class MantaClientRangeIT {
             "Girt with a seint* of silk, with barres small; " +
             "Of his array tell I no longer tale.";
 
-    private MantaClient mantaClient;
-    private ConfigContext config;
+    private final MantaClient mantaClient;
+    private final ConfigContext config;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
-    @BeforeClass
     @Parameters({"usingEncryption", "encryptionCipher"})
-    public void beforeClass(final @Optional Boolean usingEncryption,
-                            final @Optional String encryptionCipher) throws IOException {
+    public MantaClientRangeIT(final @Optional Boolean usingEncryption,
+                              final @Optional String encryptionCipher) throws IOException {
+        setEncryptionParameters(usingEncryption, encryptionCipher);
 
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);

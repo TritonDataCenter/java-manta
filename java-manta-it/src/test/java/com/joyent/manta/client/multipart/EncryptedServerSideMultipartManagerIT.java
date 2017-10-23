@@ -16,6 +16,7 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.test.util.EncryptionAwareIT;
 import com.joyent.test.util.FailingInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -27,8 +28,6 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -47,25 +46,24 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-@Test(groups = { "encrypted" })
+@Test(groups = { "encrypted", "multipart"})
 @SuppressWarnings("Duplicates")
-public class EncryptedServerSideMultipartManagerIT {
+public class EncryptedServerSideMultipartManagerIT extends EncryptionAwareIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerIT.class);
 
-    private MantaClient mantaClient;
-    private EncryptedServerSideMultipartManager multipart;
+    private final MantaClient mantaClient;
+    private final EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
 
     private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
-    @BeforeClass()
-    @Parameters({"usingEncryption", "encryptionCipher"})
-    public void beforeClass(final @org.testng.annotations.Optional Boolean usingEncryption,
+    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional Boolean usingEncryption,
                             final @org.testng.annotations.Optional String encryptionCipher) throws IOException {
+        setEncryptionParameters(usingEncryption, encryptionCipher);
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);

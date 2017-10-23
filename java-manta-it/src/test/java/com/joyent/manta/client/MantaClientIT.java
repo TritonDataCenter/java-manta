@@ -15,6 +15,7 @@ import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
+import com.joyent.test.util.EncryptionAwareIT;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import com.joyent.test.util.RandomInputStream;
@@ -22,7 +23,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -51,18 +51,18 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = { "encryptable" })
-public class MantaClientIT {
+public class MantaClientIT extends EncryptionAwareIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
-    @BeforeClass
     @Parameters({"usingEncryption", "encryptionCipher"})
-    public void beforeClass(final @Optional Boolean usingEncryption,
-                            final @Optional String encryptionCipher) throws IOException {
+    public MantaClientIT(final @Optional Boolean usingEncryption,
+                         final @Optional String encryptionCipher) throws IOException {
+        setEncryptionParameters(usingEncryption, encryptionCipher);
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);

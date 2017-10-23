@@ -3,6 +3,7 @@
 
     <listeners>
         <listener class-name="com.joyent.test.util.MantaPathSuiteListener" />
+        <listener class-name="com.joyent.test.util.TestListingInterceptor" />
     </listeners>
 
     <test name="Manta Client Integration Test Helper Class Tests">
@@ -31,8 +32,14 @@
             <run>
                 <include name="encrypted" />
                 <include name="encryptable" />
+                <include name="multipart" />
             </run>
         </groups>
+
+        <packages>
+            <package name="com.joyent.manta.*" />
+        </packages>
+
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
@@ -54,16 +61,14 @@
             <run>
                 <include name="encrypted" />
                 <include name="encryptable" />
+                <exclude name="multipart" />
             </run>
         </groups>
-        <classes>
-            <class name="com.joyent.manta.client.MantaClientIT" />
-            <class name="com.joyent.manta.client.MantaClientPutIT" />
-            <class name="com.joyent.manta.client.MantaClientMetadataIT" />
-            <class name="com.joyent.manta.client.MantaClientRangeIT" />
-            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
-            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
-        </classes>
+
+        <packages>
+            <package name="com.joyent.manta.*" />
+        </packages>
+
     </test>
     <test name="Manta Client Integration Tests [AES128/CBC Encrypted]">
         <parameter name="usingEncryption" value="true" />
@@ -72,16 +77,14 @@
             <run>
                 <include name="encrypted" />
                 <include name="encryptable" />
+                <exclude name="multipart" />
             </run>
         </groups>
-        <classes>
-            <class name="com.joyent.manta.client.MantaClientIT" />
-            <class name="com.joyent.manta.client.MantaClientPutIT" />
-            <class name="com.joyent.manta.client.MantaClientMetadataIT" />
-            <class name="com.joyent.manta.client.MantaClientRangeIT" />
-            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
-            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
-        </classes>
+
+        <packages>
+            <package name="com.joyent.manta.*" />
+        </packages>
+
     </test>
 
     <test name="Manta Job Tests">

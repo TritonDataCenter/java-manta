@@ -7,12 +7,12 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.test.util.EncryptionAwareIT;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -27,18 +27,18 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test( groups = { "metadata" })
-public class MantaClientMetadataIT {
+@Test(groups = { "metadata" })
+public class MantaClientMetadataIT extends EncryptionAwareIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private MantaClient mantaClient;
 
     private String testPathPrefix;
 
-    @BeforeClass
     @Parameters({"usingEncryption", "encryptionCipher"})
-    public void beforeClass(final @Optional Boolean usingEncryption,
-                            final @Optional String encryptionCipher) throws IOException {
+    public MantaClientMetadataIT(final @Optional Boolean usingEncryption,
+                                 final @Optional String encryptionCipher) throws IOException {
+        setEncryptionParameters(usingEncryption, encryptionCipher);
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
