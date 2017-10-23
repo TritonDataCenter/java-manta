@@ -16,6 +16,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 
 import java.security.KeyPair;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Object for tracking configuration changes related to authentication and recreating dependent objects as needed.
@@ -32,27 +33,12 @@ public class AuthAwareConfigContext
     /**
      * Hashcode of last observed authentication-related configuration values.
      */
-    private int parametersFingerprint;
+    private volatile int parametersFingerprint;
 
     /**
-     * Reference to loaded KeyPair.
+     * Atomic reference to objects we provide.
      */
-    private KeyPair keyPair;
-
-    /**
-     * Reference to signing object built from {@link #keyPair}.
-     */
-    private ThreadLocalSigner signer;
-
-    /**
-     * Credentials object used for authenticating requests.
-     */
-    private Credentials credentials;
-
-    /**
-     * Strategy object for generating headers when generating authenticated requests.
-     */
-    private HttpSignatureAuthScheme authScheme;
+    private final AtomicReference<AuthContext> authContextRef = new AtomicReference<>();
 
     /**
      * Build an AuthAwareConfigContext from an existing {@link ConfigContext}.
@@ -77,18 +63,24 @@ public class AuthAwareConfigContext
             return this;
         }
 
-        if (signer != null) {
-            signer.clearAll();
-        }
-        signer = null;
-        keyPair = null;
-        credentials = null;
-        authScheme = null;
+        final AuthContext authContext = authContextRef.get();
 
-        if (BooleanUtils.isNotTrue(noAuth())) {
-            doLoad();
+        if (authContext != null) {
+            final ThreadLocalSigner signer = authContext.signer;
+            if (signer != null) {
+                signer.clearAll();
+            }
+            authContextRef.set(null);
         }
 
+        final AuthContext newAuthContext;
+        if (BooleanUtils.isTrue(noAuth())) {
+            newAuthContext = null;
+        } else {
+            newAuthContext = doLoad();
+        }
+
+        authContextRef.set(newAuthContext);
         parametersFingerprint = newFingerprint;
 
         return this;
@@ -96,13 +88,15 @@ public class AuthAwareConfigContext
 
     /**
      * Internal method for updating authentication parameters and derived objects.
+     *
+     * @return the new {@link AuthContext}
      */
-    private void doLoad() {
+    private AuthContext doLoad() {
         if (BooleanUtils.isNotFalse(noAuth())) {
-            return;
+            return null;
         }
 
-        keyPair = new KeyPairFactory(this).createKeyPair();
+        final KeyPair keyPair = new KeyPairFactory(this).createKeyPair();
 
         final Signer.Builder builder = new Signer.Builder(keyPair);
         if (BooleanUtils.isTrue(disableNativeSignatures())) {
@@ -110,9 +104,13 @@ public class AuthAwareConfigContext
             builder.providerCode("stdlib");
         }
 
-        signer = new ThreadLocalSigner(builder);
-        credentials = new UsernamePasswordCredentials(getMantaUser(), null);
-        authScheme = new HttpSignatureAuthScheme(keyPair, signer);
+        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
+
+        return new AuthContext(
+                keyPair,
+                signer,
+                new UsernamePasswordCredentials(getMantaUser(), null),
+                new HttpSignatureAuthScheme(keyPair, signer));
     }
 
     /**
@@ -122,7 +120,13 @@ public class AuthAwareConfigContext
      * @return the credentials used to sign requests
      */
     public Credentials getCredentials() {
-        return credentials;
+        final AuthContext authContext = authContextRef.get();
+
+        if (authContext == null) {
+            return null;
+        }
+
+        return authContext.credentials;
     }
 
     /**
@@ -132,7 +136,13 @@ public class AuthAwareConfigContext
      * @return the auth scheme which does request signing
      */
     public HttpSignatureAuthScheme getAuthScheme() {
-        return authScheme;
+        final AuthContext authContext = authContextRef.get();
+
+        if (authContext == null) {
+            return null;
+        }
+
+        return authContext.authScheme;
     }
 
     /**
@@ -142,7 +152,13 @@ public class AuthAwareConfigContext
      * @return the keypair used to sign requests
      */
     public KeyPair getKeyPair() {
-        return keyPair;
+        final AuthContext authContext = authContextRef.get();
+
+        if (authContext == null) {
+            return null;
+        }
+
+        return authContext.keyPair;
     }
 
     /**
@@ -152,7 +168,13 @@ public class AuthAwareConfigContext
      * @return the object used to sign requests
      */
     public ThreadLocalSigner getSigner() {
-        return signer;
+        final AuthContext authContext = authContextRef.get();
+
+        if (authContext == null) {
+            return null;
+        }
+
+        return authContext.signer;
     }
 
     /**
@@ -174,12 +196,49 @@ public class AuthAwareConfigContext
 
     @Override
     public void close() throws Exception {
-        keyPair = null;
+        final AuthContext authContext = authContextRef.get();
 
-        if (signer != null) {
-            signer.clearAll();
+        if (authContext != null) {
+            authContext.signer.clearAll();
         }
 
-        signer = null;
+        authContextRef.set(null);
+    }
+
+    /**
+     * Class for holding references to bundled authentication objects so they can be swapped out atomically.
+     */
+    private static final class AuthContext {
+
+        /**
+         * Reference to loaded KeyPair.
+         */
+        private KeyPair keyPair;
+
+        /**
+         * Reference to signing object built from {@link #keyPair}.
+         */
+        private ThreadLocalSigner signer;
+
+        /**
+         * Credentials object used for authenticating requests.
+         */
+        private Credentials credentials;
+
+        /**
+         * Strategy object for generating headers when generating authenticated requests.
+         */
+        private HttpSignatureAuthScheme authScheme;
+
+        @SuppressWarnings("JavadocMethod")
+        private AuthContext(final KeyPair keyPair,
+                            final ThreadLocalSigner signer,
+                            final Credentials credentials,
+                            final HttpSignatureAuthScheme authScheme) {
+            this.keyPair = keyPair;
+            this.signer = signer;
+            this.credentials = credentials;
+            this.authScheme = authScheme;
+        }
     }
 }
