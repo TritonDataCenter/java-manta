@@ -255,10 +255,9 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-      * Method that returns the configuration context used to
-      * instantiate the MantaClient instance.
+      * Method that returns the configuration context used by the MantaClient instance.
       *
-      * @return instance of the configuration context used to construct this client
+      * @return instance of the configuration context (not necessarily the one passed in)
       */
     public ConfigContext getContext() {
         return this.config;
