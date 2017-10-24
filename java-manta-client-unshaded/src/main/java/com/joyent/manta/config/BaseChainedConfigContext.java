@@ -100,6 +100,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Integer connectionRequestTimeout;
 
     /**
+     * When not null, time in milliseconds to wait for a 100-continue response.
+     */
+    private Integer expectContinueTimeout;
+
+    /**
      * Flag indicating if we verify the uploaded file's checksum against the
      * server's checksum (MD5).
      */
@@ -263,6 +268,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Integer getExpectContinueTimeout() {
+        return expectContinueTimeout;
+    }
+
+    @Override
     public Boolean verifyUploads() {
         return verifyUploads;
     }
@@ -403,6 +413,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.connectionRequestTimeout = context.getConnectionRequestTimeout();
         }
 
+        if (context.getExpectContinueTimeout() != null) {
+            this.expectContinueTimeout = context.getExpectContinueTimeout();
+        }
+
         if (context.verifyUploads() != null) {
             this.verifyUploads = context.verifyUploads();
         }
@@ -505,6 +519,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.connectionRequestTimeout == null) {
             this.connectionRequestTimeout = context.getConnectionRequestTimeout();
+        }
+
+        if (this.expectContinueTimeout == null) {
+            this.expectContinueTimeout = context.getExpectContinueTimeout();
         }
 
         if (this.verifyUploads == null) {
@@ -678,6 +696,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setExpectContinueTimeout(final Integer expectContinueTimeout) {
+        this.expectContinueTimeout = expectContinueTimeout;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setVerifyUploads(final Boolean verify) {
         this.verifyUploads = verify;
 
@@ -777,6 +802,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(connectionRequestTimeout, that.connectionRequestTimeout)
+                && Objects.equals(expectContinueTimeout, that.expectContinueTimeout)
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
@@ -793,7 +819,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout,
+                disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,

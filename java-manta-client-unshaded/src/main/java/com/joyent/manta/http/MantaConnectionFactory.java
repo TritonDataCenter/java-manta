@@ -49,7 +49,6 @@ import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.DynamicMBean;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -60,6 +59,7 @@ import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import javax.management.DynamicMBean;
 
 /**
  * Factory class that creates instances of
@@ -260,12 +260,23 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 config.getConnectionRequestTimeout(),
                 DefaultsConfigContext.DEFAULT_CONNECTION_REQUEST_TIMEOUT);
 
+        final Integer expectContinueTimeout = config.getExpectContinueTimeout();
+        final boolean expectContinueEnabled = expectContinueTimeout != null;
+
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
                 .setSocketTimeout(timeout)
                 .setConnectionRequestTimeout(connectionRequestTimeout)
                 .setContentCompressionEnabled(true)
+                .setExpectContinueEnabled(expectContinueEnabled)
                 .build();
+
+        final MantaHttpRequestExecutor requestExecutor;
+        if (expectContinueTimeout != null) {
+            requestExecutor = new MantaHttpRequestExecutor(expectContinueTimeout);
+        } else {
+            requestExecutor = new MantaHttpRequestExecutor();
+        }
 
         final HttpClientBuilder builder = HttpClients.custom()
                 .disableAuthCaching()
@@ -276,7 +287,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManagerShared(false)
-                .setRequestExecutor(new MantaHttpRequestExecutor())
+                .setRequestExecutor(requestExecutor)
                 .setConnectionBackoffStrategy(new DefaultBackoffStrategy());
 
         final HttpHost proxyHost = findProxyServer();

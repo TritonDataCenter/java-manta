@@ -95,6 +95,16 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY = "MANTA_TCP_SOCKET_TIMEOUT";
 
     /**
+     * Environment variable for connection request timeout.
+     */
+    public static final String MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY = "MANTA_CONNECTION_REQUEST_TIMEOUT";
+
+    /**
+     * Environment variable for setting Expect header behaviour.
+     */
+    public static final String MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY = "MANTA_EXPECT_CONTINUE_TIMEOUT";
+
+    /**
      * Environment variable for enabling the checksum verification of uploaded files.
      */
     public static final String MANTA_VERIFY_UPLOADS_ENV_KEY = "MANTA_VERIFY_UPLOADS";
@@ -103,11 +113,6 @@ public class EnvVarConfigContext implements ConfigContext {
      * Environment variable for setting the size of pre-streaming upload buffers.
      */
     public static final String MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY = "MANTA_UPLOAD_BUFFER_SIZE";
-
-    /**
-     * Environment variable for connection request timeout.
-     */
-    public static final String MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY = "MANTA_CONNECTION_REQUEST_TIMEOUT";
 
     /**
      * Environment variable for flag indicating when client-side encryption is enabled.
@@ -160,6 +165,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY,
+            MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY,
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
@@ -284,6 +290,11 @@ public class EnvVarConfigContext implements ConfigContext {
     @Override
     public Integer getConnectionRequestTimeout() {
         return MantaUtils.parseIntegerOrNull(getEnv(MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Integer getExpectContinueTimeout() {
+        return MantaUtils.parseIntegerOrNull(getEnv(MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY));
     }
 
     @Override

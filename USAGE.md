@@ -86,6 +86,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                |
 | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |
 | manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |
+| manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |
 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |
@@ -134,6 +135,13 @@ When set to true, this disables the use of native code libraries for cryptograph
 Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
 * `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
 Time in milliseconds to wait for a connection from the connection pool.
+* `manta.expect_continue_timeout` (**MANTA_EXPECT_CONTINUE_TIMEOUT**)
+Nullable integer indicating the number of milliseconds to wait for a response from the server before
+sending the request body. If enabled, the recommended wait time is **3000** ms based on the default defined in
+`HttpRequestExecutor.DEFAULT_WAIT_FOR_CONTINUE`. Enabling this setting can
+improve response latencies and error visibility when the server is under high load at the expense
+of potentially decreased total throughput. We recommend benchmarking with different values for this option before
+enabling it for production use.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
 When set to true, the client calculates a MD5 checksum of the file being uploaded
 to Manta and then checks it against the result returned by Manta.

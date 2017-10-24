@@ -103,6 +103,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_CONNECTION_REQUEST_TIMEOUT_KEY = "manta.connection_request_timeout";
 
     /**
+     * Property key for setting Expect header behavior.
+     */
+    public static final String MANTA_EXPECT_CONTINUE_TIMEOUT_KEY = "manta.expect_continue_timeout";
+
+    /**
      * Property key for enabling the checksum verification of uploaded files.
      */
     public static final String MANTA_VERIFY_UPLOADS_KEY = "manta.verify_uploads";
@@ -343,6 +348,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY));
+    }
+
+    @Override
+    public Integer getExpectContinueTimeout() {
+        final Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_EXPECT_CONTINUE_TIMEOUT_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY));
     }
 
     @Override
