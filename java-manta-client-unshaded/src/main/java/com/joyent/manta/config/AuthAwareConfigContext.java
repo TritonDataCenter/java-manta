@@ -16,7 +16,6 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 
 import java.security.KeyPair;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Object for tracking configuration changes related to authentication and recreating dependent objects as needed.
@@ -38,7 +37,7 @@ public class AuthAwareConfigContext
     /**
      * Atomic reference to objects we provide.
      */
-    private final AtomicReference<AuthContext> authContextRef = new AtomicReference<>();
+    private volatile AuthContext authContext;
 
     /**
      * Build an AuthAwareConfigContext from an existing {@link ConfigContext}.
@@ -63,24 +62,18 @@ public class AuthAwareConfigContext
             return this;
         }
 
-        final AuthContext authContext = authContextRef.get();
-
-        if (authContext != null) {
+        if (this.authContext != null) {
             final ThreadLocalSigner signer = authContext.signer;
             if (signer != null) {
                 signer.clearAll();
             }
-            authContextRef.set(null);
+            this.authContext = null;
         }
 
-        final AuthContext newAuthContext;
-        if (BooleanUtils.isTrue(noAuth())) {
-            newAuthContext = null;
-        } else {
-            newAuthContext = doLoad();
+        if (BooleanUtils.isNotTrue(noAuth())) {
+            this.authContext = doLoad();
         }
 
-        authContextRef.set(newAuthContext);
         parametersFingerprint = newFingerprint;
 
         return this;
@@ -120,8 +113,6 @@ public class AuthAwareConfigContext
      * @return the credentials used to sign requests
      */
     public Credentials getCredentials() {
-        final AuthContext authContext = authContextRef.get();
-
         if (authContext == null) {
             return null;
         }
@@ -136,8 +127,6 @@ public class AuthAwareConfigContext
      * @return the auth scheme which does request signing
      */
     public HttpSignatureAuthScheme getAuthScheme() {
-        final AuthContext authContext = authContextRef.get();
-
         if (authContext == null) {
             return null;
         }
@@ -152,8 +141,6 @@ public class AuthAwareConfigContext
      * @return the keypair used to sign requests
      */
     public KeyPair getKeyPair() {
-        final AuthContext authContext = authContextRef.get();
-
         if (authContext == null) {
             return null;
         }
@@ -168,8 +155,6 @@ public class AuthAwareConfigContext
      * @return the object used to sign requests
      */
     public ThreadLocalSigner getSigner() {
-        final AuthContext authContext = authContextRef.get();
-
         if (authContext == null) {
             return null;
         }
@@ -196,13 +181,11 @@ public class AuthAwareConfigContext
 
     @Override
     public void close() throws Exception {
-        final AuthContext authContext = authContextRef.get();
-
         if (authContext != null) {
             authContext.signer.clearAll();
         }
 
-        authContextRef.set(null);
+        authContext = null;
     }
 
     /**
