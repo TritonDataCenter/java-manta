@@ -22,6 +22,9 @@ import java.util.Objects;
  * It combines the users' configuration with the derived runtime objects needed to authenticate requests.
  * objects like the {@link ThreadLocalSigner} which needs careful lifecycle management.
  *
+ * As far as users are concerned, this class is just as thread-safe as every other {@link ConfigContext} (i.e. generally
+ * not) but we're using a private object as a lock in order to at least synchronize reloads and field updates.
+ *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */

@@ -17,7 +17,7 @@ import static com.joyent.manta.config.EnvVarConfigContext.*;
 
 /**
  * {@link ConfigContext} implementation that is used for configuring instances
- * from a Map.
+ * from a Map. This class is as thread-safe as the {@link #backingMap}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
