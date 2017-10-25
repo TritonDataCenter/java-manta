@@ -63,6 +63,11 @@ flexible combination of parameters from different sources:
   - `EnvVarConfigContext` reads values from environment variables (e.g. `export MANTA_URL=value`)
   - `SystemSettingsConfigContext` reads values from system properties (e.g. from flags `-Dmanta.url=value` or a `.properties` file)
   - `ChainedConfigContext` allows the combination of multiple `ConfigContext` values
+  - `AuthAwareConfigContext` initialized from the `ConfigContext` provided to `MantaClient` and manages derived objects.
+    Users can directly pass in a `AuthAwareConfigContext` if they wish to change configuration parameters after client
+    initialization using the `reload()` method. See
+    [the JavaDoc](/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/AuthAwareConfigContext.java) for more
+    information about using this class.
 
 ## Parameters
 
