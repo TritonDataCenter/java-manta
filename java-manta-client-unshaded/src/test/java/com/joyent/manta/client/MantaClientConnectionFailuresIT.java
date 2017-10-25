@@ -102,7 +102,7 @@ public class MantaClientConnectionFailuresIT {
 
     private class NoHttpResponseMantaConnectionFactory extends MantaConnectionFactory {
         public NoHttpResponseMantaConnectionFactory(ConfigContext config, KeyPair keyPair, ThreadLocalSigner signer) {
-            super(config, keyPair, signer);
+            super(config);
         }
 
         @Override

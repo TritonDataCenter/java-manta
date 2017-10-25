@@ -49,7 +49,7 @@ public class StandardHttpHelperTest {
     @BeforeMethod
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
-        config = new StandardConfigContext().setMantaURL("");
+        config = new StandardConfigContext().setMantaURL("http://localhost");
 
         when(connCtx.getHttpClient())
                 .thenReturn(client);

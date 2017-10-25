@@ -110,11 +110,10 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      */
     private final SupportedCipherDetails cipherDetails;
 
-
     /**
      * Creates a new instance of the helper class.
      * @param connectionContext saved context used between requests to the Manta client
-     * @param connectionFactory instance used for building requests to Manta
+     * @param connectionFactory ignored
      * @param config configuration context object
      */
     @Deprecated
@@ -124,15 +123,28 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
         this(connectionContext, config);
     }
 
+
     /**
      * Creates a new instance of the helper class.
-     *
      * @param connectionContext saved context used between requests to the Manta client
      * @param config configuration context object
      */
+    EncryptionHttpHelper(final MantaConnectionContext connectionContext,
+                         final ConfigContext config) {
+        this(connectionContext, new MantaHttpRequestFactory(config.getMantaURL()), config);
+    }
+
+    /**
+     * Creates a new instance of the helper class.
+     *
+     * @param connectionContext connection object
+     * @param requestFactory instance used for building requests to Manta
+     * @param config configuration context object
+     */
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
+                                final MantaHttpRequestFactory requestFactory,
                                 final ConfigContext config) {
-        super(connectionContext, config);
+        super(connectionContext, requestFactory, config);
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");
@@ -387,7 +399,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             // Forward on all headers to the HEAD request
             final HttpHead head = getRequestFactory().head(path);
-            head.setHeaders(request.getAllHeaders());
+            MantaHttpRequestFactory.addHeaders(head, request.getAllHeaders());
             head.removeHeaders(HttpHeaders.RANGE);
 
             HttpResponse headResponse = super.executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
