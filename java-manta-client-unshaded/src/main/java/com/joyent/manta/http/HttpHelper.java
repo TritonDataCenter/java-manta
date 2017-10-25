@@ -291,6 +291,9 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
                          Object... logParameters)
             throws IOException;
 
+    @Override
+    void close() throws IOException;
+
     /**
      * Extracts the request id from a {@link HttpRequest} object.
      *

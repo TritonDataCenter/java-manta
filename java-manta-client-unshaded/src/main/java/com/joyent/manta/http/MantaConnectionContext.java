@@ -9,6 +9,8 @@ package com.joyent.manta.http;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
+import java.io.IOException;
+
 /**
  * Interface describing the contract for a context class that stores state between
  * requests to the Manta API.
@@ -22,4 +24,7 @@ public interface MantaConnectionContext extends AutoCloseable {
      * @return connection object to Manta
      */
     CloseableHttpClient getHttpClient();
+
+    @Override
+    void close() throws IOException;
 }

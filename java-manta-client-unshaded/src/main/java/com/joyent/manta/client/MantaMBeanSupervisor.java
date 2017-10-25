@@ -10,16 +10,16 @@ package com.joyent.manta.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.DynamicMBean;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.DynamicMBean;
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 /**
  * Helper class for keeping track of MBeans associated with a {@link MantaClient}.
@@ -129,7 +129,7 @@ class MantaMBeanSupervisor implements AutoCloseable {
      * that they are no longer visible via JMX.
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
         if (closed.get()) {
             return;
         }

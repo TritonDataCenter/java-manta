@@ -565,7 +565,7 @@ public class StandardHttpHelper implements HttpHelper {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         connectionContext.close();
     }
 }

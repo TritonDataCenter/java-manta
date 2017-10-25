@@ -26,6 +26,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Fixes validation guard clauses that are not validating anything](https://github.com/joyent/java-manta/issues/346)
  - [MDC logging of the load balancer address now logs the proper address](https://github.com/joyent/java-manta/issues/266)
  - [Fixes deleteRecursive fails with ConnectionPoolTimeoutException](https://github.com/joyent/java-manta/issues/358)
+ - [InterruptedException could be thrown warnings have been resolved](https://github.com/joyent/java-manta/issues/322)
 ### Changed
  - Validation of paths passed to `MantaClient` is now more consistently strict.
    More useful errors should be thrown sooner for invalid paths, without any
