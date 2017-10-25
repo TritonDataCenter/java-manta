@@ -30,9 +30,9 @@ public class AuthAwareConfigContext
         implements AutoCloseable {
 
     /**
-     * Hashcode of last observed authentication-related configuration values.
+     * Private lock object for synchronizing updates to fields and building a derived {@link AuthContext}.
      */
-    private volatile int parametersFingerprint;
+    private final Object lock = new Object();
 
     /**
      * Atomic reference to objects we provide.
@@ -40,12 +40,22 @@ public class AuthAwareConfigContext
     private volatile AuthContext authContext;
 
     /**
+     * Build an empty AuthAwareConfigContext.
+     */
+    public AuthAwareConfigContext() {
+        this(null);
+    }
+
+    /**
      * Build an AuthAwareConfigContext from an existing {@link ConfigContext}.
      *
      * @param config configuration context from which to extract values
      */
     public AuthAwareConfigContext(final ConfigContext config) {
-        overwriteWithContext(config);
+        if (config != null) {
+            overwriteWithContext(config);
+        }
+
         reload();
     }
 
@@ -55,26 +65,24 @@ public class AuthAwareConfigContext
      *
      * @return this after reload
      */
-    public synchronized AuthAwareConfigContext reload() {
-        final int newFingerprint = calculateAuthParamsFingerprint(this);
+    @SuppressWarnings("unchecked")
+    public AuthAwareConfigContext reload() {
+        synchronized (lock) {
+            final int newParamsFingerprint = calculateAuthParamsFingerprint(this);
 
-        if (newFingerprint == parametersFingerprint) {
-            return this;
-        }
-
-        if (this.authContext != null) {
-            final ThreadLocalSigner signer = authContext.signer;
-            if (signer != null) {
-                signer.clearAll();
+            if (authContext != null) {
+                if (authContext.paramsFingerprint == newParamsFingerprint) {
+                    return this;
+                } else {
+                    authContext.signer.clearAll();
+                    authContext = null;
+                }
             }
-            this.authContext = null;
-        }
 
-        if (BooleanUtils.isNotTrue(noAuth())) {
-            this.authContext = doLoad();
+            if (BooleanUtils.isNotTrue(noAuth())) {
+                authContext = doLoad(newParamsFingerprint);
+            }
         }
-
-        parametersFingerprint = newFingerprint;
 
         return this;
     }
@@ -82,9 +90,10 @@ public class AuthAwareConfigContext
     /**
      * Internal method for updating authentication parameters and derived objects.
      *
+     * @param paramsFingerprint identifier for the new AuthContext
      * @return the new {@link AuthContext}
      */
-    private AuthContext doLoad() {
+    private AuthContext doLoad(final int paramsFingerprint) {
         if (BooleanUtils.isNotFalse(noAuth())) {
             return null;
         }
@@ -100,6 +109,7 @@ public class AuthAwareConfigContext
         final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
 
         return new AuthContext(
+                paramsFingerprint,
                 keyPair,
                 signer,
                 new UsernamePasswordCredentials(getMantaUser(), null),
@@ -170,13 +180,13 @@ public class AuthAwareConfigContext
      */
     private static int calculateAuthParamsFingerprint(final ConfigContext config) {
         return Objects.hash(
+                config.noAuth(),
+                config.disableNativeSignatures(),
                 config.getMantaUser(),
                 config.getPassword(),
                 config.getMantaKeyId(),
                 config.getMantaKeyPath(),
-                config.getPrivateKeyContent(),
-                config.disableNativeSignatures(),
-                config.noAuth());
+                config.getPrivateKeyContent());
     }
 
     @Override
@@ -194,34 +204,267 @@ public class AuthAwareConfigContext
     private static final class AuthContext {
 
         /**
+         * (Mostly) unique identifier for the config parameters which produced this AuthContext.
+         */
+        private final int paramsFingerprint;
+
+        /**
          * Reference to loaded KeyPair.
          */
-        private KeyPair keyPair;
+        private final KeyPair keyPair;
 
         /**
          * Reference to signing object built from {@link #keyPair}.
          */
-        private ThreadLocalSigner signer;
+        private final ThreadLocalSigner signer;
 
         /**
          * Credentials object used for authenticating requests.
          */
-        private Credentials credentials;
+        private final Credentials credentials;
 
         /**
          * Strategy object for generating headers when generating authenticated requests.
          */
-        private HttpSignatureAuthScheme authScheme;
+        private final HttpSignatureAuthScheme authScheme;
 
         @SuppressWarnings("JavadocMethod")
-        private AuthContext(final KeyPair keyPair,
+        private AuthContext(final int paramsFingerprint,
+                            final KeyPair keyPair,
                             final ThreadLocalSigner signer,
                             final Credentials credentials,
                             final HttpSignatureAuthScheme authScheme) {
+            this.paramsFingerprint = paramsFingerprint;
             this.keyPair = keyPair;
             this.signer = signer;
             this.credentials = credentials;
             this.authScheme = authScheme;
         }
+    }
+
+    @Override
+    public AuthAwareConfigContext setMantaURL(final String mantaURL) {
+        synchronized (lock) {
+            super.setMantaURL(mantaURL);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMantaUser(final String mantaUser) {
+        synchronized (lock) {
+            super.setMantaUser(mantaUser);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMantaKeyId(final String mantaKeyId) {
+        synchronized (lock) {
+            super.setMantaKeyId(mantaKeyId);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMantaKeyPath(final String mantaKeyPath) {
+        synchronized (lock) {
+            super.setMantaKeyPath(mantaKeyPath);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setTimeout(final Integer timeout) {
+        synchronized (lock) {
+            super.setTimeout(timeout);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setRetries(final Integer retries) {
+        synchronized (lock) {
+            super.setRetries(retries);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMaximumConnections(final Integer maxConns) {
+        synchronized (lock) {
+            super.setMaximumConnections(maxConns);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setPrivateKeyContent(final String privateKeyContent) {
+        synchronized (lock) {
+            super.setPrivateKeyContent(privateKeyContent);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setPassword(final String password) {
+        synchronized (lock) {
+            super.setPassword(password);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setHttpBufferSize(final Integer httpBufferSize) {
+        synchronized (lock) {
+            super.setHttpBufferSize(httpBufferSize);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setHttpsProtocols(final String httpsProtocols) {
+        synchronized (lock) {
+            super.setHttpsProtocols(httpsProtocols);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setHttpsCipherSuites(final String httpsCipherSuites) {
+        synchronized (lock) {
+            super.setHttpsCipherSuites(httpsCipherSuites);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setNoAuth(final Boolean noAuth) {
+        synchronized (lock) {
+            super.setNoAuth(noAuth);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setDisableNativeSignatures(final Boolean disableNativeSignatures) {
+        synchronized (lock) {
+            super.setDisableNativeSignatures(disableNativeSignatures);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setTcpSocketTimeout(final Integer tcpSocketTimeout) {
+        synchronized (lock) {
+            super.setTcpSocketTimeout(tcpSocketTimeout);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setConnectionRequestTimeout(final Integer connectionRequestTimeout) {
+        synchronized (lock) {
+            super.setConnectionRequestTimeout(connectionRequestTimeout);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setVerifyUploads(final Boolean verify) {
+        synchronized (lock) {
+            super.setVerifyUploads(verify);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setUploadBufferSize(final Integer size) {
+        synchronized (lock) {
+            super.setUploadBufferSize(size);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
+        synchronized (lock) {
+            super.setClientEncryptionEnabled(clientEncryptionEnabled);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setEncryptionKeyId(final String keyId) {
+        synchronized (lock) {
+            super.setEncryptionKeyId(keyId);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setEncryptionAlgorithm(final String algorithm) {
+        synchronized (lock) {
+            super.setEncryptionAlgorithm(algorithm);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setPermitUnencryptedDownloads(final Boolean permitUnencryptedDownloads) {
+        synchronized (lock) {
+            super.setPermitUnencryptedDownloads(permitUnencryptedDownloads);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setEncryptionAuthenticationMode(
+            final EncryptionAuthenticationMode encryptionAuthenticationMode) {
+        synchronized (lock) {
+            super.setEncryptionAuthenticationMode(encryptionAuthenticationMode);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setEncryptionPrivateKeyPath(final String encryptionPrivateKeyPath) {
+        synchronized (lock) {
+            super.setEncryptionPrivateKeyPath(encryptionPrivateKeyPath);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setEncryptionPrivateKeyBytes(final byte[] encryptionPrivateKeyBytes) {
+        synchronized (lock) {
+            super.setEncryptionPrivateKeyBytes(encryptionPrivateKeyBytes);
+        }
+
+        return this;
     }
 }
