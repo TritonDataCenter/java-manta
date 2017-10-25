@@ -9,6 +9,7 @@ package com.joyent.manta.benchmark;
 
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.config.TransactionalConfigContext;
 import org.apache.commons.text.RandomStringGenerator;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -16,9 +17,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 @State(Scope.Thread)
 @SuppressWarnings({"checkstyle:javadocmethod",
@@ -35,31 +34,65 @@ public class ConfigBenchmark {
 
     private final AuthAwareConfigContext authConfig;
 
-    private final AtomicLong num = new AtomicLong(0);
+    private final TransactionalConfigContext transactionalConfigContext;
 
     public ConfigBenchmark() {
         standardConfig = new StandardConfigContext();
         standardConfig.setNoAuth(true);
+        standardConfig.setMantaKeyId(GENERATOR.generate(10));
 
-        authConfig = new AuthAwareConfigContext(new StandardConfigContext());
+        authConfig = new AuthAwareConfigContext();
         authConfig.setNoAuth(true);
+        authConfig.setMantaKeyId(GENERATOR.generate(10));
+
+        transactionalConfigContext = new TransactionalConfigContext();
+        transactionalConfigContext.setNoAuth(true);
+        transactionalConfigContext.setMantaKeyId(GENERATOR.generate(10));
     }
+
 
     @org.openjdk.jmh.annotations.Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.SECONDS)
-    public String updateAndGetKeyId() throws IOException {
-        standardConfig.setMantaKeyId(GENERATOR.generate(10));
-
+    public String getKeyIdStandard() throws Exception {
         return standardConfig.getMantaKeyId();
     }
 
     @org.openjdk.jmh.annotations.Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.SECONDS)
-    public String updateAuthAndGetKeyId() throws IOException {
-        authConfig.setMantaKeyId(GENERATOR.generate(10));
-
+    public String getKeyIdAuth() throws Exception {
         return authConfig.getMantaKeyId();
+    }
+
+    @org.openjdk.jmh.annotations.Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public String getKeyIdTransactional() throws Exception {
+        return transactionalConfigContext.getMantaKeyId();
+    }
+
+    @org.openjdk.jmh.annotations.Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public String updateAndGetKeyIdStandard() throws Exception {
+        standardConfig.setMantaKeyId(GENERATOR.generate(10));
+        return standardConfig.getMantaKeyId();
+    }
+
+    @org.openjdk.jmh.annotations.Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public String updateAndGetKeyIdAuth() throws Exception {
+        authConfig.setMantaKeyId(GENERATOR.generate(10));
+        return authConfig.getMantaKeyId();
+    }
+
+    @org.openjdk.jmh.annotations.Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public String updateAndGetKeyIdTransactional() throws Exception {
+        transactionalConfigContext.setMantaKeyId(GENERATOR.generate(10));
+        return transactionalConfigContext.getMantaKeyId();
     }
 }

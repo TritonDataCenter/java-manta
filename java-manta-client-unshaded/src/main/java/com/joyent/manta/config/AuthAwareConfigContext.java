@@ -7,15 +7,12 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
 
 import java.security.KeyPair;
-import java.util.Objects;
 
 /**
  * Object for tracking configuration changes related to authentication and recreating dependent objects as needed.
@@ -28,9 +25,10 @@ import java.util.Objects;
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */
+@SuppressWarnings("checkstyle:VisibilityModifier")
 public class AuthAwareConfigContext
         extends StandardConfigContext
-        implements AutoCloseable {
+        implements AutoCloseable, Reloadable<AuthAwareConfigContext> {
 
     /**
      * Private lock object for synchronizing updates to fields and building a derived {@link AuthContext}.
@@ -71,7 +69,7 @@ public class AuthAwareConfigContext
     @SuppressWarnings("unchecked")
     public AuthAwareConfigContext reload() {
         synchronized (lock) {
-            final int newParamsFingerprint = calculateAuthParamsFingerprint(this);
+            final int newParamsFingerprint = ConfigContext.calculateAuthParamsFingerprint(this);
 
             if (authContext != null) {
                 if (authContext.paramsFingerprint == newParamsFingerprint) {
@@ -83,40 +81,11 @@ public class AuthAwareConfigContext
             }
 
             if (BooleanUtils.isNotTrue(noAuth())) {
-                authContext = doLoad(newParamsFingerprint);
+                authContext = ConfigContext.loadAuthContext(newParamsFingerprint, this);
             }
         }
 
         return this;
-    }
-
-    /**
-     * Internal method for updating authentication parameters and derived objects.
-     *
-     * @param paramsFingerprint identifier for the new AuthContext
-     * @return the new {@link AuthContext}
-     */
-    private AuthContext doLoad(final int paramsFingerprint) {
-        if (BooleanUtils.isNotFalse(noAuth())) {
-            return null;
-        }
-
-        final KeyPair keyPair = new KeyPairFactory(this).createKeyPair();
-
-        final Signer.Builder builder = new Signer.Builder(keyPair);
-        if (BooleanUtils.isTrue(disableNativeSignatures())) {
-            // DefaultConfigContext#DEFAULT_DISABLE_NATIVE_SIGNATURES is false
-            builder.providerCode("stdlib");
-        }
-
-        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
-
-        return new AuthContext(
-                paramsFingerprint,
-                keyPair,
-                signer,
-                new UsernamePasswordCredentials(getMantaUser(), null),
-                new HttpSignatureAuthScheme(keyPair, signer));
     }
 
     /**
@@ -175,23 +144,6 @@ public class AuthAwareConfigContext
         return authContext.signer;
     }
 
-    /**
-     * Calculate a hashcode of the currently-used configuration parameters.
-     *
-     * @param config ConfigContext from which to read authentication parameters
-     * @return the computed hashcode
-     */
-    private static int calculateAuthParamsFingerprint(final ConfigContext config) {
-        return Objects.hash(
-                config.noAuth(),
-                config.disableNativeSignatures(),
-                config.getMantaUser(),
-                config.getPassword(),
-                config.getMantaKeyId(),
-                config.getMantaKeyPath(),
-                config.getPrivateKeyContent());
-    }
-
     @Override
     public void close() throws Exception {
         if (authContext != null) {
@@ -199,50 +151,6 @@ public class AuthAwareConfigContext
         }
 
         authContext = null;
-    }
-
-    /**
-     * Class for holding references to bundled authentication objects so they can be swapped out atomically.
-     */
-    private static final class AuthContext {
-
-        /**
-         * (Mostly) unique identifier for the config parameters which produced this AuthContext.
-         */
-        private final int paramsFingerprint;
-
-        /**
-         * Reference to loaded KeyPair.
-         */
-        private final KeyPair keyPair;
-
-        /**
-         * Reference to signing object built from {@link #keyPair}.
-         */
-        private final ThreadLocalSigner signer;
-
-        /**
-         * Credentials object used for authenticating requests.
-         */
-        private final Credentials credentials;
-
-        /**
-         * Strategy object for generating headers when generating authenticated requests.
-         */
-        private final HttpSignatureAuthScheme authScheme;
-
-        @SuppressWarnings("JavadocMethod")
-        private AuthContext(final int paramsFingerprint,
-                            final KeyPair keyPair,
-                            final ThreadLocalSigner signer,
-                            final Credentials credentials,
-                            final HttpSignatureAuthScheme authScheme) {
-            this.paramsFingerprint = paramsFingerprint;
-            this.keyPair = keyPair;
-            this.signer = signer;
-            this.credentials = credentials;
-            this.authScheme = authScheme;
-        }
     }
 
     @Override

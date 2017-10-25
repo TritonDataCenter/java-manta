@@ -7,6 +7,9 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.http.signature.Signer;
+import com.joyent.http.signature.ThreadLocalSigner;
+import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
@@ -14,13 +17,17 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import javax.management.DynamicMBean;
 
 /**
@@ -517,4 +524,97 @@ public interface ConfigContext extends MantaMBeanable {
                 return null;
         }
     }
+
+    /**
+     * Calculate a hashcode of the currently-used configuration parameters.
+     *
+     * @param config ConfigContext from which to read authentication parameters
+     * @return the computed hashcode
+     */
+    static int calculateAuthParamsFingerprint(final ConfigContext config) {
+        return Objects.hash(
+                config.noAuth(),
+                config.disableNativeSignatures(),
+                config.getMantaUser(),
+                config.getPassword(),
+                config.getMantaKeyId(),
+                config.getMantaKeyPath(),
+                config.getPrivateKeyContent());
+    }
+
+
+    /**
+     * Internal method for updating authentication parameters and derived objects.
+     *
+     * @param paramsFingerprint identifier for the new AuthContext
+     * @return the new {@link AuthContext}
+     */
+    static AuthContext loadAuthContext(final int paramsFingerprint, final ConfigContext config) {
+        if (BooleanUtils.isNotTrue(config.noAuth())) {
+            return null;
+        }
+
+        final KeyPair keyPair = new KeyPairFactory(config).createKeyPair();
+
+        final Signer.Builder builder = new Signer.Builder(keyPair);
+        if (BooleanUtils.isTrue(config.disableNativeSignatures())) {
+            // DefaultConfigContext#DEFAULT_DISABLE_NATIVE_SIGNATURES is false
+            builder.providerCode("stdlib");
+        }
+
+        final ThreadLocalSigner signer = new ThreadLocalSigner(builder);
+
+        return new AuthContext(
+                paramsFingerprint,
+                keyPair,
+                signer,
+                new UsernamePasswordCredentials(config.getMantaUser(), null),
+                new HttpSignatureAuthScheme(keyPair, signer));
+    }
+
+    /**
+     * Class for holding references to bundled authentication objects so they can be swapped out atomically.
+     */
+    @SuppressWarnings("checkstyle:JavaDocVariable")
+    final class AuthContext {
+
+        /**
+         * (Mostly) unique identifier for the config parameters which produced this AuthContext.
+         */
+        protected final int paramsFingerprint;
+
+        /**
+         * Reference to loaded KeyPair.
+         */
+        protected final KeyPair keyPair;
+
+        /**
+         * Reference to signing object built from {@link #keyPair}.
+         */
+        protected final ThreadLocalSigner signer;
+
+        /**
+         * Credentials object used for authenticating requests.
+         */
+        protected final Credentials credentials;
+
+        /**
+         * Strategy object for generating headers when generating authenticated requests.
+         */
+        protected final HttpSignatureAuthScheme authScheme;
+
+        @SuppressWarnings("JavadocMethod")
+        private AuthContext(final int paramsFingerprint,
+                            final KeyPair keyPair,
+                            final ThreadLocalSigner signer,
+                            final Credentials credentials,
+                            final HttpSignatureAuthScheme authScheme) {
+            this.paramsFingerprint = paramsFingerprint;
+            this.keyPair = keyPair;
+            this.signer = signer;
+            this.credentials = credentials;
+            this.authScheme = authScheme;
+        }
+    }
+
 }
