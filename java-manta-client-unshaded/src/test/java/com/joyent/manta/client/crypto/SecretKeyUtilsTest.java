@@ -11,7 +11,6 @@ import org.apache.commons.io.FileUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -19,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import javax.crypto.SecretKey;
 
 @Test
 public class SecretKeyUtilsTest {
@@ -68,7 +68,7 @@ public class SecretKeyUtilsTest {
         File file = File.createTempFile("ciphertext-", ".data");
         FileUtils.forceDeleteOnExit(file);
         FileUtils.writeByteArrayToFile(file, keyBytes);
-        URI uri = URI.create("file://" + file.getAbsolutePath());
+        URI uri = file.toURI();
 
         SecretKey expected = SecretKeyUtils.loadKey(keyBytes, AesGcmCipherDetails.INSTANCE_128_BIT);
         SecretKey actual = SecretKeyUtils.loadKeyFromPath(Paths.get(uri), AesGcmCipherDetails.INSTANCE_128_BIT);
