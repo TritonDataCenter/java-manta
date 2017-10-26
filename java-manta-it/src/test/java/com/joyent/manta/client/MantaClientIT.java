@@ -59,14 +59,11 @@ public class MantaClientIT {
 
     private final String testPathPrefix;
 
-    private final String encryptionCipher;
-
     @Parameters({"encryptionCipher"})
     public MantaClientIT(final @Optional String encryptionCipher) throws IOException {
-        this.encryptionCipher = encryptionCipher;
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(this.encryptionCipher);
+        ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
