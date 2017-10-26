@@ -54,15 +54,9 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
         for (final IMethodInstance method : methods) {
             final ITestNGMethod testNGMethod = method.getMethod();
             final String testName = testNGMethod.getQualifiedName();
-            final Object instance = method.getInstance();
             final Map<String, String> params = testNGMethod.findMethodParameters(testNGMethod.getXmlTest());
-
-            String encryptionDetail = "";
-            if (!params.isEmpty()) {
-                encryptionDetail = '[' + params.toString() + ']';
-            }
-
-            observedTests.add(testName + ' ' + encryptionDetail);
+            final String paramsDetails = !params.isEmpty() ? params.toString() : "";
+            observedTests.add(testName + ' ' + paramsDetails);
         }
 
         if (DRY_RUN_ENABLED) {
