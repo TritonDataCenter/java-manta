@@ -7,11 +7,10 @@
  */
 package com.joyent.manta.http;
 
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -23,6 +22,11 @@ public class MantaConnectionFactoryConfiguratorTest {
     @BeforeMethod
     public void setup() throws IOException {
         MockitoAnnotations.initMocks(this);
+    }
+
+    @AfterMethod
+    public void tearDown() throws IOException {
+        Mockito.validateMockitoUsage();
     }
 
     public void willValidateInputs() {
