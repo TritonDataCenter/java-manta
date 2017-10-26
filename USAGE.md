@@ -63,108 +63,115 @@ flexible combination of parameters from different sources:
   - `EnvVarConfigContext` reads values from environment variables (e.g. `export MANTA_URL=value`)
   - `SystemSettingsConfigContext` reads values from system properties (e.g. from flags `-Dmanta.url=value` or a `.properties` file)
   - `ChainedConfigContext` allows the combination of multiple `ConfigContext` values
+  - `AuthAwareConfigContext` initialized from the `ConfigContext` provided to `MantaClient` and manages derived objects.
+    Users can directly pass in a `AuthAwareConfigContext` if they wish to change configuration parameters after client
+    initialization using the `reload()` method. See
+    [the JavaDoc](/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/AuthAwareConfigContext.java) for more
+    information about using this class.
 
 ## Parameters
 
 Below is a table of available configuration parameters followed by detailed descriptions of their usage.
 
-| System Property                    | Environment Variable           | Default                              |
-|------------------------------------|--------------------------------|--------------------------------------|
-| manta.url                          | MANTA_URL                      | https://us-east.manta.joyent.com:443 |
-| manta.user                         | MANTA_USER                     |                                      |
-| manta.key_id                       | MANTA_KEY_ID                   |                                      |
-| manta.key_path                     | MANTA_KEY_PATH                 | $HOME/.ssh/id_rsa                    |
-| manta.key_content                  | MANTA_KEY_CONTENT              |                                      |
-| manta.password                     | MANTA_PASSWORD                 |                                      |
-| manta.timeout                      | MANTA_TIMEOUT                  | 20000                                |
-| manta.retries                      | MANTA_HTTP_RETRIES             | 3 (6 for integration tests)          |
-| manta.max_connections              | MANTA_MAX_CONNS                | 24                                   |
-| manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         | 4096                                 |
-| https.protocols                    | MANTA_HTTPS_PROTOCOLS          | TLSv1.2                              |
-| https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) |
-| manta.no_auth                      | MANTA_NO_AUTH                  | false                                |
-| manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                |
-| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |
-| manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |
-| manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 |
-| manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |
-| manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |
-| manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |
-| manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |
-| manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    | false                                |
-| manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     | Mandatory                            |
-| manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |                                      |
-| manta.encryption_key_bytes         |                                |                                      |
-| manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |                                      |
+| System Property                    | Environment Variable           | Default                              | Supports Dynamic Updates |
+|------------------------------------|--------------------------------|--------------------------------------|--------------------------|
+| manta.url                          | MANTA_URL                      | https://us-east.manta.joyent.com:443 | Y*                       |
+| manta.user                         | MANTA_USER                     |                                      | Y*                       |
+| manta.key_id                       | MANTA_KEY_ID                   |                                      | Y*                       |
+| manta.key_path                     | MANTA_KEY_PATH                 | $HOME/.ssh/id_rsa (if exists)        | Y*                       |
+| manta.key_content                  | MANTA_KEY_CONTENT              |                                      | Y*                       |
+| manta.password                     | MANTA_PASSWORD                 |                                      | Y*                       |
+| manta.no_auth                      | MANTA_NO_AUTH                  | false                                | Y*                       |
+| manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                | Y*                       |
+| manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 | Y                        |
+| manta.timeout                      | MANTA_TIMEOUT                  | 20000                                |                          |
+| manta.retries                      | MANTA_HTTP_RETRIES             | 3 (6 for integration tests)          | Y                        |
+| manta.max_connections              | MANTA_MAX_CONNS                | 24                                   |                          |
+| manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         | 4096                                 |                          |
+| https.protocols                    | MANTA_HTTPS_PROTOCOLS          | TLSv1.2                              |                          |
+| https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) | |
+| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |                          |
+| manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |                          |
+| manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
+| manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
+| manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
+| manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
+| manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    | false                                |                          |
+| manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     | Mandatory                            |                          |
+| manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |                                      |                          |
+| manta.encryption_key_bytes         |                                |                                      |                          |
+| manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |                                      |                          |
+
+Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareConfigContext` class.
 
 * `manta.url` ( **MANTA_URL** )
-The URL of the Manta service endpoint.
+    The URL of the Manta service endpoint.
 * `manta.user` ( **MANTA_USER** )
-The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
-you will specify the account name as "user/subuser".
+    The account name used to access the manta service. If accessing via a [subuser](https://docs.joyent.com/public-cloud/rbac/users),
+    you will specify the account name as "user/subuser".
 * `manta.key_id`: ( **MANTA_KEY_ID**)
-The fingerprint for the public key used to access the manta service. Can be retrieved using `ssh-keygen -l -f ${MANTA_KEY_PATH} -E md5 | cut -d' ' -f 2`
+    The fingerprint for the public key used to access the manta service. Can be retrieved using `ssh-keygen -l -f ${MANTA_KEY_PATH} -E md5 | cut -d' ' -f 2`
 * `manta.key_path` ( **MANTA_KEY_PATH**)
-The name of the file that will be loaded for the account used to access the manta service.
+    The name of the file that will be loaded for the account used to access the manta service.
 * `manta.key_content` ( **MANTA_KEY_CONTENT**)
-The content of the private key as a string. This is an alternative to `manta.key_path`. Both
-`manta.key_path` and can't be specified at the same time `manta.key_content`.
+    The content of the private key as a string. This is an alternative to `manta.key_path`. Both
+    `manta.key_path` and can't be specified at the same time `manta.key_content`.
 * `manta.password` ( **MANTA_PASSWORD**)
-The password associated with the key specified. This is optional and not normally needed.
-* `manta.timeout` ( **MANTA_TIMEOUT**)
-The number of milliseconds to wait after a request was made to Manta before failing.
-* `manta.retries` ( **MANTA_HTTP_RETRIES**)
-The number of times to retry failed HTTP requests.
-* `manta.max_connections` ( **MANTA_MAX_CONNS**)
-The maximum number of open HTTP connections to the Manta API.
-* `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
-The size of the buffer to allocate when processing streaming HTTP data. This sets the value
-used by Apache HTTP Client `SessionInputBufferImpl` implementation. Ranges from 1024-16384
-are acceptable depending on your average object size and streaming needs.
-* `https.protocols` (**MANTA_HTTPS_PROTOCOLS**)
-A comma delimited list of TLS protocols.
-* `https.cipherSuites` (**MANTA_HTTPS_CIPHERS**)
-A comma delimited list of TLS cipher suites.
+    The password associated with the key specified. This is optional and not normally needed.
 * `manta.no_auth` (**MANTA_NO_AUTH**)
-When set to true, this disables HTTP Signature authentication entirely. This is
-only really useful when you are running the library as part of a Manta job.
+    When set to true, this disables HTTP Signature authentication entirely. This is
+    only really useful when you are running the library as part of a Manta job.
 * `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
-When set to true, this disables the use of native code libraries for cryptography.
-* `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
-Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
-* `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
-Time in milliseconds to wait for a connection from the connection pool.
+    When set to true, this disables the use of native code libraries for cryptography.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
-When set to true, the client calculates a MD5 checksum of the file being uploaded
-to Manta and then checks it against the result returned by Manta.
+    When set to true, the client calculates a MD5 checksum of the file being uploaded
+    to Manta and then checks it against the result returned by Manta.
+* `manta.timeout` ( **MANTA_TIMEOUT**)
+    The number of milliseconds to wait after a request was made to Manta before failing.
+* `manta.retries` ( **MANTA_HTTP_RETRIES**)
+    The number of times to retry failed HTTP requests.
+* `manta.max_connections` ( **MANTA_MAX_CONNS**)
+    The maximum number of open HTTP connections to the Manta API.
+* `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
+    The size of the buffer to allocate when processing streaming HTTP data. This sets the value
+    used by Apache HTTP Client `SessionInputBufferImpl` implementation. Ranges from 1024-16384
+    are acceptable depending on your average object size and streaming needs.
+* `https.protocols` (**MANTA_HTTPS_PROTOCOLS**)
+    A comma delimited list of TLS protocols.
+* `https.cipherSuites` (**MANTA_HTTPS_CIPHERS**)
+    A comma delimited list of TLS cipher suites.
+* `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
+    Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
+* `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
+    Time in milliseconds to wait for a connection from the connection pool.
 * `manta.upload_buffer_size` (**MANTA_UPLOAD_BUFFER_SIZE**)
-The initial amount of bytes to attempt to load into memory when uploading a stream. If the
-entirety of the stream fits within the number of bytes of this value, then the
-contents of the buffer are directly uploaded to Manta in a retryable form.
+    The initial amount of bytes to attempt to load into memory when uploading a stream. If the
+    entirety of the stream fits within the number of bytes of this value, then the
+    contents of the buffer are directly uploaded to Manta in a retryable form.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
-Boolean indicating if client-side encryption is enabled.
+    Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
-Unique ID of the client-side encryption key being used. It must be in US-ASCII
-using only printable characters and with no whitespace.
+    Unique ID of the client-side encryption key being used. It must be in US-ASCII
+    using only printable characters and with no whitespace.
 * `manta.encryption_algorithm` (**MANTA_ENCRYPTION_ALGORITHM**)
-The client-side encryption algorithm used to encrypt and decrypt data. Valid
-values are listed in [SupportedCipherDetails](java-manta-client/src/main/java/com/joyent/manta/client/crypto/SupportedCipherDetails.java#L26).
+    The client-side encryption algorithm used to encrypt and decrypt data. Valid
+    values are listed in [SupportedCipherDetails](java-manta-client/src/main/java/com/joyent/manta/client/crypto/SupportedCipherDetails.java#L26).
 * `manta.permit_unencrypted_downloads` (**MANTA_UNENCRYPTED_DOWNLOADS**)
-Boolean indicating that unencrypted files can be downloaded when client-side
-encryption is enabled.
+    Boolean indicating that unencrypted files can be downloaded when client-side
+    encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
-[EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
-enum type indicating that authenticating encryption verification is either Mandatory or Optional.
+    [EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
+    enum type indicating that authenticating encryption verification is either Mandatory or Optional.
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
-The path on the local filesystem or a URI understandable by the JVM indicating the
-location of the private key used to perform client-side encryption. If this value is
-non-null, then no other encryption key values can be non-null.
+    The path on the local filesystem or a URI understandable by the JVM indicating the
+    location of the private key used to perform client-side encryption. If this value is
+    non-null, then no other encryption key values can be non-null.
 * `manta.encryption_key_bytes`
-The private key used to perform client-side encryption as a byte array. If this value is
-non-null, then no other encryption key values can be non-null.
+    The private key used to perform client-side encryption as a byte array. If this value is
+    non-null, then no other encryption key values can be non-null.
 * `manta.encryption_key_bytes_base64` (**MANTA_ENCRYPTION_KEY_BYTES**)
-The private key used to perform client-side encryption encoded as a base64 string.
-If this value is non-null, then no other encryption key values can be non-null.
+    The private key used to perform client-side encryption encoded as a base64 string.
+    If this value is non-null, then no other encryption key values can be non-null.
 
 See the examples for a [typical configuration using defaults](/java-manta-examples/src/main/java/SimpleClient.java) and another
 [configuration with client-side encryption enabled](/java-manta-examples/src/main/java/SimpleClientEncryption.java)
@@ -344,3 +351,15 @@ Users leveraging this feature should be comfortable with the internals of the Ap
 familiarity with the
 [`MantaConnectionFactory`](/java-manta-client-unshaded/src/main/java/com/joyent/manta/http/MantaConnectionFactory.java)
 class is recommended.
+
+### Modifying configuration after client instantiation
+
+Some configuration parameters can be updated in the `ConfigContext` after the client has already been constructed.
+Instead of directly providing a `ConfigContext` users can instead supply a `AuthAwareConfigContext` to the `MantaClient`
+constructor which can be programmatically updated using its `reload()` method. Because the `MantaClient` can be used in a
+multi-threaded fashion, users should be careful to await termination of in-flight requests in before triggering authentication reload.
+Users should be aware that it is also possible to construct a `MantaClient` instance using an incomplete configuration when utilizing
+an `AuthAwareConfigContext` by disabling authentication until a private key can be set.
+Concurrently updating configuration values while requests are still pending can lead to errors and unpredictable results.
+See the [Dynamic Authentication example](/java-manta-examples/src/main/java/DynamicAuthentication.java) and
+[this test case](/java-manta-it/src/test/java/com/joyent/manta/client/MantaClientAuthenticationChangeIT) for example usage.

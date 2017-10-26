@@ -389,7 +389,7 @@ public class ServerSideMultipartManagerTest {
 
         final HttpHelper httpHelper = mock(HttpHelper.class);
         when(httpHelper.getConnectionContext()).thenReturn(connectionContext);
-        when(httpHelper.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(config));
+        when(httpHelper.getRequestFactory()).thenReturn(new MantaHttpRequestFactory(config.getMantaURL()));
         when(httpHelper.executeRequest(any(HttpUriRequest.class), any())).thenReturn(response);
 
         final MantaClient client = mock(MantaClient.class);

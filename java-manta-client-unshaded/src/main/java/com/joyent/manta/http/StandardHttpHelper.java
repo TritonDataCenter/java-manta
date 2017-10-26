@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
@@ -61,6 +62,11 @@ public class StandardHttpHelper implements HttpHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardHttpHelper.class);
 
     /**
+     * Configuration to check for upload validation.
+     */
+    private final ConfigContext config;
+
+    /**
      * Current connection context used for maintaining state between requests.
      */
     private final MantaConnectionContext connectionContext;
@@ -71,28 +77,10 @@ public class StandardHttpHelper implements HttpHelper {
     private final MantaHttpRequestFactory requestFactory;
 
     /**
-     * Flag toggling the checksum verification of uploaded files.
-     */
-    private final boolean validateUploads;
-
-    /**
-     * Creates a new instance of the helper class.
-     * @param connectionContext saved context used between requests to the Manta client
-     * @param config configuration context object
-     */
-    public StandardHttpHelper(final MantaConnectionContext connectionContext,
-                              final ConfigContext config) {
-        this.connectionContext = connectionContext;
-        this.requestFactory = new MantaHttpRequestFactory(config);
-        this.validateUploads = ObjectUtils.firstNonNull(config.verifyUploads(),
-                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
-    }
-
-    /**
      * Creates a new instance of the helper class.
      *
      * @param connectionContext saved context used between requests to the Manta client
-     * @param connectionFactory instance used for building requests to Manta
+     * @param connectionFactory ignored
      * @param config configuration context object
      */
     @Deprecated
@@ -100,6 +88,54 @@ public class StandardHttpHelper implements HttpHelper {
                               final MantaConnectionFactory connectionFactory,
                               final ConfigContext config) {
         this(connectionContext, config);
+    }
+
+    /**
+     * Create a new instance of the HttpHelper which expects a static configuration since the request factory
+     * does not have access to an {@link AuthAwareConfigContext}.
+     *
+     * @param connectionContext connection object
+     * @param config configuration context object
+     */
+    StandardHttpHelper(final MantaConnectionContext connectionContext,
+                       final ConfigContext config) {
+        this.config = config;
+        this.connectionContext = connectionContext;
+        this.requestFactory = new MantaHttpRequestFactory(config.getMantaURL());
+    }
+
+    /**
+     * Creates a new instance of the helper class which can use a potentially-dynamic {@link MantaHttpRequestFactory}.
+     *
+     * @param connectionContext connection object
+     * @param requestFactory instance used for building requests to Manta
+     * @param config configuration context object
+     */
+    public StandardHttpHelper(final MantaConnectionContext connectionContext,
+                              final MantaHttpRequestFactory requestFactory,
+                              final ConfigContext config) {
+        this.config = Validate.notNull(config, "ConfigContext must not be null");
+        this.connectionContext = Validate.notNull(connectionContext, "MantaConnectionContext must not be null");
+        this.requestFactory = Validate.notNull(requestFactory, "MantaHttpRequestFactory must not be null");
+    }
+
+    @Override
+    public MantaConnectionContext getConnectionContext() {
+        return connectionContext;
+    }
+
+    @Override
+    public MantaHttpRequestFactory getRequestFactory() {
+        return requestFactory;
+    }
+
+    /**
+     * @return true if we are validating MD5 checksums against the Manta Computed-MD5 header
+     */
+    protected boolean validateUploadsEnabled() {
+        return ObjectUtils.firstNonNull(
+                config.verifyUploads(),
+                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
     }
 
     @Override
@@ -154,7 +190,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final HttpPost post = requestFactory.post(path);
-        post.setHeaders(httpHeaders.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(post, httpHeaders.asApacheHttpHeaders());
 
         if (entity != null) {
             post.setEntity(entity);
@@ -187,7 +223,7 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final HttpPut put = requestFactory.put(path);
-        put.setHeaders(httpHeaders.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(put, httpHeaders.asApacheHttpHeaders());
 
         final DigestedEntity md5DigestedEntity;
 
@@ -248,7 +284,7 @@ public class StandardHttpHelper implements HttpHelper {
         List<NameValuePair> pairs = Collections.singletonList(new BasicNameValuePair("metadata", "true"));
 
         HttpPut put = requestFactory.put(path, pairs);
-        put.setHeaders(headers.asApacheHttpHeaders());
+        MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
         put.setEntity(NoContentEntity.INSTANCE);
 
         try (CloseableHttpResponse response = executeRequest(
@@ -277,7 +313,7 @@ public class StandardHttpHelper implements HttpHelper {
                                                            final MantaHttpHeaders requestHeaders)
             throws IOException {
         if (requestHeaders != null) {
-            request.setHeaders(requestHeaders.asApacheHttpHeaders());
+            MantaHttpRequestFactory.addHeaders(request, requestHeaders.asApacheHttpHeaders());
         }
 
         final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
@@ -545,23 +581,6 @@ public class StandardHttpHelper implements HttpHelper {
         } else {
             return code != expectedStatusCode;
         }
-    }
-
-    @Override
-    public MantaConnectionContext getConnectionContext() {
-        return connectionContext;
-    }
-
-    @Override
-    public MantaHttpRequestFactory getRequestFactory() {
-        return requestFactory;
-    }
-
-    /**
-     * @return true if we are validating MD5 checksums against the Manta Computed-MD5 header
-     */
-    protected boolean validateUploadsEnabled() {
-        return validateUploads;
     }
 
     @Override

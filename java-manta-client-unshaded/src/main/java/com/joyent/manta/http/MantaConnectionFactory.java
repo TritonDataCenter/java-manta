@@ -8,21 +8,14 @@
 package com.joyent.manta.http;
 
 import com.joyent.http.signature.ThreadLocalSigner;
-import com.joyent.http.signature.apache.httpclient.HttpSignatureAuthScheme;
-import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaVersion;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.Registry;
@@ -45,11 +38,9 @@ import org.apache.http.impl.conn.ManagedHttpClientConnectionFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.io.DefaultHttpRequestWriterFactory;
 import org.apache.http.impl.io.DefaultHttpResponseParserFactory;
-import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.DynamicMBean;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -57,9 +48,8 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.security.KeyPair;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
+import javax.management.DynamicMBean;
 
 /**
  * Factory class that creates instances of
@@ -83,14 +73,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Default DNS resolver for all connections to the Manta.
      */
     private static final DnsResolver DNS_RESOLVER = new ShufflingDnsResolver();
-
-    /**
-     * Default HTTP headers to send to all requests to Manta.
-     */
-    private static final Collection<? extends Header> HEADERS = Arrays.asList(
-            new BasicHeader(MantaHttpHeaders.ACCEPT_VERSION, "~1.0"),
-            new BasicHeader(HttpHeaders.ACCEPT, "application/json, */*")
-    );
 
     /**
      * User Agent string identifying Manta Client and Java version.
@@ -123,10 +105,11 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * @param keyPair   cryptographic signing key pair used for HTTP signatures
      * @param signer    Signer configured to use the given keyPair
      */
+    @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer) {
-        this(config, keyPair, signer, null);
+        this(config, null);
     }
 
     /**
@@ -137,12 +120,32 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * @param signer                        Signer configured to use the given keyPair
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
+    @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
                                   final KeyPair keyPair,
                                   final ThreadLocalSigner signer,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
-        Validate.notNull(config, "Configuration context must not be null");
-        this.config = config;
+        this(config, connectionFactoryConfigurator);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config configuration of the connection parameters
+     */
+    public MantaConnectionFactory(final ConfigContext config) {
+        this(config, null);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config configuration of the connection parameters
+     * @param connectionFactoryConfigurator existing HttpClient objects to reuse
+     */
+    public MantaConnectionFactory(final ConfigContext config,
+                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this.config = Validate.notNull(config, "Configuration context must not be null");
 
         if (connectionFactoryConfigurator != null) {
             this.connectionManager = null;
@@ -152,7 +155,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             this.httpClientBuilder = createStandardBuilder();
         }
 
-        configureHttpClientBuilderDefaults(keyPair, signer);
+        configureHttpClientBuilderDefaults();
     }
 
     /**
@@ -290,12 +293,8 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
-     *
-     * @param keyPair the keypair to use with signature authentication
-     * @param signer  Signer configured to use the given keyPair
      */
-    private void configureHttpClientBuilderDefaults(final KeyPair keyPair,
-                                                    final ThreadLocalSigner signer) {
+    private void configureHttpClientBuilderDefaults() {
         if (config.getRetries() > 0) {
             httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config));
             httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
@@ -308,21 +307,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         // users providing a custom HttpClientBuilder are expected to wire this up themselves
         if (this.connectionManager != null) {
             httpClientBuilder.setConnectionManager(this.connectionManager);
-        }
-
-        httpClientBuilder.setDefaultHeaders(HEADERS);
-        httpClientBuilder.addInterceptorFirst(new RequestIdInterceptor());
-
-        if (BooleanUtils.isNotTrue(config.noAuth())) {
-            Validate.notNull(keyPair, "KeyPair must not be null if authentication is enabled");
-            Validate.notNull(signer, "Signer must not be null if authentication is enabled");
-
-            // pass true directly to the constructor because auth is enabled
-            final HttpRequestInterceptor authInterceptor = new HttpSignatureRequestInterceptor(
-                    new HttpSignatureAuthScheme(keyPair, signer),
-                    new UsernamePasswordCredentials(config.getMantaUser(), null),
-                    true);
-            this.httpClientBuilder.addInterceptorLast(authInterceptor);
         }
     }
 

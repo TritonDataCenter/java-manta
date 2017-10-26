@@ -7,11 +7,9 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
-import com.joyent.manta.util.UnitTestConstants;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -28,16 +26,9 @@ public class MantaClientValidationTest {
     private MantaClient makeTestClient () {
         final ConfigContext overwrite = new StandardConfigContext()
                 .setMantaUser("phantomtest")
-                .setMantaKeyId(UnitTestConstants.FINGERPRINT)
-                .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY);
+                .setNoAuth(true);
         final ConfigContext config = new SystemSettingsConfigContext(overwrite);
-
-        try {
-            System.setProperty("manta.dontValidateConfig", "true");
-            return new MantaClient(config);
-        } finally {
-            System.setProperty("manta.dontValidateConfig", "false");
-        }
+        return new MantaClient(config);
     }
 
     @BeforeClass
