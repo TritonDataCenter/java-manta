@@ -13,7 +13,7 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
@@ -28,7 +28,7 @@ import java.nio.charset.Charset;
 import java.util.UUID;
 
 @Test(groups = {"encryptable"})
-public class MantaClientRangeIT extends EncryptionAwareIT {
+public class MantaClientRangeIT extends EncryptionAwareIntegrationTest {
     private static final String TEST_DATA =
             "A SERGEANT OF THE LAW, wary and wise, " +
             "That often had y-been at the Parvis, <26> " +

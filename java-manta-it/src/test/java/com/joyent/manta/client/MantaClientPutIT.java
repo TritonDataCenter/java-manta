@@ -10,7 +10,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import com.joyent.test.util.RandomInputStream;
@@ -41,7 +41,7 @@ import java.util.UUID;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 @Test(groups = { "encryptable" })
-public class MantaClientPutIT extends EncryptionAwareIT {
+public class MantaClientPutIT extends EncryptionAwareIntegrationTest {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
     private static final String TEST_FILENAME = "Master-Yoda.jpg";

@@ -9,7 +9,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -28,7 +28,7 @@ import java.security.MessageDigest;
 import java.util.UUID;
 
 @Test(groups = {"encryptable"})
-public class MantaObjectOutputStreamIT extends EncryptionAwareIT {
+public class MantaObjectOutputStreamIT extends EncryptionAwareIntegrationTest {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private final MantaClient mantaClient;

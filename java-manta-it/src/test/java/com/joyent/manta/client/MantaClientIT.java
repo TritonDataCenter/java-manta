@@ -15,7 +15,7 @@ import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import com.joyent.test.util.RandomInputStream;
@@ -51,7 +51,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = { "encryptable" })
-public class MantaClientIT extends EncryptionAwareIT {
+public class MantaClientIT extends EncryptionAwareIntegrationTest {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 

@@ -17,7 +17,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.serialization.EncryptedMultipartUploaSerializationHelper;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import static org.testng.Assert.fail;
 
 @Test(groups = { "encrypted", "multipart" })
 @SuppressWarnings("Duplicates")
-public class EncryptedServerSideMultipartManagerSerializationIT extends EncryptionAwareIT {
+public class EncryptedServerSideMultipartManagerSerializationIT extends EncryptionAwareIntegrationTest {
     private static final Logger LOGGER = LoggerFactory.getLogger
             (EncryptedServerSideMultipartManagerSerializationIT.class);
     private MantaClient mantaClient;

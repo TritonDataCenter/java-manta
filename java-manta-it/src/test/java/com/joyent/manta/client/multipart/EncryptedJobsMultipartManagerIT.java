@@ -17,7 +17,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -52,7 +52,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Test(groups = { "encrypted", "multipart" })
-public class EncryptedJobsMultipartManagerIT extends EncryptionAwareIT {
+public class EncryptedJobsMultipartManagerIT extends EncryptionAwareIntegrationTest {
     private MantaClient mantaClient;
     private EncryptedJobsMultipartManager multipart;
     private String testPathPrefix;

@@ -7,7 +7,7 @@
  */
 package com.joyent.test.util;
 
-public abstract class EncryptionAwareIT {
+public abstract class EncryptionAwareIntegrationTest {
 
     private Boolean usingEncryption;
     private String encryptionCipher;

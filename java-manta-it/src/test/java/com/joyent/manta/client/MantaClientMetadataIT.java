@@ -9,7 +9,7 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -28,7 +28,7 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = { "metadata" })
-public class MantaClientMetadataIT extends EncryptionAwareIT {
+public class MantaClientMetadataIT extends EncryptionAwareIntegrationTest {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private MantaClient mantaClient;

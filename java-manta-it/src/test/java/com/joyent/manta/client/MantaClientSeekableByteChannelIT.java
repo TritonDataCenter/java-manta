@@ -11,7 +11,7 @@ import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -38,7 +38,7 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = {"seekable", "encryptable"})
-public class MantaClientSeekableByteChannelIT extends EncryptionAwareIT {
+public class MantaClientSeekableByteChannelIT extends EncryptionAwareIntegrationTest {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private final MantaClient mantaClient;

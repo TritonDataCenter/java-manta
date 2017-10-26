@@ -55,8 +55,8 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
             final Object instance = method.getInstance();
 
             String encryptionDetail = "";
-            if (instance instanceof EncryptionAwareIT) {
-                final EncryptionAwareIT encryptableInstance = ((EncryptionAwareIT) instance);
+            if (instance instanceof EncryptionAwareIntegrationTest) {
+                final EncryptionAwareIntegrationTest encryptableInstance = ((EncryptionAwareIntegrationTest) instance);
 
                 if (BooleanUtils.isNotFalse(encryptableInstance.isUsingEncryption())) {
                     encryptionDetail = '[' + encryptableInstance.getEncryptionCipher() + ']';

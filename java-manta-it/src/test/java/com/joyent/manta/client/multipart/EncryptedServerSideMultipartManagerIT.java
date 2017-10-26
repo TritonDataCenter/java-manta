@@ -16,7 +16,7 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIT;
+import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.FailingInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -48,7 +48,7 @@ import static org.testng.Assert.assertTrue;
 
 @Test(groups = { "encrypted", "multipart"})
 @SuppressWarnings("Duplicates")
-public class EncryptedServerSideMultipartManagerIT extends EncryptionAwareIT {
+public class EncryptedServerSideMultipartManagerIT extends EncryptionAwareIntegrationTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerIT.class);
 
