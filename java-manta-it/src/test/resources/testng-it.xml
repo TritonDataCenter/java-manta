@@ -23,6 +23,7 @@
             <package name="com.joyent.manta.client.multipart.*" />
         </packages>
     </test>
+
     <!-- We run many of the integration tests over again using client-side encryption -->
     <test name="Manta Client Integration Tests [AES128/CTR Encrypted]">
         <parameter name="usingEncryption" value="true"/>

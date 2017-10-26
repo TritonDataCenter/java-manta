@@ -9,12 +9,10 @@ package com.joyent.manta.http;
 
 import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
-import com.joyent.http.signature.apache.httpclient.HttpSignatureRequestInterceptor;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -29,7 +27,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.security.KeyPair;
-import java.util.LinkedList;
 
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,8 +42,6 @@ public class MantaConnectionFactoryTest {
 
     private BaseChainedConfigContext config;
 
-    private ImmutablePair<KeyPair, ThreadLocalSigner> authContext;
-
     private MantaConnectionFactory connectionFactory;
 
     @BeforeMethod
@@ -56,7 +51,6 @@ public class MantaConnectionFactoryTest {
 
         final ImmutablePair<KeyPair, BaseChainedConfigContext> keypairAndConfig = TestConfigContext.generateKeyPairBackedConfig();
         final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keypairAndConfig.left).providerCode("stdlib"));
-        authContext = new ImmutablePair<>(keypairAndConfig.left, signer);
         config = keypairAndConfig.right
                 .setMantaURL("https://localhost")
                 .setMantaUser("user");
@@ -72,7 +66,6 @@ public class MantaConnectionFactoryTest {
 
         // clear references to signer
         connectionFactory = null;   // references builder which has auth interceptor
-        authContext = null;         // directly references signer
         builder = null;             // might have an auth interceptor
     }
 
@@ -85,7 +78,7 @@ public class MantaConnectionFactoryTest {
      */
 
     public void willShutdownCreatedConnectionManager() throws IOException {
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+        connectionFactory = new MantaConnectionFactory(config);
         final CloseableHttpClient client = connectionFactory.createConnection();
 
         connectionFactory.close();
@@ -98,7 +91,7 @@ public class MantaConnectionFactoryTest {
 
     public void willSkipConnectionManagerShutdownWhenFactoryClosesAndManagerIsShared() throws IOException {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        connectionFactory = new MantaConnectionFactory(config, conf);
 
         connectionFactory.close();
         verify(manager, never()).shutdown();
@@ -106,7 +99,7 @@ public class MantaConnectionFactoryTest {
 
     public void willConfigureClientToUseProvidedManager() throws IOException, ReflectiveOperationException {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        connectionFactory = new MantaConnectionFactory(config, conf);
 
         final HttpClientConnectionManager configuredManager =
                 (HttpClientConnectionManager) FieldUtils.readField(builder, "connManager", true);
@@ -114,52 +107,11 @@ public class MantaConnectionFactoryTest {
         Assert.assertEquals(manager, configuredManager);
     }
 
-    @SuppressWarnings("unchecked")
-    public void willAttachAuthInterceptorToInternallyConstructedClient() throws IOException, ReflectiveOperationException {
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
-
-        final HttpClientBuilder internallyCreatedBuilder =
-                (HttpClientBuilder) FieldUtils.readField(connectionFactory, "httpClientBuilder", true);
-
-        final LinkedList<HttpRequestInterceptor> interceptors =
-                (LinkedList<HttpRequestInterceptor>) FieldUtils.readField(internallyCreatedBuilder, "requestLast", true);
-
-        boolean foundAuthInterceptor = false;
-        for (final HttpRequestInterceptor requestInterceptor : interceptors) {
-            if (requestInterceptor instanceof HttpSignatureRequestInterceptor) {
-                foundAuthInterceptor = true;
-                break;
-            }
-        }
-
-        Assert.assertTrue(foundAuthInterceptor);
-        connectionFactory.close();
-    }
-
-    @SuppressWarnings("unchecked")
-    public void willAttachAuthInterceptorToProvidedClient() throws ReflectiveOperationException {
-        final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
-
-        final LinkedList<HttpRequestInterceptor> interceptors =
-                (LinkedList<HttpRequestInterceptor>) FieldUtils.readField(builder, "requestLast", true);
-
-        boolean foundAuthInterceptor = false;
-        for (final HttpRequestInterceptor requestInterceptor : interceptors) {
-            if (requestInterceptor instanceof HttpSignatureRequestInterceptor) {
-                foundAuthInterceptor = true;
-                break;
-            }
-        }
-
-        Assert.assertTrue(foundAuthInterceptor);
-    }
-
     public void willActuallyDisableRetriesOnInternallyConstructedBuilderWhenSetToZero()
             throws IOException, ReflectiveOperationException {
         config.setRetries(0);
 
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+        connectionFactory = new MantaConnectionFactory(config);
 
         final HttpClientBuilder internallyCreatedBuilder =
                 (HttpClientBuilder) FieldUtils.readField(connectionFactory, "httpClientBuilder", true);
@@ -171,15 +123,16 @@ public class MantaConnectionFactoryTest {
         config.setRetries(0);
 
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        connectionFactory = new MantaConnectionFactory(config, conf);
 
-        Assert.assertTrue((Boolean) FieldUtils.readField(builder, "automaticRetriesDisabled", true));
+        final Object factoryInternalBuilder = FieldUtils.readField(connectionFactory, "httpClientBuilder", true);
+        Assert.assertTrue((Boolean) FieldUtils.readField(factoryInternalBuilder, "automaticRetriesDisabled", true));
     }
 
     public void willAttachInternalRetryHandlersToInternalBuilder() throws IOException, ReflectiveOperationException {
         config.setRetries(1);
 
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right);
+        connectionFactory = new MantaConnectionFactory(config);
 
         final HttpClientBuilder internallyCreatedBuilder =
                 (HttpClientBuilder) FieldUtils.readField(connectionFactory, "httpClientBuilder", true);
@@ -195,11 +148,11 @@ public class MantaConnectionFactoryTest {
         config.setRetries(1);
 
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
-        connectionFactory = new MantaConnectionFactory(config, authContext.left, authContext.right, conf);
+        connectionFactory = new MantaConnectionFactory(config, conf);
 
-        final Object retryHandler = FieldUtils.readField(builder, "retryHandler", true);
-        final Object serviceUnavailStrategy = FieldUtils.readField(builder, "serviceUnavailStrategy", true);
-
+        final Object factoryInternalBuilder = FieldUtils.readField(connectionFactory, "httpClientBuilder", true);
+        final Object retryHandler = FieldUtils.readField(factoryInternalBuilder, "retryHandler", true);
+        final Object serviceUnavailStrategy = FieldUtils.readField(factoryInternalBuilder, "serviceUnavailStrategy", true);
 
         Assert.assertTrue(retryHandler instanceof MantaHttpRequestRetryHandler);
         Assert.assertTrue(serviceUnavailStrategy instanceof MantaServiceUnavailableRetryStrategy);

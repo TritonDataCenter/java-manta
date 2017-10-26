@@ -12,7 +12,6 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
 import com.joyent.manta.exception.MantaClientException;
-import com.joyent.manta.util.UnitTestConstants;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -134,18 +133,13 @@ public class JobsMultipartManagerTest {
 
         final ConfigContext overwrite = new StandardConfigContext()
                 .setMantaUser(user)
-                .setMantaKeyId(UnitTestConstants.FINGERPRINT)
-                .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY);
+                .setNoAuth(true);
         final ConfigContext config = new SystemSettingsConfigContext(overwrite);
 
         // We set the manta client to a non-validating mode so that we can
         // unit test
-        try {
-            System.setProperty("manta.dontValidateConfig", "true");
-            final MantaClient client = new MantaClient(config);
-            return new JobsMultipartManager(client);
-        } finally {
-            System.setProperty("manta.dontValidateConfig", "false");
-        }
+
+        final MantaClient client = new MantaClient(config);
+        return new JobsMultipartManager(client);
     }
 }

@@ -17,7 +17,7 @@ import static com.joyent.manta.config.EnvVarConfigContext.*;
 
 /**
  * {@link ConfigContext} implementation that is used for configuring instances
- * from a Map.
+ * from a Map. This class is as thread-safe as the {@link #backingMap}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
@@ -238,11 +238,6 @@ public class MapConfigContext implements ConfigContext {
     public String getPassword() {
         return normalizeEmptyAndNullAndDefaultToStringValue(
                 MANTA_PASSWORD_KEY, MANTA_PASSWORD_ENV_KEY);
-    }
-
-    @Override
-    public String getMantaHomeDirectory() {
-        return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
     }
 
     @Override

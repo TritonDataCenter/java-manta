@@ -13,6 +13,7 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaClientEncryptionException;
+import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
@@ -102,7 +103,10 @@ public class EncryptedHttpHelperTest {
                 .setEncryptionPrivateKeyBytes(SecretKeyUtils.generate(cipherDetails).getEncoded())
                 .setEncryptionAlgorithm(cipherDetails.getCipherId());
 
-        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(connectionContext, config);
+        EncryptionHttpHelper httpHelper = new EncryptionHttpHelper(
+                connectionContext,
+                new MantaHttpRequestFactory(UnitTestConstants.UNIT_TEST_URL),
+                config);
 
         URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
 
