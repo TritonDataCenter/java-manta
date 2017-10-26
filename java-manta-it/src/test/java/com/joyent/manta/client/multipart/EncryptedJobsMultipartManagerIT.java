@@ -17,7 +17,6 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -26,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Test;
 
@@ -52,28 +52,30 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Test(groups = { "encrypted", "multipart" })
-public class EncryptedJobsMultipartManagerIT extends EncryptionAwareIntegrationTest {
+public class EncryptedJobsMultipartManagerIT {
+    private final ConfigContext config;
     private MantaClient mantaClient;
     private EncryptedJobsMultipartManager multipart;
     private String testPathPrefix;
 
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
-    public EncryptedJobsMultipartManagerIT(final @Optional Boolean usingEncryption,
-                                           final @Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
-
+    public EncryptedJobsMultipartManagerIT(final @Optional String encryptionCipher) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
-
-        if (!config.isClientEncryptionEnabled()) {
-            throw new SkipException("Skipping tests if encryption is disabled");
-        }
+        config = new IntegrationTestConfigContext(encryptionCipher);
 
         this.mantaClient = new MantaClient(config);
         this.multipart = new EncryptedJobsMultipartManager(this.mantaClient);
 
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
+        if (!config.isClientEncryptionEnabled()) {
+            throw new SkipException("Skipping tests if encryption is disabled");
+        }
+
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

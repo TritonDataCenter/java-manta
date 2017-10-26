@@ -15,7 +15,6 @@ import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import com.joyent.test.util.RandomInputStream;
@@ -23,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -51,7 +51,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = { "encryptable" })
-public class MantaClientIT extends EncryptionAwareIntegrationTest {
+public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -59,16 +59,21 @@ public class MantaClientIT extends EncryptionAwareIntegrationTest {
 
     private final String testPathPrefix;
 
-    @Parameters({"usingEncryption", "encryptionCipher"})
-    public MantaClientIT(final @Optional Boolean usingEncryption,
-                         final @Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
+    private final String encryptionCipher;
+
+    @Parameters({"encryptionCipher"})
+    public MantaClientIT(final @Optional String encryptionCipher) throws IOException {
+        this.encryptionCipher = encryptionCipher;
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
+        ConfigContext config = new IntegrationTestConfigContext(this.encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

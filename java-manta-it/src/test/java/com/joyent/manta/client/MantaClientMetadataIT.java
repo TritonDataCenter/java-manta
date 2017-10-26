@@ -9,10 +9,10 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -28,23 +28,28 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = { "metadata" })
-public class MantaClientMetadataIT extends EncryptionAwareIntegrationTest {
+public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private MantaClient mantaClient;
 
     private String testPathPrefix;
 
-    @Parameters({"usingEncryption", "encryptionCipher"})
-    public MantaClientMetadataIT(final @Optional Boolean usingEncryption,
-                                 final @Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
+    private final String encryptionCipher;
+
+    @Parameters({"encryptionCipher"})
+    public MantaClientMetadataIT(final @Optional String encryptionCipher) throws IOException {
+        this.encryptionCipher = encryptionCipher;
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
+        ConfigContext config = new IntegrationTestConfigContext(this.encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

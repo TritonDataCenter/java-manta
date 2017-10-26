@@ -9,13 +9,13 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -28,25 +28,27 @@ import java.security.MessageDigest;
 import java.util.UUID;
 
 @Test(groups = {"encryptable"})
-public class MantaObjectOutputStreamIT extends EncryptionAwareIntegrationTest {
+public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private final MantaClient mantaClient;
 
     private final String testPathPrefix;
 
-    @Parameters({"usingEncryption", "encryptionCipher"})
-    public MantaObjectOutputStreamIT(final @Optional Boolean usingEncryption,
-                                     final @Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
-
+    @Parameters({"encryptionCipher"})
+    public MantaObjectOutputStreamIT(final @Optional String encryptionCipher) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
+        ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
+
 
     @AfterClass
     public void afterClass() throws IOException {

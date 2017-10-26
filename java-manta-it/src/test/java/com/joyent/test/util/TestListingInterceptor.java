@@ -16,10 +16,12 @@ import org.testng.IMethodInterceptor;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
 import org.testng.ITestContext;
+import org.testng.ITestNGMethod;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -50,17 +52,14 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
     @Override
     public List<IMethodInstance> intercept(final List<IMethodInstance> methods, final ITestContext context) {
         for (final IMethodInstance method : methods) {
-
-            final String testName = method.getMethod().getQualifiedName();
+            final ITestNGMethod testNGMethod = method.getMethod();
+            final String testName = testNGMethod.getQualifiedName();
             final Object instance = method.getInstance();
+            final Map<String, String> params = testNGMethod.findMethodParameters(testNGMethod.getXmlTest());
 
             String encryptionDetail = "";
-            if (instance instanceof EncryptionAwareIntegrationTest) {
-                final EncryptionAwareIntegrationTest encryptableInstance = ((EncryptionAwareIntegrationTest) instance);
-
-                if (BooleanUtils.isNotFalse(encryptableInstance.isUsingEncryption())) {
-                    encryptionDetail = '[' + encryptableInstance.getEncryptionCipher() + ']';
-                }
+            if (!params.isEmpty()) {
+                encryptionDetail = '[' + params.toString() + ']';
             }
 
             observedTests.add(testName + ' ' + encryptionDetail);

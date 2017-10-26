@@ -11,10 +11,10 @@ import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -38,20 +38,17 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = {"seekable", "encryptable"})
-public class MantaClientSeekableByteChannelIT extends EncryptionAwareIntegrationTest {
+public class MantaClientSeekableByteChannelIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private final MantaClient mantaClient;
 
     private final String testPathPrefix;
 
-    @Parameters({"usingEncryption", "encryptionCipher"})
-    public MantaClientSeekableByteChannelIT(final @Optional Boolean usingEncryption,
-                                            final @Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
+    @Parameters({"encryptionCipher"})
+    public MantaClientSeekableByteChannelIT(final @Optional String encryptionCipher) throws IOException {
 
-        // Let TestNG configuration take precedence over environment variables
-        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
 
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
@@ -60,6 +57,10 @@ public class MantaClientSeekableByteChannelIT extends EncryptionAwareIntegration
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

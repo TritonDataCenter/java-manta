@@ -32,7 +32,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = { "error", "encryptable"})
+@Test(groups = {"error"})
 public class MantaClientErrorIT {
     private MantaClient mantaClient;
 

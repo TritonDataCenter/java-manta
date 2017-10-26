@@ -68,7 +68,6 @@ public class JobsMultipartManagerIT {
         this.multipart = new JobsMultipartManager(this.mantaClient);
 
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass

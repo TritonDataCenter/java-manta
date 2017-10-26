@@ -50,6 +50,11 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
                         BooleanUtils.isTrue(usingEncryption), encryptionCipher()));
     }
 
+    public IntegrationTestConfigContext(final String encryptionCipher) {
+        this(encryptionCipher != null, encryptionCipher);
+
+    }
+
     /**
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in. Assigns hard-coded

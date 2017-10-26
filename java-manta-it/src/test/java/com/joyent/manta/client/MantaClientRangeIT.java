@@ -13,11 +13,11 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -28,7 +28,7 @@ import java.nio.charset.Charset;
 import java.util.UUID;
 
 @Test(groups = {"encryptable"})
-public class MantaClientRangeIT extends EncryptionAwareIntegrationTest {
+public class MantaClientRangeIT {
     private static final String TEST_DATA =
             "A SERGEANT OF THE LAW, wary and wise, " +
             "That often had y-been at the Parvis, <26> " +
@@ -58,13 +58,11 @@ public class MantaClientRangeIT extends EncryptionAwareIntegrationTest {
 
     private final String testPathPrefix;
 
-    @Parameters({"usingEncryption", "encryptionCipher"})
-    public MantaClientRangeIT(final @Optional Boolean usingEncryption,
-                              final @Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
+    @Parameters({"encryptionCipher"})
+    public MantaClientRangeIT(final @Optional String encryptionCipher) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);;
 
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
@@ -74,6 +72,10 @@ public class MantaClientRangeIT extends EncryptionAwareIntegrationTest {
         mantaClient = new MantaClient(config);
         this.config = config;
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

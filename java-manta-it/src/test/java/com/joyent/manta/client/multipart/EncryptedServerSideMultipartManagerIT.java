@@ -16,7 +16,6 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.test.util.EncryptionAwareIntegrationTest;
 import com.joyent.test.util.FailingInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -28,6 +27,7 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -48,10 +48,11 @@ import static org.testng.Assert.assertTrue;
 
 @Test(groups = { "encrypted", "multipart"})
 @SuppressWarnings("Duplicates")
-public class EncryptedServerSideMultipartManagerIT extends EncryptionAwareIntegrationTest {
+public class EncryptedServerSideMultipartManagerIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerIT.class);
 
+    private final ConfigContext config;
     private final MantaClient mantaClient;
     private final EncryptedServerSideMultipartManager multipart;
 
@@ -61,17 +62,21 @@ public class EncryptedServerSideMultipartManagerIT extends EncryptionAwareIntegr
 
     private final String testPathPrefix;
 
-    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional Boolean usingEncryption,
-                            final @org.testng.annotations.Optional String encryptionCipher) throws IOException {
-        setEncryptionParameters(usingEncryption, encryptionCipher);
-
+    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional String encryptionCipher) throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption, encryptionCipher);
+        config = new IntegrationTestConfigContext(encryptionCipher);
 
+        mantaClient = new MantaClient(config);
+
+        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
         }
-        mantaClient = new MantaClient(config);
 
         // sanity check
         if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory())) {
@@ -83,8 +88,6 @@ public class EncryptedServerSideMultipartManagerIT extends EncryptionAwareIntegr
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
-        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
