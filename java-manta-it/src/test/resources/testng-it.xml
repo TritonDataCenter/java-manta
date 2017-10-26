@@ -15,11 +15,10 @@
 
     <test name="Manta Client Integration Tests [Unencrypted]">
         <!--
-        excluding tests by group only works if everything is in a group, we are currently unable to exclude
-        EncryptedServerSideMultipartManagerSerializationIT through the "encrypted" group so we resort to listing
-        all desired unencrypted tests
+        excluding tests by group only works if everything is in a group. e.g. we are currently unable to exclude
+        EncryptedServerSideMultipartManagerSerializationIT by adding groups > run > exclude = "encrypted" group
+        so we resort to listing all desired unencrypted tests. This also helps discoverability!
         -->
-
         <classes>
             <class name="com.joyent.manta.client.MantaClientDirectoriesIT" />
             <class name="com.joyent.manta.client.MantaClientErrorIT" />
@@ -41,14 +40,6 @@
     <test name="Manta Client Integration Tests [AES128/CTR Encrypted]">
         <parameter name="usingEncryption" value="true" />
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding" />
-        <groups>
-            <run>
-                <include name="encrypted" />
-                <include name="encryptable" />
-                <include name="multipart" />
-            </run>
-        </groups>
-
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
@@ -66,14 +57,6 @@
     <test name="Manta Client Integration Tests [AES128/GCM Encrypted]">
         <parameter name="usingEncryption" value="true" />
         <parameter name="encryptionCipher" value="AES128/GCM/NoPadding" />
-        <groups>
-            <run>
-                <include name="encrypted" />
-                <include name="encryptable" />
-                <exclude name="multipart" />
-            </run>
-        </groups>
-
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
@@ -86,14 +69,6 @@
     <test name="Manta Client Integration Tests [AES128/CBC Encrypted]">
         <parameter name="usingEncryption" value="true" />
         <parameter name="encryptionCipher" value="AES128/CBC/PKCS5Padding" />
-        <groups>
-            <run>
-                <include name="encrypted" />
-                <include name="encryptable" />
-                <exclude name="multipart" />
-            </run>
-        </groups>
-
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
