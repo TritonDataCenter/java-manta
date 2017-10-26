@@ -52,7 +52,6 @@ public class MantaClientPutIT {
 
     @Parameters({"encryptionCipher"})
     public MantaClientPutIT(final @Optional String encryptionCipher) throws IOException {
-
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
 

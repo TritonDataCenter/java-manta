@@ -60,7 +60,6 @@ public class MantaClientRangeIT {
 
     @Parameters({"encryptionCipher"})
     public MantaClientRangeIT(final @Optional String encryptionCipher) throws IOException {
-
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);;
 

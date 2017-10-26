@@ -122,9 +122,11 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
     }
 
     public static void cleanupTestDirectory(final MantaClient mantaClient, final String testPathPrefix) throws IOException {
-        if (!Boolean.valueOf(ObjectUtils.firstNonNull(System.getenv("MANTA_IT_NO_CLEANUP"),
-                                                      System.getProperty("manta.it.no_cleanup"))) &&
-            mantaClient != null) {
+        final Boolean skipCleanup = Boolean.valueOf(
+                ObjectUtils.firstNonNull(System.getenv("MANTA_IT_NO_CLEANUP"), System.getProperty("manta.it.no_cleanup")));
+        if (!skipCleanup
+                && mantaClient != null
+                && mantaClient.head(testPathPrefix) != null) {
             mantaClient.deleteRecursive(testPathPrefix);
             mantaClient.closeWithWarning();
         }

@@ -22,3 +22,4 @@ public interface Cloner<T> {
      */
     T createClone(T source);
 }
+
