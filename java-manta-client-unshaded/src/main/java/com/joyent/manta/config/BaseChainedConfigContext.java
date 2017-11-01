@@ -154,7 +154,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * True = set by defaults.
      * False = overwritten by non-defaults.
      */
-    private boolean mantaKeyPathSetOnlyByDefaults = false;
+    private volatile boolean mantaKeyPathSetOnlyByDefaults = false;
 
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
