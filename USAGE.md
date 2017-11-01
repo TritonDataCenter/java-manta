@@ -93,6 +93,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |                          |
 | manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
+| manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
@@ -148,6 +149,12 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     The initial amount of bytes to attempt to load into memory when uploading a stream. If the
     entirety of the stream fits within the number of bytes of this value, then the
     contents of the buffer are directly uploaded to Manta in a retryable form.
+* `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
+    Integer indicating the number of directory levels to attempt to skip when performing a recursive `putDirectory`
+    operation. Set to 0 to disable the optimization entirely. Irrelevant when the depth of the recursive `putDirectory`
+    call is less than the setting. When creating a directory with more levels than the setting, the client will attempt
+    to skip this many non-system directories from the root. Will return to normal directory creation procedure if
+    the skipped `PUT` fails or proceed creating all directories between the skip depth and the child on success.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)

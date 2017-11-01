@@ -113,6 +113,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_UPLOAD_BUFFER_SIZE_KEY = "manta.upload_buffer_size";
 
     /**
+     * Property key for setting the number of directories to assume exist when creating directories recursively.
+     */
+    public static final String MANTA_SKIP_DIRECTORY_DEPTH_KEY = "manta.skip_directory_depth";
+
+    /**
      * Property key for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
@@ -174,6 +179,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_VERIFY_UPLOADS_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_KEY,
+            MANTA_SKIP_DIRECTORY_DEPTH_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_KEY_ID_KEY,
@@ -360,6 +366,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY));
+    }
+
+    @Override
+    public Integer getSkipDirectoryDepth() {
+        final Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SKIP_DIRECTORY_DEPTH_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY));
     }
 
     @Override
