@@ -78,6 +78,7 @@ left are overridden by values on the right.
 | 10000                                | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       |
 | true                                 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           |
 | 16384                                | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       |
+|                                      | manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |
 | false                                | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        |
 |                                      | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |
 | AES128/CTR/NoPadding                 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     |
@@ -129,6 +130,12 @@ to Manta and then checks it against the result returned by Manta.
 The initial amount of bytes to attempt to load into memory when uploading a stream. If the
 entirety of the stream fits within the number of bytes of this value, then the
 contents of the buffer are directly uploaded to Manta in a retryable form.
+* `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
+Integer indicating the number of directory levels to attempt to skip when performing a recursive `putDirectory`
+operation. Set to 0 to disable the optimization entirely. Irrelevant when the depth of the recursive `putDirectory`
+call is less than the setting. When creating a directory with more levels than the setting, the client will attempt
+to skip this many non-system directories from the root. Will return to normal directory creation procedure if
+the skipped `PUT` fails or proceed creating all directories between the skip depth and the child on success.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
 Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)

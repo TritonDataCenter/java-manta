@@ -155,6 +155,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setUploadBufferSize(Integer size);
 
     /**
+     * Sets the number of directories to be assumed to exist when creating directories recursively.
+     *
+     * @param depth directory depth to assume exists
+     * @return the current instance of {@link T}
+     */
+    T setSkipDirectoryDepth(Integer depth);
+
+    /**
      * Sets flag indicating when client-side encryption is enabled.
      *
      * @param clientEncryptionEnabled true if client-side encryption is enabled
@@ -290,6 +298,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
                 config.setTcpSocketTimeout(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
+            case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
+                config.setUploadBufferSize(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
+                config.setSkipDirectoryDepth(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:

@@ -105,6 +105,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY = "MANTA_UPLOAD_BUFFER_SIZE";
 
     /**
+     * Environment variable for setting the depth of directories to assume exists.
+     */
+    public static final String MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY = "MANTA_SKIP_DIRECTORY_DEPTH";
+
+    /**
      * Environment variable for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
@@ -156,6 +161,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
+            MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
             MANTA_ENCRYPTION_KEY_ID_ENV_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
@@ -279,6 +285,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public Boolean verifyUploads() {
         String verify = getEnv(MANTA_VERIFY_UPLOADS_ENV_KEY);
         return MantaUtils.parseBooleanOrNull(verify);
+    }
+
+    @Override
+    public Integer getSkipDirectoryDepth() {
+        return MantaUtils.parseIntegerOrNull(getEnv(MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY));
     }
 
     @Override

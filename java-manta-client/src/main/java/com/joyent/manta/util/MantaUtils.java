@@ -7,8 +7,8 @@
  */
 package com.joyent.manta.util;
 
-import io.mikael.urlbuilder.util.Encoder;
 import io.mikael.urlbuilder.util.Decoder;
+import io.mikael.urlbuilder.util.Encoder;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -34,6 +35,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
 /**
  * Manta utilities.
@@ -371,6 +374,44 @@ public final class MantaUtils {
 
         final Path lastPart = asNioPath.getName(count - 1);
         return lastPart.toString();
+    }
+
+    /**
+     * Compute the intermediate directories between "/" and {@code rawPath}.
+     *
+     * @param rawPath The fully qualified path of the Manta directory.
+     * @return All non-root directories leading to and including rawPath
+     */
+    public static String[] prefixPaths(final String rawPath) {
+        final String[] parts = rawPath.split(SEPARATOR);
+        final Iterator<Path> itr = Paths.get("", parts).iterator();
+        final StringBuilder sb = new StringBuilder(SEPARATOR);
+        final String[] paths = new String[parts.length - 1];
+
+        for (int i = 0; itr.hasNext(); i++) {
+            final String part = itr.next().toString();
+            sb.append(part);
+
+            paths[i] = sb.toString();
+
+            if (itr.hasNext()) {
+                sb.append(SEPARATOR);
+            }
+        }
+
+        return paths;
+    }
+
+    /**
+     * Returns intermediate directories between "/" and {@code rawPath}, not including
+     * the user's home folder and or system directories.
+     *
+     * @param rawPath The fully qualified path of the Manta directory.
+     * @return All non-root and non-system directories including rawPath
+     */
+    public static String[] writeablePrefixPaths(final String rawPath) {
+        final String[] paths = prefixPaths(rawPath);
+        return Arrays.copyOfRange(prefixPaths(rawPath), 2, paths.length);
     }
 
     /**
