@@ -349,6 +349,20 @@
                             <rules>
                                 <banDuplicateClasses>
                                     <findAllDuplicates>true</findAllDuplicates>
+                                    <!-- Maven enforcer erroneously reports that the below
+                                         classes are duplicated in the following jars:
+
+                                         com.joyent.manta:java-manta-client:jar:3.1.4-SNAPSHOT:compile
+                                         com.twmacinta:fast-md5:jar:2.7.1:compile
+
+                                         The fast-md5 jar will be present during the test phase, but
+                                         it will not be part of the final artifact.
+                                    -->
+                                    <ignoreClasses>
+                                        <ignoreClass>com.twmacinta.util.MD5State</ignoreClass>
+                                        <ignoreClass>com.twmacinta.util.MD5InputStream</ignoreClass>
+                                        <ignoreClass>com.twmacinta.util.MD5</ignoreClass>
+                                    </ignoreClasses>
                                 </banDuplicateClasses>
                             </rules>
                             <fail>true</fail>

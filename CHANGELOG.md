@@ -48,6 +48,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Object content verification of standard PUT requests was being
    skipped if the server [omitted the computed MD5](https://github.com/joyent/java-manta/issues/298)
    from the response.
+ - [`mvn integration-test site` fails enforce-ban-duplicate-classes](https://github.com/joyent/java-manta/issues/270)
 
 ## [3.1.5] - 2017-07-28
 ### Fixed
