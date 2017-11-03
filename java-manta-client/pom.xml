@@ -175,6 +175,25 @@
                 <artifactId>maven-clean-plugin</artifactId>
                 <executions>
                     <!--
+                    We need to add the default clean phase since we're specifying executions.
+                    -->
+                    <execution>
+                        <id>default-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>src</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+
+                    <!--
                     Remove src after use. This is for tidyness but not correctness.
                     SOMETHING in maven allows the sources jar to be built during the package phase
                     even though they've been deleted as early as the process-resources phase
@@ -188,7 +207,6 @@
                         </goals>
                         <configuration>
                             <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <verbose>true</verbose>
                             <filesets>
                                 <fileset>
                                     <directory>src</directory>
@@ -209,7 +227,6 @@
                         </goals>
                         <configuration>
                             <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <verbose>true</verbose>
                             <filesets>
                                 <fileset>
                                     <directory>src</directory>
