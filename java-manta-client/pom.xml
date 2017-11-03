@@ -291,6 +291,11 @@
                     For SOME reason Maven can build a sources JAR for this module based on the above workaround
                     *and still* deleting the source files during process-resources in order to avoid the shade plugin
                     detecting overlapping classes.
+
+                    Maintainer beware! You might be tempted to add an invocation of the maven-source-plugin directly here
+                    and bind it to a phase after the above two but before packaging (in order to avoid the overlapping 
+                    classes error) but this does not work. Relying on the parent-pom definition of maven-source-plugin is 
+                    unexpected but functional so that behavior is documented here.
                     -->
                 </plugins>
             </build>
