@@ -74,7 +74,7 @@ public class MantaObjectConversionFunction implements Function<Map<String, Objec
     /**
      * Static instance to be used as a singleton.
      */
-    static final MantaObjectConversionFunction INSTANCE = new MantaObjectConversionFunction();
+    public static final MantaObjectConversionFunction INSTANCE = new MantaObjectConversionFunction();
 
     @Override
     public MantaObject apply(final Map<String, Object> item) {
