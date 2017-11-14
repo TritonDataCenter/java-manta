@@ -111,6 +111,7 @@ Please refer to the [release documentation](/RELEASING.md).
 See <https://github.com/joyent/java-manta/issues>.
 
 ## License
+
 Java Manta is licensed under the MPLv2. Please see the [LICENSE.txt](/LICENSE.txt)
 file for more details. The license was changed from the MIT license to the MPLv2
 license starting at version 2.3.0.
