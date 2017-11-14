@@ -116,6 +116,7 @@ file for more details. The license was changed from the MIT license to the MPLv2
 license starting at version 2.3.0.
 
 ### Credits
+
 We are grateful for the functionality provided by the libraries that this project
 depends on. Without them, we would be building everything from scratch. A thank you
 goes out to:
