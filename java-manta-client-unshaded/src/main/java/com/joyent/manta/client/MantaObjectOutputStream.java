@@ -298,6 +298,7 @@ public class MantaObjectOutputStream extends OutputStream {
         Boolean innerIsClosed = isInnerStreamClosed(this.httpContent.getWriter());
         if (innerIsClosed != null && !innerIsClosed) {
             this.httpContent.getWriter().flush();
+            this.httpContent.getWriter().close();
         }
 
         synchronized (this.httpContent) {
