@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Test
@@ -156,10 +157,47 @@ public class MantaObjectOutputStreamIT {
 
         try (InputStream in = mantaClient.getAsInputStream(path)) {
             byte[] expected = bout.toByteArray();
-            byte[] actual = IOUtils.readFully(in, (int)totalBytes);
+            byte[] actual = IOUtils.readFully(in, (int) totalBytes);
 
             AssertJUnit.assertArrayEquals("Bytes written via OutputStream don't match read bytes",
                     expected, actual);
+        }
+    }
+
+    /*
+     this test fails around 2% of the time with the following exception:
+
+    org.apache.http.NoHttpResponseException: The target server failed to respond.
+
+    With the addition of `this.httpContent.getWriter().close()`, the error becomes
+
+    com.joyent.manta.exception.MantaIOException:
+    com.joyent.manta.exception.MantaChecksumFailedException:
+    Client calculated MD5 and server calculated MD5 do not match
+      */
+    @Test(invocationCount = 100)
+    public void noResponse() throws IOException {
+        String mantaFile = testPathPrefix + UUID.randomUUID().toString();
+
+        byte[] arr = new byte[15];
+        Arrays.fill(arr, (byte) 98);
+
+        MantaObjectOutputStream out = mantaClient.putAsOutputStream(mantaFile);
+
+        try {
+            out.write(arr);
+        } finally {
+            out.close();
+        }
+
+        MantaObject uploaded = out.getObjectResponse();
+
+        if (uploaded.getContentLength() != arr.length) {
+            Assert.fail(
+                    String.format("unexpected content length [%d], expected [%d]",
+                            uploaded.getContentLength(),
+                            arr.length)
+            );
         }
     }
 }
