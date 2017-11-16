@@ -203,11 +203,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public String getMantaHomeDirectory() {
-        return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
-    }
-
-    @Override
     public Integer getTimeout() {
         return this.timeout;
     }

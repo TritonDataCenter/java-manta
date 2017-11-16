@@ -68,7 +68,9 @@ public interface ConfigContext extends MantaMBeanable {
     /**
      * @return String of home directory based on Manta username.
      */
-    String getMantaHomeDirectory();
+    default String getMantaHomeDirectory() {
+        return deriveHomeDirectoryFromUser(getMantaUser());
+    }
 
     /**
      * @return Number of HTTP retries to perform on failure.
@@ -280,23 +282,25 @@ public interface ConfigContext extends MantaMBeanable {
             failureMessages.add("Manta Expect 100-continue timeout must be 1 or greater");
         }
 
-        if (config.noAuth() != null && !config.noAuth()) {
+        final boolean authenticationEnabled = BooleanUtils.isNotTrue(config.noAuth());
+
+        if (authenticationEnabled) {
             if (config.getMantaKeyId() == null) {
                 failureMessages.add("Manta key id must be specified");
             }
-        }
 
-        if (config.getMantaKeyPath() == null && config.getPrivateKeyContent() == null) {
-            failureMessages.add("Either the Manta key path must be set or the private "
-                    + "key content must be set. Both can't be null.");
-        }
+            if (config.getMantaKeyPath() == null && config.getPrivateKeyContent() == null) {
+                failureMessages.add("Either the Manta key path must be set or the private "
+                        + "key content must be set. Both can't be null.");
+            }
 
-        if (config.getMantaKeyPath() != null && StringUtils.isBlank(config.getMantaKeyPath())) {
-            failureMessages.add("Manta key path must not be blank");
-        }
+            if (config.getMantaKeyPath() != null && StringUtils.isBlank(config.getMantaKeyPath())) {
+                failureMessages.add("Manta key path must not be blank");
+            }
 
-        if (config.getPrivateKeyContent() != null && StringUtils.isBlank(config.getPrivateKeyContent())) {
-            failureMessages.add("Manta private key content must not be blank");
+            if (config.getPrivateKeyContent() != null && StringUtils.isBlank(config.getPrivateKeyContent())) {
+                failureMessages.add("Manta private key content must not be blank");
+            }
         }
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {

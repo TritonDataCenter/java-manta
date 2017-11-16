@@ -53,17 +53,18 @@ public class KeyPairFactory {
         final String keyPath = config.getMantaKeyPath();
         final String password = config.getPassword();
 
+        final char[] charPassword;
+        if (password != null) {
+            charPassword = password.toCharArray();
+        } else {
+            charPassword = null;
+        }
+
         try {
             if (privateKeyContent != null) {
-                final char[] charPassword;
-                if (password != null) {
-                    charPassword = password.toCharArray();
-                } else {
-                    charPassword = null;
-                }
                 keyPair = KeyPairLoader.getKeyPair(privateKeyContent, charPassword);
             } else if (keyPath != null) {
-                keyPair = KeyPairLoader.getKeyPair(new File(keyPath).toPath());
+                keyPair = KeyPairLoader.getKeyPair(new File(keyPath), charPassword);
             } else {
                 String msg = "Private key content setting must be set if "
                     + "key file path is not set";

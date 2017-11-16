@@ -265,11 +265,6 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public String getMantaHomeDirectory() {
-        return ConfigContext.deriveHomeDirectoryFromUser(getMantaUser());
-    }
-
-    @Override
     public String toString() {
         return ConfigContext.toString(this);
     }
