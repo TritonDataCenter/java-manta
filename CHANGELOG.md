@@ -2,7 +2,9 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.7-SNAPSHOT] - Coming soon!
+## [3.2.1-SNAPSHOT] - Coming soon!
+
+## [3.2.0] - 2017-11-03
 ### Added
  - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87).
  - Support for reading content-type and content-md5 header information from 

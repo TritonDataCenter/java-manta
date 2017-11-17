@@ -14,7 +14,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 /**
  * Object for providing pre-configured HttpClient objects to use with {@link MantaConnectionFactory}.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
 public class MantaConnectionFactoryConfigurator {

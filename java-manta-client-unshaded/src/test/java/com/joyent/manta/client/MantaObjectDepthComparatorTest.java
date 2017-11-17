@@ -109,8 +109,9 @@ public class MantaObjectDepthComparatorTest {
 
         for (int i = 0; i < number; i++) {
             final MantaObject object = mock(MantaObject.class);
+            final int segmentChar = (number + i) % 26;
             String path = dirObject.getPath() + SEPARATOR
-                    + StringUtils.repeat((char)(97 + number + i), 4) + ".json";
+                    + StringUtils.repeat(((char)(97 + segmentChar) ), 4) + ".json";
             when(object.getPath()).thenReturn(path);
             when(object.getType()).thenReturn(MantaObject.MANTA_OBJECT_TYPE_OBJECT);
             when(object.getContentType()).thenReturn(ContentType.APPLICATION_JSON.toString());
@@ -129,7 +130,8 @@ public class MantaObjectDepthComparatorTest {
         path.append("stor");
 
         for (int i = 3; i <= depth; i++) {
-            path.append(SEPARATOR).append(StringUtils.repeat((char)(97 + depth + i), 3));
+            final int segmentChar = (depth + i) % 26;
+            path.append(SEPARATOR).append(StringUtils.repeat(((char)(97 + segmentChar) ), 3));
             MantaObject object = mockDirectory(path);
             objects.add(object);
         }

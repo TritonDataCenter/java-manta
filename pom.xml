@@ -11,7 +11,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>3.1.7-SNAPSHOT</version>
+    <version>3.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>java-manta</name>
@@ -208,6 +208,32 @@
 
     <build>
         <plugins>
+
+            <plugin>
+                <!-- This property is generated so we can refer to
+                     another module in a multi-module project without
+                     brittle relative paths. -->
+                <groupId>org.commonjava.maven.plugins</groupId>
+                <artifactId>directory-maven-plugin</artifactId>
+                <version>${maven-directory-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>directory-of-property</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <property>multi.module.root</property>
+                            <project>
+                                <groupId>com.joyent.manta</groupId>
+                                <artifactId>java-manta</artifactId>
+                            </project>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
