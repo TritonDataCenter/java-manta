@@ -122,7 +122,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.no_auth` (**MANTA_NO_AUTH**)
     When set to true, this disables HTTP Signature authentication entirely. This is
     only really useful when you are running the library as part of a Manta job.
-* `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
+* `manta.disable_native_sigs` (**MANTA_NO_NATIVE_SIGS**)
     When set to true, this disables the use of native code libraries for cryptography.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
     When set to true, the client calculates a MD5 checksum of the file being uploaded
@@ -144,21 +144,14 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.tcp_socket_timeout` (**MANTA_TCP_SOCKET_TIMEOUT**)
     Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
 * `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
-<<<<<<< HEAD
-Time in milliseconds to wait for a connection from the connection pool.
-* `manta.expect_continue_timeout` (**MANTA_EXPECT_CONTINUE_TIMEOUT**)
-Nullable integer indicating the number of milliseconds to wait for a response from the server before
-sending the request body. If enabled, the recommended wait time is **3000** ms based on the default defined in
-`HttpRequestExecutor.DEFAULT_WAIT_FOR_CONTINUE`. Enabling this setting can
-improve response latencies and error visibility when the server is under high load at the expense
-of potentially decreased total throughput. We recommend benchmarking with different values for this option before
-enabling it for production use.
-* `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
-When set to true, the client calculates a MD5 checksum of the file being uploaded
-to Manta and then checks it against the result returned by Manta.
-=======
     Time in milliseconds to wait for a connection from the connection pool.
->>>>>>> master
+* `manta.expect_continue_timeout` (**MANTA_EXPECT_CONTINUE_TIMEOUT**)
+    Nullable integer indicating the number of milliseconds to wait for a response from the server before
+    sending the request body. If enabled, the recommended wait time is **3000** ms based on the default defined in
+    `HttpRequestExecutor.DEFAULT_WAIT_FOR_CONTINUE`. Enabling this setting can
+    improve response latencies and error visibility when the server is under high load at the expense
+    of potentially decreased total throughput. We recommend benchmarking with different values for this option before
+    enabling it for production use.
 * `manta.upload_buffer_size` (**MANTA_UPLOAD_BUFFER_SIZE**)
     The initial amount of bytes to attempt to load into memory when uploading a stream. If the
     entirety of the stream fits within the number of bytes of this value, then the
@@ -175,7 +168,7 @@ to Manta and then checks it against the result returned by Manta.
     Boolean indicating that unencrypted files can be downloaded when client-side
     encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
-    [EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
+    [EncryptionAuthenticationMode](/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
     enum type indicating that authenticating encryption verification is either Mandatory or Optional.
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
     The path on the local filesystem or a URI understandable by the JVM indicating the
