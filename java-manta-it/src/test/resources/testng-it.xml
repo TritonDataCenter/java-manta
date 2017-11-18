@@ -44,9 +44,11 @@
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
+            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
+
+            <!-- Range Operations only support AES/CTR -->
             <class name="com.joyent.manta.client.MantaClientRangeIT" />
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
-            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
 
             <!-- MPU only supports AES/CTR -->
             <class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />
@@ -60,8 +62,6 @@
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
-            <class name="com.joyent.manta.client.MantaClientRangeIT" />
-            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
             <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
         </classes>
     </test>
@@ -71,8 +71,6 @@
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
-            <class name="com.joyent.manta.client.MantaClientRangeIT" />
-            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
             <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
         </classes>
     </test>
