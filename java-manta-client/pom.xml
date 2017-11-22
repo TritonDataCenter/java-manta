@@ -188,6 +188,7 @@
                             <filesets>
                                 <fileset>
                                     <directory>src</directory>
+                                    <directory>target</directory>
                                 </fileset>
                             </filesets>
                         </configuration>
