@@ -108,6 +108,10 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
             throw mioe;
         }
 
+        if (!response.containsHeader("x-load-balancer")) {
+            response.setHeader("x-load-balancer", extractLoadBalancerAddress(conn));
+        }
+
         return response;
     }
 
