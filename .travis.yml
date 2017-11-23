@@ -40,8 +40,7 @@ matrix:
         - DESC="openjdk8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
         - LANG=en_US.utf8
-    - jdk: zulu-8
-      env:
+    - env:
         - JAVA_HOME=/usr/lib/jvm/zulu-8-amd64
         - DESC="zulu-8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
