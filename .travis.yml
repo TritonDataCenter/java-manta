@@ -14,7 +14,6 @@ addons:
       - sourceline: 'deb http://repos.azulsystems.com/ubuntu stable main'
         key_url: 'http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems'
     packages:
-      - oracle-java8-installer
       - oracle-java8-unlimited-jce-policy
       - zulu-8
 
