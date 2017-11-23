@@ -12,7 +12,6 @@ addons:
   apt:
     sources:
       - sourceline: 'deb http://repos.azulsystems.com/ubuntu stable main'
-        keyurl: 'http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems'
     packages:
       - oracle-java8-installer
       - oracle-java8-unlimited-jce-policy
@@ -20,11 +19,14 @@ addons:
       - wget
       - unzip
 
+before_script:
+  - apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0x219BD9C9
+
 before_install:
   - mkdir -p $HOME/.downloads
   - wget -nc -q -O $HOME/.downloads/ZuluJCEPolicies.zip 'https://cdn.azul.com/zcek/bin/ZuluJCEPolicies.zip'
   - echo "8021a28b8cac41b44f1421fd210a0a0822fcaf88d62d2e70a35b2ff628a8675a  $HOME/.downloads/ZuluJCEPolicies.zip" | sha256sum -c
-  - unzip -o /tmp/ZuluJCEPolicies.zip -d $JAVA_HOME/lib/security
+  - unzip -o $HOME/.downloads/ZuluJCEPolicies.zip -d $JAVA_HOME/lib/security
   - echo 'MAVEN_OPTS="-Dorg.slf4j.simpleLogger.defaultLogLevel=warn"' >~/.mavenrc
 
 matrix:
