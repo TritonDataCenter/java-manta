@@ -2,8 +2,10 @@ dist: trusty
 language: java
 # We now cache the Maven dependencies directory for faster builds
 cache:
+  apt: true
   directories:
   - $HOME/.m2
+  - $HOME/.downloads
 sudo: false
 
 addons:
@@ -15,8 +17,14 @@ addons:
       - oracle-java8-installer
       - oracle-java8-unlimited-jce-policy
       - zulu-8
+      - wget
+      - unzip
 
 before_install:
+  - mkdir $HOME/.downloads
+  - wget -nc -q -O $HOME/.downloads/ZuluJCEPolicies.zip 'https://cdn.azul.com/zcek/bin/ZuluJCEPolicies.zip'
+  - echo "8021a28b8cac41b44f1421fd210a0a0822fcaf88d62d2e70a35b2ff628a8675a  $HOME/.downloads/ZuluJCEPolicies.zip" | sha256sum -c
+  - unzip -o /tmp/ZuluJCEPolicies.zip -d $JAVA_HOME/lib/security
   - echo 'MAVEN_OPTS="-Dorg.slf4j.simpleLogger.defaultLogLevel=warn"' >~/.mavenrc
 
 matrix:
@@ -40,7 +48,8 @@ matrix:
         - DESC="openjdk8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
         - LANG=en_US.utf8
-    - env:
+    - language: java
+      env:
         - JAVA_HOME=/usr/lib/jvm/zulu-8-amd64
         - DESC="zulu-8 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
