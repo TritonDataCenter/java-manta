@@ -57,12 +57,6 @@ matrix:
         - DESC="oraclejdk9 unit tests"
         - CMD="mvn clean test -Dcheckstyle.skip=true"
         - LANG=en_US.utf8
-    # unit tests (openjdk8)
-    - jdk: openjdk9
-      env:
-        - DESC="openjdk9 unit tests"
-        - CMD="mvn clean test -Dcheckstyle.skip=true"
-        - LANG=en_US.utf8
     # unit tests (zulu-9)
     - env:
         - JAVA_HOME=/usr/lib/jvm/zulu-9-amd64
