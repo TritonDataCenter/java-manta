@@ -25,13 +25,14 @@ import org.bouncycastle.jcajce.provider.symmetric.util.BaseWrapCipher;
 import org.bouncycastle.jcajce.provider.symmetric.util.BlockCipherProvider;
 import org.bouncycastle.jcajce.spec.GOST28147ParameterSpec;
 import org.bouncycastle.jcajce.util.BCJcaJceHelper;
-import org.objenesis.instantiator.sun.MagicInstantiator;
+import org.objenesis.instantiator.sun.UnsafeFactoryInstantiator;
 
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEParameterSpec;
 import javax.crypto.spec.RC2ParameterSpec;
 import javax.crypto.spec.RC5ParameterSpec;
+
 import java.lang.reflect.Field;
 import java.security.AlgorithmParameters;
 
@@ -141,25 +142,25 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         kryo.register(BufferedBlockCipher.class);
         kryo.register(bufferedGenericBlockCipherClass,
                 new CompatibleFieldSerializer<>(kryo, bufferedGenericBlockCipherClass))
-                .setInstantiator(new MagicInstantiator<>(bufferedGenericBlockCipherClass));
+                .setInstantiator(new UnsafeFactoryInstantiator(bufferedGenericBlockCipherClass));
         kryo.register(SICBlockCipher.class)
-                .setInstantiator(new MagicInstantiator<>(SICBlockCipher.class));
+                .setInstantiator(new UnsafeFactoryInstantiator(SICBlockCipher.class));
         kryo.register(AlgorithmParameters.class);
         kryo.register(BCJcaJceHelper.class);
         kryo.register(ParametersWithIV.class)
-                .setInstantiator(new MagicInstantiator<>(ParametersWithIV.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(ParametersWithIV.class));
         kryo.register(KeyParameter.class)
-                .setInstantiator(new MagicInstantiator<>(KeyParameter.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(KeyParameter.class));
         kryo.register(paddedBufferedBlockCipherClass)
-                .setInstantiator(new MagicInstantiator<>(paddedBufferedBlockCipherClass));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(paddedBufferedBlockCipherClass));
         kryo.register(CBCBlockCipher.class)
-                .setInstantiator(new MagicInstantiator<>(CBCBlockCipher.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(CBCBlockCipher.class));
         kryo.register(AEADParameters.class, new CompatibleFieldSerializer<>(kryo, AEADParameters.class))
-                .setInstantiator(new MagicInstantiator<>(AEADParameters.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(AEADParameters.class));
         kryo.register(aeadGenericBlockCipherClass, new CompatibleFieldSerializer<>(kryo, aeadGenericBlockCipherClass))
-                .setInstantiator(new MagicInstantiator<>(aeadGenericBlockCipherClass));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(aeadGenericBlockCipherClass));
         kryo.register(GCMBlockCipher.class, new CompatibleFieldSerializer<>(kryo, GCMBlockCipher.class))
-                .setInstantiator(new MagicInstantiator<>(GCMBlockCipher.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(GCMBlockCipher.class));
         kryo.register(RC2ParameterSpec.class);
         kryo.register(RC5ParameterSpec.class);
         kryo.register(GCMParameterSpec.class);
