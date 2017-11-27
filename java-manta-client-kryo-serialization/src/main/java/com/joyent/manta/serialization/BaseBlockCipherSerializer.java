@@ -142,9 +142,9 @@ public class BaseBlockCipherSerializer<T extends BaseBlockCipher>
         kryo.register(BufferedBlockCipher.class);
         kryo.register(bufferedGenericBlockCipherClass,
                 new CompatibleFieldSerializer<>(kryo, bufferedGenericBlockCipherClass))
-                .setInstantiator(new UnsafeFactoryInstantiator(bufferedGenericBlockCipherClass));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(bufferedGenericBlockCipherClass));
         kryo.register(SICBlockCipher.class)
-                .setInstantiator(new UnsafeFactoryInstantiator(SICBlockCipher.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(SICBlockCipher.class));
         kryo.register(AlgorithmParameters.class);
         kryo.register(BCJcaJceHelper.class);
         kryo.register(ParametersWithIV.class)
