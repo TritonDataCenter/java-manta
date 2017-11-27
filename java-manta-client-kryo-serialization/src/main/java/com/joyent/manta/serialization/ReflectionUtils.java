@@ -143,6 +143,7 @@ final class ReflectionUtils {
      * @param target target object
      * @param value object to write
      */
+    @SuppressWarnings("deprecation")
     static void writeField(final Field field, final Object target, final Object value) {
         Objects.requireNonNull(field, "Field must not be null");
         Objects.requireNonNull(target, "Target must not be null");
