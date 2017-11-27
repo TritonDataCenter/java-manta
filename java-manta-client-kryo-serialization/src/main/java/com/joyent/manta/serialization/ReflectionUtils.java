@@ -115,6 +115,7 @@ final class ReflectionUtils {
      * @param object object to read from
      * @return field's value
      */
+    @SuppressWarnings("deprecation")
     static Object readField(final Field field, final Object object) {
         Objects.requireNonNull(field, "Field must not be null");
         Objects.requireNonNull(object, "Object must not be null");
