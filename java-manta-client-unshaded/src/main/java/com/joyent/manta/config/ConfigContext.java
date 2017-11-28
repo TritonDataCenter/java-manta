@@ -131,6 +131,11 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getUploadBufferSize();
 
     /**
+     * @return number of directories of depth to assume would exist when creating directories
+     */
+    Integer getSkipDirectoryDepth();
+
+    /**
      * @return true when client-side encryption is enabled.
      */
     Boolean isClientEncryptionEnabled();
@@ -218,6 +223,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", connectionRequestTimeout=").append(context.getConnectionRequestTimeout());
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
+        sb.append(", skipDirectoryDepth=").append(context.getSkipDirectoryDepth());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -292,6 +298,10 @@ public interface ConfigContext extends MantaMBeanable {
             if (config.getPrivateKeyContent() != null && StringUtils.isBlank(config.getPrivateKeyContent())) {
                 failureMessages.add("Manta private key content must not be blank");
             }
+        }
+
+        if (config.getSkipDirectoryDepth() != null && config.getSkipDirectoryDepth() < 0) {
+            failureMessages.add("Manta skip directory depth must be 0 or greater");
         }
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
@@ -493,6 +503,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
             case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
                 return config.getUploadBufferSize();
+            case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
+                return config.getSkipDirectoryDepth();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();
