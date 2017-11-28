@@ -15,55 +15,64 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static com.joyent.manta.util.MantaUtils.writeablePrefixPaths;
+
 /**
- * Base class for classes which implement recursive directory creation.
+ * Utility class for recursive directory creation strategies.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
  * @since 3.1.7
  */
-abstract class RecursiveDirectoryCreationStrategy {
+final class RecursiveDirectoryCreationStrategy {
 
-    @SuppressWarnings("checkstyle:JavaDocVariable")
     private static final Logger LOG = LoggerFactory.getLogger(RecursiveDirectoryCreationStrategy.class);
 
-    /**
-     * The client to use when performing operations.
-     */
-    private final MantaClient client;
-
-    /**
-     * The number of PUT operations this instance has performed.
-     */
-    private int operations;
-
-    RecursiveDirectoryCreationStrategy(final MantaClient client) {
-        this.client = client;
-        this.operations = 0;
+    private RecursiveDirectoryCreationStrategy() {
     }
 
-    /**
-     * Attempt to create the desired directory recursively.
-     *
-     * @param rawPath    The fully qualified path of the Manta directory.
-     * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an unexpected error occurs during directory creation.
-     */
-    abstract void create(String rawPath, MantaHttpHeaders headers) throws IOException;
+    static long createWithSkipDepth(final MantaClient client,
+                                    final String rawPath,
+                                    final MantaHttpHeaders headers,
+                                    final int skipDepth) throws IOException {
+        final String[] paths = writeablePrefixPaths(rawPath);
 
-    MantaClient getClient() {
-        return client;
+        if (paths.length <= skipDepth) {
+            return createCompletely(client, rawPath, headers);
+        }
+
+        final String assumedExistingDirectory = paths[skipDepth - 1];
+        final String maybeNewDirectory = paths[skipDepth];
+
+        LOG.debug("ASSUME {}", assumedExistingDirectory);
+
+        final Boolean redundantPut = createNewDirectory(client, maybeNewDirectory, headers, rawPath);
+        long ops = 1;
+
+        if (redundantPut == null) {
+            LOG.debug("FAILED {}", maybeNewDirectory);
+
+            // failed to create directory at the skip depth, proceed normally
+            return ops + createCompletely(client, rawPath, headers);
+        }
+
+        for (int idx = skipDepth + 1; idx < paths.length; idx++) {
+            client.putDirectory(paths[idx], headers);
+            ops++;
+        }
+
+        return ops;
     }
 
-    void incrementOperations() {
-        operations++;
-    }
+    static long createCompletely(final MantaClient client,
+                                 final String rawPath,
+                                 final MantaHttpHeaders headers) throws IOException {
+        long ops = 0;
+        for (final String path : writeablePrefixPaths(rawPath)) {
+            client.putDirectory(path, headers);
+            ops++;
+        }
 
-    void incrementOperations(final int ops) {
-        operations += ops;
-    }
-
-    int getOperations() {
-        return operations;
+        return ops;
     }
 
     /**
@@ -75,13 +84,17 @@ abstract class RecursiveDirectoryCreationStrategy {
      *
      * @return whether or not the directory was actually new, or null if it failed to be created
      */
-    Boolean createNewDirectory(final String path, final MantaHttpHeaders headers) throws IOException {
+    private static Boolean createNewDirectory(final MantaClient client,
+                                              final String path,
+                                              final MantaHttpHeaders headers,
+                                              final String targetPath) throws IOException {
         try {
             return client.putDirectory(path, headers);
         } catch (final MantaClientHttpResponseException mchre) {
             if (mchre.getServerCode().equals(MantaErrorCode.DIRECTORY_DOES_NOT_EXIST_ERROR)) {
                 return null;
             } else {
+                mchre.setContextValue("recursiveDirectoryCreationTarget", targetPath);
                 throw mchre;
             }
         }

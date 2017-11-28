@@ -166,13 +166,12 @@ public class MantaClientDirectoriesIT {
         // set the skip depth to be greater than the new directory's depth
         config.setSkipDirectoryDepth(childDirectoryDepth + 1);
 
-        final RecursiveDirectoryCreationStrategy directoryCreationStrategy =
-                new DepthSkippingDirectoryCreationStrategy(mantaClient, config.getSkipDirectoryDepth());
+        final long operations =
+                RecursiveDirectoryCreationStrategy.createWithSkipDepth(mantaClient, childDirectory, null, config.getSkipDirectoryDepth());
 
-        mantaClient.putDirectory(childDirectory, null, directoryCreationStrategy);
         // check that number of operations is exactly the same as the writeable directories
         // (i.e. no extra operations and no fewer operations)
-        Assert.assertEquals(directoryCreationStrategy.getOperations(), childDirectoryDepth);
+        Assert.assertEquals(operations, childDirectoryDepth);
     }
 
     @Test
@@ -219,9 +218,8 @@ public class MantaClientDirectoriesIT {
         Assert.assertEquals(parentDir, response.getPath());
 
         // create the strategy ourselves so we can check the number of operations
-        final RecursiveDirectoryCreationStrategy strategy =
-                new DepthSkippingDirectoryCreationStrategy(mantaClient, config.getSkipDirectoryDepth());
-        mantaClient.putDirectory(childDir, null, strategy);
+        final long operations =
+                RecursiveDirectoryCreationStrategy.createWithSkipDepth(mantaClient, childDir, null, config.getSkipDirectoryDepth());
 
         // ensure that the child was created
         final MantaObject nestedResponse = mantaClient.head(childDir);
@@ -232,15 +230,15 @@ public class MantaClientDirectoriesIT {
         // verify that created the nested directory took less calls than its parent
         LOG.info("PARENT " + parentDir);
         LOG.info("CHILD  " + childDir);
-        LOG.info("calls (child): " + strategy.getOperations());
+        LOG.info("calls (child): " + operations);
 
         if (settingCorrectDepth) {
             // best case we only create directories belonging to the child
-            Assert.assertEquals(strategy.getOperations(), childAddedDepth);
+            Assert.assertEquals(operations, childAddedDepth);
         } else {
             // when we fail we'll do a single (unsuccessful) probe directly under the assumed parent depth plus one PUT
             // for each directory the in child path
-            Assert.assertEquals(strategy.getOperations(), parentDirDepth + childAddedDepth + 1);
+            Assert.assertEquals(operations, parentDirDepth + childAddedDepth + 1);
         }
     }
 
