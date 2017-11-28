@@ -1432,20 +1432,11 @@ public class MantaClient implements AutoCloseable {
         }
 
         final Integer skipDepth = config.getSkipDirectoryDepth();
-        final RecursiveDirectoryCreationStrategy directoryCreationStrategy;
         if (skipDepth != null && 0 < skipDepth) {
-            directoryCreationStrategy = new DepthSkippingDirectoryCreationStrategy(this, skipDepth);
+            RecursiveDirectoryCreationStrategy.createWithSkipDepth(this, rawPath, headers, skipDepth);
         } else {
-            directoryCreationStrategy = new PessimisticDirectoryCreationStrategy(this);
+            RecursiveDirectoryCreationStrategy.createCompletely(this, rawPath, headers);
         }
-
-        putDirectory(rawPath, headers, directoryCreationStrategy);
-    }
-
-    void putDirectory(final String rawPath,
-                      final MantaHttpHeaders headers,
-                      final RecursiveDirectoryCreationStrategy strategy) throws IOException {
-        strategy.create(rawPath, headers);
     }
 
     /**

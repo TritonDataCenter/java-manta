@@ -383,10 +383,10 @@ public final class MantaUtils {
      * @return All non-root directories leading to and including rawPath
      */
     public static String[] prefixPaths(final String rawPath) {
-        final String[] parts = rawPath.split(SEPARATOR);
+        final String[] parts = StringUtils.split(rawPath, SEPARATOR.charAt(0));
         final Iterator<Path> itr = Paths.get("", parts).iterator();
         final StringBuilder sb = new StringBuilder(SEPARATOR);
-        final String[] paths = new String[parts.length - 1];
+        final String[] paths = new String[parts.length];
 
         for (int i = 0; itr.hasNext(); i++) {
             final String part = itr.next().toString();
