@@ -79,7 +79,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
@@ -1576,13 +1575,14 @@ public class MantaClient implements AutoCloseable {
     /**
      * Creates a directory in Manta.
      *
-     * @param rawPath The fully qualified path of the Manta directory.
+     * @param rawPath   The fully qualified path of the Manta directory.
      * @param recursive recursive create all of the directories specified in the path
-     * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an IO exception has occurred.
+     * @param headers   Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
+     * @throws IOException                      If an IO exception has occurred.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void putDirectory(final String rawPath, final boolean recursive,
+    public void putDirectory(final String rawPath,
+                             final boolean recursive,
                              final MantaHttpHeaders headers)
             throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
@@ -1592,23 +1592,12 @@ public class MantaClient implements AutoCloseable {
             return;
         }
 
-        final String[] parts = rawPath.split(SEPARATOR);
-        final Iterator<Path> itr = Paths.get("", parts).iterator();
-        final StringBuilder sb = new StringBuilder(SEPARATOR);
-
-        for (int i = 0; itr.hasNext(); i++) {
-            final String part = itr.next().toString();
-            sb.append(part);
-
-            // This means we aren't in the home nor in the reserved
-            // directory path (stor, public, jobs, etc)
-            if (i > 1) {
-                putDirectory(sb.toString(), headers);
-            }
-
-            if (itr.hasNext()) {
-                sb.append(SEPARATOR);
-            }
+        final Integer skipDepth = config.getSkipDirectoryDepth();
+        final RecursiveDirectoryCreationStrategy directoryCreationStrategy;
+        if (skipDepth != null && 0 < skipDepth) {
+            RecursiveDirectoryCreationStrategy.createWithSkipDepth(this, rawPath, headers, skipDepth);
+        } else {
+            RecursiveDirectoryCreationStrategy.createCompletely(this, rawPath, headers);
         }
     }
 

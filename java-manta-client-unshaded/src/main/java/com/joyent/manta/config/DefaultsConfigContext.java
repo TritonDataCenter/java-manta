@@ -218,6 +218,11 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Integer getSkipDirectoryDepth() {
+        return null;
+    }
+
+    @Override
     public Boolean isClientEncryptionEnabled() {
         return false;
     }
