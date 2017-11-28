@@ -101,6 +101,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Boolean verifyUploads;
 
     /**
+     * Number of directories to assume exist when recursively creating directories.
+     */
+    private Integer skipDirectoryDepth;
+
+    /**
      * Number of bytes to read into memory for a streaming upload before
      * deciding if we want to load it in memory before send it.
      */
@@ -258,6 +263,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Integer getSkipDirectoryDepth() {
+        return this.skipDirectoryDepth;
+    }
+
+    @Override
     public Integer getUploadBufferSize() {
         return uploadBufferSize;
     }
@@ -397,6 +407,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.uploadBufferSize = context.getUploadBufferSize();
         }
 
+        if (context.getSkipDirectoryDepth() != null) {
+            this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
@@ -495,6 +509,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.uploadBufferSize == null) {
             this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (this.skipDirectoryDepth == null) {
+            this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -667,6 +685,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setSkipDirectoryDepth(final Integer depth) {
+        this.skipDirectoryDepth = depth;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
 
@@ -753,6 +778,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
+                && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
@@ -769,6 +795,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, tcpSocketTimeout,
                 verifyUploads, uploadBufferSize,
+                skipDirectoryDepth,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
