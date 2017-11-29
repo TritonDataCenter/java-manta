@@ -193,7 +193,7 @@ public class MantaClientDirectoriesIT {
 
     private void directorySkipping(final boolean settingCorrectDepth) throws IOException {
         final int parentAddedDepth = RandomUtils.nextInt(1, 5);
-        final int childAddedDepth = RandomUtils.nextInt(1, 5);
+        final int childAddedDepth = RandomUtils.nextInt(2, 5); // child depth of 1 would trigger parts.length <= skipDepth early exit
 
         final StringBuilder parentDirBuilder = new StringBuilder(testPathPrefix);
         for (int i = 0; i < parentAddedDepth; i++) {
