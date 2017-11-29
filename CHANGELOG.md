@@ -2,7 +2,14 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.x]
+## [3.1.7] - 2017-11-29
+### Added
+ - [Recursive directory creation](https://github.com/joyent/java-manta/issues/371)
+    can now attempt to skip a configurable number of levels in order to avoid redundant `PUT` requests. See
+    `manta.skip_directory_depth` / `MANTA_SKIP_DIRECTORY_DEPTH` in the configuration documentation for an explanation
+    of how the optimization can be enabled.
+
+## [3.1.6] - 2017-08-15
 ### Fixed
  - Potential file corruption caused by automatic retries as a result of
    [503 responses](https://github.com/joyent/java-manta/issues/295)
