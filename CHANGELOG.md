@@ -2,7 +2,17 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.2.1-SNAPSHOT] - Coming soon!
+## [3.2.2-SNAPSHOT] - Coming soon!
+
+## [3.2.1] - 2017-11-29
+### Added
+ - [Load balancer IP](https://github.com/joyent/java-manta/pull/378) has been added
+   to response headers as `x-load-balancer`. The header will be injected into the response if it is not already present.
+ - Azul Systems' [Zulu JDK](https://www.azul.com/products/zulu-and-zulu-enterprise/)
+   has been [added to the Travis-CI test matrix](https://github.com/joyent/java-manta/pull/382).
+### Fixed
+ - [Signing of URLs which need to be encoded](https://github.com/joyent/java-manta/issues/379) has been fixed.
+ - [Java 9](https://github.com/joyent/java-manta/pull/382) compatibility improvements.
 
 ## [3.2.0] - 2017-11-03
 ### Added
