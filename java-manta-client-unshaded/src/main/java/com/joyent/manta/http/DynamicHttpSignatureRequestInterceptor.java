@@ -21,7 +21,7 @@ import java.io.IOException;
  * Request interceptor which can read potentially-changing authentication configuration from a
  * {@link AuthAwareConfigContext}.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
 class DynamicHttpSignatureRequestInterceptor implements HttpRequestInterceptor {

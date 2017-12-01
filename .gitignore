@@ -99,3 +99,6 @@ release.properties
 dependency-reduced-pom.xml
 
 **/test-output
+
+### macOS ###
+.DS_Store

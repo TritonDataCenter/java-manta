@@ -214,6 +214,10 @@ public class DefaultsConfigContext implements ConfigContext {
         return DEFAULT_CONNECTION_REQUEST_TIMEOUT;
     }
 
+    public Integer getExpectContinueTimeout() {
+        return DEFAULT_EXPECT_CONTINUE_TIMEOUT;
+    }
+
     @Override
     public Boolean verifyUploads() {
         return DEFAULT_VERIFY_UPLOADS;
@@ -225,8 +229,8 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public Integer getExpectContinueTimeout() {
-        return DEFAULT_EXPECT_CONTINUE_TIMEOUT;
+    public Integer getSkipDirectoryDepth() {
+        return null;
     }
 
     @Override

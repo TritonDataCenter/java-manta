@@ -22,82 +22,82 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * Manta service endpoint.
      */
-    private String mantaURL;
+    private volatile String mantaURL;
 
     /**
      * Account associated with the Manta service.
      */
-    private String account;
+    private volatile String account;
 
     /**
      * RSA key fingerprint of the private key used to access Manta.
      */
-    private String mantaKeyId;
+    private volatile String mantaKeyId;
 
     /**
      * Path on the filesystem to the private RSA key used to access Manta.
      */
-    private String mantaKeyPath;
+    private volatile String mantaKeyPath;
 
     /**
      * General connection timeout for the Manta service.
      */
-    private Integer timeout;
+    private volatile Integer timeout;
 
     /**
      * Number of times to retry failed requests.
      */
-    private Integer retries;
+    private volatile Integer retries;
 
     /**
      * The maximum number of open connections to the Manta API.
      */
-    private Integer maxConnections;
+    private volatile Integer maxConnections;
 
     /**
      * Private key content. This shouldn't be set if the MantaKeyPath is set.
      */
-    private String privateKeyContent;
+    private volatile String privateKeyContent;
 
     /**
      * Optional password for private key.
      */
-    private String password;
+    private volatile String password;
 
     /**
      * Size of buffer in bytes to use to buffer streams of HTTP data.
      */
-    private Integer httpBufferSize;
+    private volatile Integer httpBufferSize;
 
     /**
      * Comma delimited list of supported TLS protocols.
      */
-    private String httpsProtocols;
+    private volatile String httpsProtocols;
 
     /**
      * Comma delimited list of supported TLS ciphers.
      */
-    private String httpsCipherSuites;
+    private volatile String httpsCipherSuites;
 
     /**
      * Flag indicating if HTTP signatures are turned off.
      */
-    private Boolean noAuth;
+    private volatile Boolean noAuth;
 
     /**
      * Flag indicating if HTTP signature native code generation is turned off.
      */
-    private Boolean disableNativeSignatures;
+    private volatile Boolean disableNativeSignatures;
 
     /**
      * Time in milliseconds to cache HTTP signature headers.
      */
-    private Integer tcpSocketTimeout;
+    private volatile Integer tcpSocketTimeout;
 
     /**
      * Time in milliseconds to wait for a connection from the connection pool.
      */
-    private Integer connectionRequestTimeout;
+    private volatile Integer connectionRequestTimeout;
 
     /**
      * When not null, time in milliseconds to wait for a 100-continue response.
@@ -108,58 +108,63 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Flag indicating if we verify the uploaded file's checksum against the
      * server's checksum (MD5).
      */
-    private Boolean verifyUploads;
+    private volatile Boolean verifyUploads;
+
+    /**
+     * Number of directories to assume exist when recursively creating directories.
+     */
+    private Integer skipDirectoryDepth;
 
     /**
      * Number of bytes to read into memory for a streaming upload before
      * deciding if we want to load it in memory before send it.
      */
-    private Integer uploadBufferSize;
+    private volatile Integer uploadBufferSize;
 
     /**
      * Flag indicating when client-side encryption is enabled.
      */
-    private Boolean clientEncryptionEnabled;
+    private volatile Boolean clientEncryptionEnabled;
 
     /**
      * The unique identifier of the key used for encryption.
      */
-    private String encryptionKeyId;
+    private volatile String encryptionKeyId;
 
     /**
      * The client encryption algorithm name in the format of
      * <code>cipher/mode/padding state</code>.
      */
-    private String encryptionAlgorithm;
+    private volatile String encryptionAlgorithm;
 
     /**
      * Flag indicating when downloading unencrypted files is allowed in
      * encryption mode.
      */
-    private Boolean permitUnencryptedDownloads;
+    private volatile Boolean permitUnencryptedDownloads;
 
     /**
      * Enum specifying if we are in strict ciphertext authentication mode or not.
      */
-    private EncryptionAuthenticationMode encryptionAuthenticationMode;
+    private volatile EncryptionAuthenticationMode encryptionAuthenticationMode;
 
     /**
      * Path to the private encryption key on the filesystem (can't be used if
      * private key bytes is not null).
      */
-    private String encryptionPrivateKeyPath;
+    private volatile String encryptionPrivateKeyPath;
 
     /**
      * Private encryption key data (can't be used if private key path is not null).
      */
-    private byte[] encryptionPrivateKeyBytes;
+    private volatile byte[] encryptionPrivateKeyBytes;
 
     /**
      * Flag indicating the the mantaKeyPath has been set only by the defaults.
      * True = set by defaults.
      * False = overwritten by non-defaults.
      */
-    private boolean mantaKeyPathSetOnlyByDefaults = false;
+    private volatile boolean mantaKeyPathSetOnlyByDefaults = false;
 
     /** Singleton instance of default configuration for easy reference. */
     public static final ConfigContext DEFAULT_CONFIG =
@@ -270,6 +275,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public Boolean verifyUploads() {
         return verifyUploads;
+    }
+
+    @Override
+    public Integer getSkipDirectoryDepth() {
+        return this.skipDirectoryDepth;
     }
 
     @Override
@@ -420,6 +430,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.uploadBufferSize = context.getUploadBufferSize();
         }
 
+        if (context.getSkipDirectoryDepth() != null) {
+            this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
@@ -526,6 +540,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.uploadBufferSize == null) {
             this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (this.skipDirectoryDepth == null) {
+            this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -712,6 +730,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setSkipDirectoryDepth(final Integer depth) {
+        this.skipDirectoryDepth = depth;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
 
@@ -800,6 +825,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(expectContinueTimeout, that.expectContinueTimeout)
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
+                && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
@@ -816,6 +842,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
+                skipDirectoryDepth,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,

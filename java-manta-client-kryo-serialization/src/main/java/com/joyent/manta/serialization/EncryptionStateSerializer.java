@@ -21,7 +21,7 @@ import com.joyent.manta.client.multipart.MultipartOutputStream;
 import com.joyent.manta.util.HmacOutputStream;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.jcajce.io.CipherOutputStream;
-import org.objenesis.instantiator.sun.MagicInstantiator;
+import org.objenesis.instantiator.sun.UnsafeFactoryInstantiator;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -72,7 +72,7 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
      */
     private void registerClasses(final Kryo kryo) {
         kryo.register(EncryptionContext.class)
-                .setInstantiator(new MagicInstantiator<>(EncryptionContext.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(EncryptionContext.class));
         kryo.register(SupportedCipherDetails.class, new SupportedCipherDetailsSerializer());
         kryo.register(AesCtrCipherDetails.class, new SupportedCipherDetailsSerializer());
         kryo.register(AesCbcCipherDetails.class, new SupportedCipherDetailsSerializer());
@@ -85,9 +85,9 @@ public class EncryptionStateSerializer extends AbstractManualSerializer<Encrypti
                 "CloseShieldOutputStream reference must not be null");
 
         kryo.register(closeShieldStreamClass)
-                .setInstantiator(new MagicInstantiator<>(closeShieldStreamClass));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(closeShieldStreamClass));
         kryo.register(CipherOutputStream.class)
-                .setInstantiator(new MagicInstantiator<>(CipherOutputStream.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(CipherOutputStream.class));
     }
 
     /**

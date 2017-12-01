@@ -13,7 +13,7 @@ import java.security.NoSuchAlgorithmException;
 /**
  * Class for constructing AesCipherDetails which may or may not be useable in the current runtime.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  */
 public final class AesCipherDetailsFactory {
 

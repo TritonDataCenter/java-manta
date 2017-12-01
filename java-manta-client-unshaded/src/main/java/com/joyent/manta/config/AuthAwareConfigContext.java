@@ -25,7 +25,7 @@ import java.util.Objects;
  * As far as users are concerned, this class is just as thread-safe as every other {@link ConfigContext} (i.e. generally
  * not) but we're using a private object as a lock in order to at least synchronize reloads and field updates.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
 public class AuthAwareConfigContext

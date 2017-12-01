@@ -2,7 +2,23 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.7-SNAPSHOT] - Coming soon!
+## [3.2.2-SNAPSHOT] - Coming soon!
+
+## [3.2.1] - 2017-11-29
+### Added
+ - [Load balancer IP](https://github.com/joyent/java-manta/pull/378) has been added
+   to response headers as `x-load-balancer`. The header will be injected into the response if it is not already present.
+ - Azul Systems' [Zulu JDK](https://www.azul.com/products/zulu-and-zulu-enterprise/)
+   has been [added to the Travis-CI test matrix](https://github.com/joyent/java-manta/pull/382).
+ - [Recursive directory creation](https://github.com/joyent/java-manta/issues/371)
+   can now attempt to skip a configurable number of levels in order to avoid redundant `PUT` requests. See
+   `manta.skip_directory_depth` / `MANTA_SKIP_DIRECTORY_DEPTH` in the configuration documentation for an explanation
+   of how the optimization can be enabled.
+### Fixed
+ - [Signing of URLs which need to be encoded](https://github.com/joyent/java-manta/issues/379) has been fixed.
+ - [Java 9](https://github.com/joyent/java-manta/pull/382) compatibility improvements.
+
+## [3.2.0] - 2017-11-03
 ### Added
  - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87).
  - Support for reading content-type and content-md5 header information from 

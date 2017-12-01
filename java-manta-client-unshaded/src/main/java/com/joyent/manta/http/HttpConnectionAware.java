@@ -10,7 +10,7 @@ package com.joyent.manta.http;
 /**
  * Interface indicating a class has access to a {@link MantaConnectionContext}.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
 interface HttpConnectionAware {

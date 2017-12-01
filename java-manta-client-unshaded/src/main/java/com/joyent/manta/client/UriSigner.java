@@ -72,10 +72,8 @@ public class UriSigner {
         Validate.notNull(method, "Method must not be null");
         Validate.notNull(uri, "URI must not be null");
 
-        if (uri.getQuery() != null) {
-            Validate.isTrue(StringUtils.isEmpty(uri.getQuery()),
-                    "Query must be null or empty. URI: %s", uri);
-        }
+        Validate.isTrue(StringUtils.isEmpty(uri.getQuery()),
+                "Query must be null or empty. URI: %s", uri);
 
         final ThreadLocalSigner signer = authConfig.getSigner();
 
@@ -91,7 +89,7 @@ public class UriSigner {
         StringBuilder sigText = new StringBuilder();
         sigText.append(method).append(StringUtils.LF)
                 .append(uri.getHost()).append(StringUtils.LF)
-                .append(uri.getPath()).append(StringUtils.LF)
+                .append(uri.getRawPath()).append(StringUtils.LF)
                 .append("algorithm=").append(algorithm).append("&")
                 .append("expires=").append(expires).append("&")
                 .append("keyId=").append(keyIdEncoded);

@@ -19,17 +19,20 @@
             </run>
         </groups>
         <packages>
-            <package name="com.joyent.manta.client.*" />
+            <package name="com.joyent.manta.client.*">
+                <exclude name="com.joyent.manta.client.jobs"/>
+            </package>
             <package name="com.joyent.manta.client.multipart.*" />
         </packages>
     </test>
-
     <!-- We run many of the integration tests over again using client-side encryption -->
     <test name="Manta Client Integration Tests [AES128/CTR Encrypted]">
         <parameter name="usingEncryption" value="true"/>
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <packages>
-            <package name="com.joyent.manta.client.*" />
+            <package name="com.joyent.manta.client.*">
+                <exclude name="com.joyent.manta.client.jobs"/>
+            </package>
             <package name="com.joyent.manta.client.multipart.*" />
         </packages>
     </test>
@@ -37,14 +40,18 @@
         <parameter name="usingEncryption" value="true"/>
         <parameter name="encryptionCipher" value="AES128/GCM/NoPadding"/>
         <packages>
-            <package name="com.joyent.manta.client.*" />
+            <package name="com.joyent.manta.client.*">
+                <exclude name="com.joyent.manta.client.jobs"/>
+            </package>
         </packages>
     </test>
     <test name="Manta Client Integration Tests [AES128/CBC Encrypted]">
         <parameter name="usingEncryption" value="true"/>
         <parameter name="encryptionCipher" value="AES128/CBC/PKCS5Padding"/>
         <packages>
-            <package name="com.joyent.manta.client.*" />
+            <package name="com.joyent.manta.client.*">
+                <exclude name="com.joyent.manta.client.jobs"/>
+            </package>
         </packages>
     </test>
 
