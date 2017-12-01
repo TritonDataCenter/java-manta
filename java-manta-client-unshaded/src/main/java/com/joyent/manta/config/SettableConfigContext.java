@@ -145,6 +145,16 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setConnectionRequestTimeout(Integer connectionRequestTimeout);
 
     /**
+     * Sets the request body Expect behavior. When enabled we will include a header with requests and wait for the
+     * designated time before sending the request body. The amount of time to wait is bounded as suggested by
+     * RFC 2616.
+     *
+     * @param expectContinueTimeout non-null values indicate the expect wait timeout, null disables the Expect header
+     * @return the current instance of {@link T}
+     */
+    T setExpectContinueTimeout(Integer expectContinueTimeout);
+
+    /**
      * Sets if we verify the uploaded file's checksum against the server's
      * checksum (MD5).
      *

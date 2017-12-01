@@ -119,6 +119,11 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getConnectionRequestTimeout();
 
     /**
+     * @return null or the number of milliseconds to wait for a 100-continue
+     */
+    Integer getExpectContinueTimeout();
+
+    /**
      * @return true when we verify the uploaded file's checksum against the
      *         server's checksum (MD5)
      */
@@ -277,6 +282,10 @@ public interface ConfigContext extends MantaMBeanable {
 
         if (config.getConnectionRequestTimeout() != null && config.getConnectionRequestTimeout() < 0) {
             failureMessages.add("Manta connection request timeout must be 0 or greater");
+        }
+
+        if (config.getExpectContinueTimeout() != null && config.getExpectContinueTimeout() < 1) {
+            failureMessages.add("Manta Expect 100-continue timeout must be 1 or greater");
         }
 
         final boolean authenticationEnabled = BooleanUtils.isNotTrue(config.noAuth());
@@ -494,6 +503,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:
                 return config.getConnectionRequestTimeout();
+            case MapConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY:
+                return config.getExpectContinueTimeout();
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();

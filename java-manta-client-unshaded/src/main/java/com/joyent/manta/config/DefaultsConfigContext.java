@@ -103,6 +103,13 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 1000;
 
     /**
+     * We do not use the Expect header to await a 100-continue response by default. Users enabling this value should
+     * consider starting with 3000 ms as defined in
+     * {@link org.apache.http.protocol.HttpRequestExecutor#DEFAULT_WAIT_FOR_CONTINUE}.
+     */
+    public static final Integer DEFAULT_EXPECT_CONTINUE_TIMEOUT = null;
+
+    /**
      * Default size of pre-streaming upload buffer (16K).
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
@@ -205,6 +212,10 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getConnectionRequestTimeout() {
         return DEFAULT_CONNECTION_REQUEST_TIMEOUT;
+    }
+
+    public Integer getExpectContinueTimeout() {
+        return DEFAULT_EXPECT_CONTINUE_TIMEOUT;
     }
 
     @Override
