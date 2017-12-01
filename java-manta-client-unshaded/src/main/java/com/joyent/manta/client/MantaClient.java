@@ -790,9 +790,9 @@ public class MantaClient implements AutoCloseable {
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                         itr, additionalCharacteristics), false);
 
-        Stream<MantaObject> stream = backingStream.map(MantaObjectConversionFunction.INSTANCE);
-
-        stream.onClose(itr::close);
+        Stream<MantaObject> stream = backingStream
+            .map(MantaObjectConversionFunction.INSTANCE)
+            .onClose(itr::close);
 
         danglingStreams.add(stream);
 
