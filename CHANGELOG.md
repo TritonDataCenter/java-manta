@@ -14,6 +14,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    can now attempt to skip a configurable number of levels in order to avoid redundant `PUT` requests. See
    `manta.skip_directory_depth` / `MANTA_SKIP_DIRECTORY_DEPTH` in the configuration documentation for an explanation
    of how the optimization can be enabled.
+ - `Expect: 100-continue` header [can now be set](https://github.com/joyent/java-manta/issues/314)
+   by configuring a timeout value for `manta.expect_continue_timeout` / `MANTA_EXPECT_CONTINUE_TIMEOUT`.
 ### Fixed
  - [Signing of URLs which need to be encoded](https://github.com/joyent/java-manta/issues/379) has been fixed.
  - [Java 9](https://github.com/joyent/java-manta/pull/382) compatibility improvements.
