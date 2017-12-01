@@ -714,7 +714,8 @@ public class MantaClient implements AutoCloseable {
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                         itr, Spliterator.ORDERED | Spliterator.NONNULL), false);
 
-        Stream<MantaObject> stream = backingStream.map(item -> {
+        Stream<MantaObject> stream = backingStream.onClose(itr::close)
+                .map(item -> {
             String name = Objects.toString(item.get("name"));
             String mtime = Objects.toString(item.get("mtime"));
             String type = Objects.toString(item.get("type"));
