@@ -9,6 +9,10 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.http.MantaConnectionFactoryConfigurator;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -21,6 +25,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * Tests the proper functioning of the dynamically paging iterator.
@@ -29,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MantaDirectoryListingIteratorIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
+
+    private ConfigContext config;
 
     private MantaClient mantaClient;
 
@@ -39,7 +46,7 @@ public class MantaDirectoryListingIteratorIT {
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
@@ -209,4 +216,25 @@ public class MantaDirectoryListingIteratorIT {
         String dir = String.format("%s/%s/%s", testPathPrefix, UUID.randomUUID(), "- -!@#$%^&*()");
         listDirectoryUsingSmallPagingSize(dir);
     }
+
+    @Test
+    public void doesNotLeakConnections() throws IOException {
+        // BasicHttpClientConnectionManager maintains a single connection
+        final HttpClientConnectionManager mngr = new BasicHttpClientConnectionManager();
+        final HttpClientBuilder builder = HttpClientBuilder.create()
+                .setConnectionManager(mngr)
+                .setConnectionManagerShared(false);
+        final MantaConnectionFactoryConfigurator conn = new MantaConnectionFactoryConfigurator(builder);
+
+        final MantaClient singleConnClient = new MantaClient(config, conn);
+
+        final Stream<MantaObject> firstAccountListing = singleConnClient.listObjects(config.getMantaHomeDirectory());
+        firstAccountListing.close();
+
+        final Stream<MantaObject> secondAccountListing = singleConnClient.listObjects(config.getMantaHomeDirectory());
+        secondAccountListing.close();
+
+        Assert.assertTrue(true);
+    }
+
 }
