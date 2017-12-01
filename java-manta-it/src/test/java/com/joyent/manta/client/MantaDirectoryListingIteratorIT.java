@@ -9,10 +9,6 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.http.MantaConnectionFactoryConfigurator;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -25,7 +21,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * Tests the proper functioning of the dynamically paging iterator.
@@ -216,25 +211,4 @@ public class MantaDirectoryListingIteratorIT {
         String dir = String.format("%s/%s/%s", testPathPrefix, UUID.randomUUID(), "- -!@#$%^&*()");
         listDirectoryUsingSmallPagingSize(dir);
     }
-
-    @Test
-    public void doesNotLeakConnections() throws IOException {
-        // BasicHttpClientConnectionManager maintains a single connection
-        final HttpClientConnectionManager mngr = new BasicHttpClientConnectionManager();
-        final HttpClientBuilder builder = HttpClientBuilder.create()
-                .setConnectionManager(mngr)
-                .setConnectionManagerShared(false);
-        final MantaConnectionFactoryConfigurator conn = new MantaConnectionFactoryConfigurator(builder);
-
-        final MantaClient singleConnClient = new MantaClient(config, conn);
-
-        final Stream<MantaObject> firstAccountListing = singleConnClient.listObjects(config.getMantaHomeDirectory());
-        firstAccountListing.close();
-
-        final Stream<MantaObject> secondAccountListing = singleConnClient.listObjects(config.getMantaHomeDirectory());
-        secondAccountListing.close();
-
-        Assert.assertTrue(true);
-    }
-
 }

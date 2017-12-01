@@ -33,6 +33,10 @@ public class TestConfigContext extends BaseChainedConfigContext {
 
     public TestConfigContext() {
         super(new StandardConfigContext()
+                .setMaximumConnections(DEFAULT_CONFIG.getMaximumConnections())
+                .setRetries(DEFAULT_CONFIG.getRetries())
+                .setHttpsProtocols(DEFAULT_CONFIG.getHttpsProtocols())
+                .setHttpsCipherSuites(DEFAULT_CONFIG.getHttpsCipherSuites())
                 .setMantaURL("http://localhost")
                 .setMantaUser("username")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
