@@ -18,7 +18,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    by configuring a timeout value for `manta.expect_continue_timeout` / `MANTA_EXPECT_CONTINUE_TIMEOUT`.
 ### Fixed
  - [Signing of URLs which need to be encoded](https://github.com/joyent/java-manta/issues/379) has been fixed.
- - [Java 9](https://github.com/joyent/java-manta/pull/382) compatibility improvements.
+ - Java 9 [compatibility improvements](https://github.com/joyent/java-manta/pull/382).
+ - `MantaClient#listObjects` [potentially leaking connections](https://github.com/joyent/java-manta/pull/385).
 
 ## [3.2.0] - 2017-11-03
 ### Added
