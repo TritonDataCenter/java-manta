@@ -4,7 +4,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.2.2-SNAPSHOT] - Coming soon!
 
-## [3.2.1] - 2017-11-29
+## [3.2.1] - 2017-12-01
 ### Added
  - [Load balancer IP](https://github.com/joyent/java-manta/pull/378) has been added
    to response headers as `x-load-balancer`. The header will be injected into the response if it is not already present.
