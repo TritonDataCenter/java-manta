@@ -214,6 +214,7 @@ public class DefaultsConfigContext implements ConfigContext {
         return DEFAULT_CONNECTION_REQUEST_TIMEOUT;
     }
 
+    @Override
     public Integer getExpectContinueTimeout() {
         return DEFAULT_EXPECT_CONTINUE_TIMEOUT;
     }
