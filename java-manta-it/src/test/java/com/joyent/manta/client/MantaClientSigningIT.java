@@ -10,6 +10,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpStatus;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -22,12 +23,14 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Tests the functionality of signing private Manta URLs for public access.
@@ -53,7 +56,7 @@ public class MantaClientSigningIT {
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, null);
+        mantaClient.putDirectory(testPathPrefix, true);
     }
 
     @AfterClass
@@ -155,7 +158,7 @@ public class MantaClientSigningIT {
         connection.connect();
 
         try (OutputStreamWriter out = new OutputStreamWriter(
-                connection.getOutputStream(), StandardCharsets.UTF_8)) {
+                connection.getOutputStream(), UTF_8)) {
             out.write(TEST_DATA);
         } finally {
             connection.disconnect();
@@ -219,6 +222,27 @@ public class MantaClientSigningIT {
             Assert.assertEquals(headers.get("Server").get(0), "Manta");
         } finally {
             connection.disconnect();
+        }
+    }
+
+    @Test
+    public final void testCanCreateSignedURIWithEncodedCharacters() throws IOException {
+        final String path = testPathPrefix + "⛰ quack 🦆";
+
+        mantaClient.put(path, TEST_DATA, UTF_8);
+        Assert.assertEquals(mantaClient.getAsString(path), TEST_DATA);
+
+        final URI uri = mantaClient.getAsSignedURI(path, "GET", Instant.now().plus(Duration.ofHours(1)));
+        final HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
+
+        try (final InputStream is = conn.getInputStream()) {
+            conn.setReadTimeout(3000);
+            conn.connect();
+
+            Assert.assertEquals(conn.getResponseCode(), HttpStatus.SC_OK);
+            Assert.assertEquals(IOUtils.toString(is, UTF_8), TEST_DATA);
+        } finally {
+            conn.disconnect();
         }
     }
 }

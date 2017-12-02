@@ -262,6 +262,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
     @Override
     public void close() {
+        finished.set(true);
         IOUtils.closeQuietly(br);
         IOUtils.closeQuietly(currentResponse);
     }

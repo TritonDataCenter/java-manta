@@ -119,6 +119,11 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getConnectionRequestTimeout();
 
     /**
+     * @return null or the number of milliseconds to wait for a 100-continue
+     */
+    Integer getExpectContinueTimeout();
+
+    /**
      * @return true when we verify the uploaded file's checksum against the
      *         server's checksum (MD5)
      */
@@ -129,6 +134,11 @@ public interface ConfigContext extends MantaMBeanable {
      *         deciding if we want to load it in memory before send it
      */
     Integer getUploadBufferSize();
+
+    /**
+     * @return number of directories of depth to assume would exist when creating directories
+     */
+    Integer getSkipDirectoryDepth();
 
     /**
      * @return true when client-side encryption is enabled.
@@ -218,6 +228,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", connectionRequestTimeout=").append(context.getConnectionRequestTimeout());
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
+        sb.append(", skipDirectoryDepth=").append(context.getSkipDirectoryDepth());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -273,6 +284,10 @@ public interface ConfigContext extends MantaMBeanable {
             failureMessages.add("Manta connection request timeout must be 0 or greater");
         }
 
+        if (config.getExpectContinueTimeout() != null && config.getExpectContinueTimeout() < 1) {
+            failureMessages.add("Manta Expect 100-continue timeout must be 1 or greater");
+        }
+
         final boolean authenticationEnabled = BooleanUtils.isNotTrue(config.noAuth());
 
         if (authenticationEnabled) {
@@ -292,6 +307,10 @@ public interface ConfigContext extends MantaMBeanable {
             if (config.getPrivateKeyContent() != null && StringUtils.isBlank(config.getPrivateKeyContent())) {
                 failureMessages.add("Manta private key content must not be blank");
             }
+        }
+
+        if (config.getSkipDirectoryDepth() != null && config.getSkipDirectoryDepth() < 0) {
+            failureMessages.add("Manta skip directory depth must be 0 or greater");
         }
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
@@ -484,6 +503,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:
                 return config.getConnectionRequestTimeout();
+            case MapConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY:
+                return config.getExpectContinueTimeout();
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();
@@ -493,6 +515,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
             case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
                 return config.getUploadBufferSize();
+            case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
+                return config.getSkipDirectoryDepth();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();

@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MantaDirectoryListingIteratorIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
+    private ConfigContext config;
+
     private MantaClient mantaClient;
 
     private String testPathPrefix;

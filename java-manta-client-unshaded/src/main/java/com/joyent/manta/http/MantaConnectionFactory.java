@@ -263,12 +263,23 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 config.getConnectionRequestTimeout(),
                 DefaultsConfigContext.DEFAULT_CONNECTION_REQUEST_TIMEOUT);
 
+        final Integer expectContinueTimeout = config.getExpectContinueTimeout();
+        final boolean expectContinueEnabled = expectContinueTimeout != null;
+
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
                 .setSocketTimeout(timeout)
                 .setConnectionRequestTimeout(connectionRequestTimeout)
                 .setContentCompressionEnabled(true)
+                .setExpectContinueEnabled(expectContinueEnabled)
                 .build();
+
+        final MantaHttpRequestExecutor requestExecutor;
+        if (expectContinueTimeout != null) {
+            requestExecutor = new MantaHttpRequestExecutor(expectContinueTimeout);
+        } else {
+            requestExecutor = new MantaHttpRequestExecutor();
+        }
 
         final HttpClientBuilder builder = HttpClients.custom()
                 .disableAuthCaching()
@@ -279,7 +290,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManagerShared(false)
-                .setRequestExecutor(new MantaHttpRequestExecutor())
+                .setRequestExecutor(requestExecutor)
                 .setConnectionBackoffStrategy(new DefaultBackoffStrategy());
 
         final HttpHost proxyHost = findProxyServer();

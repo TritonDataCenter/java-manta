@@ -145,6 +145,16 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setConnectionRequestTimeout(Integer connectionRequestTimeout);
 
     /**
+     * Sets the request body Expect behavior. When enabled we will include a header with requests and wait for the
+     * designated time before sending the request body. The amount of time to wait is bounded as suggested by
+     * RFC 2616.
+     *
+     * @param expectContinueTimeout non-null values indicate the expect wait timeout, null disables the Expect header
+     * @return the current instance of {@link T}
+     */
+    T setExpectContinueTimeout(Integer expectContinueTimeout);
+
+    /**
      * Sets if we verify the uploaded file's checksum against the server's
      * checksum (MD5).
      *
@@ -161,6 +171,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @return the current instance of {@link T}
      */
     T setUploadBufferSize(Integer size);
+
+    /**
+     * Sets the number of directories to be assumed to exist when creating directories recursively.
+     *
+     * @param depth directory depth to assume exists
+     * @return the current instance of {@link T}
+     */
+    T setSkipDirectoryDepth(Integer depth);
 
     /**
      * Sets flag indicating when client-side encryption is enabled.
@@ -298,6 +316,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
                 config.setTcpSocketTimeout(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
+            case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
+                config.setUploadBufferSize(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
+                config.setSkipDirectoryDepth(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:

@@ -2,7 +2,24 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.2.1-SNAPSHOT] - Coming soon!
+## [3.2.2-SNAPSHOT] - Coming soon!
+
+## [3.2.1] - 2017-12-01
+### Added
+ - [Load balancer IP](https://github.com/joyent/java-manta/pull/378) has been added
+   to response headers as `x-load-balancer`. The header will be injected into the response if it is not already present.
+ - Azul Systems' [Zulu JDK](https://www.azul.com/products/zulu-and-zulu-enterprise/)
+   has been [added to the Travis-CI test matrix](https://github.com/joyent/java-manta/pull/382).
+ - [Recursive directory creation](https://github.com/joyent/java-manta/issues/371)
+   can now attempt to skip a configurable number of levels in order to avoid redundant `PUT` requests. See
+   `manta.skip_directory_depth` / `MANTA_SKIP_DIRECTORY_DEPTH` in the configuration documentation for an explanation
+   of how the optimization can be enabled.
+ - `Expect: 100-continue` header [can now be set](https://github.com/joyent/java-manta/issues/314)
+   by configuring a timeout value for `manta.expect_continue_timeout` / `MANTA_EXPECT_CONTINUE_TIMEOUT`.
+### Fixed
+ - [Signing of URLs which need to be encoded](https://github.com/joyent/java-manta/issues/379) has been fixed.
+ - Java 9 [compatibility improvements](https://github.com/joyent/java-manta/pull/382).
+ - `MantaClient#listObjects` [potentially leaking connections](https://github.com/joyent/java-manta/pull/385).
 
 ## [3.2.0] - 2017-11-03
 ### Added

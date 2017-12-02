@@ -100,10 +100,20 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Integer connectionRequestTimeout;
 
     /**
+     * When not null, time in milliseconds to wait for a 100-continue response.
+     */
+    private Integer expectContinueTimeout;
+
+    /**
      * Flag indicating if we verify the uploaded file's checksum against the
      * server's checksum (MD5).
      */
     private volatile Boolean verifyUploads;
+
+    /**
+     * Number of directories to assume exist when recursively creating directories.
+     */
+    private Integer skipDirectoryDepth;
 
     /**
      * Number of bytes to read into memory for a streaming upload before
@@ -258,8 +268,18 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Integer getExpectContinueTimeout() {
+        return expectContinueTimeout;
+    }
+
+    @Override
     public Boolean verifyUploads() {
         return verifyUploads;
+    }
+
+    @Override
+    public Integer getSkipDirectoryDepth() {
+        return this.skipDirectoryDepth;
     }
 
     @Override
@@ -398,12 +418,20 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.connectionRequestTimeout = context.getConnectionRequestTimeout();
         }
 
+        if (context.getExpectContinueTimeout() != null) {
+            this.expectContinueTimeout = context.getExpectContinueTimeout();
+        }
+
         if (context.verifyUploads() != null) {
             this.verifyUploads = context.verifyUploads();
         }
 
         if (context.getUploadBufferSize() != null) {
             this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (context.getSkipDirectoryDepth() != null) {
+            this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
         if (context.isClientEncryptionEnabled() != null) {
@@ -502,12 +530,20 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.connectionRequestTimeout = context.getConnectionRequestTimeout();
         }
 
+        if (this.expectContinueTimeout == null) {
+            this.expectContinueTimeout = context.getExpectContinueTimeout();
+        }
+
         if (this.verifyUploads == null) {
             this.verifyUploads = context.verifyUploads();
         }
 
         if (this.uploadBufferSize == null) {
             this.uploadBufferSize = context.getUploadBufferSize();
+        }
+
+        if (this.skipDirectoryDepth == null) {
+            this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -673,6 +709,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setExpectContinueTimeout(final Integer expectContinueTimeout) {
+        this.expectContinueTimeout = expectContinueTimeout;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setVerifyUploads(final Boolean verify) {
         this.verifyUploads = verify;
 
@@ -682,6 +725,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public BaseChainedConfigContext setUploadBufferSize(final Integer size) {
         this.uploadBufferSize = size;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setSkipDirectoryDepth(final Integer depth) {
+        this.skipDirectoryDepth = depth;
 
         return this;
     }
@@ -772,8 +822,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(connectionRequestTimeout, that.connectionRequestTimeout)
+                && Objects.equals(expectContinueTimeout, that.expectContinueTimeout)
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
+                && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
@@ -788,8 +840,9 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout,
+                disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
+                skipDirectoryDepth,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,

@@ -92,7 +92,9 @@ Below is a table of available configuration parameters followed by detailed desc
 | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) | |
 | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |                          |
 | manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |                          |
+| manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
+| manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
@@ -121,7 +123,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.no_auth` (**MANTA_NO_AUTH**)
     When set to true, this disables HTTP Signature authentication entirely. This is
     only really useful when you are running the library as part of a Manta job.
-* `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
+* `manta.disable_native_sigs` (**MANTA_NO_NATIVE_SIGS**)
     When set to true, this disables the use of native code libraries for cryptography.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
     When set to true, the client calculates a MD5 checksum of the file being uploaded
@@ -144,10 +146,23 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
 * `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
     Time in milliseconds to wait for a connection from the connection pool.
+* `manta.expect_continue_timeout` (**MANTA_EXPECT_CONTINUE_TIMEOUT**)
+    Nullable integer indicating the number of milliseconds to wait for a response from the server before
+    sending the request body. If enabled, the recommended wait time is **3000** ms based on the default defined in
+    `HttpRequestExecutor.DEFAULT_WAIT_FOR_CONTINUE`. Enabling this setting can
+    improve response latencies and error visibility when the server is under high load at the expense
+    of potentially decreased total throughput. We recommend benchmarking with different values for this option before
+    enabling it for production use.
 * `manta.upload_buffer_size` (**MANTA_UPLOAD_BUFFER_SIZE**)
     The initial amount of bytes to attempt to load into memory when uploading a stream. If the
     entirety of the stream fits within the number of bytes of this value, then the
     contents of the buffer are directly uploaded to Manta in a retryable form.
+* `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
+    Integer indicating the number of directory levels to attempt to skip when performing a recursive `putDirectory`
+    operation. Set to 0 to disable the optimization entirely. Irrelevant when the depth of the recursive `putDirectory`
+    call is less than the setting. When creating a directory with more levels than the setting, the client will attempt
+    to skip this many non-system directories from the root. Will return to normal directory creation procedure if
+    the skipped `PUT` fails or proceed creating all directories between the skip depth and the child on success.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
@@ -160,7 +175,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     Boolean indicating that unencrypted files can be downloaded when client-side
     encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
-    [EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
+    [EncryptionAuthenticationMode](/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
     enum type indicating that authenticating encryption verification is either Mandatory or Optional.
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
     The path on the local filesystem or a URI understandable by the JVM indicating the
