@@ -32,7 +32,7 @@
             <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
             <class name="com.joyent.manta.client.MantaHttpHeadersIT" />
             <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
-            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />
+            <!--<class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />-->
             <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
         </classes>
     </test>
@@ -50,7 +50,7 @@
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
 
             <!-- MPU only supports AES/CTR -->
-            <class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />
+            <!--<class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />-->
             <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT" />
             <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerSerializationIT" />
         </classes>
