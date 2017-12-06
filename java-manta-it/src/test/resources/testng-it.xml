@@ -74,10 +74,13 @@
         </classes>
     </test>
 
+    <!-- Temporarily disabling jobs tests -->
+    <!--
     <test name="Manta Job Tests">
         <classes>
             <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
             <class name="com.joyent.manta.client.jobs.MantaJobBuilderIT" />
         </classes>
     </test>
+    -->
 </suite>
