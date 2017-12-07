@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.2.2-SNAPSHOT] - Coming soon!
+### Fixed
+ - [Misleading log message is shown for retrying requests that are unretryable](https://github.com/joyent/java-manta/issues/388)
 
 ## [3.2.1] - 2017-11-29
 ### Added

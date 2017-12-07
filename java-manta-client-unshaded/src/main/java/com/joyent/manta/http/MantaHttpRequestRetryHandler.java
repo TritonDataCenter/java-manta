@@ -68,10 +68,14 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
             return false;
         }
 
-        if (logger.isDebugEnabled() && executionCount <= getRetryCount()) {
-            String msg = String.format("Request failed, %d/%d retry.",
-                    executionCount, getRetryCount());
-            logger.debug(msg, exception);
+        if (logger.isDebugEnabled()) {
+            if (NON_RETRIABLE.contains(exception)) {
+                logger.debug("Request failed, unable to retry.", exception);
+            } else if (executionCount <= getRetryCount()) {
+                String msg = String.format("Request failed, %d/%d retry.",
+                        executionCount, getRetryCount());
+                logger.debug(msg, exception);
+            }
         }
 
         return super.retryRequest(exception, executionCount, context);
