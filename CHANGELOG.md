@@ -6,6 +6,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Fixed
  - [Misleading log message is shown for retrying requests that are unretryable](https://github.com/joyent/java-manta/issues/388)
  - [`MantaClientHttpResponseException` provide to way to get the response headers](https://github.com/joyent/java-manta/issues/383)
+ - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
 
 ## [3.2.1] - 2017-12-01
 ### Added
