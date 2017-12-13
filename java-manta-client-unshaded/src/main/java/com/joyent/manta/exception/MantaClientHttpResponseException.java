@@ -168,6 +168,15 @@ public class MantaClientHttpResponseException extends MantaIOException {
         }
 
         HttpHelper.annotateContextedException(this, request, response);
+
+        /* We don't want any problems processing headers to get in the way of
+         * properly throwing an exception, so we warn if we hit any error cases
+         * instead of raise the exception. */
+        try {
+            setHeaders(new MantaHttpHeaders(response.getAllHeaders()));
+        } catch (RuntimeException e) {
+            LOGGER.warn("Error setting response headers on exception", e);
+        }
     }
 
     /**
