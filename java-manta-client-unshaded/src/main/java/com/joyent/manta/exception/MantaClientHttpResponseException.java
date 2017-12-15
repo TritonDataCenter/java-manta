@@ -174,9 +174,9 @@ public class MantaClientHttpResponseException extends MantaIOException {
          * properly throwing an exception, so we warn if we hit any error cases
          * instead of raise the exception. */
         try {
-            final Header[] headers = response.getAllHeaders();
-            if (headers != null) {
-                setHeaders(new MantaHttpHeaders(headers));
+            final Header[] responseHeaders = response.getAllHeaders();
+            if (responseHeaders != null) {
+                setHeaders(new MantaHttpHeaders(responseHeaders));
             }
         } catch (RuntimeException e) {
             LOGGER.warn("Error setting response headers on exception", e);
