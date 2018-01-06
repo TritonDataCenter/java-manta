@@ -14,7 +14,8 @@ import org.apache.commons.collections4.map.PredicatedMap;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
@@ -60,6 +61,10 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     private final PredicatedMap<String, String> innerMap;
 
+    private static final Predicate<String> PREDICATE_KEY = new HttpHeaderPredicate(true);
+
+    private static final Predicate<String> PREDICATE_VALUE = new HttpHeaderPredicate(false);
+
     /**
      * Create a new instance backed with the specified map.
      * @param m the backing map
@@ -74,8 +79,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     public MantaMetadata() {
         final Map<String, String> map = new CaseInsensitiveMap<>();
-        final Predicate<String> keyPredicate = new HttpHeaderNameKeyPredicate();
-        this.innerMap = PredicatedMap.predicatedMap(map, keyPredicate, null);
+        this.innerMap = PredicatedMap.predicatedMap(map, PREDICATE_KEY, PREDICATE_VALUE);
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -253,7 +257,15 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     /**
      * Implements the predicate used to validate header key values.
      */
-    protected static class HttpHeaderNameKeyPredicate implements Predicate<String> {
+    protected static class HttpHeaderPredicate implements Predicate<String> {
+
+        private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
+
+        private final boolean validatePrefix;
+
+        protected HttpHeaderPredicate(final boolean validatePrefix) {
+            this.validatePrefix = validatePrefix;
+        }
 
         /**
          * {@inheritDoc}
@@ -263,8 +275,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
             return object != null
                     && !object.isEmpty()
                     && !hasIllegalChars(object)
-                    && isIso88591(object)
-                    && validPrefix(object);
+                    && isAscii(object)
+                    && (!this.validatePrefix || validPrefix(object));
         }
 
         /**
@@ -273,14 +285,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          * @param input string value to be tested
          * @return true if the string is entirely iso8859-1, false otherwise.
          */
-        private boolean isIso88591(final String input) {
-            try {
-                final byte[] bytes = input.getBytes("ISO-8859-1");
-                final String result = new String(bytes, "ISO-8859-1");
-                return result.equals(input);
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException("JVM doesn't support \"ISO-8859-1\" encoding", e);
-            }
+        private boolean isAscii(final String input) {
+            return ASCII_ENCODER.canEncode(input);
         }
 
         /**
@@ -308,7 +314,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
                     return true;
                 }
 
-                for (char illegalKeyChar : ILLEGAL_KEY_CHARS) {
+                for (final char illegalKeyChar : ILLEGAL_KEY_CHARS) {
                     if (c == illegalKeyChar) {
                         return true;
                     }
