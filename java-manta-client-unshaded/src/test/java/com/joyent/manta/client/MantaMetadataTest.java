@@ -10,6 +10,9 @@ package com.joyent.manta.client;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
+
 /**
  * Unit test class that verifies the correct functioning of {@link MantaMetadata}.
  *
@@ -64,12 +67,28 @@ public class MantaMetadataTest {
 
             try {
                 instance.put(key, "world");
-            } catch (IllegalArgumentException e) {
+            } catch (final IllegalArgumentException e) {
                 caught = true;
             }
 
             Assert.assertTrue(caught, String.format("No exception thrown for char: %s", c));
         }
+    }
+
+    // Until MANTA-3527 is resolved we should prevent users from using non-ascii values for both keys
+    // and values.
+    @Test
+    public void cantAddMetadataKeyWithNonAsciiCharacters() {
+        final MantaMetadata instance = new MantaMetadata();
+        final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+
+        final char[] firstNonAsciiCharacter = Character.toChars(128);
+        final String badChar = String.format("%s", firstNonAsciiCharacter[0]);
+        Assert.assertFalse(asciiEncoder.canEncode(badChar));
+
+        Assert.expectThrows(IllegalArgumentException.class, () -> instance.put(String.format("m-%s", badChar), "value"));
+        Assert.expectThrows(IllegalArgumentException.class, () -> instance.put("m-key", badChar));
+        Assert.expectThrows(IllegalArgumentException.class, () -> instance.put(String.format("m-%s", badChar), badChar));
     }
 
     @Test
