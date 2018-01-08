@@ -43,19 +43,24 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      * Prefix required for metadata keys being stored via HTTP headers on Manta.
      */
     public static final String METADATA_PREFIX = "m-";
+
     /**
      * Prefix required for encrypted metadata keys being stored in ciphertext.
      */
     public static final String ENCRYPTED_METADATA_PREFIX = "e-";
+
     /**
      * An array of characters considered to be illegal in metadata keys.
      */
     static final char[] ILLEGAL_KEY_CHARS = "()<>@,;:</[]?={}\\ \n\t\r".toCharArray();
+
     private static final long serialVersionUID = -5828336629480323042L;
+
     /**
      * The character value of the ASCII code for a space character (decimal value 32).
      */
     private static final char ASCIICODE_32_SPACE = ' ';
+
     /**
      * The backing map data structure.
      */
