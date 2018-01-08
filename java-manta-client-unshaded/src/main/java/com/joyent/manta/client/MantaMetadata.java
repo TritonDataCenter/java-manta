@@ -276,17 +276,18 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
         private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
 
         /**
-         * Inclusion of header prefix rule (m- and e-) which is only relevant for metadata header names.
+         * Includes header prefix rule (m- and e-) which is only relevant for metadata header names and
+         * forbids null.
          */
-        private final boolean validatePrefix;
+        private final boolean keyPredicate;
 
         /**
          * Construct a header validator.
          *
-         * @param validatePrefix Whether or not to include the prefix rule.
+         * @param keyPredicate Whether or not to include the prefix rule and forbid null.
          */
-        protected HttpHeaderPredicate(final boolean validatePrefix) {
-            this.validatePrefix = validatePrefix;
+        protected HttpHeaderPredicate(final boolean keyPredicate) {
+            this.keyPredicate = keyPredicate;
         }
 
         /**
@@ -296,11 +297,16 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
         public boolean evaluate(final String object) {
             // NEXT: throw MantaIllegalMetadataException instead
 
-            return object != null
-                    && !object.isEmpty()
-                    && !hasIllegalChars(object)
-                    && isAscii(object)
-                    && (!this.validatePrefix || validPrefix(object));
+            if (keyPredicate) {
+                return object != null
+                        && !object.isEmpty()
+                        && !hasIllegalKeyChars(object)
+                        && isAscii(object)
+                        && validPrefix(object);
+            } else {
+                // delete is put(key, null) so we must permit a null value
+                return object == null || isAscii(object);
+            }
         }
 
         /**
@@ -330,7 +336,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          * @param input string value to be tested
          * @return true if the string contains illegal characters, false otherwise.
          */
-        private boolean hasIllegalChars(final String input) {
+        private boolean hasIllegalKeyChars(final String input) {
             final char[] chars = input.toCharArray();
 
             for (final char c : chars) {
