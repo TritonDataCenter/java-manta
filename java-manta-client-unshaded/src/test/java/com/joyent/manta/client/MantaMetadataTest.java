@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaIllegalMetadataException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -86,9 +87,16 @@ public class MantaMetadataTest {
         final String badChar = String.format("%s", firstNonAsciiCharacter[0]);
         Assert.assertFalse(asciiEncoder.canEncode(badChar));
 
-        Assert.expectThrows(IllegalArgumentException.class, () -> instance.put(String.format("m-%s", badChar), "value"));
-        Assert.expectThrows(IllegalArgumentException.class, () -> instance.put("m-key", badChar));
-        Assert.expectThrows(IllegalArgumentException.class, () -> instance.put(String.format("m-%s", badChar), badChar));
+        final MantaIllegalMetadataException keyEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+                instance.put(String.format("m-%s", badChar), "value"));
+        final MantaIllegalMetadataException valEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+                instance.put("m-key", badChar));
+        final MantaIllegalMetadataException bothEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+                instance.put(String.format("m-%s", badChar), badChar));
+
+        Assert.assertTrue(keyEx.getMessage().contains("ASCII"));
+        Assert.assertTrue(valEx.getMessage().contains("ASCII"));
+        Assert.assertTrue(bothEx.getMessage().contains("ASCII"));
     }
 
     @Test
