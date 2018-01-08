@@ -61,8 +61,14 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     private final PredicatedMap<String, String> innerMap;
 
+    /**
+     * Helper object for validating keys.
+     */
     private static final Predicate<String> PREDICATE_KEY = new HttpHeaderPredicate(true);
 
+    /**
+     * Helper object for validating values.
+     */
     private static final Predicate<String> PREDICATE_VALUE = new HttpHeaderPredicate(false);
 
     /**
@@ -259,10 +265,21 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     protected static class HttpHeaderPredicate implements Predicate<String> {
 
+        /**
+         * ASCII-based character set encoder to determine if the input is valid.
+         */
         private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
 
+        /**
+         * Inclusion of header prefix rule (m- and e-) which is only relevant for metadata header names.
+         */
         private final boolean validatePrefix;
 
+        /**
+         * Construct a header validator.
+         *
+         * @param validatePrefix Whether or not to include the prefix rule.
+         */
         protected HttpHeaderPredicate(final boolean validatePrefix) {
             this.validatePrefix = validatePrefix;
         }
@@ -272,6 +289,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          */
         @Override
         public boolean evaluate(final String object) {
+            // NEXT: throw specific exceptions instead?
+
             return object != null
                     && !object.isEmpty()
                     && !hasIllegalChars(object)
@@ -280,7 +299,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
         }
 
         /**
-         * Test a string for iso8859-1 character encoding.
+         * Test a string for US ASCII character encoding.
          *
          * @param input string value to be tested
          * @return true if the string is entirely iso8859-1, false otherwise.
