@@ -294,7 +294,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          */
         @Override
         public boolean evaluate(final String object) {
-            // NEXT: throw specific exceptions instead?
+            // NEXT: throw MantaIllegalMetadataException instead
 
             return object != null
                     && !object.isEmpty()
