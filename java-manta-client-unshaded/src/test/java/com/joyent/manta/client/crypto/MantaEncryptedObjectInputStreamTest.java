@@ -887,8 +887,10 @@ public class MantaEncryptedObjectInputStreamTest {
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        FileInputStream in = new FileInputStream(encryptedFile.file);
-        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
+
+        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
                 (long)this.plaintextSize);
 
@@ -900,6 +902,8 @@ public class MantaEncryptedObjectInputStreamTest {
         } finally {
             min.close();
         }
+
+        Mockito.verify(inSpy, Mockito.times(1)).close();
     }
 
     /**

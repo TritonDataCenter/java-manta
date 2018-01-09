@@ -14,7 +14,6 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
@@ -721,7 +720,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         readRemainingBytes();
 
         try {
-            IOUtils.closeQuietly(cipherInputStream);
+            cipherInputStream.close();
         } catch (Exception e) {
             LOGGER.warn("Error closing CipherInputStream", e);
         }
@@ -752,6 +751,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
                 e.setContextValue("checksum", Hex.encodeHexString(checksum));
                 throw e;
             }
+        } else {
+            super.close();
         }
     }
 

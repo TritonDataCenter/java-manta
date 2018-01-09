@@ -198,13 +198,11 @@ public class MantaClientRangeIT {
                 String rangeHeader = "bytes=" + start + "-" + end;
                 headers.setRange(rangeHeader);
 
-                MantaClient getClient = new MantaClient(this.config);
-                try (final InputStream min = getClient.getAsInputStream(path, headers)) {
+                try (final InputStream min = mantaClient.getAsInputStream(path, headers)) {
                     String actual = IOUtils.toString(min, Charset.defaultCharset());
                     System.out.println("Range: " + rangeHeader);
                     Assert.assertEquals(actual, expected, "Didn't receive correct range value for range: " + rangeHeader);
                 }
-                getClient.closeQuietly();
             }
         }
     }
