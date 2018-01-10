@@ -26,8 +26,6 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,6 +46,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -813,8 +813,10 @@ public class MantaEncryptedObjectInputStreamTest {
         final long ciphertextSize = encryptedFile.file.length();
 
         InputStream backing = new FileInputStream(encryptedFile.file);
+        final InputStream inSpy = Mockito.spy(backing);
+
         MantaEncryptedObjectInputStream in = createEncryptedObjectInputStream(
-                key, backing, ciphertextSize, cipherDetails, iv, authenticate,
+                key, inSpy, ciphertextSize, cipherDetails, iv, authenticate,
                 sourceLength);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -829,6 +831,7 @@ public class MantaEncryptedObjectInputStreamTest {
         }
 
         AssertJUnit.assertArrayEquals(sourceBytes, out.toByteArray());
+        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
     }
 
     /**
@@ -897,8 +900,9 @@ public class MantaEncryptedObjectInputStreamTest {
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        FileInputStream in = new FileInputStream(encryptedFile.file);
-        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
+        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
                 (long)this.plaintextSize);
 
@@ -911,6 +915,8 @@ public class MantaEncryptedObjectInputStreamTest {
         } finally {
             min.close();
         }
+
+        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
     }
 
     /**
@@ -1007,12 +1013,15 @@ public class MantaEncryptedObjectInputStreamTest {
             byte[] rangedBytes = new byte[(int)ciphertextByteRangeLength];
             randomAccessFile.read(rangedBytes);
 
-            try (ByteArrayInputStream bin = new ByteArrayInputStream(rangedBytes);
+            final ByteArrayInputStream bin = new ByteArrayInputStream(rangedBytes);
+            final ByteArrayInputStream binSpy = Mockito.spy(bin);
+
+            try (
                 /* When creating the fake stream, we feed it a content-length equal
                  * to the size of the byte range because that is what Manta would
                  * do. Also, we pass along the incorrect plaintext length and
                  * test how the stream handles incorrect values of plaintext length. */
-                 MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, bin,
+                 MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, binSpy,
                          ciphertextByteRangeLength, cipherDetails, encryptedFile.cipher.getIV(),
                     false, (long)this.plaintextSize,
                          initialSkipBytes,
@@ -1031,6 +1040,8 @@ public class MantaEncryptedObjectInputStreamTest {
                             new String(actual, StandardCharsets.UTF_8)));
                 }
             }
+
+            Mockito.verify(binSpy, Mockito.atLeastOnce()).close();
         }
     }
 
@@ -1041,8 +1052,9 @@ public class MantaEncryptedObjectInputStreamTest {
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        FileInputStream in = new FileInputStream(encryptedFile.file);
-        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
+        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                 authenticate, (long)this.plaintextSize);
 
@@ -1051,6 +1063,7 @@ public class MantaEncryptedObjectInputStreamTest {
             readBytes.readAll(min, actual);
         } finally {
             min.close();
+            Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
         }
     }
 
@@ -1070,8 +1083,9 @@ public class MantaEncryptedObjectInputStreamTest {
 
         boolean thrown = false;
 
-        FileInputStream in = new FileInputStream(encryptedFile.file);
-        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
+        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                 true, (long)this.plaintextSize);
 
@@ -1081,6 +1095,7 @@ public class MantaEncryptedObjectInputStreamTest {
             min.close();
         }  catch (MantaClientEncryptionCiphertextAuthenticationException e) {
             thrown = true;
+            Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
             System.out.printf(" Exception thrown: %s\n", e.getMessage());
         }
 
@@ -1096,8 +1111,10 @@ public class MantaEncryptedObjectInputStreamTest {
 
         boolean thrown = false;
 
-        try (FileInputStream fin = new FileInputStream(encryptedFile.file);
-             BoundedInputStream in = new BoundedInputStream(fin, ciphertextSizeWithoutHmac);
+        final FileInputStream fin = new FileInputStream(encryptedFile.file);
+        final FileInputStream finSpy = Mockito.spy(fin);
+
+        try (BoundedInputStream in = new BoundedInputStream(finSpy, ciphertextSizeWithoutHmac);
              MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, in,
                      ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                      true, (long)this.plaintextSize)) {
@@ -1112,6 +1129,7 @@ public class MantaEncryptedObjectInputStreamTest {
             }
         }
 
+        Mockito.verify(finSpy, Mockito.atLeastOnce()).close();
         Assert.assertTrue(thrown, "Expected MantaIOException was not thrown");
     }
 
@@ -1121,8 +1139,9 @@ public class MantaEncryptedObjectInputStreamTest {
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        try (FileInputStream fin = new FileInputStream(encryptedFile.file);
-             IncompleteByteReadInputStream ibrin = new IncompleteByteReadInputStream(fin);
+        final FileInputStream fin = new FileInputStream(encryptedFile.file);
+        final FileInputStream finSpy = Mockito.spy(fin);
+        try (IncompleteByteReadInputStream ibrin = new IncompleteByteReadInputStream(finSpy);
              MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, ibrin,
                      ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                      true, (long)this.plaintextSize);
@@ -1130,6 +1149,9 @@ public class MantaEncryptedObjectInputStreamTest {
 
             IOUtils.copy(min, out);
         }
+
+        fin.close();
+        Mockito.verify(finSpy, Mockito.atLeastOnce()).close();
     }
 
     private EncryptedFile encryptedFile(

@@ -43,4 +43,9 @@ public class IncompleteByteReadInputStream extends InputStream {
             return wrapped.read(b, off, len);
         }
     }
+
+    @Override
+    public void close() throws IOException {
+        wrapped.close();
+    }
 }
