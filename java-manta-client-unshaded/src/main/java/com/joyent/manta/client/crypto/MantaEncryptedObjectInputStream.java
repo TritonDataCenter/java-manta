@@ -14,7 +14,6 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
@@ -721,37 +720,39 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         readRemainingBytes();
 
         try {
-            IOUtils.closeQuietly(cipherInputStream);
-        } catch (Exception e) {
+            cipherInputStream.close();
+        } catch (final Exception e) {
             LOGGER.warn("Error closing CipherInputStream", e);
-        }
+         }
 
-        if (hmac != null && authenticateCiphertext) {
-            byte[] checksum = new byte[hmac.getMacSize()];
-            hmac.doFinal(checksum, 0);
-            byte[] expected = readHmacFromEndOfStream();
+        try {
+            if (hmac != null && authenticateCiphertext) {
+                final byte[] checksum = new byte[hmac.getMacSize()];
+                hmac.doFinal(checksum, 0);
+                final byte[] expected = readHmacFromEndOfStream();
 
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+                }
+
+                if (super.getBackingStream().read() >= 0) {
+                    final MantaIOException e = new MantaIOException("More bytes were available than the "
+                            + "expected HMAC length");
+                    annotateException(e);
+                    throw e;
+                }
+
+                if (!Arrays.equals(expected, checksum)) {
+                    final MantaClientEncryptionCiphertextAuthenticationException e =
+                            new MantaClientEncryptionCiphertextAuthenticationException();
+                    annotateException(e);
+                    e.setContextValue("expected", Hex.encodeHexString(expected));
+                    e.setContextValue("checksum", Hex.encodeHexString(checksum));
+                    throw e;
+                }
             }
-
-            if (super.getBackingStream().read() >= 0) {
-                MantaIOException e = new MantaIOException("More bytes were available than the "
-                        + "expected HMAC length");
-                annotateException(e);
-                throw e;
-            }
-
+        } finally {
             super.close();
-
-            if (!Arrays.equals(expected, checksum)) {
-                MantaClientEncryptionCiphertextAuthenticationException e =
-                        new MantaClientEncryptionCiphertextAuthenticationException();
-                annotateException(e);
-                e.setContextValue("expected", Hex.encodeHexString(expected));
-                e.setContextValue("checksum", Hex.encodeHexString(checksum));
-                throw e;
-            }
         }
     }
 
