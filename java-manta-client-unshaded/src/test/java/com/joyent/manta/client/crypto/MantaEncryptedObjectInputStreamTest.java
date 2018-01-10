@@ -827,7 +827,7 @@ public class MantaEncryptedObjectInputStreamTest {
         }
 
         AssertJUnit.assertArrayEquals(sourceBytes, out.toByteArray());
-        Mockito.verify(inSpy, Mockito.times(1)).close();
+        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
     }
 
     /**
@@ -906,7 +906,7 @@ public class MantaEncryptedObjectInputStreamTest {
             min.close();
         }
 
-        Mockito.verify(inSpy, Mockito.times(1)).close();
+        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
     }
 
     /**
@@ -1018,7 +1018,7 @@ public class MantaEncryptedObjectInputStreamTest {
             readBytes.readAll(min, actual);
 
             min.close();
-            Mockito.verify(binSpy, Mockito.times(1)).close();
+            Mockito.verify(binSpy, Mockito.atLeastOnce()).close();
 
             try {
                 AssertJUnit.assertArrayEquals("Byte range output doesn't match",
@@ -1050,7 +1050,7 @@ public class MantaEncryptedObjectInputStreamTest {
             readBytes.readAll(min, actual);
         } finally {
             min.close();
-            Mockito.verify(inSpy, Mockito.times(1)).close();
+            Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
         }
     }
 
@@ -1083,7 +1083,7 @@ public class MantaEncryptedObjectInputStreamTest {
             min.close();
         }  catch (MantaClientEncryptionCiphertextAuthenticationException e) {
             thrown = true;
-            Mockito.verify(inSpy, Mockito.times(1)).close();
+            Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
         }
 
         Assert.assertTrue(thrown, "Ciphertext authentication exception wasn't thrown");
@@ -1138,7 +1138,7 @@ public class MantaEncryptedObjectInputStreamTest {
             IOUtils.copy(min, out);
         }
 
-        Mockito.verify(finSpy, Mockito.times(1)).close();
+        Mockito.verify(finSpy, Mockito.atLeastOnce()).close();
     }
 
     private EncryptedFile encryptedFile(
