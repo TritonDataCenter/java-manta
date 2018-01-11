@@ -1,6 +1,5 @@
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import org.mockito.Mockito;
 import org.testng.annotations.AfterTest;
@@ -24,14 +23,30 @@ public class MantaClientTest {
     }
 
     @Test
-    public void listObjectsDoesNotLeakConnections() throws IOException {
+    public void listObjectsDoesNotLeakConnectionsWhenThereAreResults() throws IOException {
         // BasicHttpClientConnectionManager maintains a single connection
 
         final MantaDirectoryListingIterator iteratorMock = mock(MantaDirectoryListingIterator.class);
         when(iteratorMock.hasNext()).thenReturn(true);
 
-        final ConfigContext config = TestConfigContext.generateKeyPairBackedConfig().right.setMantaUser("user");
-        final MantaClient client = new MantaClient(config);
+        final MantaClient client = new MantaClient(TestConfigContext.generateKeyPairBackedConfig().right);
+        final MantaClient clientSpy = spy(client);
+        doReturn(iteratorMock).when(clientSpy).streamingIterator(anyString());
+
+        final Stream<MantaObject> listing = clientSpy.listObjects("/");
+        listing.close();
+
+        verify(iteratorMock).close();
+    }
+
+    @Test
+    public void listObjectsDoesNotLeakConnectionsWhenNoResults() throws IOException {
+        // BasicHttpClientConnectionManager maintains a single connection
+
+        final MantaDirectoryListingIterator iteratorMock = mock(MantaDirectoryListingIterator.class);
+        when(iteratorMock.hasNext()).thenReturn(false);
+
+        final MantaClient client = new MantaClient(TestConfigContext.generateKeyPairBackedConfig().right);
         final MantaClient clientSpy = spy(client);
         doReturn(iteratorMock).when(clientSpy).streamingIterator(anyString());
 
