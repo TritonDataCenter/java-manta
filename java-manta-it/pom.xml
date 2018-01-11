@@ -287,6 +287,8 @@
                         </goals>
                         <configuration>
                             <skip>${maven.integration.test.skip}</skip>
+                            <parallel>classes</parallel>
+                            <threadCount>4</threadCount>
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
                             </suiteXmlFiles>
