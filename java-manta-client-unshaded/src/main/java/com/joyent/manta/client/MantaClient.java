@@ -773,6 +773,7 @@ public class MantaClient implements AutoCloseable {
          */
         try {
             if (!itr.hasNext()) {
+                itr.close();
                 return Stream.empty();
             }
         } catch (UncheckedIOException e) {
