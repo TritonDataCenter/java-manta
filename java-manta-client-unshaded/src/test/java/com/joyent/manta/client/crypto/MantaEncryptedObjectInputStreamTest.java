@@ -1116,6 +1116,7 @@ public class MantaEncryptedObjectInputStreamTest {
             }
         }
 
+        Mockito.verify(finSpy, Mockito.atLeastOnce()).close();
         Assert.assertTrue(thrown, "Expected MantaIOException was not thrown");
     }
 
