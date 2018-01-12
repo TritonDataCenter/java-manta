@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.8] - 2017-01-11
+## [3.1.8] - 2017-01-12
  - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
  - [Underlying stream is not closed by `MantaEncryptedObjectInputStream` for range requests with certain ciphers](https://github.com/joyent/java-manta/issues/398)
  - [MantaDirectoryListingIterator is not closed in MantaClient#listObjects when directory is empty](https://github.com/joyent/java-manta/issues/400)
