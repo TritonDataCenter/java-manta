@@ -14,6 +14,7 @@ import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -168,6 +169,18 @@ public class MantaClientHttpResponseException extends MantaIOException {
         }
 
         HttpHelper.annotateContextedException(this, request, response);
+
+        /* We don't want any problems processing headers to get in the way of
+         * properly throwing an exception, so we warn if we hit any error cases
+         * instead of raise the exception. */
+        try {
+            final Header[] responseHeaders = response.getAllHeaders();
+            if (responseHeaders != null) {
+                setHeaders(new MantaHttpHeaders(responseHeaders));
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("Error setting response headers on exception", e);
+        }
     }
 
     /**

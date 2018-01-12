@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.2.2-SNAPSHOT] - Coming soon!
+### Fixed
+ - [Misleading log message is shown for retrying requests that are unretryable](https://github.com/joyent/java-manta/issues/388)
+ - [`MantaClientHttpResponseException` does not provide a way to get the response headers](https://github.com/joyent/java-manta/issues/383)
+ - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
+ - [Underlying stream is not closed by `MantaEncryptedObjectInputStream` for range requests with certain ciphers](https://github.com/joyent/java-manta/issues/398)
 
 ## [3.2.1] - 2017-12-01
 ### Added
