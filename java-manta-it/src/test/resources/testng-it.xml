@@ -32,7 +32,9 @@
             <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
             <class name="com.joyent.manta.client.MantaHttpHeadersIT" />
             <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
-            <!--<class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />-->
+
+            <!-- Jobs-based MPU tests-->
+            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />
             <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
         </classes>
     </test>
@@ -50,7 +52,7 @@
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
 
             <!-- MPU only supports AES/CTR -->
-            <!--<class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />-->
+            <class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />
             <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT" />
             <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerSerializationIT" />
         </classes>
@@ -74,13 +76,11 @@
         </classes>
     </test>
 
-    <!-- Temporarily disabling jobs tests -->
-    <!--
+    <!-- Jobs tests not related to MPU -->
     <test name="Manta Job Tests">
         <classes>
             <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
             <class name="com.joyent.manta.client.jobs.MantaJobBuilderIT" />
         </classes>
     </test>
-    -->
 </suite>
