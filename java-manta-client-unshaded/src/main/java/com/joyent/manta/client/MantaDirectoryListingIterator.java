@@ -9,7 +9,8 @@ package com.joyent.manta.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.domain.ObjectType;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
@@ -18,6 +19,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -161,9 +163,22 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             String contentType = entity.getContentType().getValue();
 
             if (!contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
-                String msg = String.format("Expected directory path, but was file path: %s",
-                        path);
-                throw new MantaObjectException(msg);
+                String msg = "A file was specified as the directory list path. "
+                        + "Only the contents of directories can be listed.";
+                MantaUnexpectedObjectTypeException e = new MantaUnexpectedObjectTypeException(msg,
+                        ObjectType.DIRECTORY, ObjectType.FILE);
+                e.setContextValue("path", path);
+
+                try {
+                    MantaHttpHeaders headers = new MantaHttpHeaders(currentResponse.getAllHeaders());
+                    e.setResponseHeaders(headers);
+                } catch (RuntimeException re) {
+                    LoggerFactory.getLogger(MantaDirectoryListingIterator.class).warn(
+                            "Unable to convert response headers to MantaHttpHeaders", e
+                    );
+                }
+
+                throw e;
             }
 
             Reader streamReader = new InputStreamReader(entity.getContent(),

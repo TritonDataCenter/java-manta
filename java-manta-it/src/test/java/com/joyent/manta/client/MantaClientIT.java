@@ -9,10 +9,12 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.domain.ObjectType;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
@@ -193,6 +195,27 @@ public class MantaClientIT {
 
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
+    }
+
+    @Test
+    public final void willErrorGracefullyFailWhenAttemptingToStreamADirectory() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.putDirectory(path);
+
+        boolean thrown = false;
+
+        try (InputStream in = mantaClient.getAsInputStream(path)) {
+            Assert.assertNotNull(in);
+        } catch (MantaUnexpectedObjectTypeException e) {
+            Assert.assertEquals(e.getExpected(), ObjectType.FILE);
+            Assert.assertEquals(e.getActual(), ObjectType.DIRECTORY);
+
+            thrown = true;
+        }
+
+        Assert.assertTrue(thrown, "Expected exception not thrown");
     }
 
     @Test
