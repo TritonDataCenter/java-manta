@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
@@ -53,6 +54,12 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  */
 public class MantaDirectoryListingIterator implements Iterator<Map<String, Object>>,
         AutoCloseable {
+
+    /**
+     * Maximum number of results to return for a directory listing.
+     */
+    static final int MAX_RESULTS = 1024;
+
     /**
      * Size of result set requested against the Manta API (2-1024).
      */
@@ -160,9 +167,15 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             IOUtils.closeQuietly(currentResponse);
             currentResponse = httpHelper.executeRequest(request, null);
             HttpEntity entity = currentResponse.getEntity();
-            String contentType = entity.getContentType().getValue();
+            String contentType;
 
-            if (!contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
+            if (entity.getContentType() != null) {
+                contentType = entity.getContentType().getValue();
+            } else {
+                contentType = null;
+            }
+
+            if (!DIRECTORY_RESPONSE_CONTENT_TYPE.equals(contentType)) {
                 String msg = "A file was specified as the directory list path. "
                         + "Only the contents of directories can be listed.";
                 MantaUnexpectedObjectTypeException e = new MantaUnexpectedObjectTypeException(msg,
@@ -180,6 +193,10 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
                 throw e;
             }
+
+            InputStream contentStream = entity.getContent();
+            Objects.requireNonNull(contentStream, "A directory listing without "
+                            + "content is not valid. Content is null.");
 
             Reader streamReader = new InputStreamReader(entity.getContent(),
                     StandardCharsets.UTF_8.name());
@@ -237,7 +254,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
 
     @Override
     public synchronized Map<String, Object> next() {
-        if (finished.get()) {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
 

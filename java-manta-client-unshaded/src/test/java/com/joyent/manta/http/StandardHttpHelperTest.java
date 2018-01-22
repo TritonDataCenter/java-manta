@@ -5,16 +5,20 @@ import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.entity.NoContentEntity;
 import com.twmacinta.util.FastMD5Digest;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
+import org.apache.http.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.conn.EofSensorInputStream;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
@@ -25,9 +29,11 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -186,5 +192,33 @@ public class StandardHttpHelperTest {
 
         Assert.assertThrows(MantaChecksumFailedException.class, () ->
                 helper.httpPut("/path", null, NoContentEntity.INSTANCE, null));
+    }
+
+    @Test
+    public void throwsAppropriateExceptionWhenStreamingObjectThatIsDir() {
+        final String path = "/user/stor/a-dir";
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
+        final HttpGet get = helper.getRequestFactory().get(path);
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        final Header[] responseHeaders = new Header[] {
+                new BasicHeader(HttpHeaders.CONTENT_TYPE, DIRECTORY_RESPONSE_CONTENT_TYPE)
+        };
+
+        final BasicHttpEntity entity = new BasicHttpEntity();
+        entity.setContentType(DIRECTORY_RESPONSE_CONTENT_TYPE);
+        entity.setChunked(true);
+
+        final EofSensorInputStream in = new EofSensorInputStream(
+                new NullInputStream(0), null);
+        entity.setContent(in);
+
+        when(response.getEntity()).thenReturn(entity);
+        when(response.getAllHeaders()).thenReturn(responseHeaders);
+
+        when(statusLine.getStatusCode())
+                .thenReturn(HttpStatus.SC_OK);
+
+        Assert.assertThrows(MantaUnexpectedObjectTypeException.class, () ->
+                helper.httpRequestAsInputStream(get, headers));
     }
 }

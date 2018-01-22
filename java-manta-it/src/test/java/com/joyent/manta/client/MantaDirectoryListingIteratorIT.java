@@ -179,24 +179,6 @@ public class MantaDirectoryListingIteratorIT {
         }
     }
 
-    public void willErrorGracefullyFailWhenAttemptingToListAFile() throws IOException {
-        String file = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        mantaClient.put(file, "");
-
-        boolean thrown = false;
-
-        try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(file, 10)) {
-            Assert.assertFalse(itr.hasNext());
-        } catch (MantaUnexpectedObjectTypeException e) {
-            Assert.assertEquals(e.getExpected(), ObjectType.DIRECTORY);
-            Assert.assertEquals(e.getActual(), ObjectType.FILE);
-
-            thrown = true;
-        }
-
-        Assert.assertTrue(thrown, "Expected exception not thrown");
-    }
-
     private void listDirectoryUsingSmallPagingSize(final String dir) throws IOException {
         mantaClient.putDirectory(dir, true);
 

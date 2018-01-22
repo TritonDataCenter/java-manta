@@ -198,27 +198,6 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void willErrorGracefullyFailWhenAttemptingToStreamADirectory() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-
-        mantaClient.putDirectory(path);
-
-        boolean thrown = false;
-
-        try (InputStream in = mantaClient.getAsInputStream(path)) {
-            Assert.assertNotNull(in);
-        } catch (MantaUnexpectedObjectTypeException e) {
-            Assert.assertEquals(e.getExpected(), ObjectType.FILE);
-            Assert.assertEquals(e.getActual(), ObjectType.DIRECTORY);
-
-            thrown = true;
-        }
-
-        Assert.assertTrue(thrown, "Expected exception not thrown");
-    }
-
-    @Test
     public final void testCRUDWithByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
