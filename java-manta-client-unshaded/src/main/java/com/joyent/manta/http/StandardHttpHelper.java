@@ -13,10 +13,12 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.domain.ObjectType;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
@@ -339,8 +341,14 @@ public class StandardHttpHelper implements HttpHelper {
             if (metadata.isDirectory()) {
                 final String msg = "Directories do not have data, so data streams "
                         + "from directories are not possible.";
-                final MantaClientException exception = new MantaClientException(msg);
+                final MantaUnexpectedObjectTypeException exception =
+                        new MantaUnexpectedObjectTypeException(msg,
+                            ObjectType.FILE, ObjectType.DIRECTORY);
                 exception.setContextValue("path", path);
+
+                if (metadata.getHttpHeaders() != null) {
+                    exception.setResponseHeaders(metadata.getHttpHeaders());
+                }
 
                 throw exception;
             }

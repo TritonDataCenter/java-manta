@@ -9,6 +9,8 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.domain.ObjectType;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@Test
 public class MantaDirectoryListingIteratorIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -53,7 +56,6 @@ public class MantaDirectoryListingIteratorIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
     public void isPagingCorrectly() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
@@ -158,7 +160,6 @@ public class MantaDirectoryListingIteratorIT {
         }
     }
 
-    @Test
     public void canListEmptyDirectory() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
@@ -178,7 +179,7 @@ public class MantaDirectoryListingIteratorIT {
         }
     }
 
-    public void listDirectoryUsingSmallPagingSize(final String dir) throws IOException {
+    private void listDirectoryUsingSmallPagingSize(final String dir) throws IOException {
         mantaClient.putDirectory(dir, true);
 
         final int MAX = 5;
@@ -200,7 +201,6 @@ public class MantaDirectoryListingIteratorIT {
         }
     }
 
-    @Test
     public void canListDirectoryUsingSmallPagingSize() throws IOException {
         String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         listDirectoryUsingSmallPagingSize(dir);

@@ -9,10 +9,12 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.domain.ObjectType;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
