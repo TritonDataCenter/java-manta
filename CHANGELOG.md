@@ -8,6 +8,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [`MantaClientHttpResponseException` does not provide a way to get the response headers](https://github.com/joyent/java-manta/issues/383)
  - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
  - [Underlying stream is not closed by `MantaEncryptedObjectInputStream` for range requests with certain ciphers](https://github.com/joyent/java-manta/issues/398)
+ - [Exceptions relating to object type expectations are too generic](https://github.com/joyent/java-manta/issues/403)
 
 ## [3.2.1] - 2017-12-01
 ### Added
