@@ -1260,7 +1260,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * path using supplied charset name.
      *
      * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
@@ -1276,7 +1276,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * path using the supplied {@link Charset}.
      *
      * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
@@ -1295,8 +1295,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1309,8 +1308,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1325,8 +1323,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1341,8 +1338,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1380,8 +1376,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1394,8 +1389,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1410,8 +1404,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1426,8 +1419,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
