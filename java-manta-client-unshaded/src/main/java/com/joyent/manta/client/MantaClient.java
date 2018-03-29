@@ -314,12 +314,12 @@ public class MantaClient implements AutoCloseable {
          * consumer of the SDK so that they can better tune their settings.*/
         final AtomicInteger responseTimeouts = new AtomicInteger(0);
 
-        final int retries;
+        final int tries;
 
         if (config.getRetries() == null || config.getRetries() < 1) {
-            retries = 1;
+            tries = 1;
         } else {
-            retries = config.getRetries();
+            tries = config.getRetries();
         }
 
         while (true) {
@@ -374,7 +374,7 @@ public class MantaClient implements AutoCloseable {
              * delete it even though that operation may not be immediately
              * successful. */
             toDelete.forEachOrdered(obj -> {
-                for (int i = 0; i < retries; i++) {
+                for (int i = 0; i < tries; i++) {
                     try {
                         /* Don't bother deleting the file if it was marked as
                          * deleted from the map step. */
