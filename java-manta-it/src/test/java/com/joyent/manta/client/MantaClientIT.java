@@ -266,6 +266,24 @@ public class MantaClientIT {
     }
 
     @Test
+    public final void testRecursiveDeleteOnlyDirectories() throws IOException {
+        final String dir1 = String.format("%s1", testPathPrefix);
+        mantaClient.putDirectory(testPathPrefix + "1", null);
+        mantaClient.putDirectory(dir1, null);
+
+        final String dir2 = String.format("%s/2", dir1);
+        mantaClient.putDirectory(dir2, null);
+
+        final String dir3 = String.format("%s/3", dir2);
+        mantaClient.putDirectory(dir3, null);
+
+        mantaClient.deleteRecursive(testPathPrefix + "1");
+
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
+    }
+
+    @Test
     public final void verifyYouCanJustSpecifyDirNameWhenPuttingFile() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
