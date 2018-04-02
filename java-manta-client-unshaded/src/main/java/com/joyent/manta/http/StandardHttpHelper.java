@@ -7,10 +7,10 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.domain.ObjectType;
@@ -40,13 +40,13 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -353,21 +353,15 @@ public class StandardHttpHelper implements HttpHelper {
                 throw exception;
             }
 
-            EofSensorInputStream backingStream;
+            InputStream backingStream;
 
             try {
-                if (!entity.getContent().getClass().equals(EofSensorInputStream.class)) {
-                    String msg = String.format("We are expecting an instance of [%s] as "
-                            + "a stream, but instead received: [%s]", EofSensorInputStream.class,
-                            entity.getContent().getClass());
-                    throw new UnsupportedOperationException(msg);
-                }
-
-                backingStream = (EofSensorInputStream)entity.getContent();
+                backingStream = entity.getContent();
             } catch (IOException ioe) {
                 String msg = String.format("Error getting stream from entity content for path: %s",
                         path);
                 MantaObjectException e = new MantaObjectException(msg, ioe);
+                e.setContextValue("path", path);
                 HttpHelper.annotateContextedException(e, request, response);
                 throw e;
             }

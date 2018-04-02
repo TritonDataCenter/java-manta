@@ -42,7 +42,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     /**
      * The backing {@link InputStream} implementation.
      */
-    private final EofSensorInputStream backingStream;
+    private final InputStream backingStream;
 
     /**
      * The HTTP response sent from the Manta API.
@@ -60,6 +60,22 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     public MantaObjectInputStream(final MantaObjectResponse response,
                                   final CloseableHttpResponse httpResponse,
                                   final EofSensorInputStream backingStream) {
+        this.backingStream = backingStream;
+        this.response = response;
+        this.httpResponse = httpResponse;
+    }
+
+    /**
+     * Create a new instance from the results of a GET HTTP call to the
+     * Manta API.
+     *
+     * @param response Metadata object built from request
+     * @param httpResponse Response object created
+     * @param backingStream Underlying stream being wrapped
+     */
+    public MantaObjectInputStream(final MantaObjectResponse response,
+                                  final CloseableHttpResponse httpResponse,
+                                  final InputStream backingStream) {
         this.backingStream = backingStream;
         this.response = response;
         this.httpResponse = httpResponse;
@@ -210,14 +226,30 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     }
 
     /**
-     * Aborts this stream.
-     * This is a special version of {@link #close close()} which prevents
+     * <p>Aborts this stream.</p>
+     *
+     * <p>This is a special version of {@link #close close()} which prevents
      * re-use of the underlying connection, if any. Calling this method
      * indicates that there should be no attempt to read until the end of
-     * the stream.
+     * the stream.</p>
+     *
+     * <p>If the backing stream of the connection is not a
+     * {@link EofSensorInputStream}, this method with call {@link #close()}.</p>
+     *
+     * <p>This method is deprecated because we can't relay on the underlying
+     * backing stream to always be a {@link EofSensorInputStream}.</p>
+     *
      * @throws IOException thrown when unable to abort connection
      */
+    @Deprecated
     public void abortConnection() throws IOException {
-        backingStream.abortConnection();
+        final Class<?> backingStreamClass = backingStream.getClass();
+
+        if (backingStreamClass.equals(EofSensorInputStream.class)) {
+            ((EofSensorInputStream)backingStream).abortConnection();
+            IOUtils.closeQuietly(httpResponse);
+        } else {
+            close();
+        }
     }
 }
