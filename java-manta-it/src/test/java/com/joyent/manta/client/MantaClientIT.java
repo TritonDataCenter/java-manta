@@ -230,7 +230,7 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void canGetZeroByteFile() throws IOException {
+    public final void canGetZeroByteFileAsInputStream() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] empty = new byte[0];
@@ -242,6 +242,18 @@ public class MantaClientIT {
             Assert.assertEquals(actualBytes, empty,
                     "Actual object was not the expected 0 bytes");
         }
+    }
+
+    @Test
+    public final void canGetZeroByteFileAsString() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] empty = new byte[0];
+
+        mantaClient.put(path, empty);
+        final String actual = mantaClient.getAsString(path, StandardCharsets.UTF_8);
+        Assert.assertEquals(actual, "",
+                "Empty string not returned as expected");
     }
 
     @Test
