@@ -50,6 +50,13 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setMantaKeyPath(String mantaKeyPath);
 
     /**
+     * Whether or not MBeans and metrics should be activated.
+     * @param agent build an agent or not
+     * @return the current instance of {@link T}
+     */
+    T setMonitoringEnabled(Boolean agent);
+
+    /**
      * Sets the general connection timeout for the Manta service.
      * @param timeout timeout in milliseconds
      * @return the current instance of {@link T}

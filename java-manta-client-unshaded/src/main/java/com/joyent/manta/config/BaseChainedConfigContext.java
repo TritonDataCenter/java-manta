@@ -40,6 +40,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String mantaKeyPath;
 
     /**
+     * Whether metrics and MBeans should be tracked and exposed.
+     */
+    private volatile Boolean monitoringEnabled;
+
+    /**
      * General connection timeout for the Manta service.
      */
     private volatile Integer timeout;
@@ -205,6 +210,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public String getMantaKeyPath() {
         return this.mantaKeyPath;
+    }
+
+    @Override
+    public Boolean getMonitoringEnabled() {
+        return this.monitoringEnabled;
     }
 
     @Override
@@ -611,6 +621,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         }
 
         this.mantaKeyPath = mantaKeyPath;
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setMonitoringEnabled(final Boolean monitoringEnabled) {
+        this.monitoringEnabled = monitoringEnabled;
         return this;
     }
 

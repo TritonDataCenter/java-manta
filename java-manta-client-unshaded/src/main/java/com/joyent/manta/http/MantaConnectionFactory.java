@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.codahale.metrics.MetricRegistry;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
@@ -101,9 +102,9 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config    configuration of the connection parameters
-     * @param keyPair   cryptographic signing key pair used for HTTP signatures
-     * @param signer    Signer configured to use the given keyPair
+     * @param config  configuration of the connection parameters
+     * @param keyPair cryptographic signing key pair used for HTTP signatures
+     * @param signer  Signer configured to use the given keyPair
      */
     @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
@@ -140,11 +141,24 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config configuration of the connection parameters
+     * @param config                        configuration of the connection parameters
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this(config, connectionFactoryConfigurator, null);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config                        configuration of the connection parameters
+     * @param connectionFactoryConfigurator existing HttpClient objects to reuse
+     * @param metricRegistry                potentially-null registry for tracking client metrics
+     */
+    public MantaConnectionFactory(final ConfigContext config,
+                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
+                                  final MetricRegistry metricRegistry) {
         this.config = Validate.notNull(config, "Configuration context must not be null");
 
         if (connectionFactoryConfigurator != null) {
@@ -155,7 +169,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             this.httpClientBuilder = createStandardBuilder();
         }
 
-        configureHttpClientBuilderDefaults();
+        configureHttpClientBuilderDefaults(metricRegistry);
     }
 
     /**
@@ -163,8 +177,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      *
      * @return configured connection factory
      */
-    protected HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection>
-            buildHttpConnectionFactory() {
+    protected HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> buildHttpConnectionFactory() {
         return new ManagedHttpClientConnectionFactory(
                 new DefaultHttpRequestWriterFactory(),
                 new DefaultHttpResponseParserFactory());
@@ -304,10 +317,12 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
+     *
+     * @param metricRegistry potentially-null registry for tracking client metrics
      */
-    private void configureHttpClientBuilderDefaults() {
+    private void configureHttpClientBuilderDefaults(final MetricRegistry metricRegistry) {
         if (config.getRetries() > 0) {
-            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config));
+            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config.getRetries(), metricRegistry));
             httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
         } else {
             LOGGER.info("Retry of failed requests is disabled");
@@ -352,7 +367,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             } else {
                 String msg = String.format(
                         "Expecting proxy to be instance of InetSocketAddress. "
-                        + " Actually: %s", proxy.address());
+                                + " Actually: %s", proxy.address());
                 throw new ConfigurationException(msg);
             }
         } else {

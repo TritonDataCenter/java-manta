@@ -172,6 +172,7 @@
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.6</dependency.cloning.version>
         <dependency.picocli.version>1.0.1</dependency.picocli.version>
+        <dependency.dropwizard-metrics.version>3.1.0</dependency.dropwizard-metrics.version>
     </properties>
 
     <dependencies>

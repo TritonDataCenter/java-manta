@@ -181,6 +181,10 @@ public interface ConfigContext extends MantaMBeanable {
      */
     byte[] getEncryptionPrivateKeyBytes();
 
+    default Boolean getMonitoringEnabled() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override
     default DynamicMBean toMBean() {
@@ -542,4 +546,5 @@ public interface ConfigContext extends MantaMBeanable {
                 return null;
         }
     }
+
 }

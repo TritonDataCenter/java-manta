@@ -7,15 +7,20 @@
  */
 package com.joyent.manta.client;
 
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
@@ -31,10 +36,10 @@ import javax.management.ObjectName;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
-class MantaMBeanSupervisor implements AutoCloseable {
+class MantaClientAgent implements AutoCloseable {
 
     @SuppressWarnings("JavaDocVariable")
-    private static final Logger LOGGER = LoggerFactory.getLogger(MantaMBeanSupervisor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientAgent.class);
 
     /**
      * Format string for creating {@link ObjectName}s.
@@ -42,10 +47,9 @@ class MantaMBeanSupervisor implements AutoCloseable {
     private static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:type=%s[%d]";
 
     /**
-     * A running count of the times we have created new {@link MantaMBeanSupervisor}
-     * instances.
+     * Supervisor index. Used to avoid JMX {@link ObjectName} collisions.
      */
-    private static final AtomicInteger SUPERVISOR_COUNT = new AtomicInteger(0);
+    private final UUID id;
 
     /**
      * List of all MBeans to be added to JMX.
@@ -53,21 +57,36 @@ class MantaMBeanSupervisor implements AutoCloseable {
     private final Map<ObjectName, DynamicMBean> beans;
 
     /**
-     * Supervisor index. Used to avoid JMX {@link ObjectName} collisions.
+     * Exposes metrics we don't manage as our own MBeans. The relevant type
+     * is actually {@link Reporter} but that isn't as interesting as the fact that
+     * all reporters are also {@link Closeable}.
      */
-    private final int idx;
+    private final Closeable metricReporter;
 
     /**
      * Flag indicating if the supervisor has been "closed" (i.e. beans deregistered)
      */
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
+    MantaClientAgent() {
+        this(UUID.randomUUID(), null);
+    }
+
     /**
      * Create a new supervisor that will own an index and a set of beans.
      */
-    MantaMBeanSupervisor() {
-        idx = SUPERVISOR_COUNT.incrementAndGet();
-        beans = new HashMap<>(2);
+    MantaClientAgent(final UUID clientId, final MetricRegistry metricRegistry) {
+        this.id = clientId;
+        this.beans = new HashMap<>(2);
+
+        if (metricRegistry != null) {
+            this.metricReporter = JmxReporter.forRegistry(metricRegistry)
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .build();
+        } else {
+            this.metricReporter = null;
+        }
     }
 
     /**
@@ -76,7 +95,7 @@ class MantaMBeanSupervisor implements AutoCloseable {
      *
      * @param beanable the bean to attempt to register
      */
-    void expose(final MantaMBeanable beanable) {
+    void register(final MantaMBeanable beanable) {
         if (closed.get()) {
             throw new IllegalStateException("Cannot register MBeans, supervisor has been closed");
         }
@@ -93,7 +112,7 @@ class MantaMBeanSupervisor implements AutoCloseable {
 
         final ObjectName name;
         try {
-            name = new ObjectName(String.format(FMT_MBEAN_OBJECT_NAME, bean.getClass().getSimpleName(), idx));
+            name = new ObjectName(String.format(FMT_MBEAN_OBJECT_NAME, bean.getClass().getSimpleName(), id));
         } catch (final JMException e) {
             LOGGER.warn("Error creating bean: " + bean.getClass().getSimpleName(), e);
             return;
@@ -146,6 +165,11 @@ class MantaMBeanSupervisor implements AutoCloseable {
             }
         }
 
+        if (metricReporter != null) {
+            metricReporter.close();
+        }
+
         beans.clear();
     }
+
 }
