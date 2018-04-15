@@ -16,9 +16,7 @@ import static org.testng.Assert.assertTrue;
 @Test
 public class MantaHttpRequestRetryHandlerTest {
 
-    private final MetricFilter retryMetricFilter = (name, metric) ->
-            name.matches("^com\\.joyent\\.manta\\.http\\.MantaHttpRequestRetryHandler.*retries");
-
+    private static final MetricFilter FILTER_RETRY_METRIC = (name, metric) -> name.equals("retries");
 
     public void indicatesShouldRetryOnGenericIOException() {
         final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(1);
@@ -30,7 +28,7 @@ public class MantaHttpRequestRetryHandlerTest {
         final MetricRegistry registry = new MetricRegistry();
         final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(0, registry);
 
-        final Collection<Meter> meters = registry.getMeters(retryMetricFilter).values();
+        final Collection<Meter> meters = registry.getMeters(FILTER_RETRY_METRIC).values();
         assertEquals(meters.size(), 1);
     }
 
@@ -39,7 +37,7 @@ public class MantaHttpRequestRetryHandlerTest {
         final MetricRegistry registry = new MetricRegistry();
         final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(1, registry);
 
-        final Optional<Meter> maybeMeter = registry.getMeters(retryMetricFilter).values().stream().findFirst();
+        final Optional<Meter> maybeMeter = registry.getMeters(FILTER_RETRY_METRIC).values().stream().findFirst();
         assertTrue(maybeMeter.isPresent());
 
         assertEquals(maybeMeter.get().getCount(), 0, "meter should have zero samples");

@@ -7,10 +7,10 @@
  */
 package com.joyent.manta.client;
 
-import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ObjectNameFactory;
 import com.codahale.metrics.Reporter;
+import com.codahale.metrics.jmx.JmxReporter;
+import com.codahale.metrics.jmx.ObjectNameFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
