@@ -282,6 +282,15 @@ public class AuthAwareConfigContext
     }
 
     @Override
+    public AuthAwareConfigContext setMonitoringEnabled(final Boolean monitoringEnabled) {
+        synchronized (lock) {
+            super.setMonitoringEnabled(monitoringEnabled);
+        }
+
+        return this;
+    }
+
+    @Override
     public AuthAwareConfigContext setTimeout(final Integer timeout) {
         synchronized (lock) {
             super.setTimeout(timeout);

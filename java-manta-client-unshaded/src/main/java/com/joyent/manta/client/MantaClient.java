@@ -214,7 +214,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         final MetricRegistry metricRegistry;
-        if (this.config.getMonitoringEnabled()) {
+        if (BooleanUtils.isTrue(this.config.getMonitoringEnabled())) {
             metricRegistry = new MetricRegistry();
         } else {
             metricRegistry = null;

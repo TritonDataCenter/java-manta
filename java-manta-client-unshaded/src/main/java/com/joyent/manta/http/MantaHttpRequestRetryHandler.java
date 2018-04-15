@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import javax.net.ssl.SSLException;
 
-import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang3.Validate.notNull;
 
 /**
@@ -89,7 +88,7 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
         super(retryCount, true, NON_RETRIABLE);
 
         if (metricRegistry != null) {
-            this.retries = metricRegistry.meter(name(MantaHttpRequestRetryHandler.class, "retries"));
+            this.retries = metricRegistry.meter("retries");
         } else {
             this.retries = null;
         }

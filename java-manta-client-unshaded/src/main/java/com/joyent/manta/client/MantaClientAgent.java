@@ -9,6 +9,7 @@ package com.joyent.manta.client;
 
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.ObjectNameFactory;
 import com.codahale.metrics.Reporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 /**
@@ -44,10 +46,10 @@ class MantaClientAgent implements AutoCloseable {
     /**
      * Format string for creating {@link ObjectName}s.
      */
-    private static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:type=%s[%d]";
+    private static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:00=%s,type=%s";
 
     /**
-     * Supervisor index. Used to avoid JMX {@link ObjectName} collisions.
+     * Client ID. Used to avoid JMX {@link ObjectName} collisions.
      */
     private final UUID id;
 
@@ -80,10 +82,13 @@ class MantaClientAgent implements AutoCloseable {
         this.beans = new HashMap<>(2);
 
         if (metricRegistry != null) {
-            this.metricReporter = JmxReporter.forRegistry(metricRegistry)
+            final JmxReporter reporter = JmxReporter.forRegistry(metricRegistry)
+                    .createsObjectNamesWith(buildObjectNameFactory(this.id))
                     .convertRatesTo(TimeUnit.SECONDS)
                     .convertDurationsTo(TimeUnit.MILLISECONDS)
                     .build();
+            reporter.start();
+            this.metricReporter = reporter;
         } else {
             this.metricReporter = null;
         }
@@ -172,4 +177,18 @@ class MantaClientAgent implements AutoCloseable {
         beans.clear();
     }
 
+    private static ObjectNameFactory buildObjectNameFactory(final UUID clientId) {
+        return (type, domain, name) -> {
+            final String metricJmxObjectName = String.format(FMT_MBEAN_OBJECT_NAME, name, clientId);
+
+            final ObjectName objectName;
+            try {
+                objectName = new ObjectName(metricJmxObjectName);
+            } catch (final MalformedObjectNameException e) {
+                throw new RuntimeException("Unable to create JMX object name for metric" + metricJmxObjectName);
+            }
+
+            return objectName;
+        };
+    }
 }

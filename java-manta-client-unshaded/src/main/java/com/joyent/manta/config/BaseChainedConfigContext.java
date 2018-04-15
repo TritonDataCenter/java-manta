@@ -375,6 +375,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.mantaKeyPath = context.getMantaKeyPath();
         }
 
+        if (context.getMonitoringEnabled() != null) {
+            this.monitoringEnabled = context.getMonitoringEnabled();
+        }
+
         if (context.getTimeout() != null) {
             this.timeout = context.getTimeout();
         }
@@ -494,6 +498,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (!isPresent(this.getMantaKeyPath()) && !isPresent(this.getPrivateKeyContent())) {
             this.mantaKeyPathSetOnlyByDefaults = true;
             this.mantaKeyPath = context.getMantaKeyPath();
+        }
+
+        if (this.getMonitoringEnabled() == null) {
+            this.monitoringEnabled = context.getMonitoringEnabled();
         }
 
         if (this.getTimeout() == null) {
