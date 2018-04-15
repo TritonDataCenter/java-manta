@@ -168,7 +168,7 @@ public class MantaClient implements AutoCloseable {
     private final ForkJoinPool findForkJoinPool;
 
     /**
-     * MBean agent used when metrics and JMX are enabled.
+     * Reporting agent used when metrics and JMX are enabled.
      */
     private final MantaClientAgent agent;
 

@@ -51,10 +51,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
 
     /**
      * Whether or not MBeans and metrics should be activated.
-     * @param agent build an agent or not
+     * @param monitoring build a monitoring agent or not
      * @return the current instance of {@link T}
      */
-    T setMonitoringEnabled(Boolean agent);
+    T setMonitoringEnabled(Boolean monitoring);
 
     /**
      * Sets the general connection timeout for the Manta service.

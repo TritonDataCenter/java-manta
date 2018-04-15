@@ -282,9 +282,9 @@ public class AuthAwareConfigContext
     }
 
     @Override
-    public AuthAwareConfigContext setMonitoringEnabled(final Boolean monitoringEnabled) {
+    public AuthAwareConfigContext setMonitoringEnabled(final Boolean monitoring) {
         synchronized (lock) {
-            super.setMonitoringEnabled(monitoringEnabled);
+            super.setMonitoringEnabled(monitoring);
         }
 
         return this;
