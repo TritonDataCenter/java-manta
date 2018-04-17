@@ -196,7 +196,27 @@ public class MantaClient implements AutoCloseable {
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
      */
     public MantaClient(final ConfigContext config,
-                final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this(config, connectionFactoryConfigurator, null);
+    }
+
+    /**
+     * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
+     * degree of customization at the cost of more involvement from the consumer.
+     *
+     * Users opting into advanced configuration (i.e. not passing {@code null} as the second parameter)
+     * should be comfortable with the internals of {@link CloseableHttpClient} and accept that we can only make a
+     * best effort to support all possible use-cases. For example, uses may pass in a builder which is wired to a
+     * {@link org.apache.http.impl.conn.BasicHttpClientConnectionManager} and effectively make the client
+     * single-threaded by eliminating the connection pool. Bug or feature? You decide!
+     *
+     * @param config The configuration context that provides all of the configuration values
+     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
+     * @param httpHelper helper object for executing http requests (or null)
+     */
+    MantaClient(final ConfigContext config,
+                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
+                       final HttpHelper httpHelper) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
@@ -214,7 +234,9 @@ public class MantaClient implements AutoCloseable {
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
         final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
 
-        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
+        if (httpHelper != null) {
+            this.httpHelper = httpHelper;
+        } else if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
         } else {
             this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
