@@ -85,8 +85,11 @@ public class MultipartInputStream extends InputStream {
      * @param next stream to switch to as a backing stream
      */
     public void setNext(final InputStream next) {
+        if (this.closed) {
+            throw new IllegalStateException("Attempted to setNext on a closed MultipartInputStream");
+        }
         notNull(next, "InputStream must not be null");
-        validateOpen();
+
         this.wrapped = new CountingInputStream(next);
     }
 

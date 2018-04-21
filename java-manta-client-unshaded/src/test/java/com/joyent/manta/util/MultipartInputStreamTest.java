@@ -28,17 +28,15 @@ public class MultipartInputStreamTest {
     private static final Logger LOG = LoggerFactory.getLogger(MultipartInputStreamTest.class);
 
     private static final int BUFFER_SIZE_1 = 1;
-    private static final int BUFFER_SIZE_4 = 1 << 2;
-    private static final int BUFFER_SIZE_16 = 1 << 4;
     private static final int BUFFER_SIZE_256 = 1 << 8;
-    private static final int BUFFER_SIZE_1024 = 1 << 10;
+    private static final int BUFFER_SIZE_1K = 1 << 10;
+    private static final int BUFFER_SIZE_8K = 1 << 13;
 
     private static final int[] BUFFER_SIZES = {
             BUFFER_SIZE_1,
-            BUFFER_SIZE_4,
-            BUFFER_SIZE_16,
             BUFFER_SIZE_256,
-            BUFFER_SIZE_1024,
+            BUFFER_SIZE_1K,
+            BUFFER_SIZE_8K,
     };
 
     private static final RandomStringGenerator STRING_GENERATOR =
