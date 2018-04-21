@@ -7,14 +7,15 @@
  */
 package com.joyent.manta.util;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
+import org.apache.commons.lang3.NotImplementedException;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Objects;
+
+import static org.apache.commons.lang3.Validate.notNull;
 
 /**
  * {@link OutputStream} implementation that allows for the attaching and
@@ -31,7 +32,7 @@ public class MultipartInputStream extends InputStream {
     /**
      * EOF marker.
      */
-    private static final int EOF = -1;
+    static final int EOF = -1;
 
     /**
      * Backing stream.
@@ -39,14 +40,25 @@ public class MultipartInputStream extends InputStream {
     private CountingInputStream wrapped = null;
 
     /**
-     * Buffering stream.
+     * Boolean indicating if the stream is closed and
+     * should stop accepting calls to {@link #setNext(InputStream)}
+     */
+    private volatile boolean closed = false;
+
+    /**
+     * Buffer.
      */
     private final byte[] buffer;
 
     /**
-     * Number of valid bytes in {@link this.buffer}.
+     * Index of next byte to be read.
      */
-    private int bufIndex;
+    private int bufPos;
+
+    /**
+     * Number of valid bytes.
+     */
+    private int bufCount;
 
     /**
      * Total count of bytes read across all wrapped streams.
@@ -56,52 +68,98 @@ public class MultipartInputStream extends InputStream {
     /**
      * Creates a new instance with the specified block size.
      *
-     * @param blockSize cipher block size
+     * @param bufferSize cipher block size
      */
-    public MultipartInputStream(final int blockSize) {
-        this.buffer = new byte[blockSize];
-        this.bufIndex = 0;
+    public MultipartInputStream(final int bufferSize) {
+        if (bufferSize < 1) {
+            throw new IllegalArgumentException("Buffer size must be greater than zero");
+        }
+        this.buffer = new byte[bufferSize];
+        this.bufPos = 0;
         this.count = 0;
     }
 
     /**
      * Attaches the next stream.
+     *
      * @param next stream to switch to as a backing stream
      */
     public void setNext(final InputStream next) {
+        notNull(next, "InputStream must not be null");
+        validateOpen();
         this.wrapped = new CountingInputStream(next);
     }
 
     @Override
     public int read() throws IOException {
-        if (bufIndex == buffer.length) {
-            fill();
+        if (this.closed) {
+            throw new IllegalStateException("Attempted to read from a closed MultipartInputStream");
         }
 
-        final int byteReturned = this.buffer[this.bufIndex];
+        ensureBufferIsReady();
+
+        if (this.bufCount == 0) {
+            return EOF;
+        }
+
+        final int byteReturned = this.buffer[this.bufPos];
 
         count += 1;
-        bufIndex += 1;
+        bufPos += 1;
 
         return byteReturned;
     }
 
     @Override
-    public int read(final byte[] b) throws IOException {
-    }
-
-    @Override
     public int read(final byte[] b, final int off, final int len) throws IOException {
+        if (this.closed) {
+            throw new IllegalStateException("Attempted to read from a closed MultipartInputStream");
+        }
+
+        notNull(b, "Provided byte array must not be null");
+
+        if (off < 0 || len < 0 || len > b.length - off) {
+            final String message = String.format(
+                    "Invalid parameters to read(byte[], int, int): offset=[%d], length=[%d]",
+                    off,
+                    len);
+            throw new IndexOutOfBoundsException(message);
+        }
+
+        ensureBufferIsReady();
+
+        if (count != 0 && this.bufCount == 0) {
+            return EOF;
+        }
+
+        int remaining = len;
+        int pos = off;
+        int read = 0;
+
+        while (0 < remaining && this.bufPos < this.bufCount) {
+            final int copied = Math.min(remaining, this.bufCount - this.bufPos);
+            System.arraycopy(buffer, bufPos, b, pos, copied);
+            if (copied < remaining) {
+                final int bytesFilled = fillBuffer();
+            }
+
+            remaining -= copied;
+            pos += copied;
+            read += copied;
+        }
+
+        this.count += read;
+        return read;
     }
 
     @Override
     public long skip(final long n) throws IOException {
-        return super.skip(n);
+        throw new NotImplementedException("skip(long)");
     }
 
     @Override
     public int available() throws IOException {
-        return super.available();
+        throw new NotImplementedException("available()");
     }
 
     @Override
@@ -109,4 +167,25 @@ public class MultipartInputStream extends InputStream {
         return false;
     }
 
+    @Override
+    public void close() throws IOException {
+        if (this.closed) {
+            throw new IllegalStateException("Attempted to call close() on a closed MultipartInputStream");
+        }
+
+        wrapped.close();
+        this.closed = true;
+    }
+
+    private void ensureBufferIsReady() throws IOException {
+        if (count == 0 || bufPos == buffer.length) {
+            fillBuffer();
+        }
+    }
+
+    private int fillBuffer() throws IOException {
+        this.bufPos = 0;
+        this.bufCount = IOUtils.read(this.wrapped, this.buffer);
+        return this.bufCount;
+    }
 }
