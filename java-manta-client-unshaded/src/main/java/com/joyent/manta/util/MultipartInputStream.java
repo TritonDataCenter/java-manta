@@ -142,13 +142,15 @@ public class MultipartInputStream extends InputStream {
         while (0 < remaining && this.bufPos < this.bufCount) {
             final int copied = Math.min(remaining, this.bufCount - this.bufPos);
             System.arraycopy(buffer, bufPos, b, pos, copied);
+            pos += copied;
+            bufPos += copied;
+            read += copied;
+
             if (copied < remaining) {
                 final int bytesFilled = fillBuffer();
             }
 
             remaining -= copied;
-            pos += copied;
-            read += copied;
         }
 
         this.count += read;

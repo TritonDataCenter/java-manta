@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 import static com.joyent.manta.util.MultipartInputStream.EOF;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -53,6 +54,23 @@ public class MultipartInputStreamTest {
         }
 
         return parameterLists;
+    }
+
+    @DataProvider(name = "inputAndBufferAndCopyBufferSizes")
+    private Object[][] inputAndBufferAndCopyBufferSizes() {
+        final ArrayList<Object[]> parameterLists = new ArrayList<>();
+
+        final float[] mult = new float[] { 0.5f, 1f, 2f };
+        for (int i = 0; i < BUFFER_SIZES.length; i++) {
+            for (int j = 0; j < BUFFER_SIZES.length; j++) {
+                for (int k = 0; k < mult.length; k++) {
+                    parameterLists.add(new Object[] {BUFFER_SIZES[i], BUFFER_SIZES[j], Math.max(1, (int) (BUFFER_SIZES[j] * mult[k]))});
+                }
+            }
+        }
+
+        final Object[][] params = parameterLists.toArray(new Object[][]{});
+        return params;
     }
 
     public void testValidatesInputs() throws Exception {
@@ -108,32 +126,12 @@ public class MultipartInputStreamTest {
         assertArrayEquals("First byte slice contents mismatch", referenceFirstByteSlice, multiFirstByteSlice);
     }
 
-    @Test(dataProvider = "cartesianProductOfSizes", enabled = false)
-    public void testReadVariousStringSizesFromSingleStreamWithVariousBufferSizes(
+
+    @Test(dataProvider = "inputAndBufferAndCopyBufferSizes")
+    public void testReadFirstStreamPartially(
             final int inputSize,
-            final int bufferSize
-    ) throws Exception {
-        final String errorMessage = String.format(
-                "Assertion failed while verifying MultipartInputStream with [inputSize = %d, bufferSize = %s]",
-                inputSize,
-                bufferSize);
-
-        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
-        final ByteArrayInputStream source = new ByteArrayInputStream(bytes);
-
-        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
-        mis.setNext(source);
-
-        final ByteArrayOutputStream multiBytes = new ByteArrayOutputStream();
-        IOUtils.copy(mis, multiBytes);
-
-        assertArrayEquals(errorMessage, bytes, multiBytes.toByteArray());
-    }
-
-    @Test(dataProvider = "cartesianProductOfSizes")
-    public void testReadFirstStreamFully(
-            final int inputSize,
-            final int bufferSize
+            final int bufferSize,
+            final int copyBufferSize
     ) throws IOException {
         final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
         final ByteArrayInputStream source = new ByteArrayInputStream(bytes);
@@ -143,8 +141,9 @@ public class MultipartInputStreamTest {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        final int bytesCopied = IOUtils.copy(mis, baos);
+        final long bytesCopied = IOUtils.copy(mis, baos, copyBufferSize);
         assertEquals(bytesCopied, bytes.length);
+        assertArrayEquals(bytes, baos.toByteArray());
 
         // the source stream should be exhausted
         assertEquals(source.read(), EOF);
