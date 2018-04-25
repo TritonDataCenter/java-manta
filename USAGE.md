@@ -391,9 +391,9 @@ In order to ease migration from other object stores which do not treat directori
   - strategy:
     - standard (because setting is disabled)
   - requests sent:
-    - `PUT "/$MANTA_USER/stor/foo`
-    - `PUT "/$MANTA_USER/stor/foo/bar`
-    - `PUT "/$MANTA_USER/stor/foo/bar/baz`
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
 #### Scenario 2, optimization enabled
 - `manta.skip_directory_depth` = `2`
@@ -406,9 +406,26 @@ In order to ease migration from other object stores which do not treat directori
   - strategy:
     - skip, assume first two paths already exist
   - requests sent:
-    - `PUT "/$MANTA_USER/stor/foo/bar/baz`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
-#### Scenario 2, optimization enabled, requested directory with less segments than setting
+#### Scenario 3, optimization enabled, longer path
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1"`
+- result:
+  - writeable segments = 5
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+    - `.../foo/bar/baz/subdir0`
+    - `.../foo/bar/baz/subdir0/subdir1`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1`
+
+#### Scenario 4, optimization enabled, requested directory with less segments than setting
 - `manta.skip_directory_depth` = `5`
 - directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
 - result:
@@ -419,8 +436,8 @@ In order to ease migration from other object stores which do not treat directori
   - strategy:
     - standard, because there are less segments than the skip depth*
   - requests sent:
-    - `PUT "/$MANTA_USER/stor/foo`
-    - `PUT "/$MANTA_USER/stor/foo/bar`
-    - `PUT "/$MANTA_USER/stor/foo/bar/baz`
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
 \* Note that in Scenario 3 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
