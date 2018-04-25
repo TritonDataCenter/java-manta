@@ -16,8 +16,8 @@ Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a securi
  3. Copy the downloaded JARs to the JVM extensions folder: `cp bcprov-jdk15on-158.jar bcpkix-jdk15on-158.jar $JAVA_HOME/jre/lib/ext`
 
 ### Unlimited Encryption Requirements
-Using stronger encryption modes (192 and 256-bit) will require installation of the
-[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html).
+Using stronger encryption modes (192 and 256-bit) with the Oracle and Azul JVMs requires installation of the
+[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) for Oracle JVMs and the [Zulu Cryptography Extension Kit](https://www.azul.com/products/zulu-and-zulu-enterprise/zulu-cryptography-extension-kit/) for Azul JVMs. This does not apply as of Java 8 update 161, which includes JCE by default for both [Oracle](http://www.oracle.com/technetwork/java/javase/8u161-relnotes-4021379.html#JDK-8170157) and [Azul](https://support.azul.com/hc/en-us/articles/115001122623-Java-Cryptography-Extension-JCE-for-Zing). OpenJDK distributions do not need any modifications to support stronger encryption modes.
 
 ### Using Maven
 Add the latest java-manta-client dependency to your Maven `pom.xml`.
