@@ -440,4 +440,4 @@ In order to ease migration from other object stores which do not treat directori
     - `PUT /$MANTA_USER/stor/foo/bar`
     - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
-\* Note that in Scenario 3 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
+\* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
