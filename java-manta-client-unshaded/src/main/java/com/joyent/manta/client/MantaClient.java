@@ -16,6 +16,8 @@ import com.joyent.manta.client.jobs.MantaJobError;
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
+import com.joyent.manta.config.MetricReporterMode;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
@@ -207,23 +209,32 @@ public class MantaClient implements AutoCloseable {
 
         ConfigContext.validate(config);
 
+        this.clientId = UUID.randomUUID();
+
         if (config instanceof AuthAwareConfigContext) {
             this.config = (AuthAwareConfigContext) config;
         } else {
             this.config = new AuthAwareConfigContext(config);
         }
 
-        final MetricRegistry metricRegistry;
-        if (BooleanUtils.isTrue(this.config.getMonitoringEnabled())) {
-            metricRegistry = new MetricRegistry();
+        final boolean metricsEnabled = this.config.getMetricReporterMode() != null
+                && !this.config.getMetricReporterMode().equals(MetricReporterMode.DISABLED);
+
+        final MantaClientMetricConfiguration metricConfig;
+        if (metricsEnabled) {
+            metricConfig = new MantaClientMetricConfiguration(
+                    this.clientId,
+                    new MetricRegistry(),
+                    config.getMetricReporterMode(),
+                    config.getMetricReporterOutputInterval());
         } else {
-            metricRegistry = null;
+            metricConfig = null;
         }
 
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,
                 connectionFactoryConfigurator,
-                metricRegistry);
+                metricConfig);
 
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
         final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
@@ -234,11 +245,8 @@ public class MantaClient implements AutoCloseable {
             this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
         }
 
-        // QUESTION: do we want to keep this around in the client or move it to the block below since no one
-        // else is using it yet?
-        this.clientId = UUID.randomUUID();
-        if (BooleanUtils.isTrue(this.config.getMonitoringEnabled())) {
-            this.agent = new MantaClientAgent(this.clientId, metricRegistry);
+        if (metricConfig != null) {
+            this.agent = new MantaClientAgent(metricConfig);
             agent.register(this.config);
             agent.register(connectionFactory);
         } else {

@@ -282,15 +282,6 @@ public class AuthAwareConfigContext
     }
 
     @Override
-    public AuthAwareConfigContext setMonitoringEnabled(final Boolean monitoring) {
-        synchronized (lock) {
-            super.setMonitoringEnabled(monitoring);
-        }
-
-        return this;
-    }
-
-    @Override
     public AuthAwareConfigContext setTimeout(final Integer timeout) {
         synchronized (lock) {
             super.setTimeout(timeout);
@@ -411,6 +402,24 @@ public class AuthAwareConfigContext
     public AuthAwareConfigContext setUploadBufferSize(final Integer size) {
         synchronized (lock) {
             super.setUploadBufferSize(size);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMetricReporterMode(final MetricReporterMode metricReporterMode) {
+        synchronized (lock) {
+            super.setMetricReporterMode(metricReporterMode);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMetricReporterOutputInterval(final Integer metricReporterOutputInterval) {
+        synchronized (lock) {
+            super.setMetricReporterOutputInterval(metricReporterOutputInterval);
         }
 
         return this;

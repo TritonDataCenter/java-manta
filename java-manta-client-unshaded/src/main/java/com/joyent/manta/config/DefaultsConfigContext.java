@@ -235,6 +235,16 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public MetricReporterMode getMetricReporterMode() {
+        return null;
+    }
+
+    @Override
+    public Integer getMetricReporterOutputInterval() {
+        return null;
+    }
+
+    @Override
     public Boolean isClientEncryptionEnabled() {
         return false;
     }

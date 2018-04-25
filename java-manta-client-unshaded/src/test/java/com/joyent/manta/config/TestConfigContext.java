@@ -41,8 +41,6 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setMantaUser("username")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
                 .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY)
-                // most test configs don't need mbeans and metrics enabled
-                .setMonitoringEnabled(false)
         );
     }
 
@@ -57,8 +55,6 @@ public class TestConfigContext extends BaseChainedConfigContext {
     public TestConfigContext(ConfigContext context, Properties properties,
                              boolean includeEnvironmentVars) {
         super();
-        // most test configs don't need mbeans and metrics enabled
-        setMonitoringEnabled(false);
 
         // load defaults
         overwriteWithContext(DEFAULT_CONFIG);
@@ -117,9 +113,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setMantaUser(mantaUser)
                 .setMantaKeyId(mantaKeyId)
                 .setTimeout(mantaTimeout)
-                .setRetries(retries)
-                // most test configs don't need mbeans and metrics enabled
-                .setMonitoringEnabled(false);
+                .setRetries(retries);
 
         if (privateKeyUrl != null) {
             testConfig.setMantaKeyPath(privateKeyUrl.getFile());

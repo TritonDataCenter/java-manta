@@ -7,10 +7,8 @@
  */
 package com.joyent.manta.client;
 
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Reporter;
-import com.codahale.metrics.jmx.JmxReporter;
-import com.codahale.metrics.jmx.ObjectNameFactory;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +18,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 /**
@@ -44,14 +40,14 @@ class MantaClientAgent implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientAgent.class);
 
     /**
-     * Format string for creating {@link ObjectName}s.
+     * Format string for creating {@link ObjectName}s with the {@link JmxReporter}.
      */
-    private static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:00=%s,type=%s";
+    static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:00=%s,type=%s";
 
     /**
      * Client ID. Used to avoid JMX {@link ObjectName} collisions.
      */
-    private final UUID id;
+    private final MantaClientMetricConfiguration metricConfig;
 
     /**
      * List of all MBeans to be added to JMX.
@@ -71,23 +67,18 @@ class MantaClientAgent implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     MantaClientAgent() {
-        this(UUID.randomUUID(), null);
+        this(new MantaClientMetricConfiguration());
     }
 
     /**
      * Create a new supervisor that will own an index and a set of beans.
      */
-    MantaClientAgent(final UUID clientId, final MetricRegistry metricRegistry) {
-        this.id = clientId;
+    MantaClientAgent(final MantaClientMetricConfiguration metricConfig) {
+        this.metricConfig = metricConfig;
         this.beans = new HashMap<>(2);
 
-        if (metricRegistry != null) {
-            final JmxReporter reporter = JmxReporter.forRegistry(metricRegistry)
-                    .createsObjectNamesWith(buildObjectNameFactory(this.id))
-                    .convertRatesTo(TimeUnit.SECONDS)
-                    .convertDurationsTo(TimeUnit.MILLISECONDS)
-                    .build();
-            reporter.start();
+        if (metricConfig.getRegistry() != null && metricConfig.getReporterMode() != null) {
+            final Closeable reporter = new MetricReporterSupplier(metricConfig).get();
             this.metricReporter = reporter;
         } else {
             this.metricReporter = null;
@@ -117,7 +108,11 @@ class MantaClientAgent implements AutoCloseable {
 
         final ObjectName name;
         try {
-            name = new ObjectName(String.format(FMT_MBEAN_OBJECT_NAME, bean.getClass().getSimpleName(), id));
+            name = new ObjectName(
+                    String.format(
+                            FMT_MBEAN_OBJECT_NAME,
+                            bean.getClass().getSimpleName(),
+                            this.metricConfig.getClientId()));
         } catch (final JMException e) {
             LOGGER.warn("Error creating bean: " + bean.getClass().getSimpleName(), e);
             return;
@@ -175,20 +170,5 @@ class MantaClientAgent implements AutoCloseable {
         }
 
         beans.clear();
-    }
-
-    private static ObjectNameFactory buildObjectNameFactory(final UUID clientId) {
-        return (type, domain, name) -> {
-            final String metricJmxObjectName = String.format(FMT_MBEAN_OBJECT_NAME, name, clientId);
-
-            final ObjectName objectName;
-            try {
-                objectName = new ObjectName(metricJmxObjectName);
-            } catch (final MalformedObjectNameException e) {
-                throw new RuntimeException("Unable to create JMX object name for metric" + metricJmxObjectName);
-            }
-
-            return objectName;
-        };
     }
 }

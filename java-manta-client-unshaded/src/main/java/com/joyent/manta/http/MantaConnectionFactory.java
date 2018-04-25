@@ -7,11 +7,11 @@
  */
 package com.joyent.manta.http;
 
-import com.codahale.metrics.MetricRegistry;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.ObjectUtils;
@@ -154,11 +154,11 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      *
      * @param config                        configuration of the connection parameters
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
-     * @param metricRegistry                potentially-null registry for tracking client metrics
+     * @param metricConfig                  potentially-null configuration for tracking client metrics
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
-                                  final MetricRegistry metricRegistry) {
+                                  final MantaClientMetricConfiguration metricConfig) {
         this.config = Validate.notNull(config, "Configuration context must not be null");
 
         if (connectionFactoryConfigurator != null) {
@@ -169,7 +169,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             this.httpClientBuilder = createStandardBuilder();
         }
 
-        configureHttpClientBuilderDefaults(metricRegistry);
+        configureHttpClientBuilderDefaults(metricConfig);
     }
 
     /**
@@ -318,11 +318,11 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
      *
-     * @param metricRegistry potentially-null registry for tracking client metrics
+     * @param metricConfig potentially-null configuration for tracking client metrics
      */
-    private void configureHttpClientBuilderDefaults(final MetricRegistry metricRegistry) {
+    private void configureHttpClientBuilderDefaults(final MantaClientMetricConfiguration metricConfig) {
         if (config.getRetries() > 0) {
-            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config.getRetries(), metricRegistry));
+            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config.getRetries(), metricConfig));
             httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
         } else {
             LOGGER.info("Retry of failed requests is disabled");

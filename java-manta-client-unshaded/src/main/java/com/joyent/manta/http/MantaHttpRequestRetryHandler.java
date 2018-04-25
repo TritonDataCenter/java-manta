@@ -8,8 +8,8 @@
 package com.joyent.manta.http;
 
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.protocol.HttpContext;
@@ -81,14 +81,14 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
     /**
      * Creates a new instance with the passed configuration.
      *
-     * @param retryCount     how many times to retry; 0 means no retries
-     * @param metricRegistry potentially-null registry for tracking client metrics
+     * @param retryCount   how many times to retry; 0 means no retries
+     * @param metricConfig potentially-null configuration for tracking client metrics
      */
-    public MantaHttpRequestRetryHandler(final int retryCount, final MetricRegistry metricRegistry) {
+    public MantaHttpRequestRetryHandler(final int retryCount, final MantaClientMetricConfiguration metricConfig) {
         super(retryCount, true, NON_RETRIABLE);
 
-        if (metricRegistry != null) {
-            this.retries = metricRegistry.meter("retries");
+        if (metricConfig != null && metricConfig.getRegistry() != null) {
+            this.retries = metricConfig.getRegistry().meter("retries");
         } else {
             this.retries = null;
         }

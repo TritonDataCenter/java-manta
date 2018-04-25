@@ -31,7 +31,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
 
     private static String suiteRunId = UUID.randomUUID().toString();
 
-    private static final BaseChainedConfigContext BASE = new StandardConfigContext().setMonitoringEnabled(false);
+    private static final BaseChainedConfigContext BASE = new StandardConfigContext();
 
     /**
      * Populate configuration from defaults, environment variables, system

@@ -3,12 +3,14 @@ package com.joyent.manta.http;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -26,7 +28,7 @@ public class MantaHttpRequestRetryHandlerTest {
 
     public void createsRetriesMetricInRegistry() {
         final MetricRegistry registry = new MetricRegistry();
-        final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(0, registry);
+        final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(0, new MantaClientMetricConfiguration(UUID.randomUUID(), registry));
 
         final Collection<Meter> meters = registry.getMeters(FILTER_RETRY_METRIC).values();
         assertEquals(meters.size(), 1);
@@ -35,7 +37,7 @@ public class MantaHttpRequestRetryHandlerTest {
     @Test(dependsOnMethods = {"indicatesShouldRetryOnGenericIOException", "createsRetriesMetricInRegistry"})
     public void recordsRetryMetric() {
         final MetricRegistry registry = new MetricRegistry();
-        final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(1, registry);
+        final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(1, new MantaClientMetricConfiguration(UUID.randomUUID(), registry));
 
         final Optional<Meter> maybeMeter = registry.getMeters(FILTER_RETRY_METRIC).values().stream().findFirst();
         assertTrue(maybeMeter.isPresent());

@@ -50,13 +50,6 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setMantaKeyPath(String mantaKeyPath);
 
     /**
-     * Whether or not MBeans and metrics should be activated.
-     * @param monitoring build a monitoring agent or not
-     * @return the current instance of {@link T}
-     */
-    T setMonitoringEnabled(Boolean monitoring);
-
-    /**
      * Sets the general connection timeout for the Manta service.
      * @param timeout timeout in milliseconds
      * @return the current instance of {@link T}
@@ -186,6 +179,22 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @return the current instance of {@link T}
      */
     T setSkipDirectoryDepth(Integer depth);
+
+    /**
+     * Sets the method used to report metrics (or disable them entirely).
+     *
+     * @param metricReporterMode metric reporting mode
+     * @return the current instance of {@link T}
+     */
+    T setMetricReporterMode(MetricReporterMode metricReporterMode);
+
+    /**
+     * Sets the method used to report metrics (or disables them entirely).
+     *
+     * @param metricReporterOutputInterval metrics output interval in milliseconds for modes that report periodically
+     * @return the current instance of {@link T}
+     */
+    T setMetricReporterOutputInterval(Integer metricReporterOutputInterval);
 
     /**
      * Sets flag indicating when client-side encryption is enabled.
@@ -331,6 +340,25 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
             case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
                 config.setSkipDirectoryDepth(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_METRIC_REPORTER_MODE_KEY:
+            case EnvVarConfigContext.MANTA_METRIC_REPORTER_MODE_ENV_KEY:
+                final String metricReporterModeStr = Objects.toString(value);
+                if (StringUtils.isBlank(metricReporterModeStr)) {
+                    return;
+                }
+
+                try {
+                    config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.valueOf(metricReporterModeStr));
+                } catch (IllegalArgumentException e) {
+                    // error parsing enum value, so we just exit the function
+                    return;
+                }
+
+                break;
+            case MapConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY:
+            case EnvVarConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY:
+                config.setMetricReporterOutputInterval(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
