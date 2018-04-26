@@ -1,26 +1,42 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.client;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Reporter;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import static org.apache.commons.lang3.Validate.inclusiveBetween;
 import static org.apache.commons.lang3.Validate.notNull;
 
+/**
+ * Helper class for building and starting a metric reporter given a {@link MantaClientMetricConfiguration}.
+ *
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ */
 final class MetricReporterSupplier implements Supplier<Closeable> {
 
+    /**
+     * A metric reporter constructed and configured with settings from the supplied configuration.
+     */
     private final Closeable reporter;
 
+    /**
+     * Constructing an instance of this class prepares the desired metric reporter based on the supplied configuration.
+     *
+     * @param metricConfig details about the type of reporter to construct and any necessary additional parameters
+     */
     MetricReporterSupplier(final MantaClientMetricConfiguration metricConfig) {
         notNull(metricConfig);
 

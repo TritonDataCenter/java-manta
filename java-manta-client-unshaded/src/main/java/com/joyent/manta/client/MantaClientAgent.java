@@ -17,7 +17,6 @@ import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
@@ -39,13 +38,38 @@ class MantaClientAgent implements AutoCloseable {
     @SuppressWarnings("JavaDocVariable")
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientAgent.class);
 
+    // @formatter:off
     /**
-     * Format string for creating {@link ObjectName}s with the {@link JmxReporter}.
+     * Format string for creating {@link ObjectName}s when exposing beans or metrics through JMX.
+     * This format string is used for both custom MBeans and exposing metrics. The resulting JMX structure
+     * resembles the following (where each ${CLIENT_UUID} represents a client instantiation:
+     *
+     * <ul>
+     *   <li>com.joyent.manta.client
+     *     <ul>
+     *       <li>${CLIENT_UUID}
+     *         <ul>
+     *           <li>ConfigContextMBean</li>
+     *           <li>PoolStatsMBean</li>
+     *           <li>retries</li>
+     *           <li>...</li>
+     *         </ul>
+     *       </li>
+     *       <li>${CLIENT_UUID}
+     *         <ul>
+     *           <li>...</li>
+     *         </ul>
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     *
      */
     static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:00=%s,type=%s";
+    // @formatter:on
 
     /**
-     * Client ID. Used to avoid JMX {@link ObjectName} collisions.
+     * Metric configuration info.
      */
     private final MantaClientMetricConfiguration metricConfig;
 
@@ -66,20 +90,24 @@ class MantaClientAgent implements AutoCloseable {
      */
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
+    /**
+     * Construct a stub agent for unit testing custom MBean functionality.
+     */
     MantaClientAgent() {
         this(new MantaClientMetricConfiguration());
     }
 
     /**
-     * Create a new supervisor that will own an index and a set of beans.
+     * Create a new agent that will be responsible for exposing MBeans and metrics for the given configuration.
+     *
+     * @param metricConfig details about how metrics will be exposed
      */
     MantaClientAgent(final MantaClientMetricConfiguration metricConfig) {
         this.metricConfig = metricConfig;
         this.beans = new HashMap<>(2);
 
         if (metricConfig.getRegistry() != null && metricConfig.getReporterMode() != null) {
-            final Closeable reporter = new MetricReporterSupplier(metricConfig).get();
-            this.metricReporter = reporter;
+            this.metricReporter = new MetricReporterSupplier(metricConfig).get();
         } else {
             this.metricReporter = null;
         }
@@ -93,7 +121,7 @@ class MantaClientAgent implements AutoCloseable {
      */
     void register(final MantaMBeanable beanable) {
         if (closed.get()) {
-            throw new IllegalStateException("Cannot register MBeans, supervisor has been closed");
+            throw new IllegalStateException("Cannot register MBeans, agent has been closed");
         }
 
         final DynamicMBean bean = beanable.toMBean();
@@ -127,7 +155,7 @@ class MantaClientAgent implements AutoCloseable {
     }
 
     /**
-     * Prepare the supervisor for reuse.
+     * Prepare the agent for reuse.
      *
      * @throws Exception if an exception is thrown by {@link #close()}
      */

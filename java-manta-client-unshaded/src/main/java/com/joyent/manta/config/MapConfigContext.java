@@ -424,7 +424,8 @@ public class MapConfigContext implements ConfigContext {
 
     @Override
     public Integer getMetricReporterOutputInterval() {
-        final Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY));
+        final Integer mapValue = MantaUtils.parseIntegerOrNull(
+                backingMap.get(MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY));
 
         if (mapValue != null) {
             return mapValue;
