@@ -410,7 +410,7 @@ public class MapConfigContext implements ConfigContext {
     @Override
     public MetricReporterMode getMetricReporterMode() {
         final MetricReporterMode metricReporterMode = MantaUtils.parseEnumOrNull(
-                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY),
+                backingMap.get(MANTA_METRIC_REPORTER_MODE_KEY),
                 MetricReporterMode.class);
 
         if (metricReporterMode != null) {
@@ -418,7 +418,7 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseEnumOrNull(
-                backingMap.get(MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY),
+                backingMap.get(MANTA_METRIC_REPORTER_MODE_ENV_KEY),
                 MetricReporterMode.class);
     }
 

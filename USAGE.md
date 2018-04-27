@@ -95,6 +95,8 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
 | manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
+| manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
+| manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
@@ -160,6 +162,15 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
     Integer indicating the number of **non-system** directory levels to attempt to skip for recursive `putDirectory`
     operation (i.e. `/$MANTA_USER` and `/$MANTA_USER/stor` would not be counted). A detailed explanation and example are provided [later in this document](/USAGE.md#skipping-directories)
+* `manta.metric_reporter.mode` (**MANTA_METRIC_REPORTER_MODE**)
+    Enum type indicating how metrics should be reported. Options include `DISABLED`, `JMX`, and `SLF4J`. Leaving this value
+    unset or selecting `DISABLED` will prevent the client from gathering and reporting metrics. Certain reporters
+    (only `SLF4J` at present) requires also setting an output interval.
+    See [the section on monitoring](#monitoring) for more information about reporting modes.
+* `manta.metric_reporter.output_interval` (**MANTA_METRIC_REPORTER_OUTPUT_INTERVAL**)
+    Integer interval at which metrics are reported by periodic reporters.
+    This number must be set and greater than zero if `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`
+    is set to `SLF4J`.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
@@ -355,6 +366,28 @@ and you wish to debug the establishment and leasing of HTTP connections:
 Please note that the Commons Logger adaptor is not a dependency of `java-manta-client-unshaded` and it is the user's
 responsibility to add their own dependency if they wish to collect Apache HttpClient logs. For more information on log
 bridging in SLF4J please review [this page](https://www.slf4j.org/legacy.html).
+
+### Monitoring
+
+Users can enable monitoring in order to provide better visibility into behavior and performance of a `MantaClient`.
+This requires selecting a reporting mode using the following settings:
+
+- `manta.metric_reporter.mode` select the method by which metrics are exported. Unset by default. Options include:
+    - `DISABLED`: explicitly disables monitoring.
+    - `JMX`: registers MBeans in [JMX](https://en.wikipedia.org/wiki/Java_Management_Extensions). MBeans are created
+    for the following at present:
+        - `ConfigContextMBean` displays the `ConfigContext` settings used to build the client.
+        - `PoolStatsMBean` displays statistics about the client's connection pool.
+        - Additional metrics tracked:
+            - `retries`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) measuring the rate
+            and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
+    - `SLF4J`: reporters metrics through the generic logging interface provided by [SLF4J](http://www.slf4j.org/).
+    This setting requires users to also supply a reporting output interval.
+- `manta.metric_reporter.output_interval` specify the amount of time in milliseconds between reporting metrics for
+    periodic reporters. Required by `SLF4J`. Setting this value too low may lead to excessive disk usage. A value of
+    `60000` (60s) provides minute-by-minute granularity in combination with the 1-minute moving average provided
+    by certain metric values. Logging is done at the `INFO` level using a logger named
+    `com.joyent.manta.client.metrics`.
 
 ### Customizing the client further
 

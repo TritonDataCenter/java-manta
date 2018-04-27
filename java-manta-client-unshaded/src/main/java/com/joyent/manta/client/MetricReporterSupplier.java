@@ -28,8 +28,13 @@ import static org.apache.commons.lang3.Validate.notNull;
 final class MetricReporterSupplier implements Supplier<Closeable> {
 
     /**
+     * The logger name to use for SLF4J reporting.
+     */
+    public static final String FMT_METRIC_LOGGER_NAME = "com.joyent.manta.client.metrics";
+    /**
      * A metric reporter constructed and configured with settings from the supplied configuration.
      */
+
     private final Closeable reporter;
 
     /**
@@ -67,7 +72,7 @@ final class MetricReporterSupplier implements Supplier<Closeable> {
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .prefixedWith(metricConfig.getClientId().toString())
-                .outputTo(LoggerFactory.getLogger("com.joyent.manta.client.metrics"))
+                .outputTo(LoggerFactory.getLogger(FMT_METRIC_LOGGER_NAME))
                 // .shutdownExecutorOnStop()
                 // .markWith()
                 // .withLoggingLevel()
