@@ -168,7 +168,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     (only `SLF4J` at present) requires also setting an output interval.
     See [the section on monitoring](#monitoring) for more information about reporting modes.
 * `manta.metric_reporter.output_interval` (**MANTA_METRIC_REPORTER_OUTPUT_INTERVAL**)
-    Integer interval at which metrics are reported by periodic reporters.
+    Integer interval in milliseconds at which metrics are reported by periodic reporters.
     This number must be set and greater than zero if `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`
     is set to `SLF4J`.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
