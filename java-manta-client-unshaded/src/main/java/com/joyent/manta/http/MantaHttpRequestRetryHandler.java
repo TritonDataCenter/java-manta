@@ -38,7 +38,7 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
     /**
      * Logger instance.
      */
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(MantaHttpRequestRetryHandler.class);
 
     /**
      * List of all exception types that can't be retried.
@@ -53,6 +53,11 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
      * Key for HttpContext setting indicating the request should NOT be retried under any circumstances.
      */
     public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE = "manta.retry.disable";
+
+    /**
+     * The name used to publish the retry metrics.
+     */
+    public static final String METRIC_NAME_RETRIES = "retries";
 
     /**
      * Nullable meter for keeping track of the count and rate of retries.
@@ -88,7 +93,7 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
         super(retryCount, true, NON_RETRIABLE);
 
         if (metricConfig != null && metricConfig.getRegistry() != null) {
-            this.retries = metricConfig.getRegistry().meter("retries");
+            this.retries = metricConfig.getRegistry().meter(METRIC_NAME_RETRIES);
         } else {
             this.retries = null;
         }
