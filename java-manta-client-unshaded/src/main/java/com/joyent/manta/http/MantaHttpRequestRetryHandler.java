@@ -38,7 +38,7 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
     /**
      * Logger instance.
      */
-    private static final Logger logger = LoggerFactory.getLogger(MantaHttpRequestRetryHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(MantaHttpRequestRetryHandler.class);
 
     /**
      * List of all exception types that can't be retried.
