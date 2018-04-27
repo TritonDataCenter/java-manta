@@ -9,6 +9,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
  - [Underlying stream is not closed by `MantaEncryptedObjectInputStream` for range requests with certain ciphers](https://github.com/joyent/java-manta/issues/398)
  - [Exceptions relating to object type expectations are too generic](https://github.com/joyent/java-manta/issues/403)
+ - Upgraded HTTP Signatures dependency from 4.0.6 to 4.0.8, jna-gmp from 2.0.0 to 2.1.0, and BouncyCastle from 1.58 to 1.59.
+ - Improved error messages for missing or invalid private keys.
 
 ## [3.2.1] - 2017-12-01
 ### Added
