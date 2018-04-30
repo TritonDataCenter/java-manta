@@ -146,7 +146,7 @@ public interface ConfigContext extends MantaMBeanable {
     MetricReporterMode getMetricReporterMode();
 
     /**
-     * @return number of milliseconds between metrics output for periodic reporters
+     * @return number of seconds between metrics output for periodic reporters
      */
     Integer getMetricReporterOutputInterval();
 

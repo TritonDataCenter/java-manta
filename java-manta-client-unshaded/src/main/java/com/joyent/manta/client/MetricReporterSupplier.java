@@ -53,7 +53,7 @@ final class MetricReporterSupplier implements Supplier<Closeable> {
                 break;
             case SLF4J:
                 final Slf4jReporter slf4jReporter = buildSlf4jReporter(metricConfig);
-                slf4jReporter.start(metricConfig.getPeriodicReporterOutputInterval(), TimeUnit.MILLISECONDS);
+                slf4jReporter.start(metricConfig.getPeriodicReporterOutputInterval(), TimeUnit.SECONDS);
                 this.reporter = slf4jReporter;
                 break;
             case DISABLED:

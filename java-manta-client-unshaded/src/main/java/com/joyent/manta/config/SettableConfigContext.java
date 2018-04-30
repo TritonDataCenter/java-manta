@@ -191,7 +191,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
     /**
      * Sets the method used to report metrics (or disables them entirely).
      *
-     * @param metricReporterOutputInterval metrics output interval in milliseconds for modes that report periodically
+     * @param metricReporterOutputInterval metrics output interval in seconds for modes that report metrics periodically
      * @return the current instance of {@link T}
      */
     T setMetricReporterOutputInterval(Integer metricReporterOutputInterval);

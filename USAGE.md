@@ -168,7 +168,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     (only `SLF4J` at present) requires also setting an output interval.
     See [the section on monitoring](#monitoring) for more information about reporting modes.
 * `manta.metric_reporter.output_interval` (**MANTA_METRIC_REPORTER_OUTPUT_INTERVAL**)
-    Integer interval in milliseconds at which metrics are reported by periodic reporters.
+    Integer interval in seconds at which metrics are reported by periodic reporters.
     This number must be set and greater than zero if `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`
     is set to `SLF4J`.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
@@ -383,11 +383,23 @@ This requires selecting a reporting mode using the following settings:
             and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
     - `SLF4J`: reporters metrics through the generic logging interface provided by [SLF4J](http://www.slf4j.org/).
     This setting requires users to also supply a reporting output interval.
-- `manta.metric_reporter.output_interval` specify the amount of time in milliseconds between reporting metrics for
+- `manta.metric_reporter.output_interval` specify the amount of time in seconds between reporting metrics for
     periodic reporters. Required by `SLF4J`. Setting this value too low may lead to excessive disk usage. A value of
-    `60000` (60s) provides minute-by-minute granularity in combination with the 1-minute moving average provided
+    60 affords minute-by-minute granularity in combination with the 1-minute moving average provided
     by certain metric values. Logging is done at the `INFO` level using a logger named
-    `com.joyent.manta.client.metrics`.
+    `com.joyent.manta.client.metrics`. An example metric output for client ID `c16a2f85-90f7-4e7c-b0f3-b8993eca18d1`
+    would look like the following (newlines added for clarity):
+    ```
+    [metrics-logger-reporter-1-thread-1] INFO  com.joyent.manta.client.metrics [ ] -
+    type=METER,
+    name=c16a2f85-90f7-4e7c-b0f3-b8993eca18d1.retries,
+    count=2,
+    mean_rate=0.07982106952096357,
+    m1=0.028248726311583667,
+    m5=0.006448405864180696,
+    m15=0.0021976788366558607,
+    rate_unit=events/second
+    ```
 
 ### Customizing the client further
 
