@@ -12,7 +12,6 @@ import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
