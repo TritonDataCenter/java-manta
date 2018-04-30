@@ -5,8 +5,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -98,9 +100,11 @@ public class MantaHttpHeadersIT {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta] in "
-                        + "order for this test to work";
-                throw new SkipException(msg, e);
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s] in  order for this test to work",
+                                primaryRoleName),
+                        e);
             }
 
             throw e;
@@ -133,9 +137,12 @@ public class MantaHttpHeadersIT {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta, role2] in "
-                             + "order for this test to work";
-                throw new SkipException(msg, e);
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s, %s] in  order for this test to work",
+                                primaryRoleName,
+                                secondaryRoleName),
+                        e);
             }
 
             throw e;
@@ -168,9 +175,12 @@ public class MantaHttpHeadersIT {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta, role2] in "
-                        + "order for this test to work";
-                throw new SkipException(msg, e);
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s, %s] in  order for this test to work",
+                                primaryRoleName,
+                                secondaryRoleName),
+                        e);
             }
         }
 
@@ -219,11 +229,12 @@ public class MantaHttpHeadersIT {
         try {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta, role2] in "
-                        + "order for this test to work";
-                throw new SkipException(msg, e);
-            }
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s, %s] in  order for this test to work",
+                                primaryRoleName,
+                                secondaryRoleName),
+                        e);
         }
 
         final Set<String> updatedRoles = new HashSet<>();
