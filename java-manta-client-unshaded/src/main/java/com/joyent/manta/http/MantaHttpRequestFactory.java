@@ -220,8 +220,8 @@ public class MantaHttpRequestFactory {
     }
 
     /**
-     * Add headers to an {@link org.apache.http.client.methods.HttpUriRequest} without clobbering defaults
-     * and authentication.
+     * Add headers to an {@link org.apache.http.client.methods.HttpUriRequest}. Never copies the request ID header.
+     * If reusing a request ID is desired (which it should never be) it will need to be done manually.
      *
      * @param httpMessage request to attach headers to
      * @param headers headers to attach
@@ -229,7 +229,7 @@ public class MantaHttpRequestFactory {
     public static void addHeaders(final HttpMessage httpMessage, final Header... headers) {
         Validate.notNull(httpMessage, "HttpMessage must not be null");
         for (final Header header : headers) {
-            if (header.getName().equals(MantaHttpHeaders.REQUEST_ID)) {
+            if (MantaHttpHeaders.REQUEST_ID.equals(header.getName())) {
                 continue;
             }
 
