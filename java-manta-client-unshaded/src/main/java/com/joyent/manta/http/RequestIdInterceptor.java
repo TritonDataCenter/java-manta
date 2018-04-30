@@ -61,6 +61,12 @@ public class RequestIdInterceptor implements HttpRequestInterceptor {
 
     @Override
     public void process(final HttpRequest request, final HttpContext context) throws HttpException, IOException {
+        if (request.containsHeader(MantaHttpHeaders.REQUEST_ID)) {
+            // See: MANTA-3673, manta barfs on malformed x-request-id
+            // TODO: what do? throw exception, log warning/error and skip?
+            return;
+        }
+
         final UUID id = TIME_BASED_GENERATOR.generate();
         final String requestId = id.toString();
         final Header idHeader = new BasicHeader(MantaHttpHeaders.REQUEST_ID, requestId);

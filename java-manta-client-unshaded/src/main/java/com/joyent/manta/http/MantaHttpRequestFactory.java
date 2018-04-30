@@ -229,6 +229,10 @@ public class MantaHttpRequestFactory {
     public static void addHeaders(final HttpMessage httpMessage, final Header... headers) {
         Validate.notNull(httpMessage, "HttpMessage must not be null");
         for (final Header header : headers) {
+            if (header.getName().equals(MantaHttpHeaders.REQUEST_ID)) {
+                continue;
+            }
+
             httpMessage.addHeader(header);
         }
     }
