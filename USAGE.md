@@ -16,8 +16,8 @@ Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a securi
  3. Copy the downloaded JARs to the JVM extensions folder: `cp bcprov-jdk15on-158.jar bcpkix-jdk15on-158.jar $JAVA_HOME/jre/lib/ext`
 
 ### Unlimited Encryption Requirements
-Using stronger encryption modes (192 and 256-bit) will require installation of the
-[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html).
+Using stronger encryption modes (192 and 256-bit) with the Oracle and Azul JVMs requires installation of the
+[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) for Oracle JVMs and the [Zulu Cryptography Extension Kit](https://www.azul.com/products/zulu-and-zulu-enterprise/zulu-cryptography-extension-kit/) for Azul JVMs. This does not apply as of Java 8 update 161, which includes JCE by default for both [Oracle](http://www.oracle.com/technetwork/java/javase/8u161-relnotes-4021379.html#JDK-8170157) and [Azul](https://support.azul.com/hc/en-us/articles/115001122623-Java-Cryptography-Extension-JCE-for-Zing). OpenJDK distributions do not need any modifications to support stronger encryption modes.
 
 ### Using Maven
 Add the latest java-manta-client dependency to your Maven `pom.xml`.
@@ -158,11 +158,8 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     entirety of the stream fits within the number of bytes of this value, then the
     contents of the buffer are directly uploaded to Manta in a retryable form.
 * `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
-    Integer indicating the number of directory levels to attempt to skip when performing a recursive `putDirectory`
-    operation. Set to 0 to disable the optimization entirely. Irrelevant when the depth of the recursive `putDirectory`
-    call is less than the setting. When creating a directory with more levels than the setting, the client will attempt
-    to skip this many non-system directories from the root. Will return to normal directory creation procedure if
-    the skipped `PUT` fails or proceed creating all directories between the skip depth and the child on success.
+    Integer indicating the number of **non-system** directory levels to attempt to skip for recursive `putDirectory`
+    operation (i.e. `/$MANTA_USER` and `/$MANTA_USER/stor` would not be counted). A detailed explanation and example are provided [later in this document](/USAGE.md#skipping-directories)
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
@@ -378,3 +375,69 @@ an `AuthAwareConfigContext` by disabling authentication until a private key can 
 Concurrently updating configuration values while requests are still pending can lead to errors and unpredictable results.
 See the [Dynamic Authentication example](/java-manta-examples/src/main/java/DynamicAuthentication.java) and
 [this test case](/java-manta-it/src/test/java/com/joyent/manta/client/MantaClientAuthenticationChangeIT) for example usage.
+
+### Skipping directories
+
+In order to ease migration from other object stores which do not treat directories as first-class entities a method for creating arbitrarily-nested directories is provided by the [MantaClient#putDirectory(String, boolean)](http://static.javadoc.io/com.joyent.manta/java-manta-client/3.2.1/com/joyent/manta/client/MantaClient.html#putDirectory-java.lang.String-boolean-) method. This can carry a high performance cost unless used judiciously so an optional performance enhancement is provided in the form of the `manta.skip_directory_depth`/`MANTA_SKIP_DIRECTORY_DEPTH` setting. This setting indicates how many intermediate **user-writeable** directories (i.e. those which are not "top-level directories") the client can assume to already exist. Since the first two levels of a directory path are managed by Manta they are not considered for this optimization (since they _must_ exist). To illustrate this feature let's look at a few examples:
+
+#### Scenario 1, optimization disabled
+- `manta.skip_directory_depth` = `0`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - standard (because setting is disabled)
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+#### Scenario 2, optimization enabled
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+#### Scenario 3, optimization enabled, longer path
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1"`
+- result:
+  - writeable segments = 5
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+    - `.../foo/bar/baz/subdir0`
+    - `.../foo/bar/baz/subdir0/subdir1`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1`
+
+#### Scenario 4, optimization enabled, requested directory with less segments than setting
+- `manta.skip_directory_depth` = `5`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - standard, because there are less segments than the skip depth*
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+\* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)

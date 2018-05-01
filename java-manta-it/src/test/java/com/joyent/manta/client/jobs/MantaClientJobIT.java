@@ -485,12 +485,14 @@ public class MantaClientJobIT {
     }
 
     private void awaitJobCompletion(final UUID jobId) throws IOException, InterruptedException {
-        int checks = 0;
-        while (!mantaClient.getJob(jobId).getState().equals("done") && checks < 10) {
+        for (int checks = 0; checks < 20; checks++) {
+            if (mantaClient.getJob(jobId).getState().equals("done")) {
+                return;
+            }
+
             Thread.sleep(1000);
-            checks++;
         }
 
-        throw new AssertionError("Waited too long for job state to become \"done\" ");
+        throw new AssertionError("Waited too long (~20 seconds) for job state to become \"done\" ");
     }
 }
