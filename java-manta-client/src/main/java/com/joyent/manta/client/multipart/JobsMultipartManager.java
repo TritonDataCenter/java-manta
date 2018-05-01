@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -176,47 +177,15 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
     @Override
     public Stream<MantaMultipartUpload> listInProgress() throws IOException {
-        final List<Exception> exceptions = new ArrayList<>();
+        final List<Exception> exceptions = new CopyOnWriteArrayList<>();
 
-        /* This nesting structure is unfortunate, but an artifact of us needing
-         * to close the stream when we have finished processing. */
-        try (Stream<MantaObject> multipartDirList = mantaClient
+        final Stream<MantaObject> multipartDirList;
+        try {
+            multipartDirList = mantaClient
                     .listObjects(this.resolvedMultipartUploadDirectory)
-                    .filter(MantaObject::isDirectory)) {
-
-            final Stream<MantaMultipartUpload> stream = multipartDirList
-                    .map(object -> {
-                        String idString = MantaUtils.lastItemInPath(object.getPath());
-                        UUID id = UUID.fromString(idString);
-
-                        try {
-                            MultipartMetadata mantaMetadata = downloadMultipartMetadata(id);
-                            MantaMultipartUpload upload = new JobsMultipartUpload(id, mantaMetadata.getPath());
-                            return upload;
-                        } catch (MantaClientHttpResponseException e) {
-                            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                                return null;
-                            } else {
-                                exceptions.add(e);
-                                return null;
-                            }
-                        } catch (IOException | RuntimeException e) {
-                            exceptions.add(e);
-                            return null;
-                        }
-                    })
-                    /* We explicitly filter out items that stopped existing when we
-                     * went to get the multipart metadata because we encountered a
-                     * race condition. */
-                    .filter(Objects::nonNull);
-
-            if (exceptions.isEmpty()) {
-                danglingStreams.add(stream);
-
-                return stream;
-            }
-        // This catches an exception on the initial listObjects call
-        } catch (MantaClientHttpResponseException e) {
+                    .filter(MantaObject::isDirectory);
+            // This catches an exception on the initial listObjects call
+        } catch (final MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return Stream.empty();
             } else {
@@ -224,11 +193,42 @@ public class JobsMultipartManager extends AbstractMultipartManager
             }
         }
 
+        final Stream<MantaMultipartUpload> stream = multipartDirList
+                .map(object -> {
+                    final String idString = MantaUtils.lastItemInPath(object.getPath());
+                    final UUID id = UUID.fromString(idString);
+
+                    try {
+                        MultipartMetadata mantaMetadata = downloadMultipartMetadata(id);
+                        MantaMultipartUpload upload = new JobsMultipartUpload(id, mantaMetadata.getPath());
+                        return upload;
+                    } catch (MantaClientHttpResponseException e) {
+                        if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                            return null;
+                        } else {
+                            exceptions.add(e);
+                            return null;
+                        }
+                    } catch (IOException | RuntimeException e) {
+                        exceptions.add(e);
+                        return null;
+                    }
+                })
+                /* We explicitly filter out items that stopped existing when we
+                 * went to get the multipart metadata because we encountered a
+                 * race condition. */
+                .filter(Objects::nonNull);
+
+        if (exceptions.isEmpty()) {
+            danglingStreams.add(stream);
+
+            return stream;
+        }
+
         final MantaIOException aggregateException = new MantaIOException(
                 "Problem(s) listing multipart uploads in progress");
 
-        MantaUtils.attachExceptionsToContext(aggregateException,
-                exceptions);
+        MantaUtils.attachExceptionsToContext(aggregateException, exceptions);
 
         throw aggregateException;
     }
