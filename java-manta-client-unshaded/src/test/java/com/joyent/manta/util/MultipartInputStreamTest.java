@@ -1,8 +1,6 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +33,20 @@ public class MultipartInputStreamTest {
 
     private static final int[] BUFFER_SIZES = {
             BUFFER_SIZE_1,
+            BUFFER_SIZE_256 - 1,
             BUFFER_SIZE_256,
+            BUFFER_SIZE_256 + 1,
+            BUFFER_SIZE_1K - 1,
             BUFFER_SIZE_1K,
+            BUFFER_SIZE_1K + 1,
+            BUFFER_SIZE_8K - 1,
             BUFFER_SIZE_8K,
+            BUFFER_SIZE_8K + 1,
     };
 
     private static final RandomStringGenerator STRING_GENERATOR =
             new RandomStringGenerator.Builder()
-                    .filteredBy(CharacterPredicates.DIGITS)
+                    .withinRange((int) 'a', (int) 'z')
                     .build();
 
     @DataProvider(name = "cartesianProductOfSizes")
@@ -60,11 +64,11 @@ public class MultipartInputStreamTest {
     private Object[][] inputAndBufferAndCopyBufferSizes() {
         final ArrayList<Object[]> parameterLists = new ArrayList<>();
 
-        final float[] mult = new float[] { 0.5f, 1f, 2f };
+        final float[] mult = new float[]{0.5f, 1f, 2f};
         for (int i = 0; i < BUFFER_SIZES.length; i++) {
             for (int j = 0; j < BUFFER_SIZES.length; j++) {
                 for (int k = 0; k < mult.length; k++) {
-                    parameterLists.add(new Object[] {BUFFER_SIZES[i], BUFFER_SIZES[j], Math.max(1, (int) (BUFFER_SIZES[j] * mult[k]))});
+                    parameterLists.add(new Object[]{BUFFER_SIZES[i], BUFFER_SIZES[j], Math.max(1, (int) (BUFFER_SIZES[j] * mult[k]))});
                 }
             }
         }
@@ -109,10 +113,10 @@ public class MultipartInputStreamTest {
 
     @Test(dataProvider = "cartesianProductOfSizes")
     public void testReadSmallSliceOfSingleLargeInput(final int inputSize, final int bufferSize) throws Exception {
-        final byte[] bytes = STRING_GENERATOR.generate(RandomUtils.nextInt(inputSize, inputSize * 2)).getBytes(UTF_8);
+        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
         final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
 
-        final MultipartInputStream mis = new MultipartInputStream(RandomUtils.nextInt(bufferSize, bufferSize * 2));
+        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
         mis.setNext(src);
 
         final int sliceSize = Math.min(1, Math.floorDiv(bytes.length, 2));

@@ -183,7 +183,9 @@ public class MultipartInputStream extends InputStream {
     }
 
     private void ensureBufferIsReady() throws IOException {
-        if (count == 0 || bufPos == buffer.length) {
+        if (count == 0
+                || this.bufPos == this.buffer.length
+                || this.bufPos == this.bufCount) {
             fillBuffer();
         }
     }
