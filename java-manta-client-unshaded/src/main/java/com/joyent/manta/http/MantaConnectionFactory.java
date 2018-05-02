@@ -367,7 +367,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             } else {
                 String msg = String.format(
                         "Expecting proxy to be instance of InetSocketAddress. "
-                                + " Actually: %s", proxy.address());
+                        + " Actually: %s", proxy.address());
                 throw new ConfigurationException(msg);
             }
         } else {

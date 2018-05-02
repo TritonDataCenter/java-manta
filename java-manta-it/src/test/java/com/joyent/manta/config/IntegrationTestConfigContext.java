@@ -31,14 +31,12 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
 
     private static String suiteRunId = UUID.randomUUID().toString();
 
-    private static final BaseChainedConfigContext BASE = new StandardConfigContext();
-
     /**
      * Populate configuration from defaults, environment variables, system
      * properties and an addition context passed in.
      */
     public IntegrationTestConfigContext() {
-        super(enableTestEncryption(BASE, encryptionEnabled(), encryptionCipher()));
+        super(enableTestEncryption(new StandardConfigContext(), encryptionEnabled(), encryptionCipher()));
     }
 
     /**
@@ -47,7 +45,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * client-side encryption configuration settings.
      */
     public IntegrationTestConfigContext(Boolean usingEncryption) {
-        super(enableTestEncryption(BASE,
+        super(enableTestEncryption(new StandardConfigContext(),
                 (encryptionEnabled() && usingEncryption == null) ||
                         BooleanUtils.isTrue(usingEncryption), encryptionCipher()));
     }
@@ -58,7 +56,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      * client-side encryption configuration settings.
      */
     public IntegrationTestConfigContext(Boolean usingEncryption, String encryptionCipher) {
-        super(enableTestEncryption(BASE,
+        super(enableTestEncryption(new StandardConfigContext(),
                 (encryptionEnabled() && usingEncryption == null) ||
                         BooleanUtils.isTrue(usingEncryption), encryptionCipher));
     }

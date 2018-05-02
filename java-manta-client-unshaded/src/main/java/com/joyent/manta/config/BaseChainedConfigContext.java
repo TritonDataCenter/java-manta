@@ -121,7 +121,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile MetricReporterMode metricReporterMode;
 
     /**
-     * Whether metrics and MBeans should be tracked and exposed.
+     * Metrics output interval in seconds for modes that report metrics periodically.
      */
     private volatile Integer metricReporterOutputInterval;
 

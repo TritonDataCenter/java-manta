@@ -23,8 +23,8 @@ import static org.apache.commons.lang3.Validate.notNull;
 public final class MantaClientMetricConfiguration {
 
     /**
-     * Unique identifier for each {@link com.joyent.manta.client.MantaClient} instance. Used to avoid collisions when
-     * registering objects in JMX.
+     * Unique identifier for each {@link com.joyent.manta.client.MantaClient} instance. Also used to avoid collisions
+     * when registering objects in JMX.
      */
     private final UUID clientId;
 
