@@ -11,11 +11,11 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.2.2</version>
+        <version>3.2.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>java-manta-client</artifactId>
-    <version>3.2.2</version>
+    <version>3.2.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>java-manta-client</name>
@@ -25,7 +25,7 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client-unshaded</artifactId>
-            <version>3.2.2</version>
+            <version>3.2.3-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
