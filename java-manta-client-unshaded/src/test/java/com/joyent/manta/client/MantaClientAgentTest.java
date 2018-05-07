@@ -14,16 +14,16 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-public class MantaMBeanSupervisorTest {
+public class MantaClientAgentTest {
 
     @Test
     public void canExposeConfig() throws Exception {
-        final MantaMBeanSupervisor supervisor = new MantaMBeanSupervisor();
+        final MantaClientAgent agent = new MantaClientAgent();
         final MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
 
-        supervisor.expose(new StandardConfigContext());
+        agent.register(new StandardConfigContext());
 
-        final Map<ObjectName, DynamicMBean> beans = supervisor.getBeans();
+        final Map<ObjectName, DynamicMBean> beans = agent.getBeans();
         Assert.assertEquals(beans.size(), 1);
 
         final List<String> propList = Arrays.asList(MapConfigContext.ALL_PROPERTIES);
@@ -35,36 +35,36 @@ public class MantaMBeanSupervisorTest {
             propList.contains(attrInfo.getName());
         }
 
-        supervisor.close();
+        agent.close();
         Assert.assertFalse(beanServer.isRegistered(configName));
     }
 
     @Test
     public void canReuseObjectNamesAfterReset() throws Exception {
-        final MantaMBeanSupervisor supervisor = new MantaMBeanSupervisor();
+        final MantaClientAgent agent = new MantaClientAgent();
         final MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
 
-        supervisor.expose(new StandardConfigContext());
+        agent.register(new StandardConfigContext());
 
-        final Map<ObjectName, DynamicMBean> beans = supervisor.getBeans();
+        final Map<ObjectName, DynamicMBean> beans = agent.getBeans();
         Assert.assertEquals(beans.size(), 1);
 
         final ObjectName configName = extractSingleBeanName(beans);
 
         Assert.assertTrue(beanServer.isRegistered(configName));
-        supervisor.reset();
+        agent.reset();
         Assert.assertFalse(beanServer.isRegistered(configName));
 
-        supervisor.expose(new StandardConfigContext());
+        agent.register(new StandardConfigContext());
 
-        final Map<ObjectName, DynamicMBean> beansAfterReset = supervisor.getBeans();
+        final Map<ObjectName, DynamicMBean> beansAfterReset = agent.getBeans();
         Assert.assertEquals(beansAfterReset.size(), 1);
 
         final ObjectName newConfigName = extractSingleBeanName(beansAfterReset);
 
         Assert.assertEquals(configName, newConfigName);
 
-        supervisor.close();
+        agent.close();
         Assert.assertFalse(beanServer.isRegistered(configName));
     }
 

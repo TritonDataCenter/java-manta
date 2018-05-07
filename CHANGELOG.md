@@ -19,6 +19,18 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Improved error messages for missing or invalid private keys.](https://github.com/joyent/java-manta/pull/415)
  - [Integration test regression](https://github.com/joyent/java-manta/pull/417)
 
+### Added
+ - Client metrics can now be enabled by selecting a reporting mode with the
+   [`manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`](/USAGE.md#parameters) setting. [JMX and SLF4J are
+   available, though others may be added in the future.](https://github.com/joyent/java-manta/issues/410#issuecomment-384751882)
+ - [Retry rate metric](https://github.com/joyent/java-manta/issues/410).
+
+### Changed
+ - MBeans registered in JMX no longer use an incrementing integer and instead are created under
+   [unique IDs for each client](https://user-images.githubusercontent.com/1973223/38774088-6a08861e-4014-11e8-8951-287ecd70032f.png).
+ - JMX is no longer used to expose configuration and pool stats by default. To reenable JMX,
+   set `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE` to `JMX`.
+
 ## [3.2.1] - 2017-12-01
 ### Added
  - [Load balancer IP](https://github.com/joyent/java-manta/pull/378) has been added

@@ -116,6 +116,16 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private Integer skipDirectoryDepth;
 
     /**
+     * Whether metrics and MBeans should be tracked and exposed.
+     */
+    private volatile MetricReporterMode metricReporterMode;
+
+    /**
+     * Metrics output interval in seconds for modes that report metrics periodically.
+     */
+    private volatile Integer metricReporterOutputInterval;
+
+    /**
      * Number of bytes to read into memory for a streaming upload before
      * deciding if we want to load it in memory before send it.
      */
@@ -283,6 +293,16 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public MetricReporterMode getMetricReporterMode() {
+        return this.metricReporterMode;
+    }
+
+    @Override
+    public Integer getMetricReporterOutputInterval() {
+        return this.metricReporterOutputInterval;
+    }
+
+    @Override
     public Integer getUploadBufferSize() {
         return uploadBufferSize;
     }
@@ -365,6 +385,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.mantaKeyPath = context.getMantaKeyPath();
         }
 
+        if (context.getMetricReporterMode() != null) {
+            this.metricReporterMode = context.getMetricReporterMode();
+        }
+
+        if (context.getMetricReporterOutputInterval() != null) {
+            this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
+        }
+
         if (context.getTimeout() != null) {
             this.timeout = context.getTimeout();
         }
@@ -432,6 +460,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.getSkipDirectoryDepth() != null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (context.getMetricReporterMode() != null) {
+            this.metricReporterMode = context.getMetricReporterMode();
+        }
+
+        if (context.getMetricReporterOutputInterval() != null) {
+            this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
         if (context.isClientEncryptionEnabled() != null) {
@@ -544,6 +580,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.skipDirectoryDepth == null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (this.getMetricReporterMode() == null) {
+            this.metricReporterMode = context.getMetricReporterMode();
+        }
+
+        if (this.getMetricReporterOutputInterval() == null) {
+            this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -737,6 +781,18 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setMetricReporterMode(final MetricReporterMode metricReporterMode) {
+        this.metricReporterMode = metricReporterMode;
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setMetricReporterOutputInterval(final Integer metricReporterOutputInterval) {
+        this.metricReporterOutputInterval = metricReporterOutputInterval;
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
 
@@ -826,6 +882,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
+                && Objects.equals(metricReporterMode, that.metricReporterMode)
+                && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
@@ -843,6 +901,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 skipDirectoryDepth,
+                metricReporterMode,
+                metricReporterOutputInterval,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,

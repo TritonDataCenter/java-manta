@@ -178,6 +178,18 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${dependency.dropwizard-metrics.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-jmx</artifactId>
+            <version>${dependency.dropwizard-metrics.version}</version>
+        </dependency>
+
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
