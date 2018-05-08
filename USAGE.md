@@ -474,7 +474,7 @@ In order to ease migration from other object stores which do not treat directori
 - `manta.skip_directory_depth` = `2`
 - directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
 - result:
-  - writeable segments = 5
+  - writeable segments = 3
     - `.../foo`
     - `.../foo/bar`
     - `.../foo/bar/baz`
