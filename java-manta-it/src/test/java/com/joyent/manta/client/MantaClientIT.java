@@ -7,8 +7,8 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.MetricReporterMode;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
@@ -20,7 +20,6 @@ import com.joyent.test.util.MantaFunction;
 import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -40,7 +39,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -66,8 +64,7 @@ public class MantaClientIT {
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        IntegrationTestConfigContext config = new IntegrationTestConfigContext(usingEncryption);
-        config.setMetricReporterMode(MetricReporterMode.JMX);
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
@@ -77,32 +74,6 @@ public class MantaClientIT {
     @AfterClass
     public void afterClass() throws IOException {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
-    }
-
-    @Test
-    public final void testthing() throws Exception {
-        while (true) {
-            TimeUnit.SECONDS.sleep(2);
-
-            final int i = RandomUtils.nextInt(0, 3);
-
-            final String path = testPathPrefix + UUID.randomUUID().toString();
-
-            switch (i) {
-                default:
-                case 0:
-                    mantaClient.existsAndIsAccessible(path);
-                    break;
-                case 1:
-                    mantaClient.putDirectory(path);
-                    break;
-                case 2:
-                    mantaClient.put(path, TEST_DATA);
-                    mantaClient.getToTempFile(path);
-                    break;
-            }
-            System.out.println("sleep");
-        }
     }
 
     @Test

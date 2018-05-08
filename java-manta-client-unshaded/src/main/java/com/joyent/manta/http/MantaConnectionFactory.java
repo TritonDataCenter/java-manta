@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.codahale.metrics.httpclient.InstrumentedHttpClientConnectionManager;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
@@ -250,15 +249,14 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
         final PoolingHttpClientConnectionManager connManager;
         if (metricConfig != null) {
-            connManager = new InstrumentedHttpClientConnectionManager(
+            connManager = new InstrumentedPoolingHttpClientConnectionManager(
                     metricConfig.getRegistry(),
                     socketFactoryRegistry,
                     connFactory,
                     null,
                     DNS_RESOLVER,
                     -1,
-                    TimeUnit.MILLISECONDS,
-                    metricConfig.getClientId().toString());
+                    TimeUnit.MILLISECONDS);
         } else {
             connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry,
                         connFactory,

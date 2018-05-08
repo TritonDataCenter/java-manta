@@ -134,20 +134,31 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
         return StringUtils.substringBetween(conn.toString(), "<->", ":");
     }
 
-    static class Builder {
+    /**
+     * Helper class for invoking the correct specialized {@link HttpRequestExecutor}.
+     */
+    static final class Builder {
+
+        /**
+         * Wait time in milliseconds for {@link HttpRequestExecutor} (and child class) constructor.
+         */
         private Integer waitForContinue;
+
+        /**
+         * Metric configuration info.
+         */
         private MantaClientMetricConfiguration metricConfig;
 
         static Builder create() {
             return new Builder();
         }
 
-        public Builder setWaitForContinue(final Integer waitForContinue) {
+        Builder setWaitForContinue(final Integer waitForContinue) {
             this.waitForContinue = waitForContinue;
             return this;
         }
 
-        public Builder setMetricConfiguration(final MantaClientMetricConfiguration metricConfiguration) {
+        Builder setMetricConfiguration(final MantaClientMetricConfiguration metricConfiguration) {
             this.metricConfig = metricConfiguration;
             return this;
         }
