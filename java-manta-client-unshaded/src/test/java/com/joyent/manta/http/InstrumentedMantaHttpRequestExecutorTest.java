@@ -24,6 +24,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.Map;
@@ -53,6 +55,7 @@ public class InstrumentedMantaHttpRequestExecutorTest {
 
     static {
         final CaseInsensitiveMap<String, HttpResponse> successCodeMap = new CaseInsensitiveMap<>();
+
         successCodeMap.put(
                 HTTP_METHOD_HEAD,
                 new BasicHttpResponse(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK")));
@@ -65,6 +68,7 @@ public class InstrumentedMantaHttpRequestExecutorTest {
         successCodeMap.put(
                 HTTP_METHOD_DELETE,
                 new BasicHttpResponse(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NO_CONTENT, "No Content")));
+
         RESPONSE_HEADER_SUCCESS = Collections.unmodifiableMap(successCodeMap);
     }
 
@@ -85,11 +89,24 @@ public class InstrumentedMantaHttpRequestExecutorTest {
     }
 
     public void createSocketTimeoutExceptionMetricNoCausalChain() throws Exception {
-        createsExceptionMetric(new SocketTimeoutException(), SocketTimeoutException.class);
+        createsExceptionMetric(
+                new SocketTimeoutException(),
+                SocketTimeoutException.class);
     }
 
     public void createSocketTimeoutExceptionMetricEvenWhenWrapped() throws Exception {
-        createsExceptionMetric(new MantaIOException(new SocketTimeoutException()), SocketTimeoutException.class);
+        createsExceptionMetric(
+                new MantaIOException(new SocketTimeoutException()),
+                SocketTimeoutException.class);
+    }
+
+    public void createSocketTimeoutExceptionMetricDeeplyNested() throws Exception {
+        // the following causal chain is unlikely to ever occur, we're just testing that we
+        // to actually retrieve the innermost exception
+
+        createsExceptionMetric(
+                new IOException(new UncheckedIOException(new IOException(new SocketException()))),
+                SocketException.class);
     }
 
     private void createsRequestMetric(final String method) throws Exception {
