@@ -470,7 +470,25 @@ In order to ease migration from other object stores which do not treat directori
     - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0`
     - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1`
 
-#### Scenario 4, optimization enabled, requested directory with less segments than setting
+#### Scenario 4, **error case**, optimization set too high
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 5
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+      - fails because neither `/$MANTA_USER/stor/foo` nor `/$MANTA_USER/stor/foo/bar` exist
+      - optimization disabled, revert to standard creation order
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+#### Scenario 5, optimization enabled, requested directory with less segments than setting
 - `manta.skip_directory_depth` = `5`
 - directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
 - result:
