@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaNoHttpResponseException;
 import org.apache.commons.lang3.StringUtils;
@@ -29,6 +30,15 @@ import java.io.IOException;
  * @since 3.1.7
  */
 public class MantaHttpRequestExecutor extends HttpRequestExecutor {
+
+    /**
+     * Creates new instance of HttpRequestExecutor. We're delegating any concerns
+     * about waitForContinue to the parent's parameterless constructor.
+     */
+    public MantaHttpRequestExecutor() {
+        super();
+    }
+
     /**
      * Creates new instance of HttpRequestExecutor.
      *
@@ -36,12 +46,6 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
      */
     public MantaHttpRequestExecutor(final int waitForContinue) {
         super(waitForContinue);
-    }
-
-    /**
-     * Creates new instance of HttpRequestExecutor.
-     */
-    public MantaHttpRequestExecutor() {
     }
 
     /**
@@ -128,5 +132,40 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
         }
 
         return StringUtils.substringBetween(conn.toString(), "<->", ":");
+    }
+
+    static class Builder {
+        private Integer waitForContinue;
+        private MantaClientMetricConfiguration metricConfig;
+
+        static Builder create() {
+            return new Builder();
+        }
+
+        public Builder setWaitForContinue(final Integer waitForContinue) {
+            this.waitForContinue = waitForContinue;
+            return this;
+        }
+
+        public Builder setMetricConfiguration(final MantaClientMetricConfiguration metricConfiguration) {
+            this.metricConfig = metricConfiguration;
+            return this;
+        }
+
+        public MantaHttpRequestExecutor build() {
+            if (metricConfig != null) {
+                if (waitForContinue != null) {
+                    return new InstrumentedMantaHttpRequestExecutor(metricConfig.getRegistry(), waitForContinue);
+                }
+
+                return new InstrumentedMantaHttpRequestExecutor(metricConfig.getRegistry());
+            }
+
+            if (waitForContinue != null) {
+                return new MantaHttpRequestExecutor(waitForContinue);
+            }
+
+            return new MantaHttpRequestExecutor();
+        }
     }
 }

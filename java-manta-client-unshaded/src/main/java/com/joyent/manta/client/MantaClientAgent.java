@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Reporter;
 import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
@@ -94,7 +96,7 @@ class MantaClientAgent implements AutoCloseable {
      * Construct a stub agent for unit testing custom MBean functionality.
      */
     MantaClientAgent() {
-        this(new MantaClientMetricConfiguration());
+        this(new MantaClientMetricConfiguration(UUID.randomUUID(), new MetricRegistry()));
     }
 
     /**
