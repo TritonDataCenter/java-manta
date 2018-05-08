@@ -12,6 +12,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.httpclient.HttpClientMetricNameStrategies;
 import com.codahale.metrics.httpclient.HttpClientMetricNameStrategy;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -91,6 +93,8 @@ public class InstrumentedMantaHttpRequestExecutor extends MantaHttpRequestExecut
      * @return a meter within the registry
      */
     private Meter meter(final Exception e) {
-        return registry.meter(name(e.getClass().getSimpleName()));
+        final Throwable rootEx = ObjectUtils.firstNonNull(ExceptionUtils.getRootCause(e), e);
+
+        return registry.meter(name(rootEx.getClass().getSimpleName()));
     }
 }

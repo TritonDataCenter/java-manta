@@ -190,6 +190,12 @@
             <version>${dependency.dropwizard-metrics.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-httpclient</artifactId>
+            <version>${dependency.dropwizard-metrics.version}</version>
+        </dependency>
+
         <!-- These dependencies are declared at the module level because we can not
              inherit exclusions from the parent. -->
         <dependency>
