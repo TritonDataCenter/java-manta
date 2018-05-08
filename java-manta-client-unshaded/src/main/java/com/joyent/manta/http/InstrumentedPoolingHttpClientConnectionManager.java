@@ -36,7 +36,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpClientConnectionManager {
 
     /**
-     * The metric registry.
+     * Registry used to track metrics. Never null.
      */
     private final MetricRegistry metricRegistry;
 
