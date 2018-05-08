@@ -15,7 +15,8 @@ import static org.apache.commons.lang3.Validate.inclusiveBetween;
 import static org.apache.commons.lang3.Validate.notNull;
 
 /**
- * Value object describing how metrics should be exposed for a {@link com.joyent.manta.client.MantaClient}.
+ * Value object describing how metrics should be exposed for a {@link com.joyent.manta.client.MantaClient}. It is
+ * impossible to have a {@code MantaClientMetricConfiguration} with a null Client ID or a null {@link MetricRegistry}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.9, 3.2.2
