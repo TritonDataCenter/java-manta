@@ -20,8 +20,6 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
 /**
  * Custom reimplementation of <a href="http://
  * metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/httpclient/InstrumentedHttpClientConnectionManager.html>
@@ -33,7 +31,13 @@ import static com.codahale.metrics.MetricRegistry.name;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.2
  */
+@SuppressWarnings("checkstyle:JavaDocVariable")
 class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpClientConnectionManager {
+
+    static final String METRIC_NAME_CONNECTIONS_AVAILABLE = "connections-available";
+    static final String METRIC_NAME_CONNECTIONS_LEASED = "connections-leased";
+    static final String METRIC_NAME_CONNECTIONS_MAX = "connections-max";
+    static final String METRIC_NAME_CONNECTIONS_PENDING = "connections-pending";
 
     /**
      * Registry used to track metrics. Never null.
@@ -53,22 +57,22 @@ class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpClientCo
         this.metricRegistry = metricRegistry;
 
         // Just like PoolStatsMBean, getTotalStats aquires a lock
-        this.metricRegistry.register("connections-available",
+        this.metricRegistry.register(METRIC_NAME_CONNECTIONS_AVAILABLE,
                 (Gauge<Integer>) () -> getTotalStats().getAvailable());
-        this.metricRegistry.register("connections-leased",
+        this.metricRegistry.register(METRIC_NAME_CONNECTIONS_LEASED,
                 (Gauge<Integer>) () -> getTotalStats().getLeased());
-        this.metricRegistry.register("connections-max",
+        this.metricRegistry.register(METRIC_NAME_CONNECTIONS_MAX,
                 (Gauge<Integer>) () -> getTotalStats().getMax());
-        this.metricRegistry.register("connections-pending",
+        this.metricRegistry.register(METRIC_NAME_CONNECTIONS_PENDING,
                 (Gauge<Integer>) () -> getTotalStats().getPending());
     }
 
     @Override
     public void shutdown() {
         super.shutdown();
-        metricRegistry.remove(name("connections-available"));
-        metricRegistry.remove(name("connections-leased"));
-        metricRegistry.remove(name("connections-max"));
-        metricRegistry.remove(name("connections-pending"));
+        metricRegistry.remove(METRIC_NAME_CONNECTIONS_AVAILABLE);
+        metricRegistry.remove(METRIC_NAME_CONNECTIONS_LEASED);
+        metricRegistry.remove(METRIC_NAME_CONNECTIONS_MAX);
+        metricRegistry.remove(METRIC_NAME_CONNECTIONS_PENDING);
     }
 }
