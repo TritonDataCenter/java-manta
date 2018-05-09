@@ -47,11 +47,11 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest {
         assertNotNull(gauges.get(METRIC_NAME_CONNECTIONS_MAX));
         assertNotNull(gauges.get(METRIC_NAME_CONNECTIONS_PENDING));
 
-        // max = available = expectedMax
-        assertEquals(gauges.get(METRIC_NAME_CONNECTIONS_AVAILABLE).getValue(), maxConns);
+        // max = expectedMax
         assertEquals(gauges.get(METRIC_NAME_CONNECTIONS_MAX).getValue(), maxConns);
 
-        // no one is in the pool
+        // no one is in the pool and no connections have been requested
+        assertEquals(gauges.get(METRIC_NAME_CONNECTIONS_AVAILABLE).getValue(), 0);
         assertEquals(gauges.get(METRIC_NAME_CONNECTIONS_LEASED).getValue(), 0);
         assertEquals(gauges.get(METRIC_NAME_CONNECTIONS_PENDING).getValue(), 0);
 
