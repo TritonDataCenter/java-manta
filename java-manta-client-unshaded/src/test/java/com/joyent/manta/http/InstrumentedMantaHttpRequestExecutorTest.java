@@ -102,7 +102,7 @@ public class InstrumentedMantaHttpRequestExecutorTest {
 
     public void createSocketTimeoutExceptionMetricDeeplyNested() throws Exception {
         // the following causal chain is unlikely to ever occur, we're just testing that we
-        // to actually retrieve the innermost exception
+        // can actually retrieve the innermost exception
 
         createsExceptionMetric(
                 new IOException(new UncheckedIOException(new IOException(new SocketException()))),
