@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.AssertJUnit;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -14,11 +15,17 @@ import java.io.InputStream;
 import java.util.ArrayList;
 
 import static com.joyent.manta.util.MultipartInputStream.EOF;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertThrows;
+import static org.testng.Assert.assertTrue;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 @Test
@@ -48,6 +55,15 @@ public class MultipartInputStreamTest {
             new RandomStringGenerator.Builder()
                     .withinRange((int) 'a', (int) 'z')
                     .build();
+
+    @DataProvider(name = "bufferSizes")
+    private Object[][] bufferSizes() {
+        final Object[][] parameterLists = new Object[BUFFER_SIZES.length][1];
+        for (int i = 0; i < parameterLists.length; i++) {
+            parameterLists[i][0] = BUFFER_SIZES[i];
+        }
+        return parameterLists;
+    }
 
     @DataProvider(name = "cartesianProductOfSizes")
     private Object[][] cartesianProductOfSizes() {
@@ -86,6 +102,24 @@ public class MultipartInputStreamTest {
 
         assertThrows(NullPointerException.class, () -> mis.read());
         assertThrows(NullPointerException.class, () -> mis.read(null, 0, 0));
+
+        // read 1 byte with space for 0 bytes
+        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[0], 0, 1));
+
+        // read 0 bytes with invalid offset
+        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[1], -1, 0));
+
+        // read more bytes than space available
+        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[1], 0, 2));
+
+        // read more bytes than space available (due to offset)
+        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[2], 1, 2));
+    }
+
+    public void testMiscInputStreamMethods() throws Exception {
+        final MultipartInputStream mis = new MultipartInputStream();
+
+        assertFalse(mis.markSupported());
     }
 
     public void testCloseClosesWrappedInputStream() throws Exception {
@@ -130,7 +164,6 @@ public class MultipartInputStreamTest {
         assertArrayEquals("First byte slice contents mismatch", referenceFirstByteSlice, multiFirstByteSlice);
     }
 
-
     @Test(dataProvider = "inputAndBufferAndCopyBufferSizes")
     public void testReadFirstStreamPartially(
             final int inputSize,
@@ -155,4 +188,65 @@ public class MultipartInputStreamTest {
 
     // TODO: still missing a test where the input is larger than 4096 (the default buffer size of IOUtils.copy
     // TODO: still missing a test with a mix of read() and read(byte[], int, int)
+
+    public void testClosingWithoutSettingDoesNotThrow() throws Exception {
+        final MultipartInputStream mis = new MultipartInputStream();
+
+        mis.close();
+        assertTrue(true);
+    }
+
+    public void testDoubleCloseDoesNotThrow() throws Exception {
+        final MultipartInputStream mis = new MultipartInputStream();
+        mis.setNext(mock(InputStream.class));
+
+        mis.close();
+        mis.close();
+        assertTrue(true);
+    }
+
+    public void testStreamsAreClosedWhereExpected() throws Exception {
+        final MultipartInputStream mis = new MultipartInputStream();
+        final InputStream firstStream = mock(InputStream.class);
+        final InputStream secondStream = mock(InputStream.class);
+
+        mis.setNext(firstStream);
+        verify(firstStream, never()).close();
+
+        mis.setNext(secondStream);
+        verify(secondStream, never()).close();
+
+        verify(firstStream, times(1)).close();
+        verifyNoMoreInteractions(firstStream);
+
+        mis.close();
+        verify(secondStream, times(1)).close();
+        verifyNoMoreInteractions(secondStream);
+
+        mis.close();
+    }
+
+    @Test(dataProvider = "bufferSizes")
+    public void testSingleObjectCanBeReadAcrossTwoStreams(final int inputSize) throws Exception {
+        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(US_ASCII);
+
+        final int firstSegmentSize = Math.floorDiv(bytes.length, 2);
+        final int lastSegmentSize = bytes.length - firstSegmentSize;
+
+        final MultipartInputStream mis = new MultipartInputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+
+        // the first stream provides bytes `0` through `firstSegmentSize - 1`
+        mis.setNext(new FailingInputStream(new ByteArrayInputStream(bytes), firstSegmentSize));
+
+        assertThrows(IOException.class, () -> IOUtils.copy(mis, baos));
+        assertEquals(mis.getCount(), firstSegmentSize);
+
+        // the second stream provides bytes `firstSegmentSize - 1` through `bytes.length`
+        mis.setNext(new ByteArrayInputStream(bytes, firstSegmentSize, bytes.length - firstSegmentSize));
+
+        IOUtils.copy(mis, baos);
+
+        AssertJUnit.assertArrayEquals(baos.toByteArray(), bytes);
+    }
 }

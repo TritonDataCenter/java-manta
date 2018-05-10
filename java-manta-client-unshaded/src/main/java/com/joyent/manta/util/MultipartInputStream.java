@@ -9,7 +9,6 @@ package com.joyent.manta.util;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,13 +34,18 @@ public class MultipartInputStream extends InputStream {
     static final int EOF = -1;
 
     /**
+     * Default buffer size (same as manta.http_buffer_size).
+     */
+    private static final int BUFFER_SIZE_DEFAULT = 4 * 1024;
+
+    /**
      * Backing stream.
      */
     private CountingInputStream wrapped = null;
 
     /**
      * Boolean indicating if the stream is closed and
-     * should stop accepting calls to {@link #setNext(InputStream)}
+     * should stop accepting calls to {@link #setNext(InputStream)} and {@code read} methods.
      */
     private volatile boolean closed = false;
 
@@ -63,10 +67,17 @@ public class MultipartInputStream extends InputStream {
     /**
      * Total count of bytes read across all wrapped streams.
      */
-    private int count;
+    private long count;
 
     /**
-     * Creates a new instance with the specified block size.
+     * Creates a new instance with the default buffer size.
+     */
+    public MultipartInputStream() {
+        this(BUFFER_SIZE_DEFAULT);
+    }
+
+    /**
+     * Creates a new instance with the specified buffer size.
      *
      * @param bufferSize cipher block size
      */
@@ -89,6 +100,10 @@ public class MultipartInputStream extends InputStream {
             throw new IllegalStateException("Attempted to setNext on a closed MultipartInputStream");
         }
         notNull(next, "InputStream must not be null");
+
+        if (this.wrapped != null) {
+            IOUtils.closeQuietly(this.wrapped);
+        }
 
         this.wrapped = new CountingInputStream(next);
     }
@@ -123,7 +138,8 @@ public class MultipartInputStream extends InputStream {
 
         if (off < 0 || len < 0 || len > b.length - off) {
             final String message = String.format(
-                    "Invalid parameters to read(byte[], int, int): offset=[%d], length=[%d]",
+                    "Invalid parameters to read(byte[], int, int): buffersize=%d, offset=%d, length=%d",
+                    b.length,
                     off,
                     len);
             throw new IndexOutOfBoundsException(message);
@@ -158,13 +174,9 @@ public class MultipartInputStream extends InputStream {
     }
 
     @Override
-    public long skip(final long n) throws IOException {
-        throw new NotImplementedException("skip(long)");
-    }
-
-    @Override
     public int available() throws IOException {
-        throw new NotImplementedException("available()");
+        ensureBufferIsReady();
+        return this.bufCount - this.bufPos;
     }
 
     @Override
@@ -175,11 +187,18 @@ public class MultipartInputStream extends InputStream {
     @Override
     public void close() throws IOException {
         if (this.closed) {
-            throw new IllegalStateException("Attempted to call close() on a closed MultipartInputStream");
+            return;
         }
 
-        wrapped.close();
+        if (this.wrapped != null) {
+            wrapped.close();
+        }
+
         this.closed = true;
+    }
+
+    public long getCount() {
+        return this.count;
     }
 
     private void ensureBufferIsReady() throws IOException {
