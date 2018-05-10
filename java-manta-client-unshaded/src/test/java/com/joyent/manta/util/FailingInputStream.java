@@ -32,46 +32,69 @@ public class FailingInputStream extends InputStream {
      */
     private final long minimumBytes;
 
+    private final boolean failAfterRead;
+
     /**
-     *
-     * @param wrapped InputStream to wrap
+     * @param wrapped      InputStream to wrap
      * @param minimumBytes number of bytes to read successfully before failing
      */
-    public FailingInputStream(InputStream wrapped, int minimumBytes) {
+    public FailingInputStream(InputStream wrapped, int minimumBytes, boolean failAfterRead) {
         this.wrapped = wrapped;
         this.minimumBytes = minimumBytes;
+        this.failAfterRead = failAfterRead;
     }
 
     @Override
     public int read(byte[] b) throws IOException {
-        failAfterMinimum(b.length);
-        int bytesRead = wrapped.read(b);
-        count.addAndGet(bytesRead);
-        return bytesRead;
+        return read(b, 0, b.length);
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        failAfterMinimum(len);
+        preReadFailure(len);
+
         int bytesRead = wrapped.read(b, off, len);
+
         count.addAndGet(bytesRead);
+
+        // bytes were read, but the user won't know how many
+        postReadFailure();
+
         return bytesRead;
     }
 
     @Override
     public int read() throws IOException {
-        failAfterMinimum(1);
+        preReadFailure(1);
+
         // it's a byte, even though the return is int
-        int nextByte = wrapped.read();
+        int nextByte = this.wrapped.read();
         if (nextByte != EOF) {
-            count.incrementAndGet();
+            this.count.incrementAndGet();
         }
+
+        // byte is lost!
+        postReadFailure();
+
         return nextByte;
     }
 
-    private void failAfterMinimum(final int next) throws IOException {
+    private void preReadFailure(final int next) throws IOException {
+        if (!this.failAfterRead) {
+            failIfEnoughBytesRead(next, false);
+        }
+    }
+
+    private void postReadFailure() throws IOException {
+        if (this.failAfterRead) {
+            failIfEnoughBytesRead(0, true);
+        }
+    }
+
+    private void failIfEnoughBytesRead(final int next, final boolean isAfterRead) throws IOException {
         if (count.get() + next > minimumBytes) {
-            throw new IOException("Read failure after byte " + minimumBytes);
+            final String relative = isAfterRead ? "after reading" : "attempting to read up to";
+            throw new IOException("Read failure " + relative + " byte " + minimumBytes);
         }
     }
 }

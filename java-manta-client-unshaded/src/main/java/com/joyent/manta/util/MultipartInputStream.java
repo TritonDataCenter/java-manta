@@ -45,7 +45,7 @@ public class MultipartInputStream extends InputStream {
 
     /**
      * Boolean indicating if the stream is closed and
-     * should stop accepting calls to {@link #setNext(InputStream)} and {@code read} methods.
+     * should stop accepting calls to {@link #setSource(InputStream)} and {@code read} methods.
      */
     private volatile boolean closed = false;
 
@@ -95,11 +95,15 @@ public class MultipartInputStream extends InputStream {
      *
      * @param next stream to switch to as a backing stream
      */
-    public void setNext(final InputStream next) {
+    public void setSource(final InputStream next) {
         if (this.closed) {
-            throw new IllegalStateException("Attempted to setNext on a closed MultipartInputStream");
+            throw new IllegalStateException("Attempted to set source on a closed MultipartInputStream");
         }
         notNull(next, "InputStream must not be null");
+
+        if (this.bufCount == EOF) {
+            throw new IllegalStateException("Already reached end of source stream, refusing to set new source");
+        }
 
         if (this.wrapped != null) {
             IOUtils.closeQuietly(this.wrapped);
@@ -116,7 +120,7 @@ public class MultipartInputStream extends InputStream {
 
         ensureBufferIsReady();
 
-        if (this.bufCount == 0) {
+        if (this.bufCount == 0 || this.bufCount == EOF) {
             return EOF;
         }
 
@@ -163,7 +167,7 @@ public class MultipartInputStream extends InputStream {
             read += copied;
 
             if (copied < remaining) {
-                final int bytesFilled = fillBuffer();
+                fillBuffer();
             }
 
             remaining -= copied;
@@ -209,9 +213,11 @@ public class MultipartInputStream extends InputStream {
         }
     }
 
-    private int fillBuffer() throws IOException {
-        this.bufPos = 0;
+    private void fillBuffer() throws IOException {
+        // we only reset bufPos if we successfully read
         this.bufCount = IOUtils.read(this.wrapped, this.buffer);
-        return this.bufCount;
+        // TODO: investigate calling read directory so we can know when the source stream actually reaches EOF
+        // this.bufCount = this.wrapped.read(this.buffer);
+        this.bufPos = 0;
     }
 }
