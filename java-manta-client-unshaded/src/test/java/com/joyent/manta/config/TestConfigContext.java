@@ -40,7 +40,8 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setMantaURL("http://localhost")
                 .setMantaUser("username")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
-                .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY));
+                .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY)
+        );
     }
 
     /**

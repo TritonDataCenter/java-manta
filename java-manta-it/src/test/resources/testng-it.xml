@@ -2,13 +2,13 @@
 <suite name="Java Manta SDK Integration Test Suite" verbose="1">
 
     <listeners>
-        <listener class-name="com.joyent.test.util.MantaPathSuiteListener" />
+        <listener class-name="com.joyent.test.util.MantaPathSuiteListener"/>
     </listeners>
 
     <test name="Manta Client Integration Test Helper Class Tests">
         <classes>
-            <class name="com.joyent.test.util.FailingInputStreamTest" />
-            <class name="com.joyent.test.util.RandomInputStreamTest" />
+            <class name="com.joyent.test.util.FailingInputStreamTest"/>
+            <class name="com.joyent.test.util.RandomInputStreamTest"/>
         </classes>
     </test>
 
@@ -22,7 +22,8 @@
             <package name="com.joyent.manta.client.*">
                 <exclude name="com.joyent.manta.client.jobs"/>
             </package>
-            <package name="com.joyent.manta.client.multipart.*" />
+            <package name="com.joyent.manta.client.multipart.*"/>
+            <package name="com.joyent.manta.http.*"/>
         </packages>
     </test>
     <!-- We run many of the integration tests over again using client-side encryption -->
@@ -33,7 +34,7 @@
             <package name="com.joyent.manta.client.*">
                 <exclude name="com.joyent.manta.client.jobs"/>
             </package>
-            <package name="com.joyent.manta.client.multipart.*" />
+            <package name="com.joyent.manta.client.multipart.*"/>
         </packages>
     </test>
     <test name="Manta Client Integration Tests [AES128/GCM Encrypted]">
@@ -57,7 +58,7 @@
 
     <test name="Manta Job Tests">
         <packages>
-            <package name="com.joyent.manta.client.jobs.*" />
+            <package name="com.joyent.manta.client.jobs.*"/>
         </packages>
     </test>
 </suite>

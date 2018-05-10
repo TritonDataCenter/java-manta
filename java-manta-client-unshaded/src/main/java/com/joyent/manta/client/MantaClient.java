@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
@@ -15,6 +16,8 @@ import com.joyent.manta.client.jobs.MantaJobError;
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
+import com.joyent.manta.config.MetricReporterMode;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
@@ -133,6 +136,11 @@ public class MantaClient implements AutoCloseable {
     private static final int MAX_RESULTS = 1024;
 
     /**
+     * Unique identifier for this client instance.
+     */
+    private final UUID clientId;
+
+    /**
      * Flag indicating if the client instance has been closed.
      */
     private volatile boolean closed = false;
@@ -155,16 +163,16 @@ public class MantaClient implements AutoCloseable {
             = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
 
     /**
-     * MBean supervisor.
-     */
-    private final MantaMBeanSupervisor beanSupervisor;
-
-    /**
      * ForkJoinPool used specifically for find() operations because we want
      * to make sure that the number of concurrent threads will not exceed
      * the maximum number of available connections.
      */
     private final ForkJoinPool findForkJoinPool;
+
+    /**
+     * Reporting agent used when metrics and JMX are enabled.
+     */
+    private final MantaClientAgent agent;
 
     /* We preform some sanity checks against the JVM in order to determine if
      * we can actually run on the platform. */
@@ -221,15 +229,32 @@ public class MantaClient implements AutoCloseable {
 
         ConfigContext.validate(config);
 
+        this.clientId = UUID.randomUUID();
+
         if (config instanceof AuthAwareConfigContext) {
             this.config = (AuthAwareConfigContext) config;
         } else {
             this.config = new AuthAwareConfigContext(config);
         }
 
+        final boolean metricsEnabled = this.config.getMetricReporterMode() != null
+                && !this.config.getMetricReporterMode().equals(MetricReporterMode.DISABLED);
+
+        final MantaClientMetricConfiguration metricConfig;
+        if (metricsEnabled) {
+            metricConfig = new MantaClientMetricConfiguration(
+                    this.clientId,
+                    new MetricRegistry(),
+                    config.getMetricReporterMode(),
+                    config.getMetricReporterOutputInterval());
+        } else {
+            metricConfig = null;
+        }
+
         final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
                 config,
-                connectionFactoryConfigurator);
+                connectionFactoryConfigurator,
+                metricConfig);
 
         final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
         final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
@@ -242,12 +267,17 @@ public class MantaClient implements AutoCloseable {
             this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
         }
 
-        this.beanSupervisor = new MantaMBeanSupervisor();
-        beanSupervisor.expose(this.config);
-        beanSupervisor.expose(connectionFactory);
+        if (metricConfig != null) {
+            this.agent = new MantaClientAgent(metricConfig);
+            agent.register(this.config);
+            agent.register(connectionFactory);
+        } else {
+            this.agent = null;
+        }
 
         this.findForkJoinPool = FindForkJoinPoolFactory.getInstance(config);
     }
+
 
     /* ======================================================================
      * Constructor Helpers
@@ -2519,7 +2549,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         try {
-            httpHelper.close();
+            this.httpHelper.close();
         } catch (InterruptedException ie) {
             /* Do nothing, but we won't capture the interrupted exception
              * because even if we are interrupted, we want to close all open
@@ -2530,20 +2560,22 @@ public class MantaClient implements AutoCloseable {
 
         // Deregister associated MBeans
         try {
-            beanSupervisor.close();
+            if (this.agent != null) {
+                this.agent.close();
+            }
         } catch (Exception e) {
             exceptions.add(e);
         }
 
         try {
-            config.close();
+            this.config.close();
         } catch (final Exception e) {
             exceptions.add(e);
         }
 
         // Shut down the ForkJoinPool that may be executing find() operations
         try {
-            findForkJoinPool.shutdownNow();
+            this.findForkJoinPool.shutdownNow();
         } catch (Exception e) {
             exceptions.add(e);
         }

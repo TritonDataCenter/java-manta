@@ -7,20 +7,24 @@
  */
 package com.joyent.manta.http;
 
+import com.codahale.metrics.Meter;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
+import javax.net.ssl.SSLException;
+
+import static org.apache.commons.lang3.Validate.notNull;
 
 /**
  * Implementation of {@link HttpRequestRetryHandler} customized for use with
@@ -30,10 +34,11 @@ import java.util.List;
  * @since 3.0.0
  */
 public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler {
+
     /**
      * Logger instance.
      */
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(MantaHttpRequestRetryHandler.class);
 
     /**
      * List of all exception types that can't be retried.
@@ -50,18 +55,56 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
     public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE = "manta.retry.disable";
 
     /**
+     * The name used to publish the retry metrics.
+     */
+    public static final String METRIC_NAME_RETRIES = "retries";
+
+    /**
+     * Nullable meter for keeping track of the count and rate of retries.
+     */
+    private final Meter retries;
+
+    /**
+     * Deprecated constructor.
+     *
+     * @param config configuration indicating retry count
+     */
+    @Deprecated
+    public MantaHttpRequestRetryHandler(final ConfigContext config) {
+        this(notNull(config).getRetries(), null);
+    }
+
+    /**
+     * Creates a new instance with the passed configuration.
+     *  @param retryCount     how many times to retry; 0 means no retries
+     *
+     */
+    public MantaHttpRequestRetryHandler(final int retryCount) {
+        this(retryCount, null);
+    }
+
+    /**
      * Creates a new instance with the passed configuration.
      *
-     * @param config configuration for retries
+     * @param retryCount   how many times to retry; 0 means no retries
+     * @param metricConfig potentially-null configuration for tracking client metrics
      */
-    public MantaHttpRequestRetryHandler(final ConfigContext config) {
-        super(config.getRetries(), true, NON_RETRIABLE);
+    public MantaHttpRequestRetryHandler(final int retryCount, final MantaClientMetricConfiguration metricConfig) {
+        super(retryCount, true, NON_RETRIABLE);
+
+        if (metricConfig != null && metricConfig.getRegistry() != null) {
+            this.retries = metricConfig.getRegistry().meter(METRIC_NAME_RETRIES);
+        } else {
+            this.retries = null;
+        }
     }
 
     @Override
     public boolean retryRequest(final IOException exception,
                                 final int executionCount,
                                 final HttpContext context) {
+        notNull(context, "HTTP context cannot be null");
+
         final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
 
         if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
@@ -78,6 +121,10 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
             } else {
                 logger.debug("Request failed, unable to retry.", exception);
             }
+        }
+
+        if (toBeRetried && retries != null) {
+            retries.mark();
         }
 
         return toBeRetried;
