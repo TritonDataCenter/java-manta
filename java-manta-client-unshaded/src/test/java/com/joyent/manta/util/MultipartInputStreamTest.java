@@ -1,6 +1,7 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +115,15 @@ public class MultipartInputStreamTest {
 
         // read more bytes than space available (due to offset)
         assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[2], 1, 2));
+
+        final MultipartInputStream closed = new MultipartInputStream();
+        closed.close();
+
+        assertThrows(IllegalStateException.class, () -> closed.setNext(new NullInputStream(0)));
+
+        assertThrows(IllegalStateException.class, () -> closed.read());
+
+        assertThrows(IllegalStateException.class, () -> closed.read(new byte[1]));
     }
 
     public void testMiscInputStreamMethods() throws Exception {
