@@ -67,7 +67,7 @@ public class MultipartInputStream extends InputStream {
     /**
      * Total count of bytes read across all wrapped streams.
      */
-    private long count;
+    private int count;
 
     /**
      * Creates a new instance with the default buffer size.
@@ -201,7 +201,7 @@ public class MultipartInputStream extends InputStream {
         this.closed = true;
     }
 
-    public long getCount() {
+    public int getCount() {
         return this.count;
     }
 

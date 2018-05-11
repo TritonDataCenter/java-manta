@@ -3,6 +3,7 @@ package com.joyent.manta.util;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +15,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
 
 import static com.joyent.manta.util.MultipartInputStream.EOF;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.lang3.Validate.validState;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -34,64 +41,112 @@ public class MultipartInputStreamTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(MultipartInputStreamTest.class);
 
-    private static final int BUFFER_SIZE_1 = 1;
-    private static final int BUFFER_SIZE_256 = 1 << 8;
-    private static final int BUFFER_SIZE_1K = 1 << 10;
-    private static final int BUFFER_SIZE_8K = 1 << 13;
-
-    private static final int[] BUFFER_SIZES = {
-            BUFFER_SIZE_1,
-            BUFFER_SIZE_256 - 1,
-            BUFFER_SIZE_256,
-            BUFFER_SIZE_256 + 1,
-            BUFFER_SIZE_1K - 1,
-            BUFFER_SIZE_1K,
-            BUFFER_SIZE_1K + 1,
-            BUFFER_SIZE_8K - 1,
-            BUFFER_SIZE_8K,
-            BUFFER_SIZE_8K + 1,
-    };
+    private static final int MAX_SIZE = 16;
 
     private static final RandomStringGenerator STRING_GENERATOR =
             new RandomStringGenerator.Builder()
                     .withinRange((int) 'a', (int) 'z')
                     .build();
 
+    /*
+        These methods were originally used as data providers but the number of tests generated was getting out of hand
+        (cubed alone generates 4k test when MAX_SIZE is 16. bufferSizesCubedWithIncreasingFailureFrequency generates
+        more than 100k test input combinations.
+     */
+
     @DataProvider(name = "bufferSizes")
-    private Object[][] bufferSizes() {
-        final Object[][] parameterLists = new Object[BUFFER_SIZES.length][1];
-        for (int i = 0; i < parameterLists.length; i++) {
-            parameterLists[i][0] = BUFFER_SIZES[i];
+    private static Object[][] bufferSizes() {
+        final ArrayList<Object[]> paramLists = new ArrayList<>();
+        for (int i = 1; i <= MAX_SIZE; i++) {
+            paramLists.add(new Object[]{i});
         }
-        return parameterLists;
+        return paramLists.toArray(new Object[][]{});
     }
 
-    @DataProvider(name = "cartesianProductOfSizes")
-    private Object[][] cartesianProductOfSizes() {
-        final Object[][] parameterLists = new Object[BUFFER_SIZES.length * BUFFER_SIZES.length][2];
-        for (int i = 0; i < parameterLists.length; i++) {
-            parameterLists[i][0] = BUFFER_SIZES[i / BUFFER_SIZES.length];
-            parameterLists[i][1] = BUFFER_SIZES[i % BUFFER_SIZES.length];
+    @DataProvider(name = "bufferSizesSquared")
+    private static Object[][] bufferSizesSquared() {
+        final ArrayList<Object[]> paramLists = new ArrayList<>();
+        for (int i = 1; i <= MAX_SIZE; i++) {
+            for (int j = 1; j <= MAX_SIZE; j++) {
+                paramLists.add(new Object[]{i, j});
+            }
         }
-
-        return parameterLists;
+        return paramLists.toArray(new Object[][]{});
     }
 
-    @DataProvider(name = "inputAndBufferAndCopyBufferSizes")
-    private Object[][] inputAndBufferAndCopyBufferSizes() {
-        final ArrayList<Object[]> parameterLists = new ArrayList<>();
+    @DataProvider(name = "bufferSizesCubed")
+    private static Object[][] bufferSizesCubed() {
+        final ArrayList<Object[]> paramLists = new ArrayList<>();
+        for (int i = 1; i <= MAX_SIZE; i++) {
+            for (int j = 1; j <= MAX_SIZE; j++) {
+                for (int k = 1; k <= MAX_SIZE; k++) {
+                    paramLists.add(new Object[]{i, j, k});
+                }
+            }
+        }
+        return paramLists.toArray(new Object[][]{});
+    }
 
-        final float[] mult = new float[]{0.5f, 1f, 2f};
-        for (int i = 0; i < BUFFER_SIZES.length; i++) {
-            for (int j = 0; j < BUFFER_SIZES.length; j++) {
-                for (int k = 0; k < mult.length; k++) {
-                    parameterLists.add(new Object[]{BUFFER_SIZES[i], BUFFER_SIZES[j], Math.max(1, (int) (BUFFER_SIZES[j] * mult[k]))});
+    @DataProvider(name = "bufferSizesCubedWithIncreasingFailureFrequency")
+    private static Object[][] bufferSizesCubedWithIncreasingFailureFrequency() {
+        int totalParamLists = 0;
+        final ArrayList<Object[]> paramLists = new ArrayList<>();
+        final Integer[] emptyFailureOffsetInput = new Integer[0];
+        final Set<Integer> deepHashcodes = new HashSet<>();
+        // with MAX_SIZE set to 16 and deephashcode unique checking we can bring the total number of input combinations
+        // from 352256 to 121054
+
+        for (int i = 1; i <= MAX_SIZE; i++) {
+            for (int j = 1; j <= MAX_SIZE; j++) {
+                for (int k = 1; k <= MAX_SIZE; k++) {
+                    // generate params for anywhere between 0 and inputSize-1 failures
+                    for (int failureCount = 0; failureCount < i; failureCount++) {
+
+                        // if we are on the first loop, just add the params with no failures
+                        if (failureCount == 0) {
+                            totalParamLists++;
+                            addToParamListIfUnseen(deepHashcodes, paramLists, new Object[]{i, j, k, emptyFailureOffsetInput});
+                            continue;
+                        }
+
+                        // for each count of failures being generated, also shift the entire set of failure offsets by an increasing amount
+                        // that is up to 1 less than half of the inputSize
+                        for (int failureGlobalOffset = 0; failureGlobalOffset < i; failureGlobalOffset++) {
+
+                            final ArrayList<Integer> failureOffsets = new ArrayList<>();
+
+                            final int divided = Math.floorDiv(i, failureCount);
+                            final int failureSpacing = NumberUtils.max(1, divided);
+
+                            for (int failure = 0; failure <= failureCount; failure++) {
+                                final int failureOffset = (failure * failureSpacing) + failureGlobalOffset;
+                                if (i <= failureOffset) {
+                                    // the test will complain if we pass in a failure offset that is equal to the inputSize
+                                    // (since the array position at input[input.length] or after that don't make sense
+                                    continue;
+                                }
+
+                                failureOffsets.add(failureOffset);
+                            }
+
+                            addToParamListIfUnseen(deepHashcodes, paramLists, new Object[]{i, j, k, failureOffsets.toArray(new Integer[]{})});
+                        }
+                    }
                 }
             }
         }
 
-        final Object[][] params = parameterLists.toArray(new Object[][]{});
-        return params;
+        return paramLists.toArray(new Object[][]{});
+    }
+
+    private static void addToParamListIfUnseen(final Set<Integer> hashcodes, final ArrayList<Object[]> paramList, final Object[] params) {
+        final int hashcode = Arrays.deepHashCode(params);
+        if (hashcodes.contains(hashcode)) {
+            return;
+        }
+
+        hashcodes.add(hashcode);
+        paramList.add(params);
     }
 
     public void testValidatesInputs() throws Exception {
@@ -141,65 +196,7 @@ public class MultipartInputStreamTest {
         verify(source).close();
     }
 
-    public void testReadSingleByteFromSingleStream() throws Exception {
-        final byte[] bytes = new byte[]{1};
-        final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
-
-        final MultipartInputStream mis = new MultipartInputStream(BUFFER_SIZE_1);
-        mis.setSource(src);
-
-        final int firstByte = mis.read();
-        assertEquals(firstByte, 1);
-
-        final int expectedEOF = mis.read();
-        assertEquals(expectedEOF, EOF);
-    }
-
-    @Test(dataProvider = "cartesianProductOfSizes")
-    public void testReadSmallSliceOfSingleLargeInput(final int inputSize, final int bufferSize) throws Exception {
-        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
-        final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
-
-        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
-        mis.setSource(src);
-
-        final int sliceSize = Math.min(1, Math.floorDiv(bytes.length, 2));
-        final byte[] multiFirstByteSlice = new byte[sliceSize];
-        final int bytesRead = mis.read(multiFirstByteSlice, 0, multiFirstByteSlice.length);
-        assertEquals(bytesRead, sliceSize, "Unexpected number of bytes read");
-
-        final byte[] referenceFirstByteSlice = new byte[sliceSize];
-        System.arraycopy(bytes, 0, referenceFirstByteSlice, 0, sliceSize);
-
-        assertArrayEquals("First byte slice contents mismatch", referenceFirstByteSlice, multiFirstByteSlice);
-    }
-
-    @Test(dataProvider = "inputAndBufferAndCopyBufferSizes")
-    public void testReadFirstStreamPartially(
-            final int inputSize,
-            final int bufferSize,
-            final int copyBufferSize
-    ) throws IOException {
-        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
-        final ByteArrayInputStream source = new ByteArrayInputStream(bytes);
-
-        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
-        mis.setSource(source);
-
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        final long bytesCopied = IOUtils.copy(mis, baos, copyBufferSize);
-        assertEquals(bytesCopied, bytes.length);
-        assertArrayEquals(bytes, baos.toByteArray());
-
-        // the source stream should be exhausted
-        assertEquals(source.read(), EOF);
-    }
-
-    // TODO: still missing a test where the input is larger than 4096 (the default buffer size of IOUtils.copy
-    // TODO: still missing a test with a mix of read() and read(byte[], int, int)
-
-    public void testClosingWithoutSettingDoesNotThrow() throws Exception {
+        public void testClosingWithoutSettingDoesNotThrow() throws Exception {
         final MultipartInputStream mis = new MultipartInputStream();
 
         mis.close();
@@ -274,13 +271,102 @@ public class MultipartInputStreamTest {
         // assertEquals(readBuffer[0], bytes[0]);
     }
 
-    public void testReadFailureAfterCopyingHalfOfInputUpdatesCountCorrectly() throws Exception {
-        // final byte[] bytes = RandomUtils.nextBytes(8);
-        final byte[] bytes = new byte[] { 10, 11, 12, 13, 14, 15, 16, 17, };
-        assertEquals(bytes.length, 8);
-        final MultipartInputStream mis = new MultipartInputStream(2);
+    public void testReadSingleByteFromSingleStream() throws Exception {
+        final byte[] bytes = new byte[]{1};
+        final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
+
+        final MultipartInputStream mis = new MultipartInputStream(1);
+        mis.setSource(src);
+
+        final int firstByte = mis.read();
+        assertEquals(firstByte, 1);
+
+        final int expectedEOF = mis.read();
+        assertEquals(expectedEOF, EOF);
+    }
+
+    public void testReadSmallSliceOfSingleLargeInput() throws Exception {
+        final Object[][] paramLists = bufferSizesSquared();
+
+        for (final Object[] untypedParams : paramLists) {
+            final Integer[] params = Arrays.copyOf(untypedParams, untypedParams.length, Integer[].class);
+
+            try {
+                testReadSmallSliceOfSingleLargeInput(params[0], params[1]);
+            } catch (final Exception e) {
+                LOG.error("Failed testReadSmallSliceOfSingleLargeInput with inputs: {}", Arrays.deepToString(params));
+                throw e;
+            }
+        }
+        LOG.info("MultipartInputStream testReadSmallSliceOfSingleLargeInput completed all combinations without error: {}", paramLists.length);
+    }
+
+    private void testReadSmallSliceOfSingleLargeInput(final int inputSize, final int bufferSize) throws Exception {
+        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
+        final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
+
+        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
+        mis.setSource(src);
+
+        final int sliceSize = Math.min(1, Math.floorDiv(bytes.length, 2));
+        final byte[] multiFirstByteSlice = new byte[sliceSize];
+        final int bytesRead = mis.read(multiFirstByteSlice, 0, multiFirstByteSlice.length);
+        assertEquals(bytesRead, sliceSize, "Unexpected number of bytes read");
+
+        final byte[] referenceFirstByteSlice = new byte[sliceSize];
+        System.arraycopy(bytes, 0, referenceFirstByteSlice, 0, sliceSize);
+
+        assertArrayEquals("First byte slice contents mismatch", referenceFirstByteSlice, multiFirstByteSlice);
+    }
+
+    public void testReadFirstStreamPartiallyWithAllSizeCombinations() throws Exception {
+        final Object[] paramLists = bufferSizesCubed();
+        for (final Object[] untypedParams : bufferSizesCubed()) {
+            final Integer[] params = Arrays.copyOf(untypedParams, untypedParams.length, Integer[].class);
+
+            try {
+                testReadFirstStreamPartially(params[0], params[1], params[2]);
+            } catch (final Exception e) {
+                LOG.error("Failed testReadFirstStreamPartially with inputs: {}", Arrays.deepToString(params));
+                throw e;
+            }
+        }
+        LOG.info("MultipartInputStream testReadFirstStreamPartially completed all combinations without error: {}", paramLists.length);
+    }
+
+    private void testReadFirstStreamPartially(
+            final int inputSize,
+            final int bufferSize,
+            final int copyBufferSize
+    ) throws IOException {
+        final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
+        final ByteArrayInputStream source = new ByteArrayInputStream(bytes);
+
+        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
+        mis.setSource(source);
+
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        final long bytesCopied = IOUtils.copy(mis, baos, copyBufferSize);
+        assertEquals(bytesCopied, bytes.length);
+        assertArrayEquals(bytes, baos.toByteArray());
+
+        // the source stream should be exhausted
+        assertEquals(source.read(), EOF);
+    }
+
+    /*
+        This test is left as a demonstration of how someone might work directly with the MultipartInputStream,
+        later tests which dynamically slice the input into many segments or use IOUtils helpers are better real-world
+        test cases. Truthfully, I was still working up to the complexity of the next test case but it's still a nice
+        demonstration of "intermediate" complexity.
+     */
+    public void testCanPerformDirectReadsOnInputWithExpectedSize() throws Exception {
+        final byte[] bytes = RandomUtils.nextBytes(16);
+        final MultipartInputStream mis = new MultipartInputStream(4);
+        final int safeBytes = 8;
+
         final byte[] readBuffer = new byte[bytes.length];
-        final int safeBytes = Math.floorDiv(bytes.length, 2);
 
         mis.setSource(new FailingInputStream(new ByteArrayInputStream(bytes), safeBytes + 1, true));
 
@@ -289,10 +375,7 @@ public class MultipartInputStreamTest {
         assertEquals(mis.getCount(), safeBytes);
 
         // the next read should fail
-        assertThrows(IOException.class, () -> {
-            System.out.println("poot");
-            mis.read();
-        });
+        assertThrows(IOException.class, () -> mis.read());
 
         // next source starts where we left off and provides remaining bytes
         mis.setSource(new ByteArrayInputStream(bytes, safeBytes, bytes.length - safeBytes));
@@ -309,12 +392,71 @@ public class MultipartInputStreamTest {
         // reading more bytes should return EOF
         assertEquals(mis.read(), EOF);
 
-        // reading more bytes into a new buffer should leave the buffer untouched and return EOF
-        final byte[] unusedBuffer = new byte[] { 1 };
+        // reading more bytes into a new buffer should return EOF and leave the buffer untouched
+        final byte[] unusedBuffer = new byte[]{1};
         assertEquals(mis.read(unusedBuffer), EOF);
         assertEquals(unusedBuffer[0], 1);
 
         assertEquals(mis.read(unusedBuffer), EOF);
         assertEquals(mis.read(unusedBuffer, 0, unusedBuffer.length), EOF);
     }
+
+    public void testCanRecoverFromFailureWithEveryCombinationOfInputSizeInternalBufferSizeAndCopyBufferSizeWithIncreasingCountAndOffsetFailures()
+            throws Exception
+    {
+        final Object[][] paramLists = bufferSizesCubedWithIncreasingFailureFrequency();
+        // don't need to burden testng with the 100k combinations
+        for (final Object[] params : paramLists) {
+            try {
+                testCanRecoverFromFailureRepeatedly(
+                        (Integer) params[0],
+                        (Integer) params[1],
+                        (Integer) params[2],
+                        (Integer[]) params[3]);
+            } catch (final Exception e) {
+                LOG.error("Failed testCanRecoverFromFailureRepeatedly with inputs: {}", Arrays.deepToString(params));
+                throw e;
+            }
+        }
+        LOG.info("MultipartInputStream testCanRecoverFromFailureRepeatedly completed all combinations without error: {}", paramLists.length);
+    }
+
+    private void testCanRecoverFromFailureRepeatedly(
+            final int inputSize,
+            final int bufferSize,
+            final int copyBufferSize,
+            final Integer[] readFailureOffsets
+    ) throws Exception {
+        final byte[] bytes = RandomUtils.nextBytes(inputSize);
+        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
+
+        final Deque<Integer> failureOffsets = new LinkedList<>(Arrays.asList(readFailureOffsets));
+
+        final ByteArrayOutputStream copied = new ByteArrayOutputStream();
+        while (!failureOffsets.isEmpty()) {
+            final int nextFailure = failureOffsets.pop();
+            validState(-1 < nextFailure, "failure offset must be non-negative");
+            validState(nextFailure < bytes.length, "failure offset must be less than input length");
+
+            // "request" the remaining bytes, offset by how many bytes we've already successfully read
+            mis.setSource(new FailingInputStream(new ByteArrayInputStream(bytes, mis.getCount(), bytes.length - mis.getCount()), nextFailure, true));
+
+            try {
+                IOUtils.copy(mis, copied, copyBufferSize);
+            } catch (final Exception e) {
+                // we don't care, we'll just try again
+            }
+        }
+
+        // copy any remaining bytes
+        if (copied.size() < bytes.length) {
+            mis.setSource(new ByteArrayInputStream(bytes, mis.getCount(), bytes.length));
+            IOUtils.copy(mis, copied, copyBufferSize);
+        }
+
+        assertEquals(copied.size(), bytes.length);
+        assertArrayEquals(bytes, copied.toByteArray());
+    }
+
+    // TODO: still missing a test with a mix of read() and read(byte[], int, int)
 }

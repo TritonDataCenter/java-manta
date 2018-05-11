@@ -92,7 +92,7 @@ public class FailingInputStream extends InputStream {
     }
 
     private void failIfEnoughBytesRead(final int next, final boolean isAfterRead) throws IOException {
-        if (count.get() + next > minimumBytes) {
+        if (count.get() + next >= minimumBytes) {
             final String relative = isAfterRead ? "after reading" : "attempting to read up to";
             throw new IOException("Read failure " + relative + " byte " + minimumBytes);
         }
