@@ -355,11 +355,11 @@ public class MultipartInputStreamTest {
         assertEquals(source.read(), EOF);
     }
 
-    /*
-        This test is left as a demonstration of how someone might work directly with the MultipartInputStream,
-        later tests which dynamically slice the input into many segments or use IOUtils helpers are better real-world
-        test cases. Truthfully, I was still working up to the complexity of the next test case but it's still a nice
-        demonstration of "intermediate" complexity.
+    /**
+     * This test is left as a demonstration of how someone might work directly with the MultipartInputStream,
+     * later tests which dynamically slice the input into many segments or use IOUtils helpers are better real-world
+     * test cases. Truthfully, I was still working up to the complexity of the next test case but it's still a nice
+     * demonstration of "intermediate" complexity.
      */
     public void testCanPerformDirectReadsOnInputWithExpectedSize() throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(16);
@@ -401,31 +401,52 @@ public class MultipartInputStreamTest {
         assertEquals(mis.read(unusedBuffer, 0, unusedBuffer.length), EOF);
     }
 
+    /**
+     * This test prepares arguments for testCanRecoverFromFailureRepeatedly and injects a "read failure order".
+     * True means the error will occur after the bytes were read (but before returning).
+     * False means the error will occur before reading the bytes.
+     * Null means the ordering is undefined and will be picked randomly for each upcoming failure.
+     */
     public void testCanRecoverFromFailureWithEveryCombinationOfInputSizeInternalBufferSizeAndCopyBufferSizeWithIncreasingCountAndOffsetFailures()
             throws Exception
     {
         final Object[][] paramLists = bufferSizesCubedWithIncreasingFailureFrequency();
         // don't need to burden testng with the 100k combinations
         for (final Object[] params : paramLists) {
-            try {
-                testCanRecoverFromFailureRepeatedly(
-                        (Integer) params[0],
-                        (Integer) params[1],
-                        (Integer) params[2],
-                        (Integer[]) params[3]);
-            } catch (final Exception e) {
-                LOG.error("Failed testCanRecoverFromFailureRepeatedly with inputs: {}", Arrays.deepToString(params));
-                throw e;
-            }
+            testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, true);
+            testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, false);
+            testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, null);
         }
-        LOG.info("MultipartInputStream testCanRecoverFromFailureRepeatedly completed all combinations without error: {}", paramLists.length);
+        LOG.info("MultipartInputStream testCanRecoverFromFailureRepeatedly completed all combinations without error: {}", paramLists.length * 3);
+    }
+
+    private void testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(final Object[] params, final Boolean postReadFailure) throws Exception {
+        try {
+            testCanRecoverFromFailureRepeatedly(
+                    (Integer) params[0],
+                    (Integer) params[1],
+                    (Integer) params[2],
+                    (Integer[]) params[3],
+                    postReadFailure);
+        } catch (final Exception e) {
+            final String readFailureDesc;
+            if (postReadFailure == null) {
+                readFailureDesc = "randomOrderedReadFailure";
+            } else {
+                readFailureDesc = postReadFailure ? "postReadFailure" : "preReadFailure";
+            }
+
+            LOG.error("Failed testCanRecoverFromFailureRepeatedly ({}) with inputs: {}", readFailureDesc, Arrays.deepToString(params));
+            throw e;
+        }
     }
 
     private void testCanRecoverFromFailureRepeatedly(
             final int inputSize,
             final int bufferSize,
             final int copyBufferSize,
-            final Integer[] readFailureOffsets
+            final Integer[] readFailureOffsets,
+            final Boolean readFailureIsPost
     ) throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(inputSize);
         final MultipartInputStream mis = new MultipartInputStream(bufferSize);
@@ -439,7 +460,17 @@ public class MultipartInputStreamTest {
             validState(nextFailure < bytes.length, "failure offset must be less than input length");
 
             // "request" the remaining bytes, offset by how many bytes we've already successfully read
-            mis.setSource(new FailingInputStream(new ByteArrayInputStream(bytes, mis.getCount(), bytes.length - mis.getCount()), nextFailure, true));
+            final InputStream remainingInput = new ByteArrayInputStream(bytes, mis.getCount(), bytes.length - mis.getCount());
+
+            // if we were passed null, randomly select a read failure ordering
+            final boolean postReadFailure;
+            if (readFailureIsPost == null) {
+                postReadFailure = RandomUtils.nextBoolean();
+            } else {
+                postReadFailure = readFailureIsPost;
+            }
+
+            mis.setSource(new FailingInputStream(remainingInput, nextFailure, postReadFailure));
 
             try {
                 IOUtils.copy(mis, copied, copyBufferSize);
@@ -458,5 +489,5 @@ public class MultipartInputStreamTest {
         assertArrayEquals(bytes, copied.toByteArray());
     }
 
-    // TODO: still missing a test with a mix of read() and read(byte[], int, int)
+    // CONSIDER: still missing a test with a mix of read() and read(byte[], int, int)
 }

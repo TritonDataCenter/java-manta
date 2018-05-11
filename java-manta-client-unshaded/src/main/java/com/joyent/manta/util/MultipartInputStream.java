@@ -18,7 +18,7 @@ import static org.apache.commons.lang3.Validate.notNull;
 
 /**
  * {@link OutputStream} implementation that allows for the attaching and
- * detaching of delegated (wrapped) streams. This is done so that we can
+ * detaching of delegated (source) streams. This is done so that we can
  * preserve the state of a {@link org.bouncycastle.jcajce.io.CipherOutputStream} instance
  * while switching the backing stream (in this case a stream that allows
  * writing to the HTTP socket).
@@ -41,7 +41,7 @@ public class MultipartInputStream extends InputStream {
     /**
      * Backing stream.
      */
-    private CountingInputStream wrapped = null;
+    private CountingInputStream source = null;
 
     /**
      * Boolean indicating if the stream is closed and
@@ -65,7 +65,7 @@ public class MultipartInputStream extends InputStream {
     private int bufCount;
 
     /**
-     * Total count of bytes read across all wrapped streams.
+     * Total count of bytes read across all source streams.
      */
     private int count;
 
@@ -105,11 +105,11 @@ public class MultipartInputStream extends InputStream {
             throw new IllegalStateException("Already reached end of source stream, refusing to set new source");
         }
 
-        if (this.wrapped != null) {
-            IOUtils.closeQuietly(this.wrapped);
+        if (this.source != null) {
+            IOUtils.closeQuietly(this.source);
         }
 
-        this.wrapped = new CountingInputStream(next);
+        this.source = new CountingInputStream(next);
     }
 
     @Override
@@ -194,8 +194,8 @@ public class MultipartInputStream extends InputStream {
             return;
         }
 
-        if (this.wrapped != null) {
-            wrapped.close();
+        if (this.source != null) {
+            source.close();
         }
 
         this.closed = true;
@@ -205,6 +205,11 @@ public class MultipartInputStream extends InputStream {
         return this.count;
     }
 
+    /**
+     * Make sure we're ready to provide bytes. It might make sense to provide as input the desired number of bytes?
+     *
+     * @throws IOException when {@link #fillBuffer()} throws
+     */
     private void ensureBufferIsReady() throws IOException {
         if (count == 0
                 || this.bufPos == this.buffer.length
@@ -213,11 +218,16 @@ public class MultipartInputStream extends InputStream {
         }
     }
 
+    /**
+     * Populate our buffer with data from {@link #source}.
+     *
+     * @throws IOException when we fail to read from the source stream
+     */
     private void fillBuffer() throws IOException {
         // we only reset bufPos if we successfully read
-        this.bufCount = IOUtils.read(this.wrapped, this.buffer);
-        // TODO: investigate calling read directory so we can know when the source stream actually reaches EOF
-        // this.bufCount = this.wrapped.read(this.buffer);
+        this.bufCount = IOUtils.read(this.source, this.buffer);
+        // CONSIDER: investigate calling read directory so we can know when the source stream actually reaches EOF
+        // this.bufCount = this.source.read(this.buffer);
         this.bufPos = 0;
     }
 }
