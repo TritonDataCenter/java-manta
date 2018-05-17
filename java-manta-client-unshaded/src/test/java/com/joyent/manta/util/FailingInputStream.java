@@ -38,7 +38,7 @@ public class FailingInputStream extends InputStream {
      * @param wrapped      InputStream to wrap
      * @param minimumBytes number of bytes to read successfully before failing
      */
-    public FailingInputStream(InputStream wrapped, int minimumBytes, boolean failAfterRead) {
+    public FailingInputStream(InputStream wrapped, long minimumBytes, boolean failAfterRead) {
         this.wrapped = wrapped;
         this.minimumBytes = minimumBytes;
         this.failAfterRead = failAfterRead;
