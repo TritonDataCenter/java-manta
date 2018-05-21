@@ -22,8 +22,12 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Added
  - Client metrics can now be enabled by selecting a reporting mode with the
    [`manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`](/USAGE.md#parameters) setting. [JMX and SLF4J are
-   available, though others may be added in the future.](https://github.com/joyent/java-manta/issues/410#issuecomment-384751882)
- - [Retry rate metric](https://github.com/joyent/java-manta/issues/410).
+   available](https://github.com/joyent/java-manta/issues/410#issuecomment-384751882), though others may be added in the future.
+ - New metrics exposed:
+    - [Meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) for
+    [retries](https://github.com/joyent/java-manta/issues/410).
+    - [Timers](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) per HTTP request method.
+    - [Meters](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) per exception that occurs during requests.
 
 ### Changed
  - MBeans registered in JMX no longer use an incrementing integer and instead are created under
