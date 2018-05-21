@@ -142,17 +142,17 @@ public class InstrumentedMantaHttpRequestExecutorTest {
         final InstrumentedMantaHttpRequestExecutor reqExec = new InstrumentedMantaHttpRequestExecutor(registry);
 
         reqExec.execute(request, conn, ctx);
-        final Optional<Timer> maybeGetTimer =
+        final Optional<Timer> foundMethodTimer =
                 registry.getTimers(MetricFilter.contains("requests-" + method.toLowerCase()))
                         .values()
                         .stream()
                         .findFirst();
 
-        assertTrue(maybeGetTimer.isPresent());
-        assertEquals(maybeGetTimer.get().getCount(), 1, method + " timer should have one sample");
+        assertTrue(foundMethodTimer.isPresent());
+        assertEquals(foundMethodTimer.get().getCount(), 1, method + " timer should have one sample");
 
         reqExec.execute(request, conn, ctx);
-        assertEquals(maybeGetTimer.get().getCount(), 2, method + " timer should have two samples");
+        assertEquals(foundMethodTimer.get().getCount(), 2, method + " timer should have two samples");
     }
 
     private void createsExceptionMetric(final Exception ex,
