@@ -163,7 +163,7 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
             return this;
         }
 
-        public MantaHttpRequestExecutor build() {
+        MantaHttpRequestExecutor build() {
             if (metricConfig != null) {
                 if (waitForContinue != null) {
                     return new InstrumentedMantaHttpRequestExecutor(metricConfig.getRegistry(), waitForContinue);
