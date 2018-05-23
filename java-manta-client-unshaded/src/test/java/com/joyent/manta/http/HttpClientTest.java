@@ -1,47 +1,34 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.exception.RecoverableDownloadMantaIOException;
-import com.joyent.manta.util.FailingInputStream;
-import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.util.MultipartInputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.lang.Math.toIntExact;
+import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_INPUT_CHARACTER;
+import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_REPEAT_COUNT;
 import static java.lang.System.out;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.apache.commons.lang3.Validate.notNull;
-import static org.apache.http.HttpHeaders.RANGE;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 
@@ -50,36 +37,8 @@ public class HttpClientTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTest.class);
 
-    private static final String CONTEXT_RESUMABLE_DOWNLOAD_MEMENTO = "manta.resumable_download_memento";
-
-    private static final String HEADER_INPUT_CHARACTER = "x-input-character";
-
-    private static final String HEADER_REPEAT_COUNT = "x-repeat-count";
-
-    private static class ResumableDownloadMemento {
-        private final String etag;
-        private final Long contentLength;
-        private final MultipartInputStream multipartInputStream;
-
-        ResumableDownloadMemento(final String etag,
-                                 final Long contentLength) {
-            this.etag = etag;
-            this.contentLength = contentLength;
-            this.multipartInputStream = new MultipartInputStream();
-        }
-
-        public String getEtag() {
-            return this.etag;
-        }
-
-        public Long getContentLength() {
-            return this.contentLength;
-        }
-
-        public MultipartInputStream getMultipartInputStream() {
-            return this.multipartInputStream;
-        }
-    }
+    private static final String CONTEXT_RESUMABLE_DOWNLOAD_ENABLED = "manta.resumable_download_enabled";
+    private static final String CONTEXT_RESUMABLE_DOWNLOAD = "manta.resumable_download";
 
     public void testServer() throws Exception {
 
@@ -96,12 +55,17 @@ public class HttpClientTest {
         final OutputStream savedEntity = new ByteArrayOutputStream();
 
         final HttpContext ctx = new HttpClientContext();
+        ctx.setAttribute(CONTEXT_RESUMABLE_DOWNLOAD_ENABLED, true);
 
-        try (final CloseableHttpResponse res = client.execute(req, ctx)) {
+        int loops = 0;
+        boolean finished = false;
+        do {
+            loops++;
+            final CloseableHttpResponse res = client.execute(req, ctx);
             final int statusCode = res.getStatusLine().getStatusCode();
             if (statusCode != SC_OK
                     && statusCode != SC_PARTIAL_CONTENT) {
-                throw new AssertionError("invalid response code: " + res.getStatusLine().getStatusCode());
+                throw new AssertionError("invalid response code: " + statusCode);
             }
 
             out.println("response: " + res.getStatusLine());
@@ -110,116 +74,106 @@ public class HttpClientTest {
                 throw new AssertionError("response must have entity");
             }
 
-            attemptToReadEntity(ctx, ent.getContent(), savedEntity);
+            final MultipartInputStream multiInput = resumed.getMultipartInputStream();
+            multiInput.setSource(ent.getContent());
 
-        } catch (final RecoverableDownloadMantaIOException recoverable) {
-            // TODO: do something here
-            LOG.info("success!");
-        } catch (final IOException e) {
-            LOG.info("failure!");
-            throw e;
-        }
-    }
+            try {
+                IOUtils.copy(multiInput, savedEntity, 4);
+                finished = true;
+            } catch (final IOException e) {
+                if (RecoverableDownloadMantaIOException.isResumableError(e)) {
+                    continue;
+                }
 
-    private void attemptToReadEntity(final HttpContext context,
-                                     final InputStream content,
-                                     final OutputStream copy) throws IOException {
-        try {
-            IOUtils.copy(content, copy, 4);
-        } catch (final IOException e) {
-            if (RecoverableDownloadMantaIOException.isResumableError(e)) {
-                throw new RecoverableDownloadMantaIOException(e);
+                throw e;
+            } finally {
+                res.close();
             }
+        } while (!finished && loops < 5);
 
-            throw e;
+        if (!finished) {
+            throw new AssertionError("Failed to download object content, attempts: " + loops);
         }
     }
-
 
     private CloseableHttpClient prepareClient(final HttpClientConnection conn) {
         return HttpClientBuilder.create()
                 .setConnectionManager(new FakeHttpClientConnectionManager(conn))
                 .setRetryHandler(new StandardHttpRequestRetryHandler())
-                .addInterceptorFirst((HttpResponseInterceptor) (response, context) -> {
-                    final HttpEntity responseEntity = response.getEntity();
-
-                    if (responseEntity == null) {
+                .addInterceptorFirst((HttpRequestInterceptor) (request, context) -> {
+                    if (request.getRequestLine() == null) {
+                        // nonsensical but might as well
                         return;
                     }
 
-                    final Object existingMemento = context.getAttribute(CONTEXT_RESUMABLE_DOWNLOAD_MEMENTO);
-
-                    if (existingMemento == null) {
-                        final String etag = notNull(response.getFirstHeader(HttpHeaders.ETAG)).getValue();
-                        final Long contentLength = responseEntity.getContentLength();
-
-                        context.setAttribute(
-                                CONTEXT_RESUMABLE_DOWNLOAD_MEMENTO,
-                                new ResumableDownloadMemento(etag, contentLength));
-
-                    } else if (existingMemento instanceof ResumableDownloadMemento) {
-                        throw new NotImplementedException("update? ¯\\_(ツ)_/¯");
-                    } else {
-                        throw new AssertionError("wtf? ¯\\_(ツ)_/¯");
+                    if (!HttpGet.METHOD_NAME.equals(request.getRequestLine().getMethod())) {
+                        // not a GET request
+                        return;
                     }
+
+                    final Object resumableDownload = context.getAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+
+                    if (null != request.getFirstHeader(HttpHeaders.IF_MATCH)) {
+                        // request already uses if-match, don't clobber it
+                        return;
+                    }
+
+                    if (null == resumableDownload) {
+                        // prepare the context to receive a marker which will be set once the response arrives
+                        context.setAttribute(CONTEXT_RESUMABLE_DOWNLOAD, true);
+                        return;
+                    }
+
+                    if (resumableDownload instanceof Boolean) {
+                        // this interceptor has somehow run twice for the same initial download
+                        LOG.debug("ResumableDownloadPreparationInterceptor has been invoked unexpectedly, skipping!");
+                        return;
+                    }
+
+                    if (!(resumableDownload instanceof ResumableDownloadMarker)) {
+                        LOG.error("Unexpected type found while preparing resumable download, got: " + resumableDownload.getClass());
+
+                        return;
+                    }
+
+                    final ResumableDownloadMarker resuming = (ResumableDownloadMarker) resumableDownload;
+                })
+                .addInterceptorFirst((HttpResponseInterceptor) (response, context) -> {
+                    final Object resumableDownload = context.getAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+                    if (resumableDownload == null) {
+                        // the request is not eligible for resuming
+                        return;
+                    }
+
+                    final ImmutablePair<String, ContentRange> fingerprint = ResumableDownloadMarker.extractFingerprint(response);
+
+                    if (fingerprint == null) {
+                        // there is not enough information in the response to create or update a marker
+                        // so clear one that may already be present and exit
+                        context.removeAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+                        return;
+                    }
+
+                    if (!(resumableDownload instanceof ResumableDownloadMarker)) {
+                        // we are receiving the first response, attach a new marker to the context and exit
+                        context.setAttribute(
+                                CONTEXT_RESUMABLE_DOWNLOAD,
+                                new ResumableDownloadMarker(fingerprint.left, fingerprint.right));
+                        return;
+                    }
+
+                    // check that the marker is still valid
+                    final ResumableDownloadMarker resumed = (ResumableDownloadMarker) resumableDownload;
+
+                    if (!fingerprint.left.equals(resumed.getEtag())) {
+                        // the etag has changed, abort!
+                        context.removeAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+                    }
+
                 })
                 .build();
     }
 
-    private class FixedFailureCountCharacterRepeatingHttpHandler implements HttpRequestHandler {
-
-        private final AtomicInteger requestsToFail;
-
-        FixedFailureCountCharacterRepeatingHttpHandler(final int requestsToFail) {
-            this.requestsToFail = new AtomicInteger(requestsToFail);
-        }
-
-        @Override
-        public void handle(final HttpRequest request,
-                           final HttpResponse response,
-                           final HttpContext context) {
-            if (!request.containsHeader(HEADER_INPUT_CHARACTER)
-                    && !request.containsHeader(HEADER_REPEAT_COUNT)) {
-                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-                return;
-            }
-
-            response.setStatusCode(SC_OK);
-            final String inputChar = request.getFirstHeader(HEADER_INPUT_CHARACTER).getValue();
-            final Integer repeatCount = Integer.parseInt(request.getFirstHeader(HEADER_REPEAT_COUNT).getValue());
-            final String rawResponse = StringUtils.repeat(inputChar, repeatCount);
-            final byte[] responseBytes = rawResponse.getBytes(US_ASCII);
-
-            // TODO: do something different with ETag?
-            response.setHeader(HttpHeaders.ETAG, rawResponse);
-
-            InputStream responseBody;
-            final Header rangeHeader = request.getFirstHeader(RANGE);
-            if (rangeHeader != null) {
-                final Long[] reqRange = MantaUtils.parseSingleRange(rangeHeader.getValue());
-
-                responseBody = new ByteArrayInputStream(
-                        responseBytes,
-                        toIntExact(reqRange[0]),
-                        toIntExact(reqRange[1]));
-            } else {
-                responseBody = new ByteArrayInputStream(responseBytes);
-            }
-
-
-            if (0 < requestsToFail.getAndDecrement()) {
-                // this causes a connection reset on the client side when
-                // the exception is triggered
-                responseBody = new FailingInputStream(
-                        responseBody,
-                        Math.floorDiv(responseBytes.length, 2),
-                        RandomUtils.nextBoolean());
-            }
-
-
-            response.setEntity(new InputStreamEntity(responseBody, responseBytes.length));
-        }
-    }
 
 
 }

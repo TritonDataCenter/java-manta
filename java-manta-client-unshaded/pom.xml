@@ -53,6 +53,14 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${dependency.apache-http-client.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Apache Commons Lang for helpful utility functions -->
         <dependency>
             <groupId>org.apache.commons</groupId>
