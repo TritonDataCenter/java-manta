@@ -67,6 +67,7 @@ class FixedFailureCountCharacterRepeatingHttpHandler implements HttpRequestHandl
 
             final String contentRange = String.format("bytes %d-%d/%d", reqRange[0], reqRange[1], responseBytes.length);
             response.setHeader(CONTENT_RANGE, contentRange);
+            response.setStatusCode(HttpStatus.SC_PARTIAL_CONTENT);
         } else {
             responseBody = new ByteArrayInputStream(responseBytes);
         }

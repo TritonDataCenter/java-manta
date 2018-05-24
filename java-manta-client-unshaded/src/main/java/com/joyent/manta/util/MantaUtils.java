@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.util;
 
-import com.joyent.manta.http.ContentRange;
 import io.mikael.urlbuilder.util.Decoder;
 import io.mikael.urlbuilder.util.Encoder;
 import org.apache.commons.codec.binary.Hex;
@@ -16,7 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
 import org.apache.commons.lang3.exception.ExceptionContext;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.http.client.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

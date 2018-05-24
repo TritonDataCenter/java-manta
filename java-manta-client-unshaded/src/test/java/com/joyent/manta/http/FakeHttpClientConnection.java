@@ -1,6 +1,7 @@
 package com.joyent.manta.http;
 
 
+import org.apache.http.Header;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpConnectionMetrics;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.mock;
@@ -22,6 +24,10 @@ import static org.mockito.Mockito.mock;
 public class FakeHttpClientConnection implements HttpClientConnection {
     
     private static final Logger LOG = LoggerFactory.getLogger(FakeHttpClientConnection.class);
+
+    private static final AtomicLong COUNTER = new AtomicLong(0);
+
+    private final String id;
 
     private final HttpRequestHandler requestHandler;
 
@@ -42,6 +48,7 @@ public class FakeHttpClientConnection implements HttpClientConnection {
     }
 
     FakeHttpClientConnection(final HttpRequestHandler requestHandler) {
+        this.id = Long.toString(COUNTER.getAndIncrement());
         this.requestHandler = requestHandler;
         this.state = new AtomicReference<>(ConnectionState.READY);
         this.handled = false;
@@ -64,15 +71,15 @@ public class FakeHttpClientConnection implements HttpClientConnection {
     @Override
     public void sendRequestHeader(final HttpRequest request)
             throws IOException, HttpException {
-        LOG.info(" >>> headers >>> " + request.getRequestLine());
-
         this.state.compareAndSet(ConnectionState.READY, ConnectionState.REQ_SENT_HEADER);
-        this.currentResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_IMPLEMENTED, "Who cares");
+        this.currentResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_IMPLEMENTED, "Sorry");
 
         if (request instanceof HttpEntityEnclosingRequest) {
             this.handled = false;
             return;
         }
+
+        onRequestSubmitted(request);
 
         this.requestHandler.handle(request, this.currentResponse, null);
         this.handled = true;
@@ -106,7 +113,6 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      */
     @Override
     public HttpResponse receiveResponseHeader() {
-        LOG.info(" <<< header <<< " + this.currentResponse.getStatusLine());
         final ConnectionState currentState = this.state.get();
 
         if (!currentState.equals(ConnectionState.REQ_SENT_HEADER)
@@ -114,6 +120,8 @@ public class FakeHttpClientConnection implements HttpClientConnection {
             throw new AssertionError(
                     "Invalid state transition during receiveResponseHeader, was: " + currentState);
         }
+
+        onResponseReceived(this.currentResponse);
 
         this.state.compareAndSet(ConnectionState.REQ_SENT_HEADER, ConnectionState.REQ_SENT_BODY);
 
@@ -126,7 +134,7 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      */
     @Override
     public void receiveResponseEntity(final HttpResponse response) {
-        LOG.info(" <<< entity <<< " + this.currentResponse.getStatusLine());
+        LOG.debug(getId() + " << entity received " + this.currentResponse.getStatusLine());
     }
 
     /**
@@ -182,5 +190,30 @@ public class FakeHttpClientConnection implements HttpClientConnection {
     public HttpConnectionMetrics getMetrics() {
         return this.metrics;
     }
+
+    private String getId() {
+        return this.id;
+    }
+
+    private void onResponseReceived(final HttpResponse response) {
+        if (response != null) {
+            LOG.debug(getId() + " << " + response.getStatusLine().toString());
+            final Header[] headers = response.getAllHeaders();
+            for (final Header header : headers) {
+                LOG.debug(getId() + " << " + header.toString());
+            }
+        }
+    }
+
+    private void onRequestSubmitted(final HttpRequest request) {
+        if (request != null) {
+            LOG.debug(getId() + " >> " + request.getRequestLine().toString());
+            final Header[] headers = request.getAllHeaders();
+            for (final Header header : headers) {
+                LOG.debug(getId() + " >> " + header.toString());
+            }
+        }
+    }
+
 }
 

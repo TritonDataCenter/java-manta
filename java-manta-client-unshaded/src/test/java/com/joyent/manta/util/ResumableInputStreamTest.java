@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-import static com.joyent.manta.util.MultipartInputStream.EOF;
+import static com.joyent.manta.util.ResumableInputStream.EOF;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang3.Validate.validState;
 import static org.mockito.Mockito.mock;
@@ -37,9 +37,9 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 @Test
-public class MultipartInputStreamTest {
+public class ResumableInputStreamTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MultipartInputStreamTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResumableInputStreamTest.class);
 
     private static final int MAX_SIZE = 16;
 
@@ -150,10 +150,10 @@ public class MultipartInputStreamTest {
     }
 
     public void testValidatesInputs() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> new MultipartInputStream(0));
-        assertThrows(IllegalArgumentException.class, () -> new MultipartInputStream(-1));
+        assertThrows(IllegalArgumentException.class, () -> new ResumableInputStream(0));
+        assertThrows(IllegalArgumentException.class, () -> new ResumableInputStream(-1));
 
-        final MultipartInputStream mis = new MultipartInputStream(1);
+        final ResumableInputStream mis = new ResumableInputStream(1);
         assertThrows(NullPointerException.class, () -> mis.setSource(null));
 
         assertThrows(NullPointerException.class, () -> mis.read());
@@ -171,7 +171,7 @@ public class MultipartInputStreamTest {
         // read more bytes than space available (due to offset)
         assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[2], 1, 2));
 
-        final MultipartInputStream closed = new MultipartInputStream();
+        final ResumableInputStream closed = new ResumableInputStream();
         closed.close();
 
         assertThrows(IllegalStateException.class, () -> closed.setSource(new NullInputStream(0)));
@@ -182,13 +182,13 @@ public class MultipartInputStreamTest {
     }
 
     public void testMiscInputStreamMethods() throws Exception {
-        final MultipartInputStream mis = new MultipartInputStream();
+        final ResumableInputStream mis = new ResumableInputStream();
 
         assertFalse(mis.markSupported());
     }
 
     public void testCloseClosesWrappedInputStream() throws Exception {
-        final MultipartInputStream mis = new MultipartInputStream(1);
+        final ResumableInputStream mis = new ResumableInputStream(1);
         final InputStream source = mock(InputStream.class);
         mis.setSource(source);
         mis.close();
@@ -197,14 +197,14 @@ public class MultipartInputStreamTest {
     }
 
         public void testClosingWithoutSettingDoesNotThrow() throws Exception {
-        final MultipartInputStream mis = new MultipartInputStream();
+        final ResumableInputStream mis = new ResumableInputStream();
 
         mis.close();
         assertTrue(true);
     }
 
     public void testDoubleCloseDoesNotThrow() throws Exception {
-        final MultipartInputStream mis = new MultipartInputStream();
+        final ResumableInputStream mis = new ResumableInputStream();
         final InputStream inner = mock(InputStream.class);
         mis.setSource(inner);
 
@@ -214,7 +214,7 @@ public class MultipartInputStreamTest {
     }
 
     public void testStreamsAreClosedWhereExpected() throws Exception {
-        final MultipartInputStream mis = new MultipartInputStream();
+        final ResumableInputStream mis = new ResumableInputStream();
         final InputStream firstStream = mock(InputStream.class);
         final InputStream secondStream = mock(InputStream.class);
 
@@ -236,7 +236,7 @@ public class MultipartInputStreamTest {
 
     public void testReadFailureBeforeCopyingBytesDoesNotAffectCount() throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(2);
-        final MultipartInputStream mis = new MultipartInputStream();
+        final ResumableInputStream mis = new ResumableInputStream();
         final byte[] readBuffer = new byte[bytes.length];
 
         // read will fail before any bytes are read
@@ -256,7 +256,7 @@ public class MultipartInputStreamTest {
         } while (bytes[0] == 0);
         assertNotEquals(bytes[0], 0); // kinda redundant
 
-        final MultipartInputStream mis = new MultipartInputStream();
+        final ResumableInputStream mis = new ResumableInputStream();
         final byte[] readBuffer = new byte[bytes.length];
 
         // read will actually copy bytes over but fail before telling us how many
@@ -275,7 +275,7 @@ public class MultipartInputStreamTest {
         final byte[] bytes = new byte[]{1};
         final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
 
-        final MultipartInputStream mis = new MultipartInputStream(1);
+        final ResumableInputStream mis = new ResumableInputStream(1);
         mis.setSource(src);
 
         final int firstByte = mis.read();
@@ -298,14 +298,14 @@ public class MultipartInputStreamTest {
                 throw e;
             }
         }
-        LOG.info("MultipartInputStream testReadSmallSliceOfSingleLargeInput completed all combinations without error: {}", paramLists.length);
+        LOG.info("ResumableInputStream testReadSmallSliceOfSingleLargeInput completed all combinations without error: {}", paramLists.length);
     }
 
     private void testReadSmallSliceOfSingleLargeInput(final int inputSize, final int bufferSize) throws Exception {
         final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
         final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
 
-        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
+        final ResumableInputStream mis = new ResumableInputStream(bufferSize);
         mis.setSource(src);
 
         final int sliceSize = Math.min(1, Math.floorDiv(bytes.length, 2));
@@ -331,7 +331,7 @@ public class MultipartInputStreamTest {
                 throw e;
             }
         }
-        LOG.info("MultipartInputStream testReadFirstStreamPartially completed all combinations without error: {}", paramLists.length);
+        LOG.info("ResumableInputStream testReadFirstStreamPartially completed all combinations without error: {}", paramLists.length);
     }
 
     private void testReadFirstStreamPartially(
@@ -342,7 +342,7 @@ public class MultipartInputStreamTest {
         final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
         final ByteArrayInputStream source = new ByteArrayInputStream(bytes);
 
-        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
+        final ResumableInputStream mis = new ResumableInputStream(bufferSize);
         mis.setSource(source);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -356,14 +356,14 @@ public class MultipartInputStreamTest {
     }
 
     /**
-     * This test is left as a demonstration of how someone might work directly with the MultipartInputStream,
+     * This test is left as a demonstration of how someone might work directly with the ResumableInputStream,
      * later tests which dynamically slice the input into many segments or use IOUtils helpers are better real-world
      * test cases. Truthfully, I was still working up to the complexity of the next test case but it's still a nice
      * demonstration of "intermediate" complexity.
      */
     public void testCanPerformDirectReadsOnInputWithExpectedSize() throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(16);
-        final MultipartInputStream mis = new MultipartInputStream(4);
+        final ResumableInputStream mis = new ResumableInputStream(4);
         final int safeBytes = 8;
 
         final byte[] readBuffer = new byte[bytes.length];
@@ -417,7 +417,7 @@ public class MultipartInputStreamTest {
             testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, false);
             testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, null);
         }
-        LOG.info("MultipartInputStream testCanRecoverFromFailureRepeatedly completed all combinations without error: {}", paramLists.length * 3);
+        LOG.info("ResumableInputStream testCanRecoverFromFailureRepeatedly completed all combinations without error: {}", paramLists.length * 3);
     }
 
     private void testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(final Object[] params, final Boolean postReadFailure) throws Exception {
@@ -449,7 +449,7 @@ public class MultipartInputStreamTest {
             final Boolean readFailureIsPost
     ) throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(inputSize);
-        final MultipartInputStream mis = new MultipartInputStream(bufferSize);
+        final ResumableInputStream mis = new ResumableInputStream(bufferSize);
 
         final Deque<Integer> failureOffsets = new LinkedList<>(Arrays.asList(readFailureOffsets));
 

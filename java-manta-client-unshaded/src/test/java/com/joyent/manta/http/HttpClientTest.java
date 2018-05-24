@@ -1,12 +1,14 @@
 package com.joyent.manta.http;
 
-import com.joyent.manta.exception.RecoverableDownloadMantaIOException;
-import com.joyent.manta.util.MultipartInputStream;
+import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.http.Header;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -23,22 +25,21 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 
 import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_INPUT_CHARACTER;
 import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_REPEAT_COUNT;
 import static java.lang.System.out;
-import static org.apache.commons.lang3.Validate.notNull;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
+import static org.testng.Assert.assertEquals;
 
 @Test
 public class HttpClientTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTest.class);
-
-    private static final String CONTEXT_RESUMABLE_DOWNLOAD_ENABLED = "manta.resumable_download_enabled";
-    private static final String CONTEXT_RESUMABLE_DOWNLOAD = "manta.resumable_download";
 
     public void testServer() throws Exception {
 
@@ -49,13 +50,15 @@ public class HttpClientTest {
         final HttpUriRequest req = new HttpGet("http://localhost");
 
         final int expectedEntityLength = 16;
+        final String inputChar = "a";
         req.setHeader(HEADER_REPEAT_COUNT, Integer.toString(expectedEntityLength));
-        req.setHeader(HEADER_INPUT_CHARACTER, "a");
+        req.setHeader(HEADER_INPUT_CHARACTER, inputChar);
 
-        final OutputStream savedEntity = new ByteArrayOutputStream();
+        final ByteArrayOutputStream savedEntity = new ByteArrayOutputStream();
 
         final HttpContext ctx = new HttpClientContext();
-        ctx.setAttribute(CONTEXT_RESUMABLE_DOWNLOAD_ENABLED, true);
+        final ResumableInputStream resumableStream = new ResumableInputStream(2);
+        final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(resumableStream, ctx);
 
         int loops = 0;
         boolean finished = false;
@@ -74,14 +77,15 @@ public class HttpClientTest {
                 throw new AssertionError("response must have entity");
             }
 
-            final MultipartInputStream multiInput = resumed.getMultipartInputStream();
-            multiInput.setSource(ent.getContent());
+            final InputStream entityContent = ent.getContent();
+            resumableStream.setSource(entityContent);
 
             try {
-                IOUtils.copy(multiInput, savedEntity, 4);
+                IOUtils.copy(resumableStream, savedEntity, 2);
                 finished = true;
             } catch (final IOException e) {
-                if (RecoverableDownloadMantaIOException.isResumableError(e)) {
+                if (ResumableDownloadCoordinator.isRecoverable(e)) {
+                    coordinator.updateMarker();
                     continue;
                 }
 
@@ -94,6 +98,11 @@ public class HttpClientTest {
         if (!finished) {
             throw new AssertionError("Failed to download object content, attempts: " + loops);
         }
+
+        LOG.info("resumable download test took {} attempts", loops);
+
+        final String expectedEntity = StringUtils.repeat(inputChar, expectedEntityLength);
+        assertEquals(expectedEntity, new String(savedEntity.toByteArray(), US_ASCII));
     }
 
     private CloseableHttpClient prepareClient(final HttpClientConnection conn) {
@@ -111,69 +120,78 @@ public class HttpClientTest {
                         return;
                     }
 
-                    final Object resumableDownload = context.getAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+                    final ResumableDownloadCoordinator coordinator = ResumableDownloadCoordinator.extractFromContext(context);
 
-                    if (null != request.getFirstHeader(HttpHeaders.IF_MATCH)) {
-                        // request already uses if-match, don't clobber it
+                    if (null == coordinator) {
+                        // no coordinator prepared
                         return;
                     }
 
-                    if (null == resumableDownload) {
-                        // prepare the context to receive a marker which will be set once the response arrives
-                        context.setAttribute(CONTEXT_RESUMABLE_DOWNLOAD, true);
+                    final boolean ifMatchHeaderIsCompatible = coordinator.compatibleIfMatchHeaders(request);
+                    final boolean rangeHeaderIsCompatible = coordinator.compatibleRangeHeaders(request);
+                    if (!ifMatchHeaderIsCompatible || !rangeHeaderIsCompatible) {
+                        LOG.debug("aborting download resumption due to incompatible headers: if-match ok? {}, range ok? {}", ifMatchHeaderIsCompatible, rangeHeaderIsCompatible);
                         return;
                     }
 
-                    if (resumableDownload instanceof Boolean) {
-                        // this interceptor has somehow run twice for the same initial download
-                        LOG.debug("ResumableDownloadPreparationInterceptor has been invoked unexpectedly, skipping!");
+                    if (!coordinator.canResume()) {
                         return;
                     }
 
-                    if (!(resumableDownload instanceof ResumableDownloadMarker)) {
-                        LOG.error("Unexpected type found while preparing resumable download, got: " + resumableDownload.getClass());
+                    coordinator.applyHeaders(request);
 
-                        return;
-                    }
-
-                    final ResumableDownloadMarker resuming = (ResumableDownloadMarker) resumableDownload;
                 })
                 .addInterceptorFirst((HttpResponseInterceptor) (response, context) -> {
-                    final Object resumableDownload = context.getAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
-                    if (resumableDownload == null) {
-                        // the request is not eligible for resuming
+                    final ResumableDownloadCoordinator coordinator = ResumableDownloadCoordinator.extractFromContext(context);
+                    if (coordinator == null) {
+                        // for one reason or another this request can't be resumed, abort
                         return;
                     }
 
-                    final ImmutablePair<String, ContentRange> fingerprint = ResumableDownloadMarker.extractFingerprint(response);
+                    final ImmutablePair<String, HttpRange> fingerprint = ResumableDownloadCoordinator.extractFingerprint(response);
 
                     if (fingerprint == null) {
                         // there is not enough information in the response to create or update a marker
                         // so clear one that may already be present and exit
-                        context.removeAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+                        coordinator.cancel();
                         return;
                     }
 
-                    if (!(resumableDownload instanceof ResumableDownloadMarker)) {
-                        // we are receiving the first response, attach a new marker to the context and exit
-                        context.setAttribute(
-                                CONTEXT_RESUMABLE_DOWNLOAD,
-                                new ResumableDownloadMarker(fingerprint.left, fingerprint.right));
-                        return;
+                    if (coordinator.canResume()) {
+                        throw new NotImplementedException("do the needful");
                     }
 
-                    // check that the marker is still valid
-                    final ResumableDownloadMarker resumed = (ResumableDownloadMarker) resumableDownload;
-
-                    if (!fingerprint.left.equals(resumed.getEtag())) {
-                        // the etag has changed, abort!
-                        context.removeAttribute(CONTEXT_RESUMABLE_DOWNLOAD);
+                    if (coordinator.canStart()) {
+                        LOG.debug("attaching marker");
+                        coordinator.attachMarker(new ResumableDownloadMarker(fingerprint.left, fingerprint.right));
                     }
-
                 })
                 .build();
     }
 
+    private static boolean conflictingIfMatchHeaderPresent(final ResumableDownloadMarker marker,
+                                                           final Header[] ifMatchHeaders) {
+        Validate.notNull(marker);
+        Validate.notNull(ifMatchHeaders);
+
+        if (ifMatchHeaders.length == 0) {
+            return false;
+        }
+
+        for (final Header hdr : ifMatchHeaders) {
+            if (IF_MATCH.equalsIgnoreCase(hdr.getName())) {
+                // we shouldn't be here?
+                continue;
+            }
+
+            final String headerValue = hdr.getValue();
+            if (StringUtils.isNotBlank(headerValue) && !marker.getEtag().contentEquals(headerValue)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 
 }

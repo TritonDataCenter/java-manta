@@ -26,7 +26,7 @@ import static org.apache.commons.lang3.Validate.notNull;
  * <p><strong>This class is not thread-safe.</strong></p>
  */
 @NotThreadSafe
-public class MultipartInputStream extends InputStream {
+public class ResumableInputStream extends InputStream {
 
     /**
      * EOF marker.
@@ -72,7 +72,7 @@ public class MultipartInputStream extends InputStream {
     /**
      * Creates a new instance with the default buffer size.
      */
-    public MultipartInputStream() {
+    public ResumableInputStream() {
         this(BUFFER_SIZE_DEFAULT);
     }
 
@@ -81,7 +81,7 @@ public class MultipartInputStream extends InputStream {
      *
      * @param bufferSize cipher block size
      */
-    public MultipartInputStream(final int bufferSize) {
+    public ResumableInputStream(final int bufferSize) {
         if (bufferSize < 1) {
             throw new IllegalArgumentException("Buffer size must be greater than zero");
         }
@@ -97,7 +97,7 @@ public class MultipartInputStream extends InputStream {
      */
     public void setSource(final InputStream next) {
         if (this.closed) {
-            throw new IllegalStateException("Attempted to set source on a closed MultipartInputStream");
+            throw new IllegalStateException("Attempted to set source on a closed ResumableInputStream");
         }
         notNull(next, "InputStream must not be null");
 
@@ -115,7 +115,7 @@ public class MultipartInputStream extends InputStream {
     @Override
     public int read() throws IOException {
         if (this.closed) {
-            throw new IllegalStateException("Attempted to read from a closed MultipartInputStream");
+            throw new IllegalStateException("Attempted to read from a closed ResumableInputStream");
         }
 
         ensureBufferIsReady();
@@ -135,7 +135,7 @@ public class MultipartInputStream extends InputStream {
     @Override
     public int read(final byte[] b, final int off, final int len) throws IOException {
         if (this.closed) {
-            throw new IllegalStateException("Attempted to read from a closed MultipartInputStream");
+            throw new IllegalStateException("Attempted to read from a closed ResumableInputStream");
         }
 
         notNull(b, "Provided byte array must not be null");
