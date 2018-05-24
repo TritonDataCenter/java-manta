@@ -49,4 +49,13 @@ class ResumableDownloadMarker {
     public HttpRange getCurrentRange() {
         return this.current;
     }
+
+    @Override
+    public String toString() {
+        return "ResumableDownloadMarker{" +
+                "etag='" + this.etag + '\'' +
+                ", target=" + this.target +
+                ", current=" + this.current +
+                '}';
+    }
 }

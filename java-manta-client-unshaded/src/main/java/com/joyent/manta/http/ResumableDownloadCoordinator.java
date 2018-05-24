@@ -1,5 +1,6 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.exception.MantaResumedDownloadIncompatibleResponseException;
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +27,7 @@ import javax.net.ssl.SSLException;
 
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
+import static org.apache.http.HttpHeaders.CONTENT_RANGE;
 import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpHeaders.RANGE;
 
@@ -103,7 +105,7 @@ public class ResumableDownloadCoordinator
     void updateMarker() {
         final ResumableDownloadMarker marker = this.markerHolder.get();
         if (null == marker) {
-            throw new IllegalStateException("no marker to update");
+            throw new IllegalStateException("No marker to update");
         }
 
         marker.updateStart(this.resumableStream.getCount());
@@ -178,6 +180,38 @@ public class ResumableDownloadCoordinator
         }
     }
 
+    void validateResponse(final HttpResponse response) throws MantaResumedDownloadIncompatibleResponseException {
+        notNull(response);
+        final ResumableDownloadMarker marker = this.markerHolder.get();
+        if (null == marker) {
+            throw new IllegalStateException("No marker to compare against response");
+        }
+
+        final Header contentRangeHeader = response.getFirstHeader(CONTENT_RANGE);
+
+        if (null == contentRangeHeader || StringUtils.isBlank(contentRangeHeader.getValue())) {
+            throw new IllegalArgumentException("Invalid Content-Range header (blank or missing)");
+        }
+
+        final HttpRange range;
+        try {
+            range = HttpRange.parseContentRange(contentRangeHeader.getValue());
+        } catch (final Exception e) {
+            throw new IllegalArgumentException("Invalid Content-Range header (malformed)", e);
+        }
+
+        if (!range.equals(marker.getCurrentRange())) {
+            final StringBuilder message = new StringBuilder();
+            message.append("Response Content-Range does not match range request, expected: [");
+            message.append(marker.getCurrentRange());
+            message.append("], received: [");
+            message.append(range);
+            message.append("]");
+
+            throw new MantaResumedDownloadIncompatibleResponseException(message.toString());
+        }
+    }
+
     void cancel() {
         final HttpContext ctx = contextHolder.get();
         if (null == ctx) {
@@ -187,6 +221,15 @@ public class ResumableDownloadCoordinator
         ctx.removeAttribute(CTX_RESUMABLE_COORDINATOR);
         contextHolder.set(null);
         markerHolder.set(null);
+    }
+
+    @Override
+    public String toString() {
+        return "ResumableDownloadCoordinator{" +
+                "resumableStream=" + this.resumableStream +
+                ", contextHolder=" + this.contextHolder +
+                ", markerHolder=" + this.markerHolder +
+                '}';
     }
 
     static boolean isRecoverable(final IOException e) {

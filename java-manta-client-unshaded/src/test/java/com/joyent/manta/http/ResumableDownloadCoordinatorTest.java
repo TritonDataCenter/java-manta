@@ -2,11 +2,8 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.http.Header;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequestInterceptor;
@@ -31,21 +28,20 @@ import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandl
 import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_REPEAT_COUNT;
 import static java.lang.System.out;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 import static org.testng.Assert.assertEquals;
 
 @Test
-public class HttpClientTest {
+public class ResumableDownloadCoordinatorTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HttpClientTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResumableDownloadCoordinatorTest.class);
 
-    public void testServer() throws Exception {
+    public void testBasicFunctionalityWorks() throws Exception {
 
         final CloseableHttpClient client = prepareClient(
                 new FakeHttpClientConnection(
-                        new FixedFailureCountCharacterRepeatingHttpHandler(1)));
+                        new FixedFailureCountCharacterRepeatingHttpHandler(2)));
 
         final HttpUriRequest req = new HttpGet("http://localhost");
 
@@ -99,10 +95,11 @@ public class HttpClientTest {
             throw new AssertionError("Failed to download object content, attempts: " + loops);
         }
 
-        LOG.info("resumable download test took {} attempts", loops);
 
         final String expectedEntity = StringUtils.repeat(inputChar, expectedEntityLength);
         assertEquals(expectedEntity, new String(savedEntity.toByteArray(), US_ASCII));
+
+        LOG.info("leapin' lizards! resumable download test completed successfully with {} attempts!", loops);
     }
 
     private CloseableHttpClient prepareClient(final HttpClientConnection conn) {
@@ -158,40 +155,15 @@ public class HttpClientTest {
                     }
 
                     if (coordinator.canResume()) {
-                        throw new NotImplementedException("do the needful");
-                    }
-
-                    if (coordinator.canStart()) {
+                        // verify that the returned range matches the marker's current range
+                        LOG.debug("verifying that returned response matches requested range");
+                        coordinator.validateResponse(response);
+                    } else if (coordinator.canStart()) {
                         LOG.debug("attaching marker");
                         coordinator.attachMarker(new ResumableDownloadMarker(fingerprint.left, fingerprint.right));
                     }
                 })
                 .build();
     }
-
-    private static boolean conflictingIfMatchHeaderPresent(final ResumableDownloadMarker marker,
-                                                           final Header[] ifMatchHeaders) {
-        Validate.notNull(marker);
-        Validate.notNull(ifMatchHeaders);
-
-        if (ifMatchHeaders.length == 0) {
-            return false;
-        }
-
-        for (final Header hdr : ifMatchHeaders) {
-            if (IF_MATCH.equalsIgnoreCase(hdr.getName())) {
-                // we shouldn't be here?
-                continue;
-            }
-
-            final String headerValue = hdr.getValue();
-            if (StringUtils.isNotBlank(headerValue) && !marker.getEtag().contentEquals(headerValue)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
 }

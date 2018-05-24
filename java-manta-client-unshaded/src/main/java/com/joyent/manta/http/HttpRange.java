@@ -83,6 +83,7 @@ class HttpRange {
         return sb.toString();
     }
 
+    // TODO: I don't think we need this
     public String renderContentRange() {
         final StringBuilder sb = new StringBuilder("bytes ");
         sb.append(start);
@@ -113,5 +114,14 @@ class HttpRange {
     @Override
     public int hashCode() {
         return Objects.hash(start, end, size);
+    }
+
+    @Override
+    public String toString() {
+        return "HttpRange{" +
+                "start=" + this.start +
+                ", end=" + this.end +
+                ", size=" + this.size +
+                '}';
     }
 }
