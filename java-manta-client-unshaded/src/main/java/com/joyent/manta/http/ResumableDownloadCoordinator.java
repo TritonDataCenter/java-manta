@@ -31,13 +31,11 @@ import static org.apache.http.HttpHeaders.CONTENT_RANGE;
 import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpHeaders.RANGE;
 
-public class ResumableDownloadCoordinator
-        // implements Closeable
-{
+public class ResumableDownloadCoordinator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResumableDownloadCoordinator.class);
 
-    static final String CTX_RESUMABLE_COORDINATOR = "manta.resumable_coordinator";
+    private static final String CTX_RESUMABLE_COORDINATOR = "manta.resumable_coordinator";
 
     private final Object lock;
 
@@ -111,7 +109,7 @@ public class ResumableDownloadCoordinator
         marker.updateStart(this.resumableStream.getCount());
     }
 
-    boolean compatibleRangeHeaders(final HttpRequest request) {
+    boolean requestHasCompatibleRangeHeaders(final HttpRequest request) {
         final Header[] rangeHeaders = request.getHeaders(IF_MATCH);
 
         if (1 < rangeHeaders.length) {
@@ -127,7 +125,7 @@ public class ResumableDownloadCoordinator
         throw new NotImplementedException("gotta get here someday!");
     }
 
-    boolean compatibleIfMatchHeaders(final HttpRequest request) {
+    boolean requestHasCompatibleIfMatchHeaders(final HttpRequest request) {
         final Header[] ifMatchHeaders = request.getHeaders(IF_MATCH);
 
         if (1 < ifMatchHeaders.length) {

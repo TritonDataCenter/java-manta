@@ -3,11 +3,8 @@ package com.joyent.manta.http;
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -106,63 +103,8 @@ public class ResumableDownloadCoordinatorTest {
         return HttpClientBuilder.create()
                 .setConnectionManager(new FakeHttpClientConnectionManager(conn))
                 .setRetryHandler(new StandardHttpRequestRetryHandler())
-                .addInterceptorFirst((HttpRequestInterceptor) (request, context) -> {
-                    if (request.getRequestLine() == null) {
-                        // nonsensical but might as well
-                        return;
-                    }
-
-                    if (!HttpGet.METHOD_NAME.equals(request.getRequestLine().getMethod())) {
-                        // not a GET request
-                        return;
-                    }
-
-                    final ResumableDownloadCoordinator coordinator = ResumableDownloadCoordinator.extractFromContext(context);
-
-                    if (null == coordinator) {
-                        // no coordinator prepared
-                        return;
-                    }
-
-                    final boolean ifMatchHeaderIsCompatible = coordinator.compatibleIfMatchHeaders(request);
-                    final boolean rangeHeaderIsCompatible = coordinator.compatibleRangeHeaders(request);
-                    if (!ifMatchHeaderIsCompatible || !rangeHeaderIsCompatible) {
-                        LOG.debug("aborting download resumption due to incompatible headers: if-match ok? {}, range ok? {}", ifMatchHeaderIsCompatible, rangeHeaderIsCompatible);
-                        return;
-                    }
-
-                    if (!coordinator.canResume()) {
-                        return;
-                    }
-
-                    coordinator.applyHeaders(request);
-
-                })
-                .addInterceptorFirst((HttpResponseInterceptor) (response, context) -> {
-                    final ResumableDownloadCoordinator coordinator = ResumableDownloadCoordinator.extractFromContext(context);
-                    if (coordinator == null) {
-                        // for one reason or another this request can't be resumed, abort
-                        return;
-                    }
-
-                    final ImmutablePair<String, HttpRange> fingerprint = ResumableDownloadCoordinator.extractFingerprint(response);
-
-                    if (fingerprint == null) {
-                        // there is not enough information in the response to create or update a marker
-                        // so clear one that may already be present and exit
-                        coordinator.cancel();
-                        return;
-                    }
-
-                    if (coordinator.canResume()) {
-                        // verify that the returned range matches the marker's current range
-                        LOG.debug("verifying that returned response matches requested range");
-                        coordinator.validateResponse(response);
-                    } else if (coordinator.canStart()) {
-                        LOG.debug("attaching marker");
-                        coordinator.attachMarker(new ResumableDownloadMarker(fingerprint.left, fingerprint.right));
-                    }
-                })
+                .addInterceptorFirst(ResumableDownloadHttpRequestInterceptor.INSTANCE)
+                .addInterceptorFirst(ResumableDownloadHttpResponseInterceptor.INSTANCE)
                 .build();
     }
 
