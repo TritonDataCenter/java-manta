@@ -173,9 +173,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         final Stream<MantaObject> multipartDirList;
         try {
-            multipartDirList = mantaClient
-                    .listObjects(this.resolvedMultipartUploadDirectory)
-                    .filter(MantaObject::isDirectory);
+            multipartDirList = mantaClient.listObjects(this.resolvedMultipartUploadDirectory);
             // This catches an exception on the initial listObjects call
         } catch (final MantaClientHttpResponseException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -186,6 +184,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
         }
 
         final Stream<MantaMultipartUpload> stream = multipartDirList
+                .filter(MantaObject::isDirectory)
                 .map(object -> {
                     final String idString = MantaUtils.lastItemInPath(object.getPath());
                     final UUID id = UUID.fromString(idString);
@@ -209,7 +208,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
                 /* We explicitly filter out items that stopped existing when we
                  * went to get the multipart metadata because we encountered a
                  * race condition. */
-                .filter(Objects::nonNull);
+                .filter(Objects::nonNull)
+                .onClose(multipartDirList::close);
 
         if (exceptions.isEmpty()) {
             danglingStreams.add(stream);
