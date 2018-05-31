@@ -301,8 +301,11 @@ public class EncryptedJobsMultipartManagerIT {
         // If we are using encryption the remote md5 is the md5 of the
         // cipher text.  To prove we uploaded the right bytes and can
         // get them back again, we need to download and calculate.
-        MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path);
-        byte[] remoteMd5 = DigestUtils.md5(gotObject);
+
+        final byte[] remoteMd5;
+        try (MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
+            remoteMd5 = DigestUtils.md5(gotObject);
+        }
 
         if (!Arrays.equals(remoteMd5, expectedMd5)) {
             StringBuilder builder = new StringBuilder();
