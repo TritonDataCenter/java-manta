@@ -168,9 +168,9 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     (only `SLF4J` at present) requires also setting an output interval.
     See [the section on monitoring](#monitoring) for more information about reporting modes.
 * `manta.metric_reporter.output_interval` (**MANTA_METRIC_REPORTER_OUTPUT_INTERVAL**)
-    Integer interval in seconds at which metrics are reported by periodic reporters.
+    Nullable integer interval in seconds at which metrics are reported by periodic reporters.
     This number must be set and greater than zero if `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`
-    is set to `SLF4J`.
+    is set to `SLF4J`. Defaults to `null`.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
@@ -375,12 +375,8 @@ This requires selecting a reporting mode using the following settings:
 - `manta.metric_reporter.mode` select the method by which metrics are exported. Unset by default. Options include:
     - `DISABLED`: explicitly disables monitoring.
     - `JMX`: registers MBeans in [JMX](https://en.wikipedia.org/wiki/Java_Management_Extensions). MBeans are created
-    for the following at present:
+    for the following at present in addition to each metric listed below:
         - `ConfigContextMBean` displays the `ConfigContext` settings used to build the client.
-        - `PoolStatsMBean` displays statistics about the client's connection pool.
-        - Additional metrics tracked:
-            - `retries`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) measuring the rate
-            and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
     - `SLF4J`: reporters metrics through the generic logging interface provided by [SLF4J](http://www.slf4j.org/).
     This setting requires users to also supply a reporting output interval.
 - `manta.metric_reporter.output_interval` specify the amount of time in seconds between reporting metrics for
@@ -400,6 +396,21 @@ This requires selecting a reporting mode using the following settings:
     m15=0.0021976788366558607,
     rate_unit=events/second
     ```
+
+The full list of metrics exported by the client (available through both JMX and SLF4J) is as follows:
+- `requests-$METHOD`: A [timer](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) for each request
+    method measuring the rate, and timings (with percentiles) of HTTP requests. Example values for `$METHOD` include
+    `GET`, `PUT`, `DELETE`, etc.
+- `exceptions-$CLASS`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) for each
+    exception which occurred while executing HTTP requests measuring the rates and counts. Example values for
+    `$CLASS` include `SocketTimeoutException`, `InterruptedIOException`, etc.
+- `connections-$CLASSIFICATION`: A set of [guages](https://metrics.dropwizard.io/4.0.0/manual/core.html#gauges) which
+    expose the state of the connection pool. `$CLASSIFICATION` is one of `available`, `leased`, `max`, `pending` and
+    corresponds to the[similarly named HttpClient PoolStats
+    fields](http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/pool/PoolStats.html).
+- `retries`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) measuring the rate
+and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
+
 
 ### Customizing the client further
 

@@ -50,6 +50,7 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.security.KeyPair;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.management.DynamicMBean;
 
 /**
@@ -165,8 +166,8 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             this.connectionManager = null;
             this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
         } else {
-            this.connectionManager = buildConnectionManager();
-            this.httpClientBuilder = createStandardBuilder();
+            this.connectionManager = buildConnectionManager(metricConfig);
+            this.httpClientBuilder = createStandardBuilder(metricConfig);
         }
 
         configureHttpClientBuilderDefaults(metricConfig);
@@ -224,9 +225,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Configures a connection manager with all of the setting needed to connect
      * to Manta.
      *
+     * @param metricConfig potentially-null configuration for tracking client metrics
      * @return fully configured connection manager
      */
-    protected HttpClientConnectionManager buildConnectionManager() {
+    protected HttpClientConnectionManager buildConnectionManager(final MantaClientMetricConfiguration metricConfig) {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -242,28 +244,41 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .register("https", sslConnectionSocketFactory)
                 .build();
 
-        HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
+        final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
                 buildHttpConnectionFactory();
 
-        final PoolingHttpClientConnectionManager poolingConnectionManager =
-                new PoolingHttpClientConnectionManager(socketFactoryRegistry,
+        final PoolingHttpClientConnectionManager connManager;
+        if (metricConfig != null) {
+            connManager = new InstrumentedPoolingHttpClientConnectionManager(
+                    metricConfig.getRegistry(),
+                    socketFactoryRegistry,
+                    connFactory,
+                    null,
+                    DNS_RESOLVER,
+                    -1,
+                    TimeUnit.MILLISECONDS);
+        } else {
+            connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry,
                         connFactory,
                         DNS_RESOLVER);
-        poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
-        poolingConnectionManager.setMaxTotal(maxConns);
-        poolingConnectionManager.setDefaultSocketConfig(buildSocketConfig());
-        poolingConnectionManager.setDefaultConnectionConfig(buildConnectionConfig());
+        }
 
-        return poolingConnectionManager;
+        connManager.setDefaultMaxPerRoute(maxConns);
+        connManager.setMaxTotal(maxConns);
+        connManager.setDefaultSocketConfig(buildSocketConfig());
+        connManager.setDefaultConnectionConfig(buildConnectionConfig());
+
+        return connManager;
     }
 
     /**
      * Configures the builder class with all of the settings needed to connect to
      * Manta.
      *
+     * @param metricConfig nullable configuration for client metrics tracking
      * @return configured instance
      */
-    protected HttpClientBuilder createStandardBuilder() {
+    protected HttpClientBuilder createStandardBuilder(final MantaClientMetricConfiguration metricConfig) {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -287,12 +302,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .setExpectContinueEnabled(expectContinueEnabled)
                 .build();
 
-        final MantaHttpRequestExecutor requestExecutor;
-        if (expectContinueTimeout != null) {
-            requestExecutor = new MantaHttpRequestExecutor(expectContinueTimeout);
-        } else {
-            requestExecutor = new MantaHttpRequestExecutor();
-        }
+        final MantaHttpRequestExecutor requestExecutor = MantaHttpRequestExecutor.Builder.create()
+                .setMetricConfiguration(metricConfig)
+                .setWaitForContinue(expectContinueTimeout)
+                .build();
 
         final HttpClientBuilder builder = HttpClients.custom()
                 .disableAuthCaching()

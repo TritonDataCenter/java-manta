@@ -248,7 +248,6 @@ public class MantaClient implements AutoCloseable {
         if (metricConfig != null) {
             this.agent = new MantaClientAgent(metricConfig);
             agent.register(this.config);
-            agent.register(connectionFactory);
         } else {
             this.agent = null;
         }

@@ -15,7 +15,8 @@ import static org.apache.commons.lang3.Validate.inclusiveBetween;
 import static org.apache.commons.lang3.Validate.notNull;
 
 /**
- * Value object describing how metrics should be exposed for a {@link com.joyent.manta.client.MantaClient}.
+ * Value object describing how metrics should be exposed for a {@link com.joyent.manta.client.MantaClient}. It is
+ * impossible to have a {@code MantaClientMetricConfiguration} with a null Client ID or a null {@link MetricRegistry}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.9, 3.2.2
@@ -24,12 +25,12 @@ public final class MantaClientMetricConfiguration {
 
     /**
      * Unique identifier for each {@link com.joyent.manta.client.MantaClient} instance. Also used to avoid collisions
-     * when registering objects in JMX.
+     * when registering objects in JMX. Never null.
      */
     private final UUID clientId;
 
     /**
-     * Registry used to track metrics and to be used with a reporter (if one is set).
+     * Registry used to track metrics and to be used with a reporter (if one is set). Never null.
      */
     private final MetricRegistry registry;
 
@@ -42,17 +43,6 @@ public final class MantaClientMetricConfiguration {
      * Nullable duration used by periodic reporting modes.
      */
     private final Integer periodicReporterOutputInterval;
-
-    /**
-     * Empty configuration indicating no metrics should be collected. Ideally this constructor would be package-private
-     * but it is needed for testing by {@link com.joyent.manta.client.MantaClientAgent}.
-     */
-    public MantaClientMetricConfiguration() {
-        this.clientId = null;
-        this.registry = null;
-        this.reporterMode = null;
-        this.periodicReporterOutputInterval = null;
-    }
 
     /**
      * Allow users to provide an existing MetricRegistry they might want to reuse. Caller is responsible for

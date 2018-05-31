@@ -40,6 +40,32 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String mantaKeyPath;
 
     /**
+     * Private key content. This shouldn't be set if the MantaKeyPath is set.
+     */
+    private volatile String privateKeyContent;
+
+    /**
+     * Optional password for private key.
+     */
+    private volatile String password;
+
+    /**
+     * Flag indicating if HTTP signatures are turned off.
+     */
+    private volatile Boolean noAuth;
+
+    /**
+     * Flag indicating if HTTP signature native code generation is turned off.
+     */
+    private volatile Boolean disableNativeSignatures;
+
+    /**
+     * Flag indicating if we verify the uploaded file's checksum against the
+     * server's checksum (MD5).
+     */
+    private volatile Boolean verifyUploads;
+
+    /**
      * General connection timeout for the Manta service.
      */
     private volatile Integer timeout;
@@ -53,16 +79,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * The maximum number of open connections to the Manta API.
      */
     private volatile Integer maxConnections;
-
-    /**
-     * Private key content. This shouldn't be set if the MantaKeyPath is set.
-     */
-    private volatile String privateKeyContent;
-
-    /**
-     * Optional password for private key.
-     */
-    private volatile String password;
 
     /**
      * Size of buffer in bytes to use to buffer streams of HTTP data.
@@ -80,16 +96,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String httpsCipherSuites;
 
     /**
-     * Flag indicating if HTTP signatures are turned off.
-     */
-    private volatile Boolean noAuth;
-
-    /**
-     * Flag indicating if HTTP signature native code generation is turned off.
-     */
-    private volatile Boolean disableNativeSignatures;
-
-    /**
      * Time in milliseconds to cache HTTP signature headers.
      */
     private volatile Integer tcpSocketTimeout;
@@ -102,18 +108,18 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * When not null, time in milliseconds to wait for a 100-continue response.
      */
-    private Integer expectContinueTimeout;
+    private volatile Integer expectContinueTimeout;
 
     /**
-     * Flag indicating if we verify the uploaded file's checksum against the
-     * server's checksum (MD5).
+     * Number of bytes to read into memory for a streaming upload before
+     * deciding if we want to load it in memory before send it.
      */
-    private volatile Boolean verifyUploads;
+    private volatile Integer uploadBufferSize;
 
     /**
      * Number of directories to assume exist when recursively creating directories.
      */
-    private Integer skipDirectoryDepth;
+    private volatile Integer skipDirectoryDepth;
 
     /**
      * Whether metrics and MBeans should be tracked and exposed.
@@ -124,12 +130,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Metrics output interval in seconds for modes that report metrics periodically.
      */
     private volatile Integer metricReporterOutputInterval;
-
-    /**
-     * Number of bytes to read into memory for a streaming upload before
-     * deciding if we want to load it in memory before send it.
-     */
-    private volatile Integer uploadBufferSize;
 
     /**
      * Flag indicating when client-side encryption is enabled.
