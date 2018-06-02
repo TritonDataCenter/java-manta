@@ -1,5 +1,6 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.exception.MantaResumedDownloadIncompatibleResponseException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -30,7 +31,7 @@ public class ResumableDownloadHttpResponseInterceptor implements HttpResponseInt
     /**
      * Private constructor since this class is immutable and a singleton instance is provided.
      */
-    ResumableDownloadHttpResponseInterceptor() {
+    private ResumableDownloadHttpResponseInterceptor() {
     }
 
     /**
@@ -50,16 +51,24 @@ public class ResumableDownloadHttpResponseInterceptor implements HttpResponseInt
             return;
         }
 
-        final ImmutablePair<String, HttpRange> fingerprint = ResumableDownloadCoordinator.extractFingerprint(response);
+        final ImmutablePair<String, HttpRange.Response> fingerprint =
+                ResumableDownloadCoordinator.extractResponseFingerprint(response);
 
         if (fingerprint == null) {
             // there is not enough information in the response to create or update a marker
-            // so clear one that may already be present and exit
+
+            final boolean inProgress = coordinator.inProgress();
+
             coordinator.cancel();
+            if (inProgress) {
+                throw new MantaResumedDownloadIncompatibleResponseException(
+                        "Resumed response lacks range info, aborting retry");
+            }
+
             return;
         }
 
-        if (coordinator.canResume()) {
+        if (coordinator.inProgress()) {
             // verify that the returned range matches the marker's current range
             LOG.debug("verifying that returned response matches requested range");
             coordinator.validateResponse(response);

@@ -9,16 +9,26 @@ import static org.testng.Assert.assertThrows;
 @Test
 public class HttpRangeTest {
 
-    public void ctorRejectsInvalidInputs() {
-        // byte ranges are inclusive, this should fail
-        assertThrows(IllegalStateException.class, () -> new HttpRange(0, 1, 1));
-        // consequently, this should succeed
-        new HttpRange(0, 1, 2);
+    public void baseCtorRejectsInvalidInputs() {
+        new HttpRange(0, 1, 2L);
 
-        assertThrows(IllegalStateException.class, () -> new HttpRange(1, 0, 2));
+        // byte ranges are inclusive, these should fail
+        assertThrows(IllegalStateException.class, () -> new HttpRange(1, 0, null));
+        assertThrows(IllegalStateException.class, () -> new HttpRange(0, 1, 0L));
+        assertThrows(IllegalStateException.class, () -> new HttpRange(0, 1, 1L));
+        assertThrows(IllegalStateException.class, () -> new HttpRange(1, 0, 2L));
 
-        // requesting the second byte of a 1 byte file is invalid
-        assertThrows(IllegalStateException.class, () -> new HttpRange(1, 1, 1));
+        // a single byte is not forbidden
+        new HttpRange(0, 0, 1L);
+    }
+
+    public void requestCtorRejectsInvalidInputs() {
+        new HttpRange.Request(0, 1);
+
+        assertThrows(IllegalStateException.class, () -> new HttpRange.Request(1, 0));
+
+        // requesting a single byte is not forbidden
+        new HttpRange.Request(0, 0);
     }
 
     public void parseRejectsInvalidInputs() {
@@ -29,13 +39,11 @@ public class HttpRangeTest {
         assertThrows(IllegalArgumentException.class, () -> HttpRange.parseContentRange("byes 0-1/2"));
     }
 
-    public void equalsWorks() {
-        final HttpRange twoBytes = new HttpRange(0, 1, 2);
+    public void baseEqualsWorks() {
+        final HttpRange twoBytes = new HttpRange(0, 1, 2L);
 
         assertEquals(twoBytes, twoBytes);
-        assertEquals(twoBytes, new HttpRange(0, 1, 2));
-        assertNotEquals(twoBytes, new HttpRange(0, 2, 3));
+        assertEquals(twoBytes, new HttpRange(0, 1, 2L));
+        assertNotEquals(twoBytes, new HttpRange(0, 2, 3L));
     }
-
-
 }

@@ -78,7 +78,7 @@ public class ResumableDownloadCoordinatorTest {
                 finished = true;
             } catch (final IOException e) {
                 if (ResumableDownloadCoordinator.isRecoverable(e)) {
-                    coordinator.updateMarker();
+                    coordinator.updateMarkerFromStream();
                     continue;
                 }
 

@@ -84,7 +84,7 @@ public class ResumableDownloadCoordinator {
         return contextPresent && markerMissing;
     }
 
-    boolean canResume() {
+    boolean inProgress() {
         final boolean contextPresent, markerPresent;
         synchronized (this.lock) {
             contextPresent = this.contextHolder.get() != null;
@@ -100,13 +100,13 @@ public class ResumableDownloadCoordinator {
         }
     }
 
-    void updateMarker() {
+    void updateMarkerFromStream() {
         final ResumableDownloadMarker marker = this.markerHolder.get();
         if (null == marker) {
             throw new IllegalStateException("No marker to update");
         }
 
-        marker.updateStart(this.resumableStream.getCount());
+        marker.updateRequestStart(this.resumableStream.getCount());
     }
 
     boolean requestHasCompatibleRangeHeaders(final HttpRequest request) {
@@ -185,35 +185,30 @@ public class ResumableDownloadCoordinator {
             throw new IllegalStateException("No marker to compare against response");
         }
 
+        if (null == marker.getCurrentRange()) {
+            throw new IllegalStateException("No request in marker to compare against response");
+        }
+
         final Header contentRangeHeader = response.getFirstHeader(CONTENT_RANGE);
 
         if (null == contentRangeHeader || StringUtils.isBlank(contentRangeHeader.getValue())) {
             throw new IllegalArgumentException("Invalid Content-Range header (blank or missing)");
         }
 
-        final HttpRange range;
+        final HttpRange.Response range;
         try {
             range = HttpRange.parseContentRange(contentRangeHeader.getValue());
         } catch (final Exception e) {
             throw new IllegalArgumentException("Invalid Content-Range header (malformed)", e);
         }
 
-        if (!range.equals(marker.getCurrentRange())) {
-            final StringBuilder message = new StringBuilder();
-            message.append("Response Content-Range does not match range request, expected: [");
-            message.append(marker.getCurrentRange());
-            message.append("], received: [");
-            message.append(range);
-            message.append("]");
-
-            throw new MantaResumedDownloadIncompatibleResponseException(message.toString());
-        }
+        marker.getCurrentRange().validateResponse();
     }
 
     void cancel() {
         final HttpContext ctx = contextHolder.get();
         if (null == ctx) {
-            throw new IllegalStateException("No know HttpContext from which to detach");
+            throw new IllegalStateException("No HttpContext from which to detach");
         }
 
         ctx.removeAttribute(CTX_RESUMABLE_COORDINATOR);
@@ -244,9 +239,8 @@ public class ResumableDownloadCoordinator {
         return true;
     }
 
-    static ImmutablePair<String, HttpRange> extractFingerprint(final HttpResponse response) {
-
-// we can't be sure we're continuing to download the same object if we don't have an etag to compare
+    static ImmutablePair<String, HttpRange.Response> extractResponseFingerprint(final HttpResponse response) {
+        // we can't be sure we're continuing to download the same object if we don't have an etag to compare
         final Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
 
         if (etagHeader == null) {
@@ -274,11 +268,11 @@ public class ResumableDownloadCoordinator {
             return null;
         }
 
-        final HttpRange range;
+        final HttpRange.Response range;
         final Header rangeHeader = response.getFirstHeader(HttpHeaders.CONTENT_RANGE);
         if (rangeHeader == null || StringUtils.isBlank(rangeHeader.getValue())) {
             // the entire object is being requested
-            range = new HttpRange(0, contentLength - 1, contentLength);
+            range = new HttpRange.Response(0, contentLength - 1, contentLength);
         } else {
             range = HttpRange.parseContentRange(rangeHeader.getValue());
         }
@@ -300,4 +294,5 @@ public class ResumableDownloadCoordinator {
 
         return (ResumableDownloadCoordinator) coordinator;
     }
+
 }

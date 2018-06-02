@@ -67,7 +67,7 @@ public class ResumableDownloadHttpRequestInterceptor implements HttpRequestInter
             return;
         }
 
-        if (!coordinator.canResume()) {
+        if (!coordinator.inProgress()) {
             LOG.debug("aborting download resumption due to invalid coordinator state");
             // TODO: the following line breaks the test case, probably need to review this if statement's condition
             // coordinator.cancel();

@@ -1,7 +1,6 @@
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
 
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
@@ -17,21 +16,24 @@ class ResumableDownloadMarker {
     /**
      * The original download range.
      */
-    private final HttpRange target;
+    private final HttpRange.Goal goal;
 
     /**
-     * The current download range.
+     * The currentRequest download range.
      */
-    private HttpRange current;
+    private HttpRange.Request currentRequest;
 
     ResumableDownloadMarker(final String etag,
-                            final HttpRange range) {
+                            final HttpRange.Response initialContentRange) {
         validState(StringUtils.isNotBlank(etag), "ETag must not be null or blank");
-        notNull(range, "HttpRange must not be null");
+        notNull(initialContentRange, "HttpRange must not be null");
 
         this.etag = etag;
-        this.target = range;
-        this.current = this.target;
+        this.goal = new HttpRange.Goal(
+                initialContentRange.getStartInclusive(),
+                initialContentRange.getEndInclusive(),
+                initialContentRange.getSize());
+        this.currentRequest = null;
     }
 
     public String getEtag() {
@@ -39,23 +41,27 @@ class ResumableDownloadMarker {
     }
 
     public HttpRange getTargetRange() {
-        return this.target;
+        return this.goal;
     }
 
-    public void updateStart(final long aNewStart) {
-        this.current = new HttpRange(aNewStart, this.target.end, this.target.size);
+    public void updateRequestStart(final long startInclusive) {
+        // check that the currentRequest byte stream is actually a continuation of the previous stream
+        // TODO: should be lte or just lt?
+        validState(this.goal.getStartInclusive() <= startInclusive, "Resumed download range-start should be equal to or greater than currentRequest request");
+
+        this.currentRequest = new HttpRange.Request(startInclusive, this.goal.getEndInclusive());
     }
 
     public HttpRange getCurrentRange() {
-        return this.current;
+        return this.currentRequest;
     }
 
     @Override
     public String toString() {
         return "ResumableDownloadMarker{" +
                 "etag='" + this.etag + '\'' +
-                ", target=" + this.target +
-                ", current=" + this.current +
+                ", goal=" + this.goal +
+                ", currentRequest=" + this.currentRequest +
                 '}';
     }
 }

@@ -72,7 +72,7 @@ public class ResumableInputStream extends InputStream {
     /**
      * Creates a new instance with the default buffer size.
      */
-    public ResumableInputStream() {
+    ResumableInputStream() {
         this(BUFFER_SIZE_DEFAULT);
     }
 
