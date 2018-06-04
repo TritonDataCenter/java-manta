@@ -61,8 +61,8 @@ public class ResumableDownloadHttpResponseInterceptor implements HttpResponseInt
 
             coordinator.cancel();
             if (inProgress) {
-                throw new MantaResumedDownloadIncompatibleResponseException(
-                        "Resumed response lacks range info, aborting retry");
+                final String message = "Resumed response lacks range info, aborting retry";
+                throw new MantaResumedDownloadIncompatibleResponseException(message);
             }
 
             return;
@@ -72,7 +72,7 @@ public class ResumableDownloadHttpResponseInterceptor implements HttpResponseInt
             // verify that the returned range matches the marker's current range
             LOG.debug("verifying that returned response matches requested range");
             coordinator.validateResponse(response);
-        } else if (coordinator.canStart()) {
+        } else {
             LOG.debug("attaching marker");
             coordinator.attachMarker(new ResumableDownloadMarker(fingerprint.left, fingerprint.right));
         }

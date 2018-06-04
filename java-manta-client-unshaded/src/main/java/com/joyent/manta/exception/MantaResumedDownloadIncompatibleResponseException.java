@@ -12,11 +12,17 @@ public class MantaResumedDownloadIncompatibleResponseException extends MantaClie
     private static final long serialVersionUID = 123778476650917899L;
 
     /**
-     * Constructs an instance with the specified detail message.
-     *
-     * @param msg error message
+     * {@inheritDoc}
      */
     public MantaResumedDownloadIncompatibleResponseException(final String msg) {
         super(msg);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public MantaResumedDownloadIncompatibleResponseException(final String msg,
+                                                             final Throwable cause) {
+        super(msg, cause);
     }
 }

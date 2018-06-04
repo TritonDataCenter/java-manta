@@ -10,6 +10,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,26 @@ import static org.apache.http.HttpHeaders.CONTENT_RANGE;
 import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpHeaders.RANGE;
 
+// @formatter:off
+/**
+ *
+ * Manages state needed to "resume" a download by updating the {@code Range} header in subsequent retries.
+ * States:
+ *  - ready: freshly constructed, registers self into HttpContext
+ *      - NEXT: fatalExit, started
+ *  - fatalExit: at any point while copying a response body an exception may be caught and
+ *  {@link #attemptRecovery (IOException)} will indicate if the download should be abandoned.
+ *
+ *
+ *  - started: attachMarker called after first response has arrived, recording the "goal" range we intend to satisfy
+ *      - NEXT: complete
+ *
+ *  TODO: finish state listing/transitions
+ *
+ * @since 3.2.3
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ */
+// @formatter:on
 public class ResumableDownloadCoordinator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResumableDownloadCoordinator.class);
@@ -50,38 +71,28 @@ public class ResumableDownloadCoordinator {
 
     private final ResumableInputStream resumableStream;
 
+    /**
+     * We keep a reference to the HttpContext so we can detach from it.
+     */
     private final AtomicReference<HttpContext> contextHolder;
 
     private final AtomicReference<ResumableDownloadMarker> markerHolder;
 
-
-    ResumableDownloadCoordinator(final ResumableInputStream resumableStream,
-                                 final HttpContext context) {
+    ResumableDownloadCoordinator(final HttpContext context) {
         if (null != extractFromContext(context)) {
             throw new IllegalArgumentException("Coordinator already present in context");
         }
 
         context.setAttribute(CTX_RESUMABLE_COORDINATOR, this);
 
-        this.resumableStream = resumableStream;
+        this.resumableStream = new ResumableInputStream();
         this.contextHolder = new AtomicReference<>(context);
         this.markerHolder = new AtomicReference<>();
         this.lock = new Object();
     }
 
-    // @Override
-    // public void close() throws IOException {
-    //     this.markerHolder.set(null);
-    // }
-
-    boolean canStart() {
-        final boolean contextPresent, markerMissing;
-        synchronized (this.lock) {
-            contextPresent = this.contextHolder.get() != null;
-            markerMissing = this.markerHolder.get() == null;
-        }
-
-        return contextPresent && markerMissing;
+    public ResumableInputStream getResumableStream() {
+        return this.resumableStream;
     }
 
     boolean inProgress() {
@@ -100,7 +111,7 @@ public class ResumableDownloadCoordinator {
         }
     }
 
-    void updateMarkerFromStream() {
+    private void updateMarkerFromStream() {
         final ResumableDownloadMarker marker = this.markerHolder.get();
         if (null == marker) {
             throw new IllegalStateException("No marker to update");
@@ -151,7 +162,16 @@ public class ResumableDownloadCoordinator {
     }
 
     void applyHeaders(final HttpRequest request) {
-        notNull(request);
+        if (request == null || request.getRequestLine() == null) {
+            throw new NullPointerException("Request or request properties are null");
+        }
+
+        if (!HttpGet.METHOD_NAME.equalsIgnoreCase(request.getRequestLine().getMethod())) {
+            final String message = String.format(
+                    "Invalid request provided to resume download, expected: [GET], got [%s]",
+                    request.getRequestLine().getMethod());
+            throw new IllegalArgumentException(message);
+        }
 
         final ResumableDownloadMarker marker = notNull(this.markerHolder.get());
 
@@ -178,6 +198,7 @@ public class ResumableDownloadCoordinator {
         }
     }
 
+    // TODO: throw MantaResumedDownloadIncompatibleResponseException instead?
     void validateResponse(final HttpResponse response) throws MantaResumedDownloadIncompatibleResponseException {
         notNull(response);
         final ResumableDownloadMarker marker = this.markerHolder.get();
@@ -189,20 +210,39 @@ public class ResumableDownloadCoordinator {
             throw new IllegalStateException("No request in marker to compare against response");
         }
 
+
+        final Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
+
+        if (etagHeader == null || StringUtils.isBlank(etagHeader.getValue())) {
+            throw new IllegalArgumentException("Invalid ETag header (blank or missing)");
+        }
+
+        // just in case the server ignores if-match
+        if (!marker.getEtag().equals(etagHeader.getValue())) {
+            final String message = String.format(
+                    "Invalid ETag header: expected [%s], got [%s]",
+                    marker.getEtag(),
+                    etagHeader.getValue());
+            throw new IllegalArgumentException(message);
+        }
+
         final Header contentRangeHeader = response.getFirstHeader(CONTENT_RANGE);
 
         if (null == contentRangeHeader || StringUtils.isBlank(contentRangeHeader.getValue())) {
             throw new IllegalArgumentException("Invalid Content-Range header (blank or missing)");
         }
 
-        final HttpRange.Response range;
+        final HttpRange.Response responseRange;
         try {
-            range = HttpRange.parseContentRange(contentRangeHeader.getValue());
+            responseRange = HttpRange.parseContentRange(contentRangeHeader.getValue());
         } catch (final Exception e) {
             throw new IllegalArgumentException("Invalid Content-Range header (malformed)", e);
         }
 
-        marker.getCurrentRange().validateResponse();
+
+
+        // as the marker to make sure we got the expected bytes back
+        marker.validateResponseRange(responseRange);
     }
 
     void cancel() {
@@ -225,18 +265,20 @@ public class ResumableDownloadCoordinator {
                 '}';
     }
 
-    static boolean isRecoverable(final IOException e) {
+    void attemptRecovery(final IOException e) throws MantaResumedDownloadIncompatibleResponseException {
+        final String message = "Fatal exception has while attempting to download object content";
+
         if (EXCEPTIONS_FATAL.contains(e.getClass())) {
-            return false;
+            throw new MantaResumedDownloadIncompatibleResponseException(message, e);
         }
 
         for (final Class<? extends IOException> exceptionClass : EXCEPTIONS_FATAL) {
             if (exceptionClass.isInstance(e)) {
-                return false;
+                throw new MantaResumedDownloadIncompatibleResponseException(message, e);
             }
         }
 
-        return true;
+        this.updateMarkerFromStream();
     }
 
     static ImmutablePair<String, HttpRange.Response> extractResponseFingerprint(final HttpResponse response) {

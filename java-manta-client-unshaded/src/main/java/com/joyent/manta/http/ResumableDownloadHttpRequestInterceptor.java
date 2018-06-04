@@ -51,7 +51,7 @@ public class ResumableDownloadHttpRequestInterceptor implements HttpRequestInter
             return;
         }
 
-        if (!HttpGet.METHOD_NAME.equals(request.getRequestLine().getMethod())) {
+        if (!HttpGet.METHOD_NAME.equalsIgnoreCase(request.getRequestLine().getMethod())) {
             // not a GET request
             return;
         }

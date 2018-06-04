@@ -10,7 +10,7 @@ import static org.apache.commons.lang3.Validate.validState;
 /**
  * A value object for the <a href="https://tools.ietf.org/html/rfc7233#section-4.2">Content-Range</a> header.
  */
-class HttpRange {
+abstract class HttpRange {
 
     /**
      * The start of the byte range in a range/content-range (the 0 in 0-1/2).
@@ -33,16 +33,25 @@ class HttpRange {
             super(startInclusive, endInclusive, null);
         }
 
-        public void validateResponse(final HttpRange.Response contentRange) {
+        void validateResponseRange(final HttpRange.Response contentRange) {
 
-            final boolean matches =
-                    this.getStartInclusive() == contentRange.getStartInclusive() &&
-                    this.getEndInclusive() == contentRange.getEndInclusive();
+            if (this.getStartInclusive() != contentRange.getStartInclusive()) {
+                final String message = String.format(
+                        "Unexpected start of Content-Range: expected [%d], got [%d]",
+                        this.getStartInclusive(),
+                        contentRange.getStartInclusive());
 
-            // TODO: complain correctly
-            validState(matches, "Blah blah");
+                throw new IllegalArgumentException(message);
+            }
+
+            if (this.getEndInclusive() != contentRange.getEndInclusive()) {
+                final String message = String.format(
+                        "Unexpected end of Content-Range: expected [%d], got [%d]",
+                        this.getEndInclusive(),
+                        contentRange.getEndInclusive());
+                throw new IllegalArgumentException(message);
+            }
         }
-
 
         @Override
         public String toString() {
@@ -70,11 +79,39 @@ class HttpRange {
         }
     }
 
-    static class Goal extends Response {
+    static class Goal extends HttpRange {
         Goal(final long startInclusive,
              final long endInclusive,
              final long size) {
             super(startInclusive, endInclusive, size);
+        }
+
+        void validateResponseRange(final HttpRange.Response contentRange) {
+
+            if (this.getEndInclusive() != contentRange.getEndInclusive()) {
+                final String message = String.format(
+                        "Unexpected end of Content-Range: expected [%d], got [%d]",
+                        this.getEndInclusive(),
+                        contentRange.getEndInclusive());
+                throw new IllegalArgumentException(message);
+            }
+
+            if (!this.getSize().equals(contentRange.getSize())) {
+                final String message = String.format(
+                        "Unexpected size of Content-Range: expected [%d], got [%d]",
+                        this.getSize(),
+                        contentRange.getSize());
+                throw new IllegalArgumentException(message);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "HttpRange.Goal{" +
+                    "startInclusive=" + this.getStartInclusive() +
+                    ", endInclusive=" + this.getEndInclusive() +
+                    ", size=" + this.getSize() +
+                    '}';
         }
     }
 
@@ -94,37 +131,19 @@ class HttpRange {
         this.size = size;
     }
 
-    public long getStartInclusive() {
+    long getStartInclusive() {
         return this.startInclusive;
     }
 
-    public long getEndInclusive() {
+    long getEndInclusive() {
         return this.endInclusive;
     }
 
-    public Long getSize() {
+    Long getSize() {
         return this.size;
     }
 
-    public static Request parseRequestRange(final String requestRange) {
-        notNull(requestRange, "Request Range must not be null");
-
-        if (!requestRange.matches("bytes=[0-9]+-[0-9]+")) {
-            final String message = String.format(
-                    "Invalid content-range format, expected: [bytes <range-startInclusive>-<range-endInclusive>], got: %s",
-                    requestRange);
-            throw new IllegalArgumentException(message);
-        }
-
-        final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(requestRange, "bytes="), "-");
-        validState(boundsAndSize.length == 2, "Unexpected content-range parts");
-
-        return new Request(
-                Long.parseUnsignedLong(boundsAndSize[0]),
-                Long.parseUnsignedLong(boundsAndSize[1]));
-    }
-
-    public static Response parseContentRange(final String contentRange) {
+    static Response parseContentRange(final String contentRange) {
         notNull(contentRange, "Content Range must not be null");
 
         if (!contentRange.matches("bytes [0-9]+-[0-9]+/[0-9]+")) {
@@ -143,7 +162,7 @@ class HttpRange {
                 Long.parseUnsignedLong(boundsAndSize[2]));
     }
 
-    public String renderRequestRange() {
+    String renderRequestRange() {
         final StringBuilder sb = new StringBuilder("bytes=");
         sb.append(startInclusive);
         sb.append("-");
@@ -190,11 +209,5 @@ class HttpRange {
     }
 
     @Override
-    public String toString() {
-        return "HttpRange{" +
-                "startInclusive=" + this.startInclusive +
-                ", endInclusive=" + this.endInclusive +
-                ", size=" + this.size +
-                '}';
-    }
+    public abstract String toString();
 }

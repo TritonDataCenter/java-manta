@@ -2,7 +2,7 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -12,6 +12,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
+import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,37 +22,53 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_INPUT_CHARACTER;
-import static com.joyent.manta.http.FixedFailureCountCharacterRepeatingHttpHandler.HEADER_REPEAT_COUNT;
 import static java.lang.System.out;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
-import static org.testng.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertThrows;
+import static org.testng.Assert.assertTrue;
+import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 @Test
 public class ResumableDownloadCoordinatorTest {
 
+    private static final int FIVE_MB = 5242880;
+
     private static final Logger LOG = LoggerFactory.getLogger(ResumableDownloadCoordinatorTest.class);
 
+    public void coordinatorsRefuseToShareContext() {
+        // mocking the context doesn't make sense since it wouldn't receive updates
+        final HttpContext ctx = new BasicHttpContext();
+
+        new ResumableDownloadCoordinator(ctx);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new ResumableDownloadCoordinator(ctx));
+    }
+
+    public void coordinatorWithAContextAndMarkerIsInProgress() {
+        final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(mock(HttpContext.class));
+        coordinator.attachMarker(mock(ResumableDownloadMarker.class));
+
+        assertTrue(coordinator.inProgress());
+    }
+
+
+
     public void testBasicFunctionalityWorks() throws Exception {
+        final byte[] originalObjectContent = RandomUtils.nextBytes(FIVE_MB);
 
         final CloseableHttpClient client = prepareClient(
                 new FakeHttpClientConnection(
-                        new FixedFailureCountCharacterRepeatingHttpHandler(2)));
+                        new FixedFailureCountByteArrayObjectHttpHandler(originalObjectContent, 2)));
 
         final HttpUriRequest req = new HttpGet("http://localhost");
-
-        final int expectedEntityLength = 16;
-        final String inputChar = "a";
-        req.setHeader(HEADER_REPEAT_COUNT, Integer.toString(expectedEntityLength));
-        req.setHeader(HEADER_INPUT_CHARACTER, inputChar);
 
         final ByteArrayOutputStream savedEntity = new ByteArrayOutputStream();
 
         final HttpContext ctx = new HttpClientContext();
-        final ResumableInputStream resumableStream = new ResumableInputStream(2);
-        final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(resumableStream, ctx);
+        final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(ctx);
 
         int loops = 0;
         boolean finished = false;
@@ -71,18 +88,15 @@ public class ResumableDownloadCoordinatorTest {
             }
 
             final InputStream entityContent = ent.getContent();
+            final ResumableInputStream resumableStream = coordinator.getResumableStream();
             resumableStream.setSource(entityContent);
 
             try {
                 IOUtils.copy(resumableStream, savedEntity, 2);
                 finished = true;
             } catch (final IOException e) {
-                if (ResumableDownloadCoordinator.isRecoverable(e)) {
-                    coordinator.updateMarkerFromStream();
-                    continue;
-                }
-
-                throw e;
+                coordinator.attemptRecovery(e);
+                // rethrows fatal exceptions, updates marker otherwise
             } finally {
                 res.close();
             }
@@ -92,9 +106,7 @@ public class ResumableDownloadCoordinatorTest {
             throw new AssertionError("Failed to download object content, attempts: " + loops);
         }
 
-
-        final String expectedEntity = StringUtils.repeat(inputChar, expectedEntityLength);
-        assertEquals(expectedEntity, new String(savedEntity.toByteArray(), US_ASCII));
+        assertArrayEquals("Bytes received do not match original bytes", originalObjectContent, savedEntity.toByteArray());
 
         LOG.info("leapin' lizards! resumable download test completed successfully with {} attempts!", loops);
     }
