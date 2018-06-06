@@ -7,22 +7,21 @@ package com.joyent.manta.exception;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.2
  */
-public class MantaResumedDownloadIncompatibleResponseException extends MantaClientHttpResponseException {
+public class ResumableDownloadUnexpectedResponseException extends ResumableDownloadException {
 
     private static final long serialVersionUID = 123778476650917899L;
 
     /**
      * {@inheritDoc}
      */
-    public MantaResumedDownloadIncompatibleResponseException(final String msg) {
+    public ResumableDownloadUnexpectedResponseException(final String msg) {
         super(msg);
     }
 
     /**
      * {@inheritDoc}
      */
-    public MantaResumedDownloadIncompatibleResponseException(final String msg,
-                                                             final Throwable cause) {
+    public ResumableDownloadUnexpectedResponseException(final String msg, final Throwable cause) {
         super(msg, cause);
     }
 }

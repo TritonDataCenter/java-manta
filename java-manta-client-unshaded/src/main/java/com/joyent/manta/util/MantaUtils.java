@@ -627,7 +627,6 @@ public final class MantaUtils {
      */
     public static <K, V> Map<K, V> unmodifiableMap(final K key1, final V val1) {
         Map<K, V> map = Collections.singletonMap(key1, val1);
-        map.put(key1, val1);
 
         return Collections.unmodifiableMap(map);
     }

@@ -18,10 +18,12 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Math.toIntExact;
+import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
 import static org.apache.http.HttpHeaders.CONTENT_RANGE;
 import static org.apache.http.HttpHeaders.ETAG;
 import static org.apache.http.HttpHeaders.RANGE;
 import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 
 class FixedFailureCountByteArrayObjectHttpHandler implements HttpRequestHandler {
 
@@ -48,10 +50,10 @@ class FixedFailureCountByteArrayObjectHttpHandler implements HttpRequestHandler 
         }
 
         response.setStatusCode(SC_OK);
-        // TODO: do something different with ETag?
         response.setHeader(ETAG, this.generateETag(this.objectContent));
 
         InputStream responseBody;
+        final long responseLength;
         final Header rangeHeader = request.getFirstHeader(RANGE);
         if (rangeHeader != null) {
             final Long[] reqRange = MantaUtils.parseSingleRange(rangeHeader.getValue());
@@ -68,9 +70,12 @@ class FixedFailureCountByteArrayObjectHttpHandler implements HttpRequestHandler 
                     this.objectContent.length);
 
             response.setHeader(CONTENT_RANGE, contentRange);
-            response.setStatusCode(HttpStatus.SC_PARTIAL_CONTENT);
+            response.setStatusCode(SC_PARTIAL_CONTENT);
+            responseLength = 1 + toIntExact(reqRange[1]) - toIntExact(reqRange[0]);
         } else {
             responseBody = new ByteArrayInputStream(this.objectContent);
+            responseLength = this.objectContent.length;
+            response.setHeader(CONTENT_LENGTH, Long.toString(responseLength));
         }
 
 
@@ -83,7 +88,7 @@ class FixedFailureCountByteArrayObjectHttpHandler implements HttpRequestHandler 
                     RandomUtils.nextBoolean());
         }
 
-        response.setEntity(new InputStreamEntity(responseBody, this.objectContent.length));
+        response.setEntity(new InputStreamEntity(responseBody, responseLength));
     }
 }
 

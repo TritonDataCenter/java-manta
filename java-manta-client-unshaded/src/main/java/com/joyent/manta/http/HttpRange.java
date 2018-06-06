@@ -1,6 +1,7 @@
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpException;
 
 import java.util.Objects;
 
@@ -33,15 +34,15 @@ abstract class HttpRange {
             super(startInclusive, endInclusive, null);
         }
 
-        void validateResponseRange(final HttpRange.Response contentRange) {
-
+        // do we need a new exception type for this?
+        void validateResponseRange(final HttpRange.Response contentRange) throws HttpException {
             if (this.getStartInclusive() != contentRange.getStartInclusive()) {
                 final String message = String.format(
                         "Unexpected start of Content-Range: expected [%d], got [%d]",
                         this.getStartInclusive(),
                         contentRange.getStartInclusive());
 
-                throw new IllegalArgumentException(message);
+                throw new HttpException(message);
             }
 
             if (this.getEndInclusive() != contentRange.getEndInclusive()) {
@@ -49,7 +50,7 @@ abstract class HttpRange {
                         "Unexpected end of Content-Range: expected [%d], got [%d]",
                         this.getEndInclusive(),
                         contentRange.getEndInclusive());
-                throw new IllegalArgumentException(message);
+                throw new HttpException(message);
             }
         }
 
@@ -143,14 +144,14 @@ abstract class HttpRange {
         return this.size;
     }
 
-    static Response parseContentRange(final String contentRange) {
+    static Response parseContentRange(final String contentRange) throws HttpException {
         notNull(contentRange, "Content Range must not be null");
 
         if (!contentRange.matches("bytes [0-9]+-[0-9]+/[0-9]+")) {
             final String message = String.format(
                     "Invalid content-range format, expected: [bytes <range-startInclusive>-<range-endInclusive>/<size>], got: %s",
                     contentRange);
-            throw new IllegalArgumentException(message);
+            throw new HttpException(message);
         }
 
         final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(contentRange, "bytes "), "-/");

@@ -1,6 +1,7 @@
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpException;
 
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
@@ -8,7 +9,7 @@ import static org.apache.commons.lang3.Validate.validState;
 class ResumableDownloadMarker {
 
     /**
-     * The etag associated with the object being downloaded. We need to make sure the etag is unchanged between
+     * The ETag associated with the object being downloaded. We need to make sure the ETag is unchanged between
      * retries.
      */
     private final String etag;
@@ -44,15 +45,21 @@ class ResumableDownloadMarker {
         return this.currentRequestRange;
     }
 
-    void updateRequestStart(final long startInclusive) {
+    HttpRange.Goal getGoalRange() {
+        return this.goalRange;
+    }
+
+    void updateBytesRead(final long startInclusive) {
         // check that the currentRequestRange byte stream is actually a continuation of the previous stream
         // TODO: should be lte or just lt?
-        validState(this.goalRange.getStartInclusive() <= startInclusive, "Resumed download range-start should be equal to or greater than currentRequestRange request");
+        validState(
+                this.goalRange.getStartInclusive() <= startInclusive,
+                "Resumed download range-start should be equal to or greater than current Request Range");
 
         this.currentRequestRange = new HttpRange.Request(startInclusive, this.goalRange.getEndInclusive());
     }
 
-    void validateResponseRange(final HttpRange.Response responseRange) {
+    void validateResponseRange(final HttpRange.Response responseRange) throws HttpException {
         if (this.currentRequestRange == null) {
             throw new NullPointerException("No request range present to compare against response range.");
         }

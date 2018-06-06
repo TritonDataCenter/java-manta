@@ -10,9 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.apache.commons.lang3.Validate.notNull;
+
 /**
  * Request interceptor which aids in carrying out resumable downloads with the request context's
- * {@link ResumableDownloadCoordinator}. {@link }
+ * {@link ResumableDownloadCoordinator}. Instances are immutable
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.2
@@ -38,42 +40,26 @@ public class ResumableDownloadHttpRequestInterceptor implements HttpRequestInter
     @Override
     public void process(final HttpRequest request,
                         final HttpContext context) throws HttpException, IOException {
-
-        final ResumableDownloadCoordinator coordinator = ResumableDownloadCoordinator.extractFromContext(context);
-
-        if (null == coordinator) {
-            // no coordinator prepared
-            return;
-        }
-
-        if (request.getRequestLine() == null) {
-            // slightly impossible
-            return;
-        }
+        notNull(request, "Request must not be null");
+        notNull(context, "Context must not be null");
+        notNull(request.getRequestLine(), "Request line must not be null");
 
         if (!HttpGet.METHOD_NAME.equalsIgnoreCase(request.getRequestLine().getMethod())) {
             // not a GET request
             return;
         }
 
-        final boolean ifMatchHeaderIsCompatible = coordinator.requestHasCompatibleIfMatchHeaders(request);
-        final boolean rangeHeaderIsCompatible = coordinator.requestHasCompatibleRangeHeaders(request);
-        if (!ifMatchHeaderIsCompatible || !rangeHeaderIsCompatible) {
-            LOG.debug(
-                    "aborting download resumption due to incompatible headers: if-match ok? {}, range ok? {}",
-                    ifMatchHeaderIsCompatible,
-                    rangeHeaderIsCompatible);
-            coordinator.cancel();
+        final ResumableDownloadCoordinator coordinator = ResumableDownloadCoordinator.extractFromContext(context);
+
+        if (null == coordinator) {
+            // no coordinator prepared by the user
             return;
         }
 
-        if (!coordinator.inProgress()) {
-            LOG.debug("aborting download resumption due to invalid coordinator state");
-            // TODO: the following line breaks the test case, probably need to review this if statement's condition
-            // coordinator.cancel();
-            return;
-        }
+        coordinator.validateExistingRequestHeaders(request);
 
-        coordinator.applyHeaders(request);
+        if (coordinator.inProgress()) {
+            coordinator.applyHeaders(request);
+        }
     }
 }

@@ -1,10 +1,13 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -12,6 +15,8 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicRequestLine;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
@@ -21,11 +26,20 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
+import static com.joyent.manta.util.MantaUtils.unmodifiableMap;
 import static java.lang.System.out;
+import static java.util.Collections.emptyMap;
+import static org.apache.http.HttpHeaders.IF_MATCH;
+import static org.apache.http.HttpHeaders.RANGE;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
@@ -47,14 +61,88 @@ public class ResumableDownloadCoordinatorTest {
                 new ResumableDownloadCoordinator(ctx));
     }
 
-    public void coordinatorWithAContextAndMarkerIsInProgress() {
+    public void coordinatorWithMarkerIsInProgress() throws Exception {
         final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(mock(HttpContext.class));
-        coordinator.attachMarker(mock(ResumableDownloadMarker.class));
+
+        assertFalse(coordinator.inProgress());
+
+        coordinator.createMarker(mock(ResumableDownloadMarker.class));
 
         assertTrue(coordinator.inProgress());
     }
 
+    public void validatesNoCollidingHeadersForInitialRequest() throws Exception {
+        validatesCompatibleHeadersForInitialRequest(emptyMap());
+    }
 
+    public void validatesCompatibleIfMatchHeaderForInitialRequest() throws Exception {
+        final String ifMatchHeaderValue = new HttpRange.Request(0, 10).renderRequestRange();
+
+        // users are allowed to omit or set their own if-match header
+        validatesCompatibleHeadersForInitialRequest(
+                unmodifiableMap(IF_MATCH, new Header[]{}));
+        validatesCompatibleHeadersForInitialRequest(
+                unmodifiableMap(IF_MATCH, new Header[]{new BasicHeader(IF_MATCH, ifMatchHeaderValue)}));
+
+        // this should never occur so we consider it programmer error, something has been subclassed incorrectly
+        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+            validatesCompatibleHeadersForInitialRequest(
+                    unmodifiableMap(IF_MATCH, new Header[]{null}));
+        });
+
+        // we make no effort to merge headers
+        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+            validatesCompatibleHeadersForInitialRequest(
+                    unmodifiableMap(IF_MATCH, new Header[]{new BasicHeader(IF_MATCH, ifMatchHeaderValue), new BasicHeader(IF_MATCH, ifMatchHeaderValue)}));
+        });
+    }
+
+    public void validatesCompatibleRangeHeaderForInitialRequest() throws Exception {
+        final String rangeHeaderValue = new HttpRange.Request(0, 10).renderRequestRange();
+
+        // users are allowed to omit or set their own initial range header
+        validatesCompatibleHeadersForInitialRequest(
+                unmodifiableMap(RANGE, new Header[]{}));
+        validatesCompatibleHeadersForInitialRequest(
+                unmodifiableMap(RANGE, new Header[]{new BasicHeader(RANGE, rangeHeaderValue)}));
+
+        // this should never occur so we consider it programmer error, something has been subclassed incorrectly
+        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+            validatesCompatibleHeadersForInitialRequest(
+                    unmodifiableMap(RANGE, new Header[]{null}));
+        });
+
+        // we explicitly do not handle resuming multiple ranges (though we could in the future)
+        // (supplying the same range header twice is also an error, but we're not concerned with that)
+        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+            validatesCompatibleHeadersForInitialRequest(
+                    unmodifiableMap(RANGE, new Header[]{new BasicHeader(RANGE, rangeHeaderValue), new BasicHeader(RANGE, rangeHeaderValue)}));
+        });
+    }
+
+    private void validatesCompatibleHeadersForInitialRequest(final Map<String, Header[]> userSuppliedHeaders) throws Exception {
+        final HttpGet req = mock(HttpGet.class);
+        when(req.getRequestLine()).thenReturn(new BasicRequestLine(HttpGet.METHOD_NAME, "", HttpVersion.HTTP_1_1));
+
+        // return an empty list unless a list of headers was provided
+        when(req.getHeaders(anyString())).then(invocation -> {
+            final String headerName = invocation.getArgument(0);
+            if (userSuppliedHeaders.containsKey(headerName)) {
+                return userSuppliedHeaders.get(headerName);
+            }
+            return new Header[0];
+        });
+
+        for (final Map.Entry<String, Header[]> headers : userSuppliedHeaders.entrySet()) {
+            final String headerName = headers.getKey();
+            when(req.getHeaders(headerName)).thenReturn(headers.getValue());
+        }
+        verifyNoMoreInteractions(req);
+
+        final HttpContext ctx = new BasicHttpContext();
+
+        new ResumableDownloadCoordinator(ctx).validateExistingRequestHeaders(req);
+    }
 
     public void testBasicFunctionalityWorks() throws Exception {
         final byte[] originalObjectContent = RandomUtils.nextBytes(FIVE_MB);
