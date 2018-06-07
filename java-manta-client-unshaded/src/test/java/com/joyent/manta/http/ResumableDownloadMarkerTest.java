@@ -1,7 +1,9 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.http.HttpRange.Response;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.RandomStringGenerator;
+import org.apache.http.HttpException;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertThrows;
@@ -23,10 +25,10 @@ public class ResumableDownloadMarkerTest {
         final Response fullRange = new Response(0, 3, 4L);
         final ResumableDownloadMarker marker = new ResumableDownloadMarker("a", fullRange);
 
-        assertThrows(NullPointerException.class, () -> marker.validateResponseRange(fullRange));
+        assertThrows(NullPointerException.class, () -> marker.validateRange(fullRange));
     }
 
-    public void canValidateResponses() {
+    public void canValidateResponses() throws HttpException {
         final Response fullRange = new Response(0, 3, 4L);
 
         final ResumableDownloadMarker marker = new ResumableDownloadMarker("a", fullRange);
@@ -35,21 +37,26 @@ public class ResumableDownloadMarkerTest {
         marker.updateBytesRead(1);
 
         final Response validPartialRange = new Response(1, 3, 4L);
-        marker.validateResponseRange(validPartialRange);
+        marker.validateRange(validPartialRange);
 
         final Response invalidEndRange = new Response(0, 2, 4L);
-        assertThrows(IllegalArgumentException.class, () -> marker.validateResponseRange(invalidEndRange));
+        assertThrows(HttpException.class, () -> marker.validateRange(invalidEndRange));
 
         // getting bytes we've already gotten is also bad
-        assertThrows(IllegalArgumentException.class, () -> marker.validateResponseRange(fullRange));
+        assertThrows(HttpException.class, () -> marker.validateRange(fullRange));
     }
 
-    public void testToString() {
+    public void usefulToString() {
         final Response fullRange = new Response(0, 3, 4L);
         final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
 
+        final String rangeRgx = StringUtils.join(
+                new Object[]{"", fullRange.getStartInclusive(), fullRange.getEndInclusive(), fullRange.getSize(), ""},
+                ".*");
+
         final String marker = new ResumableDownloadMarker(etag, fullRange).toString();
 
-        assertTrue(marker.contains(etag) && marker.contains(fullRange.toString()));
+        assertTrue(marker.contains(etag));
+        assertTrue(marker.matches(rangeRgx));
     }
 }

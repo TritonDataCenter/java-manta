@@ -3,6 +3,7 @@ package com.joyent.manta.http;
 import com.joyent.manta.http.HttpRange.Goal;
 import com.joyent.manta.http.HttpRange.Request;
 import com.joyent.manta.http.HttpRange.Response;
+import org.apache.http.HttpException;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertFalse;
@@ -36,23 +37,23 @@ public class HttpRangeTest {
 
     public void parseContentRangeRejectsInvalidInputs() {
         assertThrows(NullPointerException.class, () -> HttpRange.parseContentRange(null));
-        assertThrows(IllegalArgumentException.class, () -> HttpRange.parseContentRange(""));
-        assertThrows(IllegalArgumentException.class, () -> HttpRange.parseContentRange("bytes"));
-        assertThrows(IllegalArgumentException.class, () -> HttpRange.parseContentRange("bytes0-1/2"));
-        assertThrows(IllegalArgumentException.class, () -> HttpRange.parseContentRange("byes 0-1/2"));
+        assertThrows(HttpException.class, () -> HttpRange.parseContentRange(""));
+        assertThrows(HttpException.class, () -> HttpRange.parseContentRange("bytes"));
+        assertThrows(HttpException.class, () -> HttpRange.parseContentRange("bytes0-1/2"));
+        assertThrows(HttpException.class, () -> HttpRange.parseContentRange("byes 0-1/2"));
     }
 
     public void requestCanValidateResponse() {
         final Request reqRange = new Request(0, 5);
         final Response contentRange = new Response(0, 5, 6);
 
-        reqRange.validateResponseRange(contentRange);
+        reqRange.matches(contentRange);
 
         final Response badStartContentRange = new Response(1, 5, 6);
-        assertThrows(IllegalArgumentException.class, () -> reqRange.validateResponseRange(badStartContentRange));
+        assertFalse(reqRange.matches(badStartContentRange));
 
         final Response badEndContentRange = new Response(0, 4, 6);
-        assertThrows(IllegalArgumentException.class, () -> reqRange.validateResponseRange(badEndContentRange));
+        assertFalse(reqRange.matches(badEndContentRange));
     }
 
     public void goalCanValidateResponse() {
@@ -63,18 +64,18 @@ public class HttpRangeTest {
         final Response contentRange = new Response(0, objectEndInclusive, objectSize);
 
         // complete object range is valid
-        goalRange.validateResponseRange(contentRange);
+        goalRange.matches(contentRange);
 
         // slice of range with matching end and size is valid
-        goalRange.validateResponseRange(new Response(4, objectEndInclusive, objectSize));
+        goalRange.matches(new Response(4, objectEndInclusive, objectSize));
 
         // end of range should always match
         final Response badEndContentRange = new Response(1, 2, objectSize);
-        assertThrows(IllegalArgumentException.class, () -> goalRange.validateResponseRange(badEndContentRange));
+        assertFalse(goalRange.matches(badEndContentRange));
 
         // total object size should always match
-        final Response badSizeContentRange = new Response(0, objectEndInclusive, 9);
-        assertThrows(IllegalArgumentException.class, () -> goalRange.validateResponseRange(badSizeContentRange));
+        final Response badSizeContentRange = new Response(0, objectEndInclusive, objectSize + 1);
+        assertFalse(goalRange.matches(badSizeContentRange));
     }
 
     public void usefulToStringMethods() {

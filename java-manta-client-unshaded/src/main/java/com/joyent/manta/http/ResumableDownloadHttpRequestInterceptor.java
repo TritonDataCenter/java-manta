@@ -41,8 +41,8 @@ public class ResumableDownloadHttpRequestInterceptor implements HttpRequestInter
     public void process(final HttpRequest request,
                         final HttpContext context) throws HttpException, IOException {
         notNull(request, "Request must not be null");
-        notNull(context, "Context must not be null");
         notNull(request.getRequestLine(), "Request line must not be null");
+        notNull(context, "Context must not be null");
 
         if (!HttpGet.METHOD_NAME.equalsIgnoreCase(request.getRequestLine().getMethod())) {
             // not a GET request
@@ -56,10 +56,7 @@ public class ResumableDownloadHttpRequestInterceptor implements HttpRequestInter
             return;
         }
 
-        coordinator.validateExistingRequestHeaders(request);
-
-        if (coordinator.inProgress()) {
-            coordinator.applyHeaders(request);
-        }
+        // this will either add hints to the coordinator or update the request's Range and If-Match headers
+        coordinator.enhance(request);
     }
 }

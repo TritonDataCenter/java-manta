@@ -1,5 +1,12 @@
 package com.joyent.manta.exception;
 
+import org.apache.http.HttpResponse;
+
+import java.util.Arrays;
+
+import static org.apache.http.HttpHeaders.CONTENT_RANGE;
+import static org.apache.http.HttpHeaders.ETAG;
+
 /**
  * Exception signaling that a resumed download request cannot be continued because the response was invalid.
  * TODO: Do we actually need a new exception?
@@ -23,5 +30,11 @@ public class ResumableDownloadUnexpectedResponseException extends ResumableDownl
      */
     public ResumableDownloadUnexpectedResponseException(final String msg, final Throwable cause) {
         super(msg, cause);
+    }
+
+    public ResumableDownloadUnexpectedResponseException(final String msg, final HttpResponse response) {
+        super(msg);
+        this.setContextValue("responseHeader_etag", Arrays.deepToString(response.getHeaders(ETAG)));
+        this.setContextValue("responseHeader_content-range", Arrays.deepToString(response.getHeaders(CONTENT_RANGE)));
     }
 }

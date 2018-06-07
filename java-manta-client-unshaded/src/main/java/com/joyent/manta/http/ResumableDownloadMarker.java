@@ -45,10 +45,6 @@ class ResumableDownloadMarker {
         return this.currentRequestRange;
     }
 
-    HttpRange.Goal getGoalRange() {
-        return this.goalRange;
-    }
-
     void updateBytesRead(final long startInclusive) {
         // check that the currentRequestRange byte stream is actually a continuation of the previous stream
         // TODO: should be lte or just lt?
@@ -59,13 +55,20 @@ class ResumableDownloadMarker {
         this.currentRequestRange = new HttpRange.Request(startInclusive, this.goalRange.getEndInclusive());
     }
 
-    void validateResponseRange(final HttpRange.Response responseRange) throws HttpException {
+    void validateRange(final HttpRange.Response responseRange) throws HttpException {
         if (this.currentRequestRange == null) {
             throw new NullPointerException("No request range present to compare against response range.");
         }
 
-        this.currentRequestRange.validateResponseRange(responseRange);
-        this.goalRange.validateResponseRange(responseRange);
+        if (!this.currentRequestRange.matches(responseRange)) {
+            throw new HttpException(
+                    String.format(
+                            "Content-Range does not match Request range: expected: [%d-%d], got [%d-%d]",
+                            this.currentRequestRange.startInclusive,
+                            this.currentRequestRange.endInclusive,
+                            responseRange.startInclusive,
+                            responseRange.endInclusive));
+        }
     }
 
     @Override

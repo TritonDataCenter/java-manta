@@ -16,17 +16,33 @@ abstract class HttpRange {
     /**
      * The start of the byte range in a range/content-range (the 0 in 0-1/2).
      */
-    private final long startInclusive;
+    final long startInclusive;
 
     /**
      * The end of the byte range in a range/content-range (the 1 in 0-1/2).
      */
-    private final long endInclusive;
+    final long endInclusive;
 
     /**
      * The total number of bytes in a content-range (the 2 in 0-1/2).
      */
-    private final Long size;
+    final Long size;
+
+
+    /*
+
+    TODO: maybe?
+
+    static class Sized extends HttpRange {
+
+        Sized(final long startInclusive,
+              final long endInclusive,
+              final Long size) {
+            super(startInclusive, endInclusive);
+            this.size = size;
+        }
+    }
+    */
 
     static class Request extends HttpRange {
         Request(final long startInclusive,
@@ -35,23 +51,16 @@ abstract class HttpRange {
         }
 
         // do we need a new exception type for this?
-        void validateResponseRange(final HttpRange.Response contentRange) throws HttpException {
-            if (this.getStartInclusive() != contentRange.getStartInclusive()) {
-                final String message = String.format(
-                        "Unexpected start of Content-Range: expected [%d], got [%d]",
-                        this.getStartInclusive(),
-                        contentRange.getStartInclusive());
+        boolean matches(final HttpRange other) {
+            notNull(other, "Compared HttpRange must not be null");
 
-                throw new HttpException(message);
-            }
+            return this.startInclusive == other.startInclusive
+                    && this.endInclusive == other.endInclusive;
+        }
 
-            if (this.getEndInclusive() != contentRange.getEndInclusive()) {
-                final String message = String.format(
-                        "Unexpected end of Content-Range: expected [%d], got [%d]",
-                        this.getEndInclusive(),
-                        contentRange.getEndInclusive());
-                throw new HttpException(message);
-            }
+        @Override
+        String render() {
+            return String.format("bytes=%d-%d", this.startInclusive, this.endInclusive);
         }
 
         @Override
@@ -68,6 +77,19 @@ abstract class HttpRange {
                  final long endInclusive,
                  final long size) {
             super(startInclusive, endInclusive, size);
+        }
+
+        boolean matches(final HttpRange other) {
+            notNull(other, "Compared HttpRange must not be null");
+
+            return this.startInclusive == other.startInclusive
+                    && this.endInclusive == other.endInclusive
+                    && this.size.equals(other.size);
+        }
+
+        @Override
+        String render() {
+            return String.format("bytes %d-%d/%d", this.startInclusive, this.endInclusive, this.size);
         }
 
         @Override
@@ -87,23 +109,16 @@ abstract class HttpRange {
             super(startInclusive, endInclusive, size);
         }
 
-        void validateResponseRange(final HttpRange.Response contentRange) {
+        boolean matches(final HttpRange other) {
+            notNull(other, "Compared HttpRange must not be null");
 
-            if (this.getEndInclusive() != contentRange.getEndInclusive()) {
-                final String message = String.format(
-                        "Unexpected end of Content-Range: expected [%d], got [%d]",
-                        this.getEndInclusive(),
-                        contentRange.getEndInclusive());
-                throw new IllegalArgumentException(message);
-            }
+            return this.endInclusive == other.endInclusive
+                    && this.size.equals(other.size);
+        }
 
-            if (!this.getSize().equals(contentRange.getSize())) {
-                final String message = String.format(
-                        "Unexpected size of Content-Range: expected [%d], got [%d]",
-                        this.getSize(),
-                        contentRange.getSize());
-                throw new IllegalArgumentException(message);
-            }
+        @Override
+        String render() {
+            return String.format("bytes %d-%d/%d", this.startInclusive, this.endInclusive, this.size);
         }
 
         @Override
@@ -144,6 +159,26 @@ abstract class HttpRange {
         return this.size;
     }
 
+    static Request parseRequestRange(final String requestRange) throws HttpException {
+        notNull(requestRange, "Request Range must not be null");
+
+        if (!requestRange.matches("bytes=[0-9]+-[0-9]+")) {
+            final String message = String.format(
+                    "Invalid Range format, expected: [bytes <range-startInclusive>-<range-endInclusive>], got: %s",
+                    requestRange);
+            throw new HttpException(message);
+        }
+
+        final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(requestRange, "bytes="), "-");
+        if (boundsAndSize.length != 2) {
+            throw new HttpException(String.format("Malformed Range value, got: %s", requestRange));
+        }
+
+        return new Request(
+                Long.parseUnsignedLong(boundsAndSize[0]),
+                Long.parseUnsignedLong(boundsAndSize[1]));
+    }
+
     static Response parseContentRange(final String contentRange) throws HttpException {
         notNull(contentRange, "Content Range must not be null");
 
@@ -163,15 +198,6 @@ abstract class HttpRange {
                 Long.parseUnsignedLong(boundsAndSize[2]));
     }
 
-    String renderRequestRange() {
-        final StringBuilder sb = new StringBuilder("bytes=");
-        sb.append(startInclusive);
-        sb.append("-");
-        sb.append(endInclusive);
-
-        return sb.toString();
-    }
-
     // TODO: I don't think we need this
     // public String renderContentRange() {
     //     final StringBuilder sb = new StringBuilder("bytes ");
@@ -183,6 +209,10 @@ abstract class HttpRange {
     //
     //     return sb.toString();
     // }
+
+    abstract boolean matches(HttpRange otherRange);
+
+    abstract String render();
 
     @Override
     public boolean equals(final Object o) {
