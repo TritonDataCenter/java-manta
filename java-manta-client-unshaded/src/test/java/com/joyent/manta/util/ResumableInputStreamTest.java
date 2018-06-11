@@ -139,7 +139,9 @@ public class ResumableInputStreamTest {
         return paramLists.toArray(new Object[][]{});
     }
 
-    private static void addToParamListIfUnseen(final Set<Integer> hashcodes, final ArrayList<Object[]> paramList, final Object[] params) {
+    private static void addToParamListIfUnseen(final Set<Integer> hashcodes,
+                                               final ArrayList<Object[]> paramList,
+                                               final Object[] params) {
         final int hashcode = Arrays.deepHashCode(params);
         if (hashcodes.contains(hashcode)) {
             return;
@@ -196,7 +198,7 @@ public class ResumableInputStreamTest {
         verify(source).close();
     }
 
-        public void testClosingWithoutSettingDoesNotThrow() throws Exception {
+    public void testClosingWithoutSettingDoesNotThrow() throws Exception {
         final ResumableInputStream mis = new ResumableInputStream();
 
         mis.close();
@@ -408,8 +410,7 @@ public class ResumableInputStreamTest {
      * Null means the ordering is undefined and will be picked randomly for each upcoming failure.
      */
     public void testCanRecoverFromFailureWithEveryCombinationOfInputSizeInternalBufferSizeAndCopyBufferSizeWithIncreasingCountAndOffsetFailures()
-            throws Exception
-    {
+            throws Exception {
         final Object[][] paramLists = bufferSizesCubedWithIncreasingFailureFrequency();
         // don't need to burden testng with the 100k combinations
         for (final Object[] params : paramLists) {
@@ -417,10 +418,11 @@ public class ResumableInputStreamTest {
             testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, false);
             testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, null);
         }
-        LOG.info("ResumableInputStream testCanRecoverFromFailureRepeatedly completed all combinations without error: {}", paramLists.length * 3);
+        LOG.info("ResumableInputStream testCanRecoverFromFailureWithEveryCombinationOfInputSizeInternalBufferSizeAndCopyBufferSizeWithIncreasingCountAndOffsetFailures completed all combinations without error: {}", paramLists.length * 3);
     }
 
-    private void testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(final Object[] params, final Boolean postReadFailure) throws Exception {
+    private void testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(final Object[] params,
+                                                                                   final Boolean postReadFailure) throws Exception {
         try {
             testCanRecoverFromFailureRepeatedly(
                     (Integer) params[0],
@@ -428,7 +430,7 @@ public class ResumableInputStreamTest {
                     (Integer) params[2],
                     (Integer[]) params[3],
                     postReadFailure);
-        } catch (final Exception e) {
+        } catch (final Exception | AssertionError e) {
             final String readFailureDesc;
             if (postReadFailure == null) {
                 readFailureDesc = "randomOrderedReadFailure";
@@ -449,13 +451,17 @@ public class ResumableInputStreamTest {
             final Boolean readFailureIsPost
     ) throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(inputSize);
+        // final byte[] bytes = new byte[]{'a'};
+
         final ResumableInputStream mis = new ResumableInputStream(bufferSize);
 
         final Deque<Integer> failureOffsets = new LinkedList<>(Arrays.asList(readFailureOffsets));
 
         final ByteArrayOutputStream copied = new ByteArrayOutputStream();
-        while (!failureOffsets.isEmpty()) {
-            final int nextFailure = failureOffsets.pop();
+
+        // we exit the retry loop when 1. there are no more failures to induce, or 2. we've read the expected number of bytes
+        while (!failureOffsets.isEmpty() && copied.size() < bytes.length) {
+            final int nextFailure = failureOffsets.removeFirst();
             validState(-1 < nextFailure, "failure offset must be non-negative");
             validState(nextFailure < bytes.length, "failure offset must be less than input length");
 

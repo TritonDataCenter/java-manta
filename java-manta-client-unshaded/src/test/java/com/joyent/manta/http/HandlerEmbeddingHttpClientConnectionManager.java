@@ -1,19 +1,26 @@
 package com.joyent.manta.http;
 
 import org.apache.http.HttpClientConnection;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.ConnectionRequest;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpRequestHandler;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class FakeHttpClientConnectionManager implements HttpClientConnectionManager {
+public class EmbeddedHandlerHttpClientconnectionMAnager implements HttpClientConnectionManager {
 
     private final ConnectionRequest connReq;
 
-    public FakeHttpClientConnectionManager(final HttpClientConnection conn) {
+    public EmbeddedHandlerHttpClientconnectionMAnager(final EntityP connReq) {
+        this.connReq = connReq
+    }
+
+    public EmbeddedHandlerHttpClientconnectionMAnager(final HttpClientConnection conn) {
         this.connReq = new PassthroughConnectionRequest(conn);
     }
 
@@ -28,6 +35,7 @@ public class FakeHttpClientConnectionManager implements HttpClientConnectionMana
                                   final Object newState,
                                   final long validDuration,
                                   final TimeUnit timeUnit) {
+
     }
 
     @Override
@@ -60,6 +68,30 @@ public class FakeHttpClientConnectionManager implements HttpClientConnectionMana
 
     @Override
     public void shutdown() {
+    }
+
+    /**
+     * "Basic" because it returns a new connection every time, e.g. it is ignorant of Keep-Alive.
+     */
+    private static class BasicEmbeddedHandlerConnectionRequest implements ConnectionRequest {
+
+        private final EntityPopulatingHttpRequestHandler requestHandler;
+
+        BasicEmbeddedHandlerConnectionRequest(final EntityPopulatingHttpRequestHandler requestHandler) {
+            this.requestHandler = requestHandler;
+        }
+
+        @Override
+        public HttpClientConnection get(final long timeout,
+                                        final TimeUnit tunit)
+                throws InterruptedException, ExecutionException, ConnectionPoolTimeoutException {
+            return new EmbeddedRequestHandlerClientConnection(this.requestHandler);
+        }
+
+        @Override
+        public boolean cancel() {
+            return false;
+        }
     }
 
     private static class PassthroughConnectionRequest implements ConnectionRequest {

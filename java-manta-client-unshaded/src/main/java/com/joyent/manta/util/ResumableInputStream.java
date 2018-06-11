@@ -50,6 +50,11 @@ public class ResumableInputStream extends InputStream {
     private volatile boolean closed = false;
 
     /**
+     *
+     */
+    private volatile boolean eofSeen = false;
+
+    /**
      * Buffer.
      */
     private final byte[] buffer;
@@ -95,13 +100,13 @@ public class ResumableInputStream extends InputStream {
      *
      * @param next stream to switch to as a backing stream
      */
-    public void setSource(final InputStream next) {
+    public ResumableInputStream setSource(final InputStream next) {
         if (this.closed) {
             throw new IllegalStateException("Attempted to set source on a closed ResumableInputStream");
         }
         notNull(next, "InputStream must not be null");
 
-        if (this.bufCount == EOF) {
+        if (this.eofSeen) {
             throw new IllegalStateException("Already reached end of source stream, refusing to set new source");
         }
 
@@ -110,6 +115,7 @@ public class ResumableInputStream extends InputStream {
         }
 
         this.source = new CountingInputStream(next);
+        return this;
     }
 
     @Override
@@ -118,9 +124,9 @@ public class ResumableInputStream extends InputStream {
             throw new IllegalStateException("Attempted to read from a closed ResumableInputStream");
         }
 
-        ensureBufferIsReady();
+        attemptToReadAhead();
 
-        if (this.bufCount == 0 || this.bufCount == EOF) {
+        if (this.eofSeen) {
             return EOF;
         }
 
@@ -149,9 +155,9 @@ public class ResumableInputStream extends InputStream {
             throw new IndexOutOfBoundsException(message);
         }
 
-        ensureBufferIsReady();
+        attemptToReadAhead();
 
-        if (count != 0 && this.bufCount == 0) {
+        if (this.eofSeen) {
             return EOF;
         }
 
@@ -159,7 +165,7 @@ public class ResumableInputStream extends InputStream {
         int pos = off;
         int read = 0;
 
-        while (0 < remaining && this.bufPos < this.bufCount) {
+        while (0 < remaining && this.bufPos < this.bufCount && !this.eofSeen) {
             final int copied = Math.min(remaining, this.bufCount - this.bufPos);
             System.arraycopy(buffer, bufPos, b, pos, copied);
             pos += copied;
@@ -179,7 +185,7 @@ public class ResumableInputStream extends InputStream {
 
     @Override
     public int available() throws IOException {
-        ensureBufferIsReady();
+        attemptToReadAhead();
         return this.bufCount - this.bufPos;
     }
 
@@ -206,14 +212,13 @@ public class ResumableInputStream extends InputStream {
     }
 
     /**
-     * Make sure we're ready to provide bytes. It might make sense to provide as input the desired number of bytes?
+     * Make sure we're ready to provide bytes.
+     * TODO: It might make sense to provide as input the desired number of bytes?
      *
      * @throws IOException when {@link #fillBuffer()} throws
      */
-    private void ensureBufferIsReady() throws IOException {
-        if (count == 0
-                || this.bufPos == this.buffer.length
-                || this.bufPos == this.bufCount) {
+    private void attemptToReadAhead() throws IOException {
+        if (!this.eofSeen && (this.count == 0 || this.bufPos == this.bufCount)) {
             fillBuffer();
         }
     }
@@ -225,9 +230,14 @@ public class ResumableInputStream extends InputStream {
      */
     private void fillBuffer() throws IOException {
         // we only reset bufPos if we successfully read
-        this.bufCount = IOUtils.read(this.source, this.buffer);
-        // CONSIDER: investigate calling read directory so we can know when the source stream actually reaches EOF
-        // this.bufCount = this.source.read(this.buffer);
+        final int bytesRead = this.source.read(this.buffer);
+
+        if (bytesRead == EOF) {
+            this.eofSeen = true;
+        } else {
+            this.bufCount = bytesRead;
+        }
+
         this.bufPos = 0;
     }
 }
