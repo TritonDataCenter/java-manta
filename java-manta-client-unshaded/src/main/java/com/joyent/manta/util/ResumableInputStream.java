@@ -50,11 +50,6 @@ public class ResumableInputStream extends InputStream {
     private volatile boolean closed = false;
 
     /**
-     *
-     */
-    private volatile boolean eofSeen = false;
-
-    /**
      * Buffer.
      */
     private final byte[] buffer;
@@ -106,7 +101,7 @@ public class ResumableInputStream extends InputStream {
         }
         notNull(next, "InputStream must not be null");
 
-        if (this.eofSeen) {
+        if (this.bufCount == EOF) {
             throw new IllegalStateException("Already reached end of source stream, refusing to set new source");
         }
 
@@ -126,7 +121,7 @@ public class ResumableInputStream extends InputStream {
 
         attemptToReadAhead();
 
-        if (this.eofSeen) {
+        if (this.bufCount == EOF) {
             return EOF;
         }
 
@@ -157,7 +152,7 @@ public class ResumableInputStream extends InputStream {
 
         attemptToReadAhead();
 
-        if (this.eofSeen) {
+        if (this.bufCount == EOF) {
             return EOF;
         }
 
@@ -165,7 +160,7 @@ public class ResumableInputStream extends InputStream {
         int pos = off;
         int read = 0;
 
-        while (0 < remaining && this.bufPos < this.bufCount && !this.eofSeen) {
+        while (0 < remaining && this.bufPos < this.bufCount) {
             final int copied = Math.min(remaining, this.bufCount - this.bufPos);
             System.arraycopy(buffer, bufPos, b, pos, copied);
             pos += copied;
@@ -218,7 +213,11 @@ public class ResumableInputStream extends InputStream {
      * @throws IOException when {@link #fillBuffer()} throws
      */
     private void attemptToReadAhead() throws IOException {
-        if (!this.eofSeen && (this.count == 0 || this.bufPos == this.bufCount)) {
+        if (this.bufCount == EOF) {
+            return;
+        }
+
+        if (this.count == 0 || this.bufPos == this.bufCount) {
             fillBuffer();
         }
     }
@@ -230,14 +229,7 @@ public class ResumableInputStream extends InputStream {
      */
     private void fillBuffer() throws IOException {
         // we only reset bufPos if we successfully read
-        final int bytesRead = this.source.read(this.buffer);
-
-        if (bytesRead == EOF) {
-            this.eofSeen = true;
-        } else {
-            this.bufCount = bytesRead;
-        }
-
+        this.bufCount = this.source.read(this.buffer);
         this.bufPos = 0;
     }
 }

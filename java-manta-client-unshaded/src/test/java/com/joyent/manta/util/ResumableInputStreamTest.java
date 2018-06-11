@@ -451,7 +451,6 @@ public class ResumableInputStreamTest {
             final Boolean readFailureIsPost
     ) throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(inputSize);
-        // final byte[] bytes = new byte[]{'a'};
 
         final ResumableInputStream mis = new ResumableInputStream(bufferSize);
 
