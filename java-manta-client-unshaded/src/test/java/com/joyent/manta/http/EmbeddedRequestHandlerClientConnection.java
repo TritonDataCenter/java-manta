@@ -1,6 +1,13 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
-
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpConnectionMetrics;
@@ -11,7 +18,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
 import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,17 +25,25 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.joyent.manta.http.EmbeddedRequestHandlerClientConnection.ConnectionState.CLOSED;
+import static com.joyent.manta.http.EmbeddedRequestHandlerClientConnection.ConnectionState.READY;
+import static com.joyent.manta.http.EmbeddedRequestHandlerClientConnection.ConnectionState.RECV_RES_BODY;
+import static com.joyent.manta.http.EmbeddedRequestHandlerClientConnection.ConnectionState.RECV_RES_HEADER;
+import static com.joyent.manta.http.EmbeddedRequestHandlerClientConnection.ConnectionState.SEND_REQ_BODY;
+import static com.joyent.manta.http.EmbeddedRequestHandlerClientConnection.ConnectionState.SEND_REQ_HEADER;
+import static org.apache.commons.lang3.Validate.notEmpty;
+import static org.apache.commons.lang3.Validate.notNull;
 import static org.mockito.Mockito.mock;
 
-public class FakeHttpClientConnection implements HttpClientConnection {
-    
-    private static final Logger LOG = LoggerFactory.getLogger(FakeHttpClientConnection.class);
+class EmbeddedRequestHandlerClientConnection implements HttpClientConnection {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedRequestHandlerClientConnection.class);
 
     private static final AtomicLong COUNTER = new AtomicLong(0);
 
     private final String id;
 
-    private final HttpRequestHandler requestHandler;
+    private final EntityPopulatingHttpRequestHandler requestHandler;
 
     private final HttpConnectionMetrics metrics;
 
@@ -39,18 +53,21 @@ public class FakeHttpClientConnection implements HttpClientConnection {
 
     private HttpResponse currentResponse;
 
-    private enum ConnectionState {
+    private final Object lock = new Object();
+
+    enum ConnectionState {
         READY,
-        REQ_SENT_HEADER,
-        REQ_SENT_BODY,
-        RES_RECV_HEADER,
-        RES_RECV_BODY,
+        SEND_REQ_HEADER,
+        SEND_REQ_BODY,
+        RECV_RES_HEADER,
+        RECV_RES_BODY,
+        CLOSED,
     }
 
-    FakeHttpClientConnection(final HttpRequestHandler requestHandler) {
+    EmbeddedRequestHandlerClientConnection(final EntityPopulatingHttpRequestHandler requestHandler) {
         this.id = Long.toString(COUNTER.getAndIncrement());
         this.requestHandler = requestHandler;
-        this.state = new AtomicReference<>(ConnectionState.READY);
+        this.state = new AtomicReference<>(READY);
         this.handled = false;
 
         // don't care about this
@@ -62,7 +79,9 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      */
     @Override
     public boolean isResponseAvailable(final int timeout) {
-        return true;
+        synchronized (this.lock) {
+            return this.handled;
+        }
     }
 
     /**
@@ -71,18 +90,21 @@ public class FakeHttpClientConnection implements HttpClientConnection {
     @Override
     public void sendRequestHeader(final HttpRequest request)
             throws IOException, HttpException {
-        this.state.compareAndSet(ConnectionState.READY, ConnectionState.REQ_SENT_HEADER);
-        this.currentResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_IMPLEMENTED, "Sorry");
+        synchronized (this.lock) {
+            this.validTransition(SEND_REQ_HEADER, READY);
+            this.currentResponse = new BasicHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_IMPLEMENTED, "Sorry");
 
-        if (request instanceof HttpEntityEnclosingRequest) {
-            this.handled = false;
-            return;
+            if (request instanceof HttpEntityEnclosingRequest) {
+                // we'll call handle when the request entity is "sent" in #sendRequestEntity(HttpEntityEnclosingRequest)
+                this.handled = false;
+                return;
+            }
+
+            onRequestSubmitted(request);
+
+            this.requestHandler.handle(request, this.currentResponse, null);
+            this.handled = true;
         }
-
-        onRequestSubmitted(request);
-
-        this.requestHandler.handle(request, this.currentResponse, null);
-        this.handled = true;
     }
 
     /**
@@ -93,14 +115,17 @@ public class FakeHttpClientConnection implements HttpClientConnection {
             throws IOException, HttpException {
         LOG.info(" >>> entity >>> " + request.getRequestLine());
 
-        this.state.compareAndSet(ConnectionState.REQ_SENT_HEADER, ConnectionState.REQ_SENT_BODY);
-        // we don't actually send a request body (since we dont need that yet)
+        synchronized (this.lock) {
+            this.validTransition(SEND_REQ_BODY, SEND_REQ_HEADER);
+            // we don't actually send a request body (since we dont need that yet)
 
-        if (this.handled) {
-            throw new IllegalStateException("sendRequestEntity called but request was already handled");
+            if (this.handled) {
+                throw new IOException("sendRequestEntity called but request was already handled");
+            }
+
+            this.requestHandler.handle(request, this.currentResponse, null);
+            this.handled = true;
         }
-
-        this.requestHandler.handle(request, this.currentResponse, null);
     }
 
     /**
@@ -112,20 +137,19 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      * initialized.
      */
     @Override
-    public HttpResponse receiveResponseHeader() {
-        final ConnectionState currentState = this.state.get();
+    public HttpResponse receiveResponseHeader()
+            throws IOException, HttpException {
+        synchronized (this.lock) {
+            if (this.currentResponse == null || !this.handled) {
+                throw new IOException("Request not yet handled");
+            }
 
-        if (!currentState.equals(ConnectionState.REQ_SENT_HEADER)
-                && !currentState.equals(ConnectionState.REQ_SENT_BODY)) {
-            throw new AssertionError(
-                    "Invalid state transition during receiveResponseHeader, was: " + currentState);
+            this.validTransition(RECV_RES_HEADER, SEND_REQ_HEADER, SEND_REQ_BODY);
+
+            onResponseReceived(this.currentResponse);
+
+            return this.currentResponse;
         }
-
-        onResponseReceived(this.currentResponse);
-
-        this.state.compareAndSet(ConnectionState.REQ_SENT_HEADER, ConnectionState.REQ_SENT_BODY);
-
-        return this.currentResponse;
     }
 
     /**
@@ -133,8 +157,37 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      * attaches it to an existing HttpResponse object.
      */
     @Override
-    public void receiveResponseEntity(final HttpResponse response) {
-        LOG.debug(getId() + " << entity received " + this.currentResponse.getStatusLine());
+    public void receiveResponseEntity(final HttpResponse response)
+            throws IOException, HttpException {
+        synchronized (this.lock) {
+            if (this.currentResponse == null || !this.handled) {
+                throw new IOException("Request not yet handled");
+            }
+
+            this.validTransition(RECV_RES_BODY, RECV_RES_HEADER);
+
+            this.requestHandler.populateEntity(response);
+        }
+    }
+
+    private void validTransition(final ConnectionState target, final ConnectionState... expected) throws IOException {
+        notNull(target);
+        notEmpty(expected);
+
+        final ConnectionState current = this.state.get();
+
+        for (int i = 0; i < expected.length; i++) {
+            if (current.equals(expected[i])) {
+                this.state.compareAndSet(current, target);
+                return;
+            }
+        }
+
+        throw new IOException(
+                String.format(
+                        "Invalid connection state transition: expected [%s], was [%s]",
+                        ArrayUtils.toString(expected, "null"),
+                        current));
     }
 
     /**
@@ -142,7 +195,6 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      */
     @Override
     public void flush() {
-
     }
 
     /**
@@ -151,13 +203,27 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      * buffer prior to closing the underlying socket.
      */
     @Override
-    public void close() {
+    public void close() throws IOException {
+        synchronized (this.lock) {
+            if (this.state.get() == CLOSED) {
+                return;
+            }
 
+            try {
+                this.validTransition(CLOSED, RECV_RES_BODY);
+            } catch (final IOException e) {
+                this.state.set(CLOSED);
+                throw e;
+            }
+            this.currentResponse = null;
+        }
     }
 
     @Override
     public boolean isOpen() {
-        return true;
+        synchronized (this.lock) {
+            return this.state.get() != CLOSED;
+        }
     }
 
     @Override
@@ -184,6 +250,7 @@ public class FakeHttpClientConnection implements HttpClientConnection {
      */
     @Override
     public void shutdown() throws IOException {
+        this.close();
     }
 
     @Override
@@ -191,26 +258,26 @@ public class FakeHttpClientConnection implements HttpClientConnection {
         return this.metrics;
     }
 
-    private String getId() {
+    String getId() {
         return this.id;
     }
 
     private void onResponseReceived(final HttpResponse response) {
         if (response != null) {
-            LOG.debug(getId() + " << " + response.getStatusLine().toString());
+            LOG.trace(getId() + " << " + response.getStatusLine().toString());
             final Header[] headers = response.getAllHeaders();
             for (final Header header : headers) {
-                LOG.debug(getId() + " << " + header.toString());
+                LOG.trace(getId() + " << " + header.toString());
             }
         }
     }
 
     private void onRequestSubmitted(final HttpRequest request) {
         if (request != null) {
-            LOG.debug(getId() + " >> " + request.getRequestLine().toString());
+            LOG.trace(getId() + " >> " + request.getRequestLine().toString());
             final Header[] headers = request.getAllHeaders();
             for (final Header header : headers) {
-                LOG.debug(getId() + " >> " + header.toString());
+                LOG.trace(getId() + " >> " + header.toString());
             }
         }
     }

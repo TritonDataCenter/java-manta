@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
@@ -16,18 +23,17 @@ abstract class HttpRange {
     /**
      * The start of the byte range in a range/content-range (the 0 in 0-1/2).
      */
-    final long startInclusive;
+    protected final long startInclusive;
 
     /**
      * The end of the byte range in a range/content-range (the 1 in 0-1/2).
      */
-    final long endInclusive;
+    protected final long endInclusive;
 
     /**
      * The total number of bytes in a content-range (the 2 in 0-1/2).
      */
-    final Long size;
-
+    protected final Long size;
 
     /*
 
@@ -92,6 +98,10 @@ abstract class HttpRange {
             return String.format("bytes %d-%d/%d", this.startInclusive, this.endInclusive, this.size);
         }
 
+        long expectedContentLength() {
+            return 1 + this.endInclusive - this.startInclusive;
+        }
+
         @Override
         public String toString() {
             return "HttpRange.Response{" +
@@ -109,6 +119,12 @@ abstract class HttpRange {
             super(startInclusive, endInclusive, size);
         }
 
+        /**
+         * Checks that the end and size of a range match. Note that a {@link Goal} range can only meaningfully be
+         * compared to a {@link Response} range.
+         * @param other the compared range
+         * @return whether or not the range end and size match
+         */
         boolean matches(final HttpRange other) {
             notNull(other, "Compared HttpRange must not be null");
 
@@ -159,6 +175,47 @@ abstract class HttpRange {
         return this.size;
     }
 
+    abstract boolean matches(HttpRange otherRange);
+
+    abstract String render();
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || this.getClass() != o.getClass()) {
+            return false;
+        }
+
+        final HttpRange that = (HttpRange) o;
+
+        return this.startInclusive == that.startInclusive &&
+                this.endInclusive == that.endInclusive &&
+                // either both are null or one of them is not null and can be used to compare with the other
+                // (which may be null)
+                ((this.size == null && that.size == null)
+                        || (this.size != null && this.size.equals(that.size)
+                        || (that.size != null && that.size.equals(this.size))));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startInclusive, endInclusive, size);
+    }
+
+    @Override
+    public abstract String toString();
+
+    static Request requestRangeFromContentLength(final long contentLength) {
+        if (0 < contentLength) {
+            throw new IllegalArgumentException("Content-Length must be greater than zero");
+        }
+
+        return new Request(0, contentLength - 1);
+    }
+
     static Request parseRequestRange(final String requestRange) throws HttpException {
         notNull(requestRange, "Request Range must not be null");
 
@@ -190,55 +247,13 @@ abstract class HttpRange {
         }
 
         final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(contentRange, "bytes "), "-/");
-        validState(boundsAndSize.length == 3, "Unexpected content-range parts");
+        if (boundsAndSize.length != 3) {
+            throw new HttpException(String.format("Malformed Range value, got: %s", contentRange));
+        }
 
         return new Response(
                 Long.parseUnsignedLong(boundsAndSize[0]),
                 Long.parseUnsignedLong(boundsAndSize[1]),
                 Long.parseUnsignedLong(boundsAndSize[2]));
     }
-
-    // TODO: I don't think we need this
-    // public String renderContentRange() {
-    //     final StringBuilder sb = new StringBuilder("bytes ");
-    //     sb.append(startInclusive);
-    //     sb.append("-");
-    //     sb.append(endInclusive);
-    //     sb.append("/");
-    //     sb.append(size);
-    //
-    //     return sb.toString();
-    // }
-
-    abstract boolean matches(HttpRange otherRange);
-
-    abstract String render();
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || this.getClass() != o.getClass()) {
-            return false;
-        }
-
-        final HttpRange that = (HttpRange) o;
-
-        return this.startInclusive == that.startInclusive &&
-                this.endInclusive == that.endInclusive &&
-                // TODO: there has to be a better way to express this safely
-                (this.size != null && this.size.equals(that.size)
-                        ||
-                        that.size != null && that.size.equals(this.size));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(startInclusive, endInclusive, size);
-    }
-
-    @Override
-    public abstract String toString();
 }

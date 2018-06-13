@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
 import org.apache.http.HttpException;
@@ -51,7 +58,7 @@ public class ResumableDownloadHttpResponseInterceptor implements HttpResponseInt
 
         if (coordinator.inProgress()) {
             // verify that the returned range matches the marker's current range
-            coordinator.validateResponse(response);
+            coordinator.validate(response);
         } else {
             // transitions coordinator to "started" state
             coordinator.createMarker(response);

@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
 import org.apache.http.HttpException;
@@ -57,6 +64,6 @@ public class ResumableDownloadHttpRequestInterceptor implements HttpRequestInter
         }
 
         // this will either add hints to the coordinator or update the request's Range and If-Match headers
-        coordinator.enhance(request);
+        coordinator.prepare(request);
     }
 }

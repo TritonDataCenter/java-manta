@@ -1,33 +1,43 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.ConnectionRequest;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpRequestHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class EmbeddedHandlerHttpClientconnectionMAnager implements HttpClientConnectionManager {
+import static org.apache.commons.lang3.Validate.notNull;
 
-    private final ConnectionRequest connReq;
+public class HandlerEmbeddingHttpClientConnectionManager implements HttpClientConnectionManager {
 
-    public EmbeddedHandlerHttpClientconnectionMAnager(final EntityP connReq) {
-        this.connReq = connReq
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(HandlerEmbeddingHttpClientConnectionManager.class);
 
-    public EmbeddedHandlerHttpClientconnectionMAnager(final HttpClientConnection conn) {
-        this.connReq = new PassthroughConnectionRequest(conn);
+    private final EntityPopulatingHttpRequestHandler requestHandler;
+
+    public HandlerEmbeddingHttpClientConnectionManager(final EntityPopulatingHttpRequestHandler requestHandler) {
+        this.requestHandler = notNull(requestHandler);
     }
 
     @Override
     public ConnectionRequest requestConnection(final HttpRoute route,
                                                final Object state) {
-        return connReq;
+        LOG.trace("Connection requested");
+        return new BasicEmbeddedHandlerConnectionRequest(this.requestHandler);
     }
 
     @Override
@@ -35,7 +45,13 @@ public class EmbeddedHandlerHttpClientconnectionMAnager implements HttpClientCon
                                   final Object newState,
                                   final long validDuration,
                                   final TimeUnit timeUnit) {
+        if (!(conn instanceof EmbeddedRequestHandlerClientConnection)) {
+            LOG.warn("Unexpected connection type, attempting to close.");
+            IOUtils.closeQuietly(conn);
+            return;
+        }
 
+        LOG.trace("Releasing connection: " + ((EmbeddedRequestHandlerClientConnection) conn).getId());
     }
 
     @Override
@@ -43,6 +59,7 @@ public class EmbeddedHandlerHttpClientconnectionMAnager implements HttpClientCon
                         final HttpRoute route,
                         final int connectTimeout,
                         final HttpContext context) throws IOException {
+        LOG.trace("Connecting connection: " + conn);
     }
 
     @Override

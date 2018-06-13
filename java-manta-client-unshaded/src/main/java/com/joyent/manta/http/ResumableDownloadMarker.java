@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +41,9 @@ class ResumableDownloadMarker {
                 initialContentRange.getStartInclusive(),
                 initialContentRange.getEndInclusive(),
                 initialContentRange.getSize());
-        this.currentRequestRange = null;
+        this.currentRequestRange = new HttpRange.Request(
+                initialContentRange.getStartInclusive(),
+                initialContentRange.getEndInclusive());
     }
 
     String getEtag() {
@@ -56,18 +65,22 @@ class ResumableDownloadMarker {
     }
 
     void validateRange(final HttpRange.Response responseRange) throws HttpException {
-        if (this.currentRequestRange == null) {
-            throw new NullPointerException("No request range present to compare against response range.");
-        }
-
         if (!this.currentRequestRange.matches(responseRange)) {
             throw new HttpException(
                     String.format(
-                            "Content-Range does not match Request range: expected: [%d-%d], got [%d-%d]",
+                            "Content-Range does not match goal range: expected: [%d-%d], got [%d-%d]",
                             this.currentRequestRange.startInclusive,
                             this.currentRequestRange.endInclusive,
                             responseRange.startInclusive,
                             responseRange.endInclusive));
+        }
+
+        if (!this.goalRange.matches(responseRange)) {
+            throw new HttpException(
+                    String.format(
+                            "Content-Range does not match goal range end or size: expected: [%s], got [%s]",
+                            this.goalRange,
+                            responseRange));
         }
     }
 

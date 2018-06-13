@@ -1,16 +1,23 @@
+/*
+ * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
+import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
-import org.apache.http.HttpHeaders;
+import org.apache.http.HttpMessage;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -32,6 +39,7 @@ import javax.net.ssl.SSLException;
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
 import static org.apache.http.HttpHeaders.CONTENT_RANGE;
+import static org.apache.http.HttpHeaders.ETAG;
 import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpHeaders.RANGE;
 
@@ -80,6 +88,9 @@ public class ResumableDownloadCoordinator {
      */
     static final String CTX_RESUMABLE_COORDINATOR = "manta.resumable_coordinator";
 
+    private static final String MESSAGE_FATAL_EXCEPTION =
+            "Fatal exception has occurred while attempting to download object content";
+
     private static final Set<Class<? extends IOException>> EXCEPTIONS_FATAL =
             Collections.unmodifiableSet(
                     new HashSet<>(
@@ -89,6 +100,10 @@ public class ResumableDownloadCoordinator {
                                     ConnectException.class,
                                     SSLException.class)));
 
+    /**
+     * The look-ahead buffering input stream which keeps track of how many bytes have been read from the underlying
+     * stream.
+     */
     private final ResumableInputStream resumableStream;
 
     /**
@@ -101,18 +116,46 @@ public class ResumableDownloadCoordinator {
     /**
      * Hints about the etag and range expected in the {@link ResumableDownloadMarker} which will be attached.
      */
-    private MutablePair<String, HttpRange.Request> markerHint;
+    private final MutablePair<String, HttpRange.Request> markerHint;
 
     private final Object lock;
 
+    /**
+     * Construct a coordinator. Each logical download should use a different coordinator in order to simplify state
+     * management. The coordinator requires an {@link HttpContext} so that it can be reached from the related
+     * interceptors ({@link ResumableDownloadHttpRequestInterceptor} and
+     * {@link ResumableDownloadHttpResponseInterceptor}.
+     *
+     * @param context the HttpContext with which the request(s) will be executed
+     */
     public ResumableDownloadCoordinator(final HttpContext context) {
+        this(context, null);
+    }
+
+    /**
+     * Construct a coordinator. Each logical download should use a different coordinator in order to simplify state
+     * management. The coordinator requires an {@link HttpContext} so that it can be reached from the related
+     * interceptors ({@link ResumableDownloadHttpRequestInterceptor} and
+     * {@link ResumableDownloadHttpResponseInterceptor}.
+     *
+     * @param context    the HttpContext with which the request(s) will be executed
+     * @param bufferSize the size passed to the {@link ResumableInputStream} constructor
+     */
+    public ResumableDownloadCoordinator(final HttpContext context, final Integer bufferSize) {
         if (null != extractFromContext(context)) {
             throw new IllegalArgumentException("Coordinator already present in context");
         }
 
         context.setAttribute(CTX_RESUMABLE_COORDINATOR, this);
 
-        this.resumableStream = new ResumableInputStream();
+        final ResumableInputStream stream;
+        if (bufferSize != null) {
+            stream = new ResumableInputStream(bufferSize);
+        } else {
+            stream = new ResumableInputStream();
+        }
+
+        this.resumableStream = stream;
         this.context = context;
         this.markerHolder = new AtomicReference<>();
         this.markerHint = MutablePair.of(null, null);
@@ -127,18 +170,17 @@ public class ResumableDownloadCoordinator {
         return this.markerHolder.get() != null;
     }
 
-    void attemptRecovery(final IOException e) throws ResumableDownloadUnexpectedResponseException {
-        final String message = "Fatal exception has while attempting to download object content";
-
+    void attemptRecovery(final IOException e)
+            throws ResumableDownloadUnexpectedResponseException {
         if (EXCEPTIONS_FATAL.contains(e.getClass())) {
             this.cancel();
-            throw new ResumableDownloadUnexpectedResponseException(message, e);
+            throw new ResumableDownloadUnexpectedResponseException(MESSAGE_FATAL_EXCEPTION, e);
         }
 
         for (final Class<? extends IOException> exceptionClass : EXCEPTIONS_FATAL) {
             if (exceptionClass.isInstance(e)) {
                 this.cancel();
-                throw new ResumableDownloadUnexpectedResponseException(message, e);
+                throw new ResumableDownloadUnexpectedResponseException(MESSAGE_FATAL_EXCEPTION, e);
             }
         }
 
@@ -154,14 +196,9 @@ public class ResumableDownloadCoordinator {
         marker.updateBytesRead(this.resumableStream.getCount());
     }
 
-    void createMarker(final HttpResponse response) throws ResumableDownloadUnexpectedResponseException {
+    void createMarker(final HttpResponse response)
+            throws ResumableDownloadUnexpectedResponseException {
         final ImmutablePair<String, HttpRange.Response> fingerprint = extractResponseFingerprint(response);
-
-        if (fingerprint == null) {
-            throw new ResumableDownloadUnexpectedResponseException(
-                    "Resumed response lacks required headers, aborting retry",
-                    response);
-        }
 
         final String initialResponseEtag = fingerprint.left;
         final HttpRange.Response initialResponseContentRange = fingerprint.right;
@@ -193,211 +230,126 @@ public class ResumableDownloadCoordinator {
         final ResumableDownloadMarker marker =
                 new ResumableDownloadMarker(initialResponseEtag, initialResponseContentRange);
 
-        if (!this.markerHolder.compareAndSet(null, marker))
-
-        {
+        if (!this.markerHolder.compareAndSet(null, marker)) {
             throw new IllegalStateException("Marker already present");
         }
 
     }
 
-    void enhance(final HttpRequest request) throws ResumableDownloadIncompatibleRequestException {
+    void prepare(final HttpRequest request)
+            throws ResumableDownloadException {
         if (request == null || request.getRequestLine() == null) {
             throw new NullPointerException("Request or request properties are null");
         }
 
         if (!HttpGet.METHOD_NAME.equalsIgnoreCase(request.getRequestLine().getMethod())) {
             final String message = String.format(
-                    "Invalid method in request provided to resume download, expected: [GET], got [%s]",
+                    "Invalid method in request provided to resume download: expected [GET], got [%s]",
                     request.getRequestLine().getMethod());
             throw new ResumableDownloadIncompatibleRequestException(message);
         }
 
-        this.validateExistingRequestHeaders(request);
+        // extract the ETag and request range headers (enforcing that 1. they're missing and 2. they are single-valued)
+        final ImmutablePair<String, HttpRange.Request> headersOrHints = extractRequestFingerprint(request);
 
-        final ResumableDownloadMarker marker = this.markerHolder.get();
+        synchronized (this.lock) {
+            final ResumableDownloadMarker marker = this.markerHolder.get();
 
-        if (marker == null) {
-            // not yet in progress, we're looking at the first request
-            return;
-        }
-
-        final Header ifMatchHeader = request.getFirstHeader(IF_MATCH);
-        final Header rangeHeader = request.getFirstHeader(RANGE);
-
-        if (ifMatchHeader == null) {
-            request.addHeader(IF_MATCH, marker.getEtag());
-        } else if (!marker.getEtag().equals(ifMatchHeader.getValue())) {
-            // TODO: this should be impossible since the header would've been validated above
-            throw new RuntimeException("something impossible has occurred?");
-        }
-
-        if (rangeHeader == null) {
-            request.addHeader(RANGE, marker.getCurrentRange().render());
-        } else {
-            throw new NotImplementedException("do the range header needful");
-        }
-    }
-
-
-    // TODO: no idea how to break this out onto multiple lines in a satisfatory way..
-
-    /*
-    since the following is too long:
-
-    void validateExistingRequestHeaders(final HttpRequest request) throws ResumableDownloadIncompatibleRequestException {
-
-    we need one of:
-
-    void validateExistingRequestHeaders(final HttpRequest request
-    ) throws ResumableDownloadIncompatibleRequestException {
-
-        or
-
-    void validateExistingRequestHeaders(
-        final HttpRequest request
-    ) throws ResumableDownloadIncompatibleRequestException {
-
-        or...?
-     */
-
-
-    private void validateExistingRequestHeaders(final HttpRequest request
-    ) throws ResumableDownloadIncompatibleRequestException {
-        ResumableDownloadIncompatibleRequestException ifMatchException = null, rangeException = null;
-
-        try {
-            this.validateRequestHasCompatibleIfMatchHeader(request);
-        } catch (final ResumableDownloadIncompatibleRequestException ifMatchFailed) {
-            ifMatchException = ifMatchFailed;
-        }
-
-        try {
-            this.validateRequestHasCompatibleRangeHeader(request);
-        } catch (final ResumableDownloadIncompatibleRequestException rangeFailed) {
-            rangeException = rangeFailed;
-        }
-
-        if (ifMatchException != null && rangeException != null) {
-            throw new ResumableDownloadIncompatibleRequestException(
-                    String.format(
-                            "Incompatible Range and If-Match headers for resuming download: %n%s%n%s",
-                            rangeException.getMessage(),
-                            ifMatchException.getMessage()));
-        } else if (ifMatchException != null) {
-            throw ifMatchException;
-        } else if (rangeException != null) {
-            throw rangeException;
-        }
-
-        // both were null, everything checks out
-    }
-
-    private void validateRequestHasCompatibleRangeHeader(final HttpRequest request
-    ) throws ResumableDownloadIncompatibleRequestException {
-        final Header[] rangeHeaders = request.getHeaders(RANGE);
-
-        if (1 < rangeHeaders.length) {
-            throw new ResumableDownloadIncompatibleRequestException(
-                    "Cannot perform resumable download with multi-part Range header");
-        }
-
-        if (0 == rangeHeaders.length) {
-            return;
-        }
-
-        // there is a single range header
-        final Header rangeHeader = rangeHeaders[0];
-
-        if (rangeHeader == null || StringUtils.isBlank(rangeHeader.getValue())) {
-            throw new ResumableDownloadIncompatibleRequestException("Invalid Range header (blank or missing)");
-        }
-
-        final HttpRange.Request requestRange;
-
-        try {
-            requestRange = HttpRange.parseRequestRange(rangeHeader.getValue());
-        } catch (final HttpException e) {
-            throw new ResumableDownloadIncompatibleRequestException(
-                    String.format("Malformed Range header: %s", rangeHeader.getValue()),
-                    e);
-        }
-
-        final ResumableDownloadMarker marker = this.markerHolder.get();
-
-        if (marker == null) {
-            // grab the Range set by the user to we can validate the first response matches
-            synchronized (this.lock) {
-                if (this.markerHint.getRight() != null) {
-                    throw new ResumableDownloadIncompatibleRequestException("Range hint already set");
-                }
-
-                this.markerHint.setRight(requestRange);
-            }
-            return;
-        }
-
-        // check against marker
-        if (!marker.getCurrentRange().matches(requestRange)) {
-            throw new ResumableDownloadIncompatibleRequestException(
-                    String.format(
-                            "Range header in Request does not match expected range: expected [%s], got [%s]",
-                            marker.getCurrentRange(),
-                            requestRange));
-        }
-    }
-
-    private void validateRequestHasCompatibleIfMatchHeader(final HttpRequest request
-    ) throws ResumableDownloadIncompatibleRequestException {
-        final Header[] ifMatchHeaders = request.getHeaders(IF_MATCH);
-
-        if (1 < ifMatchHeaders.length) {
-            throw new ResumableDownloadIncompatibleRequestException(
-                    "Cannot perform resumable download with multi-valued If-Match header");
-        }
-
-        if (0 == ifMatchHeaders.length) {
-            // no existing if-match header, we'll get the ETag from the first response
-            return;
-        }
-
-        // there is a single if-match header
-
-        final Header ifMatchHeader = ifMatchHeaders[0];
-
-        if (ifMatchHeader == null || StringUtils.isBlank(ifMatchHeader.getValue())) {
-            throw new ResumableDownloadIncompatibleRequestException("Invalid If-Match header (blank or missing)");
-        }
-
-        final ResumableDownloadMarker marker = this.markerHolder.get();
-
-        // if we don't have a marker it's the "starting" request
-        if (marker == null) {
-            // grab the ETag set by the user to we can validate the first response matches
-            synchronized (this.lock) {
-                if (this.markerHint.getLeft() != null) {
-                    throw new ResumableDownloadIncompatibleRequestException("ETag hint already set");
-                }
-
-                this.markerHint.setLeft(ifMatchHeader.getValue());
+            // this is the "start" request, pick up hints and proceed normally
+            if (marker == null) {
+                this.applyHints(headersOrHints);
+                return;
             }
 
-            return;
+            // otherwise this is a "resume" request, update it
+            updateResumeRequest(request, headersOrHints, marker);
+        }
+    }
+
+    private void applyHints(final ImmutablePair<String, HttpRange.Request> hints) throws ResumableDownloadException {
+        if (hints.left != null) {
+            if (this.markerHint.left != null) {
+                throw new ResumableDownloadException("ETag hint already set");
+            }
+            this.markerHint.setLeft(hints.left);
         }
 
-        // otherwise, this is as "resume" request and we should validate the ETag matches the marker
-        if (!marker.getEtag().equals(ifMatchHeader.getValue())) {
+        if (hints.right != null) {
+            if (this.markerHint.right != null) {
+                throw new ResumableDownloadException("Range hint already set");
+            }
+            this.markerHint.setRight(hints.right);
+        }
+    }
+
+    private static void updateResumeRequest(final HttpRequest request,
+                                            final ImmutablePair<String, HttpRange.Request> requestFingerprint,
+                                            final ResumableDownloadMarker marker)
+            throws ResumableDownloadException {
+        notNull(marker, "ResumableDownloadMarker must not be null");
+
+        if (requestFingerprint.left == null) {
+            // the request is missing an If-Match header, set it to the known ETag
+            request.setHeader(IF_MATCH, marker.getEtag());
+        } else if (!requestFingerprint.left.equals(marker.getEtag())) {
+            // if the request already has an if-match header but it doesn't match the marker something is wrong
             throw new ResumableDownloadIncompatibleRequestException(
                     String.format(
                             "Incorrect ETag in If-Match header: expected [%s], got [%s]",
                             marker.getEtag(),
-                            ifMatchHeader.getValue()));
+                            requestFingerprint.left));
         }
+
+        // unconditionally set the request range to the current range
+        request.setHeader(RANGE, marker.getCurrentRange().render());
     }
 
+    /**
+     * Extracts a single non-blank header value from the provided request or response, or null if the header wasn't
+     * present.
+     *
+     * @param message    the {@link HttpRequest} or {@link HttpResponse}
+     * @param headerName the name of the request/repsonse header
+     * @return the single header value if there was only one present, or null if it was missing
+     * @throws ResumableDownloadException When the header is present more than once, or is present but blank.
+     */
+    private static String extractSingleHeaderValue(final HttpMessage message,
+                                                   final String headerName,
+                                                   final boolean required)
+            throws ResumableDownloadException {
+        final Header[] headers = message.getHeaders(headerName);
 
-    // TODO: throw ResumableDownloadUnexpectedResponseException instead?
-    void validateResponse(final HttpResponse response) throws ResumableDownloadUnexpectedResponseException {
+        if (0 == headers.length) {
+            if (required) {
+                throw new ResumableDownloadException(
+                        String.format(
+                                "Required [%s] header for resumable downloads missing",
+                                headerName));
+            }
+
+            return null;
+        }
+
+        if (1 < headers.length) {
+            throw new ResumableDownloadException(
+                    String.format(
+                            "Resumable download not compatible with multi-valued [%s] header",
+                            headerName));
+        }
+
+        // there is a single header
+        final Header header = headers[0];
+
+        if (header == null || StringUtils.isBlank(header.getValue())) {
+            throw new ResumableDownloadException(
+                    String.format("Invalid %s header (blank or missing)", headerName));
+        }
+
+        return header.getValue();
+    }
+
+    void validate(final HttpResponse response)
+            throws ResumableDownloadUnexpectedResponseException {
         notNull(response, "Response must not be null");
 
         final ResumableDownloadMarker marker = this.markerHolder.get();
@@ -405,18 +357,19 @@ public class ResumableDownloadCoordinator {
             throw new IllegalStateException("No marker to compare against response");
         }
 
-        final Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
-
-        if (etagHeader == null || StringUtils.isBlank(etagHeader.getValue())) {
-            throw new ResumableDownloadUnexpectedResponseException("Invalid ETag header (blank or missing)");
+        final String etagHeader;
+        try {
+            etagHeader = extractSingleHeaderValue(response, ETAG, false);
+        } catch (final ResumableDownloadException e) {
+            throw new ResumableDownloadUnexpectedResponseException(e);
         }
 
         // just in case the server ignores if-match
-        if (!marker.getEtag().equals(etagHeader.getValue())) {
+        if (!marker.getEtag().equals(etagHeader)) {
             final String message = String.format(
                     "Invalid ETag header: expected [%s], got [%s]",
                     marker.getEtag(),
-                    etagHeader.getValue());
+                    etagHeader);
             throw new ResumableDownloadUnexpectedResponseException(message);
         }
 
@@ -434,7 +387,7 @@ public class ResumableDownloadCoordinator {
             throw new ResumableDownloadUnexpectedResponseException("Invalid Content-Range header (malformed)", e);
         }
 
-        // ask the marker to make sure we got the expected bytes back
+        // ask the marker to make sure we got the expected range back
         try {
             marker.validateRange(responseRange);
         } catch (final HttpException e) {
@@ -464,52 +417,110 @@ public class ResumableDownloadCoordinator {
                 '}';
     }
 
-    private static ImmutablePair<String, HttpRange.Response> extractResponseFingerprint(final HttpResponse response
-    ) throws ResumableDownloadUnexpectedResponseException {
-        // we can't be sure we're continuing to download the same object if we don't have an etag to compare
-        final Header etagHeader = response.getFirstHeader(HttpHeaders.ETAG);
+    private static ImmutablePair<String, HttpRange.Request> extractRequestFingerprint(final HttpRequest request)
+            throws ResumableDownloadIncompatibleRequestException {
+        String ifMatch = null;
+        HttpRange.Request range = null;
 
-        if (etagHeader == null) {
-            return null;
+        Exception ifMatchEx = null;
+        Exception rangeEx = null;
+
+        try {
+            ifMatch = extractSingleHeaderValue(request, IF_MATCH, false);
+        } catch (final ResumableDownloadException e) {
+            ifMatchEx = e;
         }
 
-        final String etag = etagHeader.getValue();
-
-        if (StringUtils.isBlank(etag)) {
-            return null;
+        try {
+            final String rawRequestRange = extractSingleHeaderValue(request, RANGE, false);
+            if (rawRequestRange != null) {
+                range = HttpRange.parseRequestRange(rawRequestRange);
+            }
+        } catch (final ResumableDownloadException | HttpException e) {
+            rangeEx = e;
         }
 
-        final Header contentLengthHeader = response.getFirstHeader(CONTENT_LENGTH);
+        if (ifMatchEx != null && rangeEx != null) {
+            throw new ResumableDownloadIncompatibleRequestException(
+                    String.format(
+                            "Incompatible Range and If-Match request headers for resuming download:%n%s%n%s",
+                            rangeEx.getMessage(),
+                            ifMatchEx.getMessage()));
+        } else if (ifMatchEx != null) {
+            throw new ResumableDownloadIncompatibleRequestException(ifMatchEx);
+        } else if (rangeEx != null) {
+            throw new ResumableDownloadIncompatibleRequestException(rangeEx);
+        }
 
-        if (contentLengthHeader == null) {
-            throw new ResumableDownloadUnexpectedResponseException("Response is missing Content-Length header.");
+        return ImmutablePair.of(ifMatch, range);
+    }
+
+    /**
+     * In order to be sure we're continuing to download the same object we need to extract the {@code ETag} and
+     * {@code Content-Range} headers from the response. Either header missing is an error. When the
+     * {@code Content-Range} header is present the specified range should be equal to the response's
+     * {@code Content-Length}.
+     *
+     * @param response the response to check for headers
+     * @return the request headers we're concerned with validating
+     * @throws ResumableDownloadUnexpectedResponseException when the headers are malformed, unparseable, or the
+     *                                                      {@code Content-Range} and {@code Content-Length} are
+     *                                                      mismatched
+     */
+    private static ImmutablePair<String, HttpRange.Response> extractResponseFingerprint(final HttpResponse response)
+            throws ResumableDownloadUnexpectedResponseException {
+
+        final String etag;
+        try {
+            etag = extractSingleHeaderValue(response, ETAG, true);
+        } catch (final ResumableDownloadException e) {
+            throw new ResumableDownloadUnexpectedResponseException(e);
         }
 
         final long contentLength;
         try {
-             contentLength = Long.parseUnsignedLong(contentLengthHeader.getValue());
+            final String rawContentLength = extractSingleHeaderValue(response, CONTENT_LENGTH, true);
+            contentLength = Long.parseUnsignedLong(notNull(rawContentLength)); // notNull squelches
+        } catch (final ResumableDownloadException e) {
+            throw new ResumableDownloadUnexpectedResponseException(e);
         } catch (final NumberFormatException e) {
             throw new ResumableDownloadUnexpectedResponseException(
                     String.format(
-                            "Failed to parse Content-Length response: '%s'", contentLengthHeader.getValue()));
+                            "Failed to parse Content-Length response, matching headers: %s",
+                            Arrays.deepToString(response.getHeaders(CONTENT_LENGTH))));
         }
 
-        final HttpRange.Response range;
-        final Header rangeHeader = response.getFirstHeader(HttpHeaders.CONTENT_RANGE);
-        if (rangeHeader == null || StringUtils.isBlank(rangeHeader.getValue())) {
+        final String rawContentRange;
+        try {
+            rawContentRange = extractSingleHeaderValue(response, CONTENT_RANGE, false);
+        } catch (final ResumableDownloadException e) {
+            throw new ResumableDownloadUnexpectedResponseException(e);
+        }
+
+        if (StringUtils.isBlank(rawContentRange)) {
             // the entire object is being requested
             return new ImmutablePair<>(etag, new HttpRange.Response(0, contentLength - 1, contentLength));
         }
 
+        final HttpRange.Response contentRange;
         try {
-            range = HttpRange.parseContentRange(rangeHeader.getValue());
+            contentRange = HttpRange.parseContentRange(rawContentRange);
         } catch (final HttpException e) {
             throw new ResumableDownloadUnexpectedResponseException(
                     "Unable to parse Content-Range header while analyzing download response",
                     e);
         }
 
-        return new ImmutablePair<>(etag, range);
+        // Manta follows the spec and sends the Content-Length of the range, which we should validate
+        if (contentRange.expectedContentLength() != contentLength) {
+            throw new ResumableDownloadUnexpectedResponseException(
+                    String.format(
+                            "Invalid Content-Length in range response: expected [%d], got [%d]",
+                            contentRange.expectedContentLength(),
+                            contentLength));
+        }
+
+        return new ImmutablePair<>(etag, contentRange);
     }
 
     static ResumableDownloadCoordinator extractFromContext(final HttpContext ctx) {
