@@ -512,11 +512,11 @@ public class ResumableDownloadCoordinator {
         }
 
         // Manta follows the spec and sends the Content-Length of the range, which we should validate
-        if (contentRange.expectedContentLength() != contentLength) {
+        if (contentRange.contentLength() != contentLength) {
             throw new ResumableDownloadUnexpectedResponseException(
                     String.format(
                             "Invalid Content-Length in range response: expected [%d], got [%d]",
-                            contentRange.expectedContentLength(),
+                            contentRange.contentLength(),
                             contentLength));
         }
 

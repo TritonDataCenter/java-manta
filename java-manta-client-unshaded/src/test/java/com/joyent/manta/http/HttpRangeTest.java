@@ -1,6 +1,5 @@
 package com.joyent.manta.http;
 
-import com.joyent.manta.http.HttpRange.Goal;
 import com.joyent.manta.http.HttpRange.Request;
 import com.joyent.manta.http.HttpRange.Response;
 import org.apache.http.HttpException;
@@ -56,32 +55,9 @@ public class HttpRangeTest {
         assertFalse(reqRange.matches(badEndContentRange));
     }
 
-    public void goalCanValidateResponse() {
-        final int objectSize = 6;
-        final int objectEndInclusive = objectSize - 1;
-
-        final Goal goalRange = new Goal(0, objectEndInclusive, objectSize);
-        final Response contentRange = new Response(0, objectEndInclusive, objectSize);
-
-        // complete object range is valid
-        goalRange.matches(contentRange);
-
-        // slice of range with matching end and size is valid
-        goalRange.matches(new Response(4, objectEndInclusive, objectSize));
-
-        // end of range should always match
-        final Response badEndContentRange = new Response(1, 2, objectSize);
-        assertFalse(goalRange.matches(badEndContentRange));
-
-        // total object size should always match
-        final Response badSizeContentRange = new Response(0, objectEndInclusive, objectSize + 1);
-        assertFalse(goalRange.matches(badSizeContentRange));
-    }
-
     public void usefulToStringMethods() {
         final String req = new Request(0, 1).toString();
         final String res = new Response(2, 3, 4).toString();
-        final String goal = new Goal(5, 6, 7).toString();
 
         assertTrue(req.contains("startInclusive") && req.contains("0"));
         assertTrue(req.contains("endInclusive") && req.contains("1"));
@@ -90,10 +66,6 @@ public class HttpRangeTest {
         assertTrue(res.contains("startInclusive") && res.contains("2"));
         assertTrue(res.contains("endInclusive") && res.contains("3"));
         assertTrue(res.contains("size") && res.contains("4"));
-
-        assertTrue(goal.contains("startInclusive") && goal.contains("5"));
-        assertTrue(goal.contains("endInclusive") && goal.contains("6"));
-        assertTrue(goal.contains("size") && goal.contains("7"));
     }
 
 }

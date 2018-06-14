@@ -35,28 +35,13 @@ abstract class HttpRange {
      */
     protected final Long size;
 
-    /*
-
-    TODO: maybe?
-
-    static class Sized extends HttpRange {
-
-        Sized(final long startInclusive,
-              final long endInclusive,
-              final Long size) {
-            super(startInclusive, endInclusive);
-            this.size = size;
-        }
-    }
-    */
-
-    static class Request extends HttpRange {
+    static final class Request extends HttpRange {
         Request(final long startInclusive,
                 final long endInclusive) {
             super(startInclusive, endInclusive, null);
         }
 
-        // do we need a new exception type for this?
+        @Override
         boolean matches(final HttpRange other) {
             notNull(other, "Compared HttpRange must not be null");
 
@@ -78,13 +63,18 @@ abstract class HttpRange {
         }
     }
 
-    static class Response extends HttpRange {
+    static final class Response extends HttpRange {
         Response(final long startInclusive,
                  final long endInclusive,
                  final long size) {
             super(startInclusive, endInclusive, size);
         }
 
+        long getSize() {
+            return this.size;
+        }
+
+        @Override
         boolean matches(final HttpRange other) {
             notNull(other, "Compared HttpRange must not be null");
 
@@ -98,48 +88,9 @@ abstract class HttpRange {
             return String.format("bytes %d-%d/%d", this.startInclusive, this.endInclusive, this.size);
         }
 
-        long expectedContentLength() {
-            return 1 + this.endInclusive - this.startInclusive;
-        }
-
         @Override
         public String toString() {
             return "HttpRange.Response{" +
-                    "startInclusive=" + this.getStartInclusive() +
-                    ", endInclusive=" + this.getEndInclusive() +
-                    ", size=" + this.getSize() +
-                    '}';
-        }
-    }
-
-    static class Goal extends HttpRange {
-        Goal(final long startInclusive,
-             final long endInclusive,
-             final long size) {
-            super(startInclusive, endInclusive, size);
-        }
-
-        /**
-         * Checks that the end and size of a range match. Note that a {@link Goal} range can only meaningfully be
-         * compared to a {@link Response} range.
-         * @param other the compared range
-         * @return whether or not the range end and size match
-         */
-        boolean matches(final HttpRange other) {
-            notNull(other, "Compared HttpRange must not be null");
-
-            return this.endInclusive == other.endInclusive
-                    && this.size.equals(other.size);
-        }
-
-        @Override
-        String render() {
-            return String.format("bytes %d-%d/%d", this.startInclusive, this.endInclusive, this.size);
-        }
-
-        @Override
-        public String toString() {
-            return "HttpRange.Goal{" +
                     "startInclusive=" + this.getStartInclusive() +
                     ", endInclusive=" + this.getEndInclusive() +
                     ", size=" + this.getSize() +
@@ -171,8 +122,8 @@ abstract class HttpRange {
         return this.endInclusive;
     }
 
-    Long getSize() {
-        return this.size;
+    long contentLength() {
+        return 1 + this.endInclusive - this.startInclusive;
     }
 
     abstract boolean matches(HttpRange otherRange);

@@ -13,7 +13,7 @@ import org.apache.http.HttpException;
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
 
-class ResumableDownloadMarker {
+final class ResumableDownloadMarker {
 
     /**
      * The ETag associated with the object being downloaded. We need to make sure the ETag is unchanged between
@@ -22,14 +22,13 @@ class ResumableDownloadMarker {
     private final String etag;
 
     /**
-     * The original download range.
-     */
-    private final HttpRange.Goal goalRange;
-
-    /**
      * The current download range.
      */
-    private HttpRange.Request currentRequestRange;
+    private HttpRange.Request currentRange;
+
+    private final long previousStartInclusive;
+
+    private final long totalRangeSize;
 
     ResumableDownloadMarker(final String etag,
                             final HttpRange.Response initialContentRange) {
@@ -37,13 +36,11 @@ class ResumableDownloadMarker {
         notNull(initialContentRange, "HttpRange must not be null");
 
         this.etag = etag;
-        this.goalRange = new HttpRange.Goal(
-                initialContentRange.getStartInclusive(),
-                initialContentRange.getEndInclusive(),
-                initialContentRange.getSize());
-        this.currentRequestRange = new HttpRange.Request(
+        this.currentRange = new HttpRange.Request(
                 initialContentRange.getStartInclusive(),
                 initialContentRange.getEndInclusive());
+        this.previousStartInclusive = initialContentRange.getStartInclusive();
+        this.totalRangeSize = initialContentRange.getSize();
     }
 
     String getEtag() {
@@ -51,36 +48,34 @@ class ResumableDownloadMarker {
     }
 
     HttpRange.Request getCurrentRange() {
-        return this.currentRequestRange;
+        return this.currentRange;
     }
 
-    void updateBytesRead(final long startInclusive) {
-        // check that the currentRequestRange byte stream is actually a continuation of the previous stream
-        // TODO: should be lte or just lt?
+    void updateBytesRead(final long bytesRead) {
+        final long nextStartInclusive = this.currentRange.getStartInclusive() + bytesRead;
+
+        // bytesRead must be:
         validState(
-                this.goalRange.getStartInclusive() <= startInclusive,
+                // 1. non-negative
+                // 2. equal to or greater than the previous number of bytes read
+                // 3. less than or equal to the expected total number of bytes
+                0 <= bytesRead && bytesRead <= this.totalRangeSize && this.previousStartInclusive <= nextStartInclusive,
                 "Resumed download range-start should be equal to or greater than current Request Range");
 
-        this.currentRequestRange = new HttpRange.Request(startInclusive, this.goalRange.getEndInclusive());
+        this.currentRange = new HttpRange.Request(
+                nextStartInclusive,
+                this.currentRange.getEndInclusive());
     }
 
     void validateRange(final HttpRange.Response responseRange) throws HttpException {
-        if (!this.currentRequestRange.matches(responseRange)) {
+        if (!this.currentRange.matches(responseRange)) {
             throw new HttpException(
                     String.format(
                             "Content-Range does not match goal range: expected: [%d-%d], got [%d-%d]",
-                            this.currentRequestRange.startInclusive,
-                            this.currentRequestRange.endInclusive,
+                            this.currentRange.startInclusive,
+                            this.currentRange.endInclusive,
                             responseRange.startInclusive,
                             responseRange.endInclusive));
-        }
-
-        if (!this.goalRange.matches(responseRange)) {
-            throw new HttpException(
-                    String.format(
-                            "Content-Range does not match goal range end or size: expected: [%s], got [%s]",
-                            this.goalRange,
-                            responseRange));
         }
     }
 
@@ -88,8 +83,7 @@ class ResumableDownloadMarker {
     public String toString() {
         return "ResumableDownloadMarker{" +
                 "etag='" + this.etag + '\'' +
-                ", goalRange=" + this.goalRange +
-                ", currentRequestRange=" + this.currentRequestRange +
+                ", currentRange=" + this.currentRange +
                 '}';
     }
 }

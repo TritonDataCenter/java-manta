@@ -7,11 +7,13 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import com.joyent.manta.util.ResumableInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.http.Header;
@@ -49,6 +51,8 @@ import java.util.Map;
 
 import static com.joyent.manta.http.MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
 import static com.joyent.manta.util.MantaUtils.unmodifiableMap;
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
+import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
@@ -106,8 +110,8 @@ public class ResumableDownloadCoordinatorTest {
         coordinator.createMarker(
                 prepareResponseWithHeaders(
                         unmodifiableMap(
-                                ETAG, singleValueHeader(ETAG, "abc"),
-                                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, "2"))));
+                                ETAG, singleValueHeaderList(ETAG, "abc"),
+                                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, "2"))));
 
         assertTrue(coordinator.inProgress());
     }
@@ -120,9 +124,9 @@ public class ResumableDownloadCoordinatorTest {
         coordinator.createMarker(
                 prepareResponseWithHeaders(
                         unmodifiableMap(
-                                ETAG, singleValueHeader(ETAG, "abc"),
-                                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, "2"),
-                                CONTENT_RANGE, singleValueHeader(CONTENT_RANGE, new HttpRange.Response(0, 1, 2).render()))));
+                                ETAG, singleValueHeaderList(ETAG, "abc"),
+                                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, "2"),
+                                CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, new HttpRange.Response(0, 1, 2).render()))));
 
         assertTrue(coordinator.inProgress());
     }
@@ -138,7 +142,7 @@ public class ResumableDownloadCoordinatorTest {
         validatesCompatibleHeadersForInitialRequest(
                 unmodifiableMap(IF_MATCH, new Header[]{}));
         validatesCompatibleHeadersForInitialRequest(
-                unmodifiableMap(IF_MATCH, singleValueHeader(IF_MATCH, ifMatchHeaderValue)));
+                unmodifiableMap(IF_MATCH, singleValueHeaderList(IF_MATCH, ifMatchHeaderValue)));
 
         // this should never occur so we consider it programmer error, something has been subclassed incorrectly
         assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
@@ -150,7 +154,7 @@ public class ResumableDownloadCoordinatorTest {
         // (if-match: "" doesn't make sense for GET, only for PUT, and this is all about resumable *downloads*)
         assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
-                    unmodifiableMap(RANGE, singleValueHeader(RANGE, "")));
+                    unmodifiableMap(RANGE, singleValueHeaderList(RANGE, "")));
         });
 
         // we make no effort to merge headers
@@ -167,7 +171,7 @@ public class ResumableDownloadCoordinatorTest {
         validatesCompatibleHeadersForInitialRequest(
                 unmodifiableMap(RANGE, new Header[]{}));
         validatesCompatibleHeadersForInitialRequest(
-                unmodifiableMap(RANGE, singleValueHeader(RANGE, rangeHeaderValue)));
+                unmodifiableMap(RANGE, singleValueHeaderList(RANGE, rangeHeaderValue)));
 
         // this should never occur so we consider it programmer error, something has been subclassed incorrectly
         assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
@@ -178,12 +182,12 @@ public class ResumableDownloadCoordinatorTest {
         // the following are most likely user error
         assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
-                    unmodifiableMap(RANGE, singleValueHeader(RANGE, "")));
+                    unmodifiableMap(RANGE, singleValueHeaderList(RANGE, "")));
         });
 
         final ResumableDownloadIncompatibleRequestException malformed = expectThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
-                    unmodifiableMap(RANGE, singleValueHeader(RANGE, "duck")));
+                    unmodifiableMap(RANGE, singleValueHeaderList(RANGE, "duck")));
         });
 
         assertTrue(malformed.getCause() != null && malformed.getCause() instanceof HttpException);
@@ -201,21 +205,14 @@ public class ResumableDownloadCoordinatorTest {
         final ResumableDownloadIncompatibleRequestException e = expectThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(
-                            RANGE, singleValueHeader(RANGE, ""),
-                            IF_MATCH, singleValueHeader(IF_MATCH, "")));
+                            RANGE, singleValueHeaderList(RANGE, ""),
+                            IF_MATCH, singleValueHeaderList(IF_MATCH, "")));
         });
 
         assertTrue(e.getMessage().contains(RANGE));
         assertTrue(e.getMessage().contains(IF_MATCH));
     }
 
-    private void validatesCompatibleHeadersForInitialRequest(final Map<String, Header[]> headers) throws Exception {
-        final HttpGet req = prepareRequestWithHeaders(headers);
-        verifyNoMoreInteractions(req);
-
-        final HttpContext ctx = new BasicHttpContext();
-        new ResumableDownloadCoordinator(ctx).prepare(req);
-    }
 
     public void refusesToEnhanceNonGetRequests() throws Exception {
         final Class<? extends HttpRequest>[] requests = new Class[]{
@@ -248,7 +245,7 @@ public class ResumableDownloadCoordinatorTest {
         final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
         final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(mock(HttpContext.class));
         final HttpGet req =
-                prepareRequestWithHeaders(unmodifiableMap(IF_MATCH, singleValueHeader(IF_MATCH, etag)));
+                prepareRequestWithHeaders(unmodifiableMap(IF_MATCH, singleValueHeaderList(IF_MATCH, etag)));
 
         // accept an ETag hint
         coordinator.prepare(req);
@@ -261,7 +258,7 @@ public class ResumableDownloadCoordinatorTest {
         final String range = new HttpRange.Request(0, 1).render();
         final ResumableDownloadCoordinator coordinator = new ResumableDownloadCoordinator(mock(HttpContext.class));
         final HttpGet req =
-                prepareRequestWithHeaders(unmodifiableMap(RANGE, singleValueHeader(RANGE, range)));
+                prepareRequestWithHeaders(unmodifiableMap(RANGE, singleValueHeaderList(RANGE, range)));
 
         // accept a Range hint
         coordinator.prepare(req);
@@ -288,24 +285,24 @@ public class ResumableDownloadCoordinatorTest {
         final HttpRange.Response contentRange = new HttpRange.Response(0, contentLength - 1, contentLength);
 
         final Map<String, Header[]> initial200ResponseHeaders = unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag),
-                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, "2"));
+                ETAG, singleValueHeaderList(ETAG, etag),
+                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, "2"));
 
         final Map<String, Header[]> initial206ResponseHeaders = unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag),
-                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, "2"),
-                CONTENT_RANGE, singleValueHeader(CONTENT_RANGE, contentRange.render()));
+                ETAG, singleValueHeaderList(ETAG, etag),
+                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, "2"),
+                CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, contentRange.render()));
 
         final HttpResponse everythingMissingResponse = prepareResponseWithHeaders(Collections.EMPTY_MAP);
         final HttpResponse etagOnlyResponse = prepareResponseWithHeaders(unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag)));
+                ETAG, singleValueHeaderList(ETAG, etag)));
         final HttpResponse rangeOnlyResponse = prepareResponseWithHeaders(unmodifiableMap(
-                CONTENT_RANGE, singleValueHeader(CONTENT_RANGE, contentRange.render())));
+                CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, contentRange.render())));
         final HttpResponse contentLengthOnlyResponse = prepareResponseWithHeaders(unmodifiableMap(
-                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, Long.toString(contentLength))));
+                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(contentLength))));
         final HttpResponse etagAndContentLengthResponse = prepareResponseWithHeaders(unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag),
-                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, Long.toString(contentLength))));
+                ETAG, singleValueHeaderList(ETAG, etag),
+                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(contentLength))));
 
         // started state expects to have enough enough headers to make sure we got a satisfactory response
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
@@ -335,7 +332,7 @@ public class ResumableDownloadCoordinatorTest {
     public void validatesHintedIfMatch() throws Exception {
         final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
 
-        final Map<String, Header[]> ifMatchHeaders = unmodifiableMap(IF_MATCH, singleValueHeader(IF_MATCH, etag));
+        final Map<String, Header[]> ifMatchHeaders = unmodifiableMap(IF_MATCH, singleValueHeaderList(IF_MATCH, etag));
         final ResumableDownloadCoordinator ifMatchHintFailingCoordinator = prepareReadyCoordinator(ifMatchHeaders);
 
         // any returned range is fine since none was specified
@@ -344,7 +341,7 @@ public class ResumableDownloadCoordinatorTest {
         // invalid ETag
         final String badEtag = etag.substring(Math.floorDiv(etag.length(), 2));
         final HttpResponse badResponse =
-                prepareResponseWithHeaders(unmodifiableMap(ETAG, singleValueHeader(ETAG, badEtag)));
+                prepareResponseWithHeaders(unmodifiableMap(ETAG, singleValueHeaderList(ETAG, badEtag)));
 
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
                 ifMatchHintFailingCoordinator.createMarker(badResponse));
@@ -352,8 +349,8 @@ public class ResumableDownloadCoordinatorTest {
         // build another coordinator expecting the same ETag since the first will have auto-cancelled
         final ResumableDownloadCoordinator ifMatchHintPassingCoordinator = prepareReadyCoordinator(ifMatchHeaders);
         ifMatchHintPassingCoordinator.createMarker(prepareResponseWithHeaders(unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag),
-                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, range.getSize().toString()))));
+                ETAG, singleValueHeaderList(ETAG, etag),
+                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(range.getSize())))));
         assertTrue(ifMatchHintPassingCoordinator.inProgress());
     }
 
@@ -362,7 +359,7 @@ public class ResumableDownloadCoordinatorTest {
         final HttpRange.Response expectedRange = new HttpRange.Response(0, 1, 2);
         final HttpRange.Response badRange = new HttpRange.Response(0, 1, 3);
 
-        final Map<String, Header[]> rangeHeaders = unmodifiableMap(RANGE, singleValueHeader(RANGE, range.render()));
+        final Map<String, Header[]> rangeHeaders = unmodifiableMap(RANGE, singleValueHeaderList(RANGE, range.render()));
         final ResumableDownloadCoordinator rangeHintFailingCoordinator = prepareReadyCoordinator(rangeHeaders);
 
         // any returned etag is fine since no if-match was specified
@@ -370,8 +367,8 @@ public class ResumableDownloadCoordinatorTest {
 
         // invalid Range
         final HttpResponse badResponse = prepareResponseWithHeaders(unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag),
-                CONTENT_RANGE, singleValueHeader(CONTENT_RANGE, badRange.render())));
+                ETAG, singleValueHeaderList(ETAG, etag),
+                CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, badRange.render())));
 
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
                 rangeHintFailingCoordinator.createMarker(badResponse));
@@ -379,15 +376,77 @@ public class ResumableDownloadCoordinatorTest {
         // build another coordinator expecting the same Range since the first will have auto-cancelled
         final ResumableDownloadCoordinator rangeHintPassingCoordinator = prepareReadyCoordinator(rangeHeaders);
         rangeHintPassingCoordinator.createMarker(prepareResponseWithHeaders(unmodifiableMap(
-                ETAG, singleValueHeader(ETAG, etag),
-                CONTENT_LENGTH, singleValueHeader(CONTENT_LENGTH, expectedRange.getSize().toString()),
-                CONTENT_RANGE, singleValueHeader(CONTENT_RANGE, expectedRange.render()))));
+                ETAG, singleValueHeaderList(ETAG, etag),
+                CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(expectedRange.getSize())),
+                CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, expectedRange.render()))));
         assertTrue(rangeHintPassingCoordinator.inProgress());
     }
 
+    private static final int[] BUFFER_SIZES = new int[]{1, 2, 3, 4, 5, 7, 8, 9, 127, 128, 129, 1023, 1024, 1025, 2048};
 
-    //     final HttpRange.Response expectedContentRange = new HttpRange.Response(range.getStartInclusive(), range.getEndInclusive(), range.getEndInclusive() + 1);
-    // final HttpRange.Response badContentRange = new HttpRange.Response(range.getStartInclusive() + 1, range.getEndInclusive(), range.getEndInclusive() + 1);
+    public void testFullObjectFunctionalityWithVariousBufferSizeCombinations() throws Exception {
+        int tests = 0;
+        for (int i = 0; i < BUFFER_SIZES.length; i++) {
+            final int object = BUFFER_SIZES[i];
+
+            for (int j = 0; j < BUFFER_SIZES.length; j++) {
+                final int readBuffer = BUFFER_SIZES[j];
+
+                for (int k = 0; k < BUFFER_SIZES.length; k++) {
+                    final int copyBuffer = BUFFER_SIZES[k];
+                    testResumableDownloadWorks(object, readBuffer, copyBuffer, 0, null);
+                    tests++;
+                }
+            }
+        }
+
+        LOG.info("ResumableDownloadCoordinator full object download test completed all combinations without error: {}", tests);
+    }
+
+    public void testRangeFunctionalityWithVariousBufferSizeCombinations() throws Exception {
+        int tests = 0;
+        for (final int objectSize : BUFFER_SIZES) {
+            for (final int readBufferSize : BUFFER_SIZES) {
+                for (final int copyBufferSize : BUFFER_SIZES) {
+                    for (int failureCount = 0; failureCount <= DefaultsConfigContext.DEFAULT_HTTP_RETRIES; failureCount++) {
+                        for (final int rangeSize : BUFFER_SIZES) {
+                            for (final int rangeStart : BUFFER_SIZES) {
+
+                                if (objectSize < rangeStart + rangeSize) {
+                                    continue;
+                                }
+
+                                final HttpRange.Request range = new HttpRange.Request(rangeStart, rangeStart + rangeSize - 1);
+                                try {
+                                    testResumableDownloadWorks(objectSize, readBufferSize, copyBufferSize, failureCount, range);
+                                } catch (final Throwable err) {
+                                    throw new RuntimeException(
+                                            "Range resume test failed with inputs:"
+                                                    + " objectSize=" + objectSize
+                                                    + ", readBuffer=" + readBufferSize
+                                                    + ", copyBuffer=" + copyBufferSize
+                                                    + ", failureCount=" + failureCount
+                                                    + ", range=" + range,
+                                            err);
+                                }
+                                tests++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        LOG.info("ResumableDownloadCoordinator range download test completed all combinations without error: {}", tests);
+    }
+
+    private static void validatesCompatibleHeadersForInitialRequest(final Map<String, Header[]> headers) throws Exception {
+        final HttpGet req = prepareRequestWithHeaders(headers);
+        verifyNoMoreInteractions(req);
+
+        final HttpContext ctx = new BasicHttpContext();
+        new ResumableDownloadCoordinator(ctx).prepare(req);
+    }
 
     private ResumableDownloadCoordinator prepareReadyCoordinator(final Map<String, Header[]> initialRequestHeaders) throws Exception {
         final HttpGet initialRequest = prepareRequestWithHeaders(initialRequestHeaders);
@@ -407,11 +466,11 @@ public class ResumableDownloadCoordinatorTest {
         return coordinator;
     }
 
-    private static Header[] singleValueHeader(final String name, final String value) {
+    private static Header[] singleValueHeaderList(final String name, final String value) {
         return new Header[]{new BasicHeader(name, value)};
     }
 
-    private HttpGet prepareRequestWithHeaders(final Map<String, Header[]> headers) {
+    private static HttpGet prepareRequestWithHeaders(final Map<String, Header[]> headers) {
         final HttpGet req = prepareMessageWithHeaders(HttpGet.class, headers);
 
         when(req.getRequestLine()).thenReturn(new BasicRequestLine(HttpGet.METHOD_NAME, "", HttpVersion.HTTP_1_1));
@@ -423,8 +482,8 @@ public class ResumableDownloadCoordinatorTest {
         return prepareMessageWithHeaders(HttpResponse.class, headers);
     }
 
-    private <T extends HttpMessage> T prepareMessageWithHeaders(final Class<T> klass,
-                                                                final Map<String, Header[]> headers) {
+    private static <T extends HttpMessage> T prepareMessageWithHeaders(final Class<T> klass,
+                                                                       final Map<String, Header[]> headers) {
         final T msg = mock(klass);
 
         // return an empty list unless a list of headers was provided
@@ -455,79 +514,19 @@ public class ResumableDownloadCoordinatorTest {
         return msg;
     }
 
-    private static final int[] BUFFER_SIZES = new int[]{1, 2, 3, 4, 5, 7, 8, 9, 127, 128, 129, 1023, 1024, 1025, 2048};
-
-    public void testFullObjectFunctionalityWithVariousBufferSizeCombinations() throws Exception {
-        int tests = 0;
-        for (int i = 0; i < BUFFER_SIZES.length; i++) {
-            final int object = BUFFER_SIZES[i];
-
-            for (int j = 0; j < BUFFER_SIZES.length; j++) {
-                final int readBuffer = BUFFER_SIZES[j];
-
-                for (int k = 0; k < BUFFER_SIZES.length; k++) {
-                    final int copyBuffer = BUFFER_SIZES[k];
-                    testResumableDownloadWorks(object, readBuffer, copyBuffer, 0, null);
-                    tests++;
-                }
-            }
-        }
-
-        LOG.info("ResumableDownloadCoordinator full object download test completed all combinations without error: {}", tests);
-    }
-
-    public void testRangeFunctionalityWithVariousBufferSizeCombinations() throws Exception {
-        if (true) {
-            testResumableDownloadWorks(4, 4, 4, 1, new HttpRange.Request(0, 3));
-            return;
-        }
-
-        int tests = 0;
-        for (int i = 0; i < BUFFER_SIZES.length; i++) {
-            final int object = BUFFER_SIZES[i];
-
-            for (int j = 0; j < BUFFER_SIZES.length; j++) {
-                final int readBuffer = BUFFER_SIZES[j];
-
-                for (int k = 0; k < BUFFER_SIZES.length; k++) {
-                    final int copyBuffer = BUFFER_SIZES[k];
-
-                    for (int l = 0; l < BUFFER_SIZES.length; l++) {
-                        final int rangeSize = BUFFER_SIZES[l];
-
-                        for (int m = 0; m < BUFFER_SIZES.length; m++) {
-                            final int rangeStart = BUFFER_SIZES[m];
-
-                            if (object < rangeStart + rangeSize) {
-                                continue;
-                            }
-
-                            final HttpRange.Request range = new HttpRange.Request(rangeStart, rangeStart + rangeSize - 1);
-                            testResumableDownloadWorks(object, readBuffer, copyBuffer, 0, range);
-                            tests++;
-                        }
-                    }
-                }
-            }
-        }
-
-        LOG.info("ResumableDownloadCoordinator range download test completed all combinations without error: {}", tests);
-    }
-
-    private static final boolean TOO_VERBOSE = false;
-
-    private void testResumableDownloadWorks(final int objectSize,
-                                            final int readBufferSize,
-                                            final int copyBufferSize,
-                                            final int failureCount,
-                                            final HttpRange.Request initialRequestRange) throws Exception {
+    private static void testResumableDownloadWorks(final int objectSize,
+                                                   final int readBufferSize,
+                                                   final int copyBufferSize,
+                                                   final int failureCount,
+                                                   final HttpRange.Request initialRequestRange) throws Exception {
         final String resumableTestType = initialRequestRange != null ? "Object range" : "Full object";
 
         final byte[] originalObjectContent = RandomUtils.nextBytes(objectSize);
+
         final CloseableHttpClient client = prepareClient(
                 new FixedFailureCountByteArrayObjectHttpHandler(originalObjectContent, failureCount));
 
-        final HttpUriRequest req = new HttpGet("http://localhost");
+        final HttpUriRequest req = new HttpGet(UNIT_TEST_URL);
         final ByteArrayOutputStream savedEntity = new ByteArrayOutputStream();
 
         // explcitly disable automatic retries
@@ -571,7 +570,22 @@ public class ResumableDownloadCoordinatorTest {
             attempt++;
         } while (attempt < 10);
 
-        assertArrayEquals("Bytes received do not match original bytes", originalObjectContent, savedEntity.toByteArray());
+        if (initialRequestRange == null) {
+            assertArrayEquals(
+                    "Bytes received do not match original bytes",
+                    originalObjectContent,
+                    savedEntity.toByteArray());
+        } else {
+            final byte[] expectedObjectContent = ArrayUtils.subarray(
+                    originalObjectContent,
+                    toIntExact(initialRequestRange.getStartInclusive()),
+                    toIntExact(initialRequestRange.getEndInclusive() + 1)); // subarray end is exclusive
+
+            assertArrayEquals(
+                    "Bytes received do not match original bytes",
+                    expectedObjectContent,
+                    savedEntity.toByteArray());
+        }
 
         LOG.trace("{} resumable download test completed successfully with {} attempts!", resumableTestType, attempt);
     }
@@ -590,7 +604,7 @@ public class ResumableDownloadCoordinatorTest {
                         statusCode));
     }
 
-    private CloseableHttpClient prepareClient(final EntityPopulatingHttpRequestHandler requestHandler) {
+    private static CloseableHttpClient prepareClient(final EntityPopulatingHttpRequestHandler requestHandler) {
         return HttpClientBuilder.create()
                 .setConnectionManager(new HandlerEmbeddingHttpClientConnectionManager(requestHandler))
                 // set a retry handler that respects "manta.retry.disable" like MantaHttpRequestRetryHandler

@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 
 import java.util.UUID;
 
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,7 +76,7 @@ public class MantaClientHttpResponseExceptionTest {
 
     private static HttpRequest request() {
         final HttpRequest request = mock(HttpRequest.class);
-        when(request.getRequestLine()).thenReturn(new BasicRequestLine("GET", "http://localhost",
+        when(request.getRequestLine()).thenReturn(new BasicRequestLine("GET", UNIT_TEST_URL,
                 HttpVersion.HTTP_1_1));
 
         return request;

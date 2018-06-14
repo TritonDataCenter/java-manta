@@ -21,17 +21,13 @@ public class ResumableDownloadMarkerTest {
         assertThrows(NullPointerException.class, () -> new ResumableDownloadMarker("A", null));
     }
 
-    public void cantValidateResponsesBeforeFirstUpdate() {
-        final Response fullRange = new Response(0, 3, 4L);
-        final ResumableDownloadMarker marker = new ResumableDownloadMarker("a", fullRange);
-
-        assertThrows(NullPointerException.class, () -> marker.validateRange(fullRange));
-    }
-
     public void canValidateResponses() throws HttpException {
         final Response fullRange = new Response(0, 3, 4L);
 
         final ResumableDownloadMarker marker = new ResumableDownloadMarker("a", fullRange);
+
+        // pretend there was an error receiving headers and we had to restart the initial request completely
+        marker.validateRange(fullRange);
 
         // pretend we got the first byte
         marker.updateBytesRead(1);
@@ -51,7 +47,7 @@ public class ResumableDownloadMarkerTest {
         final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
 
         final String rangeRgx = StringUtils.join(
-                new Object[]{"", fullRange.getStartInclusive(), fullRange.getEndInclusive(), fullRange.getSize(), ""},
+                new Object[]{"", fullRange.getStartInclusive(), fullRange.getEndInclusive(), ""},
                 ".*");
 
         final String marker = new ResumableDownloadMarker(etag, fullRange).toString();

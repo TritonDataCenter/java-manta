@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.security.KeyPair;
 
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -84,7 +85,7 @@ public class MantaConnectionFactoryTest {
         connectionFactory.close();
 
         final IllegalStateException shutdownException = Assert.expectThrows(IllegalStateException.class, () ->
-                client.execute(new HttpGet("http://localhost")));
+                client.execute(new HttpGet(UNIT_TEST_URL)));
 
         Assert.assertTrue(shutdownException.getMessage().contains("Connection pool shut down"));
     }

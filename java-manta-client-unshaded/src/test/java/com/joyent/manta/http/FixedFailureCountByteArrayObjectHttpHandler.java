@@ -26,6 +26,7 @@ import static org.apache.http.HttpHeaders.ETAG;
 import static org.apache.http.HttpHeaders.RANGE;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
+import static org.apache.http.HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE;
 
 class FixedFailureCountByteArrayObjectHttpHandler implements EntityPopulatingHttpRequestHandler {
 
@@ -64,12 +65,29 @@ class FixedFailureCountByteArrayObjectHttpHandler implements EntityPopulatingHtt
         final long responseLength;
         final Header rangeHeader = request.getFirstHeader(RANGE);
         if (rangeHeader != null) {
-            final Long[] reqRange = MantaUtils.parseSingleRange(rangeHeader.getValue());
+
+            final Long[] reqRange;
+            try {
+                reqRange = MantaUtils.parseSingleRange(rangeHeader.getValue());
+            } catch (final IllegalArgumentException e) {
+                response.setStatusCode(SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                return;
+            }
+
+            if (reqRange[0] < 0 || objectContent.length <= reqRange[1] || reqRange[1] < reqRange[0]) {
+                response.setStatusCode(SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                return;
+            }
+
+            // we need to add one since HTTP ranges are inclusive but ByteArrayInputStream's length is not
+            final int startInclusive = toIntExact(reqRange[0]);
+            final int endInclusive = toIntExact(reqRange[1]);
+            responseLength = 1 + endInclusive - startInclusive;
 
             responseBody = new ByteArrayInputStream(
                     this.objectContent,
-                    toIntExact(reqRange[0]),
-                    toIntExact(reqRange[1]));
+                    startInclusive,
+                    toIntExact(responseLength));
 
             final String contentRange = String.format(
                     "bytes %d-%d/%d",
@@ -78,9 +96,7 @@ class FixedFailureCountByteArrayObjectHttpHandler implements EntityPopulatingHtt
                     this.objectContent.length);
 
             response.setHeader(CONTENT_RANGE, contentRange);
-            response.setHeader(CONTENT_RANGE, contentRange);
             response.setStatusCode(SC_PARTIAL_CONTENT);
-            responseLength = 1 + toIntExact(reqRange[1]) - toIntExact(reqRange[0]);
         } else {
             responseBody = new ByteArrayInputStream(this.objectContent);
             responseLength = this.objectContent.length;
