@@ -7,10 +7,10 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.domain.ObjectType;
@@ -24,6 +24,7 @@ import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -58,6 +59,7 @@ import java.util.function.Function;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class StandardHttpHelper implements HttpHelper {
+
     /**
      * Logger instance.
      */
@@ -66,7 +68,16 @@ public class StandardHttpHelper implements HttpHelper {
     /**
      * Configuration to check for upload validation.
      */
-    private final ConfigContext config;
+    private final boolean verifyUploads;
+
+    /**
+     * Whether or not automatic download continuation is enabled.
+     *
+     * @see ApacheHttpGetResumer
+     * @see RetryConfigAware
+     * @see HttpContextRetryCancellation
+     */
+    private final boolean downloadContinuation;
 
     /**
      * Current connection context used for maintaining state between requests.
@@ -93,17 +104,22 @@ public class StandardHttpHelper implements HttpHelper {
     }
 
     /**
-     * Create a new instance of the HttpHelper which expects a static configuration since the request factory
-     * does not have access to an {@link AuthAwareConfigContext}.
+     * Create a new instance of the HttpHelper which expects a static configuration since the request factory does not
+     * have access to an {@link AuthAwareConfigContext}.
      *
      * @param connectionContext connection object
      * @param config configuration context object
      */
     StandardHttpHelper(final MantaConnectionContext connectionContext,
                        final ConfigContext config) {
-        this.config = config;
-        this.connectionContext = connectionContext;
-        this.requestFactory = new MantaHttpRequestFactory(config.getMantaURL());
+        this(connectionContext,
+                new MantaHttpRequestFactory(config.getMantaURL()),
+                ObjectUtils.firstNonNull(
+                        config.verifyUploads(),
+                        DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
+                ObjectUtils.firstNonNull(
+                        config.isDownloadContinuationEnabled(),
+                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
     }
 
     /**
@@ -113,12 +129,44 @@ public class StandardHttpHelper implements HttpHelper {
      * @param requestFactory instance used for building requests to Manta
      * @param config configuration context object
      */
+    @Deprecated
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaHttpRequestFactory requestFactory,
                               final ConfigContext config) {
-        this.config = Validate.notNull(config, "ConfigContext must not be null");
+        this(connectionContext,
+                requestFactory,
+                ObjectUtils.firstNonNull(
+                        config.verifyUploads(),
+                        DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
+                ObjectUtils.firstNonNull(
+                        config.isDownloadContinuationEnabled(),
+                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
+    }
+
+    /**
+     * Creates a new instance of the helper class which can use a potentially-dynamic {@link MantaHttpRequestFactory}
+     * and knows whether or not it supports verifying uploads by calculating checksums and download resuming by retrying
+     * requests with updated Range headers.
+     *
+     * @param connectionContext connection object
+     * @param requestFactory instance used for building requests to Manta
+     * @param verifyUploads whether or not to validate response checksums
+     * @param downloadContinuation whether or not to return an auto-resuming {@link java.io.InputStream}
+     */
+    public StandardHttpHelper(final MantaConnectionContext connectionContext,
+                              final MantaHttpRequestFactory requestFactory,
+                              final boolean verifyUploads,
+                              final boolean downloadContinuation) {
         this.connectionContext = Validate.notNull(connectionContext, "MantaConnectionContext must not be null");
         this.requestFactory = Validate.notNull(requestFactory, "MantaHttpRequestFactory must not be null");
+        this.verifyUploads = verifyUploads;
+
+        this.downloadContinuation = downloadContinuation && verifyDownloadContinuationConditions(connectionContext);
+
+        if (downloadContinuation && !this.downloadContinuation) {
+            LOGGER.warn("Download continuation requested but provided connection context is invalid. Retries must "
+                    + "be cancellable or disabled");
+        }
     }
 
     @Override
@@ -134,10 +182,9 @@ public class StandardHttpHelper implements HttpHelper {
     /**
      * @return true if we are validating MD5 checksums against the Manta Computed-MD5 header
      */
+    @Deprecated
     protected boolean validateUploadsEnabled() {
-        return ObjectUtils.firstNonNull(
-                config.verifyUploads(),
-                DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS);
+        return this.verifyUploads;
     }
 
     @Override
@@ -198,7 +245,7 @@ public class StandardHttpHelper implements HttpHelper {
             post.setEntity(entity);
         }
 
-        return executeAndCloseRequest(post, (Integer)null,
+        return executeAndCloseRequest(post, (Integer) null,
                 "POST   {} response [{}] {} ");
     }
 
@@ -230,7 +277,7 @@ public class StandardHttpHelper implements HttpHelper {
         final DigestedEntity md5DigestedEntity;
 
         if (entity != null) {
-            if (validateUploadsEnabled()) {
+            if (this.verifyUploads) {
                 md5DigestedEntity = new DigestedEntity(entity, new FastMD5Digest());
                 put.setEntity(md5DigestedEntity);
             } else {
@@ -259,7 +306,7 @@ public class StandardHttpHelper implements HttpHelper {
                         put.getURI().getPath());
             }
 
-            if (validateUploadsEnabled()) {
+            if (this.verifyUploads) {
                 validateChecksum(md5DigestedEntity, obj.getMd5Bytes(), put, response);
             }
         }
@@ -318,7 +365,39 @@ public class StandardHttpHelper implements HttpHelper {
             MantaHttpRequestFactory.addHeaders(request, requestHeaders.asApacheHttpHeaders());
         }
 
-        final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
+        final int expectedHttpStatus;
+
+        if (requestHeaders != null && requestHeaders.containsKey(HttpHeaders.RANGE)) {
+            expectedHttpStatus = HttpStatus.SC_PARTIAL_CONTENT;
+        } else {
+            expectedHttpStatus = HttpStatus.SC_OK;
+        }
+
+        final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction;
+        if (this.downloadContinuation && HttpGet.METHOD_NAME.equalsIgnoreCase(request.getMethod())) {
+            responseAction = buildContinuationResponseAction(request);
+        } else {
+            responseAction = buildResponseAction(request);
+        }
+
+        return executeRequest(
+                request,
+                expectedHttpStatus,
+                responseAction,
+                false,
+                "GET    {} response [{}] {} ");
+    }
+
+    /**
+     * Prepare the appropriate response action for converting a response into a {@link MantaObjectInputStream}. May
+     * delegate to {@link #buildContinuationResponseAction(HttpUriRequest)} if download continuation is enabled.
+     *
+     * @param request the initial request
+     * @return a response action
+     */
+    private static Function<CloseableHttpResponse, MantaObjectInputStream> buildResponseAction(
+            final HttpUriRequest request) {
+        return response -> {
             HttpEntity entity = response.getEntity();
 
             if (entity == null) {
@@ -336,14 +415,15 @@ public class StandardHttpHelper implements HttpHelper {
             // encoded path, which it then decodes when a caller does
             // getPath.  However, here the HttpUriRequest has already
             // decoded.
-            final MantaObjectResponse metadata = new MantaObjectResponse(MantaUtils.formatPath(path), responseHeaders);
+            final MantaObjectResponse metadata = new MantaObjectResponse(MantaUtils.formatPath(path),
+                    responseHeaders);
 
             if (metadata.isDirectory()) {
                 final String msg = "Directories do not have data, so data streams "
                         + "from directories are not possible.";
                 final MantaUnexpectedObjectTypeException exception =
                         new MantaUnexpectedObjectTypeException(msg,
-                            ObjectType.FILE, ObjectType.DIRECTORY);
+                                ObjectType.FILE, ObjectType.DIRECTORY);
                 exception.setContextValue("path", path);
 
                 if (metadata.getHttpHeaders() != null) {
@@ -358,14 +438,15 @@ public class StandardHttpHelper implements HttpHelper {
             try {
                 if (!entity.getContent().getClass().equals(EofSensorInputStream.class)) {
                     String msg = String.format("We are expecting an instance of [%s] as "
-                            + "a stream, but instead received: [%s]", EofSensorInputStream.class,
+                                    + "a stream, but instead received: [%s]", EofSensorInputStream.class,
                             entity.getContent().getClass());
                     throw new UnsupportedOperationException(msg);
                 }
 
-                backingStream = (EofSensorInputStream)entity.getContent();
+                backingStream = (EofSensorInputStream) entity.getContent();
             } catch (IOException ioe) {
-                String msg = String.format("Error getting stream from entity content for path: %s",
+                String msg = String.format(
+                        "Error getting stream from entity content for path: %s",
                         path);
                 MantaObjectException e = new MantaObjectException(msg, ioe);
                 HttpHelper.annotateContextedException(e, request, response);
@@ -375,25 +456,17 @@ public class StandardHttpHelper implements HttpHelper {
             return new MantaObjectInputStream(metadata, response,
                     backingStream);
         };
+    }
 
-        final int expectedHttpStatus;
-
-        if (requestHeaders != null && requestHeaders.containsKey(HttpHeaders.RANGE)) {
-            expectedHttpStatus = HttpStatus.SC_PARTIAL_CONTENT;
-        } else {
-            expectedHttpStatus = HttpStatus.SC_OK;
-        }
-
-        return executeRequest(
-                request,
-                expectedHttpStatus,
-                responseAction,
-                false, "GET    {} response [{}] {} ");
+    @SuppressWarnings("checkstyle:JavadocMethod")
+    private static Function<CloseableHttpResponse, MantaObjectInputStream> buildContinuationResponseAction(
+            final HttpUriRequest request) {
+        throw new NotImplementedException("not yet");
     }
 
     /**
-     * Checks to make sure that the uploaded entity's MD5 matches the MD5 as
-     * calculated on the server. This check is skipped if the entity is null.
+     * Checks to make sure that the uploaded entity's MD5 matches the MD5 as calculated on the server. This check is
+     * skipped if the entity is null.
      *
      * @param entity null or the entity object
      * @param serverMd5 service side computed MD5 value
@@ -465,7 +538,7 @@ public class StandardHttpHelper implements HttpHelper {
                                                         final String logMessage,
                                                         final Object... logParameters)
             throws IOException {
-        return executeAndCloseRequest(request, (Integer)null, logMessage, logParameters);
+        return executeAndCloseRequest(request, (Integer) null, logMessage, logParameters);
     }
 
     @Override
@@ -535,11 +608,11 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public <R> R executeRequest(final HttpUriRequest request,
-                                   final Integer expectedStatusCode,
-                                   final Function<CloseableHttpResponse, R> responseAction,
-                                   final boolean closeResponse,
-                                   final String logMessage,
-                                   final Object... logParameters)
+                                final Integer expectedStatusCode,
+                                final Function<CloseableHttpResponse, R> responseAction,
+                                final boolean closeResponse,
+                                final String logMessage,
+                                final Object... logParameters)
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
@@ -572,9 +645,8 @@ public class StandardHttpHelper implements HttpHelper {
     }
 
     /**
-     * Utility method that determines if a request failed by comparing the
-     * status code to an expectation if present (non-null) or by finding out
-     * if the HTTP status code is less than 400.
+     * Utility method that determines if a request failed by comparing the status code to an expectation if present
+     * (non-null) or by finding out if the HTTP status code is less than 400.
      *
      * @param expectedStatusCode null for default behavior or the specific status code
      * @param statusLine status line object containing status code
@@ -589,6 +661,23 @@ public class StandardHttpHelper implements HttpHelper {
         } else {
             return code != expectedStatusCode;
         }
+    }
+
+    /**
+     * Check if we can safely provide download continuation.
+     *
+     * @param connCtx the connection context which should also be a {@link RetryConfigAware}
+     * @return if it is safe to enable download continuation
+     */
+    private static boolean verifyDownloadContinuationConditions(final MantaConnectionContext connCtx) {
+        if (!(connCtx instanceof MantaApacheHttpClientContext)) {
+            return false;
+        }
+
+        final MantaApacheHttpClientContext apacheConnCtx = (MantaApacheHttpClientContext) connCtx;
+
+        // download continuation can only be enabled if retries are either cancellable or disabled
+        return apacheConnCtx.isRetryCancellable() || !apacheConnCtx.isRetryEnabled();
     }
 
     @Override

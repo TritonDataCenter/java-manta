@@ -52,6 +52,16 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     }
 
     @Override
+    public boolean isRetryEnabled() {
+        return this.connectionFactory.isRetryEnabled();
+    }
+
+    @Override
+    public boolean isRetryCancellable() {
+        return this.connectionFactory.isRetryCancellable();
+    }
+
+    @Override
     public void close() throws IOException {
         MDC.remove(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
 

@@ -16,13 +16,13 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
-import javax.net.ssl.SSLException;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
@@ -33,7 +33,9 @@ import static org.apache.commons.lang3.Validate.notNull;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler {
+public class MantaHttpRequestRetryHandler
+        extends DefaultHttpRequestRetryHandler
+        implements HttpContextRetryCancellation {
 
     /**
      * Logger instance.
@@ -51,8 +53,12 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
 
     /**
      * Key for HttpContext setting indicating the request should NOT be retried under any circumstances.
+     * @deprecated 3.2.2
+     * @see RetryConfigAware#CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE
      */
-    public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE = "manta.retry.disable";
+    @Deprecated
+    public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE =
+            RetryConfigAware.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
 
     /**
      * The name used to publish the retry metrics.
@@ -105,9 +111,7 @@ public class MantaHttpRequestRetryHandler extends DefaultHttpRequestRetryHandler
                                 final HttpContext context) {
         notNull(context, "HTTP context cannot be null");
 
-        final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
-
-        if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
+        if (neverRetry(context)) {
             return false;
         }
 
