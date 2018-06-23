@@ -21,7 +21,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-import static com.joyent.manta.util.ResumableInputStream.EOF;
+import static com.joyent.manta.util.ContinuableInputStream.EOF;
+import static java.lang.Math.toIntExact;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang3.Validate.validState;
 import static org.mockito.Mockito.mock;
@@ -37,9 +38,9 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 @Test
-public class ResumableInputStreamTest {
+public class ContinuableInputStreamTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ResumableInputStreamTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContinuableInputStreamTest.class);
 
     private static final int MAX_SIZE = 16;
 
@@ -152,10 +153,10 @@ public class ResumableInputStreamTest {
     }
 
     public void testValidatesInputs() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> new ResumableInputStream(0));
-        assertThrows(IllegalArgumentException.class, () -> new ResumableInputStream(-1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedResumableInputStream(0));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedResumableInputStream(-1));
 
-        final ResumableInputStream mis = new ResumableInputStream(1);
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream(1);
         assertThrows(NullPointerException.class, () -> mis.setSource(null));
 
         assertThrows(NullPointerException.class, () -> mis.read());
@@ -173,7 +174,7 @@ public class ResumableInputStreamTest {
         // read more bytes than space available (due to offset)
         assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[2], 1, 2));
 
-        final ResumableInputStream closed = new ResumableInputStream();
+        final BufferedResumableInputStream closed = new BufferedResumableInputStream();
         closed.close();
 
         assertThrows(IllegalStateException.class, () -> closed.setSource(new NullInputStream(0)));
@@ -184,13 +185,13 @@ public class ResumableInputStreamTest {
     }
 
     public void testMiscInputStreamMethods() throws Exception {
-        final ResumableInputStream mis = new ResumableInputStream();
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream();
 
         assertFalse(mis.markSupported());
     }
 
     public void testCloseClosesWrappedInputStream() throws Exception {
-        final ResumableInputStream mis = new ResumableInputStream(1);
+        final ContinuableInputStream mis = new BufferedResumableInputStream(1);
         final InputStream source = mock(InputStream.class);
         mis.setSource(source);
         mis.close();
@@ -199,14 +200,14 @@ public class ResumableInputStreamTest {
     }
 
     public void testClosingWithoutSettingDoesNotThrow() throws Exception {
-        final ResumableInputStream mis = new ResumableInputStream();
+        final ContinuableInputStream mis = new BufferedResumableInputStream();
 
         mis.close();
         assertTrue(true);
     }
 
     public void testDoubleCloseDoesNotThrow() throws Exception {
-        final ResumableInputStream mis = new ResumableInputStream();
+        final ContinuableInputStream mis = new BufferedResumableInputStream();
         final InputStream inner = mock(InputStream.class);
         mis.setSource(inner);
 
@@ -216,7 +217,7 @@ public class ResumableInputStreamTest {
     }
 
     public void testStreamsAreClosedWhereExpected() throws Exception {
-        final ResumableInputStream mis = new ResumableInputStream();
+        final ContinuableInputStream mis = new BufferedResumableInputStream();
         final InputStream firstStream = mock(InputStream.class);
         final InputStream secondStream = mock(InputStream.class);
 
@@ -238,7 +239,7 @@ public class ResumableInputStreamTest {
 
     public void testReadFailureBeforeCopyingBytesDoesNotAffectCount() throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(2);
-        final ResumableInputStream mis = new ResumableInputStream();
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream();
         final byte[] readBuffer = new byte[bytes.length];
 
         // read will fail before any bytes are read
@@ -246,7 +247,7 @@ public class ResumableInputStreamTest {
         assertThrows(IOException.class, () -> mis.read(readBuffer));
 
         // no bytes were read
-        assertEquals(mis.getCount(), 0);
+        assertEquals(mis.getBytesRead(), 0);
     }
 
     public void testReadFailureAfterCopyingBytesDoesNotAffectCount() throws Exception {
@@ -258,7 +259,7 @@ public class ResumableInputStreamTest {
         } while (bytes[0] == 0);
         assertNotEquals(bytes[0], 0); // kinda redundant
 
-        final ResumableInputStream mis = new ResumableInputStream();
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream();
         final byte[] readBuffer = new byte[bytes.length];
 
         // read will actually copy bytes over but fail before telling us how many
@@ -266,7 +267,7 @@ public class ResumableInputStreamTest {
         assertThrows(IOException.class, () -> mis.read(readBuffer));
 
         // no bytes were (confirmed to be) read
-        assertEquals(mis.getCount(), 0);
+        assertEquals(mis.getBytesRead(), 0);
 
         // TODO: is this assertion actually useful?
         // the first byte was successfully read, but we couldn't tell since the return value from read(byte[]) was lost
@@ -277,7 +278,7 @@ public class ResumableInputStreamTest {
         final byte[] bytes = new byte[]{1};
         final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
 
-        final ResumableInputStream mis = new ResumableInputStream(1);
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream(1);
         mis.setSource(src);
 
         final int firstByte = mis.read();
@@ -300,14 +301,14 @@ public class ResumableInputStreamTest {
                 throw e;
             }
         }
-        LOG.info("ResumableInputStream testReadSmallSliceOfSingleLargeInput completed all combinations without error: {}", paramLists.length);
+        LOG.info("ContinuableInputStream testReadSmallSliceOfSingleLargeInput completed all combinations without error: {}", paramLists.length);
     }
 
     private void testReadSmallSliceOfSingleLargeInput(final int inputSize, final int bufferSize) throws Exception {
         final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
         final ByteArrayInputStream src = new ByteArrayInputStream(bytes);
 
-        final ResumableInputStream mis = new ResumableInputStream(bufferSize);
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream(bufferSize);
         mis.setSource(src);
 
         final int sliceSize = Math.min(1, Math.floorDiv(bytes.length, 2));
@@ -333,7 +334,7 @@ public class ResumableInputStreamTest {
                 throw e;
             }
         }
-        LOG.info("ResumableInputStream testReadFirstStreamPartially completed all combinations without error: {}", paramLists.length);
+        LOG.info("ContinuableInputStream testReadFirstStreamPartially completed all combinations without error: {}", paramLists.length);
     }
 
     private void testReadFirstStreamPartially(
@@ -344,7 +345,7 @@ public class ResumableInputStreamTest {
         final byte[] bytes = STRING_GENERATOR.generate(inputSize).getBytes(UTF_8);
         final ByteArrayInputStream source = new ByteArrayInputStream(bytes);
 
-        final ResumableInputStream mis = new ResumableInputStream(bufferSize);
+        final ContinuableInputStream mis = new BufferedResumableInputStream(bufferSize);
         mis.setSource(source);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -358,14 +359,14 @@ public class ResumableInputStreamTest {
     }
 
     /**
-     * This test is left as a demonstration of how someone might work directly with the ResumableInputStream,
+     * This test is left as a demonstration of how someone might work directly with the ContinuableInputStream,
      * later tests which dynamically slice the input into many segments or use IOUtils helpers are better real-world
      * test cases. Truthfully, I was still working up to the complexity of the next test case but it's still a nice
      * demonstration of "intermediate" complexity.
      */
     public void testCanPerformDirectReadsOnInputWithExpectedSize() throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(16);
-        final ResumableInputStream mis = new ResumableInputStream(4);
+        final BufferedResumableInputStream mis = new BufferedResumableInputStream(4);
         final int safeBytes = 8;
 
         final byte[] readBuffer = new byte[bytes.length];
@@ -374,7 +375,7 @@ public class ResumableInputStreamTest {
 
         final int initialBytesRead = mis.read(readBuffer, 0, safeBytes);
         assertEquals(initialBytesRead, safeBytes);
-        assertEquals(mis.getCount(), safeBytes);
+        assertEquals(mis.getBytesRead(), safeBytes);
 
         // the next read should fail
         assertThrows(IOException.class, () -> mis.read());
@@ -386,7 +387,7 @@ public class ResumableInputStreamTest {
         assertEquals(finalBytesRead, bytes.length - safeBytes);
 
         // we should have read all the bytes by now
-        assertEquals(mis.getCount(), bytes.length);
+        assertEquals(mis.getBytesRead(), bytes.length);
 
         // we should have all the right bytes now
         assertArrayEquals(bytes, readBuffer);
@@ -418,7 +419,7 @@ public class ResumableInputStreamTest {
             testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, false);
             testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(params, null);
         }
-        LOG.info("ResumableInputStream testCanRecoverFromFailureWithEveryCombinationOfInputSizeInternalBufferSizeAndCopyBufferSizeWithIncreasingCountAndOffsetFailures completed all combinations without error: {}", paramLists.length * 3);
+        LOG.info("ContinuableInputStream testCanRecoverFromFailureWithEveryCombinationOfInputSizeInternalBufferSizeAndCopyBufferSizeWithIncreasingCountAndOffsetFailures completed all combinations without error: {}", paramLists.length * 3);
     }
 
     private void testCanRecoverFromFailureOrderRepeatedlyWithSpecifiedFailureOrder(final Object[] params,
@@ -452,7 +453,7 @@ public class ResumableInputStreamTest {
     ) throws Exception {
         final byte[] bytes = RandomUtils.nextBytes(inputSize);
 
-        final ResumableInputStream mis = new ResumableInputStream(bufferSize);
+        final ContinuableInputStream mis = new BufferedResumableInputStream(bufferSize);
 
         final Deque<Integer> failureOffsets = new LinkedList<>(Arrays.asList(readFailureOffsets));
 
@@ -465,7 +466,7 @@ public class ResumableInputStreamTest {
             validState(nextFailure < bytes.length, "failure offset must be less than input length");
 
             // "request" the remaining bytes, offset by how many bytes we've already successfully read
-            final InputStream remainingInput = new ByteArrayInputStream(bytes, mis.getCount(), bytes.length - mis.getCount());
+            final InputStream remainingInput = new ByteArrayInputStream(bytes, toIntExact(mis.getBytesRead()), toIntExact(bytes.length - mis.getBytesRead()));
 
             // if we were passed null, randomly select a read failure ordering
             final boolean postReadFailure;
@@ -486,7 +487,7 @@ public class ResumableInputStreamTest {
 
         // copy any remaining bytes
         if (copied.size() < bytes.length) {
-            mis.setSource(new ByteArrayInputStream(bytes, mis.getCount(), bytes.length));
+            mis.setSource(new ByteArrayInputStream(bytes, toIntExact(mis.getBytesRead()), toIntExact(bytes.length)));
             IOUtils.copy(mis, copied, copyBufferSize);
         }
 

@@ -29,7 +29,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertThrows;
 
 @Test
-public class FixedFailureCountByteArrayObjectHttpHandlerTest {
+public class FixedCountEntityFailingByteArrayObjectHttpHandlerTest {
 
     public void complainsAboutInvalidRequestRanges() throws Exception {
         final int size = 5;
@@ -52,7 +52,7 @@ public class FixedFailureCountByteArrayObjectHttpHandlerTest {
 
             final HttpResponse res = new BasicHttpResponse(HTTP_1_1, SC_NOT_IMPLEMENTED, "Sorry");
             final HttpContext ctx = new BasicHttpContext();
-            final FixedFailureCountByteArrayObjectHttpHandler handler = new FixedFailureCountByteArrayObjectHttpHandler(object, 0);
+            final FixedCountEntityFailingByteArrayObjectHttpHandler handler = new FixedCountEntityFailingByteArrayObjectHttpHandler(object, 0, false);
             handler.handle(req, res, ctx);
             assertThrows(NullPointerException.class, () -> handler.populateEntity(res));
 
@@ -91,7 +91,7 @@ public class FixedFailureCountByteArrayObjectHttpHandlerTest {
 
         final HttpResponse res = new BasicHttpResponse(HTTP_1_1, SC_NOT_IMPLEMENTED, "Sorry");
         final HttpContext ctx = new BasicHttpContext();
-        final FixedFailureCountByteArrayObjectHttpHandler handler = new FixedFailureCountByteArrayObjectHttpHandler(object, 0);
+        final FixedCountEntityFailingByteArrayObjectHttpHandler handler = new FixedCountEntityFailingByteArrayObjectHttpHandler(object, 0, false);
 
         handler.handle(req, res, ctx);
         handler.populateEntity(res);

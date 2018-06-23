@@ -114,6 +114,11 @@ public class DefaultsConfigContext implements ConfigContext {
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
 
+    /**
+     * Download continuation is disabled by default.
+     */
+    public static final boolean DEFAULT_DOWNLOAD_CONTINUATION = false;
+
     static {
         // Don't even bother setting a default key path if it doesn't exist
         String defaultKeyPath = String.format("%s/.ssh/id_rsa",

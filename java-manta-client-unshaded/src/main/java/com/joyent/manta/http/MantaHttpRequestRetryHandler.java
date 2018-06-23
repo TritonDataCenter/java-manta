@@ -53,12 +53,12 @@ public class MantaHttpRequestRetryHandler
 
     /**
      * Key for HttpContext setting indicating the request should NOT be retried under any circumstances.
-     * @deprecated 3.2.2
-     * @see RetryConfigAware#CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE
+     * @deprecated 3.2.3
+     * @see HttpContextRetryCancellation#CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE
      */
     @Deprecated
     public static final String CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE =
-            RetryConfigAware.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
+            HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
 
     /**
      * The name used to publish the retry metrics.

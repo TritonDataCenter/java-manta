@@ -3,7 +3,6 @@ package com.joyent.manta.http;
 import com.joyent.manta.util.FailingInputStream;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
@@ -28,19 +27,24 @@ import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 import static org.apache.http.HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE;
 
-class FixedFailureCountByteArrayObjectHttpHandler implements EntityPopulatingHttpRequestHandler {
+class FixedCountEntityFailingByteArrayObjectHttpHandler implements EntityPopulatingHttpRequestHandler {
 
     protected final byte[] objectContent;
 
     private final AtomicInteger requestsToFail;
 
+    private final boolean postReadFailure;
+
     private final ConcurrentHashMap<HttpResponse, HttpEntity> responseEntities;
 
     private Object lock;
 
-    FixedFailureCountByteArrayObjectHttpHandler(final byte[] objectContent, final int requestsToFail) {
+    FixedCountEntityFailingByteArrayObjectHttpHandler(final byte[] objectContent,
+                                                      final int requestsToFail,
+                                                      final boolean postReadFailure) {
         this.objectContent = objectContent;
         this.requestsToFail = new AtomicInteger(requestsToFail);
+        this.postReadFailure = postReadFailure;
         this.responseEntities = new ConcurrentHashMap<>();
         this.lock = new Object();
     }
@@ -110,7 +114,7 @@ class FixedFailureCountByteArrayObjectHttpHandler implements EntityPopulatingHtt
             responseBody = new FailingInputStream(
                     responseBody,
                     Math.floorDiv(this.objectContent.length, 2),
-                    RandomUtils.nextBoolean());
+                    postReadFailure);
         }
 
         responseEntities.put(response, new InputStreamEntity(responseBody, responseLength));

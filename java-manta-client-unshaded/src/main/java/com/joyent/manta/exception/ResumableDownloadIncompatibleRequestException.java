@@ -7,28 +7,44 @@
  */
 package com.joyent.manta.exception;
 
+/**
+ * Exception indicating that the provided request cannot be reliable auto-resumed. This exception indicates a programmer
+ * error since the request should've been checked for compatibility before attempting to be supplied to
+ * {@link com.joyent.manta.http.HttpGetContinuator}.
+ *
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @since 3.2.3
+ */
 public class ResumableDownloadIncompatibleRequestException extends ResumableDownloadException {
 
     private static final long serialVersionUID = 7415723473743850334L;
 
     /**
-     * {@inheritDoc}
+     * Constructs an instance with the specified detail message and cause.
+     *
+     * @param message The detail message
      */
-    public ResumableDownloadIncompatibleRequestException(final String msg) {
-        super(msg);
+    public ResumableDownloadIncompatibleRequestException(final String message) {
+        super(message);
     }
 
+
     /**
-     * {@inheritDoc}
+     * Constructs an instance with the specified detail message and cause.
+     *
+     * @param cause The cause
      */
     public ResumableDownloadIncompatibleRequestException(final Throwable cause) {
         super(cause);
     }
 
     /**
-     * {@inheritDoc}
+     * Constructs an instance with the specified detail message and cause.
+     *
+     * @param message The detail message
+     * @param cause The cause
      */
-    public ResumableDownloadIncompatibleRequestException(final String msg, final Throwable cause) {
-        super(msg, cause);
+    public ResumableDownloadIncompatibleRequestException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

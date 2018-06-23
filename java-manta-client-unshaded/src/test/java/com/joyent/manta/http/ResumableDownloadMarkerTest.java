@@ -27,19 +27,19 @@ public class ResumableDownloadMarkerTest {
         final ResumableDownloadMarker marker = new ResumableDownloadMarker("a", fullRange);
 
         // pretend there was an error receiving headers and we had to restart the initial request completely
-        marker.validateRange(fullRange);
+        marker.validateResponseRange(fullRange);
 
         // pretend we got the first byte
-        marker.updateBytesRead(1);
+        marker.updateRangeStart(1);
 
         final Response validPartialRange = new Response(1, 3, 4L);
-        marker.validateRange(validPartialRange);
+        marker.validateResponseRange(validPartialRange);
 
         final Response invalidEndRange = new Response(0, 2, 4L);
-        assertThrows(HttpException.class, () -> marker.validateRange(invalidEndRange));
+        assertThrows(HttpException.class, () -> marker.validateResponseRange(invalidEndRange));
 
         // getting bytes we've already gotten is also bad
-        assertThrows(HttpException.class, () -> marker.validateRange(fullRange));
+        assertThrows(HttpException.class, () -> marker.validateResponseRange(fullRange));
     }
 
     public void usefulToString() {

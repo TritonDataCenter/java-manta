@@ -16,7 +16,7 @@ public class HttpRangeTest {
     public void requestCtorRejectsInvalidInputs() {
         new Request(0, 1);
 
-        assertThrows(IllegalStateException.class, () -> new Request(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new Request(1, 0));
 
         // requesting a single byte is not forbidden
         new Request(0, 0);
@@ -26,11 +26,11 @@ public class HttpRangeTest {
         new Response(0, 1, 2L);
 
         // byte ranges are inclusive, these should fail
-        assertThrows(IllegalStateException.class, () -> new Response(0, 1, 0L));
-        assertThrows(IllegalStateException.class, () -> new Response(0, 1, 1L));
-        assertThrows(IllegalStateException.class, () -> new Response(1, 0, 2L));
+        assertThrows(IllegalArgumentException.class, () -> new Response(0, 1, 0L));
+        assertThrows(IllegalArgumentException.class, () -> new Response(0, 1, 1L));
+        assertThrows(IllegalArgumentException.class, () -> new Response(1, 0, 2L));
 
-        // a single byte is not forbidden
+        // a single byte is a valid range as well
         new Response(0, 0, 1L);
     }
 

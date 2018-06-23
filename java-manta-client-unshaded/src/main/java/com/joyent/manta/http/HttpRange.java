@@ -70,11 +70,6 @@ abstract class HttpRange {
         }
 
         @Override
-        HttpRange.Request fromContentLength(final long contentLength) {
-            return new HttpRange.Request(0, contentLength - 1);
-        }
-
-        @Override
         boolean matches(final HttpRange other) {
             notNull(other, "Compared HttpRange must not be null");
 
@@ -105,11 +100,6 @@ abstract class HttpRange {
                  final long endInclusive,
                  final long size) {
             super(startInclusive, endInclusive, size);
-        }
-
-        @Override
-        HttpRange.Response fromContentLength(final long contentLength) {
-            return new HttpRange.Response(0, contentLength - 1, contentLength);
         }
 
         @Override
@@ -181,7 +171,18 @@ abstract class HttpRange {
      * @param contentLength the object's Content-Length
      * @return a range representing the object content
      */
-    abstract HttpRange fromContentLength(long contentLength);
+    @SuppressWarnings("unchecked")
+    static <T extends HttpRange> T fromContentLength(final Class<T> klass, final long contentLength) {
+        if (klass.equals(Request.class)) {
+            return (T) new Request(0, contentLength - 1);
+        }
+
+        if (klass.equals(Response.class)) {
+            return (T) new Response(0, contentLength - 1, contentLength);
+        }
+
+        throw new IllegalArgumentException(String.format("Cannot recognize HttpRange class: [%s]", klass));
+    }
 
     /**
      * Checks if an HttpRange is "equivalent" to the compared HttpRange. Subclasses should compare as much as possible

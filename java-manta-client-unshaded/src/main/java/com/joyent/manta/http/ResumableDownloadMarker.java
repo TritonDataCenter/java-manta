@@ -20,7 +20,11 @@ import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
 
 /**
+ * Mostly-value class for recording an initial request/response cycle and retaining the necessary information to
+ * create continuation requests and validate their responses.
  *
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @since 3.2.3
  */
 final class ResumableDownloadMarker {
 
@@ -59,11 +63,13 @@ final class ResumableDownloadMarker {
      * Build a marker from the initial ETag and response range. The Response range may be constructed from a singular
      * Content-Length or from a Content-Range header.
      *
-     * @param etag
-     * @param initialContentRange
+     * @param etag the etag of the object being downloaded
+     * @param initialContentRange the target range being downloaded, derived from Content-Length for entire objects
+     * @see HttpRange#parseContentRange(String)
+     * @see HttpRange#fromContentLength(long)
      */
-    private ResumableDownloadMarker(final String etag,
-                                    final HttpRange.Response initialContentRange) {
+    ResumableDownloadMarker(final String etag,
+                            final HttpRange.Response initialContentRange) {
         validState(StringUtils.isNotBlank(etag), "ETag must not be null or blank");
         notNull(initialContentRange, "HttpRange must not be null");
 

@@ -17,7 +17,7 @@ import java.io.InputStream;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.2
  */
-public interface HttpGetResumer {
+public interface HttpGetContinuator {
 
     /**
      * Get an {@link InputStream} which picks up starting {@code bytesRead} bytes from the beginning of the logical
@@ -29,5 +29,5 @@ public interface HttpGetResumer {
      * @return another stream which continues to deliver the bytes from the initial request
      * @throws IOException if the exception is not recoverable or there is an error preparing the continuation
      */
-    InputStream continueFrom(IOException ex, long bytesRead) throws IOException;
+    InputStream buildContinuation(IOException ex, long bytesRead) throws IOException;
 }

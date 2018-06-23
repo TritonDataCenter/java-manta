@@ -7,11 +7,17 @@
  */
 package com.joyent.manta.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FailingInputStream extends InputStream {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FailingInputStream.class);
+
     /**
      * End of file magic number.
      */
@@ -42,6 +48,7 @@ public class FailingInputStream extends InputStream {
         this.wrapped = wrapped;
         this.minimumBytes = minimumBytes;
         this.failAfterRead = failAfterRead;
+        LOG.debug("failing stream, bytes {} post? {}", minimumBytes, failAfterRead);
     }
 
     @Override
@@ -53,11 +60,15 @@ public class FailingInputStream extends InputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         preReadFailure(len);
 
-        int bytesRead = wrapped.read(b, off, len);
+        final int bytesRead = wrapped.read(b, off, len);
+
+        if (bytesRead == EOF) {
+            return EOF;
+        }
 
         count.addAndGet(bytesRead);
 
-        // bytes were read, but the user won't know how many
+        // bytes were read into buffer but the user won't know how many
         postReadFailure();
 
         return bytesRead;
@@ -69,9 +80,11 @@ public class FailingInputStream extends InputStream {
 
         // it's a byte, even though the return is int
         int nextByte = this.wrapped.read();
-        if (nextByte != EOF) {
-            this.count.incrementAndGet();
+        if (nextByte == EOF) {
+            return EOF;
         }
+
+        this.count.incrementAndGet();
 
         // byte is lost!
         postReadFailure();
@@ -92,9 +105,15 @@ public class FailingInputStream extends InputStream {
     }
 
     private void failIfEnoughBytesRead(final int next, final boolean isAfterRead) throws IOException {
+        IOException e = null;
         if (count.get() + next >= minimumBytes) {
             final String relative = isAfterRead ? "after reading" : "attempting to read up to";
-            throw new IOException("Read failure " + relative + " byte " + minimumBytes);
+            e = new IOException("Read failure " + relative + " byte " + minimumBytes);
+            LOG.debug("should fail {} because {} + {} >= {}", relative, count.get(), next, minimumBytes);
+        }
+
+        if (e != null) {
+            throw e;
         }
     }
 }

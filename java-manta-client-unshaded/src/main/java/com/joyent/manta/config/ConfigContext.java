@@ -140,6 +140,10 @@ public interface ConfigContext extends MantaMBeanable {
      */
     Integer getSkipDirectoryDepth();
 
+    default Boolean isDownloadContinuationEnabled() {
+        return true;
+    }
+
     /**
      * @return the way metrics should be reported, {@code MetricReporterMode.DISABLED} or {@code null} to disable
      */

@@ -264,7 +264,11 @@ public class MantaClient implements AutoCloseable {
         } else if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
         } else {
-            this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
+            this.httpHelper = new StandardHttpHelper(
+                    connectionContext,
+                    requestFactory,
+                    config.verifyUploads(),
+                    config.isDownloadContinuationEnabled());
         }
 
         if (metricConfig != null) {

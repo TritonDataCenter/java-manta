@@ -16,8 +16,8 @@ import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
+import com.joyent.manta.http.HttpContextRetryCancellation;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.MantaHttpRequestRetryHandler;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -28,13 +28,13 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * Multipart upload manager class that wraps another {@link MantaMultipartManager}
@@ -389,7 +389,7 @@ public class EncryptedMultipartManager
         } else {
             ctx = new BasicHttpContext();
         }
-        ctx.setAttribute(MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
+        ctx.setAttribute(HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
         return ctx;
     }
 

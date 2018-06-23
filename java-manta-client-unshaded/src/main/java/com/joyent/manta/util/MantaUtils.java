@@ -735,6 +735,15 @@ public final class MantaUtils {
         return (int)value;
     }
 
+    /**
+     * Parse a string representation of a request {@code Range} header value into a pair of longs.
+     *
+     * @param range the serialized range
+     * @return a two-element array containing both longs
+     * @see com.joyent.manta.http.HttpRange#parseRequestRange(String)
+     * @deprecated 3.2.3
+     */
+    @Deprecated
     public static Long[] parseSingleRange(final String range) {
         Validate.notNull(range, "Range value must not be null");
         String[] rangeValuesStrings = StringUtils.split(range, "bytes=");

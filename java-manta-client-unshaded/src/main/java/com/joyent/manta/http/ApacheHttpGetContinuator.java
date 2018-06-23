@@ -48,16 +48,16 @@ import static org.apache.http.HttpHeaders.RANGE;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 
 /**
- * Manages state needed to repeatedly "resume" a download (as an {@link java.io.InputStream} by updating the
- * {@code Range} header whenever non-fatal resonse errors occur. Uses {@code If-Match} to make sure the object
- * being downloaded has not been changed between download segments. Additionally validates that the returned
- * {@code ETag} does actually match the {@code If-Match} header and that the returned {@code Content-Range}
- * does actually match the requested {@code Range} header.
+ * Manages state needed to repeatedly "resume" a download (as an {@link java.io.InputStream} by updating the {@code
+ * Range} header whenever non-fatal resonse errors occur. Uses {@code If-Match} to make sure the object being downloaded
+ * has not been changed between download segments. Additionally validates that the returned {@code ETag} does actually
+ * match the {@code If-Match} header and that the returned {@code Content-Range} does actually match the requested
+ * {@code Range} header.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>h
  * @since 3.2.3
  */
-public class ApacheHttpGetResumer implements HttpGetResumer {
+public class ApacheHttpGetContinuator implements HttpGetContinuator {
 
     /**
      * Set of exceptions from which we know we cannot recover by simply retrying.
@@ -126,10 +126,10 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
      * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
      */
-    public ApacheHttpGetResumer(final MantaApacheHttpClientContext connCtx,
-                                final HttpGet request,
-                                final HttpResponse initialResponse,
-                                final int retryCount)
+    public ApacheHttpGetContinuator(final MantaApacheHttpClientContext connCtx,
+                                    final HttpGet request,
+                                    final HttpResponse initialResponse,
+                                    final int retryCount)
             throws ResumableDownloadException {
         this(connCtx, request, initialResponse, retryCount, null);
     }
@@ -148,11 +148,11 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
      * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
      */
-    public ApacheHttpGetResumer(final MantaApacheHttpClientContext connCtx,
-                                final HttpGet request,
-                                final HttpResponse initialResponse,
-                                final int retryCount,
-                                final MetricRegistry metricRegistry)
+    public ApacheHttpGetContinuator(final MantaApacheHttpClientContext connCtx,
+                                    final HttpGet request,
+                                    final HttpResponse initialResponse,
+                                    final int retryCount,
+                                    final MetricRegistry metricRegistry)
             throws ResumableDownloadException {
         this(verifyDownloadContinuationIsSafeAndExtractHttpClient(connCtx),
                 request,
@@ -171,7 +171,7 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
      * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
      */
-    ApacheHttpGetResumer(final HttpGet request, final HttpResponse initialResponse)
+    ApacheHttpGetContinuator(final HttpGet request, final HttpResponse initialResponse)
             throws ResumableDownloadException {
         this((CloseableHttpClient) null, request, initialResponse, INFINITE_CONTINUATIONS, null);
     }
@@ -188,11 +188,11 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
      * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
      */
-    ApacheHttpGetResumer(final CloseableHttpClient client,
-                         final HttpGet request,
-                         final HttpResponse initialResponse,
-                         final int retryCount,
-                         final MetricRegistry metricRegistry)
+    ApacheHttpGetContinuator(final CloseableHttpClient client,
+                             final HttpGet request,
+                             final HttpResponse initialResponse,
+                             final int retryCount,
+                             final MetricRegistry metricRegistry)
             throws ResumableDownloadException {
         // we clone and verify the request before assigning it to our field
         final HttpGet cloned = cloneRequest(request);
@@ -226,7 +226,7 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
      * that the remote object has somehow changed
      */
     @Override
-    public InputStream continueFrom(final IOException ex, final long bytesRead) throws ResumableDownloadException {
+    public InputStream buildContinuation(final IOException ex, final long bytesRead) throws ResumableDownloadException {
         if (!this.isRecoverable(ex)) {
             throw new ResumableDownloadException("IOException is not recoverable", ex);
         }
@@ -334,8 +334,8 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
 
     /**
      * Clone a request so we can freely modify headers when retrieving a continuation {@link InputStream} in {@link
-     * #continueFrom(IOException, long)}. This method is necessary because {@link AbstractExecutionAwareRequest#clone()}
-     * is basically useless.
+     * #buildContinuation(IOException, long)}. This method is necessary because {@link
+     * AbstractExecutionAwareRequest#clone()} is basically useless.
      *
      * @param request the request being cloned
      * @return the cloned request
@@ -470,9 +470,12 @@ public class ApacheHttpGetResumer implements HttpGetResumer {
             final MantaApacheHttpClientContext connCtx) throws ResumableDownloadException {
         notNull(connCtx, "Connection context must not be null");
 
-        if (connCtx.isRetryEnabled() && !connCtx.isRetryCancellable()) {
+
+        final boolean cancellable = connCtx.isRetryCancellable();
+        final boolean enabled = connCtx.isRetryEnabled();
+        if (enabled && !cancellable) {
             throw new ResumableDownloadException("Incompatible connection context, automatic retries must be "
-                                                 + "disabled or cancellable");
+                    + "disabled or cancellable");
         }
 
         final CloseableHttpClient client = connCtx.getHttpClient();
