@@ -27,7 +27,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
-import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -37,8 +36,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import javax.net.ssl.SSLException;
 
+import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractSingleHeaderValue;
 import static com.joyent.manta.http.HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
+import static com.joyent.manta.http.HttpRange.parseContentRange;
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
 import static org.apache.http.HttpHeaders.CONTENT_RANGE;
@@ -369,13 +371,13 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
         Exception rangeEx = null;
 
         try {
-            ifMatch = ApacheHttpHeaderUtils.extractSingleHeaderValue(request, IF_MATCH, false);
+            ifMatch = extractSingleHeaderValue(request, IF_MATCH, false);
         } catch (final HttpException e) {
             ifMatchEx = e;
         }
 
         try {
-            final String rawRequestRange = ApacheHttpHeaderUtils.extractSingleHeaderValue(request, RANGE, false);
+            final String rawRequestRange = extractSingleHeaderValue(request, RANGE, false);
             if (rawRequestRange != null) {
                 range = HttpRange.parseRequestRange(rawRequestRange);
             }
@@ -413,14 +415,14 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
 
         final String etag;
         try {
-            etag = ApacheHttpHeaderUtils.extractSingleHeaderValue(response, ETAG, true);
+            etag = extractSingleHeaderValue(response, ETAG, true);
         } catch (final HttpException e) {
             throw new ResumableDownloadUnexpectedResponseException(e);
         }
 
         final long contentLength;
         try {
-            final String rawContentLength = ApacheHttpHeaderUtils.extractSingleHeaderValue(response, CONTENT_LENGTH,
+            final String rawContentLength = extractSingleHeaderValue(response, CONTENT_LENGTH,
                     true);
             contentLength = Long.parseUnsignedLong(notNull(rawContentLength)); // notNull squelches
         } catch (final HttpException e) {
@@ -434,7 +436,7 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
 
         final String rawContentRange;
         try {
-            rawContentRange = ApacheHttpHeaderUtils.extractSingleHeaderValue(response, CONTENT_RANGE, false);
+            rawContentRange = extractSingleHeaderValue(response, CONTENT_RANGE, false);
         } catch (final HttpException e) {
             throw new ResumableDownloadUnexpectedResponseException(e);
         }
@@ -446,7 +448,7 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
 
         final HttpRange.Response contentRange;
         try {
-            contentRange = HttpRange.parseContentRange(rawContentRange);
+            contentRange = parseContentRange(rawContentRange);
         } catch (final HttpException e) {
             throw new ResumableDownloadUnexpectedResponseException(
                     "Unable to parse Content-Range header while analyzing download response",

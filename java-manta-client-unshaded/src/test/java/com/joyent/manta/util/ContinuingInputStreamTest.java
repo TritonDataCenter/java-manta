@@ -1,17 +1,16 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BrokenInputStream;
 import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.text.RandomStringGenerator;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -36,18 +35,12 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
+import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 @Test
 public class ContinuingInputStreamTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(ContinuingInputStreamTest.class);
-
-    private static final int MAX_SIZE = 16;
-
-    private static final RandomStringGenerator STRING_GENERATOR =
-            new RandomStringGenerator.Builder()
-                    .withinRange((int) 'a', (int) 'z')
-                    .build();
 
     @AfterMethod
     public void afterMethod() {
@@ -55,21 +48,12 @@ public class ContinuingInputStreamTest {
     }
 
     public void testValidatesInputs() throws Exception {
-        final ContinuingInputStream mis = new ContinuingInputStream(
+        assertThrows(NullPointerException.class, () -> new ContinuingInputStream(null));
+
+        final ContinuingInputStream cis = new ContinuingInputStream(
                 new ByteArrayInputStream(RandomUtils.nextBytes(10)));
-        assertThrows(NullPointerException.class, () -> mis.continueWith(null));
 
-        // read 1 byte with space for 0 bytes
-        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[0], 0, 1));
-
-        // read 0 bytes with invalid offset
-        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[1], -1, 0));
-
-        // read more bytes than space available
-        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[1], 0, 2));
-
-        // read more bytes than space available (due to offset)
-        assertThrows(IndexOutOfBoundsException.class, () -> mis.read(new byte[2], 1, 2));
+        assertThrows(NullPointerException.class, () -> cis.continueWith(null));
 
         final ContinuingInputStream closed = new ContinuingInputStream(new NullInputStream(1));
         closed.close();
@@ -78,68 +62,106 @@ public class ContinuingInputStreamTest {
 
         assertThrows(IllegalStateException.class, () -> closed.read());
 
+        assertThrows(IllegalStateException.class, () -> closed.read(new byte[1], 0, 1));
+
         assertThrows(IllegalStateException.class, () -> closed.read(new byte[1]));
     }
 
-    public void testMiscInputStreamMethods() throws Exception {
-        final ContinuingInputStream mis = new ContinuingInputStream(new NullInputStream(1));
+    // theoretically this stream could delegate all reset/mark operations to the underlying stream
+    // but we don't know if every wrapped stream will support these methods so mark/reset is currently out of scope
+    public void testMarkResetInputStreamMethods() throws Exception {
+        final ContinuingInputStream cis = new ContinuingInputStream(new NullInputStream(1));
 
-        assertFalse(mis.markSupported());
+        assertFalse(cis.markSupported());
+
+        assertThrows(UnsupportedOperationException.class, () -> cis.mark(1));
+        assertThrows(UnsupportedOperationException.class, () -> cis.reset());
     }
 
     public void testCloseClosesWrappedInputStream() throws Exception {
         final InputStream source = mock(InputStream.class);
-        final ContinuingInputStream mis = new ContinuingInputStream(source);
-        mis.close();
+        final ContinuingInputStream cis = new ContinuingInputStream(source);
+        cis.close();
 
         verify(source).close();
     }
 
     public void testClosingWithoutSettingDoesNotThrow() throws Exception {
-        final ContinuingInputStream mis = new ContinuingInputStream(new NullInputStream(1));
+        final ContinuingInputStream cis = new ContinuingInputStream(new NullInputStream(1));
 
-        mis.close();
+        cis.close();
         assertTrue(true);
     }
 
     public void testStreamsAreClosedWhereExpected() throws Exception {
         final InputStream initial = mock(InputStream.class);
-        final ContinuingInputStream mis = new ContinuingInputStream(initial);
+        final ContinuingInputStream cis = new ContinuingInputStream(initial);
 
-        mis.close();
+        cis.close();
         verify(initial, times(1)).close();
         verifyNoMoreInteractions(initial);
 
         // extra close call doesn't throw
-        mis.close();
+        cis.close();
     }
 
     private static final byte[] STUB_OBJECT_BYTES = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',};
 
-    public void testReadFailureBeforeCopyingBytesDoesNotAffectCount() throws Exception {
+    private static final int EOF = -1;
 
-        final ContinuingInputStream mis = new ContinuingInputStream(
-                new FailingInputStream(new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, false));
-        final byte[] readBuffer = new byte[STUB_OBJECT_BYTES.length];
+    public void testSingleByteReads() throws Exception {
+        final ContinuingInputStream cis = new ContinuingInputStream(new ByteArrayInputStream(STUB_OBJECT_BYTES));
+        final byte[] copy = new byte[STUB_OBJECT_BYTES.length];
+
+        int b;
+        int idx = 0;
+        while ((b = cis.read()) != -1) {
+            copy[idx++] = (byte) b;
+        }
+
+        assertArrayEquals(STUB_OBJECT_BYTES, copy);
+
+        assertEquals(cis.read(), EOF);
+        assertEquals(cis.read(new byte[1]), EOF);
+        assertEquals(cis.read(new byte[1], 0, 1), EOF);
+    }
+
+    public void testReadFailureBeforeCopyingBytesDoesNotAffectCount() throws Exception {
+        final InputStream immediatelyPreReadFailing = new FailingInputStream(
+                new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, false);
 
         // read will fail before any bytes are read
-        assertThrows(IOException.class, () -> mis.read(readBuffer));
-
+        final ContinuingInputStream cisSingle = new ContinuingInputStream(immediatelyPreReadFailing);
+        assertThrows(IOException.class, () -> cisSingle.read());
         // no bytes were read
-        assertEquals(mis.getBytesRead(), 0);
+        assertEquals(cisSingle.getBytesRead(), 0);
+
+        final ContinuingInputStream cisBuffer = new ContinuingInputStream(immediatelyPreReadFailing);
+        assertThrows(IOException.class, () -> cisBuffer.read(new byte[1]));
+        assertEquals(cisBuffer.getBytesRead(), 0);
+
+        final ContinuingInputStream cisBufferOffLen = new ContinuingInputStream(immediatelyPreReadFailing);
+        assertThrows(IOException.class, () -> cisBufferOffLen.read(new byte[1], 0, 1));
+        assertEquals(cisBufferOffLen.getBytesRead(), 0);
     }
 
     public void testReadFailureAfterCopyingBytesDoesNotAffectCount() throws Exception {
+        final InputStream immediatelyPostReadFailing = new FailingInputStream(
+                new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, true);
 
-        final ContinuingInputStream mis = new ContinuingInputStream(
-                new FailingInputStream(new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, true));
-        final byte[] readBuffer = new byte[STUB_OBJECT_BYTES.length];
+        // read will fail before any bytes are read
+        final ContinuingInputStream cisSingle = new ContinuingInputStream(immediatelyPostReadFailing);
+        assertThrows(IOException.class, () -> cisSingle.read());
+        // no bytes were (confirmed to have been) read
+        assertEquals(cisSingle.getBytesRead(), 0);
 
-        // read will actually copy bytes over but fail before telling us how many
-        assertThrows(IOException.class, () -> mis.read(readBuffer));
+        final ContinuingInputStream cisBuffer = new ContinuingInputStream(immediatelyPostReadFailing);
+        assertThrows(IOException.class, () -> cisBuffer.read(new byte[1]));
+        assertEquals(cisBuffer.getBytesRead(), 0);
 
-        // no bytes were (confirmed to be) read
-        assertEquals(mis.getBytesRead(), 0);
+        final ContinuingInputStream cisBufferOffLen = new ContinuingInputStream(immediatelyPostReadFailing);
+        assertThrows(IOException.class, () -> cisBufferOffLen.read(new byte[1], 0, 1));
+        assertEquals(cisBufferOffLen.getBytesRead(), 0);
     }
 
     private static void testBufferedRead(final int objectSize,
@@ -164,7 +186,7 @@ public class ContinuingInputStreamTest {
         final byte[] copied = ArrayUtils.subarray(readBuffer, readOffset, toIntExact(cis.getBytesRead()));
 
         final byte[] expected = ArrayUtils.subarray(STUB_OBJECT_BYTES, readOffset, Math.min(objectSize, readLength));
-        AssertJUnit.assertArrayEquals(expected, copied);
+        assertArrayEquals(expected, copied);
     }
 
     public void testVariableObjectAndBufferSizesWithFullSingleBufferReads() throws Exception {
@@ -200,10 +222,7 @@ public class ContinuingInputStreamTest {
                 for (final FailureOrderType failureOrderType : FailureOrderType.values()) {
                     // i is the index of the failure being
                     for (int i = 0; i <= STUB_OBJECT_BYTES.length; i++) {
-
                         for (int failureCount = 0; failureCount < i; failureCount++) {
-
-                            // if we are on the first loop, just add the params with no failures
                             if (failureCount == 0) {
                                 continue;
                             }
@@ -244,7 +263,8 @@ public class ContinuingInputStreamTest {
                                     failureOffsets.add(ImmutablePair.of(failureOffset, failureOrder));
                                 }
 
-                                addToParamListIfUnseen(deepHashcodes, paramLists, new Object[]{objectSize, readBufferSize, failureOffsets});
+                                addToParamListIfUnseen(deepHashcodes, paramLists,
+                                        new Object[]{objectSize, readBufferSize, failureOffsets});
                             }
                         }
                     }
@@ -255,15 +275,16 @@ public class ContinuingInputStreamTest {
         int tests = 0;
         for (Object[] params : paramLists) {
             tests++;
-            testBytesReadUpdatesReliably((Integer) params[0], (Integer) params[1], (Deque<ImmutablePair<Integer, Boolean>>) params[2]);
+            testBytesReadUpdatesReliably((Integer) params[0], (Integer) params[1],
+                    (Deque<ImmutablePair<Integer, Boolean>>) params[2]);
         }
 
         LOG.debug("testVariableStartOffsetAndFrequencyFailures completed {} input combinations", tests);
     }
 
     private static void testBytesReadUpdatesReliably(final int objectSize,
-                                             final int readBufferSize,
-                                             final Deque<ImmutablePair<Integer, Boolean>> failureOffsets) {
+                                                     final int readBufferSize,
+                                                     final Deque<ImmutablePair<Integer, Boolean>> failureOffsets) {
         final byte[] object = ArrayUtils.subarray(STUB_OBJECT_BYTES, 0, objectSize);
 
         final ByteArrayOutputStream copied = new ByteArrayOutputStream();
@@ -306,7 +327,8 @@ public class ContinuingInputStreamTest {
             continuable.continueWith(remaining);
         } while (!finished && copied.size() < object.length);
 
-        AssertJUnit.assertArrayEquals("Copied object content does not match original object", object, copied.toByteArray());
+        assertArrayEquals("Copied object content does not match original object", object,
+                copied.toByteArray());
     }
 
     private enum FailureOrderType {
@@ -327,5 +349,82 @@ public class ContinuingInputStreamTest {
         hashcodes.add(hashcode);
         paramList.add(params);
     }
+
+    public void testAvailableCanAlsoThrow() throws IOException {
+        final ContinuingInputStream cis = new ContinuingInputStream(new BrokenInputStream());
+
+        assertThrows(IOException.class, () -> cis.available());
+
+        assertThrows(IllegalStateException.class,  () -> cis.read());
+    }
+
+    public void testSkipCompletelySingleOperation() throws IOException {
+        final ContinuingInputStream cis = new ContinuingInputStream(new ByteArrayInputStream(STUB_OBJECT_BYTES));
+
+        final long skipped = cis.skip(STUB_OBJECT_BYTES.length);
+        assertEquals(skipped, STUB_OBJECT_BYTES.length);
+
+        assertEquals(cis.read(), EOF);
+        assertEquals(cis.read(new byte[1]), EOF);
+        assertEquals(cis.read(new byte[1], 0, 1), EOF);
+
+        assertEquals(cis.skip(1), 0);
+    }
+
+    public void testSkipSingleBytes() throws IOException {
+        final ContinuingInputStream cis = new ContinuingInputStream(new ByteArrayInputStream(STUB_OBJECT_BYTES));
+
+        // ByteArrayInputStream provides a useful available() method
+        for (int i = 0; 0 < cis.available(); i++) {
+            assertEquals(cis.getBytesRead(), i);
+            assertEquals(cis.skip(1), 1);
+        }
+
+        assertEquals(cis.read(), EOF);
+        assertEquals(cis.read(new byte[1]), EOF);
+        assertEquals(cis.read(new byte[1], 0, 1), EOF);
+
+        assertEquals(cis.skip(1), 0);
+    }
+
+    public void testSkipThenRead() throws IOException {
+        final ContinuingInputStream cis = new ContinuingInputStream(new ByteArrayInputStream(STUB_OBJECT_BYTES));
+
+        final int skipLength = 4;
+        final int readLength = STUB_OBJECT_BYTES.length - skipLength;
+
+        final long skipped = cis.skip(skipLength);
+        assertEquals(skipped, cis.getBytesRead());
+
+        final byte[] copied = new byte[readLength];
+
+        final int bytesRead = cis.read(copied);
+
+        assertEquals(bytesRead + skipped, cis.getBytesRead());
+
+        final byte[] expected = ArrayUtils.subarray(STUB_OBJECT_BYTES, skipLength, skipLength + readLength);
+        assertArrayEquals(expected, copied);
+
+        assertEquals(cis.read(), EOF);
+        assertEquals(cis.read(new byte[1]), EOF);
+        assertEquals(cis.read(new byte[1], 0, 1), EOF);
+    }
+
+    public void testFailureFromSkipThenRead() throws IOException {
+        final InputStream immediatelyPreReadFailing = new FailingInputStream(
+                new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, false);
+
+        final ContinuingInputStream cis = new ContinuingInputStream(immediatelyPreReadFailing);
+
+        assertThrows(IOException.class, () -> cis.skip(1));
+        assertEquals(cis.getBytesRead(), 0);
+
+        assertThrows(IllegalStateException.class, () -> cis.skip(1));
+
+        cis.continueWith(new ByteArrayInputStream(STUB_OBJECT_BYTES));
+
+        assertArrayEquals(STUB_OBJECT_BYTES, IOUtils.toByteArray(cis));
+    }
+
 
 }

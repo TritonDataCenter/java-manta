@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
@@ -35,7 +36,7 @@ public class ContinuingInputStream extends InputStream {
     /**
      * EOF marker.
      */
-    static final int EOF = -1;
+    private static final int EOF = -1;
 
     /**
      * We don't want to keep trying to read from the backing stream (or accept new continuations) if we've actually seen
@@ -69,7 +70,7 @@ public class ContinuingInputStream extends InputStream {
         this.eofSeen = false;
         this.closed = false;
         this.bytesRead = 0;
-        this.wrapped = initial;
+        this.wrapped = Objects.requireNonNull(initial);
     }
 
     /**
@@ -88,7 +89,7 @@ public class ContinuingInputStream extends InputStream {
             throw new IllegalStateException("Stream is closed, refusing to set new source");
         }
 
-        // TODO: is the following useful? it signals that the caller has probably done something silly
+        // QUESTION: is the following useful? it signals that the caller has probably done something silly
         // if (this.wrapped == next) {
         //     throw new IllegalArgumentException("Current and next stream are the same");
         // }
@@ -102,7 +103,7 @@ public class ContinuingInputStream extends InputStream {
      * @return total bytes read
      */
     public long getBytesRead() {
-        return bytesRead;
+        return this.bytesRead;
     }
 
     @Override
@@ -124,8 +125,7 @@ public class ContinuingInputStream extends InputStream {
 
             return b;
         } catch (final IOException ioe) {
-            IOUtils.closeQuietly(this.wrapped);
-            this.wrapped = null;
+            discardWrapped();
             throw ioe;
         }
     }
@@ -149,8 +149,7 @@ public class ContinuingInputStream extends InputStream {
 
             return n;
         } catch (final IOException ioe) {
-            IOUtils.closeQuietly(this.wrapped);
-            this.wrapped = null;
+            discardWrapped();
             throw ioe;
         }
     }
@@ -174,35 +173,67 @@ public class ContinuingInputStream extends InputStream {
 
             return n;
         } catch (final IOException ioe) {
-            IOUtils.closeQuietly(this.wrapped);
-            this.wrapped = null;
+            discardWrapped();
             throw ioe;
         }
     }
 
-    /**
-     * Closes this stream and releases any system resources associated with it. If the stream is already closed then
-     * invoking this method has no effect.
-     *
-     * <p> As noted in {@link AutoCloseable#close()}, cases where the
-     * close may fail require careful attention. It is strongly advised to relinquish the underlying resources and to
-     * internally
-     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-     * the {@code IOException}.
-     *
-     * @throws IOException if an I/O error occurs
-     */
+    @Override
+    public long skip(final long n) throws IOException {
+        ensureReady();
+
+        try {
+            final long s = this.wrapped.skip(n);
+
+            if (0 < s) {
+                this.bytesRead += s;
+            }
+
+            return s;
+        } catch (final IOException ioe) {
+            discardWrapped();
+            throw ioe;
+        }
+    }
+
+    @Override
+    public int available() throws IOException {
+        ensureReady();
+
+        try {
+            return this.wrapped.available();
+        } catch (final IOException ioe) {
+            discardWrapped();
+            throw ioe;
+        }
+    }
+
+    @Override
+    public void mark(final int readlimit) {
+        throw new UnsupportedOperationException("ContinuingInputStream does not support mark/reset");
+    }
+
+    @Override
+    public void reset() throws IOException {
+        throw new UnsupportedOperationException("ContinuingInputStream does not support mark/reset");
+    }
+
+    @Override
+    public boolean markSupported() {
+        return false;
+    }
+
     @Override
     public void close() throws IOException {
         if (this.closed) {
             return;
         }
 
+        this.closed = true;
+
         if (this.wrapped != null) {
             wrapped.close();
         }
-
-        this.closed = true;
     }
 
     @SuppressWarnings("checkstyle:JavadocMethod")
@@ -212,8 +243,14 @@ public class ContinuingInputStream extends InputStream {
         }
 
         if (this.wrapped == null) {
-            throw new IllegalStateException("Read called before setting a continuation");
+            throw new IllegalStateException("Read called before setting a continuation stream");
         }
+    }
+
+    @SuppressWarnings("checkstyle:JavadocMethod")
+    private void discardWrapped() {
+        IOUtils.closeQuietly(this.wrapped);
+        this.wrapped = null;
     }
 
 }

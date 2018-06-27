@@ -7,11 +7,9 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.http.Header;
@@ -20,29 +18,20 @@ import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicRequestLine;
-import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
 import java.util.Map;
 
 import static com.joyent.manta.http.ApacheHttpGetContinuator.INFINITE_CONTINUATIONS;
-import static com.joyent.manta.http.HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
 import static com.joyent.manta.http.HttpRange.fromContentLength;
 import static com.joyent.manta.util.MantaUtils.unmodifiableMap;
 import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
-import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyMap;
-import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
 import static org.apache.http.HttpHeaders.CONTENT_RANGE;
 import static org.apache.http.HttpHeaders.ETAG;
@@ -58,7 +47,6 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.expectThrows;
-import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 @Test
 public class ApacheHttpGetContinuatorTest {
@@ -282,74 +270,6 @@ public class ApacheHttpGetContinuatorTest {
 
     private static final int[] BUFFER_SIZES = new int[]{1, 2, 3, 4, 5, 7, 8, 9, 127, 128, 129, 1023, 1024, 1025, 2048};
 
-    public void testFullObjectFunctionalityWithVariousBufferSizeCombinations() throws Exception {
-        int tests = 0;
-        for (int i = 0; i < BUFFER_SIZES.length; i++) {
-            final int object = BUFFER_SIZES[i];
-
-            for (int j = 0; j < BUFFER_SIZES.length; j++) {
-                final int readBuffer = BUFFER_SIZES[j];
-
-                for (int k = 0; k < BUFFER_SIZES.length; k++) {
-                    final int copyBuffer = BUFFER_SIZES[k];
-                    // TODO: triple it up
-                    testResumableDownloadWorks(object, readBuffer, copyBuffer, 0, false, null);
-                    tests++;
-                }
-            }
-        }
-
-        LOG.info(
-                "ApacheHttpGetContinuator full object download test completed all combinations without error: {}",
-                tests);
-    }
-
-    public void testRangeFunctionalityWithVariousBufferSizeCombinations() throws Exception {
-        if (true) {
-            testResumableDownloadWorks(4, 1, 1, 1, false, new HttpRange.Request(1, 1));
-            return;
-        }
-
-        int tests = 0;
-        for (final int objectSize : BUFFER_SIZES) {
-            for (final int readBufferSize : BUFFER_SIZES) {
-                for (final int copyBufferSize : BUFFER_SIZES) {
-                    for (int failureCount = 0;
-                         failureCount <= DefaultsConfigContext.DEFAULT_HTTP_RETRIES; failureCount++) {
-                        for (final int rangeSize : BUFFER_SIZES) {
-                            for (final int rangeStart : BUFFER_SIZES) {
-
-                                if (objectSize < rangeStart + rangeSize) {
-                                    continue;
-                                }
-
-                                final HttpRange.Request range = new HttpRange.Request(
-                                        rangeStart, rangeStart + rangeSize - 1);
-                                try {
-                                    testResumableDownloadWorks(
-                                            objectSize, readBufferSize, copyBufferSize, failureCount, false, range);
-                                } catch (final Throwable err) {
-                                    throw new RuntimeException(
-                                            "Range resume test failed with inputs:"
-                                                    + " objectSize=" + objectSize
-                                                    + ", readBuffer=" + readBufferSize
-                                                    + ", copyBuffer=" + copyBufferSize
-                                                    + ", failureCount=" + failureCount
-                                                    + ", range=" + range,
-                                            err);
-                                }
-                                tests++;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        LOG.info(
-                "ApacheHttpGetContinuator range download test completed all combinations without error: {}", tests);
-    }
-
     private static void validatesCompatibleHeadersForInitialRequest(final Map<String, Header[]> headers)
             throws Exception {
         final HttpGet req = prepareRequestWithHeaders(headers);
@@ -370,7 +290,7 @@ public class ApacheHttpGetContinuatorTest {
         return req;
     }
 
-    private HttpResponse prepareResponseWithHeaders(final Map<String, Header[]> headers) {
+    private static HttpResponse prepareResponseWithHeaders(final Map<String, Header[]> headers) {
         return prepareMessageWithHeaders(HttpResponse.class, headers);
     }
 
@@ -404,81 +324,5 @@ public class ApacheHttpGetContinuatorTest {
         }
 
         return msg;
-    }
-
-    private static void testResumableDownloadWorks(final int objectSize,
-                                                   final int readBufferSize,
-                                                   final int copyBufferSize,
-                                                   final int failureCount,
-                                                   final boolean postReadFailure,
-                                                   final HttpRange.Request initialRequestRange) throws Exception {
-        if (true) throw new AssertionError("rewrite this stupid test");
-
-
-        final String resumableTestType = initialRequestRange != null ? "Object range" : "Full object";
-
-        // final byte[] originalObjectContent = RandomUtils.nextBytes(objectSize);
-        final byte[] originalObjectContent = {'a', 'b', 'c', 'd'};
-
-        System.out.println("object: " + Arrays.toString(originalObjectContent));
-
-        assertEquals(objectSize, originalObjectContent.length);
-
-        final CloseableHttpClient client = prepareClient(
-                new FixedCountEntityFailingByteArrayObjectHttpHandler(
-                        originalObjectContent, failureCount, postReadFailure));
-
-        final HttpUriRequest req = new HttpGet(UNIT_TEST_URL);
-        final ByteArrayOutputStream savedEntity = new ByteArrayOutputStream();
-
-        // explicitly disable automatic retries
-        final HttpContext ctx = new HttpClientContext();
-        ctx.setAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
-
-        // final ApacheHttpGetContinuator coordinator = new ApacheHttpGetContinuator(failureCount + 1);
-        final ApacheHttpGetContinuator coordinator = null;
-
-        if (initialRequestRange != null) {
-            req.setHeader(RANGE, initialRequestRange.render());
-        }
-
-        // coordinator.buildContinuation(client, req);
-
-        if (initialRequestRange != null) {
-            final byte[] expectedObjectContent = ArrayUtils.subarray(
-                    originalObjectContent,
-                    toIntExact(initialRequestRange.getStartInclusive()),
-                    toIntExact(initialRequestRange.getEndInclusive() + 1)); // subarray end is exclusive
-
-            assertArrayEquals(
-                    "Bytes received do not match original bytes",
-                    expectedObjectContent,
-                    savedEntity.toByteArray());
-        } else {
-            assertArrayEquals(
-                    "Bytes received do not match original bytes",
-                    originalObjectContent,
-                    savedEntity.toByteArray());
-        }
-
-        LOG.trace("{} resumable download test completed successfully", resumableTestType);
-    }
-
-    private static CloseableHttpClient prepareClient(final EntityPopulatingHttpRequestHandler requestHandler) {
-        return HttpClientBuilder.create()
-                .setConnectionManager(new HandlerEmbeddingHttpClientConnectionManager(requestHandler))
-                // set a retry handler that respects "manta.retry.disable" like MantaHttpRequestRetryHandler
-                .setRetryHandler((exception, executionCount, context) -> {
-                    notNull(context, "HTTP context cannot be null");
-
-                    final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
-
-                    if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
-                        return false;
-                    }
-
-                    return true;
-                })
-                .build();
     }
 }
