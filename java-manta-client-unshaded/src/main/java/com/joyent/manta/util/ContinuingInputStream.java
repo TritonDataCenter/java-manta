@@ -28,9 +28,9 @@ import static org.apache.commons.lang3.Validate.notNull;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
  */
-public class ContinuableInputStream extends InputStream {
+public class ContinuingInputStream extends InputStream {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ContinuableInputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContinuingInputStream.class);
 
     /**
      * EOF marker.
@@ -38,14 +38,14 @@ public class ContinuableInputStream extends InputStream {
     static final int EOF = -1;
 
     /**
-     * We don't want to keep trying to read from the backing stream (or accept new continuations) if we've actually
-     * seen EOF.
+     * We don't want to keep trying to read from the backing stream (or accept new continuations) if we've actually seen
+     * EOF.
      */
     private boolean eofSeen;
 
     /**
-     * Whether the stream has been closed yet. We don't want to continue delivering reads or accept new continuations
-     * if this stream has been closed.
+     * Whether the stream has been closed yet. We don't want to continue delivering reads or accept new continuations if
+     * this stream has been closed.
      */
     private boolean closed;
 
@@ -55,7 +55,8 @@ public class ContinuableInputStream extends InputStream {
     private long bytesRead;
 
     /**
-     * The delegate stream. We replace this
+     * The delegate stream. We replace this when the user calls {@link #continueWith(InputStream)}. When this field is
+     * null we are in a "dirty" state and will not handle read calls.
      */
     private InputStream wrapped;
 
@@ -64,7 +65,7 @@ public class ContinuableInputStream extends InputStream {
      *
      * @param initial the stream from which to start reading
      */
-    ContinuableInputStream(final InputStream initial) {
+    ContinuingInputStream(final InputStream initial) {
         this.eofSeen = false;
         this.closed = false;
         this.bytesRead = 0;
@@ -83,7 +84,14 @@ public class ContinuableInputStream extends InputStream {
             throw new IllegalStateException("Already reached end of source stream, refusing to set new source");
         }
 
-        IOUtils.closeQuietly(this.wrapped);
+        if (this.closed) {
+            throw new IllegalStateException("Stream is closed, refusing to set new source");
+        }
+
+        // TODO: is the following useful? it signals that the caller has probably done something silly
+        // if (this.wrapped == next) {
+        //     throw new IllegalArgumentException("Current and next stream are the same");
+        // }
 
         this.wrapped = next;
     }
@@ -99,56 +107,77 @@ public class ContinuableInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        ensureOpen();
+        ensureReady();
 
-        if (this.closed || this.eofSeen) {
+        if (this.eofSeen) {
             return EOF;
         }
 
-        final int b = this.wrapped.read();
-        if (b != EOF) {
-            this.bytesRead += b;
-        } else {
-            this.eofSeen = true;
-        }
+        try {
+            final int b = this.wrapped.read();
 
-        return b;
+            if (b != EOF) {
+                this.bytesRead += b;
+            } else {
+                this.eofSeen = true;
+            }
+
+            return b;
+        } catch (final IOException ioe) {
+            IOUtils.closeQuietly(this.wrapped);
+            this.wrapped = null;
+            throw ioe;
+        }
     }
 
     @Override
     public int read(final byte[] buffer) throws IOException {
-        ensureOpen();
+        ensureReady();
 
-        if (this.closed || this.eofSeen) {
+        if (this.eofSeen) {
             return EOF;
         }
 
-        final int n = this.wrapped.read(buffer);
-        if (n != EOF) {
-            this.bytesRead += n;
-        } else {
-            this.eofSeen = true;
-        }
+        try {
+            final int n = this.wrapped.read(buffer);
 
-        return n;
+            if (n != EOF) {
+                this.bytesRead += n;
+            } else {
+                this.eofSeen = true;
+            }
+
+            return n;
+        } catch (final IOException ioe) {
+            IOUtils.closeQuietly(this.wrapped);
+            this.wrapped = null;
+            throw ioe;
+        }
     }
 
     @Override
     public int read(final byte[] buffer, final int offset, final int length) throws IOException {
-        ensureOpen();
+        ensureReady();
 
-        if (this.closed || this.eofSeen) {
+        if (this.eofSeen) {
             return EOF;
         }
 
-        final int n = this.wrapped.read(buffer, offset, length);
-        if (n != EOF) {
-            this.bytesRead += n;
-        } else {
-            this.eofSeen = true;
-        }
+        try {
+            final int n = this.wrapped.read(buffer, offset, length);
 
-        return n;
+            if (n != EOF) {
+                this.bytesRead += n;
+            } else {
+                this.eofSeen = true;
+            }
+
+            return n;
+        } catch (final IOException ioe) {
+            IOUtils.closeQuietly(this.wrapped);
+            this.wrapped = null;
+            throw ioe;
+        }
     }
 
     /**
@@ -177,9 +206,13 @@ public class ContinuableInputStream extends InputStream {
     }
 
     @SuppressWarnings("checkstyle:JavadocMethod")
-    private void ensureOpen() {
+    private void ensureReady() {
         if (this.closed) {
             throw new IllegalStateException("Attempted to read from a closed InputStream");
+        }
+
+        if (this.wrapped == null) {
+            throw new IllegalStateException("Read called before setting a continuation");
         }
     }
 

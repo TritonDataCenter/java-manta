@@ -30,7 +30,7 @@ public class AutoContinuingInputStream extends InputStream {
     /**
      * The workhorse stream which reads from the actual source stream and keeps track of how many bytes it has read.
      */
-    private final ContinuableInputStream in;
+    private final ContinuingInputStream in;
 
     /**
      * Produces continuations of the original stream given new byte offsets.
@@ -44,7 +44,7 @@ public class AutoContinuingInputStream extends InputStream {
      * @param in the stream to which we delegate reads
      * @param continuator helper that can produce continuations of {@code in}
      */
-    public AutoContinuingInputStream(final ContinuableInputStream in,
+    public AutoContinuingInputStream(final ContinuingInputStream in,
                                      final HttpGetContinuator continuator) {
         this.in = requireNonNull(in);
         this.continuator = requireNonNull(continuator);

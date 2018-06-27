@@ -48,7 +48,6 @@ public class FailingInputStream extends InputStream {
         this.wrapped = wrapped;
         this.minimumBytes = minimumBytes;
         this.failAfterRead = failAfterRead;
-        LOG.debug("failing stream, bytes {} post? {}", minimumBytes, failAfterRead);
     }
 
     @Override
@@ -92,9 +91,9 @@ public class FailingInputStream extends InputStream {
         return nextByte;
     }
 
-    private void preReadFailure(final int next) throws IOException {
+    private void preReadFailure(final int willRead) throws IOException {
         if (!this.failAfterRead) {
-            failIfEnoughBytesRead(next, false);
+            failIfEnoughBytesRead(willRead, false);
         }
     }
 
@@ -109,7 +108,6 @@ public class FailingInputStream extends InputStream {
         if (count.get() + next >= minimumBytes) {
             final String relative = isAfterRead ? "after reading" : "attempting to read up to";
             e = new IOException("Read failure " + relative + " byte " + minimumBytes);
-            LOG.debug("should fail {} because {} + {} >= {}", relative, count.get(), next, minimumBytes);
         }
 
         if (e != null) {
