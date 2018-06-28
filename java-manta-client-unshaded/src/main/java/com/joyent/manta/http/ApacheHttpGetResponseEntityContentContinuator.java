@@ -59,7 +59,7 @@ import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>h
  * @since 3.2.3
  */
-public class ApacheHttpGetContinuator implements HttpGetContinuator {
+public class ApacheHttpGetResponseEntityContentContinuator implements InputStreamContinuator {
 
     /**
      * Set of exceptions from which we know we cannot recover by simply retrying.
@@ -95,12 +95,12 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
     private final HttpGet request;
 
     /**
-     * Maximum number of continuations this resumer will supply.
+     * Maximum number of continuations we will supply.
      */
     private final int retryCount;
 
     /**
-     * Number of continuations this resumer has supplied.
+     * Number of continuations we has supplied.
      */
     private int continuation;
 
@@ -122,16 +122,15 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
      * @param connCtx the http connection context
      * @param request the initial request
      * @param initialResponse the first response received
-     * @param retryCount the number of continuations to attempt, or -1 for infinite continuations
      * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
      * implementation
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
+     * @throws ResumableDownloadException when something unexpected happens while preparing
      */
-    public ApacheHttpGetContinuator(final MantaApacheHttpClientContext connCtx,
-                                    final HttpGet request,
-                                    final HttpResponse initialResponse,
-                                    final int retryCount)
+    public ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
+                                                         final HttpGet request,
+                                                         final HttpResponse initialResponse,
+                                                         final int retryCount)
             throws ResumableDownloadException {
         this(connCtx, request, initialResponse, retryCount, null);
     }
@@ -148,13 +147,13 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
      * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
      * implementation
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
+     * @throws ResumableDownloadException when something unexpected happens while preparing
      */
-    public ApacheHttpGetContinuator(final MantaApacheHttpClientContext connCtx,
-                                    final HttpGet request,
-                                    final HttpResponse initialResponse,
-                                    final int retryCount,
-                                    final MetricRegistry metricRegistry)
+    public ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
+                                                         final HttpGet request,
+                                                         final HttpResponse initialResponse,
+                                                         final int retryCount,
+                                                         final MetricRegistry metricRegistry)
             throws ResumableDownloadException {
         this(verifyDownloadContinuationIsSafeAndExtractHttpClient(connCtx),
                 request,
@@ -171,9 +170,9 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
      * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
      * implementation
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
+     * @throws ResumableDownloadException when something unexpected happens while preparing we
      */
-    ApacheHttpGetContinuator(final HttpGet request, final HttpResponse initialResponse)
+    ApacheHttpGetResponseEntityContentContinuator(final HttpGet request, final HttpResponse initialResponse)
             throws ResumableDownloadException {
         this((CloseableHttpClient) null, request, initialResponse, INFINITE_CONTINUATIONS, null);
     }
@@ -188,13 +187,13 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
      * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
      * implementation
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing the resumer
+     * @throws ResumableDownloadException when something unexpected happens while preparing
      */
-    ApacheHttpGetContinuator(final CloseableHttpClient client,
-                             final HttpGet request,
-                             final HttpResponse initialResponse,
-                             final int retryCount,
-                             final MetricRegistry metricRegistry)
+    ApacheHttpGetResponseEntityContentContinuator(final CloseableHttpClient client,
+                                                  final HttpGet request,
+                                                  final HttpResponse initialResponse,
+                                                  final int retryCount,
+                                                  final MetricRegistry metricRegistry)
             throws ResumableDownloadException {
         // we clone and verify the request before assigning it to our field
         final HttpGet cloned = cloneRequest(request);
@@ -202,12 +201,12 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
         // one or both (or neither) hints may be present
         final Pair<String, HttpRange.Request> hints = ensureRequestHeadersAreCompatible(cloned);
         final Pair<String, HttpRange.Response> initialResponseFingerprint = extractResponseFingerprint(initialResponse);
-
         this.marker = ResumableDownloadMarker.validateInitialExchange(hints, initialResponseFingerprint);
-        cloned.setHeader(IF_MATCH, this.marker.getEtag());
-        cloned.setHeader(RANGE, this.marker.getCurrentRange().render());
 
         this.request = cloned;
+        this.request.setHeader(IF_MATCH, this.marker.getEtag());
+        this.request.setHeader(RANGE, this.marker.getCurrentRange().render());
+
         this.client = client;
         this.retryCount = validateRetryCount(retryCount);
         this.continuation = 0;
@@ -354,9 +353,13 @@ public class ApacheHttpGetContinuator implements HttpGetContinuator {
     }
 
     /**
-     * Checks that a request has headers which are compatible. This means that the request either: 1. has no If-Match
-     * header and no ETag header 2. has a single-valued If-Match header 3. has a single Range header specifying a single
-     * byte range (i.e. no multipart ranges) 4. satisfies both #2 and #3
+     * Checks that a request has headers which are compatible. This means that the request either:
+     * <ul>
+     * <li>has no If-Match header and no ETag header</li>
+     * <li>has a single-valued If-Match header</li>
+     * <li>has a single Range header specifying a single byte range (i.e. no multipart ranges)</li>
+     * <li>satisfies both #2 and #3</li>
+     * </ul>
      *
      * @param request the request being checked for compatibility
      * @return the ETag and range hints to be validated against the initial response

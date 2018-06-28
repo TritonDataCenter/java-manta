@@ -66,11 +66,15 @@ public class ContinuingInputStream extends InputStream {
      *
      * @param initial the stream from which to start reading
      */
-    ContinuingInputStream(final InputStream initial) {
+    public ContinuingInputStream(final InputStream initial) {
         this.eofSeen = false;
         this.closed = false;
         this.bytesRead = 0;
         this.wrapped = Objects.requireNonNull(initial);
+    }
+
+    protected InputStream getWrapped() {
+        return this.wrapped;
     }
 
     /**
@@ -131,7 +135,7 @@ public class ContinuingInputStream extends InputStream {
     }
 
     @Override
-    public int read(final byte[] buffer) throws IOException {
+    public int read(final byte[] b) throws IOException {
         ensureReady();
 
         if (this.eofSeen) {
@@ -139,7 +143,7 @@ public class ContinuingInputStream extends InputStream {
         }
 
         try {
-            final int n = this.wrapped.read(buffer);
+            final int n = this.wrapped.read(b);
 
             if (n != EOF) {
                 this.bytesRead += n;
@@ -155,7 +159,7 @@ public class ContinuingInputStream extends InputStream {
     }
 
     @Override
-    public int read(final byte[] buffer, final int offset, final int length) throws IOException {
+    public int read(final byte[] b, final int off, final int len) throws IOException {
         ensureReady();
 
         if (this.eofSeen) {
@@ -163,7 +167,7 @@ public class ContinuingInputStream extends InputStream {
         }
 
         try {
-            final int n = this.wrapped.read(buffer, offset, length);
+            final int n = this.wrapped.read(b, off, len);
 
             if (n != EOF) {
                 this.bytesRead += n;

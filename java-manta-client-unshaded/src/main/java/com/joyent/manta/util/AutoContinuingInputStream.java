@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.util;
 
-import com.joyent.manta.http.HttpGetContinuator;
+import com.joyent.manta.http.InputStreamContinuator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,28 +25,23 @@ import static java.util.Objects.requireNonNull;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
  */
-public class AutoContinuingInputStream extends InputStream {
-
-    /**
-     * The workhorse stream which reads from the actual source stream and keeps track of how many bytes it has read.
-     */
-    private final ContinuingInputStream in;
+public class AutoContinuingInputStream extends ContinuingInputStream {
 
     /**
      * Produces continuations of the original stream given new byte offsets.
      */
-    private final HttpGetContinuator continuator;
+    private final InputStreamContinuator continuator;
 
     /**
      * Construct a resilient {@code InputStream} with a reusable stream and a helper that can supply "suffixes"
      * (generally referred to as "continuations") of the original stream given a new starting offset.
      *
-     * @param in the stream to which we delegate reads
+     * @param wrapped the stream to which we delegate reads
      * @param continuator helper that can produce continuations of {@code in}
      */
-    public AutoContinuingInputStream(final ContinuingInputStream in,
-                                     final HttpGetContinuator continuator) {
-        this.in = requireNonNull(in);
+    public AutoContinuingInputStream(final InputStream wrapped,
+                                     final InputStreamContinuator continuator) {
+        super(wrapped);
         this.continuator = requireNonNull(continuator);
     }
 
@@ -59,14 +54,14 @@ public class AutoContinuingInputStream extends InputStream {
      * continuing
      */
     private void attemptRecovery(final IOException e) throws IOException {
-        this.in.continueWith(this.continuator.buildContinuation(e, this.in.getBytesRead()));
+        this.continueWith(this.continuator.buildContinuation(e, this.getBytesRead()));
     }
 
     @Override
     public int read() throws IOException {
         while (true) {
             try {
-                return this.in.read();
+                return this.getWrapped().read();
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -77,7 +72,7 @@ public class AutoContinuingInputStream extends InputStream {
     public int read(final byte[] b) throws IOException {
         while (true) {
             try {
-                return this.in.read(b);
+                return this.getWrapped().read(b);
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -88,7 +83,7 @@ public class AutoContinuingInputStream extends InputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         while (true) {
             try {
-                return this.in.read(b, off, len);
+                return this.getWrapped().read(b, off, len);
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -96,10 +91,10 @@ public class AutoContinuingInputStream extends InputStream {
     }
 
     @Override
-    public long skip(final long ln) throws IOException {
+    public long skip(final long n) throws IOException {
         while (true) {
             try {
-                return this.in.skip(ln);
+                return this.getWrapped().skip(n);
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -110,16 +105,11 @@ public class AutoContinuingInputStream extends InputStream {
     public int available() throws IOException {
         while (true) {
             try {
-                return this.in.available();
+                return this.getWrapped().available();
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
         }
-    }
-
-    @Override
-    public void close() throws IOException {
-        in.close();
     }
 
     @Override
@@ -137,4 +127,9 @@ public class AutoContinuingInputStream extends InputStream {
         return false;
     }
 
+
+    @Override
+    public void close() throws IOException {
+        this.getWrapped().close();
+    }
 }

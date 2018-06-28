@@ -7,10 +7,12 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.http.InputStreamContinuator;
+
 /**
  * Exception indicating that the provided request cannot be reliable auto-resumed. This exception indicates a programmer
  * error since the request should've been checked for compatibility before attempting to be supplied to
- * {@link com.joyent.manta.http.HttpGetContinuator}.
+ * {@link InputStreamContinuator}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3

@@ -17,7 +17,7 @@ import java.io.InputStream;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.2
  */
-public interface HttpGetContinuator {
+public interface InputStreamContinuator {
 
     /**
      * Get an {@link InputStream} which picks up starting {@code bytesRead} bytes from the beginning of the logical

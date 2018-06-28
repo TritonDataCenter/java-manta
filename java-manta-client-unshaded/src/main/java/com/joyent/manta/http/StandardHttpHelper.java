@@ -73,7 +73,7 @@ public class StandardHttpHelper implements HttpHelper {
     /**
      * Whether or not automatic download continuation is enabled.
      *
-     * @see ApacheHttpGetContinuator
+     * @see ApacheHttpGetResponseEntityContentContinuator
      * @see RetryConfigAware
      * @see HttpContextRetryCancellation
      */

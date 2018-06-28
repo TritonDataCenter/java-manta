@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static com.joyent.manta.http.ApacheHttpGetContinuator.INFINITE_CONTINUATIONS;
+import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.INFINITE_CONTINUATIONS;
 import static com.joyent.manta.http.HttpRange.fromContentLength;
 import static com.joyent.manta.util.MantaUtils.unmodifiableMap;
 import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
@@ -49,9 +49,9 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.expectThrows;
 
 @Test
-public class ApacheHttpGetContinuatorTest {
+public class ApacheHttpGetResponseEntityContentContinuatorTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ApacheHttpGetContinuatorTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ApacheHttpGetResponseEntityContentContinuatorTest.class);
 
     public void httpGetIsCloneable() throws ResumableDownloadIncompatibleRequestException {
 
@@ -62,7 +62,7 @@ public class ApacheHttpGetContinuatorTest {
                 new BasicHeader(RANGE, initialRange),
                 new BasicHeader(IF_MATCH, "abc")});
 
-        final HttpGet cloned = ApacheHttpGetContinuator.cloneRequest(get);
+        final HttpGet cloned = ApacheHttpGetResponseEntityContentContinuator.cloneRequest(get);
         // we have to call getValue because most of the header classes dont actually equals themselves
         assertEquals(cloned.getFirstHeader(RANGE).getValue(), get.getFirstHeader(RANGE).getValue());
 
@@ -82,23 +82,23 @@ public class ApacheHttpGetContinuatorTest {
 
         // basic null checks
         assertThrows(NullPointerException.class,
-                () -> new ApacheHttpGetContinuator(null, null, null, INFINITE_CONTINUATIONS));
+                () -> new ApacheHttpGetResponseEntityContentContinuator(null, null, null, INFINITE_CONTINUATIONS));
 
 
         assertThrows(NullPointerException.class,
-                () -> new ApacheHttpGetContinuator(connCtx, null, response, INFINITE_CONTINUATIONS));
+                () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, null, response, INFINITE_CONTINUATIONS));
 
         assertThrows(NullPointerException.class,
-                () -> new ApacheHttpGetContinuator(connCtx, request, null, INFINITE_CONTINUATIONS));
+                () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, null, INFINITE_CONTINUATIONS));
 
         // this connectionContext returns null for the getHttpClient call
         final MantaApacheHttpClientContext badConnCtx = mock(MantaApacheHttpClientContext.class);
         assertThrows(NullPointerException.class,
-                () -> new ApacheHttpGetContinuator(badConnCtx, request, response, INFINITE_CONTINUATIONS));
+                () -> new ApacheHttpGetResponseEntityContentContinuator(badConnCtx, request, response, INFINITE_CONTINUATIONS));
 
         // retry count validation
-        assertThrows(IllegalArgumentException.class, () -> new ApacheHttpGetContinuator(connCtx, request, response, 0));
-        assertThrows(IllegalArgumentException.class, () -> new ApacheHttpGetContinuator(connCtx, request, response, -3));
+        assertThrows(IllegalArgumentException.class, () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, response, 0));
+        assertThrows(IllegalArgumentException.class, () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, response, -3));
 
         // this connectionContext somehow doesn't support retry cancellation
         // e.g. a custom MantaConnectionFactory or MantaConnectionContext was supplied
@@ -108,7 +108,7 @@ public class ApacheHttpGetContinuatorTest {
         when(retryNotCancellableConnCtx.isRetryCancellable()).thenReturn(false);
 
         assertThrows(ResumableDownloadException.class,
-                () -> new ApacheHttpGetContinuator(retryNotCancellableConnCtx, request, response, INFINITE_CONTINUATIONS));
+                () -> new ApacheHttpGetResponseEntityContentContinuator(retryNotCancellableConnCtx, request, response, INFINITE_CONTINUATIONS));
     }
 
     public void validatesNoCollidingHeadersForInitialRequest() throws Exception {
@@ -241,30 +241,30 @@ public class ApacheHttpGetContinuatorTest {
                         CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(contentLength)),
                         CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, contentRange.render())));
 
-        new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(etag, contentRange));
+        new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(etag, contentRange));
 
         // the following assertion just tests for programmer error
         assertThrows(NullPointerException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(null));
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(null));
 
         // the following assertions test a response with insufficient headers
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(ImmutablePair.nullPair()));
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(ImmutablePair.nullPair()));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(etag, null)));
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(etag, null)));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(null, contentRange)));
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(null, contentRange)));
 
         // the following assertions test a response with incorrect headers
         final String badEtag = etag.substring(1);
         final HttpRange.Response badContentRange = new HttpRange.Response(0, contentLength, contentLength + 1);
 
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(etag, badContentRange)));
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(etag, badContentRange)));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(badEtag, contentRange)));
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(ImmutablePair.of(badEtag, contentRange)));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetContinuator(req, res).validateResponseWithMarker(
+                new ApacheHttpGetResponseEntityContentContinuator(req, res).validateResponseWithMarker(
                         ImmutablePair.of(badEtag, badContentRange)));
     }
 
@@ -275,7 +275,7 @@ public class ApacheHttpGetContinuatorTest {
         final HttpGet req = prepareRequestWithHeaders(headers);
         verifyNoMoreInteractions(req);
 
-        ApacheHttpGetContinuator.ensureRequestHeadersAreCompatible(req);
+        ApacheHttpGetResponseEntityContentContinuator.ensureRequestHeadersAreCompatible(req);
     }
 
     private static Header[] singleValueHeaderList(final String name, final String value) {
