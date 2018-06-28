@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.2.3-SNAPSHOT] - Coming soon!
+### Fixed
+ - [UnsupportedOperationException when getting a 0 byte file using `MantaClient.getAsInputStream`](https://github.com/joyent/java-manta/issues/408)
 
 ### Added
  - Client metrics can now be enabled by selecting a reporting mode with the
