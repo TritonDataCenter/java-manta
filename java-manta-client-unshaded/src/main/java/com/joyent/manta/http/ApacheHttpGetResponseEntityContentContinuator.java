@@ -100,7 +100,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     private final int retryCount;
 
     /**
-     * Number of continuations we has supplied.
+     * Number of continuations we have supplied.
      */
     private int continuation;
 
@@ -116,8 +116,9 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     private final Counter totalContinuations;
 
     /**
-     * Construct a coordinator. Each logical download should use a different coordinator in order to simplify state
-     * management.
+     * Construct a coordinator. Each download request requires a new continuator. Invariants required by this class will
+     * be checked including whether the provided headers and the supplied client context's retry configuration are
+     * compatible with this implementation.
      *
      * @param connCtx the http connection context
      * @param request the initial request
@@ -136,8 +137,9 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     }
 
     /**
-     * Construct a coordinator. Each logical download should use a different coordinator in order to simplify state
-     * management.
+     * Construct a coordinator. Each download request requires a new continuator. Invariants required by this class will
+     * be checked including whether the provided headers and the supplied client context's retry configuration are
+     * compatible with this implementation.
      *
      * @param connCtx the http connection context
      * @param request the initial request
