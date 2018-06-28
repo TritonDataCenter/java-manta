@@ -11,6 +11,7 @@ import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.ObjectUtils;
@@ -49,6 +50,7 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.security.KeyPair;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.management.DynamicMBean;
 
 /**
@@ -101,9 +103,9 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config    configuration of the connection parameters
-     * @param keyPair   cryptographic signing key pair used for HTTP signatures
-     * @param signer    Signer configured to use the given keyPair
+     * @param config  configuration of the connection parameters
+     * @param keyPair cryptographic signing key pair used for HTTP signatures
+     * @param signer  Signer configured to use the given keyPair
      */
     @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
@@ -140,22 +142,35 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config configuration of the connection parameters
+     * @param config                        configuration of the connection parameters
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this(config, connectionFactoryConfigurator, null);
+    }
+
+    /**
+     * Create new instance using the passed configuration.
+     *
+     * @param config                        configuration of the connection parameters
+     * @param connectionFactoryConfigurator existing HttpClient objects to reuse
+     * @param metricConfig                  potentially-null configuration for tracking client metrics
+     */
+    public MantaConnectionFactory(final ConfigContext config,
+                                  final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
+                                  final MantaClientMetricConfiguration metricConfig) {
         this.config = Validate.notNull(config, "Configuration context must not be null");
 
         if (connectionFactoryConfigurator != null) {
             this.connectionManager = null;
             this.httpClientBuilder = connectionFactoryConfigurator.getHttpClientBuilder();
         } else {
-            this.connectionManager = buildConnectionManager();
-            this.httpClientBuilder = createStandardBuilder();
+            this.connectionManager = buildConnectionManager(metricConfig);
+            this.httpClientBuilder = createStandardBuilder(metricConfig);
         }
 
-        configureHttpClientBuilderDefaults();
+        configureHttpClientBuilderDefaults(metricConfig);
     }
 
     /**
@@ -163,8 +178,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      *
      * @return configured connection factory
      */
-    protected HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection>
-            buildHttpConnectionFactory() {
+    protected HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> buildHttpConnectionFactory() {
         return new ManagedHttpClientConnectionFactory(
                 new DefaultHttpRequestWriterFactory(),
                 new DefaultHttpResponseParserFactory());
@@ -211,9 +225,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
      * Configures a connection manager with all of the setting needed to connect
      * to Manta.
      *
+     * @param metricConfig potentially-null configuration for tracking client metrics
      * @return fully configured connection manager
      */
-    protected HttpClientConnectionManager buildConnectionManager() {
+    protected HttpClientConnectionManager buildConnectionManager(final MantaClientMetricConfiguration metricConfig) {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -229,28 +244,41 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .register("https", sslConnectionSocketFactory)
                 .build();
 
-        HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
+        final HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory =
                 buildHttpConnectionFactory();
 
-        final PoolingHttpClientConnectionManager poolingConnectionManager =
-                new PoolingHttpClientConnectionManager(socketFactoryRegistry,
+        final PoolingHttpClientConnectionManager connManager;
+        if (metricConfig != null) {
+            connManager = new InstrumentedPoolingHttpClientConnectionManager(
+                    metricConfig.getRegistry(),
+                    socketFactoryRegistry,
+                    connFactory,
+                    null,
+                    DNS_RESOLVER,
+                    -1,
+                    TimeUnit.MILLISECONDS);
+        } else {
+            connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry,
                         connFactory,
                         DNS_RESOLVER);
-        poolingConnectionManager.setDefaultMaxPerRoute(maxConns);
-        poolingConnectionManager.setMaxTotal(maxConns);
-        poolingConnectionManager.setDefaultSocketConfig(buildSocketConfig());
-        poolingConnectionManager.setDefaultConnectionConfig(buildConnectionConfig());
+        }
 
-        return poolingConnectionManager;
+        connManager.setDefaultMaxPerRoute(maxConns);
+        connManager.setMaxTotal(maxConns);
+        connManager.setDefaultSocketConfig(buildSocketConfig());
+        connManager.setDefaultConnectionConfig(buildConnectionConfig());
+
+        return connManager;
     }
 
     /**
      * Configures the builder class with all of the settings needed to connect to
      * Manta.
      *
+     * @param metricConfig nullable configuration for client metrics tracking
      * @return configured instance
      */
-    protected HttpClientBuilder createStandardBuilder() {
+    protected HttpClientBuilder createStandardBuilder(final MantaClientMetricConfiguration metricConfig) {
         final int maxConns = ObjectUtils.firstNonNull(
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
@@ -274,12 +302,10 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
                 .setExpectContinueEnabled(expectContinueEnabled)
                 .build();
 
-        final MantaHttpRequestExecutor requestExecutor;
-        if (expectContinueTimeout != null) {
-            requestExecutor = new MantaHttpRequestExecutor(expectContinueTimeout);
-        } else {
-            requestExecutor = new MantaHttpRequestExecutor();
-        }
+        final MantaHttpRequestExecutor requestExecutor = MantaHttpRequestExecutor.Builder.create()
+                .setMetricConfiguration(metricConfig)
+                .setWaitForContinue(expectContinueTimeout)
+                .build();
 
         final HttpClientBuilder builder = HttpClients.custom()
                 .disableAuthCaching()
@@ -304,10 +330,12 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
 
     /**
      * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
+     *
+     * @param metricConfig potentially-null configuration for tracking client metrics
      */
-    private void configureHttpClientBuilderDefaults() {
+    private void configureHttpClientBuilderDefaults(final MantaClientMetricConfiguration metricConfig) {
         if (config.getRetries() > 0) {
-            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config));
+            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config.getRetries(), metricConfig));
             httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
         } else {
             LOGGER.info("Retry of failed requests is disabled");

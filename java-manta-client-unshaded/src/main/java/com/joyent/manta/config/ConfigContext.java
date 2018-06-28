@@ -141,6 +141,16 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getSkipDirectoryDepth();
 
     /**
+     * @return the way metrics should be reported, {@code MetricReporterMode.DISABLED} or {@code null} to disable
+     */
+    MetricReporterMode getMetricReporterMode();
+
+    /**
+     * @return number of seconds between metrics output for periodic reporters
+     */
+    Integer getMetricReporterOutputInterval();
+
+    /**
      * @return true when client-side encryption is enabled.
      */
     Boolean isClientEncryptionEnabled();
@@ -229,6 +239,8 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
         sb.append(", skipDirectoryDepth=").append(context.getSkipDirectoryDepth());
+        sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
+        sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -311,6 +323,16 @@ public interface ConfigContext extends MantaMBeanable {
 
         if (config.getSkipDirectoryDepth() != null && config.getSkipDirectoryDepth() < 0) {
             failureMessages.add("Manta skip directory depth must be 0 or greater");
+        }
+
+        if (config.getMetricReporterMode() != null) {
+            if (MetricReporterMode.SLF4J.equals(config.getMetricReporterMode())) {
+                if (config.getMetricReporterOutputInterval() == null) {
+                    failureMessages.add("SLF4J metric reporter selected but no output interval was provided");
+                } else if (config.getMetricReporterOutputInterval() < 1) {
+                    failureMessages.add("Metric reporter output interval (ms) must be 1 or greater");
+                }
+            }
         }
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
@@ -542,4 +564,5 @@ public interface ConfigContext extends MantaMBeanable {
                 return null;
         }
     }
+
 }

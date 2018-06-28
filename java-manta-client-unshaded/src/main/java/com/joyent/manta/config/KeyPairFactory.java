@@ -37,6 +37,7 @@ public class KeyPairFactory {
 
     /**
      * Creates a new instance of the KeyPair factory.
+     *
      * @param config configuration to use when generating KeyPair objects
      */
     public KeyPairFactory(final ConfigContext config) {
@@ -45,6 +46,7 @@ public class KeyPairFactory {
 
     /**
      * Creates a {@link KeyPair} object based on the factory's configuration.
+     *
      * @return an encryption key pair
      */
     public KeyPair createKeyPair() {
@@ -60,32 +62,34 @@ public class KeyPairFactory {
             charPassword = null;
         }
 
-        try {
-            if (privateKeyContent != null) {
+        if (privateKeyContent != null) {
+            try {
                 keyPair = KeyPairLoader.getKeyPair(privateKeyContent, charPassword);
-            } else if (keyPath != null) {
-                keyPair = KeyPairLoader.getKeyPair(new File(keyPath), charPassword);
-            } else {
-                String msg = "Private key content setting must be set if "
-                    + "key file path is not set";
-                ConfigurationException exception = new ConfigurationException(msg);
-                exception.setContextValue("config", config);
-                throw exception;
+            } catch (final IOException e) {
+                throw new ConfigurationException("Unable to read supplied private key content", e);
             }
-        } catch (IOException e) {
-            String msg = String.format("Unable to read key files from path: %s",
-                    keyPath);
-            throw new ConfigurationException(msg, e);
+        } else if (keyPath != null) {
+            try {
+                keyPair = KeyPairLoader.getKeyPair(new File(keyPath), charPassword);
+            } catch (final IOException e) {
+                final String msg = String.format("Unable to read private key files from path: %s",
+                        keyPath);
+                throw new ConfigurationException(msg, e);
+            }
+        } else {
+            final String msg = "Private key content setting must be set if key file path is not set";
+            final ConfigurationException exception = new ConfigurationException(msg);
+            exception.setContextValue("config", config);
+            throw exception;
         }
 
         if (!KeyFingerprinter.verifyFingerprint(keyPair, config.getMantaKeyId())) {
-            String msg = String.format("Given fingerprint %s does not match expected key "
-                                       + "MD5:%s SHA256:%s",
-                                       config.getMantaKeyId(),
-                                       KeyFingerprinter.md5Fingerprint(keyPair),
-                                       KeyFingerprinter.sha256Fingerprint(keyPair));
-            ConfigurationException exception = new ConfigurationException(msg);
-            throw exception;
+            final String msg = String.format("Given fingerprint %s does not match expected key "
+                            + "MD5:%s SHA256:%s",
+                    config.getMantaKeyId(),
+                    KeyFingerprinter.md5Fingerprint(keyPair),
+                    KeyFingerprinter.sha256Fingerprint(keyPair));
+            throw new ConfigurationException(msg);
         }
 
         return keyPair;

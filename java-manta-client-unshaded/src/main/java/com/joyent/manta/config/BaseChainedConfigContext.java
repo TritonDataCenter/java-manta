@@ -40,6 +40,32 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String mantaKeyPath;
 
     /**
+     * Private key content. This shouldn't be set if the MantaKeyPath is set.
+     */
+    private volatile String privateKeyContent;
+
+    /**
+     * Optional password for private key.
+     */
+    private volatile String password;
+
+    /**
+     * Flag indicating if HTTP signatures are turned off.
+     */
+    private volatile Boolean noAuth;
+
+    /**
+     * Flag indicating if HTTP signature native code generation is turned off.
+     */
+    private volatile Boolean disableNativeSignatures;
+
+    /**
+     * Flag indicating if we verify the uploaded file's checksum against the
+     * server's checksum (MD5).
+     */
+    private volatile Boolean verifyUploads;
+
+    /**
      * General connection timeout for the Manta service.
      */
     private volatile Integer timeout;
@@ -53,16 +79,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * The maximum number of open connections to the Manta API.
      */
     private volatile Integer maxConnections;
-
-    /**
-     * Private key content. This shouldn't be set if the MantaKeyPath is set.
-     */
-    private volatile String privateKeyContent;
-
-    /**
-     * Optional password for private key.
-     */
-    private volatile String password;
 
     /**
      * Size of buffer in bytes to use to buffer streams of HTTP data.
@@ -80,16 +96,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String httpsCipherSuites;
 
     /**
-     * Flag indicating if HTTP signatures are turned off.
-     */
-    private volatile Boolean noAuth;
-
-    /**
-     * Flag indicating if HTTP signature native code generation is turned off.
-     */
-    private volatile Boolean disableNativeSignatures;
-
-    /**
      * Time in milliseconds to cache HTTP signature headers.
      */
     private volatile Integer tcpSocketTimeout;
@@ -102,24 +108,28 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * When not null, time in milliseconds to wait for a 100-continue response.
      */
-    private Integer expectContinueTimeout;
-
-    /**
-     * Flag indicating if we verify the uploaded file's checksum against the
-     * server's checksum (MD5).
-     */
-    private volatile Boolean verifyUploads;
-
-    /**
-     * Number of directories to assume exist when recursively creating directories.
-     */
-    private Integer skipDirectoryDepth;
+    private volatile Integer expectContinueTimeout;
 
     /**
      * Number of bytes to read into memory for a streaming upload before
      * deciding if we want to load it in memory before send it.
      */
     private volatile Integer uploadBufferSize;
+
+    /**
+     * Number of directories to assume exist when recursively creating directories.
+     */
+    private volatile Integer skipDirectoryDepth;
+
+    /**
+     * Whether metrics and MBeans should be tracked and exposed.
+     */
+    private volatile MetricReporterMode metricReporterMode;
+
+    /**
+     * Metrics output interval in seconds for modes that report metrics periodically.
+     */
+    private volatile Integer metricReporterOutputInterval;
 
     /**
      * Flag indicating when client-side encryption is enabled.
@@ -283,6 +293,16 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public MetricReporterMode getMetricReporterMode() {
+        return this.metricReporterMode;
+    }
+
+    @Override
+    public Integer getMetricReporterOutputInterval() {
+        return this.metricReporterOutputInterval;
+    }
+
+    @Override
     public Integer getUploadBufferSize() {
         return uploadBufferSize;
     }
@@ -365,6 +385,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.mantaKeyPath = context.getMantaKeyPath();
         }
 
+        if (context.getMetricReporterMode() != null) {
+            this.metricReporterMode = context.getMetricReporterMode();
+        }
+
+        if (context.getMetricReporterOutputInterval() != null) {
+            this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
+        }
+
         if (context.getTimeout() != null) {
             this.timeout = context.getTimeout();
         }
@@ -432,6 +460,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.getSkipDirectoryDepth() != null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (context.getMetricReporterMode() != null) {
+            this.metricReporterMode = context.getMetricReporterMode();
+        }
+
+        if (context.getMetricReporterOutputInterval() != null) {
+            this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
         if (context.isClientEncryptionEnabled() != null) {
@@ -544,6 +580,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.skipDirectoryDepth == null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (this.getMetricReporterMode() == null) {
+            this.metricReporterMode = context.getMetricReporterMode();
+        }
+
+        if (this.getMetricReporterOutputInterval() == null) {
+            this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -737,6 +781,18 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setMetricReporterMode(final MetricReporterMode metricReporterMode) {
+        this.metricReporterMode = metricReporterMode;
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setMetricReporterOutputInterval(final Integer metricReporterOutputInterval) {
+        this.metricReporterOutputInterval = metricReporterOutputInterval;
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
 
@@ -826,6 +882,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
+                && Objects.equals(metricReporterMode, that.metricReporterMode)
+                && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
@@ -843,6 +901,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 skipDirectoryDepth,
+                metricReporterMode,
+                metricReporterOutputInterval,
                 clientEncryptionEnabled, encryptionKeyId,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,

@@ -408,6 +408,24 @@ public class AuthAwareConfigContext
     }
 
     @Override
+    public AuthAwareConfigContext setMetricReporterMode(final MetricReporterMode metricReporterMode) {
+        synchronized (lock) {
+            super.setMetricReporterMode(metricReporterMode);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMetricReporterOutputInterval(final Integer metricReporterOutputInterval) {
+        synchronized (lock) {
+            super.setMetricReporterOutputInterval(metricReporterOutputInterval);
+        }
+
+        return this;
+    }
+
+    @Override
     public AuthAwareConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         synchronized (lock) {
             super.setClientEncryptionEnabled(clientEncryptionEnabled);

@@ -7,15 +7,19 @@
  */
 package com.joyent.manta.client;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reporter;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
@@ -31,21 +35,45 @@ import javax.management.ObjectName;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
-class MantaMBeanSupervisor implements AutoCloseable {
+class MantaClientAgent implements AutoCloseable {
 
     @SuppressWarnings("JavaDocVariable")
-    private static final Logger LOGGER = LoggerFactory.getLogger(MantaMBeanSupervisor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MantaClientAgent.class);
+
+    // @formatter:off
+    /**
+     * Format string for creating {@link ObjectName}s when exposing beans or metrics through JMX.
+     * This format string is used for both custom MBeans and exposing metrics. The resulting JMX structure
+     * resembles the following (where each ${CLIENT_UUID} represents a client instantiation:
+     *
+     * <ul>
+     *   <li>com.joyent.manta.client
+     *     <ul>
+     *       <li>${CLIENT_UUID}
+     *         <ul>
+     *           <li>ConfigContextMBean</li>
+     *           <li>PoolStatsMBean</li>
+     *           <li>retries</li>
+     *           <li>...</li>
+     *         </ul>
+     *       </li>
+     *       <li>${CLIENT_UUID}
+     *         <ul>
+     *           <li>...</li>
+     *         </ul>
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     *
+     */
+    static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:00=%s,type=%s";
+    // @formatter:on
 
     /**
-     * Format string for creating {@link ObjectName}s.
+     * Metric configuration info.
      */
-    private static final String FMT_MBEAN_OBJECT_NAME = "com.joyent.manta.client:type=%s[%d]";
-
-    /**
-     * A running count of the times we have created new {@link MantaMBeanSupervisor}
-     * instances.
-     */
-    private static final AtomicInteger SUPERVISOR_COUNT = new AtomicInteger(0);
+    private final MantaClientMetricConfiguration metricConfig;
 
     /**
      * List of all MBeans to be added to JMX.
@@ -53,9 +81,11 @@ class MantaMBeanSupervisor implements AutoCloseable {
     private final Map<ObjectName, DynamicMBean> beans;
 
     /**
-     * Supervisor index. Used to avoid JMX {@link ObjectName} collisions.
+     * Exposes metrics we don't manage as our own MBeans. The relevant type
+     * is actually {@link Reporter} but that isn't as interesting as the fact that
+     * all reporters are also {@link Closeable}.
      */
-    private final int idx;
+    private final Closeable metricReporter;
 
     /**
      * Flag indicating if the supervisor has been "closed" (i.e. beans deregistered)
@@ -63,11 +93,26 @@ class MantaMBeanSupervisor implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
-     * Create a new supervisor that will own an index and a set of beans.
+     * Construct a stub agent for unit testing custom MBean functionality.
      */
-    MantaMBeanSupervisor() {
-        idx = SUPERVISOR_COUNT.incrementAndGet();
-        beans = new HashMap<>(2);
+    MantaClientAgent() {
+        this(new MantaClientMetricConfiguration(UUID.randomUUID(), new MetricRegistry()));
+    }
+
+    /**
+     * Create a new agent that will be responsible for exposing MBeans and metrics for the given configuration.
+     *
+     * @param metricConfig details about how metrics will be exposed
+     */
+    MantaClientAgent(final MantaClientMetricConfiguration metricConfig) {
+        this.metricConfig = metricConfig;
+        this.beans = new HashMap<>(2);
+
+        if (metricConfig.getRegistry() != null && metricConfig.getReporterMode() != null) {
+            this.metricReporter = new MetricReporterSupplier(metricConfig).get();
+        } else {
+            this.metricReporter = null;
+        }
     }
 
     /**
@@ -76,9 +121,9 @@ class MantaMBeanSupervisor implements AutoCloseable {
      *
      * @param beanable the bean to attempt to register
      */
-    void expose(final MantaMBeanable beanable) {
+    void register(final MantaMBeanable beanable) {
         if (closed.get()) {
-            throw new IllegalStateException("Cannot register MBeans, supervisor has been closed");
+            throw new IllegalStateException("Cannot register MBeans, agent has been closed");
         }
 
         final DynamicMBean bean = beanable.toMBean();
@@ -93,7 +138,11 @@ class MantaMBeanSupervisor implements AutoCloseable {
 
         final ObjectName name;
         try {
-            name = new ObjectName(String.format(FMT_MBEAN_OBJECT_NAME, bean.getClass().getSimpleName(), idx));
+            name = new ObjectName(
+                    String.format(
+                            FMT_MBEAN_OBJECT_NAME,
+                            bean.getClass().getSimpleName(),
+                            this.metricConfig.getClientId()));
         } catch (final JMException e) {
             LOGGER.warn("Error creating bean: " + bean.getClass().getSimpleName(), e);
             return;
@@ -108,7 +157,7 @@ class MantaMBeanSupervisor implements AutoCloseable {
     }
 
     /**
-     * Prepare the supervisor for reuse.
+     * Prepare the agent for reuse.
      *
      * @throws Exception if an exception is thrown by {@link #close()}
      */
@@ -144,6 +193,10 @@ class MantaMBeanSupervisor implements AutoCloseable {
             } catch (final JMException e) {
                 LOGGER.warn(String.format("Error deregistering [%s] MBean in JMX", bean.getKey()), e);
             }
+        }
+
+        if (metricReporter != null) {
+            metricReporter.close();
         }
 
         beans.clear();

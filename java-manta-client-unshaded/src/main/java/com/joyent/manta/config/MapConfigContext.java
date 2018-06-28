@@ -123,6 +123,16 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_SKIP_DIRECTORY_DEPTH_KEY = "manta.skip_directory_depth";
 
     /**
+     * Property key for looking up a Manta agent reporting format.
+     */
+    public static final String MANTA_METRIC_REPORTER_MODE_KEY = "manta.metric_reporter.mode";
+
+    /**
+     * Property key for looking up a Manta agent reporting output interval.
+     */
+    public static final String MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY = "manta.metric_reporter.output_interval";
+
+    /**
      * Property key for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
@@ -185,6 +195,8 @@ public class MapConfigContext implements ConfigContext {
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_KEY,
             MANTA_SKIP_DIRECTORY_DEPTH_KEY,
+            MANTA_METRIC_REPORTER_MODE_KEY,
+            MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_KEY_ID_KEY,
@@ -393,6 +405,33 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY));
+    }
+
+    @Override
+    public MetricReporterMode getMetricReporterMode() {
+        final MetricReporterMode metricReporterMode = MantaUtils.parseEnumOrNull(
+                backingMap.get(MANTA_METRIC_REPORTER_MODE_KEY),
+                MetricReporterMode.class);
+
+        if (metricReporterMode != null) {
+            return metricReporterMode;
+        }
+
+        return MantaUtils.parseEnumOrNull(
+                backingMap.get(MANTA_METRIC_REPORTER_MODE_ENV_KEY),
+                MetricReporterMode.class);
+    }
+
+    @Override
+    public Integer getMetricReporterOutputInterval() {
+        final Integer mapValue = MantaUtils.parseIntegerOrNull(
+                backingMap.get(MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY));
     }
 
     @Override
