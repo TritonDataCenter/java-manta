@@ -256,7 +256,11 @@ public class MantaClient implements AutoCloseable {
                 connectionFactoryConfigurator,
                 metricConfig);
 
-        final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
+        final MantaApacheHttpClientContext connectionContext =
+                new MantaApacheHttpClientContext(
+                        connectionFactory,
+                        metricConfig);
+
         final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
 
         if (httpHelper != null) {

@@ -8,18 +8,17 @@
 package com.joyent.manta.http;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.AbstractExecutionAwareRequest;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -38,13 +37,10 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.net.ssl.SSLException;
 
-import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractSingleHeaderValue;
+import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
 import static com.joyent.manta.http.HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
-import static com.joyent.manta.http.HttpRange.parseContentRange;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.Validate.notNull;
-import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
-import static org.apache.http.HttpHeaders.CONTENT_RANGE;
-import static org.apache.http.HttpHeaders.ETAG;
 import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpHeaders.RANGE;
 import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
@@ -79,9 +75,14 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     static final int INFINITE_CONTINUATIONS = -1;
 
     /**
-     * The key under which the rate of continuation requests is recorded in the metric registry.
+     * The key under which the rate of continuation requests is recorded.
      */
-    private static final String METRIC_NAME_GET_CONTINUATIONS = "get-continuations";
+    private static final String METRIC_NAME_GET_CONTINUATIONS = "get-continuations-total";
+
+    /**
+     * The key under which the distribution of continuations delivered per request is recorded.
+     */
+    private static final String METRIC_NAME_CONTINUATIONS_PER_REQUEST = "get-continuations-per-request-distribution";
 
     /**
      * The HTTP client.
@@ -93,11 +94,6 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * to reuse it themselves since we modify headers.
      */
     private final HttpGet request;
-
-    /**
-     * Maximum number of continuations we will supply.
-     */
-    private final int retryCount;
 
     /**
      * Number of continuations we have supplied.
@@ -115,26 +111,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      */
     private final Counter totalContinuations;
 
-    /**
-     * Construct a coordinator. Each download request requires a new continuator. Invariants required by this class will
-     * be checked including whether the provided headers and the supplied client context's retry configuration are
-     * compatible with this implementation.
-     *
-     * @param connCtx the http connection context
-     * @param request the initial request
-     * @param initialResponse the first response received
-     * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
-     * implementation
-     * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing
-     */
-    public ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
-                                                         final HttpGet request,
-                                                         final HttpResponse initialResponse,
-                                                         final int retryCount)
-            throws ResumableDownloadException {
-        this(connCtx, request, initialResponse, retryCount, null);
-    }
+    private final Histogram continuationsDeliveredDistribution;
 
     /**
      * Construct a coordinator. Each download request requires a new continuator. Invariants required by this class will
@@ -143,9 +120,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      *
      * @param connCtx the http connection context
      * @param request the initial request
-     * @param initialResponse the first response received
-     * @param retryCount the number of continuations to attempt, or -1 for infinite continuations
-     * @param metricRegistry an optional registry for tracking the rate at which continuations are being triggered
+     * @param marker the relevant information from the initial exchange
      * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
      * implementation
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
@@ -153,66 +128,54 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      */
     public ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
                                                          final HttpGet request,
-                                                         final HttpResponse initialResponse,
-                                                         final int retryCount,
-                                                         final MetricRegistry metricRegistry)
+                                                         final ResumableDownloadMarker marker)
             throws ResumableDownloadException {
         this(verifyDownloadContinuationIsSafeAndExtractHttpClient(connCtx),
-                request,
-                initialResponse,
-                retryCount,
-                metricRegistry);
+             request,
+             marker,
+             extractMetricRegistry(connCtx));
     }
 
     /**
      * Package-private constructor for unit-testing methods which do not execute continuation requests.
      *
      * @param request the initial request
-     * @param initialResponse the first response received
-     * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
-     * implementation
-     * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing we
+     * @param marker the relevant information from the initial exchange
      */
-    ApacheHttpGetResponseEntityContentContinuator(final HttpGet request, final HttpResponse initialResponse)
-            throws ResumableDownloadException {
-        this((CloseableHttpClient) null, request, initialResponse, INFINITE_CONTINUATIONS, null);
+    ApacheHttpGetResponseEntityContentContinuator(final HttpGet request, final ResumableDownloadMarker marker) {
+        this(null, request, marker, null);
     }
 
     /**
      * Package-private constructor for unit-testing methods which do execute continuation requests (and can prepare
      * their own client which obeys our retry rules).
      *
+     * @param client the client we'll use to make requests for the remaining data
      * @param request the initial request
-     * @param initialResponse the first response received
-     * @param retryCount the number of continuations to attempt, or -1 for infinite continuations
-     * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
-     * implementation
-     * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing
+     * @param marker the relevant information from the initial exchange
+     * @param metricRegistry registry for building the total continuations {@link Counter}
      */
     ApacheHttpGetResponseEntityContentContinuator(final CloseableHttpClient client,
                                                   final HttpGet request,
-                                                  final HttpResponse initialResponse,
-                                                  final int retryCount,
-                                                  final MetricRegistry metricRegistry)
-            throws ResumableDownloadException {
-        // we clone and verify the request before assigning it to our field
-        final HttpGet cloned = cloneRequest(request);
-
-        // one or both (or neither) hints may be present
-        final Pair<String, HttpRange.Request> hints = ensureRequestHeadersAreCompatible(cloned);
-        final Pair<String, HttpRange.Response> initialResponseFingerprint = extractResponseFingerprint(initialResponse);
-        this.marker = ResumableDownloadMarker.validateInitialExchange(hints, initialResponseFingerprint);
-
-        this.request = cloned;
+                                                  final ResumableDownloadMarker marker,
+                                                  final MetricRegistry metricRegistry) {
+        // we clone the request in case the user is reusing the same request object
+        this.request = cloneRequest(request);
+        this.marker = requireNonNull(marker);
         this.request.setHeader(IF_MATCH, this.marker.getEtag());
         this.request.setHeader(RANGE, this.marker.getCurrentRange().render());
 
-        this.client = client;
-        this.retryCount = validateRetryCount(retryCount);
+        this.client = requireNonNull(client);
         this.continuation = 0;
-        this.totalContinuations = extractContinuationCounterOrNull(metricRegistry);
+
+        final ImmutablePair<Counter, Histogram> metrics = extractMetricFieldsOrNull(metricRegistry);
+        if (metrics != null) {
+            this.totalContinuations = metrics.left;
+            this.continuationsDeliveredDistribution = metrics.right;
+        } else {
+            this.totalContinuations = null;
+            this.continuationsDeliveredDistribution = null;
+        }
     }
 
     /**
@@ -239,10 +202,6 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             totalContinuations.inc();
         }
 
-        if (this.retryCount != INFINITE_CONTINUATIONS && this.continuation <= this.retryCount) {
-            throw new ResumableDownloadException("Maximum continuation count reached.");
-        }
-
         this.marker.updateRangeStart(bytesRead);
         this.request.setHeader(RANGE, this.marker.getCurrentRange().render());
 
@@ -266,7 +225,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                             statusCode));
         }
 
-        validateResponseWithMarker(extractResponseFingerprint(response));
+        validateResponseWithMarker(extractDownloadResponseFingerprint(response));
 
         final InputStream content;
         try {
@@ -309,6 +268,12 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         return true;
     }
 
+    /**
+     * Package-private method which compares a new response fingerprint with the internal marker
+     *
+     * @param responseFingerprint the continuation response etag+contentrange
+     * @throws ResumableDownloadUnexpectedResponseException if the response does not match the marker's expectations
+     */
     void validateResponseWithMarker(final Pair<String, HttpRange.Response> responseFingerprint)
             throws ResumableDownloadUnexpectedResponseException {
         notNull(responseFingerprint, "Response fingerprint must not be null");
@@ -336,6 +301,18 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     }
 
     /**
+     * Method indicating that this continuator is no longer required. Currently only used to record the number of
+     * continuations that where used for this particular request.
+     */
+    public void complete() {
+        if (this.continuationsDeliveredDistribution == null) {
+            return;
+        }
+
+        this.continuationsDeliveredDistribution.update(this.continuation);
+    }
+
+    /**
      * Clone a request so we can freely modify headers when retrieving a continuation {@link InputStream} in {@link
      * #buildContinuation(IOException, long)}. This method is necessary because {@link
      * AbstractExecutionAwareRequest#clone()} is basically useless.
@@ -354,156 +331,38 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         return get;
     }
 
-    /**
-     * Checks that a request has headers which are compatible. This means that the request either:
-     * <ul>
-     * <li>has no If-Match header and no ETag header</li>
-     * <li>has a single-valued If-Match header</li>
-     * <li>has a single Range header specifying a single byte range (i.e. no multipart ranges)</li>
-     * <li>satisfies both #2 and #3</li>
-     * </ul>
-     *
-     * @param request the request being checked for compatibility
-     * @return the ETag and range hints to be validated against the initial response
-     * @throws ResumableDownloadIncompatibleRequestException when the request cannot be resumed
-     */
-    static Pair<String, HttpRange.Request> ensureRequestHeadersAreCompatible(final HttpRequest request)
-            throws ResumableDownloadIncompatibleRequestException {
-        String ifMatch = null;
-        HttpRange.Request range = null;
-
-        Exception ifMatchEx = null;
-        Exception rangeEx = null;
-
-        try {
-            ifMatch = extractSingleHeaderValue(request, IF_MATCH, false);
-        } catch (final HttpException e) {
-            ifMatchEx = e;
-        }
-
-        try {
-            final String rawRequestRange = extractSingleHeaderValue(request, RANGE, false);
-            if (rawRequestRange != null) {
-                range = HttpRange.parseRequestRange(rawRequestRange);
-            }
-        } catch (final HttpException e) {
-            rangeEx = e;
-        }
-
-        if (ifMatchEx != null && rangeEx != null) {
-            throw new ResumableDownloadIncompatibleRequestException(
-                    String.format(
-                            "Incompatible Range and If-Match request headers for resuming download:%n%s%n%s",
-                            rangeEx.getMessage(),
-                            ifMatchEx.getMessage()));
-        } else if (ifMatchEx != null) {
-            throw new ResumableDownloadIncompatibleRequestException(ifMatchEx);
-        } else if (rangeEx != null) {
-            throw new ResumableDownloadIncompatibleRequestException(rangeEx);
-        }
-
-        return ImmutablePair.of(ifMatch, range);
-    }
-
-    /**
-     * In order to be sure we're continuing to download the same object we need to extract the {@code ETag} and {@code
-     * Content-Range} headers from the response. Either header missing is an error. Additionally, when the {@code
-     * Content-Range} header is present the specified range should be equal to the response's {@code Content-Length}.
-     *
-     * @param response the response to check for headers
-     * @return the request headers we're concerned with validating
-     * @throws ResumableDownloadUnexpectedResponseException when the headers are malformed, unparseable, or the {@code
-     * Content-Range} and {@code Content-Length} are mismatched
-     */
-    private static Pair<String, HttpRange.Response> extractResponseFingerprint(final HttpResponse response)
-            throws ResumableDownloadUnexpectedResponseException {
-
-        final String etag;
-        try {
-            etag = extractSingleHeaderValue(response, ETAG, true);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(e);
-        }
-
-        final long contentLength;
-        try {
-            final String rawContentLength = extractSingleHeaderValue(response, CONTENT_LENGTH,
-                    true);
-            contentLength = Long.parseUnsignedLong(notNull(rawContentLength)); // notNull squelches
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(e);
-        } catch (final NumberFormatException e) {
-            throw new ResumableDownloadUnexpectedResponseException(
-                    String.format(
-                            "Failed to parse Content-Length response, matching headers: %s",
-                            Arrays.deepToString(response.getHeaders(CONTENT_LENGTH))));
-        }
-
-        final String rawContentRange;
-        try {
-            rawContentRange = extractSingleHeaderValue(response, CONTENT_RANGE, false);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(e);
-        }
-
-        if (StringUtils.isBlank(rawContentRange)) {
-            // the entire object is being requested
-            return new ImmutablePair<>(etag, new HttpRange.Response(0, contentLength - 1, contentLength));
-        }
-
-        final HttpRange.Response contentRange;
-        try {
-            contentRange = parseContentRange(rawContentRange);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(
-                    "Unable to parse Content-Range header while analyzing download response",
-                    e);
-        }
-
-        // Manta follows the spec and sends the Content-Length of the range, which we should validateResponseWithMarker
-        if (contentRange.contentLength() != contentLength) {
-            throw new ResumableDownloadUnexpectedResponseException(
-                    String.format(
-                            "Invalid Content-Length in range response: expected [%d], got [%d]",
-                            contentRange.contentLength(),
-                            contentLength));
-        }
-
-        return new ImmutablePair<>(etag, contentRange);
-    }
-
     @SuppressWarnings("checkstyle:JavadocMethod")
     private static CloseableHttpClient verifyDownloadContinuationIsSafeAndExtractHttpClient(
             final MantaApacheHttpClientContext connCtx) throws ResumableDownloadException {
         notNull(connCtx, "Connection context must not be null");
 
-
         final boolean cancellable = connCtx.isRetryCancellable();
         final boolean enabled = connCtx.isRetryEnabled();
         if (enabled && !cancellable) {
             throw new ResumableDownloadException("Incompatible connection context, automatic retries must be "
-                    + "disabled or cancellable");
+                                                         + "disabled or cancellable");
         }
 
-        final CloseableHttpClient client = connCtx.getHttpClient();
-        return notNull(client, "Connection context missing HttpClient");
+        return requireNonNull(connCtx.getHttpClient());
+    }
+
+    private static MetricRegistry extractMetricRegistry(final MantaApacheHttpClientContext connCtx) {
+        final MantaClientMetricConfiguration metricConfig = connCtx.getMetricConfig();
+        if (metricConfig == null) {
+            return null;
+        }
+
+
+        return metricConfig.getRegistry();
     }
 
     @SuppressWarnings("checkstyle:JavadocMethod")
-    private static int validateRetryCount(final int retryCount) {
-        if (retryCount <= 0 && retryCount != INFINITE_CONTINUATIONS) {
-            throw new IllegalArgumentException("Retry count must be either -1 (infinite) or greater than zero");
-        }
-
-        return retryCount;
-    }
-
-    @SuppressWarnings("checkstyle:JavadocMethod")
-    private static Counter extractContinuationCounterOrNull(final MetricRegistry metricRegistry) {
+    private static ImmutablePair<Counter, Histogram> extractMetricFieldsOrNull(final MetricRegistry metricRegistry) {
         if (metricRegistry == null) {
             return null;
         }
 
-        return metricRegistry.counter(METRIC_NAME_GET_CONTINUATIONS);
+        return ImmutablePair.of(metricRegistry.counter(METRIC_NAME_GET_CONTINUATIONS),
+                                metricRegistry.histogram(METRIC_NAME_CONTINUATIONS_PER_REQUEST));
     }
 }

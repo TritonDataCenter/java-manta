@@ -19,12 +19,13 @@ import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
+import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
+import com.joyent.manta.util.AutoContinuingInputStream;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -53,6 +54,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
+import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
+import static com.joyent.manta.http.ResumableDownloadMarker.validateInitialExchange;
+
 /**
  * Helper class used for common HTTP operations against the Manta server.
  *
@@ -77,7 +82,7 @@ public class StandardHttpHelper implements HttpHelper {
      * @see RetryConfigAware
      * @see HttpContextRetryCancellation
      */
-    private final boolean downloadContinuation;
+    private final boolean attemptDownloadContinuation;
 
     /**
      * Current connection context used for maintaining state between requests.
@@ -110,16 +115,10 @@ public class StandardHttpHelper implements HttpHelper {
      * @param connectionContext connection object
      * @param config configuration context object
      */
+    @SuppressWarnings("deprecation")
     StandardHttpHelper(final MantaConnectionContext connectionContext,
                        final ConfigContext config) {
-        this(connectionContext,
-                new MantaHttpRequestFactory(config.getMantaURL()),
-                ObjectUtils.firstNonNull(
-                        config.verifyUploads(),
-                        DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
-                ObjectUtils.firstNonNull(
-                        config.isDownloadContinuationEnabled(),
-                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
+        this(connectionContext, new MantaHttpRequestFactory(config.getMantaURL()), config);
     }
 
     /**
@@ -134,13 +133,13 @@ public class StandardHttpHelper implements HttpHelper {
                               final MantaHttpRequestFactory requestFactory,
                               final ConfigContext config) {
         this(connectionContext,
-                requestFactory,
-                ObjectUtils.firstNonNull(
-                        config.verifyUploads(),
-                        DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
-                ObjectUtils.firstNonNull(
-                        config.isDownloadContinuationEnabled(),
-                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
+             requestFactory,
+             ObjectUtils.firstNonNull(
+                     config.verifyUploads(),
+                     DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
+             ObjectUtils.firstNonNull(
+                     config.isDownloadContinuationEnabled(),
+                     DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
     }
 
     /**
@@ -160,12 +159,12 @@ public class StandardHttpHelper implements HttpHelper {
         this.connectionContext = Validate.notNull(connectionContext, "MantaConnectionContext must not be null");
         this.requestFactory = Validate.notNull(requestFactory, "MantaHttpRequestFactory must not be null");
         this.verifyUploads = verifyUploads;
+        this.attemptDownloadContinuation =
+                downloadContinuation && verifyDownloadContinuationConditions(connectionContext);
 
-        this.downloadContinuation = downloadContinuation && verifyDownloadContinuationConditions(connectionContext);
-
-        if (downloadContinuation && !this.downloadContinuation) {
+        if (downloadContinuation && !this.attemptDownloadContinuation) {
             LOGGER.warn("Download continuation requested but provided connection context is invalid. Retries must "
-                    + "be cancellable or disabled");
+                                + "be cancellable or disabled");
         }
     }
 
@@ -373,57 +372,21 @@ public class StandardHttpHelper implements HttpHelper {
             expectedHttpStatus = HttpStatus.SC_OK;
         }
 
-        final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction;
-        if (this.downloadContinuation && HttpGet.METHOD_NAME.equalsIgnoreCase(request.getMethod())) {
-            responseAction = buildContinuationResponseAction(request);
-        } else {
-            responseAction = buildResponseAction(request);
-        }
-
-        return executeRequest(
-                request,
-                expectedHttpStatus,
-                responseAction,
-                false,
-                "GET    {} response [{}] {} ");
-    }
-
-    /**
-     * Prepare the appropriate response action for converting a response into a {@link MantaObjectInputStream}. May
-     * delegate to {@link #buildContinuationResponseAction(HttpUriRequest)} if download continuation is enabled.
-     *
-     * @param request the initial request
-     * @return a response action
-     */
-    private static Function<CloseableHttpResponse, MantaObjectInputStream> buildResponseAction(
-            final HttpUriRequest request) {
-        return response -> {
-            HttpEntity entity = response.getEntity();
-
-            if (entity == null) {
-                final String msg = "Can't process null response entity.";
-                final MantaClientException exception = new MantaClientException(msg);
-                exception.setContextValue("uri", request.getRequestLine().getUri());
-                exception.setContextValue("method", request.getRequestLine().getMethod());
-
-                throw exception;
-            }
-
+        final Function<CloseableHttpResponse, MantaObjectInputStream> responseAction = response -> {
             final MantaHttpHeaders responseHeaders = new MantaHttpHeaders(response.getAllHeaders());
             final String path = request.getURI().getPath();
             // MantaObjectResponse expects to be constructed with the
             // encoded path, which it then decodes when a caller does
             // getPath.  However, here the HttpUriRequest has already
             // decoded.
-            final MantaObjectResponse metadata = new MantaObjectResponse(MantaUtils.formatPath(path),
-                    responseHeaders);
+            final MantaObjectResponse metadata = new MantaObjectResponse(MantaUtils.formatPath(path), responseHeaders);
 
             if (metadata.isDirectory()) {
                 final String msg = "Directories do not have data, so data streams "
                         + "from directories are not possible.";
                 final MantaUnexpectedObjectTypeException exception =
                         new MantaUnexpectedObjectTypeException(msg,
-                                ObjectType.FILE, ObjectType.DIRECTORY);
+                            ObjectType.FILE, ObjectType.DIRECTORY);
                 exception.setContextValue("path", path);
 
                 if (metadata.getHttpHeaders() != null) {
@@ -433,13 +396,21 @@ public class StandardHttpHelper implements HttpHelper {
                 throw exception;
             }
 
-            InputStream backingStream;
+            final HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                final String msg = "Can't process null response entity.";
+                final MantaClientException exception = new MantaClientException(msg);
+                exception.setContextValue("uri", request.getRequestLine().getUri());
+                exception.setContextValue("method", request.getRequestLine().getMethod());
 
+                throw exception;
+            }
+
+            final InputStream httpEntityStream;
             try {
-                backingStream = entity.getContent();
+                httpEntityStream = entity.getContent();
             } catch (IOException ioe) {
-                String msg = String.format(
-                        "Error getting stream from entity content for path: %s",
+                String msg = String.format("Error getting stream from entity content for path: %s",
                         path);
                 MantaObjectException e = new MantaObjectException(msg, ioe);
                 e.setContextValue("path", path);
@@ -447,15 +418,58 @@ public class StandardHttpHelper implements HttpHelper {
                 throw e;
             }
 
-            return new MantaObjectInputStream(metadata, response,
-                    backingStream);
+            final InputStream backingStream;
+            final InputStreamContinuator continuator = constructContinuatorForCompatibleRequest(request, response);
+            if (continuator != null) {
+                backingStream = new AutoContinuingInputStream(httpEntityStream, continuator);
+            } else {
+                backingStream = httpEntityStream;
+            }
+
+            return new MantaObjectInputStream(metadata, response, backingStream);
         };
+
+        return executeRequest(
+                request,
+                expectedHttpStatus,
+                responseAction,
+                false,
+                "GET    {} response [{}] {} ");
     }
 
-    @SuppressWarnings("checkstyle:JavadocMethod")
-    private static Function<CloseableHttpResponse, MantaObjectInputStream> buildContinuationResponseAction(
-            final HttpUriRequest request) {
-        throw new NotImplementedException("not yet");
+    private InputStreamContinuator constructContinuatorForCompatibleRequest(final HttpUriRequest request,
+                                                                            final CloseableHttpResponse response) {
+
+        if (!this.attemptDownloadContinuation
+                || !HttpGet.METHOD_NAME.equalsIgnoreCase(request.getMethod())
+                || !(this.connectionContext instanceof MantaApacheHttpClientContext)
+                || !(request instanceof HttpGet)) {
+            return null;
+        }
+
+        final HttpGet get = (HttpGet) request;
+        final ResumableDownloadMarker marker;
+        try {
+            marker = validateInitialExchange(
+                    extractDownloadRequestFingerprint(get),
+                    extractDownloadResponseFingerprint(response));
+        } catch (final ResumableDownloadException rde1) {
+            return null;
+        }
+
+        try {
+            return new ApacheHttpGetResponseEntityContentContinuator(
+                    (MantaApacheHttpClientContext) this.connectionContext,
+                    get,
+                    marker);
+        } catch (final ResumableDownloadException rde) {
+            LOGGER.debug(
+                    String.format(
+                            "Expected to build a continuator but an exception occurred: %s",
+                            rde.getMessage()));
+        }
+
+        return null;
     }
 
     /**

@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.MDC;
@@ -33,17 +34,30 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      */
     private final MantaConnectionFactory connectionFactory;
 
+    private final MantaClientMetricConfiguration metricConfig;
+
     /**
      * Creates a new instance using the passed in factory class.
      *
      * @param connectionFactory factory class that creates configured connections
      */
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory) {
+        this(connectionFactory, null);
+    }
+
+    /**
+     * Creates a new instance using the passed in factory class.
+     *
+     * @param connectionFactory factory class that creates configured connections
+     */
+    public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory,
+                                        final MantaClientMetricConfiguration metricConfig) {
         Validate.notNull(connectionFactory,
                 "Connection factory must not be null");
 
         this.connectionFactory = connectionFactory;
         this.httpClient = connectionFactory.createConnection();
+        this.metricConfig = metricConfig;
     }
 
     @Override
@@ -59,6 +73,11 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
     @Override
     public boolean isRetryCancellable() {
         return this.connectionFactory.isRetryCancellable();
+    }
+
+    @Override
+    public MantaClientMetricConfiguration getMetricConfig() {
+        return this.metricConfig;
     }
 
     @Override

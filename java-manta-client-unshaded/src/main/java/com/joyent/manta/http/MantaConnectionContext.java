@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.util.MetricsAware;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
@@ -15,7 +16,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public interface MantaConnectionContext extends AutoCloseable, RetryConfigAware {
+public interface MantaConnectionContext extends AutoCloseable, RetryConfigAware, MetricsAware {
 
     /**
      * HTTP client object used for accessing Manta.

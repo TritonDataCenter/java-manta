@@ -30,4 +30,6 @@ public interface InputStreamContinuator {
      * @throws IOException if the exception is not recoverable or there is an error preparing the continuation
      */
     InputStream buildContinuation(IOException ex, long bytesRead) throws IOException;
+
+    void complete();
 }

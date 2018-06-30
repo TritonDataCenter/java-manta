@@ -127,9 +127,9 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
         return false;
     }
 
-
     @Override
     public void close() throws IOException {
         this.getWrapped().close();
+        this.continuator.complete();
     }
 }

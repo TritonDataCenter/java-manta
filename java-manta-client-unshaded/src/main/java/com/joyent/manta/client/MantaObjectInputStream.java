@@ -225,7 +225,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     @Deprecated
     public void abortConnection() throws IOException {
         if (backingStream instanceof EofSensorInputStream) {
-            ((EofSensorInputStream)backingStream).abortConnection();
+            ((EofSensorInputStream) backingStream).abortConnection();
             IOUtils.closeQuietly(httpResponse);
         } else {
             close();

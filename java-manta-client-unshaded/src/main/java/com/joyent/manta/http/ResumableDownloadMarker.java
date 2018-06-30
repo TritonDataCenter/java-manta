@@ -11,6 +11,7 @@ import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpException;
+import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +21,8 @@ import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
 
 /**
- * Mostly-value class for recording an initial request/response cycle and retaining the necessary information to
- * create continuation requests and validate their responses.
+ * Mostly-value class for recording an initial request/response cycle and retaining the necessary information to create
+ * continuation requests and validate their responses.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
