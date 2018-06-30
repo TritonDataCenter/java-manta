@@ -207,18 +207,28 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     }
 
     /**
-     * Aborts this stream. This is a special version of {@link #close close()} which prevents re-use of the underlying
-     * connection, if any. Calling this method indicates that there should be no attempt to read until the end of the
-     * stream.
+     * <p>Aborts this stream.</p>
+     *
+     * <p>This is a special version of {@link #close close()} which prevents
+     * re-use of the underlying connection, if any. Calling this method
+     * indicates that there should be no attempt to read until the end of
+     * the stream.</p>
+     *
+     * <p>If the backing stream of the connection is not a
+     * {@link EofSensorInputStream}, this method with call {@link #close()}.</p>
+     *
+     * <p>This method is deprecated because we can't relay on the underlying
+     * backing stream to always be a {@link EofSensorInputStream}.</p>
      *
      * @throws IOException thrown when unable to abort connection
      */
+    @Deprecated
     public void abortConnection() throws IOException {
         if (backingStream instanceof EofSensorInputStream) {
-            ((EofSensorInputStream) backingStream).abortConnection();
+            ((EofSensorInputStream)backingStream).abortConnection();
+            IOUtils.closeQuietly(httpResponse);
+        } else {
+            close();
         }
-
-        // QUESTION: is this correct?
-        IOUtils.closeQuietly(backingStream);
     }
 }

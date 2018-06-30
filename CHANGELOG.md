@@ -3,6 +3,29 @@ All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.2.3-SNAPSHOT] - Coming soon!
+### Fixed
+ - [UnsupportedOperationException when getting a 0 byte file using `MantaClient.getAsInputStream`](https://github.com/joyent/java-manta/issues/408)
+
+### Added
+ - Client metrics can now be enabled by selecting a reporting mode with the
+   [`manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`](/USAGE.md#parameters) setting. [JMX and SLF4J are
+   available](https://github.com/joyent/java-manta/issues/410#issuecomment-384751882), though others may be added in the future.
+ - New metrics exposed:
+    - [Meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) for
+    [retries](https://github.com/joyent/java-manta/issues/410).
+    - [Timers](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) per HTTP request method.
+    - [Meters](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) per exception that occurs during requests.
+
+### Changed
+ - MBeans registered in JMX no longer use an incrementing integer and instead are created under
+   [unique IDs for each client](https://user-images.githubusercontent.com/1973223/38774088-6a08861e-4014-11e8-8951-287ecd70032f.png).
+ - JMX is no longer used to expose configuration and pool stats by default. To reenable JMX,
+   set `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE` to `JMX`.
+ - Upgraded upstream dependencies to latest stable versions:
+    - HTTP Signatures dependency: 4.0.6 → 4.0.8
+    - jna-gmp: 2.0.0 → 2.1.0
+    - BouncyCastle: 1.58 → 1.59
+    - Apache HttpClient: 4.5.3 → 4.5.5
 
 ## [3.2.2] - 2018-05-04
 ### Fixed
@@ -10,26 +33,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [`MantaClientHttpResponseException` does not provide a way to get the response headers](https://github.com/joyent/java-manta/issues/383)
  - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
  - [Underlying stream is not closed by `MantaEncryptedObjectInputStream` for range requests with certain ciphers](https://github.com/joyent/java-manta/issues/398)
- - [Exceptions relating to object type expectations are too generic](https://github.com/joyent/java-manta/issues/403)
- - Upgraded upstream dependencies to latest stable versions:
-    - HTTP Signatures dependency: 4.0.6 → 4.0.8
-    - jna-gmp: 2.0.0 → 2.1.0
-    - BouncyCastle: 1.58 → 1.59
-    - Apache HttpClient: 4.5.3 → 4.5.5
  - [Improved error messages for missing or invalid private keys.](https://github.com/joyent/java-manta/pull/415)
+ - [Exceptions relating to object type expectations are too generic](https://github.com/joyent/java-manta/issues/403)
  - [Integration test regression](https://github.com/joyent/java-manta/pull/417)
-
-### Added
- - Client metrics can now be enabled by selecting a reporting mode with the
-   [`manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`](/USAGE.md#parameters) setting. [JMX and SLF4J are
-   available, though others may be added in the future.](https://github.com/joyent/java-manta/issues/410#issuecomment-384751882)
- - [Retry rate metric](https://github.com/joyent/java-manta/issues/410).
-
-### Changed
- - MBeans registered in JMX no longer use an incrementing integer and instead are created under
-   [unique IDs for each client](https://user-images.githubusercontent.com/1973223/38774088-6a08861e-4014-11e8-8951-287ecd70032f.png).
- - JMX is no longer used to expose configuration and pool stats by default. To reenable JMX,
-   set `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE` to `JMX`.
 
 ## [3.2.1] - 2017-12-01
 ### Added

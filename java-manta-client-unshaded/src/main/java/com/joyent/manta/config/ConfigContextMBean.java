@@ -72,6 +72,9 @@ public class ConfigContextMBean implements DynamicMBean {
     }
 
     /**
+     * Describes the attributes exposed by this MBean. Unexported configuration settings
+     * are included inline to make it easier to verify completeness.
+     *
      * @return an array of all of the attributes to expose to JMX
      */
     private MBeanAttributeInfo[] beanAttributeInfoBuilder() {
@@ -92,6 +95,17 @@ public class ConfigContextMBean implements DynamicMBean {
                         String.class.getName(),
                         "Path on the file system to private key used to generate HTTP signatures",
                         true, this.isSettable, false),
+                // MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY omitted
+                // MapConfigContext.MANTA_PASSWORD_KEY omitted
+                // MapConfigContext.MANTA_NO_AUTH_KEY omitted
+                new MBeanAttributeInfo(MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY,
+                        Boolean.class.getName(),
+                        "Flag that disables using native code to generate HTTP signatures",
+                        true, false, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY,
+                        Boolean.class.getName(),
+                        "Flag indicating the checksum verification of uploaded files is enabled",
+                        true, this.isSettable, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_TIMEOUT_KEY,
                         Integer.class.getName(),
                         "Connection timeout for the Manta service in milliseconds",
@@ -104,18 +118,15 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "Maximum number of open connections to the Manta API",
                         true, this.isSettable, false),
-                new MBeanAttributeInfo(MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY,
-                        String.class.getName(),
-                        "Comma delimited list of HTTPS protocols",
-                        true, this.isSettable, false),
-                new MBeanAttributeInfo(MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY,
-                        Boolean.class.getName(),
-                        "Flag that disables using native code to generate HTTP signatures",
-                        true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_HTTP_BUFFER_SIZE_KEY,
                         Integer.class.getName(),
                         "Size of buffer in bytes to use to buffer streams of HTTP data",
                         true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY,
+                        String.class.getName(),
+                        "Comma delimited list of HTTPS protocols",
+                        true, this.isSettable, false),
+                // MapConfigContext.MANTA_HTTPS_CIPHERS_KEY omitted
                 new MBeanAttributeInfo(MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY,
                         Integer.class.getName(),
                         "Time in milliseconds to wait to see if a TCP socket has timed out",
@@ -124,10 +135,10 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "Time in milliseconds to wait for a connection from the pool",
                         true, false, false),
-                new MBeanAttributeInfo(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY,
-                        Boolean.class.getName(),
-                        "Flag indicating the checksum verification of uploaded files is enabled",
-                        true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_KEY,
+                        Integer.class.getName(),
+                        "Time in milliseconds to wait for a 100 Continue response before sending request body",
+                        true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY,
                         Integer.class.getName(),
                         "The size of pre-streaming upload buffers",
@@ -136,6 +147,14 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "The depth of directories to skip when attempting creating directories recursively",
                         true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_METRIC_REPORTER_MODE_KEY,
+                        MetricReporterMode.class.getName(),
+                        "Method through which client metrics are reported",
+                        true, false, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
+                        Integer.class.getName(),
+                        "Interval in seconds at which client metrics are reported (where applicable)",
+                        true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
                         Boolean.class.getName(),
                         "Flag indicating client-side encryption is enabled",
@@ -160,6 +179,8 @@ public class ConfigContextMBean implements DynamicMBean {
                         String.class.getName(),
                         "Path to the private encryption key on the filesystem",
                         true, false, false)
+                // MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_KEY omitted
+                // MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY omitted
         };
     }
 
