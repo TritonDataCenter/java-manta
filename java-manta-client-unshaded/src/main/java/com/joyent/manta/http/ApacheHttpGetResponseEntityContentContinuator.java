@@ -137,16 +137,6 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     }
 
     /**
-     * Package-private constructor for unit-testing methods which do not execute continuation requests.
-     *
-     * @param request the initial request
-     * @param marker the relevant information from the initial exchange
-     */
-    ApacheHttpGetResponseEntityContentContinuator(final HttpGet request, final ResumableDownloadMarker marker) {
-        this(null, request, marker, null);
-    }
-
-    /**
      * Package-private constructor for unit-testing methods which do execute continuation requests (and can prepare
      * their own client which obeys our retry rules).
      *

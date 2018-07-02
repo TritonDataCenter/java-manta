@@ -132,6 +132,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
      * Tests validation of responses for downloads with an initial response code 200.
      */
     public void validateResponseExpectsNonNullHintsAndResponseFingerprint() throws Exception {
+        final CloseableHttpClient client = mock(CloseableHttpClient.class);
         final HttpGet req = new HttpGet();
 
         final String etag = "abc";
@@ -146,31 +147,33 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 extractDownloadRequestFingerprint(req),
                 extractDownloadResponseFingerprint(res));
 
-        new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(ImmutablePair.of(etag, contentRange));
+        final ApacheHttpGetResponseEntityContentContinuator continuator =
+                new ApacheHttpGetResponseEntityContentContinuator(client, req, marker, null);
+
+        continuator.validateResponseWithMarker(ImmutablePair.of(etag, contentRange));
 
         // the following assertion just tests for programmer error
         assertThrows(NullPointerException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(null));
+                continuator.validateResponseWithMarker(null));
 
         // the following assertions test a response with insufficient headers
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(ImmutablePair.nullPair()));
+                continuator.validateResponseWithMarker(ImmutablePair.nullPair()));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(ImmutablePair.of(etag, null)));
+                continuator.validateResponseWithMarker(ImmutablePair.of(etag, null)));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(ImmutablePair.of(null, contentRange)));
+                continuator.validateResponseWithMarker(ImmutablePair.of(null, contentRange)));
 
         // the following assertions test a response with incorrect headers
         final String badEtag = etag.substring(1);
         final HttpRange.Response badContentRange = new HttpRange.Response(0, contentLength, contentLength + 1);
 
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(ImmutablePair.of(etag, badContentRange)));
+                continuator.validateResponseWithMarker(ImmutablePair.of(etag, badContentRange)));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(ImmutablePair.of(badEtag, contentRange)));
+                continuator.validateResponseWithMarker(ImmutablePair.of(badEtag, contentRange)));
         assertThrows(ResumableDownloadUnexpectedResponseException.class, () ->
-                new ApacheHttpGetResponseEntityContentContinuator(req, marker).validateResponseWithMarker(
-                        ImmutablePair.of(badEtag, badContentRange)));
+                continuator.validateResponseWithMarker(ImmutablePair.of(badEtag, badContentRange)));
     }
 
 }
