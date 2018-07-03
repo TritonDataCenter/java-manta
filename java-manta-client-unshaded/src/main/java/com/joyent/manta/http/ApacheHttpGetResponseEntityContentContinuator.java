@@ -19,10 +19,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.AbstractExecutionAwareRequest;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
@@ -87,7 +87,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     /**
      * The HTTP client.
      */
-    private final CloseableHttpClient client;
+    private final HttpClient client;
 
     /**
      * A clone of the original user-supplied request. We need to defensively clone the request in case the user intends
@@ -145,7 +145,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * @param marker the relevant information from the initial exchange
      * @param metricRegistry registry for building the total continuations {@link Counter}
      */
-    ApacheHttpGetResponseEntityContentContinuator(final CloseableHttpClient client,
+    ApacheHttpGetResponseEntityContentContinuator(final HttpClient client,
                                                   final HttpGet request,
                                                   final ResumableDownloadMarker marker,
                                                   final MetricRegistry metricRegistry) {
@@ -196,7 +196,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         this.request.setHeader(RANGE, this.marker.getCurrentRange().render());
 
         // not yet trying to handle exceptions during request execution
-        final CloseableHttpResponse response;
+        final HttpResponse response;
         try {
             final HttpContext httpContext = new BasicHttpContext();
             httpContext.setAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
@@ -322,7 +322,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     }
 
     @SuppressWarnings("checkstyle:JavadocMethod")
-    private static CloseableHttpClient verifyDownloadContinuationIsSafeAndExtractHttpClient(
+    private static HttpClient verifyDownloadContinuationIsSafeAndExtractHttpClient(
             final MantaApacheHttpClientContext connCtx) throws ResumableDownloadException {
         notNull(connCtx, "Connection context must not be null");
 
