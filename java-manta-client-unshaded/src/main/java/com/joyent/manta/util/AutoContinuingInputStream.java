@@ -8,10 +8,10 @@
 package com.joyent.manta.util;
 
 import com.joyent.manta.http.InputStreamContinuator;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -49,12 +49,17 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
      * Attempts to build a continuation of the stream we are trying to read if our {@link #continuator} considers the
      * exception non-fatal, passing along the byte offset from which the continuation should pick up.
      *
-     * @param e the exception from which we are attempting to recover
+     * @param originalIOException the exception from which we are attempting to recover
      * @throws IOException the exception if it is not recoverable, or an exception that may have occurred while
      * continuing
      */
-    private void attemptRecovery(final IOException e) throws IOException {
-        this.continueWith(this.continuator.buildContinuation(e, this.getBytesRead()));
+    private void attemptRecovery(final IOException originalIOException) throws IOException {
+        try {
+            this.continueWith(this.continuator.buildContinuation(originalIOException, this.getBytesRead()));
+        } catch (final IOException ce) {
+            originalIOException.addSuppressed(ce);
+            throw originalIOException;
+        }
     }
 
     @Override
@@ -114,12 +119,12 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
 
     @Override
     public void mark(final int readlimit) {
-        throw new UncheckedIOException(new IOException("mark/reset not supported"));
+        throw new UnsupportedOperationException("mark/reset not supported");
     }
 
     @Override
     public void reset() throws IOException {
-        throw new IOException("mark/reset not supported");
+        throw new UnsupportedOperationException("mark/reset not supported");
     }
 
     @Override
@@ -129,7 +134,8 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
 
     @Override
     public void close() throws IOException {
+        IOUtils.closeQuietly(this.continuator);
+
         this.getWrapped().close();
-        this.continuator.complete();
     }
 }

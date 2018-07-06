@@ -11,7 +11,6 @@ import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpException;
-import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +28,6 @@ import static org.apache.commons.lang3.Validate.validState;
  */
 final class ResumableDownloadMarker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ResumableDownloadMarker.class);
-
     /**
      * The ETag associated with the object being downloaded. We need to make sure the ETag is unchanged between
      * retries.
@@ -39,9 +36,8 @@ final class ResumableDownloadMarker {
 
     /**
      * The starting offset of the initial request/response. Used as part of verifying that the next range will not lie
-     * outside of the target request range. We need to keep this in addition to {@link #previousStartInclusive} because
-     * the number of bytes provided to {@link #updateRangeStart(long)} is relative to the
-     * <strong>initial</strong> start offset, not the latest start offset.
+     * outside of the target request range. We need to keep this because the number of bytes provided to {@link
+     * #updateRangeStart(long)} is relative to the <strong>initial</strong> start offset, not the latest start offset.
      */
     private final long originalRangeStart;
 
@@ -49,11 +45,6 @@ final class ResumableDownloadMarker {
      * The total size of the target request range for Range requests, otherwise this is the Content-Length.
      */
     private final long totalRangeSize;
-
-    /**
-     * The previous start of range. Similar to {@link #originalRangeStart} but only remembers the latest value.
-     */
-    private long previousStartInclusive;
 
     /**
      * The current download range.
@@ -67,7 +58,6 @@ final class ResumableDownloadMarker {
      * @param etag the etag of the object being downloaded
      * @param initialContentRange the target range being downloaded, derived from Content-Length for entire objects
      * @see HttpRange#parseContentRange(String)
-     * @see HttpRange#fromContentLength(long)
      */
     ResumableDownloadMarker(final String etag,
                             final HttpRange.Response initialContentRange) {
@@ -75,12 +65,9 @@ final class ResumableDownloadMarker {
         notNull(initialContentRange, "HttpRange must not be null");
 
         this.etag = etag;
-        this.previousStartInclusive = initialContentRange.getStartInclusive();
-        this.originalRangeStart = this.previousStartInclusive;
+        this.originalRangeStart = initialContentRange.getStartInclusive();
         this.totalRangeSize = initialContentRange.getSize();
-        this.currentRange = new HttpRange.Request(
-                this.previousStartInclusive,
-                initialContentRange.getEndInclusive());
+        this.currentRange = new HttpRange.Request(this.originalRangeStart, initialContentRange.getEndInclusive());
     }
 
     String getEtag() {
@@ -111,12 +98,12 @@ final class ResumableDownloadMarker {
                             totalBytesRead));
         }
 
-        if (nextStartInclusive < this.previousStartInclusive) {
+        if (nextStartInclusive < this.currentRange.getStartInclusive()) {
             throw new IllegalArgumentException(
                     String.format(
                             "Next start position [%d] cannot decrease, previously [%d]",
                             nextStartInclusive,
-                            this.previousStartInclusive));
+                            this.currentRange.getStartInclusive()));
         }
 
         if (this.totalRangeSize < totalBytesRead) {
@@ -135,16 +122,13 @@ final class ResumableDownloadMarker {
                             this.currentRange.getEndInclusive()));
         }
 
-        LOG.debug("Constructing range: {} - {}", nextStartInclusive, this.currentRange.getEndInclusive());
-
         final HttpRange.Request nextRange;
         try {
             nextRange = new HttpRange.Request(nextStartInclusive, this.currentRange.getEndInclusive());
         } catch (final IllegalArgumentException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException("Failed to construct updated HttpRange: " + e.getMessage(), e);
         }
 
-        this.previousStartInclusive = this.currentRange.getStartInclusive();
         this.currentRange = nextRange;
     }
 
@@ -159,7 +143,7 @@ final class ResumableDownloadMarker {
         if (!this.currentRange.matches(responseRange)) {
             throw new HttpException(
                     String.format(
-                            "Content-Range does not match goal range: expected: [%d-%d], got [%d-%d]",
+                            "Content-Range mismatch: expected: [%d-%d], got [%d-%d]",
                             this.currentRange.getStartInclusive(),
                             this.currentRange.getEndInclusive(),
                             responseRange.getStartInclusive(),
@@ -206,7 +190,6 @@ final class ResumableDownloadMarker {
                 + "etag='" + this.etag + '\''
                 + ", originalRangeStart=" + this.originalRangeStart
                 + ", totalRangeSize=" + this.totalRangeSize
-                + ", previousStartInclusive=" + this.previousStartInclusive
                 + ", currentRange=" + this.currentRange
                 + '}';
     }

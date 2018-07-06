@@ -14,7 +14,6 @@ import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -28,7 +27,6 @@ import org.apache.http.protocol.HttpContext;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -51,6 +49,9 @@ import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
  * has not been changed between download segments. Additionally validates that the returned {@code ETag} does actually
  * match the {@code If-Match} header and that the returned {@code Content-Range} does actually match the requested
  * {@code Range} header.
+ * <p>
+ * Note: closing a continuator frees any resources that continuator owns and records the number of continuations
+ * provided by that continuator, it should <strong>NOT</strong> close the provided {@link HttpClient}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>h
  * @since 3.2.3
@@ -58,31 +59,30 @@ import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 public class ApacheHttpGetResponseEntityContentContinuator implements InputStreamContinuator {
 
     /**
-     * Set of exceptions from which we know we cannot recover by simply retrying.
+     * Set of exceptions from which we know we cannot recover by simply retrying. Since
+     * {@link java.net.SocketTimeoutException} is an {@link java.io.InterruptedIOException} we omit
+     * that class from this list.
+     *
+     * @see org.apache.http.impl.client.DefaultHttpRequestRetryHandler#nonRetriableClasses
+     * @see MantaHttpRequestRetryHandler#NON_RETRIABLE
      */
     private static final Set<Class<? extends IOException>> EXCEPTIONS_FATAL =
             Collections.unmodifiableSet(
                     new HashSet<>(
                             Arrays.asList(
-                                    InterruptedIOException.class,
                                     UnknownHostException.class,
                                     ConnectException.class,
                                     SSLException.class)));
 
     /**
-     * Constant representing that continuations should be supplied indefinitely (as long as other invariants hold).
+     * Prefix used to build metric names for exceptions from which this continuator has helped recover.
      */
-    static final int INFINITE_CONTINUATIONS = -1;
-
-    /**
-     * The key under which the rate of continuation requests is recorded.
-     */
-    private static final String METRIC_NAME_GET_CONTINUATIONS = "get-continuations-total";
+    static final String METRIC_NAME_PREFIX_METER_RECOVERED = "get-continuations-recovered-";
 
     /**
      * The key under which the distribution of continuations delivered per request is recorded.
      */
-    private static final String METRIC_NAME_CONTINUATIONS_PER_REQUEST = "get-continuations-per-request-distribution";
+    static final String METRIC_NAME_CONTINUATIONS_PER_REQUEST = "get-continuations-per-request-distribution";
 
     /**
      * The HTTP client.
@@ -107,10 +107,14 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     private final ResumableDownloadMarker marker;
 
     /**
-     * Metric for tracking all continuations seen by a single registry.
+     * Nullable metric registry for tracking exceptions seen.
      */
-    private final Counter totalContinuations;
+    private final MetricRegistry metricRegistry;
 
+    /**
+     * Histogram of the number of continuations built by a single instance, in addition to total continuations (since
+     * histograms also keep the number of samples recorded).
+     */
     private final Histogram continuationsDeliveredDistribution;
 
     /**
@@ -126,9 +130,9 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
      * @throws ResumableDownloadException when something unexpected happens while preparing
      */
-    public ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
-                                                         final HttpGet request,
-                                                         final ResumableDownloadMarker marker)
+    ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
+                                                  final HttpGet request,
+                                                  final ResumableDownloadMarker marker)
             throws ResumableDownloadException {
         this(verifyDownloadContinuationIsSafeAndExtractHttpClient(connCtx),
              request,
@@ -158,12 +162,11 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         this.client = requireNonNull(client);
         this.continuation = 0;
 
-        final ImmutablePair<Counter, Histogram> metrics = extractMetricFieldsOrNull(metricRegistry);
-        if (metrics != null) {
-            this.totalContinuations = metrics.left;
-            this.continuationsDeliveredDistribution = metrics.right;
+        if (metricRegistry != null) {
+            this.metricRegistry = metricRegistry;
+            this.continuationsDeliveredDistribution = metricRegistry.histogram(METRIC_NAME_CONTINUATIONS_PER_REQUEST);
         } else {
-            this.totalContinuations = null;
+            this.metricRegistry = null;
             this.continuationsDeliveredDistribution = null;
         }
     }
@@ -182,17 +185,23 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * that the remote object has somehow changed
      */
     @Override
-    public InputStream buildContinuation(final IOException ex, final long bytesRead) throws ResumableDownloadException {
-        if (!this.isRecoverable(ex)) {
-            throw new ResumableDownloadException("IOException is not recoverable", ex);
+    public InputStream buildContinuation(final IOException ex, final long bytesRead) throws IOException {
+        if (!isRecoverable(ex)) {
+            throw ex;
         }
 
         this.continuation++;
-        if (totalContinuations != null) {
-            totalContinuations.inc();
+        if (this.metricRegistry != null) {
+            this.metricRegistry.counter(METRIC_NAME_PREFIX_METER_RECOVERED + ex.getClass().getSimpleName()).inc();
         }
 
-        this.marker.updateRangeStart(bytesRead);
+        try {
+            this.marker.updateRangeStart(bytesRead);
+        } catch (final IllegalArgumentException iae) {
+            // we should wrap and rethrow this so that the caller doesn't get stuck in a loop
+            throw new ResumableDownloadException("Failed to update download continuation offset", iae);
+        }
+
         this.request.setHeader(RANGE, this.marker.getCurrentRange().render());
 
         // not yet trying to handle exceptions during request execution
@@ -202,7 +211,9 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             httpContext.setAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
             response = this.client.execute(this.request, httpContext);
         } catch (final IOException ioe) {
-            throw new ResumableDownloadException(ioe);
+            throw new ResumableDownloadException(
+                    "Exception occurred while attempting to build continuation: " + ioe.getMessage(),
+                    ioe);
         }
 
         final int statusCode = response.getStatusLine().getStatusCode();
@@ -215,20 +226,28 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                             statusCode));
         }
 
-        validateResponseWithMarker(extractDownloadResponseFingerprint(response));
+        try {
+            validateResponseWithMarker(extractDownloadResponseFingerprint(response, false));
+        } catch (final HttpException he) {
+            throw new ResumableDownloadUnexpectedResponseException(
+                    "Continuation request failed validation: " + he.getMessage(),
+                    he);
+        }
 
         final InputStream content;
         try {
             final HttpEntity entity = response.getEntity();
 
             if (entity == null) {
-                throw new ResumableDownloadUnexpectedResponseException("Entity missing from resumed response");
+                throw new ResumableDownloadUnexpectedResponseException(
+                        "Entity missing from continuation response");
             }
 
             content = entity.getContent();
 
             if (content == null) {
-                throw new ResumableDownloadUnexpectedResponseException("Entity content missing from resumed response");
+                throw new ResumableDownloadUnexpectedResponseException(
+                        "Entity content missing from continuation response");
             }
         } catch (final UnsupportedOperationException | IOException uoe) {
             throw new ResumableDownloadUnexpectedResponseException(uoe);
@@ -238,13 +257,13 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     }
 
     /**
-     * Determine whether an {@link IOException} indicates a fatal issue or not. Shamelessly plaigarized from {@link
+     * Determine whether an {@link IOException} indicates a fatal issue or not. Shamelessly plagiarized from {@link
      * org.apache.http.impl.client.DefaultHttpRequestRetryHandler}.
      *
      * @param e the exception to check
      * @return whether or not the caller should retry their request
      */
-    private boolean isRecoverable(final IOException e) {
+    private static boolean isRecoverable(final IOException e) {
         if (EXCEPTIONS_FATAL.contains(e.getClass())) {
             return false;
         }
@@ -271,7 +290,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         if (!this.marker.getEtag().equals(responseFingerprint.getLeft())) {
             throw new ResumableDownloadUnexpectedResponseException(
                     String.format(
-                            "Response missing ETag does not match marker: expected [%s], got [%s]",
+                            "Response ETag mismatch: expected [%s], got [%s]",
                             this.marker.getEtag(),
                             responseFingerprint.getLeft()));
         }
@@ -286,7 +305,8 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             this.marker.validateResponseRange(responseFingerprint.getRight());
         } catch (final HttpException e) {
             throw new ResumableDownloadUnexpectedResponseException(
-                    "Invalid Content-Range for resumed download response", e);
+                    "Response Content-Range mismatch: " + e.getMessage(),
+                    e);
         }
     }
 
@@ -294,7 +314,8 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * Method indicating that this continuator is no longer required. Currently only used to record the number of
      * continuations that where used for this particular request.
      */
-    public void complete() {
+    @Override
+    public void close() {
         if (this.continuationsDeliveredDistribution == null) {
             return;
         }
@@ -342,17 +363,6 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             return null;
         }
 
-
         return metricConfig.getRegistry();
-    }
-
-    @SuppressWarnings("checkstyle:JavadocMethod")
-    private static ImmutablePair<Counter, Histogram> extractMetricFieldsOrNull(final MetricRegistry metricRegistry) {
-        if (metricRegistry == null) {
-            return null;
-        }
-
-        return ImmutablePair.of(metricRegistry.counter(METRIC_NAME_GET_CONTINUATIONS),
-                                metricRegistry.histogram(METRIC_NAME_CONTINUATIONS_PER_REQUEST));
     }
 }

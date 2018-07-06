@@ -29,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -452,8 +453,8 @@ public class StandardHttpHelper implements HttpHelper {
         try {
             marker = validateInitialExchange(
                     extractDownloadRequestFingerprint(get),
-                    extractDownloadResponseFingerprint(response));
-        } catch (final ResumableDownloadException rde1) {
+                    extractDownloadResponseFingerprint(response, true));
+        } catch (final ResumableDownloadException | HttpException rde) {
             return null;
         }
 

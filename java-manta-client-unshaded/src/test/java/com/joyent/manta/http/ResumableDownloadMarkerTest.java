@@ -21,13 +21,15 @@ public class ResumableDownloadMarkerTest {
         assertThrows(NullPointerException.class, () -> new ResumableDownloadMarker("A", null));
     }
 
-    public void canValidateResponses() throws HttpException {
-        final Response fullRange = new Response(0, 3, 4L);
+    private static final String STUB_ETAG = "abc";
 
-        final ResumableDownloadMarker marker = new ResumableDownloadMarker("a", fullRange);
+    private static final Response STUB_CONTENT_RANGE = new Response(0, 3, 4L);
+
+    public void canValidateResponses() throws HttpException {
+        final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
 
         // pretend there was an error receiving headers and we had to restart the initial request completely
-        marker.validateResponseRange(fullRange);
+        marker.validateResponseRange(STUB_CONTENT_RANGE);
 
         // pretend we got the first byte
         marker.updateRangeStart(1);
@@ -39,18 +41,46 @@ public class ResumableDownloadMarkerTest {
         assertThrows(HttpException.class, () -> marker.validateResponseRange(invalidEndRange));
 
         // getting bytes we've already gotten is also bad
-        assertThrows(HttpException.class, () -> marker.validateResponseRange(fullRange));
+        assertThrows(HttpException.class, () -> marker.validateResponseRange(STUB_CONTENT_RANGE));
+    }
+
+    public void validatesBytesRead() {
+        final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
+
+        // it's possible to encounter an error without reading any bytes
+        marker.updateRangeStart(0);
+
+        // shouldn't read a negative number of bytes
+        assertThrows(IllegalArgumentException.class,
+                     () -> marker.updateRangeStart(-1));
+
+        // shouldn't be able to read more bytes than the total object size
+        assertThrows(IllegalArgumentException.class,
+                     () -> marker.updateRangeStart(10));
+
+        // advance marker by having read two bytes
+        marker.updateRangeStart(2);
+
+        // can't have read less bytes than we did at last update
+        assertThrows(IllegalArgumentException.class,
+                     () -> marker.updateRangeStart(1));
+
+
+        // TODO: how do we handle this case?
+        assertThrows(IllegalArgumentException.class,
+                     () -> marker.updateRangeStart(4));
+
     }
 
     public void usefulToString() {
-        final Response fullRange = new Response(0, 3, 4L);
+        final Response STUB_FULL_RANGE = new Response(0, 3, 4L);
         final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
 
         final String rangeRgx = StringUtils.join(
-                new Object[]{"", fullRange.getStartInclusive(), fullRange.getEndInclusive(), ""},
+                new Object[]{"", STUB_FULL_RANGE.getStartInclusive(), STUB_FULL_RANGE.getEndInclusive(), ""},
                 ".*");
 
-        final String marker = new ResumableDownloadMarker(etag, fullRange).toString();
+        final String marker = new ResumableDownloadMarker(etag, STUB_FULL_RANGE).toString();
 
         assertTrue(marker.contains(etag));
         assertTrue(marker.matches(rangeRgx));

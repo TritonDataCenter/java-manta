@@ -7,17 +7,20 @@
  */
 package com.joyent.manta.http;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * Helper class for resuming the body of a response being read as an {@link InputStream} based on the number of bytes
- * already read. Meant to be used in combination with {@link com.joyent.manta.util.PassthroughResumableInputStream}.
+ * already read. Meant to be used in combination with {@link com.joyent.manta.util.ContinuingInputStream}. The
+ * {@link Closeable} is included so that the number of continuations provided by a single continuator can be
+ * instrumented.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
- * @since 3.2.2
+ * @since 3.2.3
  */
-public interface InputStreamContinuator {
+public interface InputStreamContinuator extends Closeable {
 
     /**
      * Get an {@link InputStream} which picks up starting {@code bytesRead} bytes from the beginning of the logical
@@ -30,6 +33,4 @@ public interface InputStreamContinuator {
      * @throws IOException if the exception is not recoverable or there is an error preparing the continuation
      */
     InputStream buildContinuation(IOException ex, long bytesRead) throws IOException;
-
-    void complete();
 }

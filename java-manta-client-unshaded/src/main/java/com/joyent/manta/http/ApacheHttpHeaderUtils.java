@@ -8,7 +8,6 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
-import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -132,71 +131,66 @@ final class ApacheHttpHeaderUtils {
         return ImmutablePair.of(ifMatch, range);
     }
 
+
+
     /**
      * In order to be sure we're continuing to download the same object we need to extract the {@code ETag} and {@code
      * Content-Range} headers from the response. Either header missing is an error. Additionally, when the {@code
      * Content-Range} header is present the specified range should be equal to the response's {@code Content-Length}.
+     * If the {@code Content-Range} header is missing and {@code allowContentRangeInference} is true, we may infer the
+     * response code was 200 and construct a representative {@code Content-Range} from byte offset 0 to
+     * {@code Content-Length - 1}.
      *
      * @param response the response to check for headers
+     * @param allowContentRangeInference whether or not we can derive a {@link HttpRange.Response} from the
+     * {@code Content-Length} header instead of only using it for verification.
      * @return the request headers we're concerned with validating
-     * @throws ResumableDownloadUnexpectedResponseException when the headers are malformed, unparseable, or the {@code
+     * @throws HttpException when the headers are malformed, unparseable, or the {@code
      * Content-Range} and {@code Content-Length} are mismatched
      */
-    static Pair<String, HttpRange.Response> extractDownloadResponseFingerprint(final HttpResponse response)
-            throws ResumableDownloadUnexpectedResponseException {
+    static Pair<String, HttpRange.Response> extractDownloadResponseFingerprint(final HttpResponse response,
+                                                                               final boolean allowContentRangeInference)
+            throws HttpException {
 
-        final String etag;
-        try {
-            etag = extractSingleHeaderValue(response, ETAG, true);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(e);
-        }
+        final String etag = extractSingleHeaderValue(response, ETAG, true);
 
         final long contentLength;
         try {
             final String rawContentLength = extractSingleHeaderValue(response, CONTENT_LENGTH, true);
+            // since we're passing required=true an HttpException would be thrown and
+            // @SuppressWarnings("ConstantConditions") is too blunt a hammer and would apply to the whole method, so...
+            // noinspection ConstantConditions
             contentLength = Long.parseUnsignedLong(rawContentLength);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(e);
         } catch (final NumberFormatException e) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new HttpException(
                     String.format(
                             "Failed to parse Content-Length response, matching headers: %s",
                             Arrays.deepToString(response.getHeaders(CONTENT_LENGTH))));
         }
 
-        final String rawContentRange;
-        try {
-            rawContentRange = extractSingleHeaderValue(response, CONTENT_RANGE, false);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(e);
-        }
+        final String rawContentRange = extractSingleHeaderValue(response, CONTENT_RANGE, false);
 
         if (StringUtils.isBlank(rawContentRange)) {
+            if (!allowContentRangeInference) {
+                throw new HttpException("Content-Range header required but missing.");
+            }
+
             // the entire object is being requested
             return new ImmutablePair<>(etag, new HttpRange.Response(0, contentLength - 1, contentLength));
         }
 
-        final HttpRange.Response contentRange;
-        try {
-            contentRange = parseContentRange(rawContentRange);
-        } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(
-                    "Unable to parse Content-Range header while analyzing download response",
-                    e);
-        }
+        final HttpRange.Response contentRange = parseContentRange(rawContentRange);
 
-        // Manta follows the spec and sends the Content-Length of the range, which we should validateResponseWithMarker
+        // Manta follows the spec and sends the Content-Length of the range, which we should ensure matches
         if (contentRange.contentLength() != contentLength) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new HttpException(
                     String.format(
-                            "Invalid Content-Length in range response: expected [%d], got [%d]",
+                            "Content-Range start-to-end size and Content-Length mismatch: expected [%d], got [%d]",
                             contentRange.contentLength(),
                             contentLength));
         }
 
         return new ImmutablePair<>(etag, contentRange);
     }
-
 
 }
