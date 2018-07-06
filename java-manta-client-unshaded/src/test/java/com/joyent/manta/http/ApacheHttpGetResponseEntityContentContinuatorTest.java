@@ -20,6 +20,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -97,6 +98,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         // allow the Content-Range to be inferred from just the Content-Length
         final ResumableDownloadMarker marker = ResumableDownloadMarker.validateInitialExchange(
                 extractDownloadRequestFingerprint(request),
+                SC_OK,
                 extractDownloadResponseFingerprint(response, true));
 
         // passes with all stubs
@@ -146,44 +148,78 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
 
         final ResumableDownloadMarker marker = ResumableDownloadMarker.validateInitialExchange(
                 extractDownloadRequestFingerprint(request),
+                SC_OK,
                 extractDownloadResponseFingerprint(response, true));
 
         new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, marker)
                 .buildContinuation(new UnknownHostException("custom fatal exception yo"), 0);
     }
 
-    public void createMarkerValidatesHints() throws Exception {
+    public void markersAreCreatedByValidatingTheInitialExchange() throws Exception {
         final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
+
+        final HttpRange.Request requestRange = new HttpRange.Request(0, 1);
 
         // any returned range is fine since none was specified
         final HttpRange.Response range = new HttpRange.Response(0, 1, 2L);
 
-        // invalid ETag
-        final String badEtag = etag.substring(1);
-
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                           ImmutablePair.of(null, null)));
-
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                           ImmutablePair.of(null, range)));
-
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(
-                             ImmutablePair.of(etag, null), ImmutablePair.of(badEtag, range)));
-
+        // success
         assertNotNull(
                 ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
+                                                                SC_OK,
                                                                 ImmutablePair.of(etag, range)));
+
+        assertNotNull(
+                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, requestRange),
+                                                                SC_PARTIAL_CONTENT,
+                                                                ImmutablePair.of(etag, range)));
+
+        // no etag
+        assertThrows(ProtocolException.class,
+                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
+                                                                           SC_OK,
+                                                                           ImmutablePair.of(null, range)));
+
+        assertThrows(ProtocolException.class,
+                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
+                                                                           SC_PARTIAL_CONTENT,
+                                                                           ImmutablePair.of(null, range)));
+
+        // invalid ETag
+        final String badEtag = etag.substring(1);
+        assertThrows(ProtocolException.class,
+                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
+                                                                           SC_OK,
+                                                                           ImmutablePair.of(badEtag, range)));
+
+        final HttpRange.Response badContentRange = new HttpRange.Response(0, 99, 100);
+        // invalid range
+        assertThrows(ProtocolException.class,
+                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, requestRange),
+                                                                           SC_PARTIAL_CONTENT,
+                                                                           ImmutablePair.of(etag, badContentRange)));
+
+        // invalid response code
+        assertThrows(ProtocolException.class,
+                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
+                                                                           SC_PARTIAL_CONTENT,
+                                                                           ImmutablePair.of(etag, range)));
+        assertThrows(ProtocolException.class,
+                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, requestRange),
+                                                                           SC_OK,
+                                                                           ImmutablePair.of(etag, range)));
+
     }
 
     public void validateResponseExpectsNonNullHintsAndResponseFingerprint() throws Exception {
         final HttpClient client = mock(HttpClient.class);
-        final HttpGet req = new HttpGet();
 
         final String etag = "abc";
         final long contentLength = 2;
+
+        final HttpGet req = new HttpGet();
+        req.setHeader(RANGE, fromContentLength(HttpRange.Request.class, contentLength).render());
+
         final HttpRange.Response contentRange = fromContentLength(HttpRange.Response.class, contentLength);
         final HttpResponse res = prepareResponseWithHeaders(
                 unmodifiableMap(
@@ -193,6 +229,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
 
         final ResumableDownloadMarker marker = ResumableDownloadMarker.validateInitialExchange(
                 extractDownloadRequestFingerprint(req),
+                SC_PARTIAL_CONTENT,
                 // don't allow the Content-Range to be inferred by passing false
                 extractDownloadResponseFingerprint(res, false));
 
@@ -206,22 +243,22 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                      () -> continuator.validateResponseWithMarker(null));
 
         // the following assertions test a response with insufficient headers
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
+        assertThrows(ProtocolException.class,
                      () -> continuator.validateResponseWithMarker(ImmutablePair.nullPair()));
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
+        assertThrows(ProtocolException.class,
                      () -> continuator.validateResponseWithMarker(ImmutablePair.of(etag, null)));
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
+        assertThrows(ProtocolException.class,
                      () -> continuator.validateResponseWithMarker(ImmutablePair.of(null, contentRange)));
 
         // the following assertions test a response with incorrect headers
         final String badEtag = etag.substring(1);
         final HttpRange.Response badContentRange = new HttpRange.Response(0, contentLength, contentLength + 1);
 
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
+        assertThrows(ProtocolException.class,
                      () -> continuator.validateResponseWithMarker(ImmutablePair.of(etag, badContentRange)));
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
+        assertThrows(ProtocolException.class,
                      () -> continuator.validateResponseWithMarker(ImmutablePair.of(badEtag, contentRange)));
-        assertThrows(ResumableDownloadUnexpectedResponseException.class,
+        assertThrows(ProtocolException.class,
                      () -> continuator.validateResponseWithMarker(ImmutablePair.of(badEtag, badContentRange)));
     }
 

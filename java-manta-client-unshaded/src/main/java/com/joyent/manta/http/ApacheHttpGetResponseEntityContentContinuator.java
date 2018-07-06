@@ -19,6 +19,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.AbstractExecutionAwareRequest;
 import org.apache.http.client.methods.HttpGet;
@@ -59,9 +60,8 @@ import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 public class ApacheHttpGetResponseEntityContentContinuator implements InputStreamContinuator {
 
     /**
-     * Set of exceptions from which we know we cannot recover by simply retrying. Since
-     * {@link java.net.SocketTimeoutException} is an {@link java.io.InterruptedIOException} we omit
-     * that class from this list.
+     * Set of exceptions from which we know we cannot recover by simply retrying. Since {@link
+     * java.net.SocketTimeoutException} is an {@link java.io.InterruptedIOException} we omit that class from this list.
      *
      * @see org.apache.http.impl.client.DefaultHttpRequestRetryHandler#nonRetriableClasses
      * @see MantaHttpRequestRetryHandler#NON_RETRIABLE
@@ -278,17 +278,18 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     }
 
     /**
-     * Package-private method which compares a new response fingerprint with the internal marker
+     * Compare a new response fingerprint with the internal marker.
      *
      * @param responseFingerprint the continuation response etag+contentrange
-     * @throws ResumableDownloadUnexpectedResponseException if the response does not match the marker's expectations
+     * @throws ProtocolException if the response does not match the marker's expectations
+     * @see ApacheHttpHeaderUtils#extractDownloadResponseFingerprint(HttpResponse, boolean)
      */
     void validateResponseWithMarker(final Pair<String, HttpRange.Response> responseFingerprint)
-            throws ResumableDownloadUnexpectedResponseException {
+            throws ProtocolException {
         notNull(responseFingerprint, "Response fingerprint must not be null");
 
         if (!this.marker.getEtag().equals(responseFingerprint.getLeft())) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new ProtocolException(
                     String.format(
                             "Response ETag mismatch: expected [%s], got [%s]",
                             this.marker.getEtag(),
@@ -296,7 +297,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         }
 
         if (responseFingerprint.getRight() == null) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new ProtocolException(
                     "Response missing Content-Range and Content-Length");
         }
 
@@ -304,7 +305,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         try {
             this.marker.validateResponseRange(responseFingerprint.getRight());
         } catch (final HttpException e) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new ProtocolException(
                     "Response Content-Range mismatch: " + e.getMessage(),
                     e);
         }
@@ -357,6 +358,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         return requireNonNull(connCtx.getHttpClient());
     }
 
+    @SuppressWarnings("checkstyle:JavadocMethod")
     private static MetricRegistry extractMetricRegistry(final MantaApacheHttpClientContext connCtx) {
         final MantaClientMetricConfiguration metricConfig = connCtx.getMetricConfig();
         if (metricConfig == null) {

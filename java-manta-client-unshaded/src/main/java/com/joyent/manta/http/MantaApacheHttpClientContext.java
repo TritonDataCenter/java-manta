@@ -34,6 +34,9 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      */
     private final MantaConnectionFactory connectionFactory;
 
+    /**
+     * Nullable metrics configuration.
+     */
     private final MantaClientMetricConfiguration metricConfig;
 
     /**
@@ -49,6 +52,7 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
      * Creates a new instance using the passed in factory class.
      *
      * @param connectionFactory factory class that creates configured connections
+     * @param metricConfig potentially-null metrics configuration info
      */
     public MantaApacheHttpClientContext(final MantaConnectionFactory connectionFactory,
                                         final MantaClientMetricConfiguration metricConfig) {

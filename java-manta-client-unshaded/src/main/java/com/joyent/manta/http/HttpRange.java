@@ -9,7 +9,7 @@ package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.http.HttpException;
+import org.apache.http.ProtocolException;
 
 import java.util.Objects;
 
@@ -236,9 +236,9 @@ abstract class HttpRange {
      *
      * @param requestRange the string representation of the range
      * @return a {@link Request} range
-     * @throws HttpException if the range could not be parsed
+     * @throws ProtocolException if the range could not be parsed
      */
-    static Request parseRequestRange(final String requestRange) throws HttpException {
+    static Request parseRequestRange(final String requestRange) throws ProtocolException {
         notNull(requestRange, "Request Range must not be null");
 
         if (!requestRange.matches(REGEX_REQUEST_RANGE)) {
@@ -246,12 +246,12 @@ abstract class HttpRange {
                     "Invalid Range format, expected: "
                             + "[bytes <range-startInclusive>-<range-endInclusive>], got: %s",
                     requestRange);
-            throw new HttpException(message);
+            throw new ProtocolException(message);
         }
 
         final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(requestRange, "bytes="), "-");
         if (boundsAndSize.length != PART_COUNT_RANGE) {
-            throw new HttpException(String.format("Malformed Range value, got: %s", requestRange));
+            throw new ProtocolException(String.format("Malformed Range value, got: %s", requestRange));
         }
 
         return new Request(
@@ -264,9 +264,9 @@ abstract class HttpRange {
      *
      * @param contentRange the string representation of the range
      * @return a {@link Request} range
-     * @throws HttpException if the range could not be parsed
+     * @throws ProtocolException if the range could not be parsed
      */
-    static Response parseContentRange(final String contentRange) throws HttpException {
+    static Response parseContentRange(final String contentRange) throws ProtocolException {
         notNull(contentRange, "Content Range must not be null");
 
         if (!contentRange.matches(REGEX_CONTENT_RANGE)) {
@@ -274,12 +274,12 @@ abstract class HttpRange {
                     "Invalid content-range format, expected: "
                             + "[bytes <range-startInclusive>-<range-endInclusive>/<size>], got: %s",
                     contentRange);
-            throw new HttpException(message);
+            throw new ProtocolException(message);
         }
 
         final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(contentRange, "bytes "), "-/");
         if (boundsAndSize.length != PART_COUNT_CONTENT_RANGE) {
-            throw new HttpException(String.format("Malformed Range value, got: %s", contentRange));
+            throw new ProtocolException(String.format("Malformed Range value, got: %s", contentRange));
         }
 
         return new Response(

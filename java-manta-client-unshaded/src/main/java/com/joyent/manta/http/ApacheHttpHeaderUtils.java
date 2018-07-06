@@ -12,9 +12,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
-import org.apache.http.HttpException;
 import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolException;
 import org.apache.http.client.methods.HttpGet;
 
 import java.util.Arrays;
@@ -43,17 +43,17 @@ final class ApacheHttpHeaderUtils {
      * @param message the {@link org.apache.http.HttpRequest} or {@link org.apache.http.HttpResponse}
      * @param headerName the name of the request/repsonse header
      * @return the single header value if there was only one present, or null if it was missing
-     * @throws HttpException When the header is present more than once, or is present but blank.
+     * @throws ProtocolException When the header is present more than once, or is present but blank.
      */
     static String extractSingleHeaderValue(final HttpMessage message,
                                            final String headerName,
                                            final boolean required)
-            throws HttpException {
+            throws ProtocolException {
         final Header[] headers = message.getHeaders(headerName);
 
         if (0 == headers.length) {
             if (required) {
-                throw new HttpException(
+                throw new ProtocolException(
                         String.format(
                                 "Required [%s] header for resumable downloads missing",
                                 headerName));
@@ -63,7 +63,7 @@ final class ApacheHttpHeaderUtils {
         }
 
         if (1 < headers.length) {
-            throw new HttpException(
+            throw new ProtocolException(
                     String.format(
                             "Resumable download not compatible with multi-valued [%s] header",
                             headerName));
@@ -73,7 +73,7 @@ final class ApacheHttpHeaderUtils {
         final Header header = headers[0];
 
         if (header == null || isBlank(header.getValue())) {
-            throw new HttpException(
+            throw new ProtocolException(
                     String.format("Invalid %s header (blank or missing)", headerName));
         }
 
@@ -94,16 +94,16 @@ final class ApacheHttpHeaderUtils {
      * @throws ResumableDownloadIncompatibleRequestException when the request cannot be resumed
      */
     static Pair<String, HttpRange.Request> extractDownloadRequestFingerprint(final HttpGet request)
-            throws ResumableDownloadIncompatibleRequestException {
+            throws ProtocolException {
         String ifMatch = null;
         HttpRange.Request range = null;
 
-        Exception ifMatchEx = null;
-        Exception rangeEx = null;
+        ProtocolException ifMatchEx = null;
+        ProtocolException rangeEx = null;
 
         try {
             ifMatch = extractSingleHeaderValue(request, IF_MATCH, false);
-        } catch (final HttpException e) {
+        } catch (final ProtocolException e) {
             ifMatchEx = e;
         }
 
@@ -112,20 +112,20 @@ final class ApacheHttpHeaderUtils {
             if (rawRequestRange != null) {
                 range = HttpRange.parseRequestRange(rawRequestRange);
             }
-        } catch (final HttpException e) {
+        } catch (final ProtocolException e) {
             rangeEx = e;
         }
 
         if (ifMatchEx != null && rangeEx != null) {
-            throw new ResumableDownloadIncompatibleRequestException(
+            throw new ProtocolException(
                     String.format(
                             "Incompatible Range and If-Match request headers for resuming download:%n%s%n%s",
                             rangeEx.getMessage(),
                             ifMatchEx.getMessage()));
         } else if (ifMatchEx != null) {
-            throw new ResumableDownloadIncompatibleRequestException(ifMatchEx);
+            throw ifMatchEx;
         } else if (rangeEx != null) {
-            throw new ResumableDownloadIncompatibleRequestException(rangeEx);
+            throw rangeEx;
         }
 
         return ImmutablePair.of(ifMatch, range);
@@ -145,24 +145,24 @@ final class ApacheHttpHeaderUtils {
      * @param allowContentRangeInference whether or not we can derive a {@link HttpRange.Response} from the
      * {@code Content-Length} header instead of only using it for verification.
      * @return the request headers we're concerned with validating
-     * @throws HttpException when the headers are malformed, unparseable, or the {@code
+     * @throws ProtocolException when the headers are malformed, unparseable, or the {@code
      * Content-Range} and {@code Content-Length} are mismatched
      */
     static Pair<String, HttpRange.Response> extractDownloadResponseFingerprint(final HttpResponse response,
                                                                                final boolean allowContentRangeInference)
-            throws HttpException {
+            throws ProtocolException {
 
         final String etag = extractSingleHeaderValue(response, ETAG, true);
 
         final long contentLength;
         try {
             final String rawContentLength = extractSingleHeaderValue(response, CONTENT_LENGTH, true);
-            // since we're passing required=true an HttpException would be thrown and
+            // since we're passing required=true an ProtocolException would be thrown and
             // @SuppressWarnings("ConstantConditions") is too blunt a hammer and would apply to the whole method, so...
             // noinspection ConstantConditions
             contentLength = Long.parseUnsignedLong(rawContentLength);
         } catch (final NumberFormatException e) {
-            throw new HttpException(
+            throw new ProtocolException(
                     String.format(
                             "Failed to parse Content-Length response, matching headers: %s",
                             Arrays.deepToString(response.getHeaders(CONTENT_LENGTH))));
@@ -172,7 +172,7 @@ final class ApacheHttpHeaderUtils {
 
         if (StringUtils.isBlank(rawContentRange)) {
             if (!allowContentRangeInference) {
-                throw new HttpException("Content-Range header required but missing.");
+                throw new ProtocolException("Content-Range header required but missing.");
             }
 
             // the entire object is being requested
@@ -183,7 +183,7 @@ final class ApacheHttpHeaderUtils {
 
         // Manta follows the spec and sends the Content-Length of the range, which we should ensure matches
         if (contentRange.contentLength() != contentLength) {
-            throw new HttpException(
+            throw new ProtocolException(
                     String.format(
                             "Content-Range start-to-end size and Content-Length mismatch: expected [%d], got [%d]",
                             contentRange.contentLength(),

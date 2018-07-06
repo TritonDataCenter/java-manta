@@ -28,13 +28,14 @@ import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
+import org.apache.http.ProtocolException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -438,6 +439,17 @@ public class StandardHttpHelper implements HttpHelper {
                 "GET    {} response [{}] {} ");
     }
 
+    /**
+     * Attempts to construct a {@link InputStreamContinuator} for the initial request-response exchange. If the request
+     * cannot be resumed (either because the exchange is malformed or the request does not support resuming) we will
+     * return null, otherwise the continuator receives our client, the initial request (which it will clone) and the
+     * marker we created.
+     *
+     * @param request the initial request, etag and range headers will be used as hints for the first argument to
+     * {@link ResumableDownloadMarker#validateInitialExchange(Pair, int, Pair)}
+     * @param response the initial response which will be validated against any hints
+     * @return the continuator which can be used to resume this request
+     */
     private InputStreamContinuator constructContinuatorForCompatibleRequest(final HttpUriRequest request,
                                                                             final CloseableHttpResponse response) {
 
@@ -453,8 +465,9 @@ public class StandardHttpHelper implements HttpHelper {
         try {
             marker = validateInitialExchange(
                     extractDownloadRequestFingerprint(get),
+                    response.getStatusLine().getStatusCode(),
                     extractDownloadResponseFingerprint(response, true));
-        } catch (final ResumableDownloadException | HttpException rde) {
+        } catch (final ProtocolException pe) {
             return null;
         }
 

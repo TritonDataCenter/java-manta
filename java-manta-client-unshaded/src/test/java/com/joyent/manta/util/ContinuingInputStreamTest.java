@@ -209,6 +209,7 @@ public class ContinuingInputStreamTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void testVariableStartOffsetAndFrequencyFailures() {
 
         final ArrayList<Object[]> paramLists = new ArrayList<>();

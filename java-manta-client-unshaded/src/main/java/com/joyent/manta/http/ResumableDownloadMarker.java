@@ -7,17 +7,17 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.http.ProtocolException;
 
 import java.io.InputStream;
 
 import static org.apache.commons.lang3.Validate.notNull;
 import static org.apache.commons.lang3.Validate.validState;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 
 /**
  * Mostly-value class for recording an initial request/response cycle and retaining the necessary information to create
@@ -158,14 +158,16 @@ final class ResumableDownloadMarker {
      * @param requestHints etag and range from initial request (If-Match and Range)
      * @param responseFingerprint etag and range from initial request (ETag and Content-Range)
      * @return a marker which can be used to verify future requests
-     * @throws ResumableDownloadUnexpectedResponseException thrown when a hint is provided but not satisfied
+     * @throws ProtocolException thrown when a hint is provided but not satisfied
      */
     static ResumableDownloadMarker validateInitialExchange(final Pair<String, HttpRange.Request> requestHints,
+                                                           final int responseCode,
                                                            final Pair<String, HttpRange.Response> responseFingerprint)
-            throws ResumableDownloadUnexpectedResponseException {
+            throws ProtocolException {
 
+        // there was an if-match header and the response etag does not match
         if (requestHints.getLeft() != null && !requestHints.getLeft().equals(responseFingerprint.getLeft())) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new ProtocolException(
                     String.format(
                             "ETag does not match If-Match: If-Match [%s], ETag [%s]",
                             requestHints.getLeft(),
@@ -173,12 +175,34 @@ final class ResumableDownloadMarker {
 
         }
 
-        if (requestHints.getRight() != null && !requestHints.getRight().matches(responseFingerprint.getRight())) {
-            throw new ResumableDownloadUnexpectedResponseException(
+        final boolean rangeRequest = requestHints.getRight() != null;
+
+        // there was a request range and an invalid response range (or none) was returned
+        if (rangeRequest && !requestHints.getRight().matches(responseFingerprint.getRight())) {
+            throw new ProtocolException(
                     String.format(
                             "Content-Range does not match Request range: Range [%s], Content-Range [%s]",
                             requestHints.getRight(),
                             responseFingerprint.getRight()));
+        }
+
+        // if there was a request range the response code should be 206
+        if (rangeRequest && responseCode != SC_PARTIAL_CONTENT) {
+            throw new ProtocolException(
+                    String.format(
+                            "Unexpected response code for range request: expected [%d], got [%d]",
+                            SC_PARTIAL_CONTENT,
+                            responseCode));
+        }
+
+        // if there was no request range the response code should be 200
+        if (!rangeRequest && responseCode != SC_OK) {
+            throw new ProtocolException(
+                    String.format(
+                            "Unexpected response code for non-range request: expected [%d], got [%d]",
+                            SC_OK,
+                            responseCode));
+
         }
 
         return new ResumableDownloadMarker(responseFingerprint.getLeft(), responseFingerprint.getRight());

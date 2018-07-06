@@ -1,8 +1,7 @@
 package com.joyent.manta.http;
 
-import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import org.apache.http.Header;
-import org.apache.http.HttpException;
+import org.apache.http.ProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 import org.testng.annotations.Test;
@@ -38,20 +37,20 @@ public class ApacheHttpHeaderUtilsTest {
                 unmodifiableMap(IF_MATCH, singleValueHeaderList(IF_MATCH, ifMatchHeaderValue)));
 
         // this should never occur so we consider it programmer error, something has been subclassed incorrectly
-        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+        assertThrows(ProtocolException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(IF_MATCH, new Header[]{null}));
         });
 
         // the following is most likely user error, though we should ideally disallow it
         // (if-match: "" doesn't make sense for GET, only for PUT, and this is all about resumable *downloads*)
-        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+        assertThrows(ProtocolException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(RANGE, singleValueHeaderList(RANGE, "")));
         });
 
         // we make no effort to merge headers
-        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+        assertThrows(ProtocolException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(
                             IF_MATCH, new Header[]{new BasicHeader(IF_MATCH, ifMatchHeaderValue), new BasicHeader(
@@ -69,29 +68,28 @@ public class ApacheHttpHeaderUtilsTest {
                 unmodifiableMap(RANGE, singleValueHeaderList(RANGE, rangeHeaderValue)));
 
         // this should never occur so we consider it programmer error, something has been subclassed incorrectly
-        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+        assertThrows(ProtocolException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(RANGE, new Header[]{null}));
         });
 
         // the following are most likely user error
-        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+        assertThrows(ProtocolException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(RANGE, singleValueHeaderList(RANGE, "")));
         });
 
-        final ResumableDownloadIncompatibleRequestException malformed = expectThrows(
-                ResumableDownloadIncompatibleRequestException.class, () -> {
+        final ProtocolException malformed = expectThrows(
+                ProtocolException.class, () -> {
                     validatesCompatibleHeadersForInitialRequest(
                             unmodifiableMap(RANGE, singleValueHeaderList(RANGE, "duck")));
                 });
 
-        assertTrue(malformed.getCause() != null && malformed.getCause() instanceof HttpException);
         assertTrue(malformed.getMessage().contains("duck"));
 
         // we explicitly do not handle resuming multiple ranges (though we could in the future)
         // (supplying the same range header twice is also an error, but we're not concerned with that)
-        assertThrows(ResumableDownloadIncompatibleRequestException.class, () -> {
+        assertThrows(ProtocolException.class, () -> {
             validatesCompatibleHeadersForInitialRequest(
                     unmodifiableMap(
                             RANGE, new Header[]{new BasicHeader(RANGE, rangeHeaderValue), new BasicHeader(
@@ -101,8 +99,8 @@ public class ApacheHttpHeaderUtilsTest {
     }
 
     public void complainsAboutBothHeadersWhenRangeAndIfMatchAreMalformed() throws Exception {
-        final ResumableDownloadIncompatibleRequestException e = expectThrows(
-                ResumableDownloadIncompatibleRequestException.class, () -> {
+        final ProtocolException e = expectThrows(
+                ProtocolException.class, () -> {
                     validatesCompatibleHeadersForInitialRequest(
                             unmodifiableMap(
                                     RANGE, singleValueHeaderList(RANGE, ""),
