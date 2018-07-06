@@ -240,6 +240,11 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Boolean isDownloadContinuationEnabled() {
+        return DEFAULT_DOWNLOAD_CONTINUATION;
+    }
+
+    @Override
     public MetricReporterMode getMetricReporterMode() {
         return null;
     }

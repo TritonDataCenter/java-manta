@@ -122,6 +122,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Integer skipDirectoryDepth;
 
     /**
+     * Whether or not we can attempt to resume a download automatically.
+     */
+    private volatile Boolean isDownloadContinuationEnabled;
+
+    /**
      * Whether metrics and MBeans should be tracked and exposed.
      */
     private volatile MetricReporterMode metricReporterMode;
@@ -290,6 +295,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public Integer getSkipDirectoryDepth() {
         return this.skipDirectoryDepth;
+    }
+
+    @Override
+    public Boolean isDownloadContinuationEnabled() {
+        return this.isDownloadContinuationEnabled;
     }
 
     @Override
@@ -462,6 +472,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
+        if (context.isDownloadContinuationEnabled() != null) {
+            this.isDownloadContinuationEnabled = context.isDownloadContinuationEnabled();
+        }
+
         if (context.getMetricReporterMode() != null) {
             this.metricReporterMode = context.getMetricReporterMode();
         }
@@ -580,6 +594,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.skipDirectoryDepth == null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (this.isDownloadContinuationEnabled == null) {
+            this.isDownloadContinuationEnabled = context.isDownloadContinuationEnabled();
         }
 
         if (this.getMetricReporterMode() == null) {
@@ -781,6 +799,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setDownloadContinuationEnabled(final Boolean continuation) {
+        this.isDownloadContinuationEnabled = continuation;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setMetricReporterMode(final MetricReporterMode metricReporterMode) {
         this.metricReporterMode = metricReporterMode;
         return this;
@@ -882,6 +907,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
+                && Objects.equals(isDownloadContinuationEnabled, that.isDownloadContinuationEnabled)
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)

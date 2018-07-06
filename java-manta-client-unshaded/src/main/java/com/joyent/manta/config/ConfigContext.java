@@ -140,9 +140,13 @@ public interface ConfigContext extends MantaMBeanable {
      */
     Integer getSkipDirectoryDepth();
 
-    default Boolean isDownloadContinuationEnabled() {
-        return true;
-    }
+    /**
+     * Whether or not to enable download continuation.
+     * @return if download continuation is enabled
+     * @see com.joyent.manta.http.InputStreamContinuator
+     * @see com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator
+     */
+    Boolean isDownloadContinuationEnabled();
 
     /**
      * @return the way metrics should be reported, {@code MetricReporterMode.DISABLED} or {@code null} to disable
@@ -544,6 +548,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
             case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
                 return config.getSkipDirectoryDepth();
+            case MapConfigContext.MANTA_DOWNLOAD_CONTINUATION_KEY:
+            case EnvVarConfigContext.MANTA_DOWNLOAD_CONTINUATION_ENV_KEY:
+                return config.isDownloadContinuationEnabled();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();
