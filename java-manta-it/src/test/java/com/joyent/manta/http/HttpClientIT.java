@@ -2,24 +2,37 @@ package com.joyent.manta.http;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.FileSource;
+import com.github.tomakehurst.wiremock.common.InputStreamSource;
+import com.github.tomakehurst.wiremock.common.Notifier;
+import com.github.tomakehurst.wiremock.core.Options;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
+import com.github.tomakehurst.wiremock.http.AdminRequestHandler;
+import com.github.tomakehurst.wiremock.http.HttpServer;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
+import com.github.tomakehurst.wiremock.http.StubRequestHandler;
+import com.github.tomakehurst.wiremock.jetty9.JettyHttpServer;
+import com.github.tomakehurst.wiremock.jetty9.JettyHttpServerFactory;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.ProxyInputStream;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
@@ -27,8 +40,11 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -37,6 +53,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.common.Exceptions.throwUnchecked;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.lang.Math.round;
 import static java.lang.System.nanoTime;
@@ -52,6 +69,8 @@ public class HttpClientIT {
     private MantaClient mantaClient;
 
     private static class IncreasingDelayInputStream extends ProxyInputStream {
+
+        private static final Logger LOG = LoggerFactory.getLogger(IncreasingDelayInputStream.class);
 
         private final int baseDelay;
 
@@ -78,16 +97,16 @@ public class HttpClientIT {
                 Thread.currentThread().interrupt();
             }
         }
-
     }
 
     private static class IncreasingDelayReadingBodyResponse extends Response {
+
         IncreasingDelayReadingBodyResponse(final Response response,
                                            final int baseDelay,
                                            final float mult) {
             super(response.getStatus(),
                   response.getStatusMessage(),
-                  () -> new IncreasingDelayInputStream(response.getBodyStream(), baseDelay, mult),
+                  wrap(response, baseDelay, mult),
                   response.getHeaders(),
                   response.wasConfigured(),
                   response.getFault(),
@@ -95,6 +114,98 @@ public class HttpClientIT {
                   response.getChunkedDribbleDelay(),
                   response.isFromProxy());
         }
+
+        private static InputStreamSource wrap(final Response response,
+                                              final int baseDelay,
+                                              final float mult) {
+            byte[] bytes;
+            try {
+                bytes = IOUtils.toByteArray(response.getBodyStream());
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException(ioe);
+            }
+
+            while (bytes.length < 10_000) {
+                LOG.info("growing bytes, current length: " + bytes.length);
+                bytes = ArrayUtils.addAll(bytes, bytes);
+            }
+
+            final byte[] expandedBytes = bytes;
+            return
+                    () -> new IncreasingDelayInputStream(new ByteArrayInputStream(expandedBytes),
+                                                         baseDelay,
+                                                         mult);
+        }
+    }
+
+    private static final class CSHJHS extends JettyHttpServer {
+
+        public CSHJHS(final Options options, final AdminRequestHandler adminRequestHandler, final StubRequestHandler stubRequestHandler) {
+            super(options, adminRequestHandler, stubRequestHandler);
+        }
+
+        @Override
+        protected HandlerCollection createHandler(Options options, AdminRequestHandler adminRequestHandler, StubRequestHandler stubRequestHandler) {
+            Notifier notifier = options.notifier();
+            ServletContextHandler adminContext = addAdminContext(
+                    adminRequestHandler,
+                    notifier
+            );
+            ServletContextHandler mockServiceContext = addMockServiceContext(
+                    stubRequestHandler,
+                    options.filesRoot(),
+                    options.getAsynchronousResponseSettings(),
+                    notifier
+            );
+
+            HandlerCollection handlers = new HandlerCollection();
+            handlers.setHandlers(ArrayUtils.addAll(extensionHandlers(), adminContext));
+
+            addGZipHandler(mockServiceContext, handlers);
+
+            return handlers;
+        }
+
+            private void addGZipHandler(ServletContextHandler mockServiceContext, HandlerCollection handlers) {
+        Class<?> gzipHandlerClass = null;
+
+        try {
+            gzipHandlerClass = Class.forName("org.eclipse.jetty.servlets.gzip.GzipHandler");
+        } catch (ClassNotFoundException e) {
+            try {
+                gzipHandlerClass = Class.forName("org.eclipse.jetty.server.handler.gzip.GzipHandler");
+            } catch (ClassNotFoundException e1) {
+                throwUnchecked(e1);
+            }
+        }
+
+        try {
+            HandlerWrapper gzipWrapper = (HandlerWrapper) gzipHandlerClass.newInstance();
+            gzipWrapper.setHandler(mockServiceContext);
+            handlers.addHandler(gzipWrapper);
+        } catch (Exception e) {
+            throwUnchecked(e);
+        }
+    }
+
+
+    }
+
+    private static final class CSHJHSF extends JettyHttpServerFactory {
+
+        @Override
+        public HttpServer buildHttpServer(
+                Options options,
+                AdminRequestHandler adminRequestHandler,
+                StubRequestHandler stubRequestHandler
+        ) {
+            return new JettyHttpServer(
+                    options,
+                    adminRequestHandler,
+                    stubRequestHandler
+            );
+        }
+
     }
 
     @BeforeClass
@@ -104,6 +215,7 @@ public class HttpClientIT {
         final WireMockConfiguration wmc = wireMockConfig()
                 .dynamicPort()
                 .disableRequestJournal()
+                .httpServerFactory(new CSHJHSF)
                 .extensions(new ResponseTransformer() {
                     @Override
                     public Response transform(final Request request,
@@ -118,7 +230,6 @@ public class HttpClientIT {
                         return "increasing-delay";
                     }
                 });
-        ;
 
         this.wireMockServer = new WireMockServer(wmc);
         this.wireMockServer.start();
@@ -175,13 +286,17 @@ public class HttpClientIT {
         int soTimeout = 1000;
 
         try (final CloseableHttpClient client = HttpClients.custom()
+                .setDefaultConnectionConfig(
+                        ConnectionConfig.custom()
+                                .setBufferSize(1)
+                                .build())
                 .setDefaultSocketConfig(
                         SocketConfig.custom()
-                                .setSoTimeout(soTimeout)
+                                // .setSoTimeout(soTimeout)
                                 .build())
                 .setDefaultRequestConfig(
                         RequestConfig.custom()
-                                .setSocketTimeout(soTimeout)
+                                // .setSocketTimeout(soTimeout)
                                 .build())
                 .setKeepAliveStrategy(DefaultConnectionKeepAliveStrategy.INSTANCE)
                 .build()) {
