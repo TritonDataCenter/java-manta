@@ -566,18 +566,29 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final int bufferSize;
 
         if (numberOfBytesToSkip < defaultBufferSize) {
-            bufferSize = (int)numberOfBytesToSkip;
+            bufferSize = (int) numberOfBytesToSkip;
         } else {
             bufferSize = defaultBufferSize;
         }
 
-        byte[] buf = new byte[bufferSize];
+        final byte[] buf = new byte[bufferSize];
 
         long skipped = 0;
         int skippedInLastRead = 0;
 
         while (skippedInLastRead > EOF && skipped <= numberOfBytesToSkip) {
-            skippedInLastRead = read(buf);
+            final long bytesRemaining = numberOfBytesToSkip - skipped;
+
+            if (bytesRemaining == 0) {
+                // we're just looking for EOF
+                skippedInLastRead = read();
+            } else if (bytesRemaining < buf.length) {
+                // if the number of bytes remaining is less than the buffer size, do an offset/length read.
+                // it's fine to downcast the long to an int since we'd just loop again
+                skippedInLastRead = read(buf, 0, (int) bytesRemaining);
+            } else {
+                skippedInLastRead = read(buf);
+            }
 
             if (skippedInLastRead > EOF) {
                 skipped += skippedInLastRead;
