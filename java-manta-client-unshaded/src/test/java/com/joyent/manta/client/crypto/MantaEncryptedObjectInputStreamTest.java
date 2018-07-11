@@ -128,6 +128,21 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
 
+    public void canDecryptEntireObjectAuthenticatedWithFailureAesCbC128() throws IOException {
+        canDecryptEntireObjectAllReadModesWithFailure(AesCbcCipherDetails.INSTANCE_128_BIT, true);
+    }
+
+    private void canDecryptEntireObjectAllReadModesWithFailure(final SupportedCipherDetails cipherDetails,
+                                                                final boolean authenticate)
+            throws IOException {
+        System.out.printf("Testing decryption of [%s] as full read of stream\n",
+                cipherDetails.getCipherId());
+
+        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate);
+        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate);
+        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate);
+    }
+
     public void canDecryptEntireObjectUnauthenticatedAesCbc128() throws IOException {
         canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT, false);
     }
@@ -799,10 +814,12 @@ public class MantaEncryptedObjectInputStreamTest {
         }
     }
 
+    /**
+     * This class needs to know the amount of data being read so that it can calculate
+     * skip lengths to cover at least half of the stream.
+     */
     private static class ReadAndSkipPartialRead implements ReadPartialBytes {
 
-        // TODO: accept a file size so we can scale our operations by that size
-        // (allowing people to change the input data! waoh!)
         private final long inputSize;
 
         ReadAndSkipPartialRead(final long inputSize) {
@@ -844,64 +861,13 @@ public class MantaEncryptedObjectInputStreamTest {
      * data from the stream using three different read methods and makes sure
      * that all read methods function correctly.
      */
-    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails,
-                                                    boolean authenticate)
-            throws IOException {
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream%n",
+    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails, boolean authenticate) throws IOException {
+        System.out.printf("Testing decryption of [%s] as full read of stream\n",
                 cipherDetails.getCipherId());
 
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, null, null);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, null, null);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, null, null);
-
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream with continuator and immediate pre-read failure%n",
-                cipherDetails.getCipherId());
-
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0f, false);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0f, false);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0f, false);
-
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream with continuator and halfway pre-read failure%n",
-                cipherDetails.getCipherId());
-
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0.5f, false);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0.5f, false);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0.5f, false);
-
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream with continuator and ending pre-read failure%n",
-                cipherDetails.getCipherId());
-
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0.9f, false);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0.9f, false);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0.9f, false);
-
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream with continuator and immediate post-read failure%n",
-                cipherDetails.getCipherId());
-
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0f, true);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0f, true);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0f, true);
-
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream with continuator and halfway post-read failure%n",
-                cipherDetails.getCipherId());
-
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0.5f, true);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0.5f, true);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0.5f, true);
-
-        System.out.printf(
-                "Testing decryption of [%s] as full read of stream with continuator and ending post-read failure%n",
-                cipherDetails.getCipherId());
-
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0.9f, true);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0.9f, true);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0.9f, true);
+        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate);
+        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate);
+        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate);
     }
 
 
@@ -962,11 +928,9 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as full read of stream\n",
                 cipherDetails.getCipherId());
 
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleReads.class, null, null);
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkReads.class, null, null);
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkOffsetReads.class, null, null);
-
-        // TODO: failures
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleReads.class);
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkReads.class);
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkOffsetReads.class);
     }
 
     /**
@@ -980,7 +944,7 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as partial read of stream\n",
                 cipherDetails.getCipherId());
 
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleBytePartialRead.class, null, null);
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleBytePartialRead.class);
     }
 
     /**
@@ -992,15 +956,7 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, null, null);
-
-        // InputStreamContinuator
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, 0f, true);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, 0.5f, true);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, 0.9f, true);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, 0f, false);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, 0.5f, false);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true, 0.9f, false);
+        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true);
     }
 
     /**
@@ -1011,31 +967,17 @@ public class MantaEncryptedObjectInputStreamTest {
         System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, null, null);
-
-        // InputStreamContinuator, failures at the end are omitted because the
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, 0f, true);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, 0.5f, true);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, 0.9f, true);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, 0f, false);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, 0.5f, false);
-        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false, 0.9f, false);
+        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false);
     }
 
     private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
-                                        Class<? extends ReadBytes> strategy,
-                                        boolean authenticate,
-                                        Float failurePercent,
-                                        Boolean failureOrder) throws IOException {
+                                        Class<? extends ReadBytes> strategy, boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        final InputStream in;
-        InputStreamContinuator continuator = null;
-
-        final Pair<InputStream, InputStreamContinuator> inputs = buildInputStream(encryptedFile, failurePercent, failureOrder);
-        final InputStream inSpy = Mockito.spy(inputs.getLeft());
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
 
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
@@ -1051,20 +993,19 @@ public class MantaEncryptedObjectInputStreamTest {
         }
 
         Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
-
-        verifyContinuatorWasUsedIfPresent(inputs);
     }
 
     /**
-     * Test that attempts to skip bytes from an encrypted stream that had its ciphertext altered. In this case, the
-     * stream is closed before all of the bytes are read from it. An assertion fails if the underlying stream fails to
-     * throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     * Test that attempts to skip bytes from an encrypted stream that had its
+     * ciphertext altered. In this case, the stream is closed before all of the
+     * bytes are read from it. An assertion fails if the underlying stream
+     * fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
      */
     private void willErrorIfCiphertextIsModifiedAndBytesAreSkipped(SupportedCipherDetails cipherDetails) throws IOException {
         System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ReadAndSkipPartialRead.class, null, null);
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ReadAndSkipPartialRead.class);
     }
 
     /**
@@ -1079,13 +1020,13 @@ public class MantaEncryptedObjectInputStreamTest {
                         + "truncated stream\n",
                 cipherDetails.getCipherId());
 
-        canReadByteRange(cipherDetails, new SingleReads(), startPosInclusive, endPosInclusive);
-        canReadByteRange(cipherDetails, new ByteChunkReads(), startPosInclusive, endPosInclusive);
-        canReadByteRange(cipherDetails, new ByteChunkOffsetReads(), startPosInclusive, endPosInclusive);
+        canReadByteRange(cipherDetails, SingleReads.class, startPosInclusive, endPosInclusive);
+        canReadByteRange(cipherDetails, ByteChunkReads.class, startPosInclusive, endPosInclusive);
+        canReadByteRange(cipherDetails, ByteChunkOffsetReads.class, startPosInclusive, endPosInclusive);
     }
 
     private void canReadByteRange(SupportedCipherDetails cipherDetails,
-                                  ReadBytes readBytes,
+                                  Class<? extends ReadBytes> strategy,
                                   int startPosInclusive,
                                   int endPosInclusive) throws IOException {
         final byte[] content;
@@ -1160,7 +1101,7 @@ public class MantaEncryptedObjectInputStreamTest {
                      unboundedEnd);
 
             byte[] actual = new byte[expected.length];
-            readBytes.readBytes(min, actual);
+            ReadBytesFactory.fullStrategy(strategy).readBytes(min, actual);
 
             min.close();
             Mockito.verify(binSpy, Mockito.atLeastOnce()).close();
@@ -1178,35 +1119,29 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     private void canReadObject(SupportedCipherDetails cipherDetails,
-                               Class<? extends ReadPartialBytes> strategy,
-                               boolean authenticate,
-                               Float failurePercent,
-                               Boolean failureOrder) throws IOException {
+                               Class<? extends ReadBytes> strategy,
+                               boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        final Pair<InputStream, InputStreamContinuator> inputs = buildInputStream(encryptedFile, failurePercent, failureOrder);
-        final InputStream inSpy = Mockito.spy(inputs.getLeft());
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                 authenticate, (long)this.plaintextSize);
 
         try {
             byte[] actual = new byte[plaintextSize];
-            ReadBytesFactory.partialStrategy(strategy, encryptedFile.file.length()).readBytes(min, actual);
+            ReadBytesFactory.build(strategy, encryptedFile.file.length()).readBytes(min, actual);
         } finally {
             min.close();
             Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
         }
-
-        verifyContinuatorWasUsedIfPresent(inputs);
     }
 
     private void willThrowExceptionWhenCiphertextIsAltered(SupportedCipherDetails cipherDetails,
-                                                           Class<? extends ReadBytes> strategy,
-                                                           Float failurePercent,
-                                                           Boolean failureOrder)
+                                                           Class<? extends ReadBytes> strategy)
             throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
@@ -1221,9 +1156,8 @@ public class MantaEncryptedObjectInputStreamTest {
 
         boolean thrown = false;
 
-
-        final Pair<InputStream, InputStreamContinuator> inputs = buildInputStream(encryptedFile, failurePercent, failureOrder);
-        final InputStream inSpy = Mockito.spy(inputs.getLeft());
+        FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
 
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
@@ -1239,8 +1173,6 @@ public class MantaEncryptedObjectInputStreamTest {
         }
 
         Assert.assertTrue(thrown, "Ciphertext authentication exception wasn't thrown");
-
-        verifyContinuatorWasUsedIfPresent(inputs);
     }
 
     private void willErrorWhenMissingHMAC(final SupportedCipherDetails cipherDetails) throws IOException {
@@ -1372,6 +1304,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 cipherDetails, key, authenticate,
                 skipBytes, plaintextLength, unboundedEnd);
     }
+
 
     //@formatter:off
     /**
