@@ -66,7 +66,7 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     public int read() throws IOException {
         while (true) {
             try {
-                return this.getWrapped().read();
+                return super.read();
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -77,7 +77,7 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     public int read(final byte[] b) throws IOException {
         while (true) {
             try {
-                return this.getWrapped().read(b);
+                return super.read(b);
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -88,7 +88,7 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         while (true) {
             try {
-                return this.getWrapped().read(b, off, len);
+                return super.read(b, off, len);
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }
@@ -99,7 +99,7 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     public long skip(final long n) throws IOException {
         while (true) {
             try {
-                return this.getWrapped().skip(n);
+                return super.skip(n);
             } catch (final IOException e) {
                 this.attemptRecovery(e);
             }

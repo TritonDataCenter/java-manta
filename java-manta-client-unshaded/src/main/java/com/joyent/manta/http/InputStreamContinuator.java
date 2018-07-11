@@ -12,10 +12,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Helper class for resuming the body of a response being read as an {@link InputStream} based on the number of bytes
+ * "Factory" class for resuming the body of a response being read as an {@link InputStream} based on the number of bytes
  * already read. Meant to be used in combination with {@link com.joyent.manta.util.ContinuingInputStream}. The
  * {@link Closeable} is included so that the number of continuations provided by a single continuator can be
  * instrumented.
+ *
+ * Could also be called "InputStreamFactory" or "InputStreamContinuationFactory" but those are a bit too ambiguous.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
