@@ -21,7 +21,6 @@ public class FileInputStreamContinuator implements InputStreamContinuator {
 
     @Override
     public InputStream buildContinuation(final IOException ex, final long bytesRead) throws IOException {
-        LOG.debug("continuation requested from offset " + bytesRead);
 
         final FileInputStream fileStream = new FileInputStream(this.file);
 
