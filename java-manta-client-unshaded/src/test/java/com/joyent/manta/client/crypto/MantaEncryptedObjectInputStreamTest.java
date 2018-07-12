@@ -61,6 +61,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 @Test
 public class MantaEncryptedObjectInputStreamTest {
+
     private final Path testFile;
     private final URL testURL;
     private final int plaintextSize;
@@ -837,7 +838,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 target[totalRead++] = (byte)lastRead;
             }
 
-            final int skipSize = 15;
+            final int skipSize = Math.toIntExact(Math.floorDiv(this.inputSize, 4));
             totalRead += Math.toIntExact(in.skip(skipSize));
 
             if ((lastRead = in.read()) == -1) {
