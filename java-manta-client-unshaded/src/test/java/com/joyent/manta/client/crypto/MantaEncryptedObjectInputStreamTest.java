@@ -54,6 +54,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 @Test
 public class MantaEncryptedObjectInputStreamTest {
+
     private final Path testFile;
     private final URL testURL;
     private final int plaintextSize;
