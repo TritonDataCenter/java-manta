@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_CONTINUATIONS_PER_REQUEST;
-import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_PREFIX_METER_RECOVERED;
+import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_PREFIX_RECOVERED;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
 import static com.joyent.manta.http.ApacheHttpTestUtils.prepareResponseWithHeaders;
@@ -288,6 +288,17 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         assertEquals(IOUtils.toByteArray(response), STUB_CONTENT);
     }
 
+    public void buildContinuationHandlesEofReadFailureGracefully() throws IOException {
+        // ssshhh... we're not actually going to execute a request
+        final HttpClient client = prepareMockedClient(0, null, null, null, null);
+
+        final InputStream response =
+                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+                        .buildContinuation(new IOException(), STUB_CONTENT.length);
+
+        assertEquals(response.read(), -1);
+    }
+
     @Test(expectedExceptions = ResumableDownloadException.class,
           expectedExceptionsMessageRegExp = ".*update.*offset.*")
     public void buildContinuationInvalidBytesRead() throws IOException {
@@ -299,7 +310,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       STUB_RESPONSE_ENTITY);
 
         new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
-                .buildContinuation(new IOException(), STUB_CONTENT.length);
+                .buildContinuation(new IOException(), STUB_CONTENT.length + 1);
     }
 
     @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
@@ -406,6 +417,46 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
+    public void recordsMetrics() throws IOException {
+        final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
+                                                      STUB_ETAG,
+                                                      STUB_CONTENT_RANGE,
+                                                      (long) STUB_CONTENT.length,
+                                                      STUB_RESPONSE_ENTITY);
+        final MetricRegistry registry = new MetricRegistry();
+
+        final InputStreamContinuator continuator =
+                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, registry);
+
+        final Optional<Histogram> maybeHistogram =
+                registry.getHistograms((name, metric) -> name.equals(METRIC_NAME_CONTINUATIONS_PER_REQUEST))
+                        .values().stream().findFirst();
+
+        assertTrue(maybeHistogram.isPresent());
+
+        final Histogram histogram = maybeHistogram.get();
+        assertEquals(histogram.getCount(), 0);
+
+        continuator.buildContinuation(new SocketTimeoutException(), 0);
+
+        final String expectedMetricName =
+                METRIC_NAME_PREFIX_RECOVERED + SocketTimeoutException.class.getSimpleName();
+        final Optional<Counter> maybeSocketTimeoutExceptionCounter =
+                registry.getCounters(
+                        (name, meter) -> name.equals(expectedMetricName))
+                        .values().stream().findFirst();
+
+        assertTrue(maybeSocketTimeoutExceptionCounter.isPresent());
+
+        final Counter socketTimeoutExceptionCounter = maybeSocketTimeoutExceptionCounter.get();
+
+        assertEquals(socketTimeoutExceptionCounter.getCount(), 1);
+
+        continuator.close();
+
+        assertEquals(histogram.getCount(), 1);
+    }
+
     private static HttpClient prepareMockedClient(final int responseCode,
                                                   final String etag,
                                                   final HttpRange.Response contentRange,
@@ -442,45 +493,5 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         });
 
         return client;
-    }
-
-    public void recordsMetrics() throws IOException {
-        final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
-                                                      STUB_ETAG,
-                                                      STUB_CONTENT_RANGE,
-                                                      (long) STUB_CONTENT.length,
-                                                      STUB_RESPONSE_ENTITY);
-        final MetricRegistry registry = new MetricRegistry();
-
-        final InputStreamContinuator continuator =
-                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, registry);
-
-        final Optional<Histogram> maybeHistogram =
-                registry.getHistograms((name, metric) -> name.equals(METRIC_NAME_CONTINUATIONS_PER_REQUEST))
-                        .values().stream().findFirst();
-
-        assertTrue(maybeHistogram.isPresent());
-
-        final Histogram histogram = maybeHistogram.get();
-        assertEquals(histogram.getCount(), 0);
-
-        continuator.buildContinuation(new SocketTimeoutException(), 0);
-
-        final String expectedMetricName =
-                METRIC_NAME_PREFIX_METER_RECOVERED + SocketTimeoutException.class.getSimpleName();
-        final Optional<Counter> maybeSocketTimeoutExceptionCounter =
-                registry.getCounters(
-                        (name, meter) -> name.equals(expectedMetricName))
-                        .values().stream().findFirst();
-
-        assertTrue(maybeSocketTimeoutExceptionCounter.isPresent());
-
-        final Counter socketTimeoutExceptionCounter = maybeSocketTimeoutExceptionCounter.get();
-
-        assertEquals(socketTimeoutExceptionCounter.getCount(), 1);
-
-        continuator.close();
-
-        assertEquals(histogram.getCount(), 1);
     }
 }

@@ -14,6 +14,7 @@ import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
+import org.apache.commons.io.input.ClosedInputStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -26,6 +27,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -34,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import javax.net.ssl.SSLException;
 
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
 import static com.joyent.manta.http.HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
@@ -77,7 +78,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     /**
      * Prefix used to build metric names for exceptions from which this continuator has helped recover.
      */
-    static final String METRIC_NAME_PREFIX_METER_RECOVERED = "get-continuations-recovered-";
+    static final String METRIC_NAME_PREFIX_RECOVERED = "get-continuations-recovered-";
 
     /**
      * The key under which the distribution of continuations delivered per request is recorded.
@@ -192,7 +193,13 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
 
         this.continuation++;
         if (this.metricRegistry != null) {
-            this.metricRegistry.counter(METRIC_NAME_PREFIX_METER_RECOVERED + ex.getClass().getSimpleName()).inc();
+            this.metricRegistry.counter(METRIC_NAME_PREFIX_RECOVERED + ex.getClass().getSimpleName()).inc();
+        }
+
+        // if an IOException occurs while reading EOF the user may ask us for a continuation
+        // starting after the last valid byte. It may make sense to change this to >= instead of ==
+        if (bytesRead == this.marker.getTotalRangeSize()) {
+            return ClosedInputStream.CLOSED_INPUT_STREAM;
         }
 
         try {

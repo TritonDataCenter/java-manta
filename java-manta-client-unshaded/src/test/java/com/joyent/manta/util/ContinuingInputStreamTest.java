@@ -1,5 +1,6 @@
 package com.joyent.manta.util;
 
+import com.joyent.manta.util.FailingInputStream.FailureOrder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BrokenInputStream;
 import org.apache.commons.io.input.NullInputStream;
@@ -128,7 +129,7 @@ public class ContinuingInputStreamTest {
 
     public void testReadFailureBeforeCopyingBytesDoesNotAffectCount() throws Exception {
         final InputStream immediatelyPreReadFailing = new FailingInputStream(
-                new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, false);
+                new ByteArrayInputStream(STUB_OBJECT_BYTES), FailureOrder.PRE_READ, 1);
 
         // read will fail before any bytes are read
         final ContinuingInputStream cisSingle = new ContinuingInputStream(immediatelyPreReadFailing);
@@ -147,7 +148,7 @@ public class ContinuingInputStreamTest {
 
     public void testReadFailureAfterCopyingBytesDoesNotAffectCount() throws Exception {
         final InputStream immediatelyPostReadFailing = new FailingInputStream(
-                new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, true);
+                new ByteArrayInputStream(STUB_OBJECT_BYTES), FailureOrder.POST_READ, 1);
 
         // read will fail before any bytes are read
         final ContinuingInputStream cisSingle = new ContinuingInputStream(immediatelyPostReadFailing);
@@ -232,11 +233,11 @@ public class ContinuingInputStreamTest {
                             // that is up to 1 less than half of the inputSize
                             for (int failureGlobalOffset = 0; failureGlobalOffset < i; failureGlobalOffset++) {
 
-                                final ArrayDeque<ImmutablePair<Integer, Boolean>> failureOffsets = new ArrayDeque<>();
+                                final ArrayDeque<ImmutablePair<Integer, FailureOrder>> failureOffsets = new ArrayDeque<>();
 
                                 final int divided = Math.floorDiv(i, failureCount);
                                 final int failureSpacing = NumberUtils.max(1, divided);
-                                Boolean failureOrder = null;
+                                FailureOrder failureOrder = null;
 
                                 for (int failure = 0; failure <= failureCount; failure++) {
                                     final int failureOffset = (failure * failureSpacing) + failureGlobalOffset;
@@ -248,16 +249,28 @@ public class ContinuingInputStreamTest {
 
                                     switch (failureOrderType) {
                                         case PRE_READ:
-                                            failureOrder = false;
+                                            failureOrder = FailureOrder.PRE_READ;
                                             break;
                                         case POST_READ:
-                                            failureOrder = true;
+                                            failureOrder = FailureOrder.POST_READ;
                                             break;
                                         case PRE_READ_INITIAL_ALTERNATING:
-                                            failureOrder = failureOrder == null ? false : failureOrder ^ true;
+                                            if (failureOrder != null && failureOrder == FailureOrder.PRE_READ) {
+                                                failureOrder = FailureOrder.POST_READ;
+                                            } else if (failureOrder != null && failureOrder == FailureOrder.POST_READ) {
+                                                failureOrder = FailureOrder.PRE_READ;
+                                            } else {
+                                                failureOrder = FailureOrder.PRE_READ;
+                                            }
                                             break;
                                         case POST_READ_INITIAL_ALTERNATING:
-                                            failureOrder = failureOrder == null ? true : failureOrder ^ true;
+                                            if (failureOrder != null && failureOrder == FailureOrder.PRE_READ) {
+                                                failureOrder = FailureOrder.POST_READ;
+                                            } else if (failureOrder != null && failureOrder == FailureOrder.POST_READ) {
+                                                failureOrder = FailureOrder.PRE_READ;
+                                            } else {
+                                                failureOrder = FailureOrder.POST_READ;
+                                            }
                                             break;
                                     }
 
@@ -277,7 +290,7 @@ public class ContinuingInputStreamTest {
         for (Object[] params : paramLists) {
             tests++;
             testBytesReadUpdatesReliably((Integer) params[0], (Integer) params[1],
-                    (Deque<ImmutablePair<Integer, Boolean>>) params[2]);
+                    (Deque<ImmutablePair<Integer, FailureOrder>>) params[2]);
         }
 
         LOG.debug("testVariableStartOffsetAndFrequencyFailures completed {} input combinations", tests);
@@ -285,7 +298,7 @@ public class ContinuingInputStreamTest {
 
     private static void testBytesReadUpdatesReliably(final int objectSize,
                                                      final int readBufferSize,
-                                                     final Deque<ImmutablePair<Integer, Boolean>> failureOffsets) {
+                                                     final Deque<ImmutablePair<Integer, FailureOrder>> failureOffsets) {
         final byte[] object = ArrayUtils.subarray(STUB_OBJECT_BYTES, 0, objectSize);
 
         final ByteArrayOutputStream copied = new ByteArrayOutputStream();
@@ -293,14 +306,14 @@ public class ContinuingInputStreamTest {
         int infiniteLoopDetector = failureOffsets.size() + 2;
 
         assertFalse(failureOffsets.isEmpty());
-        final List<ImmutablePair<Integer, Boolean>> failureOffsetsCopy = new ArrayList<>(failureOffsets);
+        final List<ImmutablePair<Integer, FailureOrder>> failureOffsetsCopy = new ArrayList<>(failureOffsets);
 
-        final Pair<Integer, Boolean> firstFailure = failureOffsets.removeFirst();
+        final Pair<Integer, FailureOrder> firstFailure = failureOffsets.removeFirst();
         final ContinuingInputStream continuable = new ContinuingInputStream(
                 new FailingInputStream(
                         new ByteArrayInputStream(object),
-                        firstFailure.getLeft(),
-                        firstFailure.getRight()));
+                        firstFailure.getRight(), firstFailure.getLeft()
+                ));
 
         boolean finished = false;
         do {
@@ -321,8 +334,8 @@ public class ContinuingInputStreamTest {
             InputStream remaining;
             remaining = new ByteArrayInputStream(object, toIntExact(continuable.getBytesRead()), object.length);
             if (!failureOffsets.isEmpty()) {
-                final Pair<Integer, Boolean> nextFailure = failureOffsets.removeFirst();
-                remaining = new FailingInputStream(remaining, nextFailure.getLeft(), nextFailure.getRight());
+                final Pair<Integer, FailureOrder> nextFailure = failureOffsets.removeFirst();
+                remaining = new FailingInputStream(remaining, nextFailure.getRight(), nextFailure.getLeft());
             }
 
             continuable.continueWith(remaining);
@@ -413,7 +426,7 @@ public class ContinuingInputStreamTest {
 
     public void testFailureFromSkipThenRead() throws IOException {
         final InputStream immediatelyPreReadFailing = new FailingInputStream(
-                new ByteArrayInputStream(STUB_OBJECT_BYTES), 1, false);
+                new ByteArrayInputStream(STUB_OBJECT_BYTES), FailureOrder.PRE_READ, 1);
 
         final ContinuingInputStream cis = new ContinuingInputStream(immediatelyPreReadFailing);
 

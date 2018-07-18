@@ -78,6 +78,10 @@ final class ResumableDownloadMarker {
         return this.currentRange;
     }
 
+    long getTotalRangeSize() {
+        return this.totalRangeSize;
+    }
+
     /**
      * Advance the marker's state, updating {@link #currentRange}. Verifies that the next starting offset: 1.
      * non-negative (zero is acceptable because the user may have not read any bytes into the initial request) 2. less

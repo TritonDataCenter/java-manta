@@ -44,32 +44,53 @@ public class ResumableDownloadMarkerTest {
         assertThrows(HttpException.class, () -> marker.validateResponseRange(STUB_CONTENT_RANGE));
     }
 
-    public void validatesBytesRead() {
+    public void validatesBytesReadCanProceedNormally() {
         final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
 
         // it's possible to encounter an error without reading any bytes
         marker.updateRangeStart(0);
 
+        // normal updates
+        marker.updateRangeStart(1);
+
+        marker.updateRangeStart(2);
+        marker.updateRangeStart(2); // failed to proceed
+
+        marker.updateRangeStart(STUB_CONTENT_RANGE.getEndInclusive());
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void validatesBytesReadThrowsOnNegativeBytes() {
+        final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
+
         // shouldn't read a negative number of bytes
-        assertThrows(IllegalArgumentException.class,
-                     () -> marker.updateRangeStart(-1));
+         marker.updateRangeStart(-1);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void validatesBytesReadThrowsOnMoreBytesThanExpected() {
+        final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
 
         // shouldn't be able to read more bytes than the total object size
-        assertThrows(IllegalArgumentException.class,
-                     () -> marker.updateRangeStart(10));
+        marker.updateRangeStart(10);
+    }
 
-        // advance marker by having read two bytes
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void validatesBytesReadThrowsWhenBytesReadDecreases() {
+        final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
+        // advance marker by pretending we read two bytes
         marker.updateRangeStart(2);
 
         // can't have read less bytes than we did at last update
-        assertThrows(IllegalArgumentException.class,
-                     () -> marker.updateRangeStart(1));
+        marker.updateRangeStart(1);
 
+    }
 
-        // TODO: how do we handle this case?
-        assertThrows(IllegalArgumentException.class,
-                     () -> marker.updateRangeStart(4));
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void validatesBytesReadThrowsWhenSettingRangeStartToContentLength() {
+        final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
 
+        marker.updateRangeStart(STUB_CONTENT_RANGE.contentLength());
     }
 
     public void usefulToString() {

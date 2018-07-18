@@ -25,6 +25,9 @@ import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.AEADBadTagException;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
@@ -32,9 +35,6 @@ import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.function.Supplier;
-import javax.crypto.AEADBadTagException;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * <p>An {@link InputStream} implementation that decrypts client-side encrypted
@@ -562,7 +562,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return skipped;
         }
 
-        final int defaultBufferSize = calculateBufferSize();
+        final int defaultBufferSize = calculateBufferSize(this.getContentLength(), this.cipherDetails);
         final int bufferSize;
 
         if (numberOfBytesToSkip < defaultBufferSize) {
@@ -645,7 +645,7 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return;
         }
 
-        final int bufferSize = calculateBufferSize();
+        final int bufferSize = calculateBufferSize(this.getContentLength(), this.cipherDetails);
         byte[] buf = new byte[bufferSize];
 
         while (read(buf, false) > EOF);
@@ -654,13 +654,16 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * Calculates the size of buffer to use when reading chunks of bytes based on the known
      * content length.
+     *
      * @return size of buffer to read into memory
+     * @param contentLength the content
+     * @param cipherDetails the cipher in use
      */
-    private int calculateBufferSize() {
-        long cipherTextContentLength = ObjectUtils.firstNonNull(getContentLength(), -1L);
+    static int calculateBufferSize(final Long contentLength, final SupportedCipherDetails cipherDetails) {
+        long cipherTextContentLength = ObjectUtils.firstNonNull(contentLength, -1L);
 
         if (cipherTextContentLength >= 0) {
-            cipherTextContentLength -= this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+            cipherTextContentLength -= cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
         }
 
         final int bufferSize;

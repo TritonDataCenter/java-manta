@@ -14,7 +14,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.joyent.manta.util.FailingInputStream.FailureOrder.ON_EOF;
+import static com.joyent.manta.util.FailingInputStream.FailureOrder.POST_READ;
+import static com.joyent.manta.util.FailingInputStream.FailureOrder.PRE_READ;
+import static java.util.Objects.requireNonNull;
+
 public class FailingInputStream extends InputStream {
+
+    public enum FailureOrder {
+        PRE_READ,
+        POST_READ,
+        ON_EOF,
+    }
 
     private static final Logger LOG = LoggerFactory.getLogger(FailingInputStream.class);
 
@@ -38,39 +49,17 @@ public class FailingInputStream extends InputStream {
      */
     private final long minimumBytes;
 
-    private final boolean failAfterRead;
+    private final FailureOrder failureOrder;
 
     /**
-     * @param wrapped      InputStream to wrap
-     * @param minimumBytes number of bytes to read successfully before failing
+     * @param wrapped InputStream to wrap
+     * @param failureOrder when to trigger the failure
+     * @param minimumBytes number of bytes to read successfully before failing, ignored if failureOrder is ON_EOF
      */
-    public FailingInputStream(InputStream wrapped, long minimumBytes, boolean failAfterRead) {
-        this.wrapped = wrapped;
+    public FailingInputStream(final InputStream wrapped, final FailureOrder failureOrder, final long minimumBytes) {
+        this.wrapped = requireNonNull(wrapped);
+        this.failureOrder = requireNonNull(failureOrder);
         this.minimumBytes = minimumBytes;
-        this.failAfterRead = failAfterRead;
-    }
-
-    @Override
-    public int read(byte[] b) throws IOException {
-        return read(b, 0, b.length);
-    }
-
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        preReadFailure(len);
-
-        final int bytesRead = wrapped.read(b, off, len);
-
-        if (bytesRead == EOF) {
-            return EOF;
-        }
-
-        count.addAndGet(bytesRead);
-
-        // bytes were read into buffer but the user won't know how many
-        postReadFailure();
-
-        return bytesRead;
     }
 
     @Override
@@ -78,8 +67,11 @@ public class FailingInputStream extends InputStream {
         preReadFailure(1);
 
         // it's a byte, even though the return is int
-        int nextByte = this.wrapped.read();
+        final int nextByte = this.wrapped.read();
+
         if (nextByte == EOF) {
+            eofReadFailure();
+
             return EOF;
         }
 
@@ -91,27 +83,68 @@ public class FailingInputStream extends InputStream {
         return nextByte;
     }
 
-    private void preReadFailure(final int willRead) throws IOException {
-        if (!this.failAfterRead) {
-            failIfEnoughBytesRead(willRead, false);
+    @Override
+    public int read(final byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }
+
+    @Override
+    public int read(final byte[] b, final int off, final int len) throws IOException {
+        preReadFailure(len);
+
+        final int bytesRead = wrapped.read(b, off, len);
+
+        if (bytesRead == EOF) {
+            eofReadFailure();
+
+            return EOF;
         }
+
+        count.addAndGet(bytesRead);
+
+        // bytes were read into buffer but the user won't know how many
+        postReadFailure();
+
+        return bytesRead;
+    }
+
+    private void preReadFailure(final int willRead) throws IOException {
+        if (PRE_READ != (this.failureOrder)) {
+            return;
+        }
+
+        failIfEnoughBytesRead(willRead);
     }
 
     private void postReadFailure() throws IOException {
-        if (this.failAfterRead) {
-            failIfEnoughBytesRead(0, true);
+        if (POST_READ != (this.failureOrder)) {
+            return;
         }
+
+        failIfEnoughBytesRead(0);
     }
 
-    private void failIfEnoughBytesRead(final int next, final boolean isAfterRead) throws IOException {
-        IOException e = null;
-        if (count.get() + next >= minimumBytes) {
-            final String relative = isAfterRead ? "after reading" : "attempting to read up to";
-            e = new IOException("Read failure " + relative + " byte " + minimumBytes);
+    private void eofReadFailure() throws IOException {
+        if (ON_EOF != this.failureOrder) {
+            return;
         }
 
-        if (e != null) {
-            throw e;
+        failIfEnoughBytesRead(EOF);
+    }
+
+    private void failIfEnoughBytesRead(final int next) throws IOException {
+        if (next == EOF && ON_EOF.equals(this.failureOrder)) {
+            throw new IOException("Read failure on EOF");
+        }
+
+        final boolean failureByteReached = this.minimumBytes <= this.count.get() + next;
+
+        if (failureByteReached && this.failureOrder == PRE_READ) {
+            throw new IOException("Read failure before byte " + this.minimumBytes);
+        }
+
+        if (failureByteReached && this.failureOrder == POST_READ) {
+            throw new IOException("Read failure after byte " + this.minimumBytes);
         }
     }
 }
