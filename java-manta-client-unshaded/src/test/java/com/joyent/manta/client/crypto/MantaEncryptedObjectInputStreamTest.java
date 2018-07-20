@@ -12,20 +12,13 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.exception.MantaClientEncryptionCiphertextAuthenticationException;
 import com.joyent.manta.exception.MantaIOException;
-import com.joyent.manta.http.InputStreamContinuator;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
-import com.joyent.manta.util.AutoContinuingInputStream;
-import com.joyent.manta.util.FailingInputStream;
-import com.joyent.manta.util.FailingInputStream.FailureOrder;
-import com.joyent.manta.util.FileInputStreamContinuator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
 import org.mockito.Mockito;
@@ -39,7 +32,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,9 +49,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
 
-import static com.joyent.manta.util.FailingInputStream.FailureOrder.ON_EOF;
-import static com.joyent.manta.util.FailingInputStream.FailureOrder.POST_READ;
-import static com.joyent.manta.util.FailingInputStream.FailureOrder.PRE_READ;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
@@ -89,8 +78,6 @@ public class MantaEncryptedObjectInputStreamTest {
             throw new UncheckedIOException(e);
         }
     }
-
-    // DECRYPT ENTIRE OBJECT
 
     public void canDecryptEntireObjectAuthenticatedAesCbc128() throws IOException {
         canDecryptEntireObjectAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT, true);
@@ -177,94 +164,92 @@ public class MantaEncryptedObjectInputStreamTest {
         canDecryptEntireObjectAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT, false);
     }
 
-    // DECRYPT ENTIRE OBJECT w/ CONTINUATIONS
 
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesCbc128() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_128_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAesCbc128() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesCbc192() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_192_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAesCbc192() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesCbc256() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_256_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAesCbc256() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
 
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesCtr128() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_128_BIT, true);
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesCtr192() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_192_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAesCtr128() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesCtr256() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_256_BIT, true);
-    }
-
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesGcm128() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_128_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAesCtr192() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesGcm192() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_192_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAesCtr256() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAesGcm128() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectAuthenticatedWithFailureAutoRecoveryAesGcm256() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_256_BIT, true);
-    }
-
-
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesCbc128() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_128_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAesGcm192() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesGcmCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesCbc192() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_192_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAesGcm256() throws IOException {
+        willErrorIfCiphertextIsModifiedAllReadModes(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCbc128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesCbc256() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_256_BIT, false);
-    }
-
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesCtr128() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_128_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCbc192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCbcCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesCtr192() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_192_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCbc256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCbcCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCtr128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesCtr256() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_256_BIT, false);
-    }
-
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesGcm128() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_128_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCtr192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesGcm192() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_192_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesCtr256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesGcm128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canDecryptEntireObjectUnauthenticatedWithFailureAutoRecoveryAesGcm256() throws IOException {
-        canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_256_BIT, false);
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesGcm192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesGcmCipherDetails.INSTANCE_192_BIT);
     }
 
-    // SKIPS ONLY
+    @Test(groups = {"unlimited-crypto"})
+    public void willErrorIfCiphertextIsModifiedAndNotReadFullyAesGcm256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndNotReadFully(AesGcmCipherDetails.INSTANCE_256_BIT);
+    }
+
 
     public void canSkipBytesAuthenticatedAesCbc128() throws IOException {
         canSkipBytesAuthenticated(AesCbcCipherDetails.INSTANCE_128_BIT);
@@ -351,94 +336,48 @@ public class MantaEncryptedObjectInputStreamTest {
         canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
 
-    // SKIPS w/ CONTINUATIONS
 
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesCbc128() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_128_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesCbc192() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_192_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesCbc256() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesCbcCipherDetails.INSTANCE_256_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCbc256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCbcCipherDetails.INSTANCE_256_BIT);
     }
 
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesCtr128() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_128_BIT, true);
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesCtr192() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_192_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCtr128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCtrCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesCtr256() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesCtrCipherDetails.INSTANCE_256_BIT, true);
-    }
-
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesGcm128() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_128_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCtr192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCtrCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesGcm192() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_192_BIT, true);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesCtr256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesCtrCipherDetails.INSTANCE_256_BIT);
+    }
+
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm128() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_128_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesAuthenticatedWithFailureAutoRecoveryAesGcm256() throws IOException {
-        canSkipBytesWithFailureAutoRecovery(AesGcmCipherDetails.INSTANCE_256_BIT, true);
-    }
-
-
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesCbc128() throws IOException {
-        canSkipBytesUnauthenticated(AesCbcCipherDetails.INSTANCE_128_BIT);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm192() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_192_BIT);
     }
 
     @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesCbc192() throws IOException {
-        canSkipBytesUnauthenticated(AesCbcCipherDetails.INSTANCE_192_BIT);
+    public void willErrorIfCiphertextIsModifiedAndBytesAreSkippedAesGcm256() throws IOException {
+        willErrorIfCiphertextIsModifiedAndBytesAreSkipped(AesGcmCipherDetails.INSTANCE_256_BIT);
     }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesCbc256() throws IOException {
-        canSkipBytesUnauthenticated(AesCbcCipherDetails.INSTANCE_256_BIT);
-    }
-
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesCtr128() throws IOException {
-        canSkipBytesUnauthenticated(AesCtrCipherDetails.INSTANCE_128_BIT);
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesCtr192() throws IOException {
-        canSkipBytesUnauthenticated(AesCtrCipherDetails.INSTANCE_192_BIT);
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesCtr256() throws IOException {
-        canSkipBytesUnauthenticated(AesCtrCipherDetails.INSTANCE_256_BIT);
-    }
-
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesGcm128() throws IOException {
-        canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_128_BIT);
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesGcm192() throws IOException {
-        canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_192_BIT);
-    }
-
-    @Test(groups = {"unlimited-crypto"})
-    public void canSkipBytesUnauthenticatedWithFailureAutoRecoveryAesGcm256() throws IOException {
-        canSkipBytesUnauthenticated(AesGcmCipherDetails.INSTANCE_256_BIT);
-    }
-
-    // RANGE
 
     public void canReadByteRangeStartingAtZeroEndingInFirstBlockAesCtr128() throws IOException {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_128_BIT;
@@ -607,11 +546,6 @@ public class MantaEncryptedObjectInputStreamTest {
          canCopyToOutputStreamWithLargeBuffer(AesGcmCipherDetails.INSTANCE_192_BIT, true);
     }
 
-    @Test(groups = {"unlimited-crypto"})
-    public void canCopyStreamWithLargeBufferBufferAuthenticatedAesGcm256() throws IOException {
-         canCopyToOutputStreamWithLargeBuffer(AesGcmCipherDetails.INSTANCE_256_BIT, true);
-    }
-
 
     public void canCopyStreamWithLargeBufferBufferUnauthenticatedAesCbc128() throws IOException {
         canCopyToOutputStreamWithLargeBuffer(AesCbcCipherDetails.INSTANCE_128_BIT, false);
@@ -739,30 +673,24 @@ public class MantaEncryptedObjectInputStreamTest {
             throw new ClassCastException("Don't know how to build class: " + klass.getCanonicalName());
         }
 
-        public static <T extends ReadPartialBytes> ReadBytes partialStrategy(final Class<T> klass,
-                                                                             final long minReadSize) {
+        public static <T extends ReadPartialBytes> ReadBytes partialStrategy(final Class<? extends ReadPartialBytes> klass,
+                                                                             final long inputSize) {
 
             if (SingleBytePartialRead.class.equals(klass)) {
                 return new SingleBytePartialRead();
             }
 
-            if (ReadAndSkipPartialReadFirstHalfOfFile.class.equals(klass)) {
-                return new ReadAndSkipPartialReadFirstHalfOfFile(minReadSize);
-            }
 
-            if (ReadAndSkipPartialReadStaticSkipSize.class.equals(klass)) {
-                return new ReadAndSkipPartialReadStaticSkipSize(Math.toIntExact(minReadSize));
+            if (ReadAndSkipPartialRead.class.equals(klass)) {
+                return new ReadAndSkipPartialRead(inputSize);
             }
 
             throw new ClassCastException("Don't know how to build class: " + klass.getCanonicalName());
         }
 
-        @SuppressWarnings("unchecked")
-        public static <T extends ReadBytes> ReadBytes build(final Class<T> klass,
-                                                            final long minReadSize,
-                                                            final SupportedCipherDetails cipherDetails) {
+        public static <T extends ReadBytes> ReadBytes build(final Class<T> klass, final long inputSize) {
             if (ReadPartialBytes.class.isAssignableFrom(klass)) {
-                return partialStrategy((Class<? extends ReadPartialBytes>) klass, minReadSize);
+                return partialStrategy((Class<? extends ReadPartialBytes>) klass, inputSize);
             }
 
             if (ReadBytes.class.isAssignableFrom(klass)) {
@@ -866,17 +794,15 @@ public class MantaEncryptedObjectInputStreamTest {
     }
 
     /**
-     * This class needs to know the amount of data being read so that it can calculate skip lengths to cover at least
-     * half of the stream.
+     * This class needs to know the amount of data being read so that it can calculate
+     * skip lengths to cover at least half of the stream.
      */
-    private static class ReadAndSkipPartialReadFirstHalfOfFile implements ReadPartialBytes {
+    private static class ReadAndSkipPartialRead implements ReadPartialBytes {
 
-        private final long skipSize;
+        private final long inputSize;
 
-        ReadAndSkipPartialReadFirstHalfOfFile(final long inputSize) {
-            // in total we do two single-byte reads and two multi-byte skips
-            // so inputSize/4 will take us halfway into the file plus two bytes (give or take a byte)
-            this.skipSize = Math.floorDiv(inputSize, 4);
+        ReadAndSkipPartialRead(final long inputSize) {
+            this.inputSize = inputSize;
         }
 
         @Override
@@ -890,43 +816,7 @@ public class MantaEncryptedObjectInputStreamTest {
                 target[totalRead++] = (byte)lastRead;
             }
 
-            totalRead += Math.toIntExact(in.skip(skipSize));
-
-            if ((lastRead = in.read()) == -1) {
-                return -1;
-            } else {
-                target[totalRead++] = (byte)lastRead;
-            }
-
-            totalRead += Math.toIntExact(in.skip(skipSize));
-
-            return totalRead;
-        }
-    }
-
-    /**
-     * Like ReadAndSkipPartialReadFirstHalfOfFile but allows for setting the skip size directly to test
-     * skips smaller and larger than {@link MantaEncryptedObjectInputStream#DEFAULT_BUFFER_SIZE}.
-     */
-    private static class ReadAndSkipPartialReadStaticSkipSize implements ReadPartialBytes {
-
-        private final int skipSize;
-
-        ReadAndSkipPartialReadStaticSkipSize(final int skipSize) {
-            this.skipSize = skipSize;
-        }
-
-        @Override
-        public int readBytes(InputStream in, byte[] target) throws IOException {
-            int totalRead = 0;
-            int lastRead;
-
-            if ((lastRead = in.read()) == -1) {
-                return -1;
-            } else {
-                target[totalRead++] = (byte)lastRead;
-            }
-
+            final int skipSize = Math.toIntExact(Math.floorDiv(this.inputSize, 4));
             totalRead += Math.toIntExact(in.skip(skipSize));
 
             if ((lastRead = in.read()) == -1) {
@@ -944,105 +834,162 @@ public class MantaEncryptedObjectInputStreamTest {
     /* TEST UTILITY METHODS */
 
     /**
-     * Test that loops through all of the ciphers and attempts to decrypt an encrypted stream. An assertion fails if the
-     * original plaintext and the decrypted plaintext don't match. Additionally, this test tries to read data from the
-     * stream using three different read methods and makes sure that all read methods function correctly.
+     * Test that loops through all of the ciphers and attempts to decrypt an
+     * encrypted stream. An assertion fails if the original plaintext and the
+     * decrypted plaintext don't match. Additionally, this test tries to read
+     * data from the stream using three different read methods and makes sure
+     * that all read methods function correctly.
      */
-    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails,
-                                                    boolean authenticate) throws IOException {
-        System.out.printf("Testing %s decryption of [%s] as full read of stream\n",
-                          authenticate ? "authenticated" : "unauthenticated",
-                          cipherDetails.getCipherId());
+    private void canDecryptEntireObjectAllReadModes(SupportedCipherDetails cipherDetails, boolean authenticate) throws IOException {
+        System.out.printf("Testing decryption of [%s] as full read of stream\n",
+                cipherDetails.getCipherId());
 
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, null, null);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, null, null);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, null, null);
+        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate);
+        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate);
+        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate);
     }
 
-    private void canDecryptEntireObjectAllReadModesWithFailureAutoRecovery(final SupportedCipherDetails cipherDetails,
-                                                                           final boolean authenticate)
+
+    /**
+     * Attempts to copy a {@link MantaEncryptedObjectInputStream} stream to
+     * a {@link java.io.OutputStream} and close the streams. Copy is done using
+     * a large buffer size and logic borrowed directly from COSBench.
+     */
+    private void canCopyToOutputStreamWithLargeBuffer(SupportedCipherDetails cipherDetails,
+                                                      boolean authenticate)
             throws IOException {
-        System.out.printf("Testing %s decryption of [%s] as full read of stream with failure recovery%n",
-                          authenticate ? "authenticated" : "unauthenticated",
-                          cipherDetails.getCipherId());
+        final byte[] buffer = new byte[1024*1024];
+        final int sourceLength = 8000;
+        final byte[] sourceBytes = RandomUtils.nextBytes(sourceLength);
 
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0, PRE_READ);
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, 0, POST_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0, PRE_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, 0, POST_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0, PRE_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, 0, POST_READ);
+        SecretKey key = SecretKeyUtils.generate(cipherDetails);
+        final EncryptedFile encryptedFile;
 
-        // failure position doesn't matter for EOF
-        // the extra EOF read does not occur when authentication is skipped and the cipher is not authenticated
-        if (authenticate || cipherDetails.isAEADCipher()) {
-            canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, -1, ON_EOF);
-            canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, -1, ON_EOF);
-            canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, -1, ON_EOF);
+        try (InputStream in = new ByteArrayInputStream(sourceBytes)) {
+            encryptedFile = encryptedFile(key, cipherDetails, sourceLength, in);
         }
 
-        final Integer halfFileSize = Math.floorDiv(this.plaintextSize, 2);
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, halfFileSize, PRE_READ);
-        canDecryptEntireObject(cipherDetails, SingleReads.class, authenticate, halfFileSize, POST_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, halfFileSize, PRE_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkReads.class, authenticate, halfFileSize, POST_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, halfFileSize, PRE_READ);
-        canDecryptEntireObject(cipherDetails, ByteChunkOffsetReads.class, authenticate, halfFileSize, POST_READ);
+        final byte[] iv = encryptedFile.cipher.getIV();
+
+        final long ciphertextSize = encryptedFile.file.length();
+
+        InputStream backing = new FileInputStream(encryptedFile.file);
+        final InputStream inSpy = Mockito.spy(backing);
+
+        MantaEncryptedObjectInputStream in = createEncryptedObjectInputStream(
+                key, inSpy, ciphertextSize, cipherDetails, iv, authenticate,
+                sourceLength);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        try {
+            // Don't change me - I'm imitating COSBench
+            for (int n; -1 != (n = in.read(buffer));) {
+                out.write(buffer, 0, n);
+            }
+        } finally {
+            in.close();
+            out.close();
+        }
+
+        AssertJUnit.assertArrayEquals(sourceBytes, out.toByteArray());
+        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
     }
 
     /**
-     * Test that loops through all of the ciphers and attempts to skip bytes from an encrypted stream. This test
-     * verifies that the checksums are being calculated correctly even if bytes are skipped.
+     * Test that loops through all of the ciphers and attempts to decrypt an
+     * encrypted stream that had its ciphertext altered. An assertion fails if
+     * the underlying stream fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     * Additionally, this test tries to read data from the stream using three
+     * different read methods and makes sure that all read methods function
+     * correctly.
+     */
+    private void willErrorIfCiphertextIsModifiedAllReadModes(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as full read of stream\n",
+                cipherDetails.getCipherId());
+
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleReads.class);
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkReads.class);
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkOffsetReads.class);
+    }
+
+    /**
+     * Test that loops through all of the ciphers and attempts to decrypt an
+     * encrypted stream that had its ciphertext altered. In this case, the
+     * stream is closed before all of the bytes are read from it. An assertion
+     * fails if the underlying stream fails to throw a
+     * {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     */
+    private void willErrorIfCiphertextIsModifiedAndNotReadFully(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as partial read of stream\n",
+                cipherDetails.getCipherId());
+
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleBytePartialRead.class);
+    }
+
+    /**
+     * Test that loops through all of the ciphers and attempts to skip bytes
+     * from an encrypted stream. This test verifies that the checksums are being
+     * calculated correctly even if bytes are skipped.
      */
     private void canSkipBytesAuthenticated(SupportedCipherDetails cipherDetails) throws IOException {
-        System.out.printf("Testing authentication ciphertext with [%s] as read and skips of stream\n",
+        System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, true, null, null);
+        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, true);
     }
 
     /**
-     * Test that loops through all of the ciphers and attempts to skip bytes from an encrypted stream.
+     * Test that loops through all of the ciphers and attempts to skip bytes
+     * from an encrypted stream.
      */
     private void canSkipBytesUnauthenticated(SupportedCipherDetails cipherDetails) throws IOException {
-        System.out.printf("Testing unauthenticated ciphertext with [%s] as read and skips of stream\n",
+        System.out.printf("Testing authentication of ciphertext with [%s] as read and skips of stream\n",
                 cipherDetails.getCipherId());
 
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, null, null);
+        canReadObject(cipherDetails, ReadAndSkipPartialRead.class, false);
     }
 
-    private void canSkipBytesWithFailureAutoRecovery(final SupportedCipherDetails cipherDetails,
-                                                     final boolean authenticate) throws IOException {
-        System.out.printf("Testing %s ciphertext with [%s] as read and skips of stream with %n",
-                authenticate ? "authenticated" : "unauthenticated",
-                cipherDetails.getCipherId());
+    private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
+                                        Class<? extends ReadBytes> strategy, boolean authenticate) throws IOException {
+        SecretKey key = SecretKeyUtils.generate(cipherDetails);
+        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
+        long ciphertextSize = encryptedFile.file.length();
 
-        final Integer halfFileSize = Math.floorDiv(this.plaintextSize, 2);
-        final Integer meoisBufferSize = MantaEncryptedObjectInputStream.calculateBufferSize((long) this.plaintextSize, cipherDetails);
-        final Integer halfBufferSize = Math.floorDiv(meoisBufferSize, 2);
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
 
-        // neither of these strategies reach the end of the file so ON_EOF does not make sense
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, 0, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, 0, POST_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, halfFileSize, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, halfFileSize, POST_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, meoisBufferSize - halfBufferSize, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, meoisBufferSize - halfBufferSize, POST_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, meoisBufferSize + halfBufferSize, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class, false, meoisBufferSize + halfBufferSize, POST_READ);
+        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
+                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
+                (long)this.plaintextSize);
 
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, 0, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, 0, POST_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, halfFileSize, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, halfFileSize, POST_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, meoisBufferSize - halfBufferSize, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, meoisBufferSize - halfBufferSize, POST_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, meoisBufferSize + halfBufferSize, PRE_READ);
-        canReadObject(cipherDetails, ReadAndSkipPartialReadStaticSkipSize.class, false, meoisBufferSize + halfBufferSize, POST_READ);
+        try {
+            byte[] actual = new byte[plaintextSize];
+            ReadBytesFactory.fullStrategy(strategy).readBytes(min, actual);
+
+            AssertJUnit.assertArrayEquals("Plaintext doesn't match decrypted data", plaintextBytes, actual);
+        } finally {
+            min.close();
+        }
+
+        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
     }
 
     /**
-     * Test that attempts to read a byte range from an encrypted stream starting at the first byte.
+     * Test that attempts to skip bytes from an encrypted stream that had its
+     * ciphertext altered. In this case, the stream is closed before all of the
+     * bytes are read from it. An assertion fails if the underlying stream
+     * fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
+     */
+    private void willErrorIfCiphertextIsModifiedAndBytesAreSkipped(SupportedCipherDetails cipherDetails) throws IOException {
+        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
+                cipherDetails.getCipherId());
+
+        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ReadAndSkipPartialRead.class);
+    }
+
+    /**
+     * Test that attempts to read a byte range from an encrypted stream starting
+     * at the first byte.
      */
     private void canReadByteRangeAllReadModes(SupportedCipherDetails cipherDetails,
                                               int startPosInclusive,
@@ -1150,145 +1097,26 @@ public class MantaEncryptedObjectInputStreamTest {
         }
     }
 
-    /**
-     * Attempts to copy a {@link MantaEncryptedObjectInputStream} stream to a {@link java.io.OutputStream} and close the
-     * streams. Copy is done using a large buffer size and logic borrowed directly from COSBench.
-     */
-    private void canCopyToOutputStreamWithLargeBuffer(SupportedCipherDetails cipherDetails,
-                                                      boolean authenticate)
-            throws IOException {
-        final byte[] buffer = new byte[1024*1024];
-        final int sourceLength = 8000;
-        final byte[] sourceBytes = RandomUtils.nextBytes(sourceLength);
-
-        SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        final EncryptedFile encryptedFile;
-
-        try (InputStream in = new ByteArrayInputStream(sourceBytes)) {
-            encryptedFile = encryptedFile(key, cipherDetails, sourceLength, in);
-        }
-
-        final byte[] iv = encryptedFile.cipher.getIV();
-
-        final long ciphertextSize = encryptedFile.file.length();
-
-        InputStream backing = new FileInputStream(encryptedFile.file);
-        final InputStream inSpy = Mockito.spy(backing);
-
-        MantaEncryptedObjectInputStream in = createEncryptedObjectInputStream(
-                key, inSpy, ciphertextSize, cipherDetails, iv, authenticate,
-                sourceLength);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        try {
-            // Don't change me - I'm imitating COSBench
-            for (int n; -1 != (n = in.read(buffer));) {
-                out.write(buffer, 0, n);
-            }
-        } finally {
-            in.close();
-            out.close();
-        }
-
-        AssertJUnit.assertArrayEquals(sourceBytes, out.toByteArray());
-        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
-    }
-
-    /**
-     * Test that loops through all of the ciphers and attempts to decrypt an encrypted stream that had its ciphertext
-     * altered. An assertion fails if the underlying stream fails to throw a {@link
-     * MantaClientEncryptionCiphertextAuthenticationException}. Additionally, this test tries to read data from the
-     * stream using three different read methods and makes sure that all read methods function correctly.
-     */
-    private void willErrorIfCiphertextIsModifiedAllReadModes(SupportedCipherDetails cipherDetails) throws IOException {
-        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as full read of stream\n",
-                cipherDetails.getCipherId());
-
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleReads.class);
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkReads.class);
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ByteChunkOffsetReads.class);
-    }
-
-    /**
-     * Test that loops through all of the ciphers and attempts to decrypt an encrypted stream that had its ciphertext
-     * altered. In this case, the stream is closed before all of the bytes are read from it. An assertion fails if the
-     * underlying stream fails to throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
-     */
-    private void willErrorIfCiphertextIsModifiedAndNotReadFully(SupportedCipherDetails cipherDetails) throws IOException {
-        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as partial read of stream\n",
-                cipherDetails.getCipherId());
-
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, SingleBytePartialRead.class);
-    }
-
-    private void canDecryptEntireObject(SupportedCipherDetails cipherDetails,
-                                        Class<? extends ReadBytes> strategy,
-                                        boolean authenticate,
-                                        Integer failureOffset,
-                                        FailureOrder failureOrder) throws IOException {
-        SecretKey key = SecretKeyUtils.generate(cipherDetails);
-        EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
-        long ciphertextSize = encryptedFile.file.length();
-
-        final Pair<InputStream, InputStreamContinuator> in =
-                buildEncryptedFileInputStream(encryptedFile, failureOffset, failureOrder);
-
-
-        final InputStream inSpy = Mockito.spy(in.getLeft());
-
-        MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
-                ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(), authenticate,
-                (long)this.plaintextSize);
-
-        try {
-            byte[] actual = new byte[plaintextSize];
-            ReadBytesFactory.fullStrategy(strategy).readBytes(min, actual);
-
-            AssertJUnit.assertArrayEquals("Plaintext doesn't match decrypted data", plaintextBytes, actual);
-        } finally {
-            min.close();
-        }
-
-        Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
-        verifyContinuatorWasUsedIfPresent(in, failureOrder);
-    }
-
     private void canReadObject(SupportedCipherDetails cipherDetails,
                                Class<? extends ReadBytes> strategy,
-                               boolean authenticate,
-                               final Integer failureOffset,
-                               final FailureOrder failureOrder) throws IOException {
+                               boolean authenticate) throws IOException {
         SecretKey key = SecretKeyUtils.generate(cipherDetails);
         EncryptedFile encryptedFile = encryptedFile(key, cipherDetails, this.plaintextSize);
         long ciphertextSize = encryptedFile.file.length();
 
-        final Pair<InputStream, InputStreamContinuator> in = buildEncryptedFileInputStream(encryptedFile, failureOffset, failureOrder);
-        final InputStream inSpy = Mockito.spy(in.getLeft());
+        final FileInputStream in = new FileInputStream(encryptedFile.file);
+        final FileInputStream inSpy = Mockito.spy(in);
         MantaEncryptedObjectInputStream min = createEncryptedObjectInputStream(key, inSpy,
                 ciphertextSize, cipherDetails, encryptedFile.cipher.getIV(),
                 authenticate, (long)this.plaintextSize);
 
         try {
             byte[] actual = new byte[plaintextSize];
-            ReadBytesFactory.build(strategy, encryptedFile.file.length(), cipherDetails).readBytes(min, actual);
+            ReadBytesFactory.build(strategy, encryptedFile.file.length()).readBytes(min, actual);
         } finally {
             min.close();
             Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
         }
-
-        verifyContinuatorWasUsedIfPresent(in, failureOrder);
-    }
-
-    /**
-     * Test that attempts to skip bytes from an encrypted stream that had its ciphertext altered. In this case, the
-     * stream is closed before all of the bytes are read from it. An assertion fails if the underlying stream fails to
-     * throw a {@link MantaClientEncryptionCiphertextAuthenticationException}.
-     */
-    private void willErrorIfCiphertextIsModifiedAndBytesAreSkipped(SupportedCipherDetails cipherDetails) throws IOException {
-        System.out.printf("Testing authentication of corrupted ciphertext with [%s] as read and skips of stream\n",
-                cipherDetails.getCipherId());
-
-        willThrowExceptionWhenCiphertextIsAltered(cipherDetails, ReadAndSkipPartialReadFirstHalfOfFile.class);
     }
 
     private void willThrowExceptionWhenCiphertextIsAltered(SupportedCipherDetails cipherDetails,
@@ -1316,7 +1144,7 @@ public class MantaEncryptedObjectInputStreamTest {
 
         try {
             byte[] actual = new byte[plaintextSize];
-            ReadBytesFactory.build(strategy, encryptedFile.file.length(), cipherDetails).readBytes(min, actual);
+            ReadBytesFactory.build(strategy, encryptedFile.file.length()).readBytes(min, actual);
             min.close();
         }  catch (MantaClientEncryptionCiphertextAuthenticationException e) {
             thrown = true;
@@ -1454,54 +1282,5 @@ public class MantaEncryptedObjectInputStreamTest {
         return new MantaEncryptedObjectInputStream(mantaObjectInputStream,
                 cipherDetails, key, authenticate,
                 skipBytes, plaintextLength, unboundedEnd);
-    }
-
-
-    //@formatter:off
-    /**
-     *
-     * Builds an {@link InputStream} from the supplied file and returns it. In case a failure percentage and order are
-     * provided, we will:
-     *  - wrap the first stream in a {@link FailingInputStream}
-     *  - build an {@link InputStreamContinuator} which can provide streams for the remaining data
-     *  - build an {@link AutoContinuingInputStream} which uses the continuator to recover from the initial failure
-     *
-     * We need to return both the requested {@link InputStream} and (if on exists) the {@link InputStreamContinuator}
-     * so that the test can check that the continuator was actually used.
-     */
-    //@formatter:on
-    private static Pair<InputStream, InputStreamContinuator> buildEncryptedFileInputStream(final EncryptedFile encryptedFile,
-                                                                                           final Integer failureOffset,
-                                                                                           final FailureOrder failureOrder)
-            throws FileNotFoundException {
-        if (failureOffset == null ^ failureOrder == null) {
-            throw new AssertionError("One of failure offset or order provided but the other was null, "
-                                             + "this is most likely a mistake. "
-                                             + "If you're passing ON_EOF, supply any integer for the offset");
-        }
-
-        if (failureOffset == null || failureOrder == null) {
-            return ImmutablePair.of(new FileInputStream(encryptedFile.file), null);
-        }
-
-        final InputStream initialStream = new FailingInputStream(new FileInputStream(encryptedFile.file),
-                                                                 failureOrder,
-                                                                 failureOffset);
-        final InputStreamContinuator continuator = Mockito.spy(new FileInputStreamContinuator(encryptedFile.file));
-
-        return ImmutablePair.of(new AutoContinuingInputStream(initialStream, continuator), continuator);
-    }
-
-    /**
-     * In case a test injected a failure, it would have also build a continuator to recover from that failure. If we
-     * see a continuator, we verify it was used.
-     */
-    private void verifyContinuatorWasUsedIfPresent(final Pair<InputStream, InputStreamContinuator> inputs,
-                                                   final FailureOrder failureOrder) throws IOException {
-        if (inputs.getRight() == null) {
-            return;
-        }
-
-        Mockito.verify(inputs.getRight()).buildContinuation(Mockito.any(IOException.class), Mockito.anyLong());
     }
 }
