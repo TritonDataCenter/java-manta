@@ -691,6 +691,7 @@ public class StandardHttpHelper implements HttpHelper {
      * Check if we can safely provide download continuation.
      *
      * @param connCtx the connection context which should also be a {@link RetryConfigAware}
+     * @param downloadContinuations the desired number of continuations
      * @return if it is safe to enable download continuation
      */
     private static Integer verifyDownloadContinuationConditions(final MantaConnectionContext connCtx,
