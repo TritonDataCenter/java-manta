@@ -7,6 +7,8 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.http.HttpRange.BoundedRequest;
+import com.joyent.manta.http.HttpRange.Request;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpException;
@@ -47,9 +49,10 @@ final class ResumableDownloadMarker {
     private final long totalRangeSize;
 
     /**
-     * The current download range.
+     * The current download range. Even if the initial request is an unbounded range, we'll know the response range
+     * and always include the original value for {@code <range-end>} (derived from the content-range's end).
      */
-    private HttpRange.Request currentRange;
+    private BoundedRequest currentRange;
 
     /**
      * Build a marker from the initial ETag and response range. The Response range may be constructed from a singular
@@ -67,14 +70,14 @@ final class ResumableDownloadMarker {
         this.etag = etag;
         this.originalRangeStart = initialContentRange.getStartInclusive();
         this.totalRangeSize = initialContentRange.getSize();
-        this.currentRange = new HttpRange.Request(this.originalRangeStart, initialContentRange.getEndInclusive());
+        this.currentRange = new BoundedRequest(this.originalRangeStart, initialContentRange.getEndInclusive());
     }
 
     String getEtag() {
         return this.etag;
     }
 
-    HttpRange.Request getCurrentRange() {
+    BoundedRequest getCurrentRange() {
         return this.currentRange;
     }
 
@@ -126,9 +129,9 @@ final class ResumableDownloadMarker {
                             this.currentRange.getEndInclusive()));
         }
 
-        final HttpRange.Request nextRange;
+        final BoundedRequest nextRange;
         try {
-            nextRange = new HttpRange.Request(nextStartInclusive, this.currentRange.getEndInclusive());
+            nextRange = new BoundedRequest(nextStartInclusive, this.currentRange.getEndInclusive());
         } catch (final IllegalArgumentException e) {
             throw new IllegalArgumentException("Failed to construct updated HttpRange: " + e.getMessage(), e);
         }
@@ -138,7 +141,7 @@ final class ResumableDownloadMarker {
 
     /**
      * Verify that the Content-Range returned by a request matches the Range header that was sent. Because a {@link
-     * HttpRange.Request} does not contain a total object size, only the start and end offsets should be checked.
+     * BoundedRequest} does not contain a total object size, only the start and end offsets should be checked.
      *
      * @param responseRange the parsed Content-Range header as a {@link HttpRange.Response}
      * @throws HttpException in case the returned range does not match, this should've been a (416) response
@@ -164,7 +167,7 @@ final class ResumableDownloadMarker {
      * @return a marker which can be used to verify future requests
      * @throws ProtocolException thrown when a hint is provided but not satisfied
      */
-    static ResumableDownloadMarker validateInitialExchange(final Pair<String, HttpRange.Request> requestHints,
+    static ResumableDownloadMarker validateInitialExchange(final Pair<String, Request> requestHints,
                                                            final int responseCode,
                                                            final Pair<String, HttpRange.Response> responseFingerprint)
             throws ProtocolException {
@@ -182,6 +185,8 @@ final class ResumableDownloadMarker {
         final boolean rangeRequest = requestHints.getRight() != null;
 
         // there was a request range and an invalid response range (or none) was returned
+        // Note: we should use the more complete range (the response range) to invoke match so as many values are
+        // compared as possible
         if (rangeRequest && !requestHints.getRight().matches(responseFingerprint.getRight())) {
             throw new ProtocolException(
                     String.format(

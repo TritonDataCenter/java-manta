@@ -1,5 +1,6 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.http.HttpRange.BoundedRequest;
 import org.apache.http.Header;
 import org.apache.http.ProtocolException;
 import org.apache.http.client.methods.HttpGet;
@@ -28,7 +29,7 @@ public class ApacheHttpHeaderUtilsTest {
     }
 
     public void validatesCompatibleIfMatchHeaderForInitialRequest() throws Exception {
-        final String ifMatchHeaderValue = new HttpRange.Request(0, 10).render();
+        final String ifMatchHeaderValue = new BoundedRequest(0, 10).render();
 
         // users are allowed to omit or set their own if-match header
         validatesCompatibleHeadersForInitialRequest(
@@ -59,7 +60,7 @@ public class ApacheHttpHeaderUtilsTest {
     }
 
     public void validatesCompatibleRangeHeaderForInitialRequest() throws Exception {
-        final String rangeHeaderValue = new HttpRange.Request(0, 10).render();
+        final String rangeHeaderValue = new BoundedRequest(0, 10).render();
 
         // users are allowed to omit or set their own initial range header
         validatesCompatibleHeadersForInitialRequest(

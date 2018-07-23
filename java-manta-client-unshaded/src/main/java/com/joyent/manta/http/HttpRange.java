@@ -37,7 +37,7 @@ abstract class HttpRange {
     /**
      * The number of segments the Range regex expects to find.
      */
-    private static final int PART_COUNT_RANGE = 2;
+    private static final int REGEX_SPLIT_PART_COUNT_RANGE = 2;
 
     /**
      * The number of segments the Content-Range regex expects to find.
@@ -52,7 +52,7 @@ abstract class HttpRange {
     /**
      * The end of the byte range in a range/content-range (the 1 in 0-1/2).
      */
-    private final long endInclusive;
+    private final Long endInclusive;
 
     /**
      * The total number of bytes in a content-range (the 2 in 0-1/2).
@@ -60,21 +60,66 @@ abstract class HttpRange {
     private final Long size;
 
     /**
+     * Abstract class grouping request ranges.
+     */
+    abstract static class Request extends HttpRange {
+        Request(final long startInclusive, final Long endInclusive, final Long size) {
+            super(startInclusive, endInclusive, size);
+        }
+    }
+
+    /**
      * Value object representing a {@link org.apache.http.HttpHeaders#RANGE}.
      */
-    static final class Request extends HttpRange {
+    static final class UnboundedRequest extends Request {
 
-        Request(final long startInclusive,
-                final long endInclusive) {
+        UnboundedRequest(final long startInclusive) {
+            super(startInclusive, null, null);
+        }
+
+        @Override
+        protected boolean matches(final HttpRange other) {
+            notNull(other, "Compared HttpRange must not be null");
+
+            return Objects.equals(this.getStartInclusive(), other.startInclusive);
+        }
+
+        @Override
+        String render() {
+            return String.format("bytes=%d-", this.getStartInclusive());
+        }
+
+        @Override
+        public String toString() {
+            return "HttpRange.UnboundedRequest{"
+                    + "startInclusive=" + this.getStartInclusive()
+                    + ", endInclusive=" + this.getEndInclusive()
+                    + '}';
+        }
+    }
+
+    /**
+     * Value object representing a {@link org.apache.http.HttpHeaders#RANGE}.
+     */
+    static final class BoundedRequest extends Request {
+
+        BoundedRequest(final long startInclusive,
+                       final long endInclusive) {
             super(startInclusive, endInclusive, null);
         }
 
         @Override
-        boolean matches(final HttpRange other) {
+        protected boolean matches(final HttpRange other) {
             notNull(other, "Compared HttpRange must not be null");
 
-            return this.getStartInclusive() == other.startInclusive
-                    && this.getEndInclusive() == other.endInclusive;
+            final boolean matchingStart = Objects.equals(this.getStartInclusive(), other.startInclusive);
+            final boolean matchingEnd = Objects.equals(this.getEndInclusive(), other.endInclusive);
+
+            if (other.endInclusive != null) {
+                return matchingStart && matchingEnd;
+            }
+
+            return matchingStart;
         }
 
         @Override
@@ -84,7 +129,7 @@ abstract class HttpRange {
 
         @Override
         public String toString() {
-            return "HttpRange.Request{"
+            return "HttpRange.BoundedRequest{"
                     + "startInclusive=" + this.getStartInclusive()
                     + ", endInclusive=" + this.getEndInclusive()
                     + '}';
@@ -103,12 +148,22 @@ abstract class HttpRange {
         }
 
         @Override
-        boolean matches(final HttpRange other) {
+        protected boolean matches(final HttpRange other) {
             notNull(other, "Compared HttpRange must not be null");
 
-            return this.getStartInclusive() == other.startInclusive
-                    && this.getEndInclusive() == other.endInclusive
-                    && Objects.equals(this.getSize(), other.size);
+            final boolean matchingStart = Objects.equals(this.getStartInclusive(), other.startInclusive);
+            final boolean matchingEnd = Objects.equals(this.getEndInclusive(), other.endInclusive);
+            final boolean matchingSize = Objects.equals(this.getSize(), other.size);
+
+            if (other.size == null) {
+                if (other.endInclusive == null) {
+                    return matchingStart;
+                }
+
+                return matchingStart && matchingEnd;
+            }
+
+            return matchingStart && matchingEnd && matchingSize;
         }
 
         @Override
@@ -127,21 +182,27 @@ abstract class HttpRange {
     }
 
     HttpRange(final long startInclusive,
-              final long endInclusive,
+              final Long endInclusive,
               final Long size) {
-        if (startInclusive > endInclusive) {
+        if (null != endInclusive && startInclusive > endInclusive) {
             throw new IllegalArgumentException("<range-start> must not be greater than <range-end>");
         }
 
-        if (null != size) {
+        if (size != null) {
+            if (endInclusive == null) {
+                throw new IllegalArgumentException("<range-end> must be present if size is present");
+            }
+
             if (size < 0) {
                 throw new IllegalArgumentException("<range-size> must not be less than zero");
             }
 
-            if ((1 + endInclusive - startInclusive) > size) {
+            if (size < (1 + endInclusive - startInclusive)) {
                 throw new IllegalArgumentException(
                         "<range-size> must not be less than the bytes defined by <range-start> and <range-end>");
             }
+
+            // size can be greater than the range if only a part of the file was requested
         }
 
         this.startInclusive = startInclusive;
@@ -153,7 +214,7 @@ abstract class HttpRange {
         return this.startInclusive;
     }
 
-    long getEndInclusive() {
+    Long getEndInclusive() {
         return this.endInclusive;
     }
 
@@ -173,8 +234,8 @@ abstract class HttpRange {
      */
     @SuppressWarnings("unchecked")
     static <T extends HttpRange> T fromContentLength(final Class<T> klass, final long contentLength) {
-        if (klass.equals(Request.class)) {
-            return (T) new Request(0, contentLength - 1);
+        if (klass.equals(BoundedRequest.class)) {
+            return (T) new BoundedRequest(0, contentLength - 1);
         }
 
         if (klass.equals(Response.class)) {
@@ -191,7 +252,7 @@ abstract class HttpRange {
      * @param otherRange the comparison range
      * @return whether or not the ranges represent the same bytes
      */
-    abstract boolean matches(HttpRange otherRange);
+    protected abstract boolean matches(HttpRange otherRange);
 
     /**
      * Render the HttpRange into its corresponding header value.
@@ -235,10 +296,10 @@ abstract class HttpRange {
      * Deserialize a request range.
      *
      * @param requestRange the string representation of the range
-     * @return a {@link Request} range
+     * @return a {@link BoundedRequest} range
      * @throws ProtocolException if the range could not be parsed
      */
-    static Request parseRequestRange(final String requestRange) throws ProtocolException {
+    static BoundedRequest parseRequestRange(final String requestRange) throws ProtocolException {
         notNull(requestRange, "Request Range must not be null");
 
         if (!requestRange.matches(REGEX_REQUEST_RANGE)) {
@@ -250,11 +311,11 @@ abstract class HttpRange {
         }
 
         final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(requestRange, "bytes="), "-");
-        if (boundsAndSize.length != PART_COUNT_RANGE) {
+        if (boundsAndSize.length != REGEX_SPLIT_PART_COUNT_RANGE) {
             throw new ProtocolException(String.format("Malformed Range value, got: %s", requestRange));
         }
 
-        return new Request(
+        return new BoundedRequest(
                 Long.parseUnsignedLong(boundsAndSize[0]),
                 Long.parseUnsignedLong(boundsAndSize[1]));
     }
@@ -263,7 +324,7 @@ abstract class HttpRange {
      * Deserialize a response (Content-Range) range.
      *
      * @param contentRange the string representation of the range
-     * @return a {@link Request} range
+     * @return a {@link BoundedRequest} range
      * @throws ProtocolException if the range could not be parsed
      */
     static Response parseContentRange(final String contentRange) throws ProtocolException {

@@ -218,7 +218,7 @@ public class MantaEncryptedObjectInputStreamAutoFailureRecoveryTest extends Abst
 
     private void canSkipBytesWithFailureAutoRecovery(final SupportedCipherDetails cipherDetails,
                                                      final boolean authenticate) throws IOException {
-        System.out.printf("Testing %s ciphertext with [%s] as read and skips of stream with %n",
+        System.out.printf("Testing %s ciphertext with [%s] as read and skips of stream with failure recovery%n",
                 authenticate ? "authenticated" : "unauthenticated",
                 cipherDetails.getCipherId());
 

@@ -1,7 +1,8 @@
 package com.joyent.manta.http;
 
-import com.joyent.manta.http.HttpRange.Request;
+import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.HttpRange.Response;
+import com.joyent.manta.http.HttpRange.UnboundedRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.text.RandomStringGenerator;
@@ -29,7 +30,9 @@ public class ResumableDownloadMarkerTest {
 
     private static final String STUB_ETAG = "abc";
 
-    public static final Request STUB_REQUEST_RANGE = new Request(0, 3);
+    private static final UnboundedRequest STUB_UNBOUNDED_REQUEST_RANGE = new UnboundedRequest(0);
+
+    private static final BoundedRequest STUB_BOUNDED_REQUEST_RANGE = new BoundedRequest(0, 3);
 
     private static final Response STUB_CONTENT_RANGE = new Response(0, 3, 4L);
 
@@ -110,9 +113,17 @@ public class ResumableDownloadMarkerTest {
 
     public void markersAreCreatedByValidatingTheInitialExchangeRangeRequest() throws Exception {
         assertNotNull(
-                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_BOUNDED_REQUEST_RANGE),
                                                                 SC_PARTIAL_CONTENT,
                                                                 ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE)));
+    }
+
+    public void initialRequestValidationAllowsUnboundedRangeRequest() throws Exception {
+        assertNotNull(
+                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_UNBOUNDED_REQUEST_RANGE),
+                                                                SC_PARTIAL_CONTENT,
+                                                                ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE)));
+
     }
 
     @Test(expectedExceptions = ProtocolException.class)
@@ -124,14 +135,13 @@ public class ResumableDownloadMarkerTest {
 
     @Test(expectedExceptions = ProtocolException.class)
     public void throwsWhenResponseIsMissingETagWithRangeRequest() throws Exception {
-        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_BOUNDED_REQUEST_RANGE),
                                                         SC_PARTIAL_CONTENT,
                                                         ImmutablePair.of(null, STUB_CONTENT_RANGE));
     }
 
     @Test(expectedExceptions = ProtocolException.class)
     public void throwsWhenResponseHasIncorrectETag() throws Exception {
-        // invalid ETag
         final String badEtag = STUB_ETAG.substring(1);
         ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, null),
                                                         SC_OK,
@@ -142,7 +152,7 @@ public class ResumableDownloadMarkerTest {
     public void throwsWhenResponseHasIncorrectContentRange() throws Exception {
         final HttpRange.Response badContentRange = new HttpRange.Response(0, 99, 100);
 
-        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_BOUNDED_REQUEST_RANGE),
                                                         SC_PARTIAL_CONTENT,
                                                         ImmutablePair.of(STUB_ETAG, badContentRange));
     }
@@ -156,7 +166,7 @@ public class ResumableDownloadMarkerTest {
 
     @Test(expectedExceptions = ProtocolException.class)
     public void throwsWhenResponseHasIncorrectResponseCodeForRangeRequest() throws Exception {
-        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_BOUNDED_REQUEST_RANGE),
                                                         SC_OK,
                                                         ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE));
     }

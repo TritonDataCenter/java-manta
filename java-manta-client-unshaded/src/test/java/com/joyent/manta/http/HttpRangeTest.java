@@ -1,6 +1,6 @@
 package com.joyent.manta.http;
 
-import com.joyent.manta.http.HttpRange.Request;
+import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.HttpRange.Response;
 import org.apache.http.HttpException;
 import org.testng.annotations.Test;
@@ -14,12 +14,12 @@ public class HttpRangeTest {
 
 
     public void requestCtorRejectsInvalidInputs() {
-        new Request(0, 1);
+        new BoundedRequest(0, 1);
 
-        assertThrows(IllegalArgumentException.class, () -> new Request(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new BoundedRequest(1, 0));
 
         // requesting a single byte is not forbidden
-        new Request(0, 0);
+        new BoundedRequest(0, 0);
     }
 
     public void responseCtorRejectsInvalidInputs() {
@@ -43,7 +43,7 @@ public class HttpRangeTest {
     }
 
     public void requestCanValidateResponse() {
-        final Request reqRange = new Request(0, 5);
+        final BoundedRequest reqRange = new BoundedRequest(0, 5);
         final Response contentRange = new Response(0, 5, 6);
 
         reqRange.matches(contentRange);
@@ -56,7 +56,7 @@ public class HttpRangeTest {
     }
 
     public void usefulToStringMethods() {
-        final String req = new Request(0, 1).toString();
+        final String req = new BoundedRequest(0, 1).toString();
         final String res = new Response(2, 3, 4).toString();
 
         assertTrue(req.contains("startInclusive") && req.contains("0"));

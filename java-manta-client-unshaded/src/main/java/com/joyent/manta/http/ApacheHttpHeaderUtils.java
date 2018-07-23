@@ -8,6 +8,8 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
+import com.joyent.manta.http.HttpRange.BoundedRequest;
+import com.joyent.manta.http.HttpRange.Request;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -93,10 +95,10 @@ final class ApacheHttpHeaderUtils {
      * @return the ETag and range hints to be validated against the initial response
      * @throws ResumableDownloadIncompatibleRequestException when the request cannot be resumed
      */
-    static Pair<String, HttpRange.Request> extractDownloadRequestFingerprint(final HttpGet request)
+    static Pair<String, Request> extractDownloadRequestFingerprint(final HttpGet request)
             throws ProtocolException {
         String ifMatch = null;
-        HttpRange.Request range = null;
+        BoundedRequest range = null;
 
         ProtocolException ifMatchEx = null;
         ProtocolException rangeEx = null;

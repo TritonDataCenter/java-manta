@@ -12,6 +12,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
 import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
+import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.entity.NoContentEntity;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -29,13 +30,14 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 import org.apache.http.protocol.HttpContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,8 +68,54 @@ import static org.testng.Assert.assertTrue;
 @Test
 public class ApacheHttpGetResponseEntityContentContinuatorTest {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ApacheHttpGetResponseEntityContentContinuatorTest.class);
+
+    public static final String STUB_ETAG = "abc";
+
+    private static final byte[] STUB_CONTENT = new byte[]{'f', 'o', 'o',};
+
+    private static final long STUB_CONTENT_LENGTH = STUB_CONTENT.length;
+
+    private static final HttpRange.Response STUB_CONTENT_RANGE = new HttpRange.Response(0, 2, 3);
+
+    private static final ByteArrayEntity STUB_RESPONSE_ENTITY = new ByteArrayEntity(STUB_CONTENT);
+
+    private static final ResumableDownloadMarker STUB_MARKER = new ResumableDownloadMarker(STUB_ETAG,
+                                                                                           STUB_CONTENT_RANGE);
+
+    private static final ApacheHttpGetResponseEntityContentContinuator STUB_CONTINUATOR;
+
+    static {
+        final HttpClient client = mock(HttpClient.class);
+        final HttpGet req = new HttpGet();
+        req.setHeader(RANGE, fromContentLength(BoundedRequest.class, STUB_CONTENT_LENGTH).render());
+
+        final HttpRange.Response STUB_CONTENT_RANGE = fromContentLength(HttpRange.Response.class, STUB_CONTENT_LENGTH);
+        final HttpResponse STUB_BOUNDED_RESPONSE = prepareResponseWithHeaders(
+                unmodifiableMap(
+                        ETAG, singleValueHeaderList(ETAG, STUB_ETAG),
+                        CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(STUB_CONTENT_LENGTH)),
+                        CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, STUB_CONTENT_RANGE.render())));
+
+        ApacheHttpGetResponseEntityContentContinuator continuator;
+        ResumableDownloadMarker marker = null;
+        try {
+            marker = ResumableDownloadMarker.validateInitialExchange(
+                    extractDownloadRequestFingerprint(req),
+                    SC_PARTIAL_CONTENT,
+                    // don't allow the Content-Range to be inferred by passing false
+                    extractDownloadResponseFingerprint(STUB_BOUNDED_RESPONSE, false));
+            continuator = new ApacheHttpGetResponseEntityContentContinuator(client, req, marker, null);
+        } catch (final ProtocolException pe) {
+            LOG.error("There was an unexpected error constructing the stub continuator, expect NPEs");
+            continuator = null;
+        }
+
+        STUB_CONTINUATOR = continuator;
+    }
+
     public void canCloneHttpGet() {
-        final String initialRange = new HttpRange.Request(0, 2).render();
+        final String initialRange = new BoundedRequest(0, 2).render();
 
         final HttpGet get = new HttpGet(UNIT_TEST_URL);
         get.setHeaders(new Header[]{
@@ -78,7 +126,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         // we have to call getValue because most of the header classes dont actually equals themselves
         assertEquals(cloned.getFirstHeader(RANGE).getValue(), get.getFirstHeader(RANGE).getValue());
 
-        cloned.setHeader(RANGE, new HttpRange.Request(1, 2).render());
+        cloned.setHeader(RANGE, new BoundedRequest(1, 2).render());
         assertNotEquals(cloned.getFirstHeader(RANGE).getValue(), get.getFirstHeader(RANGE).getValue());
     }
 
@@ -157,67 +205,42 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
      * method.
      */
     public void validateResponseExpectsNonNullHintsAndResponseFingerprint() throws Exception {
-        final HttpClient client = mock(HttpClient.class);
-
-        final String etag = "abc";
-        final long contentLength = 2;
-
-        final HttpGet req = new HttpGet();
-        req.setHeader(RANGE, fromContentLength(HttpRange.Request.class, contentLength).render());
-
-        final HttpRange.Response contentRange = fromContentLength(HttpRange.Response.class, contentLength);
-        final HttpResponse res = prepareResponseWithHeaders(
-                unmodifiableMap(
-                        ETAG, singleValueHeaderList(ETAG, etag),
-                        CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, Long.toString(contentLength)),
-                        CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, contentRange.render())));
-
-        final ResumableDownloadMarker marker = ResumableDownloadMarker.validateInitialExchange(
-                extractDownloadRequestFingerprint(req),
-                SC_PARTIAL_CONTENT,
-                // don't allow the Content-Range to be inferred by passing false
-                extractDownloadResponseFingerprint(res, false));
-
-        final ApacheHttpGetResponseEntityContentContinuator continuator =
-                new ApacheHttpGetResponseEntityContentContinuator(client, req, marker, null);
-
-        continuator.validateResponseWithMarker(ImmutablePair.of(etag, contentRange));
-
-        // the following assertion just tests for programmer error
-        assertThrows(NullPointerException.class,
-                     () -> continuator.validateResponseWithMarker(null));
-
-        // the following assertions test a response with insufficient headers
-        assertThrows(ProtocolException.class,
-                     () -> continuator.validateResponseWithMarker(ImmutablePair.nullPair()));
-        assertThrows(ProtocolException.class,
-                     () -> continuator.validateResponseWithMarker(ImmutablePair.of(etag, null)));
-        assertThrows(ProtocolException.class,
-                     () -> continuator.validateResponseWithMarker(ImmutablePair.of(null, contentRange)));
-
-        // the following assertions test a response with incorrect headers
-        final String badEtag = etag.substring(1);
-        final HttpRange.Response badContentRange = new HttpRange.Response(0, contentLength, contentLength + 1);
-
-        assertThrows(ProtocolException.class,
-                     () -> continuator.validateResponseWithMarker(ImmutablePair.of(etag, badContentRange)));
-        assertThrows(ProtocolException.class,
-                     () -> continuator.validateResponseWithMarker(ImmutablePair.of(badEtag, contentRange)));
-        assertThrows(ProtocolException.class,
-                     () -> continuator.validateResponseWithMarker(ImmutablePair.of(badEtag, badContentRange)));
+        STUB_CONTINUATOR.validateResponseWithMarker(ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE));
     }
 
-    private static final byte[] STUB_CONTENT = new byte[]{'f', 'o', 'o',};
+    @Test(expectedExceptions = NullPointerException.class)
+    public void ValidateResponseExpectsNonNullFingerprint() throws ProtocolException {
+        STUB_CONTINUATOR.validateResponseWithMarker(null);
+    }
 
-    // for simplicity the etag is the same as the content
-    private static final String STUB_ETAG = new String(STUB_CONTENT, StandardCharsets.US_ASCII);
+    @Test(expectedExceptions = ProtocolException.class)
+    public void validateResponseExpectsBothResponseHeaders() throws ProtocolException {
+        STUB_CONTINUATOR.validateResponseWithMarker(ImmutablePair.nullPair());
+    }
 
-    private static final HttpRange.Response STUB_CONTENT_RANGE = new HttpRange.Response(0, 2, 3);
+    @Test(expectedExceptions = ProtocolException.class)
+    public void validateResponseExpectsContentRangeHeader() throws ProtocolException {
+        STUB_CONTINUATOR.validateResponseWithMarker(ImmutablePair.of(STUB_ETAG, null));
+    }
 
-    private static final ByteArrayEntity STUB_RESPONSE_ENTITY = new ByteArrayEntity(STUB_CONTENT);
+    @Test(expectedExceptions = ProtocolException.class)
+    public void validateResponseExpectsETagHeader() throws ProtocolException {
+        STUB_CONTINUATOR.validateResponseWithMarker(ImmutablePair.of(null, STUB_CONTENT_RANGE));
+    }
 
-    private static final ResumableDownloadMarker STUB_MARKER = new ResumableDownloadMarker(STUB_ETAG,
-                                                                                           STUB_CONTENT_RANGE);
+    @Test(expectedExceptions = ProtocolException.class)
+    public void validateResponseExpectsMatchingResponseRange() throws ProtocolException {
+        final HttpRange.Response badContentRange = new HttpRange.Response(0,
+                                                                          STUB_CONTENT_LENGTH,
+                                                                          STUB_CONTENT_LENGTH + 1);
+        STUB_CONTINUATOR.validateResponseWithMarker(ImmutablePair.of(STUB_ETAG, badContentRange));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void validateResponseExpectsMatchingETag() throws ProtocolException {
+        final String badEtag = STUB_ETAG.substring(1);
+        STUB_CONTINUATOR.validateResponseWithMarker(ImmutablePair.of(badEtag, STUB_CONTENT_RANGE));
+    }
 
     public void buildContinuationSucceedsWhenAllStubsArePassed() throws IOException {
         final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
@@ -288,7 +311,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
           expectedExceptionsMessageRegExp = ".*ETag.*mismatch.*")
     public void buildContinuationResponseInvalidETagHeader() throws IOException {
         final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
-                                                      "abc",
+                                                      STUB_ETAG.substring(1),
                                                       STUB_CONTENT_RANGE,
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
