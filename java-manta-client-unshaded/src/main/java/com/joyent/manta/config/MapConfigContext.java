@@ -414,14 +414,14 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public Boolean isDownloadContinuationEnabled() {
-        final Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATIONS_KEY));
+    public Integer downloadContinuations() {
+        final Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATIONS_KEY));
 
         if (mapValue != null) {
             return mapValue;
         }
 
-        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY));
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY));
     }
 
     @Override

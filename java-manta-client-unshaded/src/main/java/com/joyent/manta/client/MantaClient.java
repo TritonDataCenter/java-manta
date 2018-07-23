@@ -272,7 +272,7 @@ public class MantaClient implements AutoCloseable {
                     connectionContext,
                     requestFactory,
                     config.verifyUploads(),
-                    config.isDownloadContinuationEnabled());
+                    config.downloadContinuations());
         }
 
         if (metricConfig != null) {

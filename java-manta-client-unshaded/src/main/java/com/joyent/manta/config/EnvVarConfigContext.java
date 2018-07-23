@@ -328,8 +328,8 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
-    public Boolean isDownloadContinuationEnabled() {
-        return MantaUtils.parseBooleanOrNull(getEnv(MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY));
+    public Integer downloadContinuations() {
+        return MantaUtils.parseIntegerOrNull(getEnv(MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY));
     }
 
     @Override

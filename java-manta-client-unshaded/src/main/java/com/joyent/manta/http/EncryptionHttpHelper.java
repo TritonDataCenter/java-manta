@@ -150,8 +150,8 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                         config.verifyUploads(),
                         DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
                 ObjectUtils.firstNonNull(
-                        config.isDownloadContinuationEnabled(),
-                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
+                        config.downloadContinuations(),
+                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATIONS));
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");

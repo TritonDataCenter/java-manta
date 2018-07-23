@@ -124,7 +124,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     /**
      * Whether or not we can attempt to resume a download automatically.
      */
-    private volatile Boolean isDownloadContinuationEnabled;
+    private volatile Integer downloadContinuations;
 
     /**
      * Whether metrics and MBeans should be tracked and exposed.
@@ -298,8 +298,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public Boolean isDownloadContinuationEnabled() {
-        return this.isDownloadContinuationEnabled;
+    public Integer downloadContinuations() {
+        return this.downloadContinuations;
     }
 
     @Override
@@ -472,8 +472,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
-        if (context.isDownloadContinuationEnabled() != null) {
-            this.isDownloadContinuationEnabled = context.isDownloadContinuationEnabled();
+        if (context.downloadContinuations() != null) {
+            this.downloadContinuations = context.downloadContinuations();
         }
 
         if (context.getMetricReporterMode() != null) {
@@ -596,8 +596,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
-        if (this.isDownloadContinuationEnabled == null) {
-            this.isDownloadContinuationEnabled = context.isDownloadContinuationEnabled();
+        if (this.downloadContinuations == null) {
+            this.downloadContinuations = context.downloadContinuations();
         }
 
         if (this.getMetricReporterMode() == null) {
@@ -799,8 +799,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setDownloadContinuationEnabled(final Boolean continuation) {
-        this.isDownloadContinuationEnabled = continuation;
+    public BaseChainedConfigContext setDownloadContinuations(final Integer continuation) {
+        this.downloadContinuations = continuation;
 
         return this;
     }
@@ -907,7 +907,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
-                && Objects.equals(isDownloadContinuationEnabled, that.isDownloadContinuationEnabled)
+                && Objects.equals(downloadContinuations, that.downloadContinuations)
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)

@@ -41,6 +41,7 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.INFINITE_CONTINUATIONS;
 import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_CONTINUATIONS_PER_REQUEST;
 import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_PREFIX_RECOVERED;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
@@ -105,7 +106,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                     SC_PARTIAL_CONTENT,
                     // don't allow the Content-Range to be inferred by passing false
                     extractDownloadResponseFingerprint(STUB_BOUNDED_RESPONSE, false));
-            continuator = new ApacheHttpGetResponseEntityContentContinuator(client, req, marker, null);
+            continuator = new ApacheHttpGetResponseEntityContentContinuator(client, req, marker, INFINITE_CONTINUATIONS, null);
         } catch (final ProtocolException pe) {
             LOG.error("There was an unexpected error constructing the stub continuator, expect NPEs");
             continuator = null;
@@ -147,23 +148,23 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 extractDownloadResponseFingerprint(response, true));
 
         // passes with all stubs
-        new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, marker);
+        new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, marker, INFINITE_CONTINUATIONS);
 
         // basic null checks
         assertThrows(NullPointerException.class,
-                     () -> new ApacheHttpGetResponseEntityContentContinuator(null, null, null, null));
+                     () -> new ApacheHttpGetResponseEntityContentContinuator(null, null, null, INFINITE_CONTINUATIONS, null));
 
 
         assertThrows(NullPointerException.class,
-                     () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, null, marker));
+                     () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, null, marker, INFINITE_CONTINUATIONS));
 
         assertThrows(NullPointerException.class,
-                     () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, null));
+                     () -> new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, null, INFINITE_CONTINUATIONS));
 
         // this connectionContext returns null for the getHttpClient call
         final MantaApacheHttpClientContext badConnCtx = mock(MantaApacheHttpClientContext.class);
         assertThrows(NullPointerException.class,
-                     () -> new ApacheHttpGetResponseEntityContentContinuator(badConnCtx, request, marker));
+                     () -> new ApacheHttpGetResponseEntityContentContinuator(badConnCtx, request, marker, INFINITE_CONTINUATIONS));
 
         // this connectionContext somehow doesn't support retry cancellation
         // e.g. a custom MantaConnectionFactory or MantaConnectionContext was supplied
@@ -175,7 +176,8 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         assertThrows(ResumableDownloadException.class,
                      () -> new ApacheHttpGetResponseEntityContentContinuator(retryNotCancellableConnCtx,
                                                                              request,
-                                                                             marker));
+                                                                             marker,
+                                                                             INFINITE_CONTINUATIONS));
     }
 
     @Test(expectedExceptions = UnknownHostException.class,
@@ -196,7 +198,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 SC_OK,
                 extractDownloadResponseFingerprint(response, true));
 
-        new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, marker)
+        new ApacheHttpGetResponseEntityContentContinuator(connCtx, request, marker, INFINITE_CONTINUATIONS)
                 .buildContinuation(new UnknownHostException("custom fatal exception yo"), 0);
     }
 
@@ -250,7 +252,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       STUB_RESPONSE_ENTITY);
 
         final InputStream response =
-                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                         .buildContinuation(new IOException(), 0);
 
         assertEquals(IOUtils.toByteArray(response), STUB_CONTENT);
@@ -261,7 +263,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         final HttpClient client = prepareMockedClient(0, null, null, null, null);
 
         final InputStream response =
-                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                         .buildContinuation(new IOException(), STUB_CONTENT.length);
 
         assertEquals(response.read(), -1);
@@ -277,7 +279,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), STUB_CONTENT.length + 1);
     }
 
@@ -290,7 +292,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -303,7 +305,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -316,7 +318,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -329,7 +331,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -343,7 +345,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       STUB_RESPONSE_ENTITY);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -357,7 +359,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       null);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -371,7 +373,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                                       (long) STUB_CONTENT.length,
                                                       NoContentEntity.INSTANCE);
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -381,7 +383,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         final HttpClient client = mock(HttpClient.class);
         when(client.execute(any(HttpUriRequest.class), any(HttpContext.class))).thenThrow(new IOException("woops"));
 
-        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, null)
+        new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, null)
                 .buildContinuation(new IOException(), 0);
     }
 
@@ -394,7 +396,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         final MetricRegistry registry = new MetricRegistry();
 
         final InputStreamContinuator continuator =
-                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, registry);
+                new ApacheHttpGetResponseEntityContentContinuator(client, new HttpGet(), STUB_MARKER, INFINITE_CONTINUATIONS, registry);
 
         final Optional<Histogram> maybeHistogram =
                 registry.getHistograms((name, metric) -> name.equals(METRIC_NAME_CONTINUATIONS_PER_REQUEST))

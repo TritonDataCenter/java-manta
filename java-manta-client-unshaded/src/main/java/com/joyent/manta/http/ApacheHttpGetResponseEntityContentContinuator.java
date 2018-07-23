@@ -76,6 +76,11 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                                     SSLException.class)));
 
     /**
+     * Sentinel value for unbounded continuations.
+     */
+    static final int INFINITE_CONTINUATIONS = -1;
+
+    /**
      * Prefix used to build metric names for exceptions from which this continuator has helped recover.
      */
     static final String METRIC_NAME_PREFIX_RECOVERED = "get-continuations-recovered-";
@@ -100,6 +105,11 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * Number of continuations we have supplied.
      */
     private int continuation;
+
+    /**
+     * The maximum number of continuations we should provided.
+     */
+    private final int maxContinuations;
 
     /**
      * Information recorded about the initial request/response exchange we can used to validateResponseWithMarker
@@ -133,11 +143,13 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      */
     ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
                                                   final HttpGet request,
-                                                  final ResumableDownloadMarker marker)
+                                                  final ResumableDownloadMarker marker,
+                                                  final int maxContinuations)
             throws ResumableDownloadException {
         this(verifyDownloadContinuationIsSafeAndExtractHttpClient(connCtx),
              request,
              marker,
+             maxContinuations,
              extractMetricRegistry(connCtx));
     }
 
@@ -153,6 +165,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     ApacheHttpGetResponseEntityContentContinuator(final HttpClient client,
                                                   final HttpGet request,
                                                   final ResumableDownloadMarker marker,
+                                                  final int maxContinuations,
                                                   final MetricRegistry metricRegistry) {
         // we clone the request in case the user is reusing the same request object
         this.request = cloneRequest(request);
@@ -162,6 +175,12 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
 
         this.client = requireNonNull(client);
         this.continuation = 0;
+
+        if (maxContinuations == 0) {
+            throw new IllegalArgumentException("Maximum continuations must be -1 or positive, zero given.");
+        }
+
+        this.maxContinuations = maxContinuations;
 
         if (metricRegistry != null) {
             this.metricRegistry = metricRegistry;
@@ -192,6 +211,15 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         }
 
         this.continuation++;
+
+        if (this.maxContinuations != INFINITE_CONTINUATIONS && this.maxContinuations <= this.continuation) {
+            throw new ResumableDownloadException(
+                    String.format("Maximum number of continuations reached [%s], aborting auto-retry: %s",
+                                  this.maxContinuations,
+                                  ex.getMessage()),
+                    ex);
+        }
+
         if (this.metricRegistry != null) {
             this.metricRegistry.counter(METRIC_NAME_PREFIX_RECOVERED + ex.getClass().getSimpleName()).inc();
         }

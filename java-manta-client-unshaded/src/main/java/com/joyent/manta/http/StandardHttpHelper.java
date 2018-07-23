@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import static com.joyent.manta.config.DefaultsConfigContext.DOWNLOAD_CONTINUATIONS_DISABLED;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
 import static com.joyent.manta.http.ResumableDownloadMarker.validateInitialExchange;
@@ -84,7 +85,7 @@ public class StandardHttpHelper implements HttpHelper {
      * @see RetryConfigAware
      * @see HttpContextRetryCancellation
      */
-    private final boolean attemptDownloadContinuation;
+    private final int maxDownloadContinuations;
 
     /**
      * Current connection context used for maintaining state between requests.
@@ -140,8 +141,8 @@ public class StandardHttpHelper implements HttpHelper {
                      config.verifyUploads(),
                      DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
              ObjectUtils.firstNonNull(
-                     config.isDownloadContinuationEnabled(),
-                     DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATION));
+                     config.downloadContinuations(),
+                     DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATIONS));
     }
 
     /**
@@ -157,14 +158,15 @@ public class StandardHttpHelper implements HttpHelper {
     public StandardHttpHelper(final MantaConnectionContext connectionContext,
                               final MantaHttpRequestFactory requestFactory,
                               final boolean verifyUploads,
-                              final boolean downloadContinuation) {
+                              final Integer downloadContinuation) {
         this.connectionContext = Validate.notNull(connectionContext, "MantaConnectionContext must not be null");
         this.requestFactory = Validate.notNull(requestFactory, "MantaHttpRequestFactory must not be null");
         this.verifyUploads = verifyUploads;
-        this.attemptDownloadContinuation =
-                downloadContinuation && verifyDownloadContinuationConditions(connectionContext);
+        this.maxDownloadContinuations = verifyDownloadContinuationConditions(connectionContext, downloadContinuation);
 
-        if (downloadContinuation && !this.attemptDownloadContinuation) {
+        if (downloadContinuation != null
+                && downloadContinuation != 0
+                && this.maxDownloadContinuations == DOWNLOAD_CONTINUATIONS_DISABLED) {
             LOGGER.warn("Download continuation requested but provided connection context is invalid. Retries must "
                                 + "be cancellable or disabled");
         }
@@ -452,8 +454,7 @@ public class StandardHttpHelper implements HttpHelper {
      */
     private InputStreamContinuator constructContinuatorForCompatibleRequest(final HttpUriRequest request,
                                                                             final CloseableHttpResponse response) {
-
-        if (!this.attemptDownloadContinuation
+        if (this.maxDownloadContinuations == DOWNLOAD_CONTINUATIONS_DISABLED
                 || !HttpGet.METHOD_NAME.equalsIgnoreCase(request.getMethod())
                 || !(this.connectionContext instanceof MantaApacheHttpClientContext)
                 || !(request instanceof HttpGet)) {
@@ -475,7 +476,8 @@ public class StandardHttpHelper implements HttpHelper {
             return new ApacheHttpGetResponseEntityContentContinuator(
                     (MantaApacheHttpClientContext) this.connectionContext,
                     get,
-                    marker);
+                    marker,
+                    this.maxDownloadContinuations);
         } catch (final ResumableDownloadException rde) {
             LOGGER.debug(
                     String.format(
@@ -691,15 +693,30 @@ public class StandardHttpHelper implements HttpHelper {
      * @param connCtx the connection context which should also be a {@link RetryConfigAware}
      * @return if it is safe to enable download continuation
      */
-    private static boolean verifyDownloadContinuationConditions(final MantaConnectionContext connCtx) {
+    private static Integer verifyDownloadContinuationConditions(final MantaConnectionContext connCtx,
+                                                                final Integer downloadContinuations) {
         if (!(connCtx instanceof MantaApacheHttpClientContext)) {
-            return false;
+            return DOWNLOAD_CONTINUATIONS_DISABLED;
+        }
+
+        final boolean continuationDisabled = downloadContinuations == null || downloadContinuations == 0;
+
+        if (continuationDisabled) {
+            return DOWNLOAD_CONTINUATIONS_DISABLED;
         }
 
         final MantaApacheHttpClientContext apacheConnCtx = (MantaApacheHttpClientContext) connCtx;
+        // the final condition is that the client either has retries disabled or supports cancellation
+        if (apacheConnCtx.isRetryCancellable()) {
+            return downloadContinuations;
+        }
 
-        // download continuation can only be enabled if retries are either cancellable or disabled
-        return apacheConnCtx.isRetryCancellable() || !apacheConnCtx.isRetryEnabled();
+        if (!apacheConnCtx.isRetryEnabled()) {
+            return downloadContinuations;
+        }
+
+        // otherwise disable
+        return DOWNLOAD_CONTINUATIONS_DISABLED;
     }
 
     @Override

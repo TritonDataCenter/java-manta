@@ -186,7 +186,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @param continuation whether to enable download continuation
      * @return the current instance of {@link T}
      */
-    T setDownloadContinuationEnabled(Boolean continuation);
+    T setDownloadContinuations(Integer continuation);
 
     /**
      * Sets the method used to report metrics (or disable them entirely).

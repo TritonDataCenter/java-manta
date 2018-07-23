@@ -15,13 +15,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.management.DynamicMBean;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import javax.management.DynamicMBean;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -141,12 +141,12 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getSkipDirectoryDepth();
 
     /**
-     * Whether or not to enable download continuation.
+     * Whether unbounded (-1) or bounded (positive integer) download continuations are enabled.
      * @return if download continuation is enabled
      * @see com.joyent.manta.http.InputStreamContinuator
      * @see com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator
      */
-    Boolean isDownloadContinuationEnabled();
+    Integer downloadContinuations();
 
     /**
      * @return the way metrics should be reported, {@code MetricReporterMode.DISABLED} or {@code null} to disable
@@ -550,7 +550,7 @@ public interface ConfigContext extends MantaMBeanable {
                 return config.getSkipDirectoryDepth();
             case MapConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_KEY:
             case EnvVarConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY:
-                return config.isDownloadContinuationEnabled();
+                return config.downloadContinuations();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();
