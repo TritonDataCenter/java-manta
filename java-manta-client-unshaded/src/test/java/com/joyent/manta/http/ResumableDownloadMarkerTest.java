@@ -1,11 +1,17 @@
 package com.joyent.manta.http;
 
+import com.joyent.manta.http.HttpRange.Request;
 import com.joyent.manta.http.HttpRange.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.http.HttpException;
+import org.apache.http.ProtocolException;
 import org.testng.annotations.Test;
 
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
@@ -22,6 +28,8 @@ public class ResumableDownloadMarkerTest {
     }
 
     private static final String STUB_ETAG = "abc";
+
+    public static final Request STUB_REQUEST_RANGE = new Request(0, 3);
 
     private static final Response STUB_CONTENT_RANGE = new Response(0, 3, 4L);
 
@@ -64,7 +72,7 @@ public class ResumableDownloadMarkerTest {
         final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
 
         // shouldn't read a negative number of bytes
-         marker.updateRangeStart(-1);
+        marker.updateRangeStart(-1);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -91,6 +99,66 @@ public class ResumableDownloadMarkerTest {
         final ResumableDownloadMarker marker = new ResumableDownloadMarker(STUB_ETAG, STUB_CONTENT_RANGE);
 
         marker.updateRangeStart(STUB_CONTENT_RANGE.contentLength());
+    }
+
+    public void markersAreCreatedByValidatingTheInitialExchangePlainRequest() throws Exception {
+        assertNotNull(
+                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, null),
+                                                                SC_OK,
+                                                                ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE)));
+    }
+
+    public void markersAreCreatedByValidatingTheInitialExchangeRangeRequest() throws Exception {
+        assertNotNull(
+                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+                                                                SC_PARTIAL_CONTENT,
+                                                                ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE)));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void throwsWhenResponseIsMissingETagWithPlainRequest() throws Exception {
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, null),
+                                                        SC_OK,
+                                                        ImmutablePair.of(null, STUB_CONTENT_RANGE));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void throwsWhenResponseIsMissingETagWithRangeRequest() throws Exception {
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+                                                        SC_PARTIAL_CONTENT,
+                                                        ImmutablePair.of(null, STUB_CONTENT_RANGE));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void throwsWhenResponseHasIncorrectETag() throws Exception {
+        // invalid ETag
+        final String badEtag = STUB_ETAG.substring(1);
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, null),
+                                                        SC_OK,
+                                                        ImmutablePair.of(badEtag, STUB_CONTENT_RANGE));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void throwsWhenResponseHasIncorrectContentRange() throws Exception {
+        final HttpRange.Response badContentRange = new HttpRange.Response(0, 99, 100);
+
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+                                                        SC_PARTIAL_CONTENT,
+                                                        ImmutablePair.of(STUB_ETAG, badContentRange));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void throwsWhenResponseHasIncorrectResponseCodeForPlainRequest() throws Exception {
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, null),
+                                                        SC_PARTIAL_CONTENT,
+                                                        ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE));
+    }
+
+    @Test(expectedExceptions = ProtocolException.class)
+    public void throwsWhenResponseHasIncorrectResponseCodeForRangeRequest() throws Exception {
+        ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(STUB_ETAG, STUB_REQUEST_RANGE),
+                                                        SC_OK,
+                                                        ImmutablePair.of(STUB_ETAG, STUB_CONTENT_RANGE));
     }
 
     public void usefulToString() {

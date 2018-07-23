@@ -15,7 +15,6 @@ import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
 import com.joyent.manta.http.entity.NoContentEntity;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.text.RandomStringGenerator;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -61,7 +60,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
@@ -69,7 +67,6 @@ import static org.testng.Assert.assertTrue;
 public class ApacheHttpGetResponseEntityContentContinuatorTest {
 
     public void canCloneHttpGet() {
-
         final String initialRange = new HttpRange.Request(0, 2).render();
 
         final HttpGet get = new HttpGet(UNIT_TEST_URL);
@@ -155,62 +152,10 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new UnknownHostException("custom fatal exception yo"), 0);
     }
 
-    public void markersAreCreatedByValidatingTheInitialExchange() throws Exception {
-        final String etag = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(10);
-
-        final HttpRange.Request requestRange = new HttpRange.Request(0, 1);
-
-        // any returned range is fine since none was specified
-        final HttpRange.Response range = new HttpRange.Response(0, 1, 2L);
-
-        // success
-        assertNotNull(
-                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                SC_OK,
-                                                                ImmutablePair.of(etag, range)));
-
-        assertNotNull(
-                ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, requestRange),
-                                                                SC_PARTIAL_CONTENT,
-                                                                ImmutablePair.of(etag, range)));
-
-        // no etag
-        assertThrows(ProtocolException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                           SC_OK,
-                                                                           ImmutablePair.of(null, range)));
-
-        assertThrows(ProtocolException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                           SC_PARTIAL_CONTENT,
-                                                                           ImmutablePair.of(null, range)));
-
-        // invalid ETag
-        final String badEtag = etag.substring(1);
-        assertThrows(ProtocolException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                           SC_OK,
-                                                                           ImmutablePair.of(badEtag, range)));
-
-        final HttpRange.Response badContentRange = new HttpRange.Response(0, 99, 100);
-        // invalid range
-        assertThrows(ProtocolException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, requestRange),
-                                                                           SC_PARTIAL_CONTENT,
-                                                                           ImmutablePair.of(etag, badContentRange)));
-
-        // invalid response code
-        assertThrows(ProtocolException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, null),
-                                                                           SC_PARTIAL_CONTENT,
-                                                                           ImmutablePair.of(etag, range)));
-        assertThrows(ProtocolException.class,
-                     () -> ResumableDownloadMarker.validateInitialExchange(ImmutablePair.of(etag, requestRange),
-                                                                           SC_OK,
-                                                                           ImmutablePair.of(etag, range)));
-
-    }
-
+    /**
+     * There are a lot of combinations for ValidatesInitialExchange and validateResponse sorry to cram them all in one
+     * method.
+     */
     public void validateResponseExpectsNonNullHintsAndResponseFingerprint() throws Exception {
         final HttpClient client = mock(HttpClient.class);
 
