@@ -122,7 +122,7 @@ public class EnvVarConfigContext implements ConfigContext {
     /**
      * Environment variable for setting whether download continuation is enabled.
      */
-    public static final String MANTA_DOWNLOAD_CONTINUATION_ENV_KEY = "MANTA_DOWNLOAD_CONTINUATION";
+    public static final String MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY = "MANTA_DOWNLOAD_CONTINUATION";
 
     /**
      * Environment variable for setting the depth of directories to assume exists.
@@ -189,7 +189,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_VERIFY_UPLOADS_ENV_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY,
             MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY,
-            MANTA_DOWNLOAD_CONTINUATION_ENV_KEY,
+            MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY,
             MANTA_METRIC_REPORTER_MODE_ENV_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
@@ -329,7 +329,7 @@ public class EnvVarConfigContext implements ConfigContext {
 
     @Override
     public Boolean isDownloadContinuationEnabled() {
-        return MantaUtils.parseBooleanOrNull(getEnv(MANTA_DOWNLOAD_CONTINUATION_ENV_KEY));
+        return MantaUtils.parseBooleanOrNull(getEnv(MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY));
     }
 
     @Override

@@ -95,6 +95,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
 | manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
+| manta.download_continuations       | MANTA_DOWNLOAD_CONTINUATIONS   | 0                                    |                          |
 | manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
 | manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
@@ -162,6 +163,10 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
     Integer indicating the number of **non-system** directory levels to attempt to skip for recursive `putDirectory`
     operation (i.e. `/$MANTA_USER` and `/$MANTA_USER/stor` would not be counted). A detailed explanation and example are provided [later in this document](/USAGE.md#skipping-directories)
+* `manta.download_continuations` (**MANTA_DOWNLOAD_CONTINUATIONS**)
+    Nullable Integer property for enabling the [download continuation](#download-continuation) "optimization."
+    A value of 0 explicitly disabled this feature, a value of `-1` enables unlimited continuations, a positive value
+    sets the maximum number of continuations that may be delivered for a single request/reponse.
 * `manta.metric_reporter.mode` (**MANTA_METRIC_REPORTER_MODE**)
     Enum type indicating how metrics should be reported. Options include `DISABLED`, `JMX`, and `SLF4J`. Leaving this value
     unset or selecting `DISABLED` will prevent the client from gathering and reporting metrics. Certain reporters
@@ -515,3 +520,29 @@ In order to ease migration from other object stores which do not treat directori
     - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
 \* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
+
+### Download continuation
+
+When `manta.download_continuation`/`MANTA_DOWNLOAD_CONTINUATION` is set to `-1` or positive value the `HttpHelper` in use
+will check that the initial request/response for a GET request passes validation (described below) and will wrap the
+returned stream in with the information and helper classes needed to automatically resume a download. This is similar to
+automatic retries in that the client will issue a request for the remaining bytes in an object automatically if a
+non-fatal `IOException` is encountered while reading from the source stream. If the remote object has changed (either
+because the `ETag` or `Content-Length`/`Content-Range` changed) then the encountered exception will be rethrown. If the
+caller indicates that they have read an invalid number of bytes (somehow total bytes read decreases) the continuator
+will complain and the download will be aborted.
+
+Validation of the initial request/response includes:
+ - correct response code (200 for non-range requests, 206 for range requests)
+ - requests including a single `If-Match` header (only one is supported) should have the same value in the response's
+ `ETag` header
+ - requests including a single `Range` header (only one is supported) should have an appropriate value in the response's
+ `Content-Range` header
+
+No enhancement will be performed if any of the following conditions are met:
+ - the request is not a GET request
+ - the request headers were malformed or multi-valued
+ - the user passed in their own `HttpClientBuilder` through `MantaConnectionFactoryConfigurator` so we can't be sure
+ retry cancellation is supported
+
+We may pick up and validate additional response headers in the future (e.g. validate that `Content-MD5` never changes).

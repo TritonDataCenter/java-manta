@@ -548,8 +548,8 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
             case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
                 return config.getSkipDirectoryDepth();
-            case MapConfigContext.MANTA_DOWNLOAD_CONTINUATION_KEY:
-            case EnvVarConfigContext.MANTA_DOWNLOAD_CONTINUATION_ENV_KEY:
+            case MapConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_KEY:
+            case EnvVarConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY:
                 return config.isDownloadContinuationEnabled();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:

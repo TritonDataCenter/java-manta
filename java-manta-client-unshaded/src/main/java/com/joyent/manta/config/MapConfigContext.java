@@ -125,7 +125,7 @@ public class MapConfigContext implements ConfigContext {
     /**
      * Property key for setting the number of directories to assume exist when creating directories recursively.
      */
-    public static final String MANTA_DOWNLOAD_CONTINUATION_KEY = "manta.download_continuation";
+    public static final String MANTA_DOWNLOAD_CONTINUATIONS_KEY = "manta.download_continuations";
 
     /**
      * Property key for looking up a Manta agent reporting format.
@@ -200,7 +200,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_KEY,
             MANTA_SKIP_DIRECTORY_DEPTH_KEY,
-            MANTA_DOWNLOAD_CONTINUATION_KEY,
+            MANTA_DOWNLOAD_CONTINUATIONS_KEY,
             MANTA_METRIC_REPORTER_MODE_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
@@ -415,13 +415,13 @@ public class MapConfigContext implements ConfigContext {
 
     @Override
     public Boolean isDownloadContinuationEnabled() {
-        final Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATION_KEY));
+        final Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATIONS_KEY));
 
         if (mapValue != null) {
             return mapValue;
         }
 
-        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATION_ENV_KEY));
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY));
     }
 
     @Override
