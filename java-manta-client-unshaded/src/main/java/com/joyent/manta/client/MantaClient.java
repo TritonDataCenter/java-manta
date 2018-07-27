@@ -342,6 +342,7 @@ public class MantaClient implements AutoCloseable {
      * Deletes an object from Manta.
      *
      * @param rawPath The fully qualified path of the Manta object.
+     * @param requestHeaders HTTP headers to attach to request
      * @throws IOException If an IO exception has occurred.
      * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
      */

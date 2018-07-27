@@ -258,7 +258,6 @@ public class StandardHttpHelperTest {
         when(statusLine.getStatusCode())
                 .thenReturn(SC_NO_CONTENT);
 
-
         final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
         final MantaHttpHeaders ifMatchHeader = new MantaHttpHeaders();
         final String etag = "foo";

@@ -127,7 +127,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
     public MantaClientHttpResponseException(final HttpRequest request,
                                             final HttpResponse response,
                                             final String path) {
-        this(request, response, path, (Integer[]) null);
+        this(request, response, path, (int[]) null);
     }
 
     /**
@@ -137,11 +137,12 @@ public class MantaClientHttpResponseException extends MantaIOException {
      * @param request HTTP request object
      * @param response HTTP response object
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param expectedResponseCodes list of allowed response codes when the exception is response-code-related
      */
     public MantaClientHttpResponseException(final HttpRequest request,
                                             final HttpResponse response,
                                             final String path,
-                                            final Integer... expectedResponseCodes) {
+                                            final int... expectedResponseCodes) {
         super(buildExceptionMessageFromHttpExchange(request, response, path, expectedResponseCodes));
         final HttpEntity entity = response.getEntity();
         final ContentType jsonContentType = ContentType.APPLICATION_JSON;
@@ -199,10 +200,19 @@ public class MantaClientHttpResponseException extends MantaIOException {
         }
     }
 
+    /**
+     * Build an exception message tailored to the arguments passed to the most complex constructor.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param expectedResponseCodes list of allowed response codes
+     * @return a relevant error message
+     */
     private static String buildExceptionMessageFromHttpExchange(final HttpRequest request,
                                                                 final HttpResponse response,
                                                                 final String path,
-                                                                final Integer... expectedResponseCodes) {
+                                                                final int... expectedResponseCodes) {
         if (expectedResponseCodes != null) {
             return String.format("HTTP request returned unexpected response code: expected one of %s, got [%d] ",
                                  Arrays.toString(expectedResponseCodes),

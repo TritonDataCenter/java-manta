@@ -71,6 +71,7 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
      * Executes a HTTP DELETE against the remote Manta API with provided headers.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers HTTP headers to attach to request
      * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the object over the network
      */
