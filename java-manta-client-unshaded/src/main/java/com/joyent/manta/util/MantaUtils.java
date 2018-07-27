@@ -734,45 +734,4 @@ public final class MantaUtils {
 
         return (int)value;
     }
-
-    /**
-     * Parse a string representation of a request {@code Range} header value into a pair of longs.
-     *
-     * @param range the serialized range
-     * @return a two-element array containing both longs
-     * @see com.joyent.manta.http.HttpRange#parseRequestRange(String)
-     * @deprecated 3.2.3
-     */
-    @Deprecated
-    public static Long[] parseSingleRange(final String range) {
-        Validate.notNull(range, "Range value must not be null");
-        String[] rangeValuesStrings = StringUtils.split(range, "bytes=");
-        Validate.isTrue(rangeValuesStrings.length == 1,
-                "Range header value doesn't begin with string: bytes=");
-
-        final String byteRange = rangeValuesStrings[0];
-
-        Validate.isTrue(StringUtils.split(byteRange, ",").length == 1,
-                "Multi-range requests are not supported");
-
-        String[] rangeParts = StringUtils.split(byteRange, "-");
-        Validate.isTrue(StringUtils.countMatches(byteRange, "-") < 2,
-                "Cannot end or start with a negative number");
-
-        Long startPos = null;
-        Long endPos = null;
-
-        if (StringUtils.startsWith(byteRange, "-")) {
-            endPos = Long.parseLong(byteRange);
-        } else if (StringUtils.endsWith(byteRange, "-")) {
-            startPos = Long.parseLong(byteRange.split("-")[0]);
-        } else if (rangeParts.length == 2) {
-            startPos = Long.parseUnsignedLong(rangeParts[0]);
-            endPos = Long.parseUnsignedLong(rangeParts[1]);
-        } else {
-            throw new IllegalArgumentException("range must exist with - separator");
-        }
-
-        return new Long[] {startPos, endPos};
-    }
 }

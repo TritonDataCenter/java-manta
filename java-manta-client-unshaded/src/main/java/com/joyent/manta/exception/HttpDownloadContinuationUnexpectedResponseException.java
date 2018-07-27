@@ -7,36 +7,31 @@
  */
 package com.joyent.manta.exception;
 
-import com.joyent.manta.http.InputStreamContinuator;
-
 /**
- * Exception indicating that the provided request cannot be reliable auto-resumed. This exception indicates a programmer
- * error since the request should've been checked for compatibility before attempting to be supplied to
- * {@link InputStreamContinuator}.
+ * Exception signaling that a resumed download request cannot be continued because the response was invalid.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
  */
-public class ResumableDownloadIncompatibleRequestException extends ResumableDownloadException {
+public class HttpDownloadContinuationUnexpectedResponseException extends HttpDownloadContinuationException {
 
-    private static final long serialVersionUID = 7415723473743850334L;
+    private static final long serialVersionUID = 123778476650917899L;
 
     /**
      * Constructs an instance with the specified detail message and cause.
      *
      * @param message The detail message
      */
-    public ResumableDownloadIncompatibleRequestException(final String message) {
+    public HttpDownloadContinuationUnexpectedResponseException(final String message) {
         super(message);
     }
-
 
     /**
      * Constructs an instance with the specified detail message and cause.
      *
      * @param cause The cause
      */
-    public ResumableDownloadIncompatibleRequestException(final Throwable cause) {
+    public HttpDownloadContinuationUnexpectedResponseException(final Throwable cause) {
         super(cause);
     }
 
@@ -46,7 +41,7 @@ public class ResumableDownloadIncompatibleRequestException extends ResumableDown
      * @param message The detail message
      * @param cause The cause
      */
-    public ResumableDownloadIncompatibleRequestException(final String message, final Throwable cause) {
+    public HttpDownloadContinuationUnexpectedResponseException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

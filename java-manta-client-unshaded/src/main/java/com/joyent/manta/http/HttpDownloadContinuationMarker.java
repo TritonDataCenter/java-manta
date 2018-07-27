@@ -9,6 +9,7 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.HttpRange.Request;
+import com.joyent.manta.http.HttpRange.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpException;
@@ -28,7 +29,7 @@ import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
  */
-final class ResumableDownloadMarker {
+final class HttpDownloadContinuationMarker {
 
     /**
      * The ETag associated with the object being downloaded. We need to make sure the ETag is unchanged between
@@ -62,8 +63,8 @@ final class ResumableDownloadMarker {
      * @param initialContentRange the target range being downloaded, derived from Content-Length for entire objects
      * @see HttpRange#parseContentRange(String)
      */
-    ResumableDownloadMarker(final String etag,
-                            final HttpRange.Response initialContentRange) {
+    HttpDownloadContinuationMarker(final String etag,
+                                   final Response initialContentRange) {
         validState(StringUtils.isNotBlank(etag), "ETag must not be null or blank");
         notNull(initialContentRange, "HttpRange must not be null");
 
@@ -143,10 +144,10 @@ final class ResumableDownloadMarker {
      * Verify that the Content-Range returned by a request matches the Range header that was sent. Because a {@link
      * BoundedRequest} does not contain a total object size, only the start and end offsets should be checked.
      *
-     * @param responseRange the parsed Content-Range header as a {@link HttpRange.Response}
+     * @param responseRange the parsed Content-Range header as a {@link Response}
      * @throws HttpException in case the returned range does not match, this should've been a (416) response
      */
-    void validateResponseRange(final HttpRange.Response responseRange) throws HttpException {
+    void validateResponseRange(final Response responseRange) throws HttpException {
         if (!this.currentRange.matches(responseRange)) {
             throw new HttpException(
                     String.format(
@@ -159,17 +160,17 @@ final class ResumableDownloadMarker {
     }
 
     /**
-     * Confirm that the initial response matches either of the hints that the initial request supplied. If a hint is
-     * missing it will not be checked.
+     * Builds a download marker after confirming that the initial response matches any hints that the initial request
+     * supplied. If a hint is missing it will not be checked. If the response
      *
      * @param requestHints etag and range from initial request (If-Match and Range)
-     * @param responseFingerprint etag and range from initial request (ETag and Content-Range)
-     * @return a marker which can be used to verify future requests
+     * @param responseFingerprint etag and range from initial response (ETag and Content-Range)
+     * @return a marker which can be used to track download progress and verify future responses
      * @throws ProtocolException thrown when a hint is provided but not satisfied
      */
-    static ResumableDownloadMarker validateInitialExchange(final Pair<String, Request> requestHints,
-                                                           final int responseCode,
-                                                           final Pair<String, HttpRange.Response> responseFingerprint)
+    static HttpDownloadContinuationMarker validateInitialExchange(final Pair<String, Request> requestHints,
+                                                                  final int responseCode,
+                                                                  final Pair<String, Response> responseFingerprint)
             throws ProtocolException {
 
         // there was an if-match header and the response etag does not match
@@ -214,12 +215,12 @@ final class ResumableDownloadMarker {
 
         }
 
-        return new ResumableDownloadMarker(responseFingerprint.getLeft(), responseFingerprint.getRight());
+        return new HttpDownloadContinuationMarker(responseFingerprint.getLeft(), responseFingerprint.getRight());
     }
 
     @Override
     public String toString() {
-        return "ResumableDownloadMarker{"
+        return "HttpDownloadContinuationMarker{"
                 + "etag='" + this.etag + '\''
                 + ", originalRangeStart=" + this.originalRangeStart
                 + ", totalRangeSize=" + this.totalRangeSize

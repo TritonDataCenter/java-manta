@@ -414,7 +414,18 @@ The full list of metrics exported by the client (available through both JMX and 
     corresponds to the[similarly named HttpClient PoolStats
     fields](http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/pool/PoolStats.html).
 - `retries`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) measuring the rate
-and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
+    and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
+- `get-continuations-recovered-$CLASS`: A [counter](https://metrics.dropwizard.io/4.0.0/manual/core.html#counters)
+    tracking the number of exceptions by exception class from which [download continuators](#download-continuation)
+    have recovered. Any non-zero values recorded in these counters indicate that download continuation is
+    being used to mitigate network failures.
+- `get-continuations-per-request-distribution`: A
+    [histogram](https://metrics.dropwizard.io/4.0.0/manual/core.html#histograms) tracking the distribution of
+    continuations served per request. Since each continuator only handles a single logical request and the
+    wrapping `InputStream` signals closure to the continuator it can record how many times it was invoked for a single
+    logical download. Any non-zero values recorded in this histogram indicate that download continuation is
+    being used to mitigate network failures.
+
 
 
 ### Customizing the client further

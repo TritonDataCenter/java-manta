@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
+import com.joyent.manta.exception.HttpDownloadContinuationIncompatibleRequestException;
 import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.HttpRange.Request;
 import org.apache.commons.lang3.StringUtils;
@@ -93,7 +93,7 @@ final class ApacheHttpHeaderUtils {
      *
      * @param request the request being checked for compatibility
      * @return the ETag and range hints to be validated against the initial response
-     * @throws ResumableDownloadIncompatibleRequestException when the request cannot be resumed
+     * @throws HttpDownloadContinuationIncompatibleRequestException when the request cannot be resumed
      */
     static Pair<String, Request> extractDownloadRequestFingerprint(final HttpGet request)
             throws ProtocolException {

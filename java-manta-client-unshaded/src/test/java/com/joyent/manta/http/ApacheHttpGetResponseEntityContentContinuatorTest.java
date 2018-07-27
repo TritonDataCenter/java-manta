@@ -10,10 +10,11 @@ package com.joyent.manta.http;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
-import com.joyent.manta.exception.ResumableDownloadException;
-import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
+import com.joyent.manta.exception.HttpDownloadContinuationException;
+import com.joyent.manta.exception.HttpDownloadContinuationUnexpectedResponseException;
 import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.entity.NoContentEntity;
+import com.joyent.manta.util.InputStreamContinuator;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.Header;
@@ -43,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.INFINITE_CONTINUATIONS;
 import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_CONTINUATIONS_PER_REQUEST;
-import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_PREFIX_RECOVERED;
+import static com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator.METRIC_NAME_RECOVERED_EXCEPTION_PREFIX;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
 import static com.joyent.manta.http.ApacheHttpTestUtils.prepareResponseWithHeaders;
@@ -81,8 +82,8 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
 
     private static final ByteArrayEntity STUB_RESPONSE_ENTITY = new ByteArrayEntity(STUB_CONTENT);
 
-    private static final ResumableDownloadMarker STUB_MARKER = new ResumableDownloadMarker(STUB_ETAG,
-                                                                                           STUB_CONTENT_RANGE);
+    private static final HttpDownloadContinuationMarker STUB_MARKER = new HttpDownloadContinuationMarker(STUB_ETAG,
+                                                                                                         STUB_CONTENT_RANGE);
 
     private static final ApacheHttpGetResponseEntityContentContinuator STUB_CONTINUATOR;
 
@@ -99,9 +100,9 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                         CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, STUB_CONTENT_RANGE.render())));
 
         ApacheHttpGetResponseEntityContentContinuator continuator;
-        ResumableDownloadMarker marker = null;
+        HttpDownloadContinuationMarker marker = null;
         try {
-            marker = ResumableDownloadMarker.validateInitialExchange(
+            marker = HttpDownloadContinuationMarker.validateInitialExchange(
                     extractDownloadRequestFingerprint(req),
                     SC_PARTIAL_CONTENT,
                     // don't allow the Content-Range to be inferred by passing false
@@ -142,7 +143,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                 CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, "1")));
 
         // allow the Content-Range to be inferred from just the Content-Length
-        final ResumableDownloadMarker marker = ResumableDownloadMarker.validateInitialExchange(
+        final HttpDownloadContinuationMarker marker = HttpDownloadContinuationMarker.validateInitialExchange(
                 extractDownloadRequestFingerprint(request),
                 SC_OK,
                 extractDownloadResponseFingerprint(response, true));
@@ -173,7 +174,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         when(retryNotCancellableConnCtx.isRetryEnabled()).thenReturn(true);
         when(retryNotCancellableConnCtx.isRetryCancellable()).thenReturn(false);
 
-        assertThrows(ResumableDownloadException.class,
+        assertThrows(HttpDownloadContinuationException.class,
                      () -> new ApacheHttpGetResponseEntityContentContinuator(retryNotCancellableConnCtx,
                                                                              request,
                                                                              marker,
@@ -193,7 +194,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                                 CONTENT_LENGTH, singleValueHeaderList(CONTENT_LENGTH, "1")));
         when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, SC_PARTIAL_CONTENT, ""));
 
-        final ResumableDownloadMarker marker = ResumableDownloadMarker.validateInitialExchange(
+        final HttpDownloadContinuationMarker marker = HttpDownloadContinuationMarker.validateInitialExchange(
                 extractDownloadRequestFingerprint(request),
                 SC_OK,
                 extractDownloadResponseFingerprint(response, true));
@@ -269,7 +270,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         assertEquals(response.read(), -1);
     }
 
-    @Test(expectedExceptions = ResumableDownloadException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationException.class,
           expectedExceptionsMessageRegExp = ".*update.*offset.*")
     public void buildContinuationInvalidBytesRead() throws IOException {
         // content-length agree with content-range but not the requested range
@@ -283,7 +284,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), STUB_CONTENT.length + 1);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*response.*code.*")
     public void buildContinuationResponseInvalidResponseCode() throws IOException {
         final HttpClient client = prepareMockedClient(SC_OK,
@@ -296,7 +297,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*ETag.*missing.*")
     public void buildContinuationResponseMissingETagHeader() throws IOException {
         final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
@@ -309,7 +310,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*ETag.*mismatch.*")
     public void buildContinuationResponseInvalidETagHeader() throws IOException {
         final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
@@ -322,7 +323,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*Content-Range.*missing.*")
     public void buildContinuationResponseMissingContentRangeHeader() throws IOException {
         final HttpClient client = prepareMockedClient(SC_PARTIAL_CONTENT,
@@ -335,7 +336,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*Content-Range.*Content-Length.*mismatch.*")
     public void buildContinuationResponseInvalidContentLengthForContentRangeHeader() throws IOException {
         // content-length agree with content-range but not the requested range
@@ -349,7 +350,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*Entity.*missing.*")
     public void buildContinuationResponseEntityMissing() throws IOException {
         // entity is missing
@@ -363,7 +364,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadUnexpectedResponseException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationUnexpectedResponseException.class,
           expectedExceptionsMessageRegExp = ".*Entity content.*missing.*")
     public void buildContinuationResponseEntityContentMissing() throws IOException {
         // entity has no content
@@ -377,7 +378,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                 .buildContinuation(new IOException(), 0);
     }
 
-    @Test(expectedExceptions = ResumableDownloadException.class,
+    @Test(expectedExceptions = HttpDownloadContinuationException.class,
           expectedExceptionsMessageRegExp = ".*woops.*")
     public void buildContinuationRethrowsExceptionsDuringExecute() throws IOException {
         final HttpClient client = mock(HttpClient.class);
@@ -410,7 +411,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
         continuator.buildContinuation(new SocketTimeoutException(), 0);
 
         final String expectedMetricName =
-                METRIC_NAME_PREFIX_RECOVERED + SocketTimeoutException.class.getSimpleName();
+                METRIC_NAME_RECOVERED_EXCEPTION_PREFIX + SocketTimeoutException.class.getSimpleName();
         final Optional<Counter> maybeSocketTimeoutExceptionCounter =
                 registry.getCounters(
                         (name, meter) -> name.equals(expectedMetricName))

@@ -7,31 +7,36 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.util.InputStreamContinuator;
+
 /**
- * Exception class for fatal errors which may occur while attempting to resumably (resiliently?) download an object.
+ * Exception indicating that the provided request cannot be reliable auto-resumed. This exception indicates a programmer
+ * error since the request should've been checked for compatibility before attempting to be supplied to
+ * {@link InputStreamContinuator}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
  */
-public class ResumableDownloadException extends MantaIOException {
+public class HttpDownloadContinuationIncompatibleRequestException extends HttpDownloadContinuationException {
 
-    private static final long serialVersionUID = -5972256969855482635L;
+    private static final long serialVersionUID = 7415723473743850334L;
 
     /**
      * Constructs an instance with the specified detail message and cause.
      *
      * @param message The detail message
      */
-    public ResumableDownloadException(final String message) {
+    public HttpDownloadContinuationIncompatibleRequestException(final String message) {
         super(message);
     }
+
 
     /**
      * Constructs an instance with the specified detail message and cause.
      *
      * @param cause The cause
      */
-    public ResumableDownloadException(final Throwable cause) {
+    public HttpDownloadContinuationIncompatibleRequestException(final Throwable cause) {
         super(cause);
     }
 
@@ -41,7 +46,7 @@ public class ResumableDownloadException extends MantaIOException {
      * @param message The detail message
      * @param cause The cause
      */
-    public ResumableDownloadException(final String message, final Throwable cause) {
+    public HttpDownloadContinuationIncompatibleRequestException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

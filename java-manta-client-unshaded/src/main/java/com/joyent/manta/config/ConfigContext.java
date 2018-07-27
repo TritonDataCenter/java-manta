@@ -10,6 +10,7 @@ package com.joyent.manta.config;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.util.InputStreamContinuator;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -143,7 +144,7 @@ public interface ConfigContext extends MantaMBeanable {
     /**
      * Whether unbounded (-1) or bounded (positive integer) download continuations are enabled.
      * @return if download continuation is enabled
-     * @see com.joyent.manta.http.InputStreamContinuator
+     * @see InputStreamContinuator
      * @see com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator
      */
     Integer downloadContinuations();

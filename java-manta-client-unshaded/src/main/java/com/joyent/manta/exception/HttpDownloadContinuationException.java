@@ -8,21 +8,22 @@
 package com.joyent.manta.exception;
 
 /**
- * Exception signaling that a resumed download request cannot be continued because the response was invalid.
+ * Exception class for fatal errors which may occur while attempting to resumably (resiliently?) download an object.
+ * The most important aspect of this class is that it does _not_
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.3
  */
-public class ResumableDownloadUnexpectedResponseException extends ResumableDownloadException {
+public class HttpDownloadContinuationException extends MantaIOException {
 
-    private static final long serialVersionUID = 123778476650917899L;
+    private static final long serialVersionUID = -5972256969855482635L;
 
     /**
      * Constructs an instance with the specified detail message and cause.
      *
      * @param message The detail message
      */
-    public ResumableDownloadUnexpectedResponseException(final String message) {
+    public HttpDownloadContinuationException(final String message) {
         super(message);
     }
 
@@ -31,7 +32,7 @@ public class ResumableDownloadUnexpectedResponseException extends ResumableDownl
      *
      * @param cause The cause
      */
-    public ResumableDownloadUnexpectedResponseException(final Throwable cause) {
+    public HttpDownloadContinuationException(final Throwable cause) {
         super(cause);
     }
 
@@ -41,7 +42,7 @@ public class ResumableDownloadUnexpectedResponseException extends ResumableDownl
      * @param message The detail message
      * @param cause The cause
      */
-    public ResumableDownloadUnexpectedResponseException(final String message, final Throwable cause) {
+    public HttpDownloadContinuationException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

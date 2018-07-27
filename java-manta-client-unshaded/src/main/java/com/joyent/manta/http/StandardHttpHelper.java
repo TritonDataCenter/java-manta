@@ -14,15 +14,16 @@ import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.domain.ObjectType;
+import com.joyent.manta.exception.HttpDownloadContinuationException;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
-import com.joyent.manta.exception.ResumableDownloadException;
 import com.joyent.manta.http.entity.DigestedEntity;
 import com.joyent.manta.http.entity.NoContentEntity;
 import com.joyent.manta.util.AutoContinuingInputStream;
+import com.joyent.manta.util.InputStreamContinuator;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
 import org.apache.commons.io.IOUtils;
@@ -59,7 +60,7 @@ import java.util.function.Function;
 import static com.joyent.manta.config.DefaultsConfigContext.DOWNLOAD_CONTINUATIONS_DISABLED;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
-import static com.joyent.manta.http.ResumableDownloadMarker.validateInitialExchange;
+import static com.joyent.manta.http.HttpDownloadContinuationMarker.validateInitialExchange;
 
 /**
  * Helper class used for common HTTP operations against the Manta server.
@@ -115,6 +116,8 @@ public class StandardHttpHelper implements HttpHelper {
      * Create a new instance of the HttpHelper which expects a static configuration since the request factory does not
      * have access to an {@link AuthAwareConfigContext}.
      *
+     * Only used in testing.
+     *
      * @param connectionContext connection object
      * @param config configuration context object
      */
@@ -162,8 +165,12 @@ public class StandardHttpHelper implements HttpHelper {
         this.connectionContext = Validate.notNull(connectionContext, "MantaConnectionContext must not be null");
         this.requestFactory = Validate.notNull(requestFactory, "MantaHttpRequestFactory must not be null");
         this.verifyUploads = verifyUploads;
-        this.maxDownloadContinuations = verifyDownloadContinuationConditions(connectionContext, downloadContinuation);
+        this.maxDownloadContinuations = validateDownloadContinuationConditions(connectionContext, downloadContinuation);
 
+        // the following checks that:
+        // 1. a value was provided for continuations
+        // 2. it was not zero (i.e. explicitly disable continuations)
+        // 3. we determined continuations should be disabled
         if (downloadContinuation != null
                 && downloadContinuation != 0
                 && this.maxDownloadContinuations == DOWNLOAD_CONTINUATIONS_DISABLED) {
@@ -447,8 +454,10 @@ public class StandardHttpHelper implements HttpHelper {
      * return null, otherwise the continuator receives our client, the initial request (which it will clone) and the
      * marker we created.
      *
+     * @see HttpDownloadContinuationMarker#validateInitialExchange
+     *
      * @param request the initial request, etag and range headers will be used as hints for the first argument to
-     * {@link ResumableDownloadMarker#validateInitialExchange(Pair, int, Pair)}
+     * {@link HttpDownloadContinuationMarker#validateInitialExchange(Pair, int, Pair)}
      * @param response the initial response which will be validated against any hints
      * @return the continuator which can be used to resume this request
      */
@@ -462,13 +471,16 @@ public class StandardHttpHelper implements HttpHelper {
         }
 
         final HttpGet get = (HttpGet) request;
-        final ResumableDownloadMarker marker;
+        final HttpDownloadContinuationMarker marker;
         try {
-            marker = validateInitialExchange(
-                    extractDownloadRequestFingerprint(get),
-                    response.getStatusLine().getStatusCode(),
-                    extractDownloadResponseFingerprint(response, true));
+            // if we can't build a marker the request:
+            // - uses a combination of headers we don't support (e.g. multi-part range)
+            // - the request/response pair exhibits unexpected behavior we are not prepared to follow
+            marker = validateInitialExchange(extractDownloadRequestFingerprint(get),
+                                             response.getStatusLine().getStatusCode(),
+                                             extractDownloadResponseFingerprint(response, true));
         } catch (final ProtocolException pe) {
+            LOGGER.debug("HTTP download cannot be automatically continued: %s", pe.getMessage());
             return null;
         }
 
@@ -478,7 +490,7 @@ public class StandardHttpHelper implements HttpHelper {
                     get,
                     marker,
                     this.maxDownloadContinuations);
-        } catch (final ResumableDownloadException rde) {
+        } catch (final HttpDownloadContinuationException rde) {
             LOGGER.debug(
                     String.format(
                             "Expected to build a continuator but an exception occurred: %s",
@@ -694,8 +706,8 @@ public class StandardHttpHelper implements HttpHelper {
      * @param downloadContinuations the desired number of continuations
      * @return if it is safe to enable download continuation
      */
-    private static Integer verifyDownloadContinuationConditions(final MantaConnectionContext connCtx,
-                                                                final Integer downloadContinuations) {
+    private static Integer validateDownloadContinuationConditions(final MantaConnectionContext connCtx,
+                                                                  final Integer downloadContinuations) {
         if (!(connCtx instanceof MantaApacheHttpClientContext)) {
             return DOWNLOAD_CONTINUATIONS_DISABLED;
         }

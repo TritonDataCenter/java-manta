@@ -927,6 +927,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 skipDirectoryDepth,
+                downloadContinuations,
                 metricReporterMode,
                 metricReporterOutputInterval,
                 clientEncryptionEnabled, encryptionKeyId,

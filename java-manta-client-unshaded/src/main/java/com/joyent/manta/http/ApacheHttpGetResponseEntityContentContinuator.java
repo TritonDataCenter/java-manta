@@ -11,9 +11,10 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
 import com.joyent.manta.config.MantaClientMetricConfiguration;
-import com.joyent.manta.exception.ResumableDownloadException;
-import com.joyent.manta.exception.ResumableDownloadIncompatibleRequestException;
-import com.joyent.manta.exception.ResumableDownloadUnexpectedResponseException;
+import com.joyent.manta.exception.HttpDownloadContinuationException;
+import com.joyent.manta.exception.HttpDownloadContinuationIncompatibleRequestException;
+import com.joyent.manta.exception.HttpDownloadContinuationUnexpectedResponseException;
+import com.joyent.manta.util.InputStreamContinuator;
 import org.apache.commons.io.input.ClosedInputStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
@@ -83,7 +84,13 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     /**
      * Prefix used to build metric names for exceptions from which this continuator has helped recover.
      */
-    static final String METRIC_NAME_PREFIX_RECOVERED = "get-continuations-recovered-";
+    static final String METRIC_NAME_RECOVERED_EXCEPTION_PREFIX = "get-continuations-recovered-exception-";
+
+    /**
+     * Metric name for the possible-but-unlikely scenario where a continuation is requested
+     * where the number of bytes read is equal to the expected object size.
+     */
+    static final String METRIC_NAME_RECOVERED_EOF = "get-continuations-recovered-EOF";
 
     /**
      * The key under which the distribution of continuations delivered per request is recorded.
@@ -107,7 +114,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
     private int continuation;
 
     /**
-     * The maximum number of continuations we should provided.
+     * The maximum number of continuations we should provide. {@code 0} {@code -1}
      */
     private final int maxContinuations;
 
@@ -115,7 +122,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * Information recorded about the initial request/response exchange we can used to validateResponseWithMarker
      * response headers for continuations.
      */
-    private final ResumableDownloadMarker marker;
+    private final HttpDownloadContinuationMarker marker;
 
     /**
      * Nullable metric registry for tracking exceptions seen.
@@ -136,16 +143,16 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * @param connCtx the http connection context
      * @param request the initial request
      * @param marker the relevant information from the initial exchange
-     * @throws ResumableDownloadIncompatibleRequestException when the initial request is incompatible with this
+     * @throws HttpDownloadContinuationIncompatibleRequestException when the initial request is incompatible with this
      * implementation
-     * @throws ResumableDownloadUnexpectedResponseException when the initial response diverges from the request headers
-     * @throws ResumableDownloadException when something unexpected happens while preparing
+     * @throws HttpDownloadContinuationUnexpectedResponseException when the initial response diverges from the request headers
+     * @throws HttpDownloadContinuationException when something unexpected happens while preparing
      */
     ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
                                                   final HttpGet request,
-                                                  final ResumableDownloadMarker marker,
+                                                  final HttpDownloadContinuationMarker marker,
                                                   final int maxContinuations)
-            throws ResumableDownloadException {
+            throws HttpDownloadContinuationException {
         this(verifyDownloadContinuationIsSafeAndExtractHttpClient(connCtx),
              request,
              marker,
@@ -164,7 +171,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      */
     ApacheHttpGetResponseEntityContentContinuator(final HttpClient client,
                                                   final HttpGet request,
-                                                  final ResumableDownloadMarker marker,
+                                                  final HttpDownloadContinuationMarker marker,
                                                   final int maxContinuations,
                                                   final MetricRegistry metricRegistry) {
         // we clone the request in case the user is reusing the same request object
@@ -199,9 +206,9 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * @param ex the exception which occurred while downloading (either the first response or a continuation)
      * @param bytesRead byte offset at which the new stream should start
      * @return another stream which continues to deliver the bytes from the initial request
-     * @throws ResumableDownloadException if the provided {@link IOException} is not recoverable or the number of
+     * @throws HttpDownloadContinuationException if the provided {@link IOException} is not recoverable or the number of
      * retries has been reached, or there is an error
-     * @throws ResumableDownloadUnexpectedResponseException if the continuation response was incompatible or indicated
+     * @throws HttpDownloadContinuationUnexpectedResponseException if the continuation response was incompatible or indicated
      * that the remote object has somehow changed
      */
     @Override
@@ -213,20 +220,22 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         this.continuation++;
 
         if (this.maxContinuations != INFINITE_CONTINUATIONS && this.maxContinuations <= this.continuation) {
-            throw new ResumableDownloadException(
+            throw new HttpDownloadContinuationException(
                     String.format("Maximum number of continuations reached [%s], aborting auto-retry: %s",
                                   this.maxContinuations,
                                   ex.getMessage()),
                     ex);
         }
 
-        if (this.metricRegistry != null) {
-            this.metricRegistry.counter(METRIC_NAME_PREFIX_RECOVERED + ex.getClass().getSimpleName()).inc();
-        }
-
         // if an IOException occurs while reading EOF the user may ask us for a continuation
-        // starting after the last valid byte. It may make sense to change this to >= instead of ==
+        // starting after the last valid byte.
         if (bytesRead == this.marker.getTotalRangeSize()) {
+            if (this.metricRegistry != null) {
+                this.metricRegistry.counter(METRIC_NAME_RECOVERED_EXCEPTION_PREFIX + ex.getClass().getSimpleName())
+                        .inc();
+                this.metricRegistry.counter(METRIC_NAME_RECOVERED_EOF).inc();
+            }
+
             return ClosedInputStream.CLOSED_INPUT_STREAM;
         }
 
@@ -234,7 +243,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             this.marker.updateRangeStart(bytesRead);
         } catch (final IllegalArgumentException iae) {
             // we should wrap and rethrow this so that the caller doesn't get stuck in a loop
-            throw new ResumableDownloadException("Failed to update download continuation offset", iae);
+            throw new HttpDownloadContinuationException("Failed to update download continuation offset", iae);
         }
 
         this.request.setHeader(RANGE, this.marker.getCurrentRange().render());
@@ -246,7 +255,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             httpContext.setAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
             response = this.client.execute(this.request, httpContext);
         } catch (final IOException ioe) {
-            throw new ResumableDownloadException(
+            throw new HttpDownloadContinuationException(
                     "Exception occurred while attempting to build continuation: " + ioe.getMessage(),
                     ioe);
         }
@@ -254,7 +263,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         final int statusCode = response.getStatusLine().getStatusCode();
 
         if (statusCode != SC_PARTIAL_CONTENT) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new HttpDownloadContinuationUnexpectedResponseException(
                     String.format(
                             "Invalid response code: expecting [%d], got [%d]",
                             SC_PARTIAL_CONTENT,
@@ -264,7 +273,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         try {
             validateResponseWithMarker(extractDownloadResponseFingerprint(response, false));
         } catch (final HttpException he) {
-            throw new ResumableDownloadUnexpectedResponseException(
+            throw new HttpDownloadContinuationUnexpectedResponseException(
                     "Continuation request failed validation: " + he.getMessage(),
                     he);
         }
@@ -274,20 +283,23 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
             final HttpEntity entity = response.getEntity();
 
             if (entity == null) {
-                throw new ResumableDownloadUnexpectedResponseException(
+                throw new HttpDownloadContinuationUnexpectedResponseException(
                         "Entity missing from continuation response");
             }
 
             content = entity.getContent();
 
             if (content == null) {
-                throw new ResumableDownloadUnexpectedResponseException(
+                throw new HttpDownloadContinuationUnexpectedResponseException(
                         "Entity content missing from continuation response");
             }
         } catch (final UnsupportedOperationException | IOException uoe) {
-            throw new ResumableDownloadUnexpectedResponseException(uoe);
+            throw new HttpDownloadContinuationUnexpectedResponseException(uoe);
         }
 
+        if (this.metricRegistry != null) {
+            this.metricRegistry.counter(METRIC_NAME_RECOVERED_EXCEPTION_PREFIX + ex.getClass().getSimpleName()).inc();
+        }
         return content;
     }
 
@@ -295,16 +307,16 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * Determine whether an {@link IOException} indicates a fatal issue or not. Shamelessly plagiarized from {@link
      * org.apache.http.impl.client.DefaultHttpRequestRetryHandler}.
      *
-     * @param e the exception to check
+     * @param ex the exception to check
      * @return whether or not the caller should retry their request
      */
-    private static boolean isRecoverable(final IOException e) {
-        if (EXCEPTIONS_FATAL.contains(e.getClass())) {
+    private static boolean isRecoverable(final IOException ex) {
+        if (EXCEPTIONS_FATAL.contains(ex.getClass())) {
             return false;
         }
 
         for (final Class<? extends IOException> exceptionClass : EXCEPTIONS_FATAL) {
-            if (exceptionClass.isInstance(e)) {
+            if (exceptionClass.isInstance(ex)) {
                 return false;
             }
         }
@@ -380,13 +392,13 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
 
     @SuppressWarnings("checkstyle:JavadocMethod")
     private static HttpClient verifyDownloadContinuationIsSafeAndExtractHttpClient(
-            final MantaApacheHttpClientContext connCtx) throws ResumableDownloadException {
+            final MantaApacheHttpClientContext connCtx) throws HttpDownloadContinuationException {
         notNull(connCtx, "Connection context must not be null");
 
         final boolean cancellable = connCtx.isRetryCancellable();
         final boolean enabled = connCtx.isRetryEnabled();
         if (enabled && !cancellable) {
-            throw new ResumableDownloadException("Incompatible connection context, automatic retries must be "
+            throw new HttpDownloadContinuationException("Incompatible connection context, automatic retries must be "
                                                          + "disabled or cancellable");
         }
 

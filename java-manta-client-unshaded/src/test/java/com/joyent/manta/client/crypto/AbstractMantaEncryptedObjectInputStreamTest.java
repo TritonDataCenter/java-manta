@@ -12,7 +12,7 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.exception.MantaClientEncryptionCiphertextAuthenticationException;
 import com.joyent.manta.exception.MantaIOException;
-import com.joyent.manta.http.InputStreamContinuator;
+import com.joyent.manta.util.InputStreamContinuator;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.MantaInputStreamEntity;
 import com.joyent.manta.util.AutoContinuingInputStream;

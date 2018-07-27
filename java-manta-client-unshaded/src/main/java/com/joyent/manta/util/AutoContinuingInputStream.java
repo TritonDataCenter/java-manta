@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.util;
 
-import com.joyent.manta.http.InputStreamContinuator;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;

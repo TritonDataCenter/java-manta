@@ -1,6 +1,5 @@
 package com.joyent.manta.util;
 
-import com.joyent.manta.http.InputStreamContinuator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
