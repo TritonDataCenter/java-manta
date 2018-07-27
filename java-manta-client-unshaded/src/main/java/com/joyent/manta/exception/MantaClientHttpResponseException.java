@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * Exception class representing a failure in the contract of Manta's behavior.
@@ -126,7 +127,22 @@ public class MantaClientHttpResponseException extends MantaIOException {
     public MantaClientHttpResponseException(final HttpRequest request,
                                             final HttpResponse response,
                                             final String path) {
-        super(String.format("HTTP request failed to: %s", path));
+        this(request, response, path, (Integer[]) null);
+    }
+
+    /**
+     * Builds a client exception object that is annotated with all of the
+     * relevant request and response debug information.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     */
+    public MantaClientHttpResponseException(final HttpRequest request,
+                                            final HttpResponse response,
+                                            final String path,
+                                            final Integer... expectedResponseCodes) {
+        super(buildExceptionMessageFromHttpExchange(request, response, path, expectedResponseCodes));
         final HttpEntity entity = response.getEntity();
         final ContentType jsonContentType = ContentType.APPLICATION_JSON;
 
@@ -181,6 +197,19 @@ public class MantaClientHttpResponseException extends MantaIOException {
         } catch (RuntimeException e) {
             LOGGER.warn("Error setting response headers on exception", e);
         }
+    }
+
+    private static String buildExceptionMessageFromHttpExchange(final HttpRequest request,
+                                                                final HttpResponse response,
+                                                                final String path,
+                                                                final Integer... expectedResponseCodes) {
+        if (expectedResponseCodes != null) {
+            return String.format("HTTP request returned unexpected response code: expected one of [%s], got[%d] ",
+                                 Arrays.toString(expectedResponseCodes),
+                                 response.getStatusLine().getStatusCode());
+        }
+
+        return String.format("HTTP request failed to: %s", path);
     }
 
     /**
