@@ -204,7 +204,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
                                                                 final String path,
                                                                 final Integer... expectedResponseCodes) {
         if (expectedResponseCodes != null) {
-            return String.format("HTTP request returned unexpected response code: expected one of [%s], got[%d] ",
+            return String.format("HTTP request returned unexpected response code: expected one of %s, got [%d] ",
                                  Arrays.toString(expectedResponseCodes),
                                  response.getStatusLine().getStatusCode());
         }

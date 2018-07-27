@@ -38,6 +38,9 @@ import java.util.Base64;
 
 import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
 import static org.apache.http.HttpHeaders.IF_MATCH;
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_CREATED;
+import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -63,6 +66,7 @@ public class StandardHttpHelperTest {
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
         config = new StandardConfigContext().setMantaURL("http://localhost");
+        reset(client, response, connCtx, statusLine);
 
         when(connCtx.getHttpClient())
                 .thenReturn(client);
@@ -228,7 +232,33 @@ public class StandardHttpHelperTest {
                 helper.httpRequestAsInputStream(get, headers));
     }
 
+    @Test(expectedExceptions = MantaClientHttpResponseException.class,
+          expectedExceptionsMessageRegExp = ".*code.*expected.*got.*" + SC_CREATED + ".*")
+    public void deleteValidatesSuccessResponseCode() throws Exception {
+        when(statusLine.getStatusCode())
+                .thenReturn(SC_CREATED); // this is a nonsensical response code for DELETE
+
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
+
+        helper.httpDelete("/path");
+    }
+
+    @Test(expectedExceptions = MantaClientHttpResponseException.class)
+    public void deleteValidatesErrorResponseCode() throws Exception {
+        when(statusLine.getStatusCode())
+                .thenReturn(SC_BAD_REQUEST);
+
+        final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
+
+        helper.httpDelete("/path");
+    }
+
+
     public void deleteWithHeadersPassesAlongHeaders() throws Exception {
+        when(statusLine.getStatusCode())
+                .thenReturn(SC_NO_CONTENT);
+
+
         final StandardHttpHelper helper = new StandardHttpHelper(connCtx, config);
         final MantaHttpHeaders ifMatchHeader = new MantaHttpHeaders();
         final String etag = "foo";
