@@ -145,7 +145,8 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * @param marker the relevant information from the initial exchange
      * @throws HttpDownloadContinuationIncompatibleRequestException when the initial request is incompatible with this
      * implementation
-     * @throws HttpDownloadContinuationUnexpectedResponseException when the initial response diverges from the request headers
+     * @throws HttpDownloadContinuationUnexpectedResponseException when the initial response diverges from the request
+     * headers
      * @throws HttpDownloadContinuationException when something unexpected happens while preparing
      */
     ApacheHttpGetResponseEntityContentContinuator(final MantaApacheHttpClientContext connCtx,
@@ -208,8 +209,8 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      * @return another stream which continues to deliver the bytes from the initial request
      * @throws HttpDownloadContinuationException if the provided {@link IOException} is not recoverable or the number of
      * retries has been reached, or there is an error
-     * @throws HttpDownloadContinuationUnexpectedResponseException if the continuation response was incompatible or indicated
-     * that the remote object has somehow changed
+     * @throws HttpDownloadContinuationUnexpectedResponseException if the continuation response was incompatible or
+     * indicated that the remote object has somehow changed
      */
     @Override
     public InputStream buildContinuation(final IOException ex, final long bytesRead) throws IOException {
