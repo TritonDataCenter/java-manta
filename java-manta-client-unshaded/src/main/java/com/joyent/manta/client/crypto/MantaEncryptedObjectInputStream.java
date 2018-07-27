@@ -562,7 +562,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return skipped;
         }
 
-        final int defaultBufferSize = calculateBufferSize(this.getContentLength(), this.cipherDetails);
+        final int defaultBufferSize = MantaEncryptedObjectInputStream.calculateBufferSize(this.getContentLength(),
+                                                                                          this.cipherDetails);
         final int bufferSize;
 
         if (numberOfBytesToSkip < defaultBufferSize) {
@@ -645,7 +646,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return;
         }
 
-        final int bufferSize = calculateBufferSize(this.getContentLength(), this.cipherDetails);
+        final int bufferSize = MantaEncryptedObjectInputStream.calculateBufferSize(this.getContentLength(),
+                                                                                   this.cipherDetails);
         byte[] buf = new byte[bufferSize];
 
         while (read(buf, false) > EOF);
