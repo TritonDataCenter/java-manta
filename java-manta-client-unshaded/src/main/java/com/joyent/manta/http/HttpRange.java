@@ -64,7 +64,8 @@ public abstract class HttpRange {
                     + "bytes=<startInclusive>-<endInclusive>"
                     + ","
                     + "bytes=<startInclusive>-"
-                    + "], got: %s";
+                    + "]"
+                    + ", got: %s";
 
     /**
      * The start of the byte range in a range/content-range (the 0 in 0-1/2).
