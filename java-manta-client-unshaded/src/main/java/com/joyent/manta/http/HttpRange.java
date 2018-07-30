@@ -55,6 +55,9 @@ public abstract class HttpRange {
      */
     private static final int PART_COUNT_CONTENT_RANGE = 3;
 
+    /**
+     * Exception message for issues with parsing request ranges.
+     */
     private static final String FMT_ERROR_MATCHING_REQUEST_RANGE =
             "Invalid Range format, expected one of: "
                     + "["
@@ -93,6 +96,11 @@ public abstract class HttpRange {
      */
     public static final class UnboundedRequest extends Request {
 
+        /**
+         * Construct a {@code Range} range, encapsulating the start of the range.
+         *
+         * @param startInclusive inclusive byte range start offset
+         */
         public UnboundedRequest(final long startInclusive) {
             super(startInclusive, null, null);
         }
@@ -123,6 +131,12 @@ public abstract class HttpRange {
      */
     public static final class BoundedRequest extends Request {
 
+        /**
+         * Construct a {@code Range} range, encapsulating the start and end of the range.
+         *
+         * @param startInclusive inclusive byte range start offset
+         * @param endInclusive inclusive byte range end offset
+         */
         public BoundedRequest(final long startInclusive,
                               final long endInclusive) {
             super(startInclusive, endInclusive, null);
@@ -161,6 +175,14 @@ public abstract class HttpRange {
      */
     public static final class Response extends HttpRange {
 
+        /**
+         * Construct a {@code Content-Range} range, encapsulating the start and end of the range
+         * in addition to the total object size (independent of the size of the range being downloaded).
+         *
+         * @param startInclusive inclusive byte range start offset
+         * @param endInclusive inclusive byte range end offset
+         * @param size total object size
+         */
         public Response(final long startInclusive,
                         final long endInclusive,
                         final long size) {

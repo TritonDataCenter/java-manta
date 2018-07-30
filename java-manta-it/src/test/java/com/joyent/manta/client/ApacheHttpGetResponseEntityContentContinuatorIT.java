@@ -67,14 +67,14 @@ import static org.testng.Assert.fail;
  * Users are expected to have access to <a href="https://www.charlesproxy.com/">Charles Web Proxy</a> or some other
  * configured proxy designed to cause request failures in a controlled fashion. This test specifically requires turning
  * on throttling so that the download is artificially slowed (giving the operator time to react) and then manually
- * cancelling GET requests in order to trigger the continuator. Log messages are written out indicating when the test is
- * ready to progress and when user intervention is no longer required. If the test operator does not terminate any
- * requests the test will fail when it notices no metrics were recorded.
+ * cancelling GET requests in order to trigger the continuator. Warning log messages are written out in a very obvious
+ * fashion indicating when the test is ready to progress and when user intervention is no longer required. If the test
+ * operator does not terminate any requests the test will fail when it notices no metrics were recorded.
  * </p>
  * <p>
- * Since we want to make it possible to run this test without a code change (i.e. changing the test annotation) this
- * test throws a {@link org.testng.SkipException} if the proxy settings are missing. We expect to find the following
- * settings to not be blank:
+ * Since we want to make it possible to run this test without a code change this test throws a {@link
+ * org.testng.SkipException} if the proxy settings are missing. We expect to find the following settings to not be
+ * blank:
  * <ul>
  * <li>http.proxyHost</li>
  * <li>http.proxyPort</li>
