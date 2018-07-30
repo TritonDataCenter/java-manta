@@ -220,7 +220,7 @@ public class MantaClient implements AutoCloseable {
      *
      * @param config The configuration context that provides all of the configuration values
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
-     * @param httpHelper helper object for executing http requests (or null to build one ourselvers)
+     * @param httpHelper helper object for executing http requests (or null to build one ourselves)
      */
     MantaClient(final ConfigContext config,
                 final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
