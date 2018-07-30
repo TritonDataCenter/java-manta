@@ -27,6 +27,8 @@ import org.apache.http.client.methods.AbstractExecutionAwareRequest;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
@@ -60,6 +62,8 @@ import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
  * @since 3.2.3
  */
 public class ApacheHttpGetResponseEntityContentContinuator implements InputStreamContinuator {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ApacheHttpGetResponseEntityContentContinuator.class);
 
     /**
      * Set of exceptions from which we know we cannot recover by simply retrying. Since {@link
@@ -228,6 +232,11 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                     ex);
         }
 
+        LOG.debug("Attempting to build a continuation for request {} to recover at byte offset {} from exception {}",
+                  this.request.getRequestLine(),
+                  bytesRead,
+                  ex);
+
         // if an IOException occurs while reading EOF the user may ask us for a continuation
         // starting after the last valid byte.
         if (bytesRead == this.marker.getTotalRangeSize()) {
@@ -301,6 +310,11 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
         if (this.metricRegistry != null) {
             this.metricRegistry.counter(METRIC_NAME_RECOVERED_EXCEPTION_PREFIX + ex.getClass().getSimpleName()).inc();
         }
+
+        LOG.debug("Successfully constructed continuation at byte offset {} to recover from {}",
+                  bytesRead,
+                  ex);
+
         return content;
     }
 

@@ -22,12 +22,18 @@ import static org.apache.commons.lang3.Validate.notNull;
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.2.2
  */
-abstract class HttpRange {
+public abstract class HttpRange {
 
     /**
-     * The regex used to validateResponseWithMarker request Range header values.
+     * The regex used to validateResponseWithMarker request Range header values that are bounded.
      */
-    private static final String REGEX_REQUEST_RANGE = "bytes=[0-9]+-[0-9]+";
+    private static final String REGEX_BOUNDED_REQUEST_RANGE = "bytes=[0-9]+-[0-9]+";
+
+    /**
+     * The regex used to validateResponseWithMarker request Range header values that are unbounded (and allowed by the
+     * HTTP spec).
+     */
+    private static final String REGEX_UNBOUNDED_REQUEST_RANGE = "bytes=[0-9]+-";
 
     /**
      * The regex used to validateResponseWithMarker Content-Range header values.
@@ -35,14 +41,27 @@ abstract class HttpRange {
     private static final String REGEX_CONTENT_RANGE = "bytes [0-9]+-[0-9]+/[0-9]+";
 
     /**
-     * The number of segments the Range regex expects to find.
+     * The number of segments the unbounded Range regex expects to find.
      */
-    private static final int REGEX_SPLIT_PART_COUNT_RANGE = 2;
+    private static final int PART_COUNT_UNBOUNDED_RANGE = 1;
+
+    /**
+     * The number of segments the bounded Range regex expects to find.
+     */
+    private static final int PART_COUNT_BOUNDED_RANGE = 2;
 
     /**
      * The number of segments the Content-Range regex expects to find.
      */
     private static final int PART_COUNT_CONTENT_RANGE = 3;
+
+    private static final String FMT_ERROR_MATCHING_REQUEST_RANGE =
+            "Invalid Range format, expected one of: "
+                    + "["
+                    + "bytes=<startInclusive>-<endInclusive>"
+                    + ","
+                    + "bytes=<startInclusive>-"
+                    + "], got: %s";
 
     /**
      * The start of the byte range in a range/content-range (the 0 in 0-1/2).
@@ -63,6 +82,7 @@ abstract class HttpRange {
      * Abstract class grouping request ranges.
      */
     abstract static class Request extends HttpRange {
+
         Request(final long startInclusive, final Long endInclusive, final Long size) {
             super(startInclusive, endInclusive, size);
         }
@@ -71,9 +91,9 @@ abstract class HttpRange {
     /**
      * Value object representing a {@link org.apache.http.HttpHeaders#RANGE}.
      */
-    static final class UnboundedRequest extends Request {
+    public static final class UnboundedRequest extends Request {
 
-        UnboundedRequest(final long startInclusive) {
+        public UnboundedRequest(final long startInclusive) {
             super(startInclusive, null, null);
         }
 
@@ -85,7 +105,7 @@ abstract class HttpRange {
         }
 
         @Override
-        String render() {
+        public String render() {
             return String.format("bytes=%d-", this.getStartInclusive());
         }
 
@@ -101,10 +121,10 @@ abstract class HttpRange {
     /**
      * Value object representing a {@link org.apache.http.HttpHeaders#RANGE}.
      */
-    static final class BoundedRequest extends Request {
+    public static final class BoundedRequest extends Request {
 
-        BoundedRequest(final long startInclusive,
-                       final long endInclusive) {
+        public BoundedRequest(final long startInclusive,
+                              final long endInclusive) {
             super(startInclusive, endInclusive, null);
         }
 
@@ -123,7 +143,7 @@ abstract class HttpRange {
         }
 
         @Override
-        String render() {
+        public String render() {
             return String.format("bytes=%d-%d", this.getStartInclusive(), this.getEndInclusive());
         }
 
@@ -139,11 +159,11 @@ abstract class HttpRange {
     /**
      * Value object representing a {@link org.apache.http.HttpHeaders#CONTENT_RANGE}.
      */
-    static final class Response extends HttpRange {
+    public static final class Response extends HttpRange {
 
-        Response(final long startInclusive,
-                 final long endInclusive,
-                 final long size) {
+        public Response(final long startInclusive,
+                        final long endInclusive,
+                        final long size) {
             super(startInclusive, endInclusive, size);
         }
 
@@ -167,7 +187,7 @@ abstract class HttpRange {
         }
 
         @Override
-        String render() {
+        public String render() {
             return String.format("bytes %d-%d/%d", this.getStartInclusive(), this.getEndInclusive(), this.getSize());
         }
 
@@ -185,21 +205,21 @@ abstract class HttpRange {
               final Long endInclusive,
               final Long size) {
         if (null != endInclusive && startInclusive > endInclusive) {
-            throw new IllegalArgumentException("<range-start> must not be greater than <range-end>");
+            throw new IllegalArgumentException("<start> must not be greater than <end>");
         }
 
         if (size != null) {
             if (endInclusive == null) {
-                throw new IllegalArgumentException("<range-end> must be present if size is present");
+                throw new IllegalArgumentException("<end> must be present if size is present");
             }
 
             if (size < 0) {
-                throw new IllegalArgumentException("<range-size> must not be less than zero");
+                throw new IllegalArgumentException("<size> must not be less than zero");
             }
 
             if (size < (1 + endInclusive - startInclusive)) {
                 throw new IllegalArgumentException(
-                        "<range-size> must not be less than the bytes defined by <range-start> and <range-end>");
+                        "<size> must not be less than the bytes defined by <start> and <end>");
             }
 
             // size can be greater than the range if only a part of the file was requested
@@ -259,7 +279,7 @@ abstract class HttpRange {
      *
      * @return the string representation of the range
      */
-    abstract String render();
+    public abstract String render();
 
     @Override
     public boolean equals(final Object o) {
@@ -299,25 +319,31 @@ abstract class HttpRange {
      * @return a {@link BoundedRequest} range
      * @throws ProtocolException if the range could not be parsed
      */
-    static BoundedRequest parseRequestRange(final String requestRange) throws ProtocolException {
+    static Request parseRequestRange(final String requestRange) throws ProtocolException {
         notNull(requestRange, "Request Range must not be null");
 
-        if (!requestRange.matches(REGEX_REQUEST_RANGE)) {
-            final String message = String.format(
-                    "Invalid Range format, expected: "
-                            + "[bytes <range-startInclusive>-<range-endInclusive>], got: %s",
-                    requestRange);
-            throw new ProtocolException(message);
+        final boolean boundedMatch = requestRange.matches(REGEX_BOUNDED_REQUEST_RANGE);
+        final boolean unboundedMatch = requestRange.matches(REGEX_UNBOUNDED_REQUEST_RANGE);
+        if (!boundedMatch && !unboundedMatch) {
+            throw new ProtocolException(String.format(FMT_ERROR_MATCHING_REQUEST_RANGE, requestRange));
         }
 
-        final String[] boundsAndSize = StringUtils.split(StringUtils.removeStart(requestRange, "bytes="), "-");
-        if (boundsAndSize.length != REGEX_SPLIT_PART_COUNT_RANGE) {
-            throw new ProtocolException(String.format("Malformed Range value, got: %s", requestRange));
+        final String[] bounds = StringUtils.split(StringUtils.removeStart(requestRange, "bytes="), "-");
+        if (boundedMatch) {
+            if (bounds.length != PART_COUNT_BOUNDED_RANGE) {
+                throw new ProtocolException(String.format(FMT_ERROR_MATCHING_REQUEST_RANGE, requestRange));
+            }
+
+            return new BoundedRequest(
+                    Long.parseUnsignedLong(bounds[0]),
+                    Long.parseUnsignedLong(bounds[1]));
         }
 
-        return new BoundedRequest(
-                Long.parseUnsignedLong(boundsAndSize[0]),
-                Long.parseUnsignedLong(boundsAndSize[1]));
+        if (unboundedMatch && bounds.length != PART_COUNT_UNBOUNDED_RANGE) {
+            throw new ProtocolException(String.format(FMT_ERROR_MATCHING_REQUEST_RANGE, requestRange));
+        }
+
+        return new UnboundedRequest(Long.parseUnsignedLong(bounds[0]));
     }
 
     /**
@@ -333,7 +359,7 @@ abstract class HttpRange {
         if (!contentRange.matches(REGEX_CONTENT_RANGE)) {
             final String message = String.format(
                     "Invalid content-range format, expected: "
-                            + "[bytes <range-startInclusive>-<range-endInclusive>/<size>], got: %s",
+                            + "[bytes <startInclusive>-<endInclusive>/<size>], got: %s",
                     contentRange);
             throw new ProtocolException(message);
         }

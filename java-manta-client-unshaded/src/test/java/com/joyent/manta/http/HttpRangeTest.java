@@ -2,16 +2,16 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.HttpRange.Response;
-import org.apache.http.HttpException;
+import org.apache.http.ProtocolException;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
 @Test
 public class HttpRangeTest {
-
 
     public void requestCtorRejectsInvalidInputs() {
         new BoundedRequest(0, 1);
@@ -34,12 +34,31 @@ public class HttpRangeTest {
         new Response(0, 0, 1L);
     }
 
+    public void parseRequestRangeRejectsInvalidInputs() {
+        assertThrows(NullPointerException.class, () -> HttpRange.parseRequestRange(null));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseRequestRange(""));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseRequestRange("bytes"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseRequestRange("bytes0-1/2"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseRequestRange("byes 0-1/2"));
+    }
+
+    public void parseRequestRangeHandlesValidHttpSpecInputs() throws ProtocolException {
+        assertEquals(new HttpRange.BoundedRequest(0, 1), HttpRange.parseRequestRange("bytes=0-1"));
+        assertEquals(new HttpRange.UnboundedRequest(0), HttpRange.parseRequestRange("bytes=0-"));
+
+        assertEquals(new HttpRange.BoundedRequest(10, 20), HttpRange.parseRequestRange("bytes=10-20"));
+        assertEquals(new HttpRange.UnboundedRequest(10), HttpRange.parseRequestRange("bytes=10-"));
+    }
+
     public void parseContentRangeRejectsInvalidInputs() {
         assertThrows(NullPointerException.class, () -> HttpRange.parseContentRange(null));
-        assertThrows(HttpException.class, () -> HttpRange.parseContentRange(""));
-        assertThrows(HttpException.class, () -> HttpRange.parseContentRange("bytes"));
-        assertThrows(HttpException.class, () -> HttpRange.parseContentRange("bytes0-1/2"));
-        assertThrows(HttpException.class, () -> HttpRange.parseContentRange("byes 0-1/2"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange(""));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange("bytes"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange("bytes0-1/2"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange("byes 0-1/2"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange("bytes 0-/2"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange("bytes -1/2"));
+        assertThrows(ProtocolException.class, () -> HttpRange.parseContentRange("bytes 0-1"));
     }
 
     public void requestCanValidateResponse() {

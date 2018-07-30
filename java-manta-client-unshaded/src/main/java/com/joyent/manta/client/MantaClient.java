@@ -205,7 +205,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaClient(final ConfigContext config,
                        final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
-        this(config, connectionFactoryConfigurator, null);
+        this(config, connectionFactoryConfigurator, null, null);
     }
 
     /**
@@ -223,8 +223,9 @@ public class MantaClient implements AutoCloseable {
      * @param httpHelper helper object for executing http requests (or null)
      */
     MantaClient(final ConfigContext config,
-                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
-                       final HttpHelper httpHelper) {
+                final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
+                final HttpHelper httpHelper,
+                final MantaClientMetricConfiguration metricConfiguration) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
@@ -241,7 +242,9 @@ public class MantaClient implements AutoCloseable {
                 && !this.config.getMetricReporterMode().equals(MetricReporterMode.DISABLED);
 
         final MantaClientMetricConfiguration metricConfig;
-        if (metricsEnabled) {
+        if (metricConfiguration != null) {
+            metricConfig = metricConfiguration;
+        } else if (metricsEnabled) {
             metricConfig = new MantaClientMetricConfiguration(
                     this.clientId,
                     new MetricRegistry(),

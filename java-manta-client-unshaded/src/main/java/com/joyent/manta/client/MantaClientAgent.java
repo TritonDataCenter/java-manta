@@ -13,6 +13,10 @@ import com.joyent.manta.config.MantaClientMetricConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.DynamicMBean;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
@@ -20,10 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.management.DynamicMBean;
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 /**
  * Helper class for keeping track of MBeans associated with a {@link MantaClient}.

@@ -480,7 +480,7 @@ public class StandardHttpHelper implements HttpHelper {
                                              response.getStatusLine().getStatusCode(),
                                              extractDownloadResponseFingerprint(response, true));
         } catch (final ProtocolException pe) {
-            LOGGER.debug("HTTP download cannot be automatically continued: %s", pe.getMessage());
+            LOGGER.debug("HTTP download cannot be automatically continued: {}", pe.getMessage());
             return null;
         }
 

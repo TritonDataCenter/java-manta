@@ -8,7 +8,6 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.exception.HttpDownloadContinuationIncompatibleRequestException;
-import com.joyent.manta.http.HttpRange.BoundedRequest;
 import com.joyent.manta.http.HttpRange.Request;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -98,7 +97,7 @@ final class ApacheHttpHeaderUtils {
     static Pair<String, Request> extractDownloadRequestFingerprint(final HttpGet request)
             throws ProtocolException {
         String ifMatch = null;
-        BoundedRequest range = null;
+        Request range = null;
 
         ProtocolException ifMatchEx = null;
         ProtocolException rangeEx = null;
