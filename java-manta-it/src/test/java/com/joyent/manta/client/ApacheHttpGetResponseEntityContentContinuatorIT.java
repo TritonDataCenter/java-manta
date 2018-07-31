@@ -58,17 +58,17 @@ import static org.testng.Assert.fail;
  * for manual verification.
  * </p>
  * <p>
- * Until the issue with WireMock is resolved or Charles Web Proxy allows dynamic request termination through its control
- * panel integration testing of {@code com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator} will require
- * manual user intervention. There is more griping about this (and a Github issue link) in the final paragraph of this
- * JavaDoc.
+ * Until either 1. the missing functionality is added to WireMock or 2. Charles Web Proxy allows dynamic request
+ * termination through its control panel, integration testing of {@link com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator}
+ * will require manual user intervention. There is more griping about this (and a Github issue link) in the final
+ * paragraph of this JavaDoc.
  * </p>
  * <p>
  * Users are expected to have access to <a href="https://www.charlesproxy.com/">Charles Web Proxy</a> or some other
  * configured proxy designed to cause request failures in a controlled fashion. This test specifically requires turning
  * on throttling so that the download is artificially slowed (giving the operator time to react) and then manually
  * cancelling GET requests in order to trigger the continuator. Warning log messages are written out in a very obvious
- * fashion indicating when the test is ready to progress and when user intervention is no longer required. If the test
+ * fashion indicating when each test is about to start and when user intervention is no longer required. If the test
  * operator does not terminate any requests the test will fail when it notices no metrics were recorded.
  * </p>
  * <p>
@@ -81,6 +81,14 @@ import static org.testng.Assert.fail;
  * <li>https.proxyHost</li>
  * <li>https.proxyPort</li>
  * </ul>
+ * Assuming the proxy is running locally, these values can be set either programmatically with {@link
+ * System#setProperty(String, String)} or using the {@code -D} flag when starting the JVM. For example, this test can be
+ * invoked with Maven using the following command line:
+ * <code>mvn verify -DfailIfNoTests=false -Dtest=ApacheHttpGetResponseEntityContentContinuatorIT
+ * -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=8888 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=8888</code> or to run
+ * a single test case:
+ * <code>mvn verify -DfailIfNoTests=false -Dtest=ApacheHttpGetResponseEntityContentContinuatorIT#regularObjectDownloadUnencrypted
+ * -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=8888 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=8888</code>
  * </p>
  * <p>
  * Also note that since several other test cases cover the interactions between {@link
@@ -360,8 +368,8 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
                 config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Mandatory);
             }
 
-            LOG.info("Unique secret key used for continuator test (base64, cipher: {}): [{}]",
-                     cipherDetails,
+            LOG.info("Secret key used for continuator test (base64, cipher: {}): [{}]",
+                     cipherDetails.getCipherId(),
                      Base64.getEncoder().encodeToString(secretKey.getEncoded()));
         }
 
