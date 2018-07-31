@@ -81,9 +81,8 @@ import static org.testng.Assert.fail;
  * <li>https.proxyHost</li>
  * <li>https.proxyPort</li>
  * </ul>
- * Assuming the proxy is running locally, these values can be set either programmatically with {@link
- * System#setProperty(String, String)} or using the {@code -D} flag when starting the JVM. For example, this test can be
- * invoked with Maven using the following command line:
+ * Assuming the proxy is running locally, these values can be set either programmatically with using the {@code -D} flag
+ * when starting the JVM. For example, this test can be invoked with Maven using the following command line:
  * <code>mvn verify -DfailIfNoTests=false -Dtest=ApacheHttpGetResponseEntityContentContinuatorIT
  * -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=8888 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=8888</code> or to run
  * a single test case:
