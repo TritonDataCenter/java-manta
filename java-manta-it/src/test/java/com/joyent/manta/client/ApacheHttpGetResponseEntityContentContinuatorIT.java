@@ -81,14 +81,16 @@ import static org.testng.Assert.fail;
  * <li>https.proxyHost</li>
  * <li>https.proxyPort</li>
  * </ul>
- * Assuming the proxy is running locally, these values can be set either programmatically with using the {@code -D} flag
- * when starting the JVM. For example, this test can be invoked with Maven using the following command line:
+ * Assuming the proxy is running locally, these values can be set using the {@code -D} flag when starting the JVM. For
+ * example, this test can be invoked with Maven using the following command line:
  * <code>mvn verify -DfailIfNoTests=false -Dtest=ApacheHttpGetResponseEntityContentContinuatorIT
  * -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=8888 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=8888</code> or to run
  * a single test case:
  * <code>mvn verify -DfailIfNoTests=false -Dtest=ApacheHttpGetResponseEntityContentContinuatorIT#regularObjectDownloadUnencrypted
  * -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=8888 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=8888</code>
  * </p>
+ * <p>Remember to also pass system properties for client configuration (manta.username/etc.) or set the values in the
+ * environment (MANTA_USERNAME/etc).</p>
  * <p>
  * Also note that since several other test cases cover the interactions between {@link
  * com.joyent.manta.util.InputStreamContinuator} and {@link com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream}
