@@ -16,8 +16,8 @@ import com.joyent.manta.client.crypto.EncryptionContext;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.exception.MantaMultipartException;
 import com.joyent.manta.http.EncryptionHttpHelper;
+import com.joyent.manta.http.HttpContextRetryCancellation;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.http.MantaHttpRequestRetryHandler;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
@@ -389,7 +389,7 @@ public class EncryptedMultipartManager
         } else {
             ctx = new BasicHttpContext();
         }
-        ctx.setAttribute(MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
+        ctx.setAttribute(HttpContextRetryCancellation.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE, true);
         return ctx;
     }
 

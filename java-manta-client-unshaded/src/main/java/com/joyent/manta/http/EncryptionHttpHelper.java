@@ -144,7 +144,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
                                 final MantaHttpRequestFactory requestFactory,
                                 final ConfigContext config) {
-        super(connectionContext, requestFactory, config);
+        super(connectionContext,
+                requestFactory,
+                ObjectUtils.firstNonNull(
+                        config.verifyUploads(),
+                        DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
+                ObjectUtils.firstNonNull(
+                        config.downloadContinuations(),
+                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATIONS));
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");

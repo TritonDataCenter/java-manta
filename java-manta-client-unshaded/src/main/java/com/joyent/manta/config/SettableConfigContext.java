@@ -181,6 +181,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setSkipDirectoryDepth(Integer depth);
 
     /**
+     * Sets whether download continuation is enabled.
+     *
+     * @param continuation whether to enable download continuation
+     * @return the current instance of {@link T}
+     */
+    T setDownloadContinuations(Integer continuation);
+
+    /**
      * Sets the method used to report metrics (or disable them entirely).
      *
      * @param metricReporterMode metric reporting mode

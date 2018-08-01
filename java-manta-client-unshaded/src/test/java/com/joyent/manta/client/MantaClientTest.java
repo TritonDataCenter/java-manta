@@ -60,7 +60,7 @@ public class MantaClientTest {
 
     public void deleteWithHeadersPassesAlongHeaders() throws IOException {
         final HttpHelper helper = mock(HttpHelper.class);
-        final MantaClient client = new MantaClient(new TestConfigContext(), null, helper);
+        final MantaClient client = new MantaClient(new TestConfigContext(), null, helper, null);
         final MantaHttpHeaders hdrs = new MantaHttpHeaders();
         final String etag = "magic";
         hdrs.setIfMatch(etag);

@@ -22,6 +22,8 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
+
 /**
  * {@link com.joyent.manta.config.ConfigContext} implementation that loads
  * configuration parameters in an order that makes sense for unit testing
@@ -37,7 +39,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setRetries(DEFAULT_CONFIG.getRetries())
                 .setHttpsProtocols(DEFAULT_CONFIG.getHttpsProtocols())
                 .setHttpsCipherSuites(DEFAULT_CONFIG.getHttpsCipherSuites())
-                .setMantaURL("http://localhost")
+                .setMantaURL(UNIT_TEST_URL)
                 .setMantaUser("username")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
                 .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY)

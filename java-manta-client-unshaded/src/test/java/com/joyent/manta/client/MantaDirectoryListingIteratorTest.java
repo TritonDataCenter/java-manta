@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static com.joyent.manta.client.MantaDirectoryListingIterator.MAX_RESULTS;
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -51,8 +52,7 @@ public class MantaDirectoryListingIteratorTest {
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        String url = "http://localhost";
-        MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(url);
+        MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(UNIT_TEST_URL);
 
         when(httpHelper.getRequestFactory()).thenReturn(requestFactory);
         when(httpHelper.executeRequest(any(), any())).thenReturn(response);

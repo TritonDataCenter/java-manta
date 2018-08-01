@@ -1062,11 +1062,16 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * end of a file (unlimited), then the end value will be set to null.
      * Likewise, if the start position is unknown, it will be set to null.
      *
+     * This method may eventually be deprecated in favor of {@link HttpRange#parseRequestRange(String)} but
+     * that refactoring is being deferred.
+     *
      * @return two value array containing the start and the end of a byte range as Long
+     *
+     * @see HttpRange#parseRequestRange(String)
      */
     public Long[] getByteRange() {
         final String rangeString = getRange();
-        Validate.notNull(rangeString, "Range HTTP must not be null");
+        Validate.notNull(rangeString, "Range value must not be null");
         String[] rangeValuesStrings = StringUtils.split(rangeString, "bytes=");
         Validate.isTrue(rangeValuesStrings.length == 1,
                 "Range header value doesn't begin with string: bytes=");

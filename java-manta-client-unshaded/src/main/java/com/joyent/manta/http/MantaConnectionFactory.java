@@ -17,6 +17,8 @@ import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpHost;
+import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.client.ServiceUnavailableRetryStrategy;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.Registry;
@@ -42,6 +44,7 @@ import org.apache.http.impl.io.DefaultHttpResponseParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.DynamicMBean;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -51,13 +54,12 @@ import java.net.URI;
 import java.security.KeyPair;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.management.DynamicMBean;
 
 /**
  * Factory class that creates instances of
  * {@link org.apache.http.client.HttpClient} configured for use with
  * HTTP signature based authentication.
- *
+ * <p>
  * Note: This class used to contain convenience methods for building
  * {@link org.apache.http.client.methods.HttpUriRequest} objects, those have been moved
  * to {@link MantaHttpRequestFactory}.
@@ -65,7 +67,7 @@ import javax.management.DynamicMBean;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class MantaConnectionFactory implements Closeable, MantaMBeanable {
+public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryConfigAware {
     /**
      * Logger instance.
      */
@@ -101,11 +103,21 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     private final HttpClientConnectionManager connectionManager;
 
     /**
+     * The retry handler used to handle transport errors during requests if automatic retries are enabled, or null.
+     */
+    private final HttpRequestRetryHandler retryHandler;
+
+    /**
+     * The retry handler used to handle 5xx errors during requests if automatic retries are enabled, or null.
+     */
+    private final ServiceUnavailableRetryStrategy serviceUnavailableRetryStrategy;
+
+    /**
      * Create new instance using the passed configuration.
      *
-     * @param config  configuration of the connection parameters
+     * @param config configuration of the connection parameters
      * @param keyPair cryptographic signing key pair used for HTTP signatures
-     * @param signer  Signer configured to use the given keyPair
+     * @param signer Signer configured to use the given keyPair
      */
     @Deprecated
     public MantaConnectionFactory(final ConfigContext config,
@@ -117,9 +129,9 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create a new instance based on a shared {@link HttpClientBuilder} and {@link HttpClientConnectionManager}.
      *
-     * @param config                        configuration of the connection parameters
-     * @param keyPair                       cryptographic signing key pair used for HTTP signatures
-     * @param signer                        Signer configured to use the given keyPair
+     * @param config configuration of the connection parameters
+     * @param keyPair cryptographic signing key pair used for HTTP signatures
+     * @param signer Signer configured to use the given keyPair
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
     @Deprecated
@@ -142,7 +154,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config                        configuration of the connection parameters
+     * @param config configuration of the connection parameters
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
      */
     public MantaConnectionFactory(final ConfigContext config,
@@ -153,9 +165,9 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     /**
      * Create new instance using the passed configuration.
      *
-     * @param config                        configuration of the connection parameters
+     * @param config configuration of the connection parameters
      * @param connectionFactoryConfigurator existing HttpClient objects to reuse
-     * @param metricConfig                  potentially-null configuration for tracking client metrics
+     * @param metricConfig potentially-null configuration for tracking client metrics
      */
     public MantaConnectionFactory(final ConfigContext config,
                                   final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
@@ -170,7 +182,28 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             this.httpClientBuilder = createStandardBuilder(metricConfig);
         }
 
-        configureHttpClientBuilderDefaults(metricConfig);
+        // Manta does not generally return redirects, but let's be safe and disable them in the client
+        this.httpClientBuilder.disableRedirectHandling();
+
+        if (config.getRetries() > 0) {
+            this.retryHandler = new MantaHttpRequestRetryHandler(config.getRetries(), metricConfig);
+            this.serviceUnavailableRetryStrategy = new MantaServiceUnavailableRetryStrategy(config.getRetries());
+
+            this.httpClientBuilder.setRetryHandler(this.retryHandler);
+            this.httpClientBuilder.setServiceUnavailableRetryStrategy(this.serviceUnavailableRetryStrategy);
+        } else {
+            LOGGER.info("Retry of failed requests is disabled");
+            this.retryHandler = null;
+            this.serviceUnavailableRetryStrategy = null;
+
+            this.httpClientBuilder.disableAutomaticRetries();
+        }
+
+        // attach the connection manager if it was created by us
+        // users providing a custom HttpClientBuilder are expected to wire this up themselves
+        if (this.connectionManager != null) {
+            this.httpClientBuilder.setConnectionManager(this.connectionManager);
+        }
     }
 
     /**
@@ -329,27 +362,6 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
     }
 
     /**
-     * Apply required configuration to an HttpClientBuilder that may have been created by us or provided externally.
-     *
-     * @param metricConfig potentially-null configuration for tracking client metrics
-     */
-    private void configureHttpClientBuilderDefaults(final MantaClientMetricConfiguration metricConfig) {
-        if (config.getRetries() > 0) {
-            httpClientBuilder.setRetryHandler(new MantaHttpRequestRetryHandler(config.getRetries(), metricConfig));
-            httpClientBuilder.setServiceUnavailableRetryStrategy(new MantaServiceUnavailableRetryStrategy(config));
-        } else {
-            LOGGER.info("Retry of failed requests is disabled");
-            httpClientBuilder.disableAutomaticRetries();
-        }
-
-        // attach the connection manager if it was created by us
-        // users providing a custom HttpClientBuilder are expected to wire this up themselves
-        if (this.connectionManager != null) {
-            httpClientBuilder.setConnectionManager(this.connectionManager);
-        }
-    }
-
-    /**
      * Finds the host of the proxy server that was configured as part of the
      * JVM settings.
      *
@@ -380,7 +392,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
             } else {
                 String msg = String.format(
                         "Expecting proxy to be instance of InetSocketAddress. "
-                        + " Actually: %s", proxy.address());
+                                + " Actually: %s", proxy.address());
                 throw new ConfigurationException(msg);
             }
         } else {
@@ -405,6 +417,17 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable {
         }
 
         return new PoolStatsMBean((PoolingHttpClientConnectionManager) connectionManager);
+    }
+
+    @Override
+    public boolean isRetryEnabled() {
+        return ObjectUtils.allNotNull(this.retryHandler, this.serviceUnavailableRetryStrategy);
+    }
+
+    @Override
+    public boolean isRetryCancellable() {
+        return this.retryHandler instanceof HttpContextRetryCancellation
+                && this.serviceUnavailableRetryStrategy instanceof HttpContextRetryCancellation;
     }
 
     @Override

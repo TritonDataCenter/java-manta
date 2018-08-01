@@ -114,6 +114,16 @@ public class DefaultsConfigContext implements ConfigContext {
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
 
+    /**
+     * The explicit "off" value for download continuations.
+     */
+    public static final int DOWNLOAD_CONTINUATIONS_DISABLED = 0;
+
+    /**
+     * Download continuation is disabled by default.
+     */
+    public static final int DEFAULT_DOWNLOAD_CONTINUATIONS = DOWNLOAD_CONTINUATIONS_DISABLED;
+
     static {
         // Don't even bother setting a default key path if it doesn't exist
         String defaultKeyPath = String.format("%s/.ssh/id_rsa",
@@ -232,6 +242,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getSkipDirectoryDepth() {
         return null;
+    }
+
+    @Override
+    public Integer downloadContinuations() {
+        return DEFAULT_DOWNLOAD_CONTINUATIONS;
     }
 
     @Override

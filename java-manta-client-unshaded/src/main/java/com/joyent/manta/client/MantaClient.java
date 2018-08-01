@@ -113,6 +113,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaClient implements AutoCloseable {
+
     /**
      * Directory separator used in Manta.
      */
@@ -205,7 +206,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaClient(final ConfigContext config,
                        final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
-        this(config, connectionFactoryConfigurator, null);
+        this(config, connectionFactoryConfigurator, null, null);
     }
 
     /**
@@ -224,7 +225,8 @@ public class MantaClient implements AutoCloseable {
      */
     MantaClient(final ConfigContext config,
                 final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
-                final HttpHelper httpHelper) {
+                final HttpHelper httpHelper,
+                final MantaClientMetricConfiguration metricConfiguration) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
@@ -241,7 +243,9 @@ public class MantaClient implements AutoCloseable {
                 && !this.config.getMetricReporterMode().equals(MetricReporterMode.DISABLED);
 
         final MantaClientMetricConfiguration metricConfig;
-        if (metricsEnabled) {
+        if (metricConfiguration != null) {
+            metricConfig = metricConfiguration;
+        } else if (metricsEnabled) {
             metricConfig = new MantaClientMetricConfiguration(
                     this.clientId,
                     new MetricRegistry(),
@@ -256,7 +260,11 @@ public class MantaClient implements AutoCloseable {
                 connectionFactoryConfigurator,
                 metricConfig);
 
-        final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
+        final MantaApacheHttpClientContext connectionContext =
+                new MantaApacheHttpClientContext(
+                        connectionFactory,
+                        metricConfig);
+
         final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
 
         if (httpHelper != null) {
@@ -264,7 +272,11 @@ public class MantaClient implements AutoCloseable {
         } else if (BooleanUtils.isTrue(this.config.isClientEncryptionEnabled())) {
             this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
         } else {
-            this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
+            this.httpHelper = new StandardHttpHelper(
+                    connectionContext,
+                    requestFactory,
+                    config.verifyUploads(),
+                    config.downloadContinuations());
         }
 
         if (metricConfig != null) {

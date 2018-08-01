@@ -11,7 +11,7 @@ public class UnitTestConstants {
 
     public static final String UNIT_TEST_URL = "http://localhost";
 
-    /* Key used just for unit tests, not tied to any real Manta account */
+    /* Key used just for unit tests, not tied to anything. In case it isn't obvious, DON'T USE IT FOR ANYTHING */
     public static final String PRIVATE_KEY = "-----BEGIN RSA PRIVATE KEY-----\n" +
         "MIIEpQIBAAKCAQEA1lPONrT34W2VPlltA76E2JUX/8+Et7PiMiRNWAyrATLG7aRA\n" +
         "8iZ5A8o/aQMyexp+xgXoJIh18LmJ1iV8zqnr4TPXD2iPO92fyHWPu6P+qn0uw2Hu\n" +

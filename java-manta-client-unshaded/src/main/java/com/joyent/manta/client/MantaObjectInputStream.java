@@ -19,14 +19,14 @@ import java.io.InputStream;
 import java.util.Date;
 
 /**
- * {@link InputStream} implementation that wraps the input stream provided
- * from {@link MantaClient} and implements {@link MantaObject} so that you
- * can obtain metadata information.
+ * {@link InputStream} implementation that wraps the input stream provided from {@link MantaClient} and implements
+ * {@link MantaObject} so that you can obtain metadata information.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject,
         AutoCloseable {
+
     private static final long serialVersionUID = -4692104903008485259L;
 
     /**
@@ -50,24 +50,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     private final transient CloseableHttpResponse httpResponse;
 
     /**
-     * Create a new instance from the results of a GET HTTP call to the
-     * Manta API.
-     *
-     * @param response Metadata object built from request
-     * @param httpResponse Response object created
-     * @param backingStream Underlying stream being wrapped
-     */
-    public MantaObjectInputStream(final MantaObjectResponse response,
-                                  final CloseableHttpResponse httpResponse,
-                                  final EofSensorInputStream backingStream) {
-        this.backingStream = backingStream;
-        this.response = response;
-        this.httpResponse = httpResponse;
-    }
-
-    /**
-     * Create a new instance from the results of a GET HTTP call to the
-     * Manta API.
+     * Create a new instance from the results of a GET HTTP call to the Manta API.
      *
      * @param response Metadata object built from request
      * @param httpResponse Response object created
@@ -83,13 +66,11 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
 
     /**
      * Creates a new instance based on an existing instance.
+     *
      * @param copy instance to copy properties from
      */
-    @SuppressWarnings("unchecked")
     protected MantaObjectInputStream(final MantaObjectInputStream copy) {
-        this.backingStream = (EofSensorInputStream)copy.getBackingStream();
-        this.response = copy.response;
-        this.httpResponse = copy.httpResponse;
+        this(copy.response, copy.httpResponse, copy.backingStream);
     }
 
     @Override
@@ -243,10 +224,8 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
      */
     @Deprecated
     public void abortConnection() throws IOException {
-        final Class<?> backingStreamClass = backingStream.getClass();
-
-        if (backingStreamClass.equals(EofSensorInputStream.class)) {
-            ((EofSensorInputStream)backingStream).abortConnection();
+        if (backingStream instanceof EofSensorInputStream) {
+            ((EofSensorInputStream) backingStream).abortConnection();
             IOUtils.closeQuietly(httpResponse);
         } else {
             close();

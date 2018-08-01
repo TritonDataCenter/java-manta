@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
 import static org.apache.http.HttpHeaders.IF_MATCH;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CREATED;
@@ -65,7 +66,7 @@ public class StandardHttpHelperTest {
     @BeforeMethod
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
-        config = new StandardConfigContext().setMantaURL("http://localhost");
+        config = new StandardConfigContext().setMantaURL(UNIT_TEST_URL);
         reset(client, response, connCtx, statusLine);
 
         when(connCtx.getHttpClient())
