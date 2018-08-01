@@ -113,6 +113,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaClient implements AutoCloseable {
+
     /**
      * Directory separator used in Manta.
      */
