@@ -15,6 +15,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
     [retries](https://github.com/joyent/java-manta/issues/410).
     - [Timers](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) per HTTP request method.
     - [Meters](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) per exception that occurs during requests.
+ - [`MantaClient#delete(String, MantaHttpHeaders)`](https://github.com/joyent/java-manta/issues/427)
 
 ### Changed
  - MBeans registered in JMX no longer use an incrementing integer and instead are created under

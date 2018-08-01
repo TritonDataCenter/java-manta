@@ -61,6 +61,9 @@ import static com.joyent.manta.config.DefaultsConfigContext.DOWNLOAD_CONTINUATIO
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadRequestFingerprint;
 import static com.joyent.manta.http.ApacheHttpHeaderUtils.extractDownloadResponseFingerprint;
 import static com.joyent.manta.http.HttpDownloadContinuationMarker.validateInitialExchange;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.apache.http.HttpStatus.SC_NO_CONTENT;
+import static org.apache.http.HttpStatus.SC_OK;
 
 /**
  * Helper class used for common HTTP operations against the Manta server.
@@ -219,13 +222,39 @@ public class StandardHttpHelper implements HttpHelper {
 
     @Override
     public HttpResponse httpDelete(final String path) throws IOException {
+        return this.httpDelete(path, null);
+    }
+
+    @Override
+    public HttpResponse httpDelete(final String path,
+                                   final MantaHttpHeaders headers) throws IOException {
         Validate.notNull(path, "Path must not be null");
 
         LOGGER.debug("DELETE {}", path);
 
         final HttpDelete delete = requestFactory.delete(path);
-        return executeAndCloseRequest(delete, "DELETE {} response [{}] {} ");
+        if (headers != null) {
+            MantaHttpRequestFactory.addHeaders(delete, headers.asApacheHttpHeaders());
+        }
+
+        final CloseableHttpResponse response = executeAndCloseRequest(delete, "DELETE {} response [{}] {} ");
+        final int code = response.getStatusLine().getStatusCode();
+
+        // any of the following are valid response codes for DELETE
+        // though manta currently only returns SC_NO_CONTENT (204)
+        // general error response codes (>=400) like SC_PRECONDITION_FAILED are validated by executeAndCloseRequest
+        if (code != SC_OK
+                && code != SC_ACCEPTED
+                && code != SC_NO_CONTENT) {
+            throw new MantaClientHttpResponseException(delete,
+                                                       response,
+                                                       path,
+                                                       SC_OK, SC_ACCEPTED, SC_NO_CONTENT);
+        }
+
+        return response;
     }
+
 
     @Override
     public HttpResponse httpPost(final String path) throws IOException {
