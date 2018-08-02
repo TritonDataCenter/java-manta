@@ -139,7 +139,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.timeout` ( **MANTA_TIMEOUT**)
     The number of milliseconds to wait after a request was made to Manta before failing.
 * `manta.retries` ( **MANTA_HTTP_RETRIES**)
-    The number of times to retry failed HTTP requests.
+    The number of times to retry failed HTTP requests. Setting this value to zero disables retries completely.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
     The maximum number of open HTTP connections to the Manta API.
 * `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
