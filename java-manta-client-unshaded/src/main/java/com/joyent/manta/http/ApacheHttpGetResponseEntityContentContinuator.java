@@ -232,10 +232,15 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                     ex);
         }
 
-        LOG.debug("Attempting to build a continuation for request {} to recover at byte offset {} from exception {}",
+        LOG.debug("Attempting to build a continuation for "
+                          + "[{}] request "
+                          + "to path [{}] "
+                          + "to recover at byte offset {} "
+                          + "from exception {}",
+                  this.request.getMethod(),
                   this.request.getRequestLine(),
                   bytesRead,
-                  ex);
+                  ex.getMessage());
 
         // if an IOException occurs while reading EOF the user may ask us for a continuation
         // starting after the last valid byte.
