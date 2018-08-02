@@ -143,8 +143,10 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
 
         final InputStream wrapped = this.getWrapped();
 
-        if (wrapped != null) {
-            wrapped.close();
+        if (wrapped == null) {
+            return;
         }
+
+        wrapped.close();
     }
 }
