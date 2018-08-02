@@ -238,7 +238,7 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                           + "to recover at byte offset {} "
                           + "from exception {}",
                   this.request.getMethod(),
-                  this.request.getRequestLine(),
+                  this.request.getRequestLine().getUri(),
                   bytesRead,
                   ex.getMessage());
 
