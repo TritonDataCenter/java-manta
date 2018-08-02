@@ -57,12 +57,17 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
      * continuing
      */
     private void attemptRecovery(final IOException originalIOException) throws IOException {
-        final InputStream continuation;
         try {
-            continuation = this.continuator.buildContinuation(originalIOException, this.getBytesRead());
-            super.continueWith(continuation);
+            super.continueWith(this.continuator.buildContinuation(originalIOException, this.getBytesRead()));
         } catch (final IOException ioe) {
             LOG.debug("Failed to automatically recover: {}", ioe.getMessage());
+
+            // if a different exception was thrown while recovering, add it as a suppressed exception
+            if (originalIOException != ioe) {
+                originalIOException.addSuppressed(ioe);
+            }
+
+            // rethrow the original exception
             throw originalIOException;
         }
     }
