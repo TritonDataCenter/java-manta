@@ -93,10 +93,13 @@ public class ContinuingInputStream extends InputStream {
             throw new IllegalStateException("Stream is closed, refusing to set new source");
         }
 
-        // QUESTION: is the following useful? it signals that the caller has probably done something silly
-        // if (this.wrapped == next) {
-        //     throw new IllegalArgumentException("Current and next stream are the same");
-        // }
+        if (this.wrapped == next) {
+            throw new IllegalArgumentException("Current and next stream are the same");
+        }
+
+        if (this.wrapped != null) {
+            this.closeAndDiscardWrapped();
+        }
 
         this.wrapped = next;
     }
@@ -118,20 +121,15 @@ public class ContinuingInputStream extends InputStream {
             return EOF;
         }
 
-        try {
-            final int b = this.wrapped.read();
+        final int b = this.wrapped.read();
 
-            if (b != EOF) {
-                this.bytesRead += b;
-            } else {
-                this.eofSeen = true;
-            }
-
-            return b;
-        } catch (final IOException ioe) {
-            discardWrapped();
-            throw ioe;
+        if (b != EOF) {
+            this.bytesRead += b;
+        } else {
+            this.eofSeen = true;
         }
+
+        return b;
     }
 
     @Override
@@ -142,20 +140,15 @@ public class ContinuingInputStream extends InputStream {
             return EOF;
         }
 
-        try {
-            final int n = this.wrapped.read(b);
+        final int n = this.wrapped.read(b);
 
-            if (n != EOF) {
-                this.bytesRead += n;
-            } else {
-                this.eofSeen = true;
-            }
-
-            return n;
-        } catch (final IOException ioe) {
-            discardWrapped();
-            throw ioe;
+        if (n != EOF) {
+            this.bytesRead += n;
+        } else {
+            this.eofSeen = true;
         }
+
+        return n;
     }
 
     @Override
@@ -166,50 +159,35 @@ public class ContinuingInputStream extends InputStream {
             return EOF;
         }
 
-        try {
-            final int n = this.wrapped.read(b, off, len);
+        final int n = this.wrapped.read(b, off, len);
 
-            if (n != EOF) {
-                this.bytesRead += n;
-            } else {
-                this.eofSeen = true;
-            }
-
-            return n;
-        } catch (final IOException ioe) {
-            discardWrapped();
-            throw ioe;
+        if (n != EOF) {
+            this.bytesRead += n;
+        } else {
+            this.eofSeen = true;
         }
+
+        return n;
     }
 
     @Override
     public long skip(final long n) throws IOException {
         ensureReady();
 
-        try {
-            final long s = this.wrapped.skip(n);
+        final long s = this.wrapped.skip(n);
 
-            if (0 < s) {
-                this.bytesRead += s;
-            }
-
-            return s;
-        } catch (final IOException ioe) {
-            discardWrapped();
-            throw ioe;
+        if (0 < s) {
+            this.bytesRead += s;
         }
+
+        return s;
     }
 
     @Override
     public int available() throws IOException {
         ensureReady();
 
-        try {
-            return this.wrapped.available();
-        } catch (final IOException ioe) {
-            discardWrapped();
-            throw ioe;
-        }
+        return this.wrapped.available();
     }
 
     @Override
@@ -252,7 +230,7 @@ public class ContinuingInputStream extends InputStream {
     }
 
     @SuppressWarnings("checkstyle:JavadocMethod")
-    private void discardWrapped() {
+    private void closeAndDiscardWrapped() {
         IOUtils.closeQuietly(this.wrapped);
         this.wrapped = null;
     }

@@ -8,6 +8,8 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +27,8 @@ import static java.util.Objects.requireNonNull;
  * @since 3.2.3
  */
 public class AutoContinuingInputStream extends ContinuingInputStream {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AutoContinuingInputStream.class);
 
     /**
      * Produces continuations of the original stream given new byte offsets.
@@ -53,10 +57,12 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
      * continuing
      */
     private void attemptRecovery(final IOException originalIOException) throws IOException {
+        final InputStream continuation;
         try {
-            this.continueWith(this.continuator.buildContinuation(originalIOException, this.getBytesRead()));
-        } catch (final IOException ce) {
-            originalIOException.addSuppressed(ce);
+            continuation = this.continuator.buildContinuation(originalIOException, this.getBytesRead());
+            super.continueWith(continuation);
+        } catch (final IOException ioe) {
+            LOG.debug("Failed to automatically recover: {}", ioe.getMessage());
             throw originalIOException;
         }
     }
@@ -135,6 +141,10 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     public void close() throws IOException {
         IOUtils.closeQuietly(this.continuator);
 
-        this.getWrapped().close();
+        final InputStream wrapped = this.getWrapped();
+
+        if (wrapped != null) {
+            wrapped.close();
+        }
     }
 }
