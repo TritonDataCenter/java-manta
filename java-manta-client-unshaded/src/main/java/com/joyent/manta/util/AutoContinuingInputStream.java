@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -59,7 +60,7 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     private void attemptRecovery(final IOException originalIOException) throws IOException {
         try {
             super.continueWith(this.continuator.buildContinuation(originalIOException, this.getBytesRead()));
-        } catch (final IOException ioe) {
+        } catch (final UncheckedIOException | IOException ioe) {
             LOG.debug("Failed to automatically recover: {}", ioe.getMessage());
 
             // if a different exception was thrown while recovering, add it as a suppressed exception

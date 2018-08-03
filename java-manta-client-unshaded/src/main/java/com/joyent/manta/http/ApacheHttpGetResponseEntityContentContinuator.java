@@ -218,6 +218,8 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      */
     @Override
     public InputStream buildContinuation(final IOException ex, final long bytesRead) throws IOException {
+        requireNonNull(ex);
+
         if (!isRecoverable(ex)) {
             throw ex;
         }
