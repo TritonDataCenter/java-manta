@@ -368,8 +368,6 @@ public class ContinuingInputStreamTest {
         final ContinuingInputStream cis = new ContinuingInputStream(new BrokenInputStream());
 
         assertThrows(IOException.class, () -> cis.available());
-
-        assertThrows(IllegalStateException.class,  () -> cis.read());
     }
 
     public void testSkipCompletelySingleOperation() throws IOException {
@@ -432,8 +430,6 @@ public class ContinuingInputStreamTest {
 
         assertThrows(IOException.class, () -> cis.skip(1));
         assertEquals(cis.getBytesRead(), 0);
-
-        assertThrows(IllegalStateException.class, () -> cis.skip(1));
 
         cis.continueWith(new ByteArrayInputStream(STUB_OBJECT_BYTES));
 
