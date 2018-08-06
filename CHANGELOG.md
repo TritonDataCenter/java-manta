@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.2.3-SNAPSHOT] - Coming soon!
+## [3.2.3] - 2018-08-03
 ### Fixed
  - [UnsupportedOperationException when getting a 0 byte file using `MantaClient.getAsInputStream`](https://github.com/joyent/java-manta/issues/408)
  - [AutoContinuingInputStream fails to handle fatal exceptions correctly and triggers a self-suppression error.](https://github.com/joyent/java-manta/pull/429)
