@@ -242,4 +242,72 @@ public class MantaClientDirectoriesIT {
         }
     }
 
+    
+    
+    /**
+     * This test will create a set of directories, then it will 
+     * set the pruneEmptyParentDepth = -1, meaning it will 
+     * delete all empty directories in the hierarchy.
+     * @throws IOException
+     */
+    @Test
+    public void pruneParentDirectoriesFull() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        // We are going to create a stopping point at the parentDir
+        final String saftey = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.info("CHILD DIR  : " + childDir);
+        LOG.info("Parent DIR : " + parentDir);
+        mantaClient.delete(childDir);
+        PruneEmpytParentDirectoryStrategy.pruneParentDirectories(mantaClient, null, childDir , -1);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(childDir));
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(parentDir));
+    }
+
+    @Test
+    public void pruneParentDirectoryZero() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 2);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        mantaClient.delete(childDir);
+        PruneEmpytParentDirectoryStrategy.pruneParentDirectories(mantaClient, null, childDir , 0);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(childDir));
+        Assert.assertFalse(mantaClient.isDirectoryEmpty(parentDir));
+    }
+
+    @Test
+    public void pruneParentDirectoryOne() throws IOException {
+        // This should stop at 1 parent being deleted
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 3);
+        LOG.info("CHILD DIR  : " + childDir);
+        LOG.info("Parent DIR : " + parentDir);
+        mantaClient.delete(childDir);
+        PruneEmpytParentDirectoryStrategy.pruneParentDirectories(mantaClient, null, childDir , 1);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(childDir));
+        Assert.assertFalse(mantaClient.isDirectoryEmpty(parentDir));
+    }
+
+    /**
+     * This will create a hierarchy of random directories with the starting point of parent with the given depth.
+     * 
+     * @param parent - the directory to create this from.
+     * @param depth - the desired depth from the parent.
+     * @return
+     */
+    private String createRandomDirectory(final String parent, final int depth) throws IOException {
+        final StringBuilder parentDirBuilder = new StringBuilder(parent);
+        for (int i = 0; i < depth; i++) {
+            parentDirBuilder.append(SEPARATOR).append(STRING_GENERATOR.generate(3));
+        }
+        final String dirPath = parentDirBuilder.toString();
+        mantaClient.putDirectory(dirPath, true);
+        return dirPath;
+    }
+
 }

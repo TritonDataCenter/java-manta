@@ -142,6 +142,12 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getSkipDirectoryDepth();
 
     /**
+     * @return the maximum amount of empty parent directories to delete. -1 will delete all empty parent directories 0
+     *         will delete none of them.
+     */
+    Integer getPruneEmptyParentDepth();
+
+    /**
      * Whether unbounded (-1) or bounded (positive integer) download continuations are enabled.
      * @return if download continuation is enabled
      * @see InputStreamContinuator
@@ -248,6 +254,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
         sb.append(", skipDirectoryDepth=").append(context.getSkipDirectoryDepth());
+        sb.append(", pruneEmptyParentDepth=").append(context.getPruneEmptyParentDepth());
         sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
         sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());

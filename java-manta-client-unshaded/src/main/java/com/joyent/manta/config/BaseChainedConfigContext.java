@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,9 +11,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Abstract implementation of {@link ConfigContext} that allows for chaining
- * in default implementations of configuration that are delegate to when
- * we aren't passed a value.
+ * Abstract implementation of {@link ConfigContext} that allows for chaining in default implementations of configuration
+ * that are delegate to when we aren't passed a value.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
@@ -60,8 +59,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Boolean disableNativeSignatures;
 
     /**
-     * Flag indicating if we verify the uploaded file's checksum against the
-     * server's checksum (MD5).
+     * Flag indicating if we verify the uploaded file's checksum against the server's checksum (MD5).
      */
     private volatile Boolean verifyUploads;
 
@@ -111,8 +109,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Integer expectContinueTimeout;
 
     /**
-     * Number of bytes to read into memory for a streaming upload before
-     * deciding if we want to load it in memory before send it.
+     * Number of bytes to read into memory for a streaming upload before deciding if we want to load it in memory before
+     * send it.
      */
     private volatile Integer uploadBufferSize;
 
@@ -120,6 +118,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Number of directories to assume exist when recursively creating directories.
      */
     private volatile Integer skipDirectoryDepth;
+
+    /**
+     * Clean up as many parent directories as possible after deleting an object. This is the greatest number of
+     * directories that will be attempted to be deleted.
+     */
+    private volatile Integer pruneEmptyParentDepth;
 
     /**
      * Whether or not we can attempt to resume a download automatically.
@@ -147,14 +151,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String encryptionKeyId;
 
     /**
-     * The client encryption algorithm name in the format of
-     * <code>cipher/mode/padding state</code>.
+     * The client encryption algorithm name in the format of <code>cipher/mode/padding state</code>.
      */
     private volatile String encryptionAlgorithm;
 
     /**
-     * Flag indicating when downloading unencrypted files is allowed in
-     * encryption mode.
+     * Flag indicating when downloading unencrypted files is allowed in encryption mode.
      */
     private volatile Boolean permitUnencryptedDownloads;
 
@@ -164,8 +166,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile EncryptionAuthenticationMode encryptionAuthenticationMode;
 
     /**
-     * Path to the private encryption key on the filesystem (can't be used if
-     * private key bytes is not null).
+     * Path to the private encryption key on the filesystem (can't be used if private key bytes is not null).
      */
     private volatile String encryptionPrivateKeyPath;
 
@@ -175,26 +176,22 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile byte[] encryptionPrivateKeyBytes;
 
     /**
-     * Flag indicating the the mantaKeyPath has been set only by the defaults.
-     * True = set by defaults.
-     * False = overwritten by non-defaults.
+     * Flag indicating the the mantaKeyPath has been set only by the defaults. True = set by defaults. False =
+     * overwritten by non-defaults.
      */
     private volatile boolean mantaKeyPathSetOnlyByDefaults = false;
 
     /** Singleton instance of default configuration for easy reference. */
-    public static final ConfigContext DEFAULT_CONFIG =
-            new DefaultsConfigContext();
+    public static final ConfigContext DEFAULT_CONFIG = new DefaultsConfigContext();
 
     /**
-     * Constructor that pre-populates configuration context with the default
-     * values.
+     * Constructor that pre-populates configuration context with the default values.
      */
     public BaseChainedConfigContext() {
     }
 
     /**
-     * Constructor that takes a default value for each one of the configuration
-     * values.
+     * Constructor that takes a default value for each one of the configuration values.
      *
      * @param defaultingContext context that provides default values
      */
@@ -298,6 +295,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Integer getPruneEmptyParentDepth() {
+        return this.pruneEmptyParentDepth;
+    }
+
+    @Override
     public Integer downloadContinuations() {
         return this.downloadContinuations;
     }
@@ -359,19 +361,20 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     /**
-     * Overwrites the configuration values with the values of the passed context
-     * if those values are not null and aren't empty.
+     * Overwrites the configuration values with the values of the passed context if those values are not null and aren't
+     * empty.
      *
      * @param context context to overwrite configuration with
      */
     public void overwriteWithContext(final ConfigContext context) {
-        /* If a default context is being used to overwrite after this
-         * context has been initialized, then we want to be careful to not
-         * overwrite values that have already been set by non-default contexts. */
+        /*
+         * If a default context is being used to overwrite after this context has been initialized, then we want to be
+         * careful to not overwrite values that have already been set by non-default contexts.
+         */
         boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
 
         if (isDefaultContext) {
-            overwriteWithDefaultContext((DefaultsConfigContext)context);
+            overwriteWithDefaultContext((DefaultsConfigContext) context);
             return;
         }
 
@@ -414,7 +417,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (context.getMaximumConnections() != null) {
             this.maxConnections = context.getMaximumConnections();
         }
-
         if (isPresent(context.getPrivateKeyContent())) {
             if (isPresent(mantaKeyPath) && !this.mantaKeyPathSetOnlyByDefaults) {
                 String msg = "You can't set both a private key path and private key content";
@@ -423,19 +425,15 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
             this.privateKeyContent = context.getPrivateKeyContent();
         }
-
         if (isPresent(context.getPassword())) {
             this.password = context.getPassword();
         }
-
         if (isPresent(context.getHttpsProtocols())) {
             this.httpsProtocols = context.getHttpsProtocols();
         }
-
         if (isPresent(context.getHttpsCipherSuites())) {
             this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
-
         if (context.noAuth() != null) {
             this.noAuth = context.noAuth();
         }
@@ -470,6 +468,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.getSkipDirectoryDepth() != null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (context.getPruneEmptyParentDepth() != null) {
+            this.pruneEmptyParentDepth = context.getPruneEmptyParentDepth();
         }
 
         if (context.downloadContinuations() != null) {
@@ -596,6 +598,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
+        if (this.pruneEmptyParentDepth == null) {
+            this.pruneEmptyParentDepth = context.getPruneEmptyParentDepth();
+        }
+
         if (this.downloadContinuations == null) {
             this.downloadContinuations = context.downloadContinuations();
         }
@@ -632,14 +638,15 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
         }
 
-        /* Note: we purposely omitted privateKeyContent and
-         * EncryptionPrivateKeyBytes because there are never going to
+        /*
+         * Note: we purposely omitted privateKeyContent and EncryptionPrivateKeyBytes because there are never going to
          * be defaults for those values.
          */
     }
 
     /**
      * Checks to see that a given string is neither empty nor null.
+     *
      * @param string string to check
      * @return true when string is non-null and not empty
      */
@@ -694,8 +701,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public BaseChainedConfigContext setMaximumConnections(final Integer maxConns) {
         if (maxConns < 1) {
-            throw new IllegalArgumentException("Maximum number of connections must "
-                    + "be 1 or greater");
+            throw new IllegalArgumentException("Maximum number of connections must " + "be 1 or greater");
         }
         this.maxConnections = maxConns;
 
@@ -799,6 +805,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setPruneEmptyParentDepth(final Integer depth) {
+        this.pruneEmptyParentDepth = depth;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setDownloadContinuations(final Integer continuation) {
         this.downloadContinuations = continuation;
 
@@ -887,19 +900,14 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         }
 
         BaseChainedConfigContext that = (BaseChainedConfigContext) other;
-        return Objects.equals(mantaURL, that.mantaURL)
-                && Objects.equals(account, that.account)
-                && Objects.equals(mantaKeyId, that.mantaKeyId)
-                && Objects.equals(mantaKeyPath, that.mantaKeyPath)
-                && Objects.equals(timeout, that.timeout)
-                && Objects.equals(retries, that.retries)
+        return Objects.equals(mantaURL, that.mantaURL) && Objects.equals(account, that.account)
+                && Objects.equals(mantaKeyId, that.mantaKeyId) && Objects.equals(mantaKeyPath, that.mantaKeyPath)
+                && Objects.equals(timeout, that.timeout) && Objects.equals(retries, that.retries)
                 && Objects.equals(maxConnections, that.maxConnections)
-                && Objects.equals(privateKeyContent, that.privateKeyContent)
-                && Objects.equals(password, that.password)
+                && Objects.equals(privateKeyContent, that.privateKeyContent) && Objects.equals(password, that.password)
                 && Objects.equals(httpBufferSize, that.httpBufferSize)
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
-                && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
-                && Objects.equals(noAuth, that.noAuth)
+                && Objects.equals(httpsCipherSuites, that.httpsCipherSuites) && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(connectionRequestTimeout, that.connectionRequestTimeout)
@@ -921,18 +929,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
     @Override
     public int hashCode() {
-        return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
-                timeout, retries, maxConnections, privateKeyContent, password,
-                httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
+        return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath, timeout, retries, maxConnections,
+                privateKeyContent, password, httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
                 disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
-                verifyUploads, uploadBufferSize,
-                skipDirectoryDepth,
-                downloadContinuations,
-                metricReporterMode,
-                metricReporterOutputInterval,
-                clientEncryptionEnabled, encryptionKeyId,
-                encryptionAlgorithm, permitUnencryptedDownloads,
-                encryptionAuthenticationMode, encryptionPrivateKeyPath,
+                verifyUploads, uploadBufferSize, skipDirectoryDepth, downloadContinuations, metricReporterMode,
+                metricReporterOutputInterval, clientEncryptionEnabled, encryptionKeyId, encryptionAlgorithm,
+                permitUnencryptedDownloads, encryptionAuthenticationMode, encryptionPrivateKeyPath,
                 Arrays.hashCode(encryptionPrivateKeyBytes));
     }
 

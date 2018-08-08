@@ -181,6 +181,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setSkipDirectoryDepth(Integer depth);
 
     /**
+     * Sets a limit to the number of parent directories deleted, after a delete.
+     *
+     * @param depth directory depth to assume exists
+     * @return the current instance of {@link T}
+     */
+    T setPruneEmptyParentDepth(Integer depth);
+
+    /**
      * Sets whether download continuation is enabled.
      *
      * @param continuation whether to enable download continuation
@@ -348,6 +356,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
             case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
                 config.setSkipDirectoryDepth(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_PRUNE_EMPTY_PARENT_DEPTH_ENV_KEY:
+                config.setPruneEmptyParentDepth(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_METRIC_REPORTER_MODE_KEY:
             case EnvVarConfigContext.MANTA_METRIC_REPORTER_MODE_ENV_KEY:

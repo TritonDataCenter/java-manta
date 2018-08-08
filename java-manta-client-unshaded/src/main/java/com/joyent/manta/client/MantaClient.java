@@ -358,14 +358,29 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException If an IO exception has occurred.
      * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
      */
-    public void delete(final String rawPath,
-                       final MantaHttpHeaders requestHeaders) throws IOException {
+    public void delete(final String rawPath, final MantaHttpHeaders requestHeaders) throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
-
         String path = formatPath(rawPath);
         LOG.debug("DELETE {}", path);
-
         httpHelper.httpDelete(path, requestHeaders);
+        final Integer pruneEmptyParentDepth = config.getPruneEmptyParentDepth();
+        if (pruneEmptyParentDepth != null && 0 != pruneEmptyParentDepth) {
+            PruneEmpytParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneEmptyParentDepth);
+        }
+    }
+
+    /**
+     * Deletes several directories in manta.
+     * @param paths - A list of paths to be deleted.
+     * @param requestHeaders - headers can be null.
+     * @throws IOException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
+     */
+    public void delete(final List<String> paths, final MantaHttpHeaders requestHeaders) throws IOException {
+            for (String curPath: paths) {
+                String path = formatPath(curPath);
+                LOG.debug("DELETE {}", path);
+                httpHelper.httpDelete(path, requestHeaders);
+            }
     }
 
     /**

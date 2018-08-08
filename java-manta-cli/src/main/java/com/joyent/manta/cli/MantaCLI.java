@@ -18,7 +18,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EnvVarConfigContext;
 import com.joyent.manta.config.MapConfigContext;
-import com.joyent.manta.util.MantaUtils;;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;

@@ -125,6 +125,11 @@ public class MapConfigContext implements ConfigContext {
     /**
      * Property key for setting the number of directories to assume exist when creating directories recursively.
      */
+    public static final String MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY = "manta.prune_empty_parent_depth";
+
+    /**
+     * Property key for setting the number of directories to assume exist when creating directories recursively.
+     */
     public static final String MANTA_DOWNLOAD_CONTINUATIONS_KEY = "manta.download_continuations";
 
     /**
@@ -200,6 +205,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_KEY,
             MANTA_SKIP_DIRECTORY_DEPTH_KEY,
+            MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY,
             MANTA_DOWNLOAD_CONTINUATIONS_KEY,
             MANTA_METRIC_REPORTER_MODE_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
@@ -411,6 +417,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY));
+    }
+
+    @Override
+    public Integer getPruneEmptyParentDepth() {
+        final Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY));
     }
 
     @Override
