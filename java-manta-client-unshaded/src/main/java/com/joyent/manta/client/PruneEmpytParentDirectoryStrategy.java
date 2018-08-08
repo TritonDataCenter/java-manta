@@ -43,7 +43,7 @@ final class PruneEmpytParentDirectoryStrategy {
             final String path,
             final int limit) throws IOException {
         int actualLimit = limit;
-        if (actualLimit == -1) {
+        if (actualLimit < 0) {
             actualLimit = path.split(MantaClient.SEPARATOR).length - 1;
         }
         LOG.info("Actual Number : " + actualLimit + " of directories ");
