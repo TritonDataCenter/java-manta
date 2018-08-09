@@ -359,14 +359,7 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
      */
     public void delete(final String rawPath, final MantaHttpHeaders requestHeaders) throws IOException {
-        Validate.notBlank(rawPath, "rawPath must not be blank");
-        String path = formatPath(rawPath);
-        LOG.debug("DELETE {}", path);
-        httpHelper.httpDelete(path, requestHeaders);
-        final Integer pruneEmptyParentDepth = config.getPruneEmptyParentDepth();
-        if (pruneEmptyParentDepth != null && 0 != pruneEmptyParentDepth) {
-            PruneEmpytParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneEmptyParentDepth);
-        }
+        delete(rawPath, requestHeaders, config.getPruneEmptyParentDepth());
     }
 
     /**
@@ -375,13 +368,17 @@ public class MantaClient implements AutoCloseable {
      * @param requestHeaders - headers can be null.
      * @throws IOException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
      */
-    public void delete(final List<String> paths, final MantaHttpHeaders requestHeaders) throws IOException {
-            for (String curPath: paths) {
-                String path = formatPath(curPath);
-                LOG.debug("DELETE {}", path);
-                httpHelper.httpDelete(path, requestHeaders);
-            }
-    }
+    void delete(final String rawPath, final MantaHttpHeaders requestHeaders, final Integer pruneDepth)
+            throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+        String path = formatPath(rawPath);
+        if (pruneDepth == null) {
+            LOG.debug("DELETE {}", path);
+            httpHelper.httpDelete(path, requestHeaders);
+        } else {
+            PruneEmpytParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
+        }
+   }
 
     /**
      * Recursively deletes an object in Manta.

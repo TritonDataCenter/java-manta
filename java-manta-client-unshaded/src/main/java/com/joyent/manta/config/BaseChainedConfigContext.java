@@ -122,8 +122,9 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Integer skipDirectoryDepth;
 
     /**
-     * Clean up as many parent directories as possible after deleting an object. This is the greatest number of
-     * directories that will be attempted to be deleted.
+     * Clean up as many parent directories as possible after deleting an object.
+     * This is the greatest number of directories that will be attempted
+     * to be deleted.
      */
     private volatile Integer pruneEmptyParentDepth;
 
@@ -514,15 +515,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (context.getEncryptionAuthenticationMode() != null) {
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
-
         if (context.getEncryptionPrivateKeyPath() != null) {
             this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
         }
-
         if (context.getEncryptionPrivateKeyBytes() != null) {
             this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
         }
-
         if (context.permitUnencryptedDownloads() != null) {
             this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
         }

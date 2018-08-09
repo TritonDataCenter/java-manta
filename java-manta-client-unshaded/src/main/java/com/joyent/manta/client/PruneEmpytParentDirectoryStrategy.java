@@ -8,7 +8,6 @@
 package com.joyent.manta.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +19,17 @@ import com.joyent.manta.http.MantaHttpHeaders;
 /**
  * Utility class for recursive directory creation strategies.
  *
- * @author <a href="hhttps://github.com/douglasAtJoyent">Tomas Celayac</a>
+ * @author <a href="https://github.com/douglasAtJoyent">Douglas Anderson</a>
  * @since 3.2.4
  */
 final class PruneEmpytParentDirectoryStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(PruneEmpytParentDirectoryStrategy.class);
+
+    /**
+     * Pass this if you want to prune all parent directories.
+     */
+    public static final Integer PRUNE_ALL_PARENTS = -1;
 
     private PruneEmpytParentDirectoryStrategy() {
     }
@@ -42,24 +46,21 @@ final class PruneEmpytParentDirectoryStrategy {
             final MantaHttpHeaders headers,
             final String path,
             final int limit) throws IOException {
+        // First thing first, delete the child directory.
+        client.delete(path, headers, null);
+
         int actualLimit = limit;
-        if (actualLimit < 0) {
+        if (actualLimit == PRUNE_ALL_PARENTS) {
             actualLimit = path.split(MantaClient.SEPARATOR).length - 1;
         }
-        LOG.info("Actual Number : " + actualLimit + " of directories ");
-        String curPath = path;
-        // We are going to walk backward
-        ArrayList<String> dirs = new ArrayList<String>();
-
+        LOG.debug("Actual Number : " + actualLimit + " of directories");
         // I am generating all of the possible paths first, then we will delete them.
-        String parent = curPath;
-        for (int i = 0; i < actualLimit; i++) {
-            parent = parent.substring(0, parent.lastIndexOf("/"));
-            dirs.add(parent);
-        }
+        String parent = path;
         try {
-            LOG.info("Number of DIRECTORIES : " + dirs.size() + " of directories ");
-            client.delete(dirs, headers);
+            for (int i = 0; i < actualLimit; i++) {
+                parent = parent.substring(0, parent.lastIndexOf("/"));
+                client.delete(parent, headers, null);
+            }
         } catch (MantaClientHttpResponseException responseException) {
             if (responseException.getServerCode() != MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR) {
                 throw responseException;
