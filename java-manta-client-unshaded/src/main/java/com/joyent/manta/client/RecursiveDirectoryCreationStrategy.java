@@ -20,8 +20,8 @@ import static com.joyent.manta.util.MantaUtils.writeablePrefixPaths;
 /**
  * Utility class for recursive directory creation strategies.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
- * @since 3.1.7
+ * @author <a href="hhttps://github.com/douglasAtJoyent">Douglas Anderson</a>
+ * @since 3.2.4
  */
 final class RecursiveDirectoryCreationStrategy {
 
