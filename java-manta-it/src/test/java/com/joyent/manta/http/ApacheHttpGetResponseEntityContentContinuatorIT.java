@@ -1,8 +1,9 @@
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
@@ -13,8 +14,6 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.config.MetricReporterMode;
-import com.joyent.manta.http.HttpRange;
-import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -392,7 +391,6 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         }
 
         final MantaClient mantaClient = new MantaClient(config,
-                                                        null,
                                                         null,
                                                         metricConfig);
 

@@ -8,9 +8,12 @@
 package com.joyent.manta.util;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -25,6 +28,8 @@ import static java.util.Objects.requireNonNull;
  * @since 3.2.3
  */
 public class AutoContinuingInputStream extends ContinuingInputStream {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AutoContinuingInputStream.class);
 
     /**
      * Produces continuations of the original stream given new byte offsets.
@@ -54,9 +59,16 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
      */
     private void attemptRecovery(final IOException originalIOException) throws IOException {
         try {
-            this.continueWith(this.continuator.buildContinuation(originalIOException, this.getBytesRead()));
-        } catch (final IOException ce) {
-            originalIOException.addSuppressed(ce);
+            super.continueWith(this.continuator.buildContinuation(originalIOException, this.getBytesRead()));
+        } catch (final UncheckedIOException | IOException ioe) {
+            LOG.debug("Failed to automatically recover: {}", ioe.getMessage());
+
+            // if a different exception was thrown while recovering, add it as a suppressed exception
+            if (originalIOException != ioe) {
+                originalIOException.addSuppressed(ioe);
+            }
+
+            // rethrow the original exception
             throw originalIOException;
         }
     }
@@ -135,6 +147,12 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     public void close() throws IOException {
         IOUtils.closeQuietly(this.continuator);
 
-        this.getWrapped().close();
+        final InputStream wrapped = this.getWrapped();
+
+        if (wrapped == null) {
+            return;
+        }
+
+        wrapped.close();
     }
 }

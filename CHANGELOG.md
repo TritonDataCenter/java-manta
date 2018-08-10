@@ -2,9 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.2.3-SNAPSHOT] - Coming soon!
+## [3.2.3] - 2018-08-03
 ### Fixed
  - [UnsupportedOperationException when getting a 0 byte file using `MantaClient.getAsInputStream`](https://github.com/joyent/java-manta/issues/408)
+ - [AutoContinuingInputStream fails to handle fatal exceptions correctly and triggers a self-suppression error.](https://github.com/joyent/java-manta/pull/429)
 
 ### Added
  - Client metrics can now be enabled by selecting a reporting mode with the
@@ -16,6 +17,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
     - [Timers](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) per HTTP request method.
     - [Meters](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) per exception that occurs during requests.
  - [`MantaClient#delete(String, MantaHttpHeaders)`](https://github.com/joyent/java-manta/issues/427)
+ - [Download auto-resume](https://github.com/joyent/java-manta/issues/411) has been added in the form of
+    [`manta.download_continuations`/`MANTA_DOWNLOAD_CONTINUATIONS` configuration
+    setting](https://github.com/joyent/java-manta/blob/master/USAGE.md#download-continuation).
 
 ### Changed
  - MBeans registered in JMX no longer use an incrementing integer and instead are created under
