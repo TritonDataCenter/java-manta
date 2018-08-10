@@ -100,6 +100,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
 | manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
+| manta.prune_empty_parent_depth     | MANTA_PRUNE_EMPTY_PARENT_DEPTH |                                     |                          |
 | manta.download_continuations       | MANTA_DOWNLOAD_CONTINUATIONS   | 0                                    |                          |
 | manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
 | manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
@@ -168,6 +169,10 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
     Integer indicating the number of **non-system** directory levels to attempt to skip for recursive `putDirectory`
     operation (i.e. `/$MANTA_USER` and `/$MANTA_USER/stor` would not be counted). A detailed explanation and example are provided [later in this document](/USAGE.md#skipping-directories)
+* `manta.prune_empty_parent_depth` (**MANTA_PRUNE_EMPTY_PARENT_DEPTH**)
+    Integer indicating the maximum number of empty parent directories to prune. If the client is given the value of -1 then the client will try and delete
+    all empty parent directories.
+    USAGE.md#Pruning empty parent directories)
 * `manta.download_continuations` (**MANTA_DOWNLOAD_CONTINUATIONS**)
     Nullable Integer property for enabling the [download continuation](#download-continuation) "optimization."
     A value of 0 explicitly disabled this feature, a value of `-1` enables unlimited continuations, a positive value
@@ -536,6 +541,29 @@ In order to ease migration from other object stores which do not treat directori
     - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
 \* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
+
+### Pruning empty parent directories
+
+When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to `-1` or a positive value, when deleting an object in Manta, either a file or a directory, the client will attempt to delete parent directories that are empty. If a positive integer is supplied the client will only try to delete up to the number supplied. If -1 is given the client will try to delete in the path until it finds a directory that it can not delete. 
+
+#### Scenario 1 : Prune Empty Parent Depth positive int
+- Given the directory structure : 
+   /Dir1
+   /Dir1/Dir2
+   /Dir1/Dir2/Dir3
+   /Dir1/Dir2/Dir3/test.txt
+   If you have prune_empty_parent_depth set to 1 then delete test.txt, the client should delete Dir3 as well.
+ 
+#### Scenario 2 : Prune Empty Parent Depth -1
+- Given the directory structure : 
+   /Dir1
+   /Dir1/DirA
+   /Dir1/Dir2
+   /Dir1/Dir2/Dir3
+   /Dir1/Dir2/Dir3/test.txt
+   In this case this will if test.txt this will delete test.txt, dir3, and Dir2. It will stop when it gets to the Dir1 since it will not be empty.
+   	  
+
 
 ### Download continuation
 
