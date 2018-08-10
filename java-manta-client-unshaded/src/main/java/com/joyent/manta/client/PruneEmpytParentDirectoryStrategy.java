@@ -9,12 +9,14 @@ package com.joyent.manta.client;
 
 import java.io.IOException;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
 
 /**
  * Utility class for recursive directory creation strategies.
@@ -49,21 +51,27 @@ final class PruneEmpytParentDirectoryStrategy {
         // First thing first, delete the child directory.
         client.delete(path, headers, null);
 
+        // Generating all parent paths.
+        String[] directories = MantaUtils.writeablePrefixPaths(path);
+        ArrayUtils.reverse(directories);
+        // Removing first element, because we have already deleted it.
+        directories = ArrayUtils.remove(directories, 0);
+
         int actualLimit = limit;
-        if (actualLimit == PRUNE_ALL_PARENTS) {
-            actualLimit = path.split(MantaClient.SEPARATOR).length - 1;
+        if (actualLimit > directories.length || actualLimit == PRUNE_ALL_PARENTS) {
+            actualLimit = directories.length;
         }
-        LOG.debug("Actual Number : " + actualLimit + " of directories");
-        // I am generating all of the possible paths first, then we will delete them.
-        String parent = path;
-        try {
-            for (int i = 0; i < actualLimit; i++) {
-                parent = parent.substring(0, parent.lastIndexOf("/"));
-                client.delete(parent, headers, null);
-            }
-        } catch (MantaClientHttpResponseException responseException) {
-            if (responseException.getServerCode() != MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR) {
-                throw responseException;
+        for (int i = 0; i < actualLimit; i++) {
+            try {
+                LOG.debug("************ Deleting Index : " + i + " name " + directories[i]);
+                client.delete(directories[i], headers, null);
+            } catch (MantaClientHttpResponseException responseException) {
+                if (responseException.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                    continue;
+                } else if (responseException.getServerCode() != MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR) {
+                    throw responseException;
+                }
+
             }
         }
     }

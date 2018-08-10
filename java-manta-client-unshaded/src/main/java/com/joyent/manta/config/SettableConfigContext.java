@@ -183,7 +183,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
     /**
      * Sets a limit to the number of parent directories deleted, after a delete.
      *
-     * @param depth directory depth to assume exists
+     * @param depth empty parents to prune upon deletion of an object
      * @return the current instance of {@link T}
      */
     T setPruneEmptyParentDepth(Integer depth);

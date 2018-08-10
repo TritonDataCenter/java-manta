@@ -171,8 +171,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     operation (i.e. `/$MANTA_USER` and `/$MANTA_USER/stor` would not be counted). A detailed explanation and example are provided [later in this document](/USAGE.md#skipping-directories)
 * `manta.prune_empty_parent_depth` (**MANTA_PRUNE_EMPTY_PARENT_DEPTH**)
     Integer indicating the maximum number of empty parent directories to prune. If the client is given the value of -1 then the client will try and delete
-    all empty parent directories.
-    USAGE.md#Pruning empty parent directories)
+    all empty parent directories. see [the section on parent directory pruning later in this document](/USAGE.md#Pruning empty parent directories) 
 * `manta.download_continuations` (**MANTA_DOWNLOAD_CONTINUATIONS**)
     Nullable Integer property for enabling the [download continuation](#download-continuation) "optimization."
     A value of 0 explicitly disabled this feature, a value of `-1` enables unlimited continuations, a positive value
@@ -561,8 +560,7 @@ When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to
    /Dir1/Dir2
    /Dir1/Dir2/Dir3
    /Dir1/Dir2/Dir3/test.txt
-   In this case this will if test.txt this will delete test.txt, dir3, and Dir2. It will stop when it gets to the Dir1 since it will not be empty.
-   	  
+   In this case, if test.txt is the target with the prune value set to -1 then test.txt, Dir3, and Dir2 will be deleted. The client will stop on Dir1 because it will not be empty, it still has a child of DirA.  	  
 
 
 ### Download continuation

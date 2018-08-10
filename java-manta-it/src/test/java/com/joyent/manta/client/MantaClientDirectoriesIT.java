@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.BAD_REQUEST_ERROR;
 import static com.joyent.manta.util.MantaUtils.writeablePrefixPaths;
 
 /**
@@ -260,10 +261,8 @@ public class MantaClientDirectoriesIT {
         LOG.info("CHILD DIR  : " + childDir);
         LOG.info("Parent DIR : " + parentDir);
         mantaClient.delete(childDir, null, PruneEmpytParentDirectoryStrategy.PRUNE_ALL_PARENTS);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(childDir));
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(parentDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(parentDir));
         // Getting the path of the parent's parent.
         String ancestor = parentDir.substring(0,parentDir.lastIndexOf(SEPARATOR));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(ancestor));
@@ -276,8 +275,7 @@ public class MantaClientDirectoriesIT {
         LOG.debug("CHILD DIR  : " + childDir);
         LOG.debug("Parent DIR : " + parentDir);
         mantaClient.delete(childDir, null, 0);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(childDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
     }
 
@@ -289,8 +287,7 @@ public class MantaClientDirectoriesIT {
         LOG.info("CHILD DIR  : " + childDir);
         LOG.info("Parent DIR : " + parentDir);
         mantaClient.delete(childDir, null, 1);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(childDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
     }
     
@@ -305,13 +302,74 @@ public class MantaClientDirectoriesIT {
     public void pruneParentDirectoriesInvalid() throws IOException {
         final String parentDir = createRandomDirectory(testPathPrefix, 1);
         final String childDir = createRandomDirectory(parentDir, 5);
-        LOG.info("CHILD DIR  : " + childDir);
-        LOG.info("Parent DIR : " + parentDir);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
         // This should delete the child, but not delete any of the parents.
         mantaClient.delete(childDir, null, -3);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(childDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    /**
+     * This will use a file and not just directories. Previous tests only used 
+     * directories, but this one will add a file.
+     *
+     * @throws IOException - when there is an error that is not accounted for.
+     */
+    @Test
+    public void pruneParentDirectoriesWithFile() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        // This should delete the child, but not delete any of the parents.
+        
+        String file = String.format("%s/%s", childDir, UUID.randomUUID());
+        mantaClient.put(file, TEST_DATA);
+        mantaClient.putDirectory(file);
+        LOG.debug("CHILD DIR  : " + childDir);
+        
+        mantaClient.delete(file, null, 1);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(file));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    /**
+     * This will use a file and not just directories. Previous tests only used 
+     * directories, but this one will add a file.
+     *
+     * @throws IOException - when there is an error that is not accounted for.
+     */
+    @Test
+    public void pruneParentDirectoriesFailingWithFile() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        // This should delete the child, but not delete any of the parents.
+
+        String file = String.format("%s/%s", childDir, UUID.randomUUID());
+        mantaClient.put(file, TEST_DATA);
+        mantaClient.putDirectory(file);
+
+        String file2 = String.format("%s/%s", childDir, UUID.randomUUID());
+        mantaClient.put(file2, TEST_DATA);
+        mantaClient.putDirectory(file2);
+        mantaClient.delete(file, null, 2);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(file));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(file2));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    @Test
+    public void pruneParentDirectoriesFailingGreaterThanDirPath() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 2);
+        // This should delete the child, but not delete any of the parents.
+        mantaClient.delete(childDir, null, 10);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(parentDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
     }
 
     /**
@@ -330,5 +388,7 @@ public class MantaClientDirectoriesIT {
         mantaClient.putDirectory(dirPath, true);
         return dirPath;
     }
+    
+    
 
 }

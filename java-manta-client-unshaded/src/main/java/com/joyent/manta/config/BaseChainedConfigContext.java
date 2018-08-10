@@ -931,6 +931,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
+                && Objects.equals(pruneEmptyParentDepth, that.pruneEmptyParentDepth)
                 && Objects.equals(downloadContinuations, that.downloadContinuations)
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
