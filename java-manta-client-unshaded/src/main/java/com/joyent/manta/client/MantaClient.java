@@ -43,6 +43,7 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -296,7 +297,7 @@ public class MantaClient implements AutoCloseable {
             this.httpHelper = new StandardHttpHelper(
                     connectionContext,
                     requestFactory,
-                    config.verifyUploads(),
+                    ObjectUtils.firstNonNull(config.verifyUploads(), DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
                     config.downloadContinuations());
         }
 
