@@ -96,8 +96,8 @@ with this).
 
 7. Push tags to github:
 `git push --follow-tags`
-In order for the `release:perform` goal to complete successfully, you will need to
-push the tags created by the maven release plugin to the remote git server.
+We also publish releases on Github so the created tag should be pushed back to java-manta
+in order to attach release artifacts for direct download.
 
 8. Perform the actual release:
 `mvn release:perform`

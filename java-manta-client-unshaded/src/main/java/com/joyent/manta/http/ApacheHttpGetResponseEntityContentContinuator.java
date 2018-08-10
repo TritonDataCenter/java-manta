@@ -218,6 +218,8 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
      */
     @Override
     public InputStream buildContinuation(final IOException ex, final long bytesRead) throws IOException {
+        requireNonNull(ex);
+
         if (!isRecoverable(ex)) {
             throw ex;
         }
@@ -232,10 +234,15 @@ public class ApacheHttpGetResponseEntityContentContinuator implements InputStrea
                     ex);
         }
 
-        LOG.debug("Attempting to build a continuation for request {} to recover at byte offset {} from exception {}",
-                  this.request.getRequestLine(),
+        LOG.debug("Attempting to build a continuation for "
+                          + "[{}] request "
+                          + "to path [{}] "
+                          + "to recover at byte offset {} "
+                          + "from exception {}",
+                  this.request.getMethod(),
+                  this.request.getRequestLine().getUri(),
                   bytesRead,
-                  ex);
+                  ex.getMessage());
 
         // if an IOException occurs while reading EOF the user may ask us for a continuation
         // starting after the last valid byte.

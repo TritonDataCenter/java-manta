@@ -10,6 +10,15 @@
             <package name="com.joyent.manta.http.*" />
         </packages>
     </test>
+    <test name="General Client tests">
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientTest" />
+            <class name="com.joyent.manta.client.MantaClientAgentTest" />
+            <class name="com.joyent.manta.client.MantaClientValidationTest" />
+            <class name="com.joyent.manta.client.MantaDirectoryListingIteratorTest" />
+            <class name="com.joyent.manta.client.MetricReporterSupplierTest" />
+        </classes>
+    </test>
     <test name="Configuration Context Tests">
         <groups>
             <define name="config" />
@@ -18,6 +27,8 @@
             <class name="com.joyent.manta.config.SystemSettingsConfigContextTest" />
             <class name="com.joyent.manta.config.TestConfigContextTest" />
             <class name="com.joyent.manta.config.ConfigContextTest" />
+            <class name="com.joyent.manta.config.ChainedConfigContextTest" />
+            <class name="com.joyent.manta.config.MantaClientMetricConfigurationTest" />
             <class name="com.joyent.manta.client.AuthAwareConfigContextTest" />
         </classes>
     </test>
