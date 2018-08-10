@@ -248,6 +248,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
         sb.append(", skipDirectoryDepth=").append(context.getSkipDirectoryDepth());
+        sb.append(", downloadContinuations=").append(context.downloadContinuations());
         sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
         sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
