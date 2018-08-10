@@ -544,7 +544,7 @@ In order to ease migration from other object stores which do not treat directori
 
 ### Pruning empty parent directories
 
-When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to `-1` or a positive value, when deleting an object in Manta, either a file or a directory, the client will attempt to delete parent directories that are empty. If a positive integer is supplied the client will only try to delete up to the number supplied. If -1 is given the client will try to delete in the path until it finds a directory that it can not delete. 
+When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to `-1` or a positive value, when deleting an object in Manta, either a file or a directory, the client will attempt to delete parent directories that are empty. If a positive integer is supplied the client will only try to delete up to the number supplied. If -1 is given the client will try to delete in the path until it finds a directory that it can not delete.  
 
 #### Scenario 1 : Prune Empty Parent Depth positive int
 - Given the directory structure : 
