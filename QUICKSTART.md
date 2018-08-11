@@ -10,9 +10,9 @@ If you want to make changes to java-manta without the pain of syncing a developm
 
 ### Running java-manta (i.e. running code)
 
-The path forward depends on whether or not your change is integrated into master yet. If you have not yet merged your change into master and  job can be used to check a branch against the test suite. In the past it’s been pointed at branches under a fork (by manually changing the remote repo) and used to run `mvn verify` before merging a PR into master.
+The path forward depends on whether or not your change is integrated into master yet. If you have not yet merged your change into master the `java-manta branch verify` job on Joyent's Jenkins deployment can be used to check a branch against the test suite. In the past it’s been pointed at branches under a fork (by manually changing the remote repo) and used to run `mvn verify` before merging a PR into master.
 
-If your change is already integrated into master see [TESTING.md](https://github.com/joyent/java-manta/blob/master/TESTING.md) in java-manta has high-level notes about running the test suite.
+If your change is already integrated into master see [TESTING.md](https://github.com/joyent/java-manta/blob/master/TESTING.md) the standard jobs referenced in the java-manta test and release internal documentation can be run and will use `master` by default.
 
 ## Setup
 
