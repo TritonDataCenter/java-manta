@@ -426,3 +426,11 @@ Version skipped due to a release error.
 ### Fixed
  - Fixed checkstyle failures.
  - Fixed pom.xml settings so that it will properly release to Maven Central.
+ 
+ ### Added
+ - [Prune Empty Parent Directory](https://github.com/joyent/java-manta/issues/425)
+ 	Can now attempt to delete empty parent directories within a delete. See 
+ 	`manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` in the configuration documentation
+ 	for an explanation of how this can be enabled.
+
+ 
