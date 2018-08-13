@@ -427,7 +427,7 @@ public class MapConfigContext implements ConfigContext {
             return mapValue;
         }
 
-        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY));
+        return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_PRUNE_EMPTY_PARENT_DEPTH_ENV_KEY));
     }
 
     @Override
