@@ -380,15 +380,28 @@ public class MantaClient implements AutoCloseable {
      * @throws IOException If an IO exception has occurred.
      * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
      */
-    public void delete(final String rawPath,
-                       final MantaHttpHeaders requestHeaders) throws IOException {
-        Validate.notBlank(rawPath, "rawPath must not be blank");
-
-        String path = formatPath(rawPath);
-        LOG.debug("DELETE {}", path);
-
-        httpHelper.httpDelete(path, requestHeaders);
+    public void delete(final String rawPath, final MantaHttpHeaders requestHeaders) throws IOException {
+        delete(rawPath, requestHeaders, config.getPruneEmptyParentDepth());
     }
+
+    /**
+     * Deletes an object in Manta with the given path.
+     * @param rawPath  Path of the object you want to delete.
+     * @param requestHeaders  requestHeaders HTTP headers to attach to request (may be null)
+     * @param pruneDepth the number of parent directories to be deleted if empty.
+     * @throws IOException
+     */
+    void delete(final String rawPath, final MantaHttpHeaders requestHeaders, final Integer pruneDepth)
+            throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+        String path = formatPath(rawPath);
+        if (pruneDepth == null || pruneDepth == 0) {
+            LOG.debug("DELETE {}", path);
+            httpHelper.httpDelete(path, requestHeaders);
+        } else {
+            PruneEmpytParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
+        }
+   }
 
     /**
      * Recursively deletes an object in Manta.

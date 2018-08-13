@@ -245,6 +245,11 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Integer getPruneEmptyParentDepth() {
+        return null;
+    }
+
+    @Override
     public Integer downloadContinuations() {
         return DEFAULT_DOWNLOAD_CONTINUATIONS;
     }

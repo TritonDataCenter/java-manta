@@ -122,6 +122,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Integer skipDirectoryDepth;
 
     /**
+     * Clean up as many parent directories as possible after deleting an object.
+     * This is the greatest number of directories that will be attempted
+     * to be deleted.
+     */
+    private volatile Integer pruneEmptyParentDepth;
+
+    /**
      * Whether or not we can attempt to resume a download automatically.
      */
     private volatile Integer downloadContinuations;
@@ -295,6 +302,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public Integer getSkipDirectoryDepth() {
         return this.skipDirectoryDepth;
+    }
+
+    @Override
+    public Integer getPruneEmptyParentDepth() {
+        return this.pruneEmptyParentDepth;
     }
 
     @Override
@@ -472,6 +484,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
 
+        if (context.getPruneEmptyParentDepth() != null) {
+            this.pruneEmptyParentDepth = context.getPruneEmptyParentDepth();
+        }
+
         if (context.downloadContinuations() != null) {
             this.downloadContinuations = context.downloadContinuations();
         }
@@ -499,15 +515,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (context.getEncryptionAuthenticationMode() != null) {
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
-
         if (context.getEncryptionPrivateKeyPath() != null) {
             this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
         }
-
         if (context.getEncryptionPrivateKeyBytes() != null) {
             this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
         }
-
         if (context.permitUnencryptedDownloads() != null) {
             this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
         }
@@ -594,6 +607,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.skipDirectoryDepth == null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
+        }
+
+        if (this.pruneEmptyParentDepth == null) {
+            this.pruneEmptyParentDepth = context.getPruneEmptyParentDepth();
         }
 
         if (this.downloadContinuations == null) {
@@ -799,6 +816,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setPruneEmptyParentDepth(final Integer depth) {
+        this.pruneEmptyParentDepth = depth;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setDownloadContinuations(final Integer continuation) {
         this.downloadContinuations = continuation;
 
@@ -907,6 +931,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(verifyUploads, that.verifyUploads)
                 && Objects.equals(uploadBufferSize, that.uploadBufferSize)
                 && Objects.equals(skipDirectoryDepth, that.skipDirectoryDepth)
+                && Objects.equals(pruneEmptyParentDepth, that.pruneEmptyParentDepth)
                 && Objects.equals(downloadContinuations, that.downloadContinuations)
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)

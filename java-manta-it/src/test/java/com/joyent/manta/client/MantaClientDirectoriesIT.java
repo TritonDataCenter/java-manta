@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.BAD_REQUEST_ERROR;
 import static com.joyent.manta.util.MantaUtils.writeablePrefixPaths;
 
 /**
@@ -241,5 +242,153 @@ public class MantaClientDirectoriesIT {
             Assert.assertEquals(operations, parentDirDepth + childAddedDepth + 1);
         }
     }
+
+    
+    
+    /**
+     * This test will create a set of directories, then it will 
+     * set the pruneEmptyParentDepth = -1, meaning it will 
+     * delete all empty directories in the hierarchy.
+     * @throws IOException
+     */
+    @Test
+    public void pruneParentDirectoriesFull() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        // We are going to create a sibling to the parent directory, so 
+        // the test does not delete the root.
+        createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.info("CHILD DIR  : " + childDir);
+        LOG.info("Parent DIR : " + parentDir);
+        mantaClient.delete(childDir, null, PruneEmpytParentDirectoryStrategy.PRUNE_ALL_PARENTS);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(parentDir));
+        // Getting the path of the parent's parent.
+        String ancestor = parentDir.substring(0,parentDir.lastIndexOf(SEPARATOR));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(ancestor));
+    }
+
+    @Test
+    public void pruneParentDirectoryZero() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 2);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        mantaClient.delete(childDir, null, 0);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+
+    @Test
+    public void pruneParentDirectoryOne() throws IOException {
+        // This should stop at 1 parent being deleted
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 3);
+        LOG.info("CHILD DIR  : " + childDir);
+        LOG.info("Parent DIR : " + parentDir);
+        mantaClient.delete(childDir, null, 1);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    /**
+     * This test will create a set of directories, then it will 
+     * set the pruneEmptyParentDepth = -3, meaning the child 
+     * should be deleted, but the parents should not be.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void pruneParentDirectoriesInvalid() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        // This should delete the child, but not delete any of the parents.
+        mantaClient.delete(childDir, null, -3);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    /**
+     * This will use a file and not just directories. Previous tests only used 
+     * directories, but this one will add a file.
+     *
+     * @throws IOException - when there is an error that is not accounted for.
+     */
+    @Test
+    public void pruneParentDirectoriesWithFile() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        // This should delete the child, but not delete any of the parents.
+        
+        String file = String.format("%s/%s", childDir, UUID.randomUUID());
+        mantaClient.put(file, TEST_DATA);
+        mantaClient.putDirectory(file);
+        LOG.debug("CHILD DIR  : " + childDir);
+        
+        mantaClient.delete(file, null, 1);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(file));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    /**
+     * This will use a file and not just directories. Previous tests only used 
+     * directories, but this one will add a file.
+     *
+     * @throws IOException - when there is an error that is not accounted for.
+     */
+    @Test
+    public void pruneParentDirectoriesFailingWithFile() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 5);
+        LOG.debug("CHILD DIR  : " + childDir);
+        LOG.debug("Parent DIR : " + parentDir);
+        // This should delete the child, but not delete any of the parents.
+
+        String file = String.format("%s/%s", childDir, UUID.randomUUID());
+        mantaClient.put(file, TEST_DATA);
+        mantaClient.putDirectory(file);
+
+        String file2 = String.format("%s/%s", childDir, UUID.randomUUID());
+        mantaClient.put(file2, TEST_DATA);
+        mantaClient.putDirectory(file2);
+        mantaClient.delete(file, null, 2);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(file));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(file2));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+    }
+    
+    @Test
+    public void pruneParentDirectoriesFailingGreaterThanDirPath() throws IOException {
+        final String parentDir = createRandomDirectory(testPathPrefix, 1);
+        final String childDir = createRandomDirectory(parentDir, 2);
+        // This should delete the child, but not delete any of the parents.
+        mantaClient.delete(childDir, null, 10);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(parentDir));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
+    }
+
+    /**
+     * This will create a hierarchy of random directories with the starting point of parent with the given depth.
+     * 
+     * @param parent - the directory to create this from.
+     * @param depth - the desired depth from the parent.
+     * @return
+     */
+    private String createRandomDirectory(final String parent, final int depth) throws IOException {
+        final StringBuilder parentDirBuilder = new StringBuilder(parent);
+        for (int i = 0; i < depth; i++) {
+            parentDirBuilder.append(SEPARATOR).append(STRING_GENERATOR.generate(3));
+        }
+        final String dirPath = parentDirBuilder.toString();
+        mantaClient.putDirectory(dirPath, true);
+        return dirPath;
+    }
+    
+    
 
 }
