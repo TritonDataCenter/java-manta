@@ -19,21 +19,21 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 
 /**
- * Utility class for recursive directory creation strategies.
+ * Utility class for recursive directory removal strategies.
  *
  * @author <a href="https://github.com/douglasAtJoyent">Douglas Anderson</a>
  * @since 3.2.4
  */
-final class PruneEmpytParentDirectoryStrategy {
+final class PruneEmptyParentDirectoryStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PruneEmpytParentDirectoryStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PruneEmptyParentDirectoryStrategy.class);
 
     /**
      * Pass this if you want to prune all parent directories.
      */
     public static final Integer PRUNE_ALL_PARENTS = -1;
 
-    private PruneEmpytParentDirectoryStrategy() {
+    private PruneEmptyParentDirectoryStrategy() {
     }
 
     /**

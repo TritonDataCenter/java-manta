@@ -399,7 +399,7 @@ public class MantaClient implements AutoCloseable {
             LOG.debug("DELETE {}", path);
             httpHelper.httpDelete(path, requestHeaders);
         } else {
-            PruneEmpytParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
+            PruneEmptyParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
         }
    }
 
