@@ -104,6 +104,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_PRUNE_DEPTH;
 import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
@@ -395,7 +396,7 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
         String path = formatPath(rawPath);
-        if (pruneDepth == null || pruneDepth == 0) {
+        if (pruneDepth == null || pruneDepth == DEFAULT_PRUNE_DEPTH) {
             LOG.debug("DELETE {}", path);
             httpHelper.httpDelete(path, requestHeaders);
         } else {

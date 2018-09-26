@@ -49,6 +49,10 @@ final class PruneEmptyParentDirectoryStrategy {
             final String path,
             final int limit) throws IOException {
         // First thing first, delete the child directory.
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Pruning first directory: {}", path);
+        }
         client.delete(path, headers, null);
 
         // Generating all parent paths.
@@ -63,7 +67,10 @@ final class PruneEmptyParentDirectoryStrategy {
         }
         for (int i = 0; i < actualLimit; i++) {
             try {
-                LOG.debug("************ Deleting Index : " + i + " name " + directories[i]);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Pruning directory[{}] at path: {}", i, directories[i]);
+                }
+
                 client.delete(directories[i], headers, null);
             } catch (MantaClientHttpResponseException responseException) {
                 if (responseException.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
