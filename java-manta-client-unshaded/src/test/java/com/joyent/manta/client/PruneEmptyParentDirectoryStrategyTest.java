@@ -8,17 +8,33 @@ import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.lang3.ObjectUtils;
 import org.mockito.Mockito;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
 import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.PRUNE_ALL_PARENTS;
-import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.parseDirectoriesFromPathRightToLeft;
+import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.extractOrderedWriteableAncestorPaths;
 import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.pruneParentDirectories;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 @Test
 public class PruneEmptyParentDirectoryStrategyTest {
+    private MantaClient client;
+
+    @BeforeClass
+    public void beforeClass() {
+        this.client = new MantaClient(new TestConfigContext());
+    }
+
+    @AfterClass
+    public void afterClass() {
+        this.client.closeWithWarning();
+    }
+
     public void canParseObjectPath() {
         final String path = "/user/stor/dir1/dir2/dir3/object.txt";
         final String[] expected = new String[] {
@@ -26,7 +42,7 @@ public class PruneEmptyParentDirectoryStrategyTest {
                 "/user/stor/dir1/dir2",
                 "/user/stor/dir1"
         };
-        final String[] directories = parseDirectoriesFromPathRightToLeft(path);
+        final String[] directories = extractOrderedWriteableAncestorPaths(path);
 
         Assert.assertEquals(directories, expected);
     }
@@ -38,7 +54,7 @@ public class PruneEmptyParentDirectoryStrategyTest {
                 "/user/stor/dir1/dir2",
                 "/user/stor/dir1"
         };
-        final String[] directories = parseDirectoriesFromPathRightToLeft(path);
+        final String[] directories = extractOrderedWriteableAncestorPaths(path);
 
         Assert.assertEquals(directories, expected);
     }
@@ -50,14 +66,13 @@ public class PruneEmptyParentDirectoryStrategyTest {
                 "/user/stor/dir1/dir2",
                 "/user/stor/dir1"
         };
-        final String[] directories = parseDirectoriesFromPathRightToLeft(path);
+        final String[] directories = extractOrderedWriteableAncestorPaths(path);
 
         Assert.assertEquals(directories, expected);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void willErrorWithALimitBelowMinusOne() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/object.txt";
@@ -69,7 +84,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void canPruneEmptyDirectoriesWithDefaultSetting() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/object.txt";
@@ -99,7 +113,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void canPruneEmptyDirectoriesWithLimitOne() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/object.txt";
@@ -121,7 +134,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void canPruneEmptyDirectoriesWithLimitTwo() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/object.txt";
@@ -146,7 +158,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void verifyThatPruneEmptyDirectoriesWontPruneBelowStorRoot() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/object.txt";
@@ -171,7 +182,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void canPruneAllDirectories() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/object.txt";
@@ -196,7 +206,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void willStopPruningWhenDirectoryHasContents() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/dir3/object.txt";
@@ -228,7 +237,6 @@ public class PruneEmptyParentDirectoryStrategyTest {
     }
 
     public void willStopPruningWhenDirectoryIsNotFound() throws IOException {
-        final MantaClient client = new MantaClient(new TestConfigContext());
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final String path = "/user/stor/dir1/dir2/dir3/object.txt";
