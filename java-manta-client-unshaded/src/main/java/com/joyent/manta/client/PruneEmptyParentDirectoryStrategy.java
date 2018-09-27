@@ -76,8 +76,8 @@ final class PruneEmptyParentDirectoryStrategy {
          * release. */
         if (limit > directories.length) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Limit [{}] was set to greater than the number of " +
-                        "directories in path [{}]", limit, directories.length);
+                LOG.debug("Limit [{}] was set to greater than the number of "
+                        + "directories in path [{}]", limit, directories.length);
             }
 
             actualLimit = directories.length;
