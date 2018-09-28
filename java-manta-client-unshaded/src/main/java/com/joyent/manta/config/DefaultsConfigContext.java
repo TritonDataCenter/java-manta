@@ -92,6 +92,12 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final boolean DEFAULT_DISABLE_NATIVE_SIGNATURES = false;
 
     /**
+     * The default number of empty ancestor directories (depth) to prune to when
+     * prune depth is set to null.
+     */
+    public static final int DEFAULT_PRUNE_DEPTH = 0;
+
+    /**
      * Default number of milliseconds to wait for a TCP socket's connection to
      * timeout.
      */

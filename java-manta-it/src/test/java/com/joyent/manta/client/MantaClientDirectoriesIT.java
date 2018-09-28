@@ -24,7 +24,6 @@ import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
-import static com.joyent.manta.exception.MantaErrorCode.BAD_REQUEST_ERROR;
 import static com.joyent.manta.util.MantaUtils.writeablePrefixPaths;
 
 /**
@@ -260,7 +259,7 @@ public class MantaClientDirectoriesIT {
         final String childDir = createRandomDirectory(parentDir, 5);
         LOG.info("CHILD DIR  : " + childDir);
         LOG.info("Parent DIR : " + parentDir);
-        mantaClient.delete(childDir, null, PruneEmpytParentDirectoryStrategy.PRUNE_ALL_PARENTS);
+        mantaClient.delete(childDir, null, PruneEmptyParentDirectoryStrategy.PRUNE_ALL_PARENTS);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(parentDir));
         // Getting the path of the parent's parent.

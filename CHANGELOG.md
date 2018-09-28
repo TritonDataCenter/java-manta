@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.2.5] - 
+### Changed
+ - Improved documentation, code comments and code path for delete prune operations.
+
 ## [3.2.4] - 2018-08-13
 ### Added 
  - [Prune Empty Parent Directory](https://github.com/joyent/java-manta/issues/425)

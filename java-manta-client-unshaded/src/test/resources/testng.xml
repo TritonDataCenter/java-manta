@@ -17,6 +17,7 @@
             <class name="com.joyent.manta.client.MantaClientValidationTest" />
             <class name="com.joyent.manta.client.MantaDirectoryListingIteratorTest" />
             <class name="com.joyent.manta.client.MetricReporterSupplierTest" />
+            <class name="com.joyent.manta.client.PruneEmptyParentDirectoryStrategyTest" />
         </classes>
     </test>
     <test name="Configuration Context Tests">
