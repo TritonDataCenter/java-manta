@@ -92,8 +92,8 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final boolean DEFAULT_DISABLE_NATIVE_SIGNATURES = false;
 
     /**
-     * The default depth of directories to prune to when prune depth
-     * is set to null.
+     * The default number of empty ancestor directories (depth) to prune to when
+     * prune depth is set to null.
      */
     public static final int DEFAULT_PRUNE_DEPTH = 0;
 

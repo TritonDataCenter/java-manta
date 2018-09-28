@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
- * Utility class for recursive directory removal strategies.
+ * Utility class for a recursive directory removal strategy that starts with a
+ * specified directory, then traverses through the ancestor directories and
+ * removes ancestor directories that are empty.
  *
  * @author <a href="https://github.com/douglasAtJoyent">Douglas Anderson</a>
  * @since 3.2.4
