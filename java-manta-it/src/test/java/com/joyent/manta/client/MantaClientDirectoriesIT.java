@@ -301,12 +301,10 @@ public class MantaClientDirectoriesIT {
     public void pruneParentDirectoriesInvalid() throws IOException {
         final String parentDir = createRandomDirectory(testPathPrefix, 1);
         final String childDir = createRandomDirectory(parentDir, 5);
-        LOG.debug("CHILD DIR  : " + childDir);
-        LOG.debug("Parent DIR : " + parentDir);
-        // This should delete the child, but not delete any of the parents.
-        mantaClient.delete(childDir, null, -3);
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
-        Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
+        // This will throw an illegal argument exception.
+        Assert.assertThrows(java.lang.IllegalArgumentException.class, () -> {
+            mantaClient.delete(childDir, null, -3);
+          });
     }
     
     /**
