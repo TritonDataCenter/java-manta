@@ -17,6 +17,10 @@ import java.io.IOException;
 import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.PRUNE_ALL_PARENTS;
 import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.extractOrderedWriteableAncestorPaths;
 import static com.joyent.manta.client.PruneEmptyParentDirectoryStrategy.pruneParentDirectories;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.matches;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -78,7 +82,8 @@ public class PruneEmptyParentDirectoryStrategyTest {
         final String path = "/user/stor/dir1/dir2/object.txt";
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, -2);
     }
@@ -100,7 +105,8 @@ public class PruneEmptyParentDirectoryStrategyTest {
                 DefaultsConfigContext.DEFAULT_PRUNE_DEPTH);
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
@@ -119,8 +125,8 @@ public class PruneEmptyParentDirectoryStrategyTest {
         final int limit = 1;
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1/dir2", headers, null);
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
@@ -140,9 +146,9 @@ public class PruneEmptyParentDirectoryStrategyTest {
         final int limit = 2;
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1/dir2", headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1", headers, null);
+        // Prevent the client from actually calling out to a real Manta
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
@@ -164,9 +170,9 @@ public class PruneEmptyParentDirectoryStrategyTest {
         final int limit = 3;
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1/dir2", headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1", headers, null);
+        // Prevent the client from actually calling out to a real Manta
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
@@ -188,9 +194,8 @@ public class PruneEmptyParentDirectoryStrategyTest {
         final int limit = PRUNE_ALL_PARENTS;
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1/dir2", headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1", headers, null);
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
@@ -216,10 +221,11 @@ public class PruneEmptyParentDirectoryStrategyTest {
                 .setServerCode(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR);
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1/dir2/dir3", headers, null);
-        Mockito.doThrow(exception)
-                .when(clientSpy).delete("/user/stor/dir1/dir2", headers, null);
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor/dir1/dir2/dir3"), any(MantaHttpHeaders.class), isNull());
+
+        Mockito.doThrow(exception).when(clientSpy)
+                .delete(matches("^(?!\\/user\\/stor\\/dir1\\/dir2\\/dir3).+"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
@@ -247,10 +253,11 @@ public class PruneEmptyParentDirectoryStrategyTest {
                         .setServerCode(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR);
 
         // Prevent the client from actually calling out to a real Manta
-        Mockito.doNothing().when(clientSpy).delete(path, headers, null);
-        Mockito.doNothing().when(clientSpy).delete("/user/stor/dir1/dir2/dir3", headers, null);
-        Mockito.doThrow(exception)
-                .when(clientSpy).delete("/user/stor/dir1/dir2", headers, null);
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor/dir1/dir2/dir3"), any(MantaHttpHeaders.class), isNull());
+
+        Mockito.doThrow(exception).when(clientSpy)
+                .delete(matches("^(?!\\/user\\/stor\\/dir1\\/dir2\\/dir3).+"), any(MantaHttpHeaders.class), isNull());
 
         pruneParentDirectories(clientSpy, headers, path, limit);
 
