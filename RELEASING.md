@@ -100,7 +100,11 @@ We also publish releases on Github so the created tag should be pushed back to j
 in order to attach release artifacts for direct download.
 
 8. Perform the actual release:
-`mvn release:perform`
+`mvn release:perform -Darguments="-Dmaven.test.skip=true -Dmaven.integration.test.skip=true"`
+
+By specifying the arguments above, it will allow you to avoid rerunning the
+unit and integration tests that were already run in step #4. 
+
 A build will be performed and packaged and artifacts deployed to the sonatype
 staging repository.
 

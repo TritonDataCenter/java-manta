@@ -242,18 +242,18 @@ public class MantaClientDirectoriesIT {
         }
     }
 
-    
-    
+
+
     /**
-     * This test will create a set of directories, then it will 
-     * set the pruneEmptyParentDepth = -1, meaning it will 
+     * This test will create a set of directories, then it will
+     * set the pruneEmptyParentDepth = -1, meaning it will
      * delete all empty directories in the hierarchy.
      * @throws IOException
      */
     @Test
     public void pruneParentDirectoriesFull() throws IOException {
         final String parentDir = createRandomDirectory(testPathPrefix, 1);
-        // We are going to create a sibling to the parent directory, so 
+        // We are going to create a sibling to the parent directory, so
         // the test does not delete the root.
         createRandomDirectory(testPathPrefix, 1);
         final String childDir = createRandomDirectory(parentDir, 5);
@@ -289,15 +289,16 @@ public class MantaClientDirectoriesIT {
         Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
     }
-    
+
     /**
-     * This test will create a set of directories, then it will 
-     * set the pruneEmptyParentDepth = -3, meaning the child 
-     * should be deleted, but the parents should not be.
+     * This test will create a set of directories, then it will
+     * set the pruneEmptyParentDepth = -3, meaning that the method should throw
+     * an exception indicating that the parameter (which is less than -1) is
+     * invalid)
      *
      * @throws IOException
      */
-    @Test
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void pruneParentDirectoriesInvalid() throws IOException {
         final String parentDir = createRandomDirectory(testPathPrefix, 1);
         final String childDir = createRandomDirectory(parentDir, 5);
@@ -306,9 +307,9 @@ public class MantaClientDirectoriesIT {
             mantaClient.delete(childDir, null, -3);
           });
     }
-    
+
     /**
-     * This will use a file and not just directories. Previous tests only used 
+     * This will use a file and not just directories. Previous tests only used
      * directories, but this one will add a file.
      *
      * @throws IOException - when there is an error that is not accounted for.
@@ -320,20 +321,20 @@ public class MantaClientDirectoriesIT {
         LOG.debug("CHILD DIR  : " + childDir);
         LOG.debug("Parent DIR : " + parentDir);
         // This should delete the child, but not delete any of the parents.
-        
+
         String file = String.format("%s/%s", childDir, UUID.randomUUID());
         mantaClient.put(file, TEST_DATA);
         mantaClient.putDirectory(file);
         LOG.debug("CHILD DIR  : " + childDir);
-        
+
         mantaClient.delete(file, null, 1);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(file));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(childDir));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
     }
-    
+
     /**
-     * This will use a file and not just directories. Previous tests only used 
+     * This will use a file and not just directories. Previous tests only used
      * directories, but this one will add a file.
      *
      * @throws IOException - when there is an error that is not accounted for.
@@ -358,7 +359,7 @@ public class MantaClientDirectoriesIT {
         Assert.assertTrue(mantaClient.existsAndIsAccessible(file2));
         Assert.assertTrue(mantaClient.existsAndIsAccessible(parentDir));
     }
-    
+
     @Test
     public void pruneParentDirectoriesFailingGreaterThanDirPath() throws IOException {
         final String parentDir = createRandomDirectory(testPathPrefix, 1);
@@ -371,7 +372,7 @@ public class MantaClientDirectoriesIT {
 
     /**
      * This will create a hierarchy of random directories with the starting point of parent with the given depth.
-     * 
+     *
      * @param parent - the directory to create this from.
      * @param depth - the desired depth from the parent.
      * @return
@@ -385,7 +386,7 @@ public class MantaClientDirectoriesIT {
         mantaClient.putDirectory(dirPath, true);
         return dirPath;
     }
-    
-    
+
+
 
 }
