@@ -64,13 +64,18 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
     public synchronized void writeTo(final OutputStream out) {
         writer = out;
 
+        /* We notify here to wake up the main calling thread which is waiting
+         * within the MantaObjectOutputStream constructor. That thread is blocking
+         * and waiting for the OutputStream above to be set before it will allow
+         * additional operations. */
         this.notify();
 
-            /* Loop while the parent OutputStream is still open. This allows us to write
-             * to the stream from the parent class while keeping the stream open with
-             * another thread. */
+        /* Loop while the parent OutputStream is still open. This allows us to write
+         * to the stream from the parent class while keeping the stream open with
+         * another thread. */
         while (!closed.get()) {
             try {
+                // We wait for notification from MantaObjectOutputStream.close()
                 this.wait();
             } catch (InterruptedException e) {
                 return; // exit loop and assume closed if interrupted
