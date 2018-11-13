@@ -11,6 +11,7 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ClosedOutputStream;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.entity.ContentType;
@@ -170,11 +171,16 @@ public class MantaObjectOutputStream extends OutputStream {
          * We have to wait here until the upload to Manta starts and a Writer
          * becomes available.
          */
-        while (httpContent.getWriter() == null) {
-            try {
-                Thread.sleep(CLOSED_CHECK_INTERVAL);
-            } catch (InterruptedException e) {
-                return;
+        synchronized (this.httpContent) {
+            while (!httpContent.isClosed() && httpContent.getWriter() == null) {
+                try {
+                    /* We poll because the httpContent.notify() call within the
+                     * httpContent.writeTo() method may have been called before
+                     * the httpContent.wait() call below. */
+                    this.httpContent.wait(CLOSED_CHECK_INTERVAL);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
         }
     }
@@ -300,6 +306,11 @@ public class MantaObjectOutputStream extends OutputStream {
             this.httpContent.getWriter().flush();
         }
 
+        IOUtils.closeQuietly(this.httpContent);
+
+        /* Now that we have marked the httpContent instance as properly closed,
+         * we wake up the the sleeping thread in order for it properly exit the
+         * writeTo() method in which it was waiting. */
         synchronized (this.httpContent) {
             this.httpContent.notify();
         }
@@ -313,7 +324,9 @@ public class MantaObjectOutputStream extends OutputStream {
             /* We wrap the cause because the stack trace for the
              * ExecutionException offers nothing useful and is just a wrapper
              * for exceptions that are thrown within a Future. */
-            MantaIOException mioe = new MantaIOException(e.getCause());
+            MantaIOException mioe = new MantaIOException(
+                    "An exception was thrown within the thread writing to the network socket",
+                    e.getCause());
 
             if (this.objectResponse != null) {
                 final String requestId = this.objectResponse.getHeaderAsString(

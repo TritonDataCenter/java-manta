@@ -12,7 +12,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
 
-import java.io.IOException;
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,12 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class EmbeddedHttpContent implements HttpEntity {
-    /**
-     * Number of milliseconds to wait between checks to see if the stream has been closed.
-     */
-    private static final long CLOSED_CHECK_INTERVAL = 50L;
-
+public class EmbeddedHttpContent implements HttpEntity, Closeable {
     /**
      * The actual output stream that is used by Apache HTTP Client.
      */
@@ -44,7 +39,7 @@ public class EmbeddedHttpContent implements HttpEntity {
     /**
      * Flag indicating that writing object has been closed.
      */
-    private AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean closed;
 
     /**
      * Creates a new instance.
@@ -57,16 +52,26 @@ public class EmbeddedHttpContent implements HttpEntity {
         this.closed = closed;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>ALSO IMPORTANT: We are implicitly relaying on the contract that this method will
+     * only be called once</p>
+     *
+     * @param out the stream to be used to back {@link com.joyent.manta.client.MantaObjectOutputStream}
+     */
     @Override
-    public synchronized void writeTo(final OutputStream out) throws IOException {
+    public synchronized void writeTo(final OutputStream out) {
         writer = out;
+
+        this.notify();
 
             /* Loop while the parent OutputStream is still open. This allows us to write
              * to the stream from the parent class while keeping the stream open with
              * another thread. */
         while (!closed.get()) {
             try {
-                this.wait(CLOSED_CHECK_INTERVAL);
+                this.wait();
             } catch (InterruptedException e) {
                 return; // exit loop and assume closed if interrupted
             }
@@ -99,7 +104,7 @@ public class EmbeddedHttpContent implements HttpEntity {
     }
 
     @Override
-    public InputStream getContent() throws IOException, UnsupportedOperationException {
+    public InputStream getContent() {
         throw new UnsupportedOperationException("getContent is not supported");
     }
 
@@ -110,11 +115,20 @@ public class EmbeddedHttpContent implements HttpEntity {
 
     @Override
     @Deprecated
-    public void consumeContent() throws IOException {
+    public void consumeContent() {
         throw new UnsupportedOperationException("consumeContent is not supported");
     }
 
     public OutputStream getWriter() {
         return writer;
+    }
+
+    @Override
+    public void close() {
+        this.closed.compareAndSet(false, true);
+    }
+
+    public boolean isClosed() {
+        return this.closed.get();
     }
 }

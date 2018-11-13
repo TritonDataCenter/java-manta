@@ -9,9 +9,11 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.exception.ExceptionContext;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
@@ -127,18 +129,21 @@ public class MantaObjectOutputStreamIT {
         }
     }
 
-    public void canUploadMuchLargerFileWithPeriodicWaits() throws IOException, InterruptedException {
+    public void canUploadMuchLargerFileWithPeriodicWaits() throws Exception {
         String path = testPathPrefix + "uploaded-" + UUID.randomUUID() + ".txt";
         MantaObjectOutputStream out = mantaClient.putAsOutputStream(path);
         ByteArrayOutputStream bout = new ByteArrayOutputStream(6553600);
 
         MessageDigest md5Digest = DigestUtils.getMd5Digest();
         long totalBytes = 0;
+        int chunkSize = -1;
+
+        Exception failureException = null;
 
         try {
             for (int i = 0; i < 100; i++) {
-                int chunkSize = RandomUtils.nextInt(1, 131072);
-                byte[] randomBytes = RandomUtils.nextBytes(chunkSize);
+                chunkSize = RandomUtils.nextInt(1, 10);
+                final byte[] randomBytes = RandomUtils.nextBytes(chunkSize);
                 md5Digest.update(randomBytes);
                 totalBytes += randomBytes.length;
                 out.write(randomBytes);
@@ -149,16 +154,35 @@ public class MantaObjectOutputStreamIT {
                     Thread.sleep(RandomUtils.nextLong(1L, 1000L));
                 }
             }
+        } catch (MantaIOException e) {
+            failureException = e;
         } finally {
-            out.close();
             bout.close();
+
+            try {
+                out.close();
+                // Test to see if the file was successfully created
+                mantaClient.head(path);
+            } catch (MantaIOException e) {
+                failureException = e;
+            }
+        }
+
+        if (failureException != null) {
+            if (failureException instanceof ExceptionContext) {
+                ExceptionContext e = (ExceptionContext)failureException;
+                e.setContextValue("lastChunkSize", chunkSize);
+                e.setContextValue("totalBytes", totalBytes);
+            }
+            throw failureException;
         }
 
         try (InputStream in = mantaClient.getAsInputStream(path)) {
             byte[] expected = bout.toByteArray();
             byte[] actual = IOUtils.readFully(in, (int)totalBytes);
 
-            AssertJUnit.assertArrayEquals("Bytes written via OutputStream don't match read bytes",
+            AssertJUnit.assertArrayEquals("Bytes written via "
+                            + "OutputStream doesn't match read bytes",
                     expected, actual);
         }
     }
