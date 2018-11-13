@@ -104,6 +104,8 @@ public class MantaObjectOutputStreamIT {
         try {
             for (int i = 0; i < 100; i++) {
                 int chunkSize = RandomUtils.nextInt(1, 131072);
+                System.out.printf("[%03d] Writing to OutputStream with [%06d] sized chunk\n",
+                        i+1, chunkSize);
                 byte[] randomBytes = RandomUtils.nextBytes(chunkSize);
                 md5Digest.update(randomBytes);
                 totalBytes += randomBytes.length;
@@ -112,6 +114,7 @@ public class MantaObjectOutputStreamIT {
 
                 // periodically flush
                 if (i % 25 == 0) {
+                    System.out.println("  Flushing OutputStream");
                     out.flush();
                 }
             }
@@ -142,8 +145,10 @@ public class MantaObjectOutputStreamIT {
 
         try {
             for (int i = 0; i < 100; i++) {
-                chunkSize = RandomUtils.nextInt(1, 10);
+                chunkSize = RandomUtils.nextInt(1, 131072);
                 final byte[] randomBytes = RandomUtils.nextBytes(chunkSize);
+                System.out.printf("[%03d] Writing to OutputStream with [%06d] sized chunk\n",
+                        i+1, chunkSize);
                 md5Digest.update(randomBytes);
                 totalBytes += randomBytes.length;
                 out.write(randomBytes);
@@ -151,7 +156,9 @@ public class MantaObjectOutputStreamIT {
 
                 // periodically wait
                 if (i % 3 == 0) {
-                    Thread.sleep(RandomUtils.nextLong(1L, 1000L));
+                    final long waitTime = RandomUtils.nextLong(1L, 1000L);
+                    System.out.printf("  Waiting for [%04d] ms\n", waitTime);
+                    Thread.sleep(waitTime);
                 }
             }
         } catch (MantaIOException e) {
