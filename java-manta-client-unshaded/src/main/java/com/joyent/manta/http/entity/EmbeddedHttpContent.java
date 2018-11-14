@@ -61,7 +61,7 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
      * @param out the stream to be used to back {@link com.joyent.manta.client.MantaObjectOutputStream}
      */
     @Override
-    public synchronized void writeTo(final OutputStream out){
+    public synchronized void writeTo(final OutputStream out) {
         writer = out;
 
         /* We notify here to wake up the main calling thread which is waiting
@@ -109,7 +109,7 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
     }
 
     @Override
-    public InputStream getContent(){
+    public InputStream getContent() {
         throw new UnsupportedOperationException("getContent is not supported");
     }
 
@@ -120,7 +120,7 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
 
     @Override
     @Deprecated
-    public void consumeContent(){
+    public void consumeContent() {
         throw new UnsupportedOperationException("consumeContent is not supported");
     }
 
