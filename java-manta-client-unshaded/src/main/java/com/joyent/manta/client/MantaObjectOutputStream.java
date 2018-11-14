@@ -11,12 +11,14 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ClosedOutputStream;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,14 +30,19 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
- * {@link OutputStream} that wraps the PUT operations using an {@link java.io.InputStream}
+ * <p>{@link OutputStream} that wraps the PUT operations using an {@link java.io.InputStream}
  * as a data source. This implementation uses another thread to keep the Apache HTTP
  * Client's {@link OutputStream} open in order to proxy all calls to it. This is far
  * from an ideal implementation. Please only use this class as a last resort when needing
- * to provide compatibility with inflexible APIs that require an {@link OutputStream}.
+ * to provide compatibility with inflexible APIs that require an {@link OutputStream}.</p>
+ *
+ * <p>NOTE: Use of this class should be discouraged because it uses another thread
+ * and it uses reflection in order to provide an {@link OutputStream} implementation.
+ * It is provided for users who have no choice but to use an {@link OutputStream} to
+ * write data to Manta due to constraints in their object model.</p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.4.0
@@ -118,7 +125,7 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * A running count of the total number of bytes written.
      */
-    private AtomicLong bytesWritten = new AtomicLong(0L);
+    private LongAdder bytesWritten = new LongAdder();
 
     /**
      * Flag indicating that this stream has been closed.
@@ -165,59 +172,68 @@ public class MantaObjectOutputStream extends OutputStream {
          */
         this.completed = EXECUTOR.submit(() ->
                 httpHelper.httpPut(path, headers, httpContent, metadata));
-
+/**/
         /*
          * We have to wait here until the upload to Manta starts and a Writer
          * becomes available.
          */
-        while (httpContent.getWriter() == null) {
-            try {
-                Thread.sleep(CLOSED_CHECK_INTERVAL);
-            } catch (InterruptedException e) {
-                return;
+        synchronized (this.httpContent) {
+            while (!isClosed() && !httpContent.isClosed() && httpContent.getWriter() == null) {
+                try {
+                    /* We poll because the httpContent.notify() call within the
+                     * httpContent.writeTo() method may have been called before
+                     * the httpContent.wait() call below. */
+                    this.httpContent.wait(CLOSED_CHECK_INTERVAL);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
         }
     }
 
     @Override
     public void write(final int b) throws IOException {
-        if (this.closed.get()) {
+        // Note: isClosed() is an expensive check, see note inside method
+        if (isClosed()) {
             MantaIOException e = new MantaIOException("Can't write to a closed stream");
             e.setContextValue("path", path);
             throw e;
         }
 
         httpContent.getWriter().write(b);
-        bytesWritten.incrementAndGet();
+        bytesWritten.increment();
     }
 
     @Override
     public void write(final byte[] b) throws IOException {
-        if (this.closed.get()) {
+        // Note: isClosed() is an expensive check, see note inside method
+        if (isClosed()) {
             MantaIOException e = new MantaIOException("Can't write to a closed stream");
             e.setContextValue("path", path);
             throw e;
         }
 
         httpContent.getWriter().write(b);
-        bytesWritten.addAndGet(b.length);
+        bytesWritten.add(b.length);
     }
 
     @Override
     public void write(final byte[] b, final int off, final int len) throws IOException {
-        if (this.closed.get()) {
+        // Note: isClosed() is an expensive check, see note inside method
+        if (isClosed()) {
             MantaIOException e = new MantaIOException("Can't write to a closed stream");
             e.setContextValue("path", path);
             throw e;
         }
 
         httpContent.getWriter().write(b, off, len);
-        bytesWritten.addAndGet(b.length);
+        bytesWritten.add(b.length);
     }
 
     @Override
     public void flush() throws IOException {
-        if (this.closed.get()) {
+        // Note: isClosed() is an expensive check, see note inside method
+        if (isClosed()) {
             return;
         }
 
@@ -263,10 +279,11 @@ public class MantaObjectOutputStream extends OutputStream {
     }
 
     /**
-     * Finds the most inner stream if the embedded stream is stored on the passed
+     * <p>Finds the most inner stream if the embedded stream is stored on the passed
      * stream as a field named <code>out</code>. This hold true for all classes
-     * that extend {@link java.io.FilterOutputStream}.
+     * that extend {@link java.io.FilterOutputStream}.</p>
      *
+     * <p>NOTE: This is a dirty hack</p>
      * @param stream stream to search for inner stream
      * @return reference to inner stream class
      */
@@ -291,6 +308,15 @@ public class MantaObjectOutputStream extends OutputStream {
         }
     }
 
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>NOTE: This close method calls flush() on the inner {@link OutputStream}
+     * and then closes it if possible.</p>
+     *
+     * @throws IOException
+     */
     @Override
     public synchronized void close() throws IOException {
         this.closed.compareAndSet(false, true);
@@ -300,20 +326,30 @@ public class MantaObjectOutputStream extends OutputStream {
             this.httpContent.getWriter().flush();
         }
 
+        IOUtils.closeQuietly(this.httpContent);
+
+        /* Now that we have marked the httpContent instance as properly closed,
+         * we wake up the the sleeping thread in order for it properly exit the
+         * writeTo() method in which it was waiting. */
         synchronized (this.httpContent) {
+            /* We notify the streaming thread which is waiting within
+             * EmbeddedHttpContent.writeTo() in order for it to wake up
+             * and exit the thread. */
             this.httpContent.notify();
         }
 
         try {
             this.objectResponse = this.completed.get();
-            this.objectResponse.setContentLength(bytesWritten.get());
+            this.objectResponse.setContentLength(bytesWritten.longValue());
         } catch (InterruptedException e) {
             // continue execution if interrupted
         } catch (ExecutionException e) {
             /* We wrap the cause because the stack trace for the
              * ExecutionException offers nothing useful and is just a wrapper
              * for exceptions that are thrown within a Future. */
-            MantaIOException mioe = new MantaIOException(e.getCause());
+            MantaIOException mioe = new MantaIOException(
+                    "An exception was thrown within the thread writing to the network socket",
+                    e.getCause());
 
             if (this.objectResponse != null) {
                 final String requestId = this.objectResponse.getHeaderAsString(
@@ -336,6 +372,26 @@ public class MantaObjectOutputStream extends OutputStream {
      * @return true if closed, otherwise false
      */
     public boolean isClosed() {
+        if (!closed.get()) {
+            return closed.get();
+        }
+
+        final Boolean innerClosed;
+
+        /* Note: There is a performance cost here that we are paying in exchange
+         * for correctness. Every execution of isInnerStreamClosed() uses
+         * reflection to find out if the innermost OutputStream is in fact
+         * closed. */
+        if (httpContent != null && httpContent.getWriter() != null) {
+            innerClosed = isInnerStreamClosed(httpContent.getWriter());
+        } else {
+            innerClosed = false;
+        }
+
+        if (BooleanUtils.toBoolean(innerClosed)) {
+            return closed.compareAndSet(false, innerClosed);
+        }
+
         return closed.get();
     }
 
