@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -42,7 +43,13 @@ import java.util.concurrent.atomic.LongAdder;
  * <p>NOTE: Use of this class should be discouraged because it uses another thread
  * and it uses reflection in order to provide an {@link OutputStream} implementation.
  * It is provided for users who have no choice but to use an {@link OutputStream} to
- * write data to Manta due to constraints in their object model.</p>
+ * write data to Manta due to constraints in their object model. In terms of
+ * actual impact to your application, the only concrete concern is performance
+ * and memory utilization.</p>
+ *
+ * <p>The above limitations of this class are shaped by the APIS provided in the
+ * Apache HTTP client library. Perhaps a version a more primitive API could
+ * be developed that didn't use another thread nor reflection.</p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.4.0
@@ -125,7 +132,7 @@ public class MantaObjectOutputStream extends OutputStream {
     /**
      * A running count of the total number of bytes written.
      */
-    private LongAdder bytesWritten = new LongAdder();
+    private AtomicLong bytesWritten = new AtomicLong(0L);
 
     /**
      * Flag indicating that this stream has been closed.
@@ -174,11 +181,15 @@ public class MantaObjectOutputStream extends OutputStream {
                 httpHelper.httpPut(path, headers, httpContent, metadata));
 
         /*
-         * We have to wait here until the upload to Manta starts and a Writer
-         * becomes available.
+         * We have to wait here until the upload to Manta starts and a writer
+         * becomes available. The notify event that triggers the wait to stop
+         * is in EmbeddedHttpContent. writeTo() after the inner OutputStream
+         * (writer) has been set. We are forced to wait in the constructor like
+         * this because the writer is needed in order to provide the
+         * OutputStream API.
          */
         synchronized (this.httpContent) {
-            while (!isClosed() && !httpContent.isClosed() && httpContent.getWriter() == null) {
+            while (httpContent.getWriter() == null && !isClosed()) {
                 try {
                     /* We poll because the httpContent.notify() call within the
                      * httpContent.writeTo() method may have been called before
@@ -201,7 +212,7 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         httpContent.getWriter().write(b);
-        bytesWritten.increment();
+        bytesWritten.incrementAndGet();
     }
 
     @Override
@@ -214,7 +225,7 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         httpContent.getWriter().write(b);
-        bytesWritten.add(b.length);
+        bytesWritten.addAndGet(b.length);
     }
 
     @Override
@@ -227,7 +238,7 @@ public class MantaObjectOutputStream extends OutputStream {
         }
 
         httpContent.getWriter().write(b, off, len);
-        bytesWritten.add(b.length);
+        bytesWritten.addAndGet(b.length);
     }
 
     @Override

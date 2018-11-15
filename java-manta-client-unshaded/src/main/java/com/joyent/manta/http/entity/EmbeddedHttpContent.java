@@ -13,6 +13,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +62,7 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
      * @param out the stream to be used to back {@link com.joyent.manta.client.MantaObjectOutputStream}
      */
     @Override
-    public synchronized void writeTo(final OutputStream out) {
+    public synchronized void writeTo(final OutputStream out) throws IOException {
         writer = out;
 
         /* We notify here to wake up the main calling thread which is waiting
@@ -109,7 +110,7 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
     }
 
     @Override
-    public InputStream getContent() {
+    public InputStream getContent() throws IOException {
         throw new UnsupportedOperationException("getContent is not supported");
     }
 
@@ -120,7 +121,7 @@ public class EmbeddedHttpContent implements HttpEntity, Closeable {
 
     @Override
     @Deprecated
-    public void consumeContent() {
+    public void consumeContent() throws IOException {
         throw new UnsupportedOperationException("consumeContent is not supported");
     }
 
