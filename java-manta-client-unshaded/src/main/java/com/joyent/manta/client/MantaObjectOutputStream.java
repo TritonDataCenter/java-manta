@@ -31,7 +31,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
 
 /**
  * <p>{@link OutputStream} that wraps the PUT operations using an {@link java.io.InputStream}
