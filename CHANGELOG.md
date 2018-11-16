@@ -2,10 +2,13 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.2.6] -
+ ### Fixed
+  - [Race condition in MantaObjectOutputStream causing MantaIOException](https://github.com/joyent/java-manta/issues/439)
+
 ## [3.2.5] - 2018-10-04
 ### Fixed
- - [Delete prune keeps trying to delete recursively when directory is not 
- empty](https://github.com/joyent/java-manta/issues/435)
+ - [Delete prune keeps trying to delete recursively when directory is not empty](https://github.com/joyent/java-manta/issues/435)
 ### Changed
  - Improved documentation, code comments and code path for delete prune operations.
 
