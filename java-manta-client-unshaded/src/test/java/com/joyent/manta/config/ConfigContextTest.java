@@ -100,28 +100,15 @@ public class ConfigContextTest {
 
         // setTimeout
 
-        config.setTimeout(-1);
-        Assert.assertThrows(ConfigurationException.class, () ->
-            ConfigContext.validate(config));
-
         config.setTimeout(DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
         ConfigContext.validate(config);
 
-
         // setTcpSocketTimeout
-
-        config.setTcpSocketTimeout(-1);
-        Assert.assertThrows(ConfigurationException.class, () ->
-            ConfigContext.validate(config));
 
         config.setTcpSocketTimeout(DefaultsConfigContext.DEFAULT_TCP_SOCKET_TIMEOUT);
         ConfigContext.validate(config);
 
         // setConnectionRequestTimeout
-
-        config.setConnectionRequestTimeout(-1);
-        Assert.assertThrows(ConfigurationException.class, () ->
-            ConfigContext.validate(config));
 
         config.setConnectionRequestTimeout(DefaultsConfigContext.DEFAULT_CONNECTION_REQUEST_TIMEOUT);
         ConfigContext.validate(config);

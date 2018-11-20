@@ -223,7 +223,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
      * @return fully configured instance
      */
     protected SocketConfig buildSocketConfig() {
-        final int socketTimeout = ObjectUtils.firstNonNull(
+        final int tcpSocketTimeout = ObjectUtils.firstNonNull(
                 config.getTcpSocketTimeout(),
                 DefaultsConfigContext.DEFAULT_TCP_SOCKET_TIMEOUT);
 
@@ -234,7 +234,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
                  */
                 .setTcpNoDelay(true)
                 /* Set a timeout on blocking Socket operations. */
-                .setSoTimeout(socketTimeout)
+                .setSoTimeout(tcpSocketTimeout)
                 .setSoKeepAlive(true)
                 .build();
     }
@@ -316,9 +316,13 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
                 config.getMaximumConnections(),
                 DefaultsConfigContext.DEFAULT_MAX_CONNS);
 
-        final int timeout = ObjectUtils.firstNonNull(
+        final int tcpSocketTimeout = ObjectUtils.firstNonNull(
+                config.getTcpSocketTimeout(),
+                DefaultsConfigContext.DEFAULT_TCP_SOCKET_TIMEOUT);
+
+        final int connectionTimeout = ObjectUtils.firstNonNull(
                 config.getTimeout(),
-                DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+                DefaultsConfigContext.DEFAULT_CONNECTION_TIMEOUT);
 
         final int connectionRequestTimeout = ObjectUtils.firstNonNull(
                 config.getConnectionRequestTimeout(),
@@ -329,7 +333,8 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
 
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
-                .setSocketTimeout(timeout)
+                .setConnectTimeout(connectionTimeout)
+                .setSocketTimeout(tcpSocketTimeout)
                 .setConnectionRequestTimeout(connectionRequestTimeout)
                 .setContentCompressionEnabled(true)
                 .setExpectContinueEnabled(expectContinueEnabled)

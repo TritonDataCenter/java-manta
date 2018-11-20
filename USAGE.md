@@ -89,13 +89,13 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.no_auth                      | MANTA_NO_AUTH                  | false                                | Y*                       |
 | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                | Y*                       |
 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 | Y                        |
-| manta.timeout                      | MANTA_TIMEOUT                  | 20000                                |                          |
+| manta.timeout                      | MANTA_TIMEOUT                  | 4000                                 |                          |
 | manta.retries                      | MANTA_HTTP_RETRIES             | 3 (6 for integration tests)          | Y                        |
 | manta.max_connections              | MANTA_MAX_CONNS                | 24                                   |                          |
 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         | 4096                                 |                          |
 | https.protocols                    | MANTA_HTTPS_PROTOCOLS          | TLSv1.2                              |                          |
 | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) | |
-| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |                          |
+| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 20000                                |                          |
 | manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |                          |
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
@@ -138,7 +138,8 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     When set to true, the client calculates a MD5 checksum of the file being uploaded
     to Manta and then checks it against the result returned by Manta.
 * `manta.timeout` ( **MANTA_TIMEOUT**)
-    The number of milliseconds to wait after a request was made to Manta before failing.
+    The number of milliseconds to wait until giving up when trying to make a new connection
+    to Manta.
 * `manta.retries` ( **MANTA_HTTP_RETRIES**)
     The number of times to retry failed HTTP requests. Setting this value to zero disables retries completely.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
