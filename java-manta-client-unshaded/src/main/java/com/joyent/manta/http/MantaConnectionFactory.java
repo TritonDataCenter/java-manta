@@ -330,6 +330,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
                 .setConnectTimeout(timeout)
+                .setSocketTimeout(timeout)
                 .setConnectionRequestTimeout(connectionRequestTimeout)
                 .setContentCompressionEnabled(true)
                 .setExpectContinueEnabled(expectContinueEnabled)
