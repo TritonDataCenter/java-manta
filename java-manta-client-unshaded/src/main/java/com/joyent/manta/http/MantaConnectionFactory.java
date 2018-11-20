@@ -223,7 +223,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
      * @return fully configured instance
      */
     protected SocketConfig buildSocketConfig() {
-        final int socketTimeout = ObjectUtils.firstNonNull(
+        final int tcpsocketTimeout = ObjectUtils.firstNonNull(
                 config.getTcpSocketTimeout(),
                 DefaultsConfigContext.DEFAULT_TCP_SOCKET_TIMEOUT);
 
@@ -234,7 +234,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
                  */
                 .setTcpNoDelay(true)
                 /* Set a timeout on blocking Socket operations. */
-                .setSoTimeout(socketTimeout)
+                .setSoTimeout(tcpsocketTimeout)
                 .setSoKeepAlive(true)
                 .build();
     }
@@ -329,7 +329,7 @@ public class MantaConnectionFactory implements Closeable, MantaMBeanable, RetryC
 
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setAuthenticationEnabled(false)
-                .setSocketTimeout(timeout)
+                .setConnectTimeout(timeout)
                 .setConnectionRequestTimeout(connectionRequestTimeout)
                 .setContentCompressionEnabled(true)
                 .setExpectContinueEnabled(expectContinueEnabled)
