@@ -295,17 +295,13 @@ public class MantaClientDirectoriesIT {
      * set the pruneEmptyParentDepth = -3, meaning that the method should throw
      * an exception indicating that the parameter (which is less than -1) is
      * invalid)
-     *
-     * @throws IOException
      */
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void pruneParentDirectoriesInvalid() throws IOException {
         final String parentDir = createRandomDirectory(testPathPrefix, 1);
         final String childDir = createRandomDirectory(parentDir, 5);
         // This will throw an illegal argument exception.
-        Assert.assertThrows(java.lang.IllegalArgumentException.class, () -> {
-            mantaClient.delete(childDir, null, -3);
-          });
+        mantaClient.delete(childDir, null, -3);
     }
 
     /**
