@@ -19,9 +19,9 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 /**
  * Integration tests for verifying the connection timeout behaviour for an invalid connection.
@@ -62,7 +62,9 @@ public class TCPSocketConnectionTimeoutIT {
             start = Instant.now();
             client.head(testPathPrefix);
 
-        } catch (ConnectTimeoutException e) {
+        } catch(InterruptedIOException e){
+            Assert.assertEquals(e.getClass().getSimpleName(),
+                    "ConnectTimeoutException");
             Assert.assertTrue(e.getMessage().endsWith("connect timed out"),
                     "ConnectTimeoutException didn't end with expected "
                             + "connection timeout message. Actual exception:\n"
