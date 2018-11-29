@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2018, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,13 @@ public interface ConfigContext extends MantaMBeanable {
     String getPassword();
 
     /**
-     * @return General connection timeout for the Manta service.
+     * Determines the timeout in milliseconds until a connection is established.
+     * <p>
+     * A timeout value of zero is interpreted as an infinite timeout.
+     * A negative value is interpreted as undefined (system default).
+     * </p>
+     *
+     * @return new connection timeout for the Manta service.
      */
     Integer getTimeout();
 
@@ -109,6 +115,14 @@ public interface ConfigContext extends MantaMBeanable {
     Boolean disableNativeSignatures();
 
     /**
+     * Defines the socket timeout ({@code SO_TIMEOUT}) in milliseconds,
+     * which is the timeout for waiting for data  or, put differently,
+     * a maximum period inactivity between two consecutive data packets).
+     * <p>
+     * A timeout value of zero is interpreted as an infinite timeout.
+     * A negative value is interpreted as undefined (system default).
+     * </p>
+     *
      * @see java.net.SocketOptions#SO_TIMEOUT
      * @return time in milliseconds to wait to see if a TCP socket has timed out
      */
@@ -120,7 +134,7 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getConnectionRequestTimeout();
 
     /**
-     * @return null or the number of milliseconds to wait for a 100-continue
+     * @return null or maximum time in milliseconds to wait for a 100-continue response
      */
     Integer getExpectContinueTimeout();
 
@@ -299,18 +313,6 @@ public interface ConfigContext extends MantaMBeanable {
                         e.getMessage(), config.getMantaURL());
                 failureMessages.add(msg);
             }
-        }
-
-        if (config.getTimeout() != null && config.getTimeout() < 0) {
-            failureMessages.add("Manta timeout must be 0 or greater");
-        }
-
-        if (config.getTcpSocketTimeout() != null && config.getTcpSocketTimeout() < 0) {
-            failureMessages.add("Manta tcp socket timeout must be 0 or greater");
-        }
-
-        if (config.getConnectionRequestTimeout() != null && config.getConnectionRequestTimeout() < 0) {
-            failureMessages.add("Manta connection request timeout must be 0 or greater");
         }
 
         if (config.getExpectContinueTimeout() != null && config.getExpectContinueTimeout() < 1) {

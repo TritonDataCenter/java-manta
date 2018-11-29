@@ -55,6 +55,13 @@
             <organizationUrl>joyent.com</organizationUrl>
             <timezone>US/Pacific</timezone>
         </developer>
+        <developer>
+            <name>Ashwin A Nair</name>
+            <email>ashwin.nair@joyent.com</email>
+            <organization>Joyent</organization>
+            <organizationUrl>joyent.com</organizationUrl>
+            <timezone>US/Pacific</timezone>
+        </developer>
     </developers>
     <contributors>
         <contributor>

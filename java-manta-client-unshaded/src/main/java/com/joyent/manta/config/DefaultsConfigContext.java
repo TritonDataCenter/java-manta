@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2018, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ public class DefaultsConfigContext implements ConfigContext {
     /**
      * The default timeout for accessing the Manta service.
      */
-    public static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+    public static final int DEFAULT_HTTP_TIMEOUT = 20_000;
 
     /**
      * The default number of times to retry failed requests.
@@ -101,7 +101,14 @@ public class DefaultsConfigContext implements ConfigContext {
      * Default number of milliseconds to wait for a TCP socket's connection to
      * timeout.
      */
-    public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
+    public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 20_000;
+
+    /**
+     * Default number of milliseconds to wait for a new connection to Manta
+     * until giving up . It starts when the socket is being opened to establish a
+     * connection. The implementation may differ depending on the OS upon which it is run.
+     */
+    public static final int DEFAULT_CONNECTION_TIMEOUT = 4000;
 
     /**
      * Default connection timeout is 1 seconds (1000 ms).
@@ -182,7 +189,7 @@ public class DefaultsConfigContext implements ConfigContext {
 
     @Override
     public Integer getTimeout() {
-        return DEFAULT_HTTP_TIMEOUT;
+        return DEFAULT_CONNECTION_TIMEOUT;
     }
 
     @Override
