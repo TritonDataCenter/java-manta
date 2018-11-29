@@ -2,9 +2,20 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.2.6] -
+## [3.3.0] -
+### Changed
+ - Configuration parameter `manta.timeout` is now being used to specify
+   connection timeouts and is updated to a default value of 4s. This parameter now accepts negative values (indicates
+   the OS default setting).
+ - Configuration parameter `manta.tcp_socket_timeout` is now being 
+   used to specify timeouts when waiting for a tcp socket and is updated to a default value of 20s. This parameter now 
+   accepts negative values (indicates the OS default setting).
+ - Configuration parameter `manta.connection_request_timeout` now accepts 
+   negative values (indicates the OS default setting).
 ### Fixed
  - [Race condition in MantaObjectOutputStream causing MantaIOException](https://github.com/joyent/java-manta/issues/439)
+ - [Manta client unable to set new connection timeout #441](https://github.com/joyent/java-manta/issues/441)
+ - [Untangle the different timeout settings from MANTA_TIMEOUT](https://github.com/joyent/java-manta/issues/109)
 
 ## [3.2.5] - 2018-10-04
 ### Fixed
