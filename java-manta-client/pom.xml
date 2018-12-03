@@ -237,69 +237,56 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${maven-build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-shade-source-workaround-src</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/shade-source-workaround</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-maven-resources-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>copy-shade-source-workaround-src</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>src/shade-source-workaround</outputDirectory>
+                    <resources>
+                        <resource>
+                            <directory>${multi.module.root}/java-manta-client-unshaded/src/main/java</directory>
+                        </resource>
+                    </resources>
+                </configuration>
+            </plugin>
+            <!--
+            For SOME reason Maven can build a sources JAR for this module based on the above workaround
+            *and still* deleting the source files during process-resources in order to avoid the shade plugin
+            detecting overlapping classes.
+
+            Maintainer beware! You might be tempted to add an invocation of the maven-source-plugin directly here
+            and bind it to a phase after the above two but before packaging (in order to avoid the overlapping
+            classes error) but this does not work. Relying on the parent-pom definition of maven-source-plugin is
+            unexpected but functional so that behavior is documented here.
+            -->
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>${maven-maven-resources-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>copy-shade-source-workaround-src</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <outputDirectory>src/shade-source-workaround</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${multi.module.root}/java-manta-client-unshaded/src/main/java</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>${maven-build-helper-maven-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>add-shade-source-workaround-src</id>
-                                <phase>process-sources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>${project.basedir}/src/shade-source-workaround</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!--
-                    For SOME reason Maven can build a sources JAR for this module based on the above workaround
-                    *and still* deleting the source files during process-resources in order to avoid the shade plugin
-                    detecting overlapping classes.
-
-                    Maintainer beware! You might be tempted to add an invocation of the maven-source-plugin directly here
-                    and bind it to a phase after the above two but before packaging (in order to avoid the overlapping 
-                    classes error) but this does not work. Relying on the parent-pom definition of maven-source-plugin is 
-                    unexpected but functional so that behavior is documented here.
-                    -->
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
