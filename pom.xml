@@ -386,7 +386,7 @@
                                     <findAllDuplicates>true</findAllDuplicates>
                                 </banDuplicateClasses>
                             </rules>
-                            <fail>true</fail>
+                            <fail>false</fail>
                         </configuration>
                     </execution>
                 </executions>
