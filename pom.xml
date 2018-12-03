@@ -443,6 +443,7 @@
                     <localCheckout>true</localCheckout>
                     <pushChanges>false</pushChanges>
                     <releaseProfiles>release</releaseProfiles>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
                     <preparationGoals>compile jar:jar source:jar site javadoc:jar</preparationGoals>
                 </configuration>
             </plugin>
