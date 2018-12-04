@@ -444,7 +444,7 @@
                     <pushChanges>false</pushChanges>
                     <releaseProfiles>release</releaseProfiles>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <preparationGoals>compile jar:jar source:jar site javadoc:jar</preparationGoals>
+                    <preparationGoals>clean compile jar:jar source:jar site:jar javadoc:jar</preparationGoals>
                 </configuration>
             </plugin>
             <plugin>
