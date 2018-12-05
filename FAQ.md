@@ -127,3 +127,48 @@ defines the following categories:
 
 Within the Java Manta library, we refer to the identity used to login -
 "owner" or "owner/subuser" - as *user*, e.g `MANTA_USER` or `manta.user`.
+
+## How can I set up the client to connect to a personal Manta deployment?
+
+If your Manta deployment has a self-signed certificate and no public DNS set up,
+some extra work must be done to connect using the `java-manta` client.
+
+1. Retrieve the self-signed certificate from your Manta deployment:
+```
+headnode$ sdc-sapi /services?name=loadbalancer | \
+    json -Ha metadata.SSL_CERTIFICATE
+```
+
+2. Paste *only the certificate* (The lines between and including
+`-----BEGIN CERTIFICATE-----` and `-----END CERTIFICATE-----`) into a file on
+the machine from which you want to run the java-manta client - for example,
+`/tmp/manta-ssl.crt`
+
+3. Get the certificate's CN:
+`openssl x509 -text -noout -in /tmp/manta-ssl.crt | grep CN`
+
+4. Retrieve your Manta deployment's public IP address - this is the public IP
+of the `loadbalancer` zone and can be found by running `ifconfig` from that
+zone.
+
+5. On the machine from which you want to run the `java-manta` client, edit
+`/etc/hosts` to add an entry mapping the Manta IP address to the Manta CN - for
+example:
+```
+10.99.99.5 manta.virtual.example.com
+```
+
+6. Add the certificate to your Java installation's keystore - this is often
+found at `$JAVA_HOME/lib/security/cacerts` but can be customized. To add the
+certificate, run:
+
+```
+$JAVA_HOME/bin/keytool -import -alias "<ALIAS OF YOUR CHOICE>" \
+-keystore $JAVA_HOME/lib/security/cacerts -file "/tmp/manta-ssl.crt"
+```
+
+7. Set `MANTA_URL` to be the CN you entered in `/etc/hosts`, and set
+`MANTA_TLS_INSECURE=true` to allow for the self-signed certificate. You may also
+set these values as Java system properties rather than environment variables.
+You should now be able to connect to your Manta deployment from the `java-manta`
+client.
