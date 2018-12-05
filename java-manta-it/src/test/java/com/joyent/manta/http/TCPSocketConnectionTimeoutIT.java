@@ -62,12 +62,10 @@ public class TCPSocketConnectionTimeoutIT {
             start = Instant.now();
             client.head(testPathPrefix);
 
-        } catch(InterruptedIOException e){
+        } catch (InterruptedIOException e) {
             Assert.assertEquals(e.getClass().getSimpleName(),
-                    "ConnectTimeoutException");
-            Assert.assertTrue(e.getMessage().endsWith("connect timed out"),
-                    "ConnectTimeoutException didn't end with expected "
-                            + "connection timeout message. Actual exception:\n"
+                    "ConnectTimeoutException",
+                    "Expected exception ConnectTimeoutException was not thrown. Actual Exception:\n"
                             + ExceptionUtils.getStackTrace(e));
         } finally {
             stop = Instant.now();
