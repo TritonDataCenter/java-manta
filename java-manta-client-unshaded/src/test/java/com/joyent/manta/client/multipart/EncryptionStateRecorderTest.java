@@ -13,16 +13,16 @@ import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaRandomUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
+import org.bouncycastle.util.encoders.Hex;
 import org.mockito.Mockito;
 import org.testng.Assert;
-import org.testng.AssertJUnit;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -32,10 +32,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Random;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
 public class EncryptionStateRecorderTest {
+    private static final MantaRandomUtils RND = new MantaRandomUtils(1);
 
     @DataProvider(name = "supportedCiphers")
     public Object[][] supportedCiphers() {
@@ -78,8 +80,8 @@ public class EncryptionStateRecorderTest {
         final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
         final ByteArrayOutputStream snapshotOutput = new ByteArrayOutputStream();
 
-        final int inputSize = RandomUtils.nextInt(300, 600);
-        final byte[] content = RandomUtils.nextBytes(inputSize);
+        final int inputSize = RND.nextInt(300, 600);
+        final byte[] content = RND.nextBytes(inputSize);
 
         // encrypt to originalOutput through state.getCipherStream()
         state.getMultipartStream().setNext(originalOutput);
@@ -98,7 +100,7 @@ public class EncryptionStateRecorderTest {
         snapshotOutput.write(ctx.getCipher().doFinal());
 
         // verify the parts encrypt to the same ciphertext
-        AssertJUnit.assertArrayEquals(originalOutput.toByteArray(), snapshotOutput.toByteArray());
+        assertByteArrayEquals(originalOutput.toByteArray(), snapshotOutput.toByteArray());
 
         // grab a distinct Cipher object to decrypt
         final Cipher decryptCipher = cipherDetails.getCipher();
@@ -106,8 +108,8 @@ public class EncryptionStateRecorderTest {
         final byte[] originalDecrypted = decryptCipher.doFinal(originalOutput.toByteArray());
         final byte[] snapshotDecrypted = decryptCipher.doFinal(snapshotOutput.toByteArray());
 
-        AssertJUnit.assertArrayEquals(content, originalDecrypted);
-        AssertJUnit.assertArrayEquals(content, snapshotDecrypted);
+        assertByteArrayEquals(originalDecrypted, content);
+        assertByteArrayEquals(content, snapshotDecrypted);
 
         // TODO: this test does not validate hmac cloning yet, that is currently only covered by HmacClonerTest
     }
@@ -129,8 +131,8 @@ public class EncryptionStateRecorderTest {
 
         initializeEncryptionStateStreams(state);
 
-        final int inputSize = RandomUtils.nextInt(1000, 2000);
-        final byte[] content = RandomUtils.nextBytes(inputSize);
+        final int inputSize = RND.nextInt(1000, 2000);
+        final byte[] content = RND.nextBytes(inputSize);
 
         final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
 
@@ -142,7 +144,7 @@ public class EncryptionStateRecorderTest {
         final byte[] uploadedBytes = writeEncryptedBytePart(state, content, finalizingCallback);
 
         // verify the parts encrypt to the same ciphertext
-        AssertJUnit.assertArrayEquals(lostBytes, uploadedBytes);
+        assertByteArrayEquals(lostBytes, uploadedBytes);
 
         // check original plaintext against uploaded ciphertext
         validateCiphertext(cipherDetails, secretKey, content, iv, uploadedBytes);
@@ -156,10 +158,10 @@ public class EncryptionStateRecorderTest {
         final EncryptionState state = new EncryptionState(ctx);
 
         // prepare part content
-        final int inputSize = RandomUtils.nextInt(1000, 2000);
-        final int firstPartSize = RandomUtils.nextInt(500, 999);
+        final int inputSize = RND.nextInt(1000, 2000);
+        final int firstPartSize = RND.nextInt(500, 999);
 
-        final byte[] content = RandomUtils.nextBytes(inputSize);
+        final byte[] content = RND.nextBytes(inputSize);
         final byte[] content1 = Arrays.copyOfRange(content, 0, firstPartSize);
         final byte[] content2 = Arrays.copyOfRange(content, firstPartSize, content.length);
 
@@ -202,7 +204,7 @@ public class EncryptionStateRecorderTest {
 
         final byte[] lastRetryUpload = writeEncryptedBytePart(state, content2, finalizingCallback);
 
-        AssertJUnit.assertArrayEquals(lastUpload, lastRetryUpload);
+        assertByteArrayEquals(lastUpload, lastRetryUpload);
 
         final byte[] ciphertext = ArrayUtils.addAll(firstUpload, lastRetryUpload);
         validateCiphertext(cipherDetails, secretKey, content, iv, ciphertext);
@@ -274,6 +276,20 @@ public class EncryptionStateRecorderTest {
         ByteArrayOutputStream decrypted = new ByteArrayOutputStream();
         IOUtils.copy(decryptingStream, decrypted);
         decryptingStream.close();
-        AssertJUnit.assertArrayEquals(plaintext, decrypted.toByteArray());
+        assertByteArrayEquals(plaintext, decrypted.toByteArray());
+    }
+
+    private static void assertByteArrayEquals(final byte[] actual, final byte[] expected) {
+        if (!Arrays.equals(actual, expected)) {
+            String msg = String.format("Array values are not equal\n"
+                            + "Expected length: %d Actual length: %d\n"
+                            + "Expected: %s\n"
+                            + "Actual:   %s",
+                    expected.length, actual.length,
+                    Hex.toHexString(expected),
+                    Hex.toHexString(actual));
+
+            Assert.fail(msg);
+        }
     }
 }

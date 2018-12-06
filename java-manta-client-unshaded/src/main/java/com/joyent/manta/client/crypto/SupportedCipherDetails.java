@@ -74,7 +74,18 @@ public interface SupportedCipherDetails {
      *
      * @return a new instance of the associated cipher using the BouncyCastle provider
      */
+    @Deprecated
     Cipher getBouncyCastleCipher();
+
+    /**
+     * Not all cipher implementations are cloneable. This method provides a
+     * Cipher implementation from a provider that supports clone via the
+     * {@link com.joyent.manta.util.CipherCloner} class.
+     *
+     * @see {@link com.joyent.manta.client.multipart.EncryptionStateRecorder}
+     * @return a new instance of the associated cipher using the BouncyCastle provider
+     */
+    Cipher getCloneableCipher();
 
     /**
      * Calculates the size of the output ciphertext based on the plaintext

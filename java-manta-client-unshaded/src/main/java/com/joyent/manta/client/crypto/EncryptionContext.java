@@ -58,13 +58,13 @@ public class EncryptionContext {
      * {@link Cipher} is unaffected by retries since {@link EncryptingEntity#writeTo(OutputStream)}
      * may be called multiple times.
      *
-     * @param key           secret key to initialize cipher with
+     * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
-     * @param suppliedIv    an existing IV to reuse
+     * @param suppliedIv  an existing IV to reuse
      */
     EncryptionContext(final SecretKey key,
-                             final SupportedCipherDetails cipherDetails,
-                             final byte[] suppliedIv) {
+                      final SupportedCipherDetails cipherDetails,
+                      final byte[] suppliedIv) {
 
         @SuppressWarnings("MagicNumber")
         final int keyBits = key.getEncoded().length << 3;
@@ -81,7 +81,7 @@ public class EncryptionContext {
 
         this.key = key;
         this.cipherDetails = cipherDetails;
-        this.cipher = cipherDetails.getBouncyCastleCipher();
+        this.cipher = cipherDetails.getCloneableCipher();
         initializeCipher(suppliedIv);
     }
 

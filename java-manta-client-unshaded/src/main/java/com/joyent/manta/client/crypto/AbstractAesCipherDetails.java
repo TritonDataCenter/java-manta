@@ -21,6 +21,7 @@ import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -163,28 +164,64 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public Cipher getCipher() {
-        if (ExternalSecurityProviderLoader.getPkcs11Provider() == null) {
-            return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
-                    ExternalSecurityProviderLoader.getBouncyCastleProvider());
-        }
+        final Provider preferredProvider = ExternalSecurityProviderLoader.getPreferredProvider();
+        final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
+        final Cipher cipher;
 
-        final Provider provider;
-
-        if (ExternalSecurityProviderLoader.getPkcs11Provider().containsKey(
-                "Cipher." + cipherAlgorithmJavaName)) {
-            provider = ExternalSecurityProviderLoader.getPkcs11Provider();
+        if (pkcs11Provider != null && preferredProvider == pkcs11Provider) {
+            /* Unfortunately, libnss via pkcs11 uses different strings to
+             * identify ciphers than Bouncy Castle or SunJCE, so if we are using
+             * it as a provider, we have to modify the cipher name that we are
+             * search for to get a compatible implementation. */
+            final String pkcs11CipherName = String.format("Cipher.%s", cipherAlgorithmJavaName);
+            if (pkcs11Provider.containsKey(pkcs11CipherName)) {
+                cipher = SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
+                        pkcs11Provider);
+            } else {
+                cipher = ExternalSecurityProviderLoader.getPreferredProvidersRanked().stream()
+                        .skip(1)
+                        .map(p -> SupportedCipherDetails.findCipher(cipherAlgorithmJavaName, p))
+                        .findFirst().orElse(null);
+            }
         } else {
-            provider = ExternalSecurityProviderLoader.getBouncyCastleProvider();
+            cipher = ExternalSecurityProviderLoader.getPreferredProvidersRanked().stream()
+                    .map(p -> SupportedCipherDetails.findCipher(cipherAlgorithmJavaName, p))
+                    .findFirst().orElse(null);
         }
 
-        return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
-                provider);
+        return cipher;
     }
 
+    @Deprecated
     @Override
     public Cipher getBouncyCastleCipher() {
         return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
                 ExternalSecurityProviderLoader.getBouncyCastleProvider());
+    }
+
+    @Override
+    public Cipher getCloneableCipher() {
+        final Iterator<Provider> itr = ExternalSecurityProviderLoader
+                .getPreferredProvidersRanked().iterator();
+
+        Provider provider = null;
+
+        while (itr.hasNext()) {
+            Provider next = itr.next();
+
+            if (ExternalSecurityProviderLoader.getPkcs11Provider() == null) {
+                provider = next;
+                break;
+            }
+
+            if (next != ExternalSecurityProviderLoader.getPkcs11Provider()) {
+                provider = next;
+                break;
+            }
+        }
+
+        return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
+                provider);
     }
 
     @Override

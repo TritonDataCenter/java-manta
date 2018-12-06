@@ -97,8 +97,15 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
         return null;
     }
 
+    @Deprecated
     @Override
     public Cipher getBouncyCastleCipher() {
+        fail();
+        return null;
+    }
+
+    @Override
+    public Cipher getCloneableCipher() {
         fail();
         return null;
     }

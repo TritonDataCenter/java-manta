@@ -36,6 +36,10 @@ public class CipherClonerTest {
             throw new SkipException("PKCS11 Security Provider not present.");
         }
 
+        if (ExternalSecurityProviderLoader.getPreferredProvider() != pkcs11Provider) {
+            throw new SkipException("PKCS11 provider wasn't loaded/chosen");
+        }
+
         // verify that the default Cipher provider is PKCS11 when it is installed
         // the assertThrows below depends on this behavior
         Assert.assertSame(ExternalSecurityProviderLoader.getPreferredProvider(), pkcs11Provider);
@@ -96,7 +100,7 @@ public class CipherClonerTest {
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
 
         // notice we are specifically calling getBouncyCastleCipher()
-        final Cipher originalCipher = cipherDetails.getBouncyCastleCipher();
+        final Cipher originalCipher = cipherDetails.getCloneableCipher();
         originalCipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
         final Cipher clonedCipher = new CipherCloner().createClone(originalCipher);
