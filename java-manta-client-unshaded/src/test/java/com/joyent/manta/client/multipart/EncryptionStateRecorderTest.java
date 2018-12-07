@@ -111,7 +111,7 @@ public class EncryptionStateRecorderTest {
         final byte[] snapshotDecrypted = decryptCipher.doFinal(snapshotOutput.toByteArray());
 
         assertByteArrayEquals(originalDecrypted, content);
-        assertByteArrayEquals(content, snapshotDecrypted);
+        assertByteArrayEquals(snapshotDecrypted, content);
 
         // TODO: this test does not validate hmac cloning yet, that is currently only covered by HmacClonerTest
     }
