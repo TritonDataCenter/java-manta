@@ -26,18 +26,19 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Random;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 public class EncryptionStateRecorderTest {
     private static final MantaRandomUtils RND = new MantaRandomUtils(1);
+    private static final byte[] SECRET_KEY = Hex.decode(
+            "8b30335ba65d1d0619c6192edb15318763d9a1be3ff916aaf46f4717232a504a");
 
     @DataProvider(name = "supportedCiphers")
     public Object[][] supportedCiphers() {
@@ -66,7 +67,8 @@ public class EncryptionStateRecorderTest {
 
     @Test(dataProvider = "supportedCiphers")
     public void testRecordAndRewindFirstPart(final SupportedCipherDetails cipherDetails) throws Exception {
-        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final SecretKey secretKey = generateSecretKey(cipherDetails);
+
         // cipher IV prepared in EncryptionContext constructor
         final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
         final EncryptionState state = new EncryptionState(ctx);
@@ -116,7 +118,7 @@ public class EncryptionStateRecorderTest {
 
     @Test(dataProvider = "supportedCiphers")
     public void testRecordAndRewindSinglePartWithEntity(final SupportedCipherDetails cipherDetails) throws Exception {
-        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final SecretKey secretKey = generateSecretKey(cipherDetails);
         final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
         final byte[] iv = ctx.getCipher().getIV();
         final EncryptionState state = new EncryptionState(ctx);
@@ -152,7 +154,7 @@ public class EncryptionStateRecorderTest {
 
     @Test(dataProvider = "supportedCiphers")
     public void testRecordAndRewindMultipleParts(final SupportedCipherDetails cipherDetails) throws Exception {
-        final SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+        final SecretKey secretKey = generateSecretKey(cipherDetails);
         final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
         final byte[] iv = ctx.getCipher().getIV();
         final EncryptionState state = new EncryptionState(ctx);
@@ -291,5 +293,11 @@ public class EncryptionStateRecorderTest {
 
             Assert.fail(msg);
         }
+    }
+
+    private static SecretKey generateSecretKey(final SupportedCipherDetails cipherDetails) {
+        int keySize = cipherDetails.getKeyLengthBits() >> 3;
+        byte[] secret = Arrays.copyOfRange(SECRET_KEY, 0, keySize);
+        return SecretKeyUtils.loadKey(secret, cipherDetails);
     }
 }
