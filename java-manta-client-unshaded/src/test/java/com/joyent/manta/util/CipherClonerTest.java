@@ -36,14 +36,6 @@ public class CipherClonerTest {
             throw new SkipException("PKCS11 Security Provider not present.");
         }
 
-        if (ExternalSecurityProviderLoader.getPreferredProvider() != pkcs11Provider) {
-            throw new SkipException("PKCS11 provider wasn't loaded/chosen");
-        }
-
-        // verify that the default Cipher provider is PKCS11 when it is installed
-        // the assertThrows below depends on this behavior
-        Assert.assertSame(ExternalSecurityProviderLoader.getPreferredProvider(), pkcs11Provider);
-
         Assert.assertThrows(MantaMemoizationException.class, () -> {
             new CipherCloner().createClone(DefaultsConfigContext.DEFAULT_CIPHER.getCipher());
         });

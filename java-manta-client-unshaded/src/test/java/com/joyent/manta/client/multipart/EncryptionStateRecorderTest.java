@@ -70,7 +70,7 @@ public class EncryptionStateRecorderTest {
         final SecretKey secretKey = generateSecretKey(cipherDetails);
 
         // cipher IV prepared in EncryptionContext constructor
-        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
+        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails, true);
         final EncryptionState state = new EncryptionState(ctx);
         final byte[] iv = ctx.getCipher().getIV();
 
@@ -122,7 +122,7 @@ public class EncryptionStateRecorderTest {
     @Test(dataProvider = "supportedCiphers")
     public void testRecordAndRewindSinglePartWithEntity(final SupportedCipherDetails cipherDetails) throws Exception {
         final SecretKey secretKey = generateSecretKey(cipherDetails);
-        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
+        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails, true);
         final byte[] iv = ctx.getCipher().getIV();
         final EncryptionState state = new EncryptionState(ctx);
 
@@ -158,7 +158,7 @@ public class EncryptionStateRecorderTest {
     @Test(dataProvider = "supportedCiphers")
     public void testRecordAndRewindMultipleParts(final SupportedCipherDetails cipherDetails) throws Exception {
         final SecretKey secretKey = generateSecretKey(cipherDetails);
-        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails);
+        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails, true);
         final byte[] iv = ctx.getCipher().getIV();
         final EncryptionState state = new EncryptionState(ctx);
 

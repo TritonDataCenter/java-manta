@@ -9,12 +9,12 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Objects;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * Context class that contains a secret key, cipher/mode properties objects
@@ -42,14 +42,22 @@ public class EncryptionContext {
     private final Cipher cipher;
 
     /**
+     * Flag indicating that we will only use cloneable ciphers for encryption
+     * operations.
+     */
+    private final boolean useCloneableCipher;
+
+    /**
      * Creates a new instance of an encryption context.
      *
-     * @param key           secret key to initialize cipher with
+     * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
+     * @param useCloneableCipher true when only cloneable ciphers can be used
      */
     public EncryptionContext(final SecretKey key,
-                             final SupportedCipherDetails cipherDetails) {
-        this(key, cipherDetails, null);
+                             final SupportedCipherDetails cipherDetails,
+                             final boolean useCloneableCipher) {
+        this(key, cipherDetails, null, useCloneableCipher);
     }
 
     /**
@@ -60,11 +68,13 @@ public class EncryptionContext {
      *
      * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
-     * @param suppliedIv  an existing IV to reuse
+     * @param suppliedIv an existing IV to reuse
+     * @param useCloneableCipher true when only cloneable ciphers can be used
      */
     EncryptionContext(final SecretKey key,
                       final SupportedCipherDetails cipherDetails,
-                      final byte[] suppliedIv) {
+                      final byte[] suppliedIv,
+                      final boolean useCloneableCipher) {
 
         @SuppressWarnings("MagicNumber")
         final int keyBits = key.getEncoded().length << 3;
@@ -80,8 +90,15 @@ public class EncryptionContext {
         }
 
         this.key = key;
+        this.useCloneableCipher = useCloneableCipher;
         this.cipherDetails = cipherDetails;
-        this.cipher = cipherDetails.getCloneableCipher();
+
+        if (useCloneableCipher) {
+            this.cipher = cipherDetails.getCloneableCipher();
+        } else {
+            this.cipher = cipherDetails.getCipher();
+        }
+
         initializeCipher(suppliedIv);
     }
 
@@ -104,6 +121,10 @@ public class EncryptionContext {
 
     public Cipher getCipher() {
         return cipher;
+    }
+
+    public boolean usesCloneableCipher() {
+        return useCloneableCipher;
     }
 
     /**
@@ -146,11 +167,12 @@ public class EncryptionContext {
         final EncryptionContext that = (EncryptionContext) o;
 
         return Objects.equals(key, that.key)
-               && Objects.equals(cipherDetails, that.cipherDetails);
+               && Objects.equals(cipherDetails, that.cipherDetails)
+               && useCloneableCipher == that.useCloneableCipher;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, cipherDetails);
+        return Objects.hash(key, cipherDetails, useCloneableCipher);
     }
 }
