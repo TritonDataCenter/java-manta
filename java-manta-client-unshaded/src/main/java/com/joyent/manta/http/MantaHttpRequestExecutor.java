@@ -12,6 +12,7 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaNoHttpResponseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpClientConnection;
+import org.apache.http.HttpConnectionMetrics;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -108,6 +109,15 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
             }
 
             mioe.setContextValue("loadBalancerAddress", extractLoadBalancerAddress(conn));
+            mioe.setContextValue("socketTimeout", conn.getSocketTimeout());
+
+            if (conn.getMetrics() != null) {
+                final HttpConnectionMetrics metrics = conn.getMetrics();
+                mioe.setContextValue("receivedBytes", metrics.getReceivedBytesCount());
+                mioe.setContextValue("sentBytes", metrics.getSentBytesCount());
+                mioe.setContextValue("requestCount", metrics.getRequestCount());
+                mioe.setContextValue("responseCount", metrics.getResponseCount());
+            }
 
             throw mioe;
         }
