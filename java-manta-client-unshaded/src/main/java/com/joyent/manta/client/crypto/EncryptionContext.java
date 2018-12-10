@@ -123,6 +123,9 @@ public class EncryptionContext {
         return cipher;
     }
 
+    /**
+     * @return when true, this encryption context requires a cloneable cipher
+     */
     public boolean usesCloneableCipher() {
         return useCloneableCipher;
     }
