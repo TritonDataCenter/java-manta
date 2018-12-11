@@ -23,21 +23,26 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 
 public class CipherClonerTest {
 
     @Test
-    public void testRefusesToClonePKCS11Cipher() {
+    public void testRefusesToClonePKCS11Cipher() throws NoSuchAlgorithmException, NoSuchPaddingException {
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
         if (pkcs11Provider == null) {
             throw new SkipException("PKCS11 Security Provider not present.");
         }
 
+        final String cipherName = DefaultsConfigContext.DEFAULT_CIPHER.getCipherAlgorithm();
+        final Cipher cipher = Cipher.getInstance(cipherName, pkcs11Provider);
+
         Assert.assertThrows(MantaMemoizationException.class, () -> {
-            new CipherCloner().createClone(DefaultsConfigContext.DEFAULT_CIPHER.getCipher());
+            new CipherCloner().createClone(cipher);
         });
     }
 

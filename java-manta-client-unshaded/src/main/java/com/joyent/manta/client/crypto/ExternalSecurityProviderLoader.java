@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
@@ -15,6 +16,9 @@ import org.slf4j.LoggerFactory;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +40,7 @@ public final class ExternalSecurityProviderLoader {
      * System property identifier used to indicate the preferred security provider
      * for client-side encryption.
      */
-    private static final String PREFERRED_PROVIDER_SYS_PROP_KEY = "manta.preferred.security.provider";
+    private static final String PREFERRED_PROVIDERS_SYS_PROP_KEY = "manta.preferred.security.providers";
 
     /**
      * Name of BouncyCastle security provider.
@@ -72,12 +76,7 @@ public final class ExternalSecurityProviderLoader {
      * A unique list of security provider supported for client-side encryption
      * in ranked order of preference.
      */
-    private static final List<Provider> RANKED_PREFERRED_PROVIDERS;
-
-    /**
-     * Reference to the most preferred cipher provider.
-     */
-    private static final Provider PREFERRED_PROVIDER;
+    private static List<Provider> rankedPreferredProviders;
 
     static {
         PKCS11_PROVIDER = Security.getProvider(PKCS11_PROVIDER_NAME);
@@ -99,17 +98,16 @@ public final class ExternalSecurityProviderLoader {
 
         SUNJCE_PROVIDER = Security.getProvider(SUNJCE_PROVIDER_NAME);
 
-        RANKED_PREFERRED_PROVIDERS = Collections.unmodifiableList(getPreferredProvidersRanked());
+        rankedPreferredProviders = Collections.unmodifiableList(
+                buildRankedPreferredProviders(System.getProperty(PREFERRED_PROVIDERS_SYS_PROP_KEY)));
 
-        if (RANKED_PREFERRED_PROVIDERS.isEmpty()) {
+        if (rankedPreferredProviders.isEmpty()) {
             String msg = "There are no usable security providers for Manta "
                     + "client-side encryption";
             throw new SecurityException(msg);
         }
 
-        PREFERRED_PROVIDER = RANKED_PREFERRED_PROVIDERS.get(0);
-
-        LOGGER.info("Java security preferred provider chosen for CSE: {}", PREFERRED_PROVIDER);
+        LOGGER.info("Java security preferred provider chosen for CSE: {}", getPreferredProvider());
     }
 
     /**
@@ -160,14 +158,23 @@ public final class ExternalSecurityProviderLoader {
      * @return the security provider to use for client side encryption
      */
     public static Provider getPreferredProvider() {
-        return PREFERRED_PROVIDER;
+        return rankedPreferredProviders.get(0);
+    }
+
+    public static List<Provider> getRankedPreferredProviders() {
+        return rankedPreferredProviders;
+    }
+
+    public static void setRankedPreferredProviders(final Collection<Provider> providersRanked) {
+        rankedPreferredProviders = Collections.unmodifiableList(
+                new ArrayList<>(providersRanked));
     }
 
     /**
+     * @param preferredProvidersCSV CSV list of security provider names
      * @return a list of valid security providers ranked from most preferred to least
      */
-    public static List<Provider> getPreferredProvidersRanked() {
-        final String preferredProvider = System.getProperty(PREFERRED_PROVIDER_SYS_PROP_KEY);
+    public static List<Provider> buildRankedPreferredProviders(final String preferredProvidersCSV) {
         final ArrayDeque<Provider> rankedProviders = new ArrayDeque<>(4);
 
         if (PKCS11_PROVIDER != null) {
@@ -182,10 +189,24 @@ public final class ExternalSecurityProviderLoader {
             rankedProviders.add(SUNJCE_PROVIDER);
         }
 
-        if (isKnownSecurityProvider(preferredProvider)) {
-            final Provider preferred = Security.getProvider(preferredProvider);
-            rankedProviders.addFirst(preferred);
+        final String[] providers;
+
+        if (StringUtils.isNotBlank(preferredProvidersCSV)) {
+            providers = StringUtils.split(preferredProvidersCSV, ",");
+        } else {
+            providers = new String[0];
         }
+
+        ArrayUtils.reverse(providers);
+        Arrays.stream(providers)
+                .map(StringUtils::trimToEmpty)
+                .filter(StringUtils::isNotBlank)
+                .filter(ExternalSecurityProviderLoader::isKnownSecurityProvider)
+                .distinct()
+                .forEach(p -> {
+                    final Provider preferred = Security.getProvider(p);
+                    rankedProviders.addFirst(preferred);
+                });
 
         return rankedProviders.stream().distinct().collect(Collectors.toList());
     }

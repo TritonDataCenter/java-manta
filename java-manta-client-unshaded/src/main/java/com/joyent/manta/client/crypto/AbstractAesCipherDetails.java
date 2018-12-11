@@ -177,13 +177,13 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
                 cipher = SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
                         pkcs11Provider);
             } else {
-                cipher = ExternalSecurityProviderLoader.getPreferredProvidersRanked().stream()
+                cipher = ExternalSecurityProviderLoader.getRankedPreferredProviders().stream()
                         .skip(1)
                         .map(p -> SupportedCipherDetails.findCipher(cipherAlgorithmJavaName, p))
                         .findFirst().orElse(null);
             }
         } else {
-            cipher = ExternalSecurityProviderLoader.getPreferredProvidersRanked().stream()
+            cipher = ExternalSecurityProviderLoader.getRankedPreferredProviders().stream()
                     .map(p -> SupportedCipherDetails.findCipher(cipherAlgorithmJavaName, p))
                     .findFirst().orElse(null);
         }
