@@ -102,7 +102,7 @@ public class CipherSerializerTest {
         final byte[] expected;
 
         {
-            Cipher cipherExpected = cipherDetails.getCipher();
+            Cipher cipherExpected = cipherDetails.getCloneableCipher();
             cipherExpected.init(Cipher.ENCRYPT_MODE, secretKey,
                     cipherDetails.getEncryptionParameterSpec(iv));
             byte[] chunk1 = cipherExpected.update(plainTextChunks[0]);
@@ -111,7 +111,7 @@ public class CipherSerializerTest {
             expected = combineArray(chunk1, chunk2);
         }
 
-        Cipher cipher = cipherDetails.getCipher();
+        Cipher cipher = cipherDetails.getCloneableCipher();
         cipher.init(Cipher.ENCRYPT_MODE, secretKey,
                 cipherDetails.getEncryptionParameterSpec(iv));
         byte[] chunk1 = cipher.update(plainTextChunks[0]);

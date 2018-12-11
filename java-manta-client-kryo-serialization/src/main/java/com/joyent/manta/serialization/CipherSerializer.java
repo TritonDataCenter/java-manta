@@ -178,6 +178,13 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
     @Override
     @SuppressWarnings("unchecked")
     public void write(final Kryo kryo, final Output output, final Cipher object) {
+        if (object.getProvider() != null && !"BC".equals(object.getProvider().getName())) {
+            String msg = String.format("Serialization is only "
+                    + "supported for ciphers from the BouncyCastle provider. "
+                    + "Actual provider: %s", object.getProvider().getName());
+            throw new UnsupportedOperationException(msg);
+        }
+
         final Object cryptoPerm = readField(cryptoPermField, object);
         kryo.writeObjectOrNull(output, cryptoPerm, cryptoAllPermissionClass);
 

@@ -21,7 +21,6 @@ import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -201,27 +200,8 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public Cipher getCloneableCipher() {
-        final Iterator<Provider> itr = ExternalSecurityProviderLoader
-                .getPreferredProvidersRanked().iterator();
-
-        Provider provider = null;
-
-        while (itr.hasNext()) {
-            Provider next = itr.next();
-
-            if (ExternalSecurityProviderLoader.getPkcs11Provider() == null) {
-                provider = next;
-                break;
-            }
-
-            if (next != ExternalSecurityProviderLoader.getPkcs11Provider()) {
-                provider = next;
-                break;
-            }
-        }
-
         return SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,
-                provider);
+                ExternalSecurityProviderLoader.getBouncyCastleProvider());
     }
 
     @Override
