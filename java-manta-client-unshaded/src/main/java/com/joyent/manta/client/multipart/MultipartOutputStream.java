@@ -33,7 +33,7 @@ public class MultipartOutputStream extends OutputStream {
     /**
      * Buffering stream.
      */
-    private ByteArrayOutputStream buf;
+    private ByteArrayOutputStream backingBuffer;
 
     /**
      * Blocksize to segment to.
@@ -53,7 +53,7 @@ public class MultipartOutputStream extends OutputStream {
      */
     public MultipartOutputStream(final int blockSize) {
         this.blockSize = blockSize;
-        this.buf = new ByteArrayOutputStream(blockSize);
+        this.backingBuffer = new ByteArrayOutputStream(blockSize);
     }
 
     /**
@@ -64,7 +64,7 @@ public class MultipartOutputStream extends OutputStream {
      */
     public MultipartOutputStream(final int blockSize, final ByteArrayOutputStream buf) {
         this.blockSize = blockSize;
-        this.buf = buf;
+        this.backingBuffer = buf;
     }
 
     /**
@@ -81,7 +81,7 @@ public class MultipartOutputStream extends OutputStream {
      * @return the bytes that didn't fit within the blocksize
      */
     public byte[] getRemainder() {
-        return buf.toByteArray();
+        return backingBuffer.toByteArray();
     }
 
     // DOES NOT CLOSE UNDERLYING STREAM
@@ -100,15 +100,24 @@ public class MultipartOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(final byte[] buffer) throws IOException {
-        int outstanding = buf.size() + buffer.length;
+    public void write(final byte[] bytesToWrite) throws IOException {
+        // This is the total number of bytes that need to be written
+        final int outstanding = backingBuffer.size() + bytesToWrite.length;
+
+        /* If the total number of bytes that need to be written is less than our
+         * block size, we do not write it to the backing stream because it is a
+         * small size and we write to the in memory buffer (ByteArrayOutputStream). */
         if (outstanding < blockSize) {
-            buf.write(buffer);
+            backingBuffer.write(bytesToWrite);
         } else {
-            int remainder = outstanding % blockSize;
+            final int remainder = outstanding % blockSize;
             flushBuffer();
-            wrapped.write(buffer, 0, buffer.length - remainder);
-            buf.write(buffer, buffer.length - remainder, remainder);
+            /* We are now assured that the backing buffer is now empty, so we
+             * now write out the supplied byte array up until its block boundary
+             * and store any values beyond the boundary in the backing buffer
+             * so that we can safely swap CipherOutputStream instances. */
+            wrapped.write(bytesToWrite, 0, bytesToWrite.length - remainder);
+            backingBuffer.write(bytesToWrite, bytesToWrite.length - remainder, remainder);
         }
     }
 
@@ -118,8 +127,13 @@ public class MultipartOutputStream extends OutputStream {
      * @throws IOException thrown when the flush operation failed
      */
     public void flushBuffer() throws IOException {
-        wrapped.write(buf.toByteArray());
-        buf.reset();
+        /* Since the assumption is that this class is not thread-safe, we can
+         * safely short-circuit these calls by checking for an empty backing
+         * buffer. */
+        if (backingBuffer.size() > 0) {
+            wrapped.write(backingBuffer.toByteArray());
+            backingBuffer.reset();
+        }
     }
 
     @Override
@@ -133,6 +147,6 @@ public class MultipartOutputStream extends OutputStream {
     }
 
     public ByteArrayOutputStream getBuf() {
-        return buf;
+        return backingBuffer;
     }
 }

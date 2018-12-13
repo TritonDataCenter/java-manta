@@ -77,7 +77,7 @@ public class EncryptionContext {
                       final boolean useCloneableCipher) {
 
         @SuppressWarnings("MagicNumber")
-        final int keyBits = key.getEncoded().length << 3;
+        final int keyBits = key.getEncoded().length << 3; // convert bytes to bits
 
         if (keyBits != cipherDetails.getKeyLengthBits()) {
             String msg = "Mismatch between algorithm definition and secret key size";

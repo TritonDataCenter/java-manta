@@ -82,7 +82,7 @@ public class EncryptionStateRecorderTest {
         final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
         final ByteArrayOutputStream snapshotOutput = new ByteArrayOutputStream();
 
-        final int inputSize = RND.nextInt(300, 600);
+        final int inputSize = 11;
         final byte[] content = RND.nextBytes(inputSize);
 
         // encrypt to originalOutput through state.getCipherStream()
@@ -299,8 +299,8 @@ public class EncryptionStateRecorderTest {
     }
 
     private static SecretKey generateSecretKey(final SupportedCipherDetails cipherDetails) {
-        int keySize = cipherDetails.getKeyLengthBits() >> 3;
-        byte[] secret = Arrays.copyOfRange(SECRET_KEY, 0, keySize);
+        int keySizeInBytes = cipherDetails.getKeyLengthBits() >> 3; // convert bits to bytes
+        byte[] secret = Arrays.copyOfRange(SECRET_KEY, 0, keySizeInBytes);
         return SecretKeyUtils.loadKey(secret, cipherDetails);
     }
 }

@@ -13,6 +13,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.bouncycastle.jcajce.provider.symmetric.AES;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.objenesis.instantiator.sun.MagicInstantiator;
 import org.objenesis.instantiator.sun.UnsafeFactoryInstantiator;
 
@@ -178,7 +179,8 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
     @Override
     @SuppressWarnings("unchecked")
     public void write(final Kryo kryo, final Output output, final Cipher object) {
-        if (object.getProvider() != null && !"BC".equals(object.getProvider().getName())) {
+        if (object.getProvider() != null && !BouncyCastleProvider.PROVIDER_NAME
+                .equals(object.getProvider().getName())) {
             String msg = String.format("Serialization is only "
                     + "supported for ciphers from the BouncyCastle provider. "
                     + "Actual provider: %s", object.getProvider().getName());
