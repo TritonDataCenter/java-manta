@@ -82,13 +82,13 @@ public class EncryptionStateRecorderTest {
         final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
         final ByteArrayOutputStream snapshotOutput = new ByteArrayOutputStream();
 
-        final int inputSize = 11;
+        final int inputSize = RND.nextInt(300, 600);
         final byte[] content = RND.nextBytes(inputSize);
 
         // encrypt to originalOutput through state.getCipherStream()
         state.getMultipartStream().setNext(originalOutput);
         IOUtils.copy(new ByteArrayInputStream(content), state.getCipherStream());
-        state.getMultipartStream().flushBuffer();
+//        state.getMultipartStream().flushBuffer();
 
         // grab any final bytes that didn't fit into the block boundary
         originalOutput.write(ctx.getCipher().doFinal());
