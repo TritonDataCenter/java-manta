@@ -24,11 +24,11 @@ import org.bouncycastle.crypto.macs.HMac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * {@link HttpEntity} implementation that wraps an entity and encrypts its
@@ -96,7 +96,12 @@ public class EncryptingEntity implements HttpEntity {
             throw new MantaClientEncryptionException(msg);
         }
 
-        this.encryptionContext = new EncryptionContext(key, cipherDetails);
+        /* We assume that a cloneable cipher is not needed because no one will
+         * be serializing the cipher in the code path because they will be using
+         * the EncryptedMultipartManager instead. By using a non-cloneable
+         * cipher here we can use a fast native library like libnss that supports
+         * AES-NI. */
+        this.encryptionContext = new EncryptionContext(key, cipherDetails, false);
 
         this.originalLength = wrapped.getContentLength();
         this.wrapped = wrapped;
@@ -150,7 +155,8 @@ public class EncryptingEntity implements HttpEntity {
         this.encryptionContext = new EncryptionContext(
                 encryptionContext.getSecretKey(),
                 encryptionContext.getCipherDetails(),
-                encryptionContext.getCipher().getIV());
+                encryptionContext.getCipher().getIV(),
+                encryptionContext.requireCloneableCipher());
 
         OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(
                 httpOut, encryptionContext);

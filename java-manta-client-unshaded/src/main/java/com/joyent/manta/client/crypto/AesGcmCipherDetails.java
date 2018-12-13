@@ -73,7 +73,7 @@ public final class AesGcmCipherDetails  extends AbstractAesCipherDetails {
                 "Initialization vector has the wrong byte count [%d] "
                 + "expected [%d] bytes", iv.length, getIVLengthInBytes());
 
-        int tagSizeInBits = getAuthenticationTagOrHmacLengthInBytes() << 3;
+        int tagSizeInBits = getAuthenticationTagOrHmacLengthInBytes() << 3; // convert bytes to bits
         return new GCMParameterSpec(tagSizeInBits, iv);
     }
 

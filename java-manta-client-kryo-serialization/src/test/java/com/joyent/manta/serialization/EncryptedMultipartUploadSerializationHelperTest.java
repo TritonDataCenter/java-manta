@@ -44,7 +44,7 @@ public class EncryptedMultipartUploadSerializationHelperTest {
         final String path = "/user/stor/myObject";
         final String partsDir = "/user/uploads/0/" + uploadId;
         final ServerSideMultipartUpload inner = new ServerSideMultipartUpload(uploadId, path, partsDir);
-        final EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
+        final EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails, true);
         final EncryptionState encryptionState = new EncryptionState(encryptionContext);
         @SuppressWarnings("unchecked")
         final EncryptedMultipartUpload<ServerSideMultipartUpload> upload =

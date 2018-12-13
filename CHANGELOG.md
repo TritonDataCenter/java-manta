@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.3.1] -
+### Fixed
+ - [Client-side encryption does not use libnss when doing simple PUT](https://github.com/joyent/java-manta/issues/449)
+
 ## [3.3.0] - 2018-12-02
 ### Changed
  - Configuration parameter `manta.timeout` is now being used to specify

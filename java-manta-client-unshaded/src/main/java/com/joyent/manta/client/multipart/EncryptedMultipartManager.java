@@ -28,13 +28,13 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * Multipart upload manager class that wraps another {@link MantaMultipartManager}
@@ -373,7 +373,7 @@ public class EncryptedMultipartManager
      * @return configured encryption context object
      */
     private EncryptionContext buildEncryptionContext() {
-        return new EncryptionContext(this.secretKey, this.cipherDetails);
+        return new EncryptionContext(this.secretKey, this.cipherDetails, true);
     }
 
     /**

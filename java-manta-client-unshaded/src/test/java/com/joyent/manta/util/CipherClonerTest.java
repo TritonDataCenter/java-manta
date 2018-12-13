@@ -23,25 +23,26 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 
 public class CipherClonerTest {
 
     @Test
-    public void testRefusesToClonePKCS11Cipher() {
+    public void testRefusesToClonePKCS11Cipher() throws NoSuchAlgorithmException, NoSuchPaddingException {
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
         if (pkcs11Provider == null) {
             throw new SkipException("PKCS11 Security Provider not present.");
         }
 
-        // verify that the default Cipher provider is PKCS11 when it is installed
-        // the assertThrows below depends on this behavior
-        Assert.assertSame(ExternalSecurityProviderLoader.getPreferredProvider(), pkcs11Provider);
+        final String cipherName = DefaultsConfigContext.DEFAULT_CIPHER.getCipherAlgorithm();
+        final Cipher cipher = Cipher.getInstance(cipherName, pkcs11Provider);
 
         Assert.assertThrows(MantaMemoizationException.class, () -> {
-            new CipherCloner().createClone(DefaultsConfigContext.DEFAULT_CIPHER.getCipher());
+            new CipherCloner().createClone(cipher);
         });
     }
 
@@ -95,8 +96,9 @@ public class CipherClonerTest {
         final byte[] iv = cipherDetails.generateIv();
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
 
-        // notice we are specifically calling getBouncyCastleCipher()
-        final Cipher originalCipher = cipherDetails.getBouncyCastleCipher();
+        // we are specifically calling a cloneable cipher because we will be
+        // making a copy of it in order to rewind the cipher state
+        final Cipher originalCipher = cipherDetails.getCloneableCipher();
         originalCipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
         final Cipher clonedCipher = new CipherCloner().createClone(originalCipher);

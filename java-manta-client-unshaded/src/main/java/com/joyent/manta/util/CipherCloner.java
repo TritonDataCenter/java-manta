@@ -31,9 +31,23 @@ public final class CipherCloner implements Cloner<Cipher> {
 
     @Override
     public Cipher createClone(final Cipher source) {
+        /* We are assured that the PKCS11 provider we are getting is libnss and
+         * we know that it isn't possible to clone ciphers from this provider. */
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
-        if (null != pkcs11Provider && pkcs11Provider.equals(source.getProvider())) {
-            throw new MantaMemoizationException("Cannot create clone of PKCS11-backed Cipher.");
+        /* This is the provider of the input cipher and we will not know what
+         * provider it is until run time. */
+        final Provider cipherProvider = source.getProvider();
+
+        /* We need to validate that the provider as given from the supplied
+         * cipher is not backed by a libnss provider because it is unclonable.
+         * In that case, we want to emit an exception that leads a developer to
+         * a sensible error message rather than the inscrutable message that is
+         * returned if we attempt the clone operation. */
+
+        if (pkcs11Provider != null && cipherProvider == pkcs11Provider) {
+            String msg = String.format("Cannot create clone of Cipher with provider: %s",
+                    source.getProvider());
+            throw new MantaMemoizationException(msg);
         }
 
         return INSTANCE.deepClone(source);

@@ -64,7 +64,6 @@ public class MantaClientSigningIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
     public final void testCanCreateSignedGETUriFromPath() throws IOException {
         if (config.isClientEncryptionEnabled()) {
             throw new SkipException("Signed URLs are not decrypted by the client");
@@ -99,7 +98,6 @@ public class MantaClientSigningIT {
         }
     }
 
-    @Test
     public final void testCanCreateSignedHEADUriFromPath() throws IOException {
         if (config.isClientEncryptionEnabled()) {
             throw new SkipException("Signed URLs are not decrypted by the client");
@@ -136,7 +134,6 @@ public class MantaClientSigningIT {
         }
     }
 
-    @Test
     public final void testCanCreateSignedPUTUriFromPath()
             throws IOException, InterruptedException {
         if (config.isClientEncryptionEnabled()) {
@@ -177,9 +174,8 @@ public class MantaClientSigningIT {
         Assert.assertEquals(actual, TEST_DATA);
     }
 
-    @Test
     public final void testCanCreateSignedOPTIONSUriFromPath()
-            throws IOException, InterruptedException {
+            throws IOException{
         if (config.isClientEncryptionEnabled()) {
             throw new SkipException("Signed URLs are not decrypted by the client");
         }
@@ -225,8 +221,11 @@ public class MantaClientSigningIT {
         }
     }
 
-    @Test
     public final void testCanCreateSignedURIWithEncodedCharacters() throws IOException {
+        if (config.isClientEncryptionEnabled()) {
+            throw new SkipException("Signed URLs are not decrypted by the client");
+        }
+
         final String path = testPathPrefix + "⛰ quack 🦆";
 
         mantaClient.put(path, TEST_DATA, UTF_8);

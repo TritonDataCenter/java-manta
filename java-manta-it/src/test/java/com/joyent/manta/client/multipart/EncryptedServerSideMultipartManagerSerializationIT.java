@@ -87,9 +87,12 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
                 new EncryptedMultipartUploaSerializationHelper<>(kryo, secretKey, cipherDetails, ServerSideMultipartUpload.class);
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1024);
-        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 1);
-        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 1, FIVE_MB + 1024);
+        /* We deliberately do not align to clean factors of 16 in order to test
+         * the encryption block size alignment when restarting the cipher state
+         * after a failed upload. */
+        final byte[] content = RandomUtils.nextBytes(FIVE_MB + 1027);
+        final byte[] content1 = Arrays.copyOfRange(content, 0, FIVE_MB + 5);
+        final byte[] content2 = Arrays.copyOfRange(content, FIVE_MB + 5, FIVE_MB + 1027);
 
         String contentType = "application/something-never-seen-before; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();

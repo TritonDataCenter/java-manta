@@ -16,8 +16,8 @@ import org.bouncycastle.jcajce.io.CipherOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.OutputStream;
 import javax.crypto.Cipher;
+import java.io.OutputStream;
 
 /**
  * Utility class that provides methods for cross-cutting encryption operations.
@@ -128,6 +128,10 @@ public final class EncryptingEntityHelper {
          *    thereby corrupting the ciphertext. */
 
         final CloseShieldOutputStream noCloseOut = new CloseShieldOutputStream(httpOut);
+
+        /* We use the BouncyCastle implementation of CipherOutputStream because
+         * it has better error handling for edge cases and we can be sure that it
+         * will be the exact same class when run on different JVMs. */
         final CipherOutputStream cipherOut = new CipherOutputStream(noCloseOut, cipher);
         final OutputStream out;
 
