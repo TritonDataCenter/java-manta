@@ -335,6 +335,30 @@ security.provider.10=sun.security.smartcardio.SunPCSC
 Once this is complete, you should now have libnss providing your cryptographic
 functions.
 
+#### Overriding Default Cryptographic Provider Ranking
+
+The default ranking of cryptographic providers within the SDK is as follows:
+
+Non-cloneable implementations:
+ * NSS via PKCS11 ("SunPKCS11-NSS")
+ * Bouncy Castle ("BC")
+ * Sun JCE provider ("SunJCE")
+
+Cloneable implementations:
+ * Bouncy Castle ("BC")
+ 
+The ranking of preferred providers can be changed using the Java system property
+`manta.preferred.security.provider`. The provider names are specified in a comma
+separated format. For example, in order to have the system prefer SunJCE, BC and
+then SunPKCS11-NSS in that order, you would specify:
+
+```
+java <...> -Dmanta.preferred.security.provider=SunJCE,BC,SunPKCS11-NSS
+```  
+
+You may want to change the ranking if you are unable to use the libnss provider
+and still want the performance benefits of AES-NI via the SunJCE provider.
+
 #### Enabling Native FastMD5 Support
 
 The Java Manta SDK uses [Timothy W Macinta's Fast MD5](http://www.twmacinta.com/myjava/fast_md5.php)

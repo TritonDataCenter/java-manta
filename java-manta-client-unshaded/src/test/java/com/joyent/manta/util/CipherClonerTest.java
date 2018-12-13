@@ -96,7 +96,8 @@ public class CipherClonerTest {
         final byte[] iv = cipherDetails.generateIv();
         final byte[] inputData = RandomUtils.nextBytes(cipherDetails.getBlockSizeInBytes() * 3);
 
-        // notice we are specifically calling getBouncyCastleCipher()
+        // we are specifically calling a cloneable cipher because we will be
+        // making a copy of it in order to rewind the cipher state
         final Cipher originalCipher = cipherDetails.getCloneableCipher();
         originalCipher.init(Cipher.ENCRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
 
