@@ -175,6 +175,7 @@
         <dependency.commons-io.version>2.5</dependency.commons-io.version>
         <dependency.commons-codec.version>1.10</dependency.commons-codec.version>
         <dependency.commons-text.version>1.1</dependency.commons-text.version>
+        <dependency.commons-math.version>3.6.1</dependency.commons-math.version>
         <dependency.kryo.version>4.0.1</dependency.kryo.version>
         <dependency.objenesis.version>2.6</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>

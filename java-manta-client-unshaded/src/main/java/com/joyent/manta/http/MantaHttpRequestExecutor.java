@@ -111,6 +111,9 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
             mioe.setContextValue("loadBalancerAddress", extractLoadBalancerAddress(conn));
             mioe.setContextValue("socketTimeout", conn.getSocketTimeout());
 
+            /* If metrics are available we add them to the exception because it
+             * is useful for debugging what went wrong. In particular, it is
+             * useful when debugging requests that use client-side encryption. */
             if (conn.getMetrics() != null) {
                 final HttpConnectionMetrics metrics = conn.getMetrics();
                 mioe.setContextValue("receivedBytes", metrics.getReceivedBytesCount());

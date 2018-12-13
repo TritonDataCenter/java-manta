@@ -69,8 +69,10 @@ public interface SupportedCipherDetails {
     Cipher getCipher();
 
     /**
-     * In some cases we <em>need</em> the Cipher to live entirely in Java.
-     * See com.joyent.manta.client.multipart.EncryptionStateRecorder
+     * <p>In some cases we <em>need</em> the Cipher to live entirely in Java.
+     * See com.joyent.manta.client.multipart.EncryptionStateRecorder</p>
+     *
+     * <p>Deprecated: Use {@link #getCloneableCipher()} instead.</p>
      *
      * @return a new instance of the associated cipher using the BouncyCastle provider
      */
@@ -82,7 +84,7 @@ public interface SupportedCipherDetails {
      * Cipher implementation from a provider that supports clone via the
      * {@link com.joyent.manta.util.CipherCloner} class.
      *
-     * @see {@link com.joyent.manta.client.multipart.EncryptionStateRecorder}
+     * @see com.joyent.manta.client.multipart.EncryptionStateRecorder
      * @return a new instance of the associated cipher using the BouncyCastle provider
      */
     Cipher getCloneableCipher();

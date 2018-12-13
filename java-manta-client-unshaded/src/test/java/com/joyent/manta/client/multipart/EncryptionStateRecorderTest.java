@@ -4,9 +4,11 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.*;
 import com.joyent.manta.http.MantaHttpHeaders;
-import com.joyent.manta.util.MantaRandomUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.random.JDKRandomGenerator;
+import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
 import org.apache.http.entity.ByteArrayEntity;
@@ -27,7 +29,9 @@ import java.util.Arrays;
 import java.util.Base64;
 
 public class EncryptionStateRecorderTest {
-    private static final MantaRandomUtils RND = new MantaRandomUtils(1);
+    private static final RandomGenerator RND = new JDKRandomGenerator(1);
+    private static final RandomDataGenerator RND_DATA = new RandomDataGenerator(RND);
+
     private static final byte[] SECRET_KEY = Hex.decode(
             "8b30335ba65d1d0619c6192edb15318763d9a1be3ff916aaf46f4717232a504a");
 
@@ -81,8 +85,9 @@ public class EncryptionStateRecorderTest {
         final ByteArrayOutputStream snapshotOutput = new ByteArrayOutputStream();
 
         // input size is randomly chosen but idempotent based on the seed
-        final int inputSize = RND.nextInt(300, 600);
-        final byte[] content = RND.nextBytes(inputSize);
+        final int inputSize = RND_DATA.nextInt(300, 600);
+        final byte[] content = new byte[inputSize];
+        RND.nextBytes(content);
 
         // encrypt to originalOutput through state.getCipherStream()
         state.getMultipartStream().setNext(originalOutput);
@@ -152,8 +157,9 @@ public class EncryptionStateRecorderTest {
 
         initializeEncryptionStateStreams(state);
 
-        final int inputSize = RND.nextInt(1000, 2000);
-        final byte[] content = RND.nextBytes(inputSize);
+        final int inputSize = RND_DATA.nextInt(1000, 2000);
+        final byte[] content = new byte[inputSize];
+        RND.nextBytes(content);
 
         final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
 
@@ -179,10 +185,11 @@ public class EncryptionStateRecorderTest {
         final EncryptionState state = new EncryptionState(ctx);
 
         // prepare part content
-        final int inputSize = RND.nextInt(1000, 2000);
-        final int firstPartSize = RND.nextInt(500, 999);
+        final int inputSize = RND_DATA.nextInt(1000, 2000);
+        final int firstPartSize = RND_DATA.nextInt(500, 999);
 
-        final byte[] content = RND.nextBytes(inputSize);
+        final byte[] content = new byte[inputSize];
+        RND.nextBytes(content);
         final byte[] content1 = Arrays.copyOfRange(content, 0, firstPartSize);
         final byte[] content2 = Arrays.copyOfRange(content, firstPartSize, content.length);
 

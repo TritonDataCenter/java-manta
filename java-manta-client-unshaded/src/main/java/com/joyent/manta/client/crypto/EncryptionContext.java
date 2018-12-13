@@ -45,19 +45,19 @@ public class EncryptionContext {
      * Flag indicating that we will only use cloneable ciphers for encryption
      * operations.
      */
-    private final boolean useCloneableCipher;
+    private final boolean requireCloneableCipher;
 
     /**
      * Creates a new instance of an encryption context.
      *
      * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
-     * @param useCloneableCipher true when only cloneable ciphers can be used
+     * @param requireCloneableCipher true when only cloneable ciphers can be used
      */
     public EncryptionContext(final SecretKey key,
                              final SupportedCipherDetails cipherDetails,
-                             final boolean useCloneableCipher) {
-        this(key, cipherDetails, null, useCloneableCipher);
+                             final boolean requireCloneableCipher) {
+        this(key, cipherDetails, null, requireCloneableCipher);
     }
 
     /**
@@ -69,12 +69,12 @@ public class EncryptionContext {
      * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
      * @param suppliedIv an existing IV to reuse
-     * @param useCloneableCipher true when only cloneable ciphers can be used
+     * @param requireCloneableCipher true when only cloneable ciphers can be used
      */
     EncryptionContext(final SecretKey key,
                       final SupportedCipherDetails cipherDetails,
                       final byte[] suppliedIv,
-                      final boolean useCloneableCipher) {
+                      final boolean requireCloneableCipher) {
 
         @SuppressWarnings("MagicNumber")
         final int keyBits = key.getEncoded().length << 3; // convert bytes to bits
@@ -90,10 +90,10 @@ public class EncryptionContext {
         }
 
         this.key = key;
-        this.useCloneableCipher = useCloneableCipher;
+        this.requireCloneableCipher = requireCloneableCipher;
         this.cipherDetails = cipherDetails;
 
-        if (useCloneableCipher) {
+        if (requireCloneableCipher) {
             this.cipher = cipherDetails.getCloneableCipher();
         } else {
             this.cipher = cipherDetails.getCipher();
@@ -126,8 +126,8 @@ public class EncryptionContext {
     /**
      * @return when true, this encryption context requires a cloneable cipher
      */
-    public boolean usesCloneableCipher() {
-        return useCloneableCipher;
+    public boolean requireCloneableCipher() {
+        return requireCloneableCipher;
     }
 
     /**
@@ -171,11 +171,11 @@ public class EncryptionContext {
 
         return Objects.equals(key, that.key)
                && Objects.equals(cipherDetails, that.cipherDetails)
-               && useCloneableCipher == that.useCloneableCipher;
+               && requireCloneableCipher == that.requireCloneableCipher;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, cipherDetails, useCloneableCipher);
+        return Objects.hash(key, cipherDetails, requireCloneableCipher);
     }
 }

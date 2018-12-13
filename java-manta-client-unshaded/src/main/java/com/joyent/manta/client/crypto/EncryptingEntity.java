@@ -156,7 +156,7 @@ public class EncryptingEntity implements HttpEntity {
                 encryptionContext.getSecretKey(),
                 encryptionContext.getCipherDetails(),
                 encryptionContext.getCipher().getIV(),
-                encryptionContext.usesCloneableCipher());
+                encryptionContext.requireCloneableCipher());
 
         OutputStream out = EncryptingEntityHelper.makeCipherOutputForStream(
                 httpOut, encryptionContext);

@@ -169,9 +169,11 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
         if (pkcs11Provider != null && preferredProvider == pkcs11Provider) {
             /* Unfortunately, libnss via pkcs11 uses different strings to
-             * identify ciphers than Bouncy Castle or SunJCE, so if we are using
-             * it as a provider, we have to modify the cipher name that we are
-             * search for to get a compatible implementation. */
+             * identify ciphers (when doing a .containsKey() call, but not a
+             * Cipher.getInstance(cipherName, provider) than Bouncy Castle or
+             * SunJCE, so if we are using it as a provider, we have to modify
+             * the cipher name that we are searching for to get a compatible
+             * implementation. */
             final String pkcs11CipherName = String.format("Cipher.%s", cipherAlgorithmJavaName);
             if (pkcs11Provider.containsKey(pkcs11CipherName)) {
                 cipher = SupportedCipherDetails.findCipher(cipherAlgorithmJavaName,

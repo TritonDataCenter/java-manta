@@ -2,7 +2,4 @@ The product includes software from the ehcache3 project
 under the Apache License 2.0 (see: com.joyent.manta.util.ConcurrentWeakIdentityHashMap).
 
 The product includes software from the Apache HTTPClient project
-under the Apache License 2.0 see the following classes:
-
-com.joyent.manta.util.NotThreadSafe
-com.joyent.manta.util.MantaRandomUtils
+under the Apache License 2.0 (see: com.joyent.manta.util.NotThreadSafe).

@@ -38,14 +38,17 @@ public final class ExternalSecurityProviderLoader {
 
     /**
      * System property identifier used to indicate the preferred security provider
-     * for client-side encryption.
+     * for client-side encryption. Note: This property is not in
+     * {@link com.joyent.manta.config.MapConfigContext} because the system
+     * property is read within the static context and is not reread when a new
+     * {@link com.joyent.manta.client.MantaClient} is created.
      */
     private static final String PREFERRED_PROVIDERS_SYS_PROP_KEY = "manta.preferred.security.providers";
 
     /**
      * Name of BouncyCastle security provider.
      */
-    static final String BC_PROVIDER_NAME = "BC";
+    static final String BC_PROVIDER_NAME = BouncyCastleProvider.PROVIDER_NAME;
 
     /**
      * Name of native PKCS11 NSS security provider.
@@ -82,7 +85,7 @@ public final class ExternalSecurityProviderLoader {
         PKCS11_PROVIDER = Security.getProvider(PKCS11_PROVIDER_NAME);
 
         if (PKCS11_PROVIDER != null) {
-            LOGGER.debug("PKCS11 NSS provider was loaded - native crypto support enabled");
+            LOGGER.debug("PKCS11 NSS provider was loaded - native crypto support available");
         }
 
         final Provider bouncyCastleProvider = Security.getProvider(BC_PROVIDER_NAME);
@@ -107,7 +110,7 @@ public final class ExternalSecurityProviderLoader {
             throw new SecurityException(msg);
         }
 
-        LOGGER.info("Java security preferred provider chosen for CSE: {}", getPreferredProvider());
+        LOGGER.info("Security provider chosen for CSE: {} ", getPreferredProvider());
     }
 
     /**
@@ -137,6 +140,7 @@ public final class ExternalSecurityProviderLoader {
      */
     private static boolean isKnownSecurityProvider(final String provider) {
         if (StringUtils.isBlank(provider)) {
+            LOGGER.warn("Blank security provider specified: [{}]", provider);
             return false;
         }
 
@@ -144,8 +148,16 @@ public final class ExternalSecurityProviderLoader {
             case PKCS11_PROVIDER_NAME:
             case BC_PROVIDER_NAME:
             case SUNJCE_PROVIDER_NAME:
-                return Security.getProvider(provider) != null;
+                final Provider foundProvider = Security.getProvider(provider);
+
+                if (foundProvider == null && LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("Known provider specified, but it "
+                            + "couldn't be loaded. Provider: [{}]", provider);
+                }
+
+                return foundProvider != null;
             default:
+                LOGGER.warn("Unknown provider specified: [{}]", provider);
                 return false;
         }
     }
