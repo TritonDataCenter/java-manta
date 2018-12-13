@@ -348,12 +348,12 @@ Cloneable implementations:
  * Bouncy Castle ("BC")
  
 The ranking of preferred providers can be changed using the Java system property
-`manta.preferred.security.provider`. The provider names are specified in a comma
+`manta.preferred.security.providers`. The provider names are specified in a comma
 separated format. For example, in order to have the system prefer SunJCE, BC and
 then SunPKCS11-NSS in that order, you would specify:
 
 ```
-java <...> -Dmanta.preferred.security.provider=SunJCE,BC,SunPKCS11-NSS
+java <...> -Dmanta.preferred.security.providers=SunJCE,BC,SunPKCS11-NSS
 ```  
 
 You may want to change the ranking if you are unable to use the libnss provider
