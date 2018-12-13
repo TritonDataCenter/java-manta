@@ -2,16 +2,7 @@ package com.joyent.manta.client.multipart;
 
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.crypto.AesCbcCipherDetails;
-import com.joyent.manta.client.crypto.AesCtrCipherDetails;
-import com.joyent.manta.client.crypto.AesGcmCipherDetails;
-import com.joyent.manta.client.crypto.EncryptingEntityHelper;
-import com.joyent.manta.client.crypto.EncryptingPartEntity;
-import com.joyent.manta.client.crypto.EncryptionContext;
-import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
-import com.joyent.manta.client.crypto.SecretKeyUtils;
-import com.joyent.manta.client.crypto.SupportedCipherDetails;
-import com.joyent.manta.client.crypto.SupportedHmacsLookupMap;
+import com.joyent.manta.client.crypto.*;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaRandomUtils;
 import org.apache.commons.io.IOUtils;
@@ -70,53 +61,78 @@ public class EncryptionStateRecorderTest {
         final SecretKey secretKey = generateSecretKey(cipherDetails);
 
         // cipher IV prepared in EncryptionContext constructor
-        final EncryptionContext ctx = new EncryptionContext(secretKey, cipherDetails, true);
+        final EncryptionContext ctx = new EncryptionContext(secretKey,
+                cipherDetails, true);
         final EncryptionState state = new EncryptionState(ctx);
         final byte[] iv = ctx.getCipher().getIV();
 
         initializeEncryptionStateStreams(state);
 
-        final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(state, null);
-        Assert.assertNotSame(snapshot.getCipher(), state.getEncryptionContext().getCipher());
+        // Clones the Cipher object internally within the snapshot
+        final EncryptionStateSnapshot snapshot = EncryptionStateRecorder.record(
+                state, null);
+        final Cipher originalCipher = snapshot.getCipher();
+        final Cipher clonedCipher = state.getEncryptionContext().getCipher();
+        Assert.assertNotSame(originalCipher, clonedCipher);
 
+        // pre-rewind ciphertext
         final ByteArrayOutputStream originalOutput = new ByteArrayOutputStream();
+        // post-rewind ciphertext
         final ByteArrayOutputStream snapshotOutput = new ByteArrayOutputStream();
 
+        // input size is randomly chosen but idempotent based on the seed
         final int inputSize = RND.nextInt(300, 600);
         final byte[] content = RND.nextBytes(inputSize);
 
         // encrypt to originalOutput through state.getCipherStream()
         state.getMultipartStream().setNext(originalOutput);
-        IOUtils.copy(new ByteArrayInputStream(content), state.getCipherStream());
-        state.getMultipartStream().flushBuffer();
+        int originalByteCount = IOUtils.copy(new ByteArrayInputStream(content),
+                state.getCipherStream());
+        // as per the multipart stream contract, we have to empty the backing
+        // buffer and write out the remaining bytes
+        originalOutput.write(state.getMultipartStream().getRemainder());
 
         // grab any final bytes that didn't fit into the block boundary
-        originalOutput.write(ctx.getCipher().doFinal());
+        final byte[] finalOriginalBytes = ctx.getCipher().doFinal();
+        originalByteCount += finalOriginalBytes.length;
+        originalOutput.write(finalOriginalBytes);
 
-        // this is where the magic happens
+        // restores the cipher state back to the state in the snapshot
         EncryptionStateRecorder.rewind(state, snapshot);
 
         // encrypt to snapshotOutput through state.getCipherStream()
         state.getMultipartStream().setNext(snapshotOutput);
-        IOUtils.copy(new ByteArrayInputStream(content), state.getCipherStream());
-        state.getMultipartStream().flushBuffer();
+        int snapshotByteCount = IOUtils.copy(new ByteArrayInputStream(content),
+                state.getCipherStream());
+        // write any remaining bytes that were in the internal buffer
+        snapshotOutput.write(state.getMultipartStream().getRemainder());
 
         // grab any final bytes that didn't fit into the block boundary
-        snapshotOutput.write(ctx.getCipher().doFinal());
+        final byte[] finalSnapshotBytes = ctx.getCipher().doFinal();
+        snapshotByteCount += finalSnapshotBytes.length;
+        snapshotOutput.write(finalSnapshotBytes);
+
+        // verify that the same number of bytes were written to both the original
+        // and snapshot streams
+        Assert.assertEquals(snapshotByteCount, originalByteCount,
+                "The number of bytes recorded as encrypted differs");
 
         // verify the parts encrypt to the same ciphertext
-        assertByteArrayEquals(originalOutput.toByteArray(), snapshotOutput.toByteArray());
+        assertByteArrayEquals(originalOutput.toByteArray(),
+                snapshotOutput.toByteArray());
 
         // grab a distinct Cipher object to decrypt
         final Cipher decryptCipher = cipherDetails.getCipher();
-        decryptCipher.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
+        decryptCipher.init(Cipher.DECRYPT_MODE, secretKey,
+                cipherDetails.getEncryptionParameterSpec(iv));
+
+        // decrypt the contents of both ciphertext instances
         final byte[] originalDecrypted = decryptCipher.doFinal(originalOutput.toByteArray());
         final byte[] snapshotDecrypted = decryptCipher.doFinal(snapshotOutput.toByteArray());
 
+        // verify that the decrypted bytes of both instances matches the original plaintext
         assertByteArrayEquals(originalDecrypted, content);
         assertByteArrayEquals(snapshotDecrypted, content);
-
-        // TODO: this test does not validate hmac cloning yet, that is currently only covered by HmacClonerTest
     }
 
     @Test(dataProvider = "supportedCiphers")
