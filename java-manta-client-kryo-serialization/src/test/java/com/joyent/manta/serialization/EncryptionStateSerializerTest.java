@@ -67,7 +67,7 @@ public class EncryptionStateSerializerTest {
     }
 
     private EncryptionState newEncryptionStateInstance() {
-        EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails);
+        EncryptionContext encryptionContext = new EncryptionContext(secretKey, cipherDetails, true);
         EncryptionState encryptionState = new EncryptionState(encryptionContext);
 
         MultipartOutputStream multipartStream = new MultipartOutputStream(

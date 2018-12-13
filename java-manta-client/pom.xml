@@ -11,11 +11,11 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.2.6-SNAPSHOT</version>
+        <version>3.3.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>java-manta-client</artifactId>
-    <version>3.2.6-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>java-manta-client</name>
@@ -25,7 +25,7 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client-unshaded</artifactId>
-            <version>3.2.6-SNAPSHOT</version>
+            <version>3.3.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -193,28 +193,6 @@
                             </filesets>
                         </configuration>
                     </execution>
-
-                    <!--
-                    Remove src after use. This is for tidyness but not correctness.
-                    SOMETHING in maven allows the sources jar to be built during the package phase
-                    even though they've been deleted as early as the process-resources phase
-                    while still allowing us to avoid the shade "define overlapping classes" warning.
-                    -->
-                    <execution>
-                        <id>clean-client-shade-workaround-source-post</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>src</directory>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
                     <!--
                     Ensure that src is *always*
                     removed before a compile phase runs. This is
@@ -237,69 +215,56 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${maven-build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-shade-source-workaround-src</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/shade-source-workaround</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-maven-resources-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>copy-shade-source-workaround-src</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>src/shade-source-workaround</outputDirectory>
+                    <resources>
+                        <resource>
+                            <directory>${multi.module.root}/java-manta-client-unshaded/src/main/java</directory>
+                        </resource>
+                    </resources>
+                </configuration>
+            </plugin>
+            <!--
+            For SOME reason Maven can build a sources JAR for this module based on the above workaround
+            *and still* deleting the source files during process-resources in order to avoid the shade plugin
+            detecting overlapping classes.
+
+            Maintainer beware! You might be tempted to add an invocation of the maven-source-plugin directly here
+            and bind it to a phase after the above two but before packaging (in order to avoid the overlapping
+            classes error) but this does not work. Relying on the parent-pom definition of maven-source-plugin is
+            unexpected but functional so that behavior is documented here.
+            -->
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>${maven-maven-resources-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>copy-shade-source-workaround-src</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <outputDirectory>src/shade-source-workaround</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${multi.module.root}/java-manta-client-unshaded/src/main/java</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>${maven-build-helper-maven-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>add-shade-source-workaround-src</id>
-                                <phase>process-sources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>${project.basedir}/src/shade-source-workaround</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!--
-                    For SOME reason Maven can build a sources JAR for this module based on the above workaround
-                    *and still* deleting the source files during process-resources in order to avoid the shade plugin
-                    detecting overlapping classes.
-
-                    Maintainer beware! You might be tempted to add an invocation of the maven-source-plugin directly here
-                    and bind it to a phase after the above two but before packaging (in order to avoid the overlapping 
-                    classes error) but this does not work. Relying on the parent-pom definition of maven-source-plugin is 
-                    unexpected but functional so that behavior is documented here.
-                    -->
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

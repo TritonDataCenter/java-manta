@@ -50,9 +50,9 @@ public class EncryptingPartEntityTest {
                     .build();
 
     @BeforeMethod
-    public void setup() throws Exception {
+    public void setup() {
         final SupportedCipherDetails cipherDetails = DefaultsConfigContext.DEFAULT_CIPHER;
-        state = new EncryptionState(new EncryptionContext(SecretKeyUtils.generate(cipherDetails), cipherDetails));
+        state = new EncryptionState(new EncryptionContext(SecretKeyUtils.generate(cipherDetails), cipherDetails, true));
 
         state.setMultipartStream(
                 new MultipartOutputStream(

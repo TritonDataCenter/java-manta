@@ -91,7 +91,7 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Number of seconds to poll Manta to see if a job is complete.
      */
-    private static final long DEFAULT_SECONDS_TO_POLL = 5L;
+    private static final long DEFAULT_SECONDS_TO_POLL = 60L;
 
     /**
      * Number of times to check to see if a multipart transfer has completed.
