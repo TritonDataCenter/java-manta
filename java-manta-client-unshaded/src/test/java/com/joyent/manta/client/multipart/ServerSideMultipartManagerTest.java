@@ -344,6 +344,72 @@ public class ServerSideMultipartManagerTest {
         ServerSideMultipartManager.createCommitRequestBody(Stream.empty());
     }
 
+    public void canExtrapolatePrefixDirectoryForObjectIdForOneToEight() {
+        final String uuidBase = "0077e0b8-fb7d-eddd-b106-8e8e3ca3d8b";
+
+        for (int lastDigit = 1; lastDigit < 9; lastDigit++) {
+            final String uuid = String.format("%s%d", uuidBase, lastDigit);
+            final String expected = uuidBase.substring(0, lastDigit);
+            final String actual = ServerSideMultipartManager.extrapolatePrefixDirectory(uuid);
+            Assert.assertEquals(actual, expected);
+        }
+    }
+
+    public void extrapolatePrefixDirectoryWillFailOnNonNumericFinalChar() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0077e0b8-fb7d-eddd-b106-8e8e3ca3d8ba");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause().getClass().equals(IllegalArgumentException.class);
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailOnFinalZeroChar() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0077e0b8-fb7d-eddd-b106-8e8e3ca3d8b0");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause() == null;
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailOnFinalNineChar() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0077e0b8-fb7d-eddd-b106-8e8e3ca3d8b9");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause() == null;
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailForEmptyString() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause().getClass().equals(StringIndexOutOfBoundsException.class);
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailForPrefixLargerThanString() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0078");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause().getClass().equals(StringIndexOutOfBoundsException.class);
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
     // TEST UTILITY METHODS
 
     private SettableConfigContext<BaseChainedConfigContext> testConfigContext() {

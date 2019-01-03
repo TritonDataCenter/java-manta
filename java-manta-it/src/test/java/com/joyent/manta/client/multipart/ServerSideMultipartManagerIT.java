@@ -131,14 +131,16 @@ public class ServerSideMultipartManagerIT {
                         break;
                     }
                     lastStatus = multipart.getStatus(upload);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
-            if (lastStatus != null) {
+            if (lastStatus != MantaMultipartStatus.COMPLETED) {
                 Assert.fail("MPU " + upload  + "did not complete after multiple status checks.  Last status: " + lastStatus);
             }
         } else if (completeStatus.equals(MantaMultipartStatus.COMPLETED)) {
-            // That was fast
-            // NOTE: Server side MPU does not use this state yet
+            // If the server was fast enough to complete the MPU on the first try,
+            // then this is a valid condition
         } else {
             Assert.fail("MPU " + upload  + "in invalid status after complete invocation. Actual status: " + completeStatus);
         }
