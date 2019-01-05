@@ -27,9 +27,8 @@ import java.time.Instant;
  * Integration tests for verifying the connection timeout behaviour for an invalid connection.
  * This Integration test is written for the sole purpose of verifying Issue #441.
  *
- * @author <a href="https://github.com/dekobon">Ashwin A Nair</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
-
 @Test
 public class TCPSocketConnectionTimeoutIT {
     private static final Logger LOG = LoggerFactory.getLogger(TCPSocketConnectionTimeoutIT.class);
