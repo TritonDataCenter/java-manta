@@ -827,6 +827,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * @return substring for the first N characters of the passed string
      * @throws MantaMultipartException thrown if unable to parse input
      */
+    @SuppressWarnings("MagicNumber")
     static String extrapolatePrefixDirectory(final String objectIdAsUUID) {
         Validate.notNull(objectIdAsUUID, "Object id (UUID) value must not be null");
 
