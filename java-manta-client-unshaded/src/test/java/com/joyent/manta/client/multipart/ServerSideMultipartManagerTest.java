@@ -185,7 +185,7 @@ public class ServerSideMultipartManagerTest {
                 HttpStatus.SC_NO_CONTENT, "NO_CONTENT");
         ServerSideMultipartManager manager = buildMockManager(statusLine, null);
 
-        UUID id = new UUID(0L, 0L);
+        UUID id = new UUID(0L, 7L);
         String partsDirectory = manager.uuidPrefixedPath(id);
         ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
                 id, null, partsDirectory);
@@ -197,7 +197,7 @@ public class ServerSideMultipartManagerTest {
                 HttpStatus.SC_CREATED, "NO_CONTENT");
         ServerSideMultipartManager manager = buildMockManager(statusLine, null);
 
-        UUID id = new UUID(0L, 0L);
+        UUID id = new UUID(0L, 7L);
         String partsDirectory = manager.uuidPrefixedPath(id);
         ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
                 id, "/test/stor/myobject", partsDirectory);
