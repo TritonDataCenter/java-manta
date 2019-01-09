@@ -107,7 +107,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(invocationCount = 50)
     public final void canGetStatus() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
