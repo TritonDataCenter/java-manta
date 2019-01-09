@@ -1,0 +1,24 @@
+etag: e0dcd260-a18e-4115-fb13-cf56706dbb41
+last-modified: Sat, 29 Dec 2018 00:09:33 GMT
+m-encrypt-metadata-aead-tag-length: 16
+m-encrypt-key-id: personal-256
+m-encrypt-aead-tag-length: 16
+m-encrypt-plaintext-content-length: 2753
+m-encrypt-iv: DXayNmffopYsL2OeTuV78Q==
+m-encrypt-metadata: 0E0flhujrj8Uc0I7Pifym/J+tohCTVVDIk/7bVE1/JliJq6QsCH7nyVcsHXvLdvh7Ii8Qaa/AVKg
+m-encrypt-type: client/1
+m-encrypt-cipher: AES256/GCM/NoPadding
+m-encrypt-metadata-iv: 2NPIZa6CMSLOVd7NEg49bQ==
+durability-level: 2
+content-length: 2769
+content-md5: wWc8Pfer5ff7bqSXromWcA==
+content-type: application/octet-stream
+date: Sat, 29 Dec 2018 01:32:58 GMT
+server: Manta
+x-request-id: a8f59f2f-5596-405c-a5e6-f44e29c8180d
+x-response-time: 124
+x-server-name: 56564894-a7c2-470e-a218-3d859e7e1687
+connection: keep-alive
+x-request-received: 1546047176879
+x-request-processing-time: 533
+
