@@ -823,7 +823,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
      * characters as the last character in the passed string are the numbers
      * 1-8.
      *
-     * @param objectIdAsUUID
+     * @param objectIdAsUUID MPU object UUID as string
      * @return substring for the first N characters of the passed string
      * @throws MantaMultipartException thrown if unable to parse input
      */

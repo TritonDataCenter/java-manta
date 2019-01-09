@@ -107,6 +107,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+    @Test(invocationCount = 50)
     public final void canGetStatus() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -136,13 +137,19 @@ public class ServerSideMultipartManagerIT {
                 }
             }
             if (lastStatus != MantaMultipartStatus.COMPLETED) {
-                Assert.fail("MPU " + upload  + "did not complete after multiple status checks.  Last status: " + lastStatus);
+                final String msg = String.format("MPU %s did not complete after "
+                        + "multiple status checks. Last status: %s",
+                        upload, lastStatus);
+                Assert.fail(msg);
             }
         } else if (completeStatus.equals(MantaMultipartStatus.COMPLETED)) {
             // If the server was fast enough to complete the MPU on the first try,
             // then this is a valid condition
         } else {
-            Assert.fail("MPU " + upload  + "in invalid status after complete invocation. Actual status: " + completeStatus);
+            final String msg = String.format("MPU %s in invalid status after "
+                            + "complete invocation. Actual status: %s",
+                    upload, completeStatus);
+            Assert.fail(msg);
         }
     }
 
