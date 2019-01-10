@@ -71,7 +71,7 @@ public class ServerSideMultipartManagerIT {
 
     public void nonExistentFileHasNotStarted() throws IOException {
         String path = testPathPrefix + UUID.randomUUID().toString();
-        UUID unknownId = new UUID(0L, -1L);
+        UUID unknownId = new UUID(0L, 3);
         ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
                 unknownId, path, null);
         assertEquals(multipart.getStatus(upload),
@@ -110,45 +110,58 @@ public class ServerSideMultipartManagerIT {
     public final void canGetStatus() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
-        final byte[] content = RandomUtils.nextBytes(5242880);
+        final byte[] content1 = RandomUtils.nextBytes(5242880);
+        final byte[] content2 = RandomUtils.nextBytes(1242880);
 
         ServerSideMultipartUpload upload = multipart.initiateUpload(path);
         MantaMultipartStatus newStatus = multipart.getStatus(upload);
         Assert.assertEquals(newStatus, MantaMultipartStatus.CREATED,
                             "Created status wasn't set. Actual status: " + newStatus);
-        MantaMultipartUploadPart part = multipart.uploadPart(upload, 1, content);
+        MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
+        MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
 
-        multipart.complete(upload, Stream.of(part));
+        multipart.complete(upload, Stream.of(part1, part2));
         MantaMultipartStatus completeStatus = multipart.getStatus(upload);
 
-        if (completeStatus.equals(MantaMultipartStatus.COMMITTING)) {
-            MantaMultipartStatus lastStatus = completeStatus;
-            for (int i = 2; i <= 15 ; i++) {
-                try {
-                    Thread.sleep((long)Math.pow(2, i));
-                    if (mantaClient.existsAndIsAccessible(path)) {
-                        lastStatus = null;
-                        break;
+        Assert.assertNotNull(completeStatus, "Status should never be null");
+
+        switch (completeStatus) {
+            /* In most cases, we will be in the committing status when this
+             * switch statement is reached because not enough time will have
+             * elapsed for us to complete the MPU operation.*/
+            case COMMITTING: {
+                MantaMultipartStatus lastStatus = completeStatus;
+
+                /* We retry until the MPU operation has changed status or we have
+                 * run out of retries. */
+                for (int i = 2; i <= 15 ; i++) {
+                    try {
+                        // Exponentially sleep longer and longer
+                        Thread.sleep((long)Math.pow(2, i));
+                        // Attempt to get the status again to see if we have completed
+                        lastStatus = multipart.getStatus(upload);
+                    } catch (InterruptedException e) {
+                        return;
                     }
-                    lastStatus = multipart.getStatus(upload);
-                } catch (InterruptedException e) {
-                    return;
                 }
+                if (lastStatus != MantaMultipartStatus.COMPLETED) {
+                    final String msg = String.format("MPU %s did not complete after "
+                                    + "multiple status checks. Last status: %s",
+                            upload, lastStatus);
+                    Assert.fail(msg);
+                }
+                break;
             }
-            if (lastStatus != MantaMultipartStatus.COMPLETED) {
-                final String msg = String.format("MPU %s did not complete after "
-                        + "multiple status checks. Last status: %s",
-                        upload, lastStatus);
+            case COMPLETED: {
+                // If the server was fast enough to complete the MPU on the first try,
+                // then this is a valid condition.
+                break;
+            }
+            default: {
+                final String msg = String.format("MPU %s returned an unexpected status: %s",
+                        upload, completeStatus);
                 Assert.fail(msg);
             }
-        } else if (completeStatus.equals(MantaMultipartStatus.COMPLETED)) {
-            // If the server was fast enough to complete the MPU on the first try,
-            // then this is a valid condition
-        } else {
-            final String msg = String.format("MPU %s in invalid status after "
-                            + "complete invocation. Actual status: %s",
-                    upload, completeStatus);
-            Assert.fail(msg);
         }
     }
 
