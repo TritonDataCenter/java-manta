@@ -501,6 +501,7 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         if (result.equalsIgnoreCase("committing")) {
             return MantaMultipartStatus.COMMITTING;
         }
+        // For history of this case, see: https://github.com/joyent/java-manta/issues/452
         if (result.equalsIgnoreCase("committed")) {
             return MantaMultipartStatus.COMPLETED;
         }
