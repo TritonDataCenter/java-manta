@@ -5,6 +5,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ## [3.3.1] -
 ### Fixed
  - [Client-side encryption does not use libnss when doing simple PUT](https://github.com/joyent/java-manta/issues/449)
+ - [Server-side MPU is hardcoded to create a directory prefix of only a single character](https://github.com/joyent/java-manta/issues/451)
+ - [Server-side MPU returns a committed result but it is parsed as COMMITTING](https://github.com/joyent/java-manta/issues/452)
 
 ## [3.3.0] - 2018-12-02
 ### Changed
