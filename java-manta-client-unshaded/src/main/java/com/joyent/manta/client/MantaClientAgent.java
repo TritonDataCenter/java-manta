@@ -197,7 +197,11 @@ class MantaClientAgent implements AutoCloseable {
         }
 
         if (metricReporter != null) {
-            metricReporter.close();
+            try {
+                metricReporter.close();
+            } catch (IOException e) {
+                LOGGER.error("Error closing metrics reporter", e);
+            }
         }
 
         beans.clear();
