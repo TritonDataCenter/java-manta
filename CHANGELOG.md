@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.3.2] -
+### Fixed
+ - [InterruptedException could be thrown warnings have been resolved](https://github.com/joyent/java-manta/issues/322)
+
 ## [3.3.1] -
 ### Fixed
  - [Client-side encryption does not use libnss when doing simple PUT](https://github.com/joyent/java-manta/issues/449)
@@ -120,7 +124,6 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Fixes validation guard clauses that are not validating anything](https://github.com/joyent/java-manta/issues/346)
  - [MDC logging of the load balancer address now logs the proper address](https://github.com/joyent/java-manta/issues/266)
  - [Fixes deleteRecursive fails with ConnectionPoolTimeoutException](https://github.com/joyent/java-manta/issues/358)
- - [InterruptedException could be thrown warnings have been resolved](https://github.com/joyent/java-manta/issues/322)
 ### Changed
  - Validation of paths passed to `MantaClient` is now more consistently strict.
    More useful errors should be thrown sooner for invalid paths, without any
