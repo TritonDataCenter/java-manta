@@ -95,7 +95,7 @@ public class EncryptedServerSideMultipartManagerIT {
 
     public void nonExistentFileHasNotStarted() throws IOException {
         String path = testPathPrefix + UUID.randomUUID().toString();
-        UUID unknownId = new UUID(0L, -1L);
+        UUID unknownId = new UUID(0L, 3);
 
         ServerSideMultipartUpload wrapped = new ServerSideMultipartUpload(
                 unknownId, path, null);
