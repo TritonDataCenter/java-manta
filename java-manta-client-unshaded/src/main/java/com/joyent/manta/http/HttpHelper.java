@@ -302,6 +302,14 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
                          Object... logParameters)
             throws IOException;
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Note: This changes the signature of {@link AutoCloseable#close()} to
+     * only throw {@link IOException}.</p>
+     *
+     * @throws IOException thrown if there was a problem closing resources
+     */
     @Override
     void close() throws IOException;
 
