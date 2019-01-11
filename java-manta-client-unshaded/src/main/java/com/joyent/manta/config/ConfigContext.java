@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2018, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,18 +10,19 @@ package com.joyent.manta.config;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.util.InputStreamContinuator;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.management.DynamicMBean;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import javax.management.DynamicMBean;
 
 /**
  * Interface representing the configuration properties needed to configure a
@@ -61,7 +62,13 @@ public interface ConfigContext extends MantaMBeanable {
     String getPassword();
 
     /**
-     * @return General connection timeout for the Manta service.
+     * Determines the timeout in milliseconds until a connection is established.
+     * <p>
+     * A timeout value of zero is interpreted as an infinite timeout.
+     * A negative value is interpreted as undefined (system default).
+     * </p>
+     *
+     * @return new connection timeout for the Manta service.
      */
     Integer getTimeout();
 
@@ -108,6 +115,14 @@ public interface ConfigContext extends MantaMBeanable {
     Boolean disableNativeSignatures();
 
     /**
+     * Defines the socket timeout ({@code SO_TIMEOUT}) in milliseconds,
+     * which is the timeout for waiting for data  or, put differently,
+     * a maximum period inactivity between two consecutive data packets).
+     * <p>
+     * A timeout value of zero is interpreted as an infinite timeout.
+     * A negative value is interpreted as undefined (system default).
+     * </p>
+     *
      * @see java.net.SocketOptions#SO_TIMEOUT
      * @return time in milliseconds to wait to see if a TCP socket has timed out
      */
@@ -117,6 +132,11 @@ public interface ConfigContext extends MantaMBeanable {
      * @return number of milliseconds to wait for a connection from the pool
      */
     Integer getConnectionRequestTimeout();
+
+    /**
+     * @return null or maximum time in milliseconds to wait for a 100-continue response
+     */
+    Integer getExpectContinueTimeout();
 
     /**
      * @return true when we verify the uploaded file's checksum against the
@@ -129,6 +149,35 @@ public interface ConfigContext extends MantaMBeanable {
      *         deciding if we want to load it in memory before send it
      */
     Integer getUploadBufferSize();
+
+    /**
+     * @return number of directories of depth to assume would exist when creating directories
+     */
+    Integer getSkipDirectoryDepth();
+
+    /**
+     * @return the maximum amount of empty parent directories to delete. -1 will delete all empty parent directories 0
+     *         will delete none of them.
+     */
+    Integer getPruneEmptyParentDepth();
+
+    /**
+     * Whether unbounded (-1) or bounded (positive integer) download continuations are enabled.
+     * @return if download continuation is enabled
+     * @see InputStreamContinuator
+     * @see com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuator
+     */
+    Integer downloadContinuations();
+
+    /**
+     * @return the way metrics should be reported, {@code MetricReporterMode.DISABLED} or {@code null} to disable
+     */
+    MetricReporterMode getMetricReporterMode();
+
+    /**
+     * @return number of seconds between metrics output for periodic reporters
+     */
+    Integer getMetricReporterOutputInterval();
 
     /**
      * @return true when client-side encryption is enabled.
@@ -218,6 +267,11 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", connectionRequestTimeout=").append(context.getConnectionRequestTimeout());
         sb.append(", verifyUploads=").append(context.verifyUploads());
         sb.append(", uploadBufferSize=").append(context.getUploadBufferSize());
+        sb.append(", skipDirectoryDepth=").append(context.getSkipDirectoryDepth());
+        sb.append(", pruneEmptyParentDepth=").append(context.getPruneEmptyParentDepth());
+        sb.append(", downloadContinuations=").append(context.downloadContinuations());
+        sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
+        sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
@@ -261,16 +315,8 @@ public interface ConfigContext extends MantaMBeanable {
             }
         }
 
-        if (config.getTimeout() != null && config.getTimeout() < 0) {
-            failureMessages.add("Manta timeout must be 0 or greater");
-        }
-
-        if (config.getTcpSocketTimeout() != null && config.getTcpSocketTimeout() < 0) {
-            failureMessages.add("Manta tcp socket timeout must be 0 or greater");
-        }
-
-        if (config.getConnectionRequestTimeout() != null && config.getConnectionRequestTimeout() < 0) {
-            failureMessages.add("Manta connection request timeout must be 0 or greater");
+        if (config.getExpectContinueTimeout() != null && config.getExpectContinueTimeout() < 1) {
+            failureMessages.add("Manta Expect 100-continue timeout must be 1 or greater");
         }
 
         final boolean authenticationEnabled = BooleanUtils.isNotTrue(config.noAuth());
@@ -291,6 +337,24 @@ public interface ConfigContext extends MantaMBeanable {
 
             if (config.getPrivateKeyContent() != null && StringUtils.isBlank(config.getPrivateKeyContent())) {
                 failureMessages.add("Manta private key content must not be blank");
+            }
+        }
+
+        if (config.getSkipDirectoryDepth() != null && config.getSkipDirectoryDepth() < 0) {
+            failureMessages.add("Manta skip directory depth must be 0 or greater");
+        }
+
+        if (config.getPruneEmptyParentDepth() != null && config.getSkipDirectoryDepth() < -1) {
+            failureMessages.add("Manta prune empty parent depth must be -1 or greater");
+        }
+
+        if (config.getMetricReporterMode() != null) {
+            if (MetricReporterMode.SLF4J.equals(config.getMetricReporterMode())) {
+                if (config.getMetricReporterOutputInterval() == null) {
+                    failureMessages.add("SLF4J metric reporter selected but no output interval was provided");
+                } else if (config.getMetricReporterOutputInterval() < 1) {
+                    failureMessages.add("Metric reporter output interval (ms) must be 1 or greater");
+                }
             }
         }
 
@@ -484,6 +548,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:
                 return config.getConnectionRequestTimeout();
+            case MapConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_KEY:
+            case EnvVarConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY:
+                return config.getExpectContinueTimeout();
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();
@@ -493,6 +560,12 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
             case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
                 return config.getUploadBufferSize();
+            case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
+                return config.getSkipDirectoryDepth();
+            case MapConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_KEY:
+            case EnvVarConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_ENV_KEY:
+                return config.downloadContinuations();
             case MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY:
             case EnvVarConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY:
                 return config.permitUnencryptedDownloads();
@@ -517,4 +590,5 @@ public interface ConfigContext extends MantaMBeanable {
                 return null;
         }
     }
+
 }

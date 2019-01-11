@@ -16,8 +16,6 @@ import org.apache.http.protocol.HttpContext;
 
 import java.time.Duration;
 
-import static com.joyent.manta.http.MantaHttpRequestRetryHandler.CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE;
-
 /**
  * Implementation of {@link org.apache.http.client.ServiceUnavailableRetryStrategy}
  * customized for use with Manta.
@@ -25,11 +23,13 @@ import static com.joyent.manta.http.MantaHttpRequestRetryHandler.CONTEXT_ATTRIBU
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavailableRetryStrategy {
+public class MantaServiceUnavailableRetryStrategy
+        extends DefaultServiceUnavailableRetryStrategy
+        implements HttpContextRetryCancellation {
     /**
      * Hardcoded retry interval of 1 second.
      */
-    private static final int RETRY_INTERVAL = (int)Duration.ofSeconds(1).toMillis();
+    private static final int RETRY_INTERVAL = (int) Duration.ofSeconds(1).toMillis();
 
     /**
      * Creates a new instance of the retry strategy configured using a
@@ -37,16 +37,35 @@ public class MantaServiceUnavailableRetryStrategy extends DefaultServiceUnavaila
      *
      * @param context Manta SDK configuration object
      */
+    @Deprecated
     public MantaServiceUnavailableRetryStrategy(final ConfigContext context) {
-        super(ObjectUtils.firstNonNull(context.getRetries(), DefaultsConfigContext.DEFAULT_HTTP_RETRIES),
-                RETRY_INTERVAL);
+        this(ObjectUtils.firstNonNull(context.getRetries(), DefaultsConfigContext.DEFAULT_HTTP_RETRIES));
+    }
+
+    /**
+     * Creates a new instance of the retry strategy configured using a
+     * {@link ConfigContext} object.
+     *
+     * @param retries number of times to retry request
+     */
+    public MantaServiceUnavailableRetryStrategy(final int retries) {
+        this(retries, RETRY_INTERVAL);
+    }
+
+    /**
+     * Creates a new instance of the retry strategy configured using a
+     * {@link ConfigContext} object.
+     *
+     * @param retries number of times to retry request
+     * @param retryIntervalInMilliseconds milliseconds to wait before retrying
+     */
+    public MantaServiceUnavailableRetryStrategy(final int retries, final int retryIntervalInMilliseconds) {
+        super(retries, retryIntervalInMilliseconds);
     }
 
     @Override
     public boolean retryRequest(final HttpResponse response, final int executionCount, final HttpContext context) {
-        final Object disableRetry = context.getAttribute(CONTEXT_ATTRIBUTE_MANTA_RETRY_DISABLE);
-
-        if (disableRetry instanceof Boolean && (Boolean) disableRetry) {
+        if (neverRetry(context)) {
             return false;
         }
 

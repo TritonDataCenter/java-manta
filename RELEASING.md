@@ -5,7 +5,7 @@ If you do not already have an account, you can click the signup link from the lo
 to begin the process of registering for an account.  After signing up, you will need to add
 your sonatype credentials to your your maven settings file.  By default this settings file is
 located at `$HOME/.m2/settings.xml`.  In addition to sonatype credentials, you will
-also need to add a [gpg signing](https://maven.apache.org/plugins/maven-gpg-plugin/sign-mojo.html) key configuration and [upload your key](http://central.sonatype.org/pages/working-with-pgp-signatures.html#distributing-your-public-key) to a public keyserver.
+also need to add a PGP key (which can be [generated with gpg](https://help.github.com/articles/generating-a-new-gpg-key/)), [gpg signing](https://maven.apache.org/plugins/maven-gpg-plugin/sign-mojo.html) key configuration and [upload your key](http://central.sonatype.org/pages/working-with-pgp-signatures.html#distributing-your-public-key) to a public keyserver.
 
 For the security conscious, a [guide to encrypting credentials in maven settings files](https://maven.apache.org/guides/mini/guide-encryption.html) exists to
 illustrate how credentials can be protected.
@@ -96,11 +96,15 @@ with this).
 
 7. Push tags to github:
 `git push --follow-tags`
-In order for the `release:perform` goal to complete successfully, you will need to
-push the tags created by the maven release plugin to the remote git server.
+We also publish releases on Github so the created tag should be pushed back to java-manta
+in order to attach release artifacts for direct download.
 
 8. Perform the actual release:
-`mvn release:perform`
+`mvn release:perform -Darguments="-Dmaven.test.skip=true -Dmaven.integration.test.skip=true"`
+
+By specifying the arguments above, it will allow you to avoid rerunning the
+unit and integration tests that were already run in step #4. 
+
 A build will be performed and packaged and artifacts deployed to the sonatype
 staging repository.
 

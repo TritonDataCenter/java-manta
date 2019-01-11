@@ -145,6 +145,16 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setConnectionRequestTimeout(Integer connectionRequestTimeout);
 
     /**
+     * Sets the request body Expect behavior. When enabled we will include a header with requests and wait for the
+     * designated time before sending the request body. The amount of time to wait is bounded as suggested by
+     * RFC 2616.
+     *
+     * @param expectContinueTimeout non-null values indicate the expect wait timeout, null disables the Expect header
+     * @return the current instance of {@link T}
+     */
+    T setExpectContinueTimeout(Integer expectContinueTimeout);
+
+    /**
      * Sets if we verify the uploaded file's checksum against the server's
      * checksum (MD5).
      *
@@ -161,6 +171,46 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @return the current instance of {@link T}
      */
     T setUploadBufferSize(Integer size);
+
+    /**
+     * Sets the number of directories to be assumed to exist when creating directories recursively.
+     *
+     * @param depth directory depth to assume exists
+     * @return the current instance of {@link T}
+     */
+    T setSkipDirectoryDepth(Integer depth);
+
+    /**
+     * Sets a limit to the number of parent directories deleted, after a delete.
+     *
+     * @param depth empty parents to prune upon deletion of an object
+     * @return the current instance of {@link T}
+     */
+    T setPruneEmptyParentDepth(Integer depth);
+
+    /**
+     * Sets whether download continuation is enabled.
+     *
+     * @param continuation whether to enable download continuation
+     * @return the current instance of {@link T}
+     */
+    T setDownloadContinuations(Integer continuation);
+
+    /**
+     * Sets the method used to report metrics (or disable them entirely).
+     *
+     * @param metricReporterMode metric reporting mode
+     * @return the current instance of {@link T}
+     */
+    T setMetricReporterMode(MetricReporterMode metricReporterMode);
+
+    /**
+     * Sets the method used to report metrics (or disables them entirely).
+     *
+     * @param metricReporterOutputInterval metrics output interval in seconds for modes that report metrics periodically
+     * @return the current instance of {@link T}
+     */
+    T setMetricReporterOutputInterval(Integer metricReporterOutputInterval);
 
     /**
      * Sets flag indicating when client-side encryption is enabled.
@@ -298,6 +348,37 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
                 config.setTcpSocketTimeout(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY:
+            case EnvVarConfigContext.MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY:
+                config.setUploadBufferSize(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_SKIP_DIRECTORY_DEPTH_ENV_KEY:
+                config.setSkipDirectoryDepth(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_PRUNE_EMPTY_PARENT_DEPTH_KEY:
+            case EnvVarConfigContext.MANTA_PRUNE_EMPTY_PARENT_DEPTH_ENV_KEY:
+                config.setPruneEmptyParentDepth(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_METRIC_REPORTER_MODE_KEY:
+            case EnvVarConfigContext.MANTA_METRIC_REPORTER_MODE_ENV_KEY:
+                final String metricReporterModeStr = Objects.toString(value);
+                if (StringUtils.isBlank(metricReporterModeStr)) {
+                    return;
+                }
+
+                try {
+                    config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.valueOf(metricReporterModeStr));
+                } catch (IllegalArgumentException e) {
+                    // error parsing enum value, so we just exit the function
+                    return;
+                }
+
+                break;
+            case MapConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY:
+            case EnvVarConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY:
+                config.setMetricReporterOutputInterval(MantaUtils.parseIntegerOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:

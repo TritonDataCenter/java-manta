@@ -14,6 +14,7 @@ import com.joyent.manta.domain.ErrorDetail;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * Exception class representing a failure in the contract of Manta's behavior.
@@ -125,7 +127,23 @@ public class MantaClientHttpResponseException extends MantaIOException {
     public MantaClientHttpResponseException(final HttpRequest request,
                                             final HttpResponse response,
                                             final String path) {
-        super(String.format("HTTP request failed to: %s", path));
+        this(request, response, path, (int[]) null);
+    }
+
+    /**
+     * Builds a client exception object that is annotated with all of the
+     * relevant request and response debug information.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param expectedResponseCodes list of allowed response codes when the exception is response-code-related
+     */
+    public MantaClientHttpResponseException(final HttpRequest request,
+                                            final HttpResponse response,
+                                            final String path,
+                                            final int... expectedResponseCodes) {
+        super(buildExceptionMessageFromHttpExchange(request, response, path, expectedResponseCodes));
         final HttpEntity entity = response.getEntity();
         final ContentType jsonContentType = ContentType.APPLICATION_JSON;
 
@@ -168,6 +186,40 @@ public class MantaClientHttpResponseException extends MantaIOException {
         }
 
         HttpHelper.annotateContextedException(this, request, response);
+
+        /* We don't want any problems processing headers to get in the way of
+         * properly throwing an exception, so we warn if we hit any error cases
+         * instead of raise the exception. */
+        try {
+            final Header[] responseHeaders = response.getAllHeaders();
+            if (responseHeaders != null) {
+                setHeaders(new MantaHttpHeaders(responseHeaders));
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("Error setting response headers on exception", e);
+        }
+    }
+
+    /**
+     * Build an exception message tailored to the arguments passed to the most complex constructor.
+     *
+     * @param request HTTP request object
+     * @param response HTTP response object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param expectedResponseCodes list of allowed response codes
+     * @return a relevant error message
+     */
+    private static String buildExceptionMessageFromHttpExchange(final HttpRequest request,
+                                                                final HttpResponse response,
+                                                                final String path,
+                                                                final int... expectedResponseCodes) {
+        if (expectedResponseCodes != null) {
+            return String.format("HTTP request returned unexpected response code: expected one of %s, got [%d] ",
+                                 Arrays.toString(expectedResponseCodes),
+                                 response.getStatusLine().getStatusCode());
+        }
+
+        return String.format("HTTP request failed to: %s", path);
     }
 
     /**

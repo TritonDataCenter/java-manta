@@ -25,7 +25,7 @@ import java.util.Objects;
  * As far as users are concerned, this class is just as thread-safe as every other {@link ConfigContext} (i.e. generally
  * not) but we're using a private object as a lock in order to at least synchronize reloads and field updates.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @since 3.1.7
  */
 public class AuthAwareConfigContext
@@ -402,6 +402,24 @@ public class AuthAwareConfigContext
     public AuthAwareConfigContext setUploadBufferSize(final Integer size) {
         synchronized (lock) {
             super.setUploadBufferSize(size);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMetricReporterMode(final MetricReporterMode metricReporterMode) {
+        synchronized (lock) {
+            super.setMetricReporterMode(metricReporterMode);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setMetricReporterOutputInterval(final Integer metricReporterOutputInterval) {
+        synchronized (lock) {
+            super.setMetricReporterOutputInterval(metricReporterOutputInterval);
         }
 
         return this;

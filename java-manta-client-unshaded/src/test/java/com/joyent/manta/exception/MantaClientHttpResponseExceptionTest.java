@@ -7,7 +7,10 @@
  */
 package com.joyent.manta.exception;
 
+import com.joyent.manta.http.MantaHttpHeaders;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -15,10 +18,15 @@ import org.apache.http.HttpVersion;
 import org.apache.http.StatusLine;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicRequestLine;
 import org.apache.http.message.BasicStatusLine;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.UUID;
+
+import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,9 +56,27 @@ public class MantaClientHttpResponseExceptionTest {
                 "/user/stor/an/object");
     }
 
+    public void errorContainsResponseHeaders() {
+        final String jsonResponse = "{ \"code\":\"InternalError\", \"message\":\"Unit test message.\"}";
+
+        final HttpRequest request = request();
+        final HttpResponse response = responseWithErrorJson(jsonResponse);
+
+        MantaClientHttpResponseException exception = new MantaClientHttpResponseException(request, response,
+                "/user/stor/an/object");
+
+        final MantaHttpHeaders headers = exception.getHeaders();
+        Assert.assertNotNull(headers);
+        Assert.assertNotNull(headers.getDate());
+        Assert.assertNotNull(headers.get(HttpHeaders.SERVER));
+        Assert.assertNotNull(headers.getRequestId());
+        Assert.assertNotNull(headers.get("x-response-time"));
+        Assert.assertNotNull(headers.get(HttpHeaders.CONNECTION));
+    }
+
     private static HttpRequest request() {
         final HttpRequest request = mock(HttpRequest.class);
-        when(request.getRequestLine()).thenReturn(new BasicRequestLine("GET", "http://localhost",
+        when(request.getRequestLine()).thenReturn(new BasicRequestLine("GET", UNIT_TEST_URL,
                 HttpVersion.HTTP_1_1));
 
         return request;
@@ -64,6 +90,16 @@ public class MantaClientHttpResponseExceptionTest {
 
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
         when(response.getEntity()).thenReturn(entity);
+
+        Header[] headers = new Header[] {
+                new BasicHeader(HttpHeaders.DATE, "Wed, 13 Dec 2017 17:18:48 GMT"),
+                new BasicHeader(HttpHeaders.SERVER, "Manta"),
+                new BasicHeader(MantaHttpHeaders.REQUEST_ID, UUID.randomUUID().toString()),
+                new BasicHeader("x-response-time", "198"),
+                new BasicHeader(HttpHeaders.CONNECTION, "Keep-alive")
+        };
+
+        when(response.getAllHeaders()).thenReturn(headers);
 
         return response;
     }

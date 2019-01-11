@@ -2,7 +2,98 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.1.7-SNAPSHOT] - Coming soon!
+## [3.3.1] -
+### Fixed
+ - [Client-side encryption does not use libnss when doing simple PUT](https://github.com/joyent/java-manta/issues/449)
+ - [Server-side MPU is hardcoded to create a directory prefix of only a single character](https://github.com/joyent/java-manta/issues/451)
+ - [Server-side MPU returns a committed result but it is parsed as COMMITTING](https://github.com/joyent/java-manta/issues/452)
+
+## [3.3.0] - 2018-12-02
+### Changed
+ - Configuration parameter `manta.timeout` is now being used to specify
+   connection timeouts and is updated to a default value of 4s. This parameter now accepts negative values (indicates
+   the OS default setting).
+ - Configuration parameter `manta.tcp_socket_timeout` is now being 
+   used to specify timeouts when waiting for a tcp socket and is updated to a default value of 20s. This parameter now 
+   accepts negative values (indicates the OS default setting).
+ - Configuration parameter `manta.connection_request_timeout` now accepts 
+   negative values (indicates the OS default setting).
+### Fixed
+ - [Race condition in MantaObjectOutputStream causing MantaIOException](https://github.com/joyent/java-manta/issues/439)
+ - [Manta client unable to set new connection timeout #441](https://github.com/joyent/java-manta/issues/441)
+ - [Untangle the different timeout settings from MANTA_TIMEOUT](https://github.com/joyent/java-manta/issues/109)
+
+## [3.2.5] - 2018-10-04
+### Fixed
+ - [Delete prune keeps trying to delete recursively when directory is not empty](https://github.com/joyent/java-manta/issues/435)
+### Changed
+ - Improved documentation, code comments and code path for delete prune operations.
+
+## [3.2.4] - 2018-08-13
+### Added 
+ - [Prune Empty Parent Directory](https://github.com/joyent/java-manta/issues/425)
+ 	Can now attempt to delete empty parent directories within a delete. See 
+ 	`manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` in the configuration documentation
+ 	for an explanation of how this can be enabled.
+
+## [3.2.3] - 2018-08-03
+### Fixed
+ - [UnsupportedOperationException when getting a 0 byte file using `MantaClient.getAsInputStream`](https://github.com/joyent/java-manta/issues/408)
+ - [AutoContinuingInputStream fails to handle fatal exceptions correctly and triggers a self-suppression error.](https://github.com/joyent/java-manta/pull/429)
+
+### Added
+ - Client metrics can now be enabled by selecting a reporting mode with the
+   [`manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`](/USAGE.md#parameters) setting. [JMX and SLF4J are
+   available](https://github.com/joyent/java-manta/issues/410#issuecomment-384751882), though others may be added in the future.
+ - New metrics exposed:
+    - [Meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) for
+    [retries](https://github.com/joyent/java-manta/issues/410).
+    - [Timers](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) per HTTP request method.
+    - [Meters](http://metrics.dropwizard.io/4.0.0/manual/core.html#meter) per exception that occurs during requests.
+ - [`MantaClient#delete(String, MantaHttpHeaders)`](https://github.com/joyent/java-manta/issues/427)
+ - [Download auto-resume](https://github.com/joyent/java-manta/issues/411) has been added in the form of
+    [`manta.download_continuations`/`MANTA_DOWNLOAD_CONTINUATIONS` configuration
+    setting](https://github.com/joyent/java-manta/blob/master/USAGE.md#download-continuation).
+
+### Changed
+ - MBeans registered in JMX no longer use an incrementing integer and instead are created under
+   [unique IDs for each client](https://user-images.githubusercontent.com/1973223/38774088-6a08861e-4014-11e8-8951-287ecd70032f.png).
+ - JMX is no longer used to expose configuration and pool stats by default. To reenable JMX,
+   set `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE` to `JMX`.
+ - Upgraded upstream dependencies to latest stable versions:
+    - HTTP Signatures dependency: 4.0.6 → 4.0.8
+    - jna-gmp: 2.0.0 → 2.1.0
+    - BouncyCastle: 1.58 → 1.59
+    - Apache HttpClient: 4.5.3 → 4.5.5
+
+## [3.2.2] - 2018-05-04
+### Fixed
+ - [Misleading log message is shown for retrying requests that are unretryable](https://github.com/joyent/java-manta/issues/388)
+ - [`MantaClientHttpResponseException` does not provide a way to get the response headers](https://github.com/joyent/java-manta/issues/383)
+ - [Underlying stream is not closed when we throw a `MantaClientEncryptionException`](https://github.com/joyent/java-manta/issues/391)
+ - [Underlying stream is not closed by `MantaEncryptedObjectInputStream` for range requests with certain ciphers](https://github.com/joyent/java-manta/issues/398)
+ - [Improved error messages for missing or invalid private keys.](https://github.com/joyent/java-manta/pull/415)
+ - [Exceptions relating to object type expectations are too generic](https://github.com/joyent/java-manta/issues/403)
+ - [Integration test regression](https://github.com/joyent/java-manta/pull/417)
+
+## [3.2.1] - 2017-12-01
+### Added
+ - [Load balancer IP](https://github.com/joyent/java-manta/pull/378) has been added
+   to response headers as `x-load-balancer`. The header will be injected into the response if it is not already present.
+ - Azul Systems' [Zulu JDK](https://www.azul.com/products/zulu-and-zulu-enterprise/)
+   has been [added to the Travis-CI test matrix](https://github.com/joyent/java-manta/pull/382).
+ - [Recursive directory creation](https://github.com/joyent/java-manta/issues/371)
+   can now attempt to skip a configurable number of levels in order to avoid redundant `PUT` requests. See
+   `manta.skip_directory_depth` / `MANTA_SKIP_DIRECTORY_DEPTH` in the configuration documentation for an explanation
+   of how the optimization can be enabled.
+ - `Expect: 100-continue` header [can now be set](https://github.com/joyent/java-manta/issues/314)
+   by configuring a timeout value for `manta.expect_continue_timeout` / `MANTA_EXPECT_CONTINUE_TIMEOUT`.
+### Fixed
+ - [Signing of URLs which need to be encoded](https://github.com/joyent/java-manta/issues/379) has been fixed.
+ - Java 9 [compatibility improvements](https://github.com/joyent/java-manta/pull/382).
+ - `MantaClient#listObjects` [potentially leaking connections](https://github.com/joyent/java-manta/pull/385).
+
+## [3.2.0] - 2017-11-03
 ### Added
  - [Added method MantaClient.find() which allows for recursive directory listing](https://github.com/joyent/java-manta/issues/87).
  - Support for reading content-type and content-md5 header information from 
@@ -370,3 +461,7 @@ Version skipped due to a release error.
 ### Fixed
  - Fixed checkstyle failures.
  - Fixed pom.xml settings so that it will properly release to Maven Central.
+ 
+ 
+
+ 

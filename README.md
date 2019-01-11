@@ -40,7 +40,7 @@ Listed below are the most commonly used configuration options:
 | manta.url                          | MANTA_URL                      | https://us-east.manta.joyent.com:443 |
 | manta.user                         | MANTA_USER                     |                                      |
 | manta.key_id                       | MANTA_KEY_ID                   |                                      |
-| manta.key_path                     | MANTA_KEY_PATH                 | $HOME/.ssh/id_rsa                    |
+| manta.key_path                     | MANTA_KEY_PATH                 | $HOME/.ssh/id_rsa (if exists)        |
 
 * `manta.url` ( **MANTA_URL** )
 The URL of the manta service endpoint to test against
@@ -129,3 +129,4 @@ goes out to:
 * [The TestNG Project](http://testng.org/doc/index.html)
 * [The Mockito Project](http://site.mockito.org/)
 * [Timothy W Macinta's FastMD5 Project](http://twmacinta.com/myjava/fast_md5.php)
+* [Remko Popma's picocli Project](https://github.com/remkop/picocli)

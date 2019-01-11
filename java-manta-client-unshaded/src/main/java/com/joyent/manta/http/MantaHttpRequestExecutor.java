@@ -7,10 +7,12 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaNoHttpResponseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpClientConnection;
+import org.apache.http.HttpConnectionMetrics;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -29,6 +31,15 @@ import java.io.IOException;
  * @since 3.1.7
  */
 public class MantaHttpRequestExecutor extends HttpRequestExecutor {
+
+    /**
+     * Creates new instance of HttpRequestExecutor. We're delegating any concerns
+     * about waitForContinue to the parent's parameterless constructor.
+     */
+    public MantaHttpRequestExecutor() {
+        super();
+    }
+
     /**
      * Creates new instance of HttpRequestExecutor.
      *
@@ -36,12 +47,6 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
      */
     public MantaHttpRequestExecutor(final int waitForContinue) {
         super(waitForContinue);
-    }
-
-    /**
-     * Creates new instance of HttpRequestExecutor.
-     */
-    public MantaHttpRequestExecutor() {
     }
 
     /**
@@ -104,8 +109,24 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
             }
 
             mioe.setContextValue("loadBalancerAddress", extractLoadBalancerAddress(conn));
+            mioe.setContextValue("socketTimeout", conn.getSocketTimeout());
+
+            /* If metrics are available we add them to the exception because it
+             * is useful for debugging what went wrong. In particular, it is
+             * useful when debugging requests that use client-side encryption. */
+            if (conn.getMetrics() != null) {
+                final HttpConnectionMetrics metrics = conn.getMetrics();
+                mioe.setContextValue("receivedBytes", metrics.getReceivedBytesCount());
+                mioe.setContextValue("sentBytes", metrics.getSentBytesCount());
+                mioe.setContextValue("requestCount", metrics.getRequestCount());
+                mioe.setContextValue("responseCount", metrics.getResponseCount());
+            }
 
             throw mioe;
+        }
+
+        if (!response.containsHeader("x-load-balancer")) {
+            response.setHeader("x-load-balancer", extractLoadBalancerAddress(conn));
         }
 
         return response;
@@ -124,5 +145,51 @@ public class MantaHttpRequestExecutor extends HttpRequestExecutor {
         }
 
         return StringUtils.substringBetween(conn.toString(), "<->", ":");
+    }
+
+    /**
+     * Helper class for invoking the correct specialized {@link HttpRequestExecutor}.
+     */
+    static final class Builder {
+
+        /**
+         * Wait time in milliseconds for {@link HttpRequestExecutor} (and child class) constructor.
+         */
+        private Integer waitForContinue;
+
+        /**
+         * Metric configuration info.
+         */
+        private MantaClientMetricConfiguration metricConfig;
+
+        static Builder create() {
+            return new Builder();
+        }
+
+        Builder setWaitForContinue(final Integer waitForContinue) {
+            this.waitForContinue = waitForContinue;
+            return this;
+        }
+
+        Builder setMetricConfiguration(final MantaClientMetricConfiguration metricConfiguration) {
+            this.metricConfig = metricConfiguration;
+            return this;
+        }
+
+        MantaHttpRequestExecutor build() {
+            if (metricConfig != null) {
+                if (waitForContinue != null) {
+                    return new InstrumentedMantaHttpRequestExecutor(metricConfig.getRegistry(), waitForContinue);
+                }
+
+                return new InstrumentedMantaHttpRequestExecutor(metricConfig.getRegistry());
+            }
+
+            if (waitForContinue != null) {
+                return new MantaHttpRequestExecutor(waitForContinue);
+            }
+
+            return new MantaHttpRequestExecutor();
+        }
     }
 }

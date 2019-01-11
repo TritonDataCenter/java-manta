@@ -12,11 +12,11 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.1.7-SNAPSHOT</version>
+        <version>3.3.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>java-manta-it</artifactId>
-    <version>3.1.7-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>java-manta-it</name>
@@ -26,14 +26,14 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
-            <version>3.1.7-SNAPSHOT</version>
+            <version>3.3.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client-kryo-serialization</artifactId>
-            <version>3.1.7-SNAPSHOT</version>
+            <version>3.3.1-SNAPSHOT</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
@@ -55,6 +55,19 @@
             <artifactId>commons-lang3</artifactId>
             <version>${dependency.commons-lang.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${dependency.commons-text.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -109,6 +122,40 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock</artifactId>
+            <version>2.18.0</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -142,30 +189,6 @@
              in this integration test module.
         -->
         <plugins>
-            <plugin>
-                <!-- This property is generated so we can refer to
-                     another module in a multi-module project without
-                     brittle relative paths. -->
-                <groupId>org.commonjava.maven.plugins</groupId>
-                <artifactId>directory-maven-plugin</artifactId>
-                <version>${maven-directory-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>directory-of-property</id>
-                        <goals>
-                            <goal>directory-of</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <property>multi.module.root</property>
-                            <project>
-                                <groupId>com.joyent.manta</groupId>
-                                <artifactId>java-manta</artifactId>
-                            </project>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <executions>
@@ -298,6 +321,8 @@
                         </goals>
                         <configuration>
                             <skip>${maven.integration.test.skip}</skip>
+                            <parallel>classes</parallel>
+                            <threadCount>4</threadCount>
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testng-it.xml</suiteXmlFile>
                             </suiteXmlFiles>

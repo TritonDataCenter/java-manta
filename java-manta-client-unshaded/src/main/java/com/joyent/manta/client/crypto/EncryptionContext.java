@@ -9,12 +9,12 @@ package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.exception.MantaClientEncryptionException;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Objects;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * Context class that contains a secret key, cipher/mode properties objects
@@ -42,14 +42,22 @@ public class EncryptionContext {
     private final Cipher cipher;
 
     /**
+     * Flag indicating that we will only use cloneable ciphers for encryption
+     * operations.
+     */
+    private final boolean requireCloneableCipher;
+
+    /**
      * Creates a new instance of an encryption context.
      *
-     * @param key           secret key to initialize cipher with
+     * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
+     * @param requireCloneableCipher true when only cloneable ciphers can be used
      */
     public EncryptionContext(final SecretKey key,
-                             final SupportedCipherDetails cipherDetails) {
-        this(key, cipherDetails, null);
+                             final SupportedCipherDetails cipherDetails,
+                             final boolean requireCloneableCipher) {
+        this(key, cipherDetails, null, requireCloneableCipher);
     }
 
     /**
@@ -58,16 +66,18 @@ public class EncryptionContext {
      * {@link Cipher} is unaffected by retries since {@link EncryptingEntity#writeTo(OutputStream)}
      * may be called multiple times.
      *
-     * @param key           secret key to initialize cipher with
+     * @param key secret key to initialize cipher with
      * @param cipherDetails cipher/mode properties object to create cipher object from
-     * @param suppliedIv    an existing IV to reuse
+     * @param suppliedIv an existing IV to reuse
+     * @param requireCloneableCipher true when only cloneable ciphers can be used
      */
     EncryptionContext(final SecretKey key,
-                             final SupportedCipherDetails cipherDetails,
-                             final byte[] suppliedIv) {
+                      final SupportedCipherDetails cipherDetails,
+                      final byte[] suppliedIv,
+                      final boolean requireCloneableCipher) {
 
         @SuppressWarnings("MagicNumber")
-        final int keyBits = key.getEncoded().length << 3;
+        final int keyBits = key.getEncoded().length << 3; // convert bytes to bits
 
         if (keyBits != cipherDetails.getKeyLengthBits()) {
             String msg = "Mismatch between algorithm definition and secret key size";
@@ -80,8 +90,15 @@ public class EncryptionContext {
         }
 
         this.key = key;
+        this.requireCloneableCipher = requireCloneableCipher;
         this.cipherDetails = cipherDetails;
-        this.cipher = cipherDetails.getBouncyCastleCipher();
+
+        if (requireCloneableCipher) {
+            this.cipher = cipherDetails.getCloneableCipher();
+        } else {
+            this.cipher = cipherDetails.getCipher();
+        }
+
         initializeCipher(suppliedIv);
     }
 
@@ -104,6 +121,13 @@ public class EncryptionContext {
 
     public Cipher getCipher() {
         return cipher;
+    }
+
+    /**
+     * @return when true, this encryption context requires a cloneable cipher
+     */
+    public boolean requireCloneableCipher() {
+        return requireCloneableCipher;
     }
 
     /**
@@ -146,11 +170,12 @@ public class EncryptionContext {
         final EncryptionContext that = (EncryptionContext) o;
 
         return Objects.equals(key, that.key)
-               && Objects.equals(cipherDetails, that.cipherDetails);
+               && Objects.equals(cipherDetails, that.cipherDetails)
+               && requireCloneableCipher == that.requireCloneableCipher;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, cipherDetails);
+        return Objects.hash(key, cipherDetails, requireCloneableCipher);
     }
 }

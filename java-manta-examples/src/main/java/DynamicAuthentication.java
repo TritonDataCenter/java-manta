@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.config.AuthAwareConfigContext;
+import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.config.SettableConfigContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,7 +22,7 @@ public class DynamicAuthentication {
     public static void main(String... args) throws IOException {
 
         // start with an unauthenticated user
-        SettableConfigContext config = new ChainedConfigContext(
+        BaseChainedConfigContext config = new ChainedConfigContext(
             new DefaultsConfigContext())
                 .setMantaURL("https://us-east.manta.joyent.com")
                 .setMantaUser("user/subuser")

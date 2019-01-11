@@ -5,16 +5,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.joyent.manta.client;
+package com.joyent.manta.http;
 
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
-import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -28,6 +32,10 @@ import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
 import static com.joyent.manta.util.MantaUtils.asString;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 
 /**
  * Integration tests for verifying the behavior of HTTP header assignment.
@@ -40,6 +48,7 @@ import static com.joyent.manta.util.MantaUtils.asString;
 @SuppressWarnings("Duplicates")
 @Test(groups = { "headers" })
 public class MantaHttpHeadersIT {
+
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
     private MantaClient mantaClient;
@@ -72,35 +81,35 @@ public class MantaHttpHeadersIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
     public void cantSetUnknownTags() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
         roles.add("thistestprobablydoesntexist");
         headers.setRoles(roles);
 
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = generatePath();
 
         MantaAssert.assertResponseFailureStatusCode(409, INVALID_ROLE_TAG_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.put(path, TEST_DATA, headers));
     }
 
-    @Test
     public void canSetSingleRoleTag() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
         roles.add(primaryRoleName);
         headers.setRoles(roles);
 
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = generatePath();
 
         try {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta] in "
-                        + "order for this test to work";
-                throw new SkipException(msg, e);
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s] in  order for this test to work",
+                                primaryRoleName),
+                        e);
             }
 
             throw e;
@@ -119,7 +128,6 @@ public class MantaHttpHeadersIT {
         }
     }
 
-    @Test
     public void canSetMultipleRoleTags() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
@@ -127,15 +135,18 @@ public class MantaHttpHeadersIT {
         roles.add(secondaryRoleName);
         headers.setRoles(roles);
 
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = generatePath();
 
         try {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta, role2] in "
-                             + "order for this test to work";
-                throw new SkipException(msg, e);
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s, %s] in  order for this test to work",
+                                primaryRoleName,
+                                secondaryRoleName),
+                        e);
             }
 
             throw e;
@@ -154,7 +165,6 @@ public class MantaHttpHeadersIT {
         }
     }
 
-    @Test
     public void canOverwriteRoleTags() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
@@ -162,15 +172,18 @@ public class MantaHttpHeadersIT {
         roles.add(secondaryRoleName);
         headers.setRoles(roles);
 
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = generatePath();
 
         try {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta, role2] in "
-                        + "order for this test to work";
-                throw new SkipException(msg, e);
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s, %s] in  order for this test to work",
+                                primaryRoleName,
+                                secondaryRoleName),
+                        e);
             }
         }
 
@@ -206,7 +219,6 @@ public class MantaHttpHeadersIT {
         }
     }
 
-    @Test
     public void canClearRoles() throws IOException {
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         final Set<String> roles = new HashSet<>();
@@ -214,16 +226,17 @@ public class MantaHttpHeadersIT {
         roles.add(secondaryRoleName);
         headers.setRoles(roles);
 
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = generatePath();
 
         try {
             mantaClient.put(path, TEST_DATA, headers);
         } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(INVALID_ROLE_TAG_ERROR)) {
-                String msg = "You will need to add roles [manta, role2] in "
-                        + "order for this test to work";
-                throw new SkipException(msg, e);
-            }
+                throw new SkipException(
+                        String.format(
+                                "You will need to add roles [%s, %s] in  order for this test to work",
+                                primaryRoleName,
+                                secondaryRoleName),
+                        e);
         }
 
         final Set<String> updatedRoles = new HashSet<>();
@@ -245,13 +258,12 @@ public class MantaHttpHeadersIT {
         }
     }
 
-    @Test
     public void canSetDurability() throws IOException {
         final int durability = 3;
         final MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setDurabilityLevel(durability);
 
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = generatePath();
 
         mantaClient.put(path, TEST_DATA, headers);
 
@@ -259,5 +271,37 @@ public class MantaHttpHeadersIT {
         MantaHttpHeaders actualHeaders = object.getHttpHeaders();
         Assert.assertEquals(actualHeaders.getDurabilityLevel().intValue(), durability,
                 "Durability not set to value on put");
+    }
+
+    public void canFailToDeleteDirectoryOnBadIfMatch() throws IOException {
+        final String path = generatePath();
+
+        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
+        // the etag reversed should not be equal to the etag (so we can fail if-match on purpose)
+        assertFalse(empty.getEtag().equals(StringUtils.reverse(empty.getEtag())));
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+
+        // fail on bad if-match
+        headers.setIfMatch(StringUtils.reverse(empty.getEtag()));
+        final MantaClientHttpResponseException badIfMatchEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(path, headers));
+
+        assertEquals(badIfMatchEx.getStatusCode(), HttpStatus.SC_PRECONDITION_FAILED);
+
+        // the object should still exist
+        assertTrue(mantaClient.existsAndIsAccessible(path));
+
+        // set the correct If-Match header
+        headers.setIfMatch(empty.getEtag());
+        mantaClient.delete(path, headers);
+
+        // the object should not exist
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    private String generatePath() {
+        return String.format("%s/%s", testPathPrefix, UUID.randomUUID());
     }
 }

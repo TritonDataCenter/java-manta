@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2018, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ public class DefaultsConfigContext implements ConfigContext {
     /**
      * The default timeout for accessing the Manta service.
      */
-    public static final int DEFAULT_HTTP_TIMEOUT = 20 * 1000;
+    public static final int DEFAULT_HTTP_TIMEOUT = 20_000;
 
     /**
      * The default number of times to retry failed requests.
@@ -92,10 +92,23 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final boolean DEFAULT_DISABLE_NATIVE_SIGNATURES = false;
 
     /**
+     * The default number of empty ancestor directories (depth) to prune to when
+     * prune depth is set to null.
+     */
+    public static final int DEFAULT_PRUNE_DEPTH = 0;
+
+    /**
      * Default number of milliseconds to wait for a TCP socket's connection to
      * timeout.
      */
-    public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 10 * 1000;
+    public static final int DEFAULT_TCP_SOCKET_TIMEOUT = 20_000;
+
+    /**
+     * Default number of milliseconds to wait for a new connection to Manta
+     * until giving up . It starts when the socket is being opened to establish a
+     * connection. The implementation may differ depending on the OS upon which it is run.
+     */
+    public static final int DEFAULT_CONNECTION_TIMEOUT = 4000;
 
     /**
      * Default connection timeout is 1 seconds (1000 ms).
@@ -103,9 +116,26 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 1000;
 
     /**
+     * We do not use the Expect header to await a 100-continue response by default. Users enabling this value should
+     * consider starting with 3000 ms as defined in
+     * {@link org.apache.http.protocol.HttpRequestExecutor#DEFAULT_WAIT_FOR_CONTINUE}.
+     */
+    public static final Integer DEFAULT_EXPECT_CONTINUE_TIMEOUT = null;
+
+    /**
      * Default size of pre-streaming upload buffer (16K).
      */
     public static final int DEFAULT_UPLOAD_BUFFER_SIZE = 16_384;
+
+    /**
+     * The explicit "off" value for download continuations.
+     */
+    public static final int DOWNLOAD_CONTINUATIONS_DISABLED = 0;
+
+    /**
+     * Download continuation is disabled by default.
+     */
+    public static final int DEFAULT_DOWNLOAD_CONTINUATIONS = DOWNLOAD_CONTINUATIONS_DISABLED;
 
     static {
         // Don't even bother setting a default key path if it doesn't exist
@@ -159,7 +189,7 @@ public class DefaultsConfigContext implements ConfigContext {
 
     @Override
     public Integer getTimeout() {
-        return DEFAULT_HTTP_TIMEOUT;
+        return DEFAULT_CONNECTION_TIMEOUT;
     }
 
     @Override
@@ -208,6 +238,11 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
+    public Integer getExpectContinueTimeout() {
+        return DEFAULT_EXPECT_CONTINUE_TIMEOUT;
+    }
+
+    @Override
     public Boolean verifyUploads() {
         return DEFAULT_VERIFY_UPLOADS;
     }
@@ -215,6 +250,31 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getUploadBufferSize() {
         return DEFAULT_UPLOAD_BUFFER_SIZE;
+    }
+
+    @Override
+    public Integer getSkipDirectoryDepth() {
+        return null;
+    }
+
+    @Override
+    public Integer getPruneEmptyParentDepth() {
+        return null;
+    }
+
+    @Override
+    public Integer downloadContinuations() {
+        return DEFAULT_DOWNLOAD_CONTINUATIONS;
+    }
+
+    @Override
+    public MetricReporterMode getMetricReporterMode() {
+        return null;
+    }
+
+    @Override
+    public Integer getMetricReporterOutputInterval() {
+        return null;
     }
 
     @Override

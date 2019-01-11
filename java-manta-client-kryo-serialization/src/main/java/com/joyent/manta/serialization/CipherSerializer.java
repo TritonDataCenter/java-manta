@@ -13,7 +13,9 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.bouncycastle.jcajce.provider.symmetric.AES;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.objenesis.instantiator.sun.MagicInstantiator;
+import org.objenesis.instantiator.sun.UnsafeFactoryInstantiator;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -94,10 +96,10 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         kryo.register(IdentityHashMap.class, new JavaSerializer());
 
         kryo.register(java.lang.ref.WeakReference.class)
-                .setInstantiator(new MagicInstantiator<>(java.lang.ref.WeakReference.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(java.lang.ref.WeakReference.class));
 
         kryo.register(java.security.AlgorithmParameters.class)
-                .setInstantiator(new MagicInstantiator<>(java.security.AlgorithmParameters.class));
+                .setInstantiator(new UnsafeFactoryInstantiator<>(java.security.AlgorithmParameters.class));
 
         kryo.register(SecretKeySpec.class, new JavaSerializer());
 
@@ -142,7 +144,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
 
         if (clazz != null) {
             kryo.register(clazz, new CompatibleFieldSerializer<>(kryo, clazz))
-                    .setInstantiator(new MagicInstantiator<>(clazz));
+                    .setInstantiator(new UnsafeFactoryInstantiator<>(clazz));
         }
     }
 
@@ -170,13 +172,21 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         Class<?> clazz = findClass(className);
 
         if (clazz != null) {
-            kryo.register(clazz).setInstantiator(new MagicInstantiator<>(clazz));
+            kryo.register(clazz).setInstantiator(new UnsafeFactoryInstantiator<>(clazz));
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void write(final Kryo kryo, final Output output, final Cipher object) {
+        if (object.getProvider() != null && !BouncyCastleProvider.PROVIDER_NAME
+                .equals(object.getProvider().getName())) {
+            String msg = String.format("Serialization is only "
+                    + "supported for ciphers from the BouncyCastle provider. "
+                    + "Actual provider: %s", object.getProvider().getName());
+            throw new UnsupportedOperationException(msg);
+        }
+
         final Object cryptoPerm = readField(cryptoPermField, object);
         kryo.writeObjectOrNull(output, cryptoPerm, cryptoAllPermissionClass);
 

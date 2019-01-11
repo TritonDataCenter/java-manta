@@ -48,6 +48,10 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -62,10 +66,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.SecretKey;
 
 /**
  * {@link HttpHelper} implementation that transparently handles client-side
@@ -144,7 +144,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
     public EncryptionHttpHelper(final MantaConnectionContext connectionContext,
                                 final MantaHttpRequestFactory requestFactory,
                                 final ConfigContext config) {
-        super(connectionContext, requestFactory, config);
+        super(connectionContext,
+                requestFactory,
+                ObjectUtils.firstNonNull(
+                        config.verifyUploads(),
+                        DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
+                ObjectUtils.firstNonNull(
+                        config.downloadContinuations(),
+                        DefaultsConfigContext.DEFAULT_DOWNLOAD_CONTINUATIONS));
 
         this.encryptionKeyId = ObjectUtils.firstNonNull(
                 config.getEncryptionKeyId(), "unknown-key");
@@ -315,9 +322,18 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                         + "client-side encryption is enabled unless the "
                         + "permit unencrypted downloads configuration setting "
                         + "is enabled";
-                MantaClientEncryptionException e = new MantaClientEncryptionException(msg);
-                HttpHelper.annotateContextedException(e, request, response);
-                throw e;
+                MantaClientEncryptionException mcee = new MantaClientEncryptionException(msg);
+                HttpHelper.annotateContextedException(mcee, request, response);
+
+                try {
+                    rawStream.close();
+                } catch (IOException ioe) {
+                    MantaIOException mioe = new MantaIOException(ioe);
+                    HttpHelper.annotateContextedException(mioe, request, response);
+                    LOGGER.debug("Error closing underlying stream", mioe);
+                }
+
+                throw mcee;
             }
         }
 

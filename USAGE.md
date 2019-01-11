@@ -16,8 +16,13 @@ Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a securi
  3. Copy the downloaded JARs to the JVM extensions folder: `cp bcprov-jdk15on-158.jar bcpkix-jdk15on-158.jar $JAVA_HOME/jre/lib/ext`
 
 ### Unlimited Encryption Requirements
-Using stronger encryption modes (192 and 256-bit) will require installation of the
-[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html).
+Using stronger encryption modes (192 and 256-bit) with the Oracle and Azul JVMs before version 8u152 requires installation of the
+[Java Cryptography Extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) for Oracle JVMs and the [Zulu Cryptography Extension Kit](https://www.azul.com/products/zulu-and-zulu-enterprise/zulu-cryptography-extension-kit/) for Azul JVMs. 
+
+Note that this is not required under the following circumstances:
+ - OpenJDK.
+ - Java version greater than [8u161](http://www.oracle.com/technetwork/java/javase/8u161-relnotes-4021379.html#JDK-8170157)
+ - Java version greater than [8u152](http://www.oracle.com/technetwork/java/javase/8u161-relnotes-4021379.html#JDK-8170157) and setting the `crypto.policy` system property to `unlimited`.
 
 ### Using Maven
 Add the latest java-manta-client dependency to your Maven `pom.xml`.
@@ -84,15 +89,21 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.no_auth                      | MANTA_NO_AUTH                  | false                                | Y*                       |
 | manta.disable_native_sigs          | MANTA_NO_NATIVE_SIGS           | false                                | Y*                       |
 | manta.verify_uploads               | MANTA_VERIFY_UPLOADS           | true                                 | Y                        |
-| manta.timeout                      | MANTA_TIMEOUT                  | 20000                                |                          |
+| manta.timeout                      | MANTA_TIMEOUT                  | 4000                                 |                          |
 | manta.retries                      | MANTA_HTTP_RETRIES             | 3 (6 for integration tests)          | Y                        |
 | manta.max_connections              | MANTA_MAX_CONNS                | 24                                   |                          |
 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         | 4096                                 |                          |
 | https.protocols                    | MANTA_HTTPS_PROTOCOLS          | TLSv1.2                              |                          |
 | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) | |
-| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 10000                                |                          |
+| manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 20000                                |                          |
 | manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |                          |
+| manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
+| manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
+| manta.prune_empty_parent_depth     | MANTA_PRUNE_EMPTY_PARENT_DEPTH |                                     |                          |
+| manta.download_continuations       | MANTA_DOWNLOAD_CONTINUATIONS   | 0                                    |                          |
+| manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
+| manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
@@ -121,15 +132,16 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.no_auth` (**MANTA_NO_AUTH**)
     When set to true, this disables HTTP Signature authentication entirely. This is
     only really useful when you are running the library as part of a Manta job.
-* `http.signature.native.rsa` (**MANTA_NO_NATIVE_SIGS**)
+* `manta.disable_native_sigs` (**MANTA_NO_NATIVE_SIGS**)
     When set to true, this disables the use of native code libraries for cryptography.
 * `manta.verify_uploads` (**MANTA_VERIFY_UPLOADS**)
     When set to true, the client calculates a MD5 checksum of the file being uploaded
     to Manta and then checks it against the result returned by Manta.
 * `manta.timeout` ( **MANTA_TIMEOUT**)
-    The number of milliseconds to wait after a request was made to Manta before failing.
+    The number of milliseconds to wait until giving up when trying to make a new connection
+    to Manta.
 * `manta.retries` ( **MANTA_HTTP_RETRIES**)
-    The number of times to retry failed HTTP requests.
+    The number of times to retry failed HTTP requests. Setting this value to zero disables retries completely.
 * `manta.max_connections` ( **MANTA_MAX_CONNS**)
     The maximum number of open HTTP connections to the Manta API.
 * `manta.http_buffer_size` (**MANTA_HTTP_BUFFER_SIZE**)
@@ -144,10 +156,36 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     Time in milliseconds to wait for TCP socket's blocking operations - zero means wait forever.
 * `manta.connection_request_timeout` (**MANTA_CONNECTION_REQUEST_TIMEOUT**)
     Time in milliseconds to wait for a connection from the connection pool.
+* `manta.expect_continue_timeout` (**MANTA_EXPECT_CONTINUE_TIMEOUT**)
+    Nullable integer indicating the number of milliseconds to wait for a response from the server before
+    sending the request body. If enabled, the recommended wait time is **3000** ms based on the default defined in
+    `HttpRequestExecutor.DEFAULT_WAIT_FOR_CONTINUE`. Enabling this setting can
+    improve response latencies and error visibility when the server is under high load at the expense
+    of potentially decreased total throughput. We recommend benchmarking with different values for this option before
+    enabling it for production use.
 * `manta.upload_buffer_size` (**MANTA_UPLOAD_BUFFER_SIZE**)
     The initial amount of bytes to attempt to load into memory when uploading a stream. If the
     entirety of the stream fits within the number of bytes of this value, then the
     contents of the buffer are directly uploaded to Manta in a retryable form.
+* `manta.skip_directory_depth` (**MANTA_SKIP_DIRECTORY_DEPTH**)
+    Integer indicating the number of **non-system** directory levels to attempt to skip for recursive `putDirectory`
+    operation (i.e. `/$MANTA_USER` and `/$MANTA_USER/stor` would not be counted). A detailed explanation and example are provided [later in this document](/USAGE.md#skipping-directories)
+* `manta.prune_empty_parent_depth` (**MANTA_PRUNE_EMPTY_PARENT_DEPTH**)
+    Integer indicating the maximum number of empty parent directories to prune. If the client is given the value of -1 then the client will try and delete
+    all empty parent directories. see [the section on parent directory pruning later in this document](/USAGE.md#pruning-empty-parent-directories) 
+* `manta.download_continuations` (**MANTA_DOWNLOAD_CONTINUATIONS**)
+    Nullable Integer property for enabling the [download continuation](#download-continuation) "optimization."
+    A value of 0 explicitly disabled this feature, a value of `-1` enables unlimited continuations, a positive value
+    sets the maximum number of continuations that may be delivered for a single request/reponse.
+* `manta.metric_reporter.mode` (**MANTA_METRIC_REPORTER_MODE**)
+    Enum type indicating how metrics should be reported. Options include `DISABLED`, `JMX`, and `SLF4J`. Leaving this value
+    unset or selecting `DISABLED` will prevent the client from gathering and reporting metrics. Certain reporters
+    (only `SLF4J` at present) requires also setting an output interval.
+    See [the section on monitoring](#monitoring) for more information about reporting modes.
+* `manta.metric_reporter.output_interval` (**MANTA_METRIC_REPORTER_OUTPUT_INTERVAL**)
+    Nullable integer interval in seconds at which metrics are reported by periodic reporters.
+    This number must be set and greater than zero if `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`
+    is set to `SLF4J`. Defaults to `null`.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
@@ -160,7 +198,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     Boolean indicating that unencrypted files can be downloaded when client-side
     encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
-    [EncryptionAuthenticationMode](java-manta-client/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
+    [EncryptionAuthenticationMode](/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
     enum type indicating that authenticating encryption verification is either Mandatory or Optional.
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
     The path on the local filesystem or a URI understandable by the JVM indicating the
@@ -297,6 +335,30 @@ security.provider.10=sun.security.smartcardio.SunPCSC
 Once this is complete, you should now have libnss providing your cryptographic
 functions.
 
+#### Overriding Default Cryptographic Provider Ranking
+
+The default ranking of cryptographic providers within the SDK is as follows:
+
+Non-cloneable implementations:
+ * NSS via PKCS11 ("SunPKCS11-NSS")
+ * Bouncy Castle ("BC")
+ * Sun JCE provider ("SunJCE")
+
+Cloneable implementations:
+ * Bouncy Castle ("BC")
+ 
+The ranking of preferred providers can be changed using the Java system property
+`manta.preferred.security.providers`. The provider names are specified in a comma
+separated format. For example, in order to have the system prefer SunJCE, BC and
+then SunPKCS11-NSS in that order, you would specify:
+
+```
+java <...> -Dmanta.preferred.security.providers=SunJCE,BC,SunPKCS11-NSS
+```  
+
+You may want to change the ranking if you are unable to use the libnss provider
+and still want the performance benefits of AES-NI via the SunJCE provider.
+
 #### Enabling Native FastMD5 Support
 
 The Java Manta SDK uses [Timothy W Macinta's Fast MD5](http://www.twmacinta.com/myjava/fast_md5.php)
@@ -344,6 +406,62 @@ Please note that the Commons Logger adaptor is not a dependency of `java-manta-c
 responsibility to add their own dependency if they wish to collect Apache HttpClient logs. For more information on log
 bridging in SLF4J please review [this page](https://www.slf4j.org/legacy.html).
 
+### Monitoring
+
+Users can enable monitoring in order to provide better visibility into behavior and performance of a `MantaClient`.
+This requires selecting a reporting mode using the following settings:
+
+- `manta.metric_reporter.mode` select the method by which metrics are exported. Unset by default. Options include:
+    - `DISABLED`: explicitly disables monitoring.
+    - `JMX`: registers MBeans in [JMX](https://en.wikipedia.org/wiki/Java_Management_Extensions). MBeans are created
+    for the following at present in addition to each metric listed below:
+        - `ConfigContextMBean` displays the `ConfigContext` settings used to build the client.
+    - `SLF4J`: reporters metrics through the generic logging interface provided by [SLF4J](http://www.slf4j.org/).
+    This setting requires users to also supply a reporting output interval.
+- `manta.metric_reporter.output_interval` specify the amount of time in seconds between reporting metrics for
+    periodic reporters. Required by `SLF4J`. Setting this value too low may lead to excessive disk usage. A value of
+    60 affords minute-by-minute granularity in combination with the 1-minute moving average provided
+    by certain metric values. Logging is done at the `INFO` level using a logger named
+    `com.joyent.manta.client.metrics`. An example metric output for client ID `c16a2f85-90f7-4e7c-b0f3-b8993eca18d1`
+    would look like the following (newlines added for clarity):
+    ```
+    [metrics-logger-reporter-1-thread-1] INFO  com.joyent.manta.client.metrics [ ] -
+    type=METER,
+    name=c16a2f85-90f7-4e7c-b0f3-b8993eca18d1.retries,
+    count=2,
+    mean_rate=0.07982106952096357,
+    m1=0.028248726311583667,
+    m5=0.006448405864180696,
+    m15=0.0021976788366558607,
+    rate_unit=events/second
+    ```
+
+The full list of metrics exported by the client (available through both JMX and SLF4J) is as follows:
+- `requests-$METHOD`: A [timer](http://metrics.dropwizard.io/4.0.0/manual/core.html#timer) for each request
+    method measuring the rate, and timings (with percentiles) of HTTP requests. Example values for `$METHOD` include
+    `GET`, `PUT`, `DELETE`, etc.
+- `exceptions-$CLASS`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) for each
+    exception which occurred while executing HTTP requests measuring the rates and counts. Example values for
+    `$CLASS` include `SocketTimeoutException`, `InterruptedIOException`, etc.
+- `connections-$CLASSIFICATION`: A set of [guages](https://metrics.dropwizard.io/4.0.0/manual/core.html#gauges) which
+    expose the state of the connection pool. `$CLASSIFICATION` is one of `available`, `leased`, `max`, `pending` and
+    corresponds to the[similarly named HttpClient PoolStats
+    fields](http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/pool/PoolStats.html).
+- `retries`: A [meter](http://metrics.dropwizard.io/4.0.0/manual/core.html#meters) measuring the rate
+    and count of retries the client has attempted, in addition to 1-, 5-, and 15-minute moving averages.
+- `get-continuations-recovered-$CLASS`: A [counter](https://metrics.dropwizard.io/4.0.0/manual/core.html#counters)
+    tracking the number of exceptions by exception class from which [download continuators](#download-continuation)
+    have recovered. Any non-zero values recorded in these counters indicate that download continuation is
+    being used to mitigate network failures.
+- `get-continuations-per-request-distribution`: A
+    [histogram](https://metrics.dropwizard.io/4.0.0/manual/core.html#histograms) tracking the distribution of
+    continuations served per request. Since each continuator only handles a single logical request and the
+    wrapping `InputStream` signals closure to the continuator it can record how many times it was invoked for a single
+    logical download. Any non-zero values recorded in this histogram indicate that download continuation is
+    being used to mitigate network failures.
+
+
+
 ### Customizing the client further
 
 It is possible to supply an `HttpClientBuilder` in order to further customize the behavior of a `MantaClient` instance.
@@ -363,3 +481,143 @@ an `AuthAwareConfigContext` by disabling authentication until a private key can 
 Concurrently updating configuration values while requests are still pending can lead to errors and unpredictable results.
 See the [Dynamic Authentication example](/java-manta-examples/src/main/java/DynamicAuthentication.java) and
 [this test case](/java-manta-it/src/test/java/com/joyent/manta/client/MantaClientAuthenticationChangeIT) for example usage.
+
+### Skipping directories
+
+In order to ease migration from other object stores which do not treat directories as first-class entities a method for creating arbitrarily-nested directories is provided by the [MantaClient#putDirectory(String, boolean)](http://static.javadoc.io/com.joyent.manta/java-manta-client/3.2.1/com/joyent/manta/client/MantaClient.html#putDirectory-java.lang.String-boolean-) method. This can carry a high performance cost unless used judiciously so an optional performance enhancement is provided in the form of the `manta.skip_directory_depth`/`MANTA_SKIP_DIRECTORY_DEPTH` setting. This setting indicates how many intermediate **user-writeable** directories (i.e. those which are not "top-level directories") the client can assume to already exist. Since the first two levels of a directory path are managed by Manta they are not considered for this optimization (since they _must_ exist). To illustrate this feature let's look at a few examples:
+
+#### Scenario 1, optimization disabled
+- `manta.skip_directory_depth` = `0`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - standard (because setting is disabled)
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+#### Scenario 2, optimization enabled
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+#### Scenario 3, optimization enabled, longer path
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1"`
+- result:
+  - writeable segments = 5
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+    - `.../foo/bar/baz/subdir0`
+    - `.../foo/bar/baz/subdir0/subdir1`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz/subdir0/subdir1`
+
+#### Scenario 4, **error case**, optimization set too high
+- `manta.skip_directory_depth` = `2`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - skip, assume first two paths already exist
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+      - fails because neither `/$MANTA_USER/stor/foo` nor `/$MANTA_USER/stor/foo/bar` exist
+      - optimization disabled, revert to standard creation order
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+#### Scenario 5, optimization enabled, requested directory with less segments than setting
+- `manta.skip_directory_depth` = `5`
+- directory path = `"/$MANTA_USER/stor/foo/bar/baz"`
+- result:
+  - writeable segments = 3
+    - `.../foo`
+    - `.../foo/bar`
+    - `.../foo/bar/baz`
+  - strategy:
+    - standard, because there are less segments than the skip depth*
+  - requests sent:
+    - `PUT /$MANTA_USER/stor/foo`
+    - `PUT /$MANTA_USER/stor/foo/bar`
+    - `PUT /$MANTA_USER/stor/foo/bar/baz`
+
+\* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
+
+### Pruning empty parent directories
+
+When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to `-1` or a positive value, when deleting an object in Manta, either a file or a directory, the client will attempt to delete parent directories that are empty. If a positive integer is supplied the client will only try to delete up to the number supplied. If -1 is given the client will try to delete in the path until it finds a directory that it can not delete.  
+
+#### Scenario 1 : Prune Empty Parent Depth positive int
+- Given the directory structure : 
+   /Dir1
+   /Dir1/Dir2
+   /Dir1/Dir2/Dir3
+   /Dir1/Dir2/Dir3/test.txt
+   If you have prune_empty_parent_depth set to 1 then delete test.txt, the client should delete Dir3 as well.
+ 
+#### Scenario 2 : Prune Empty Parent Depth -1
+- Given the directory structure : 
+   /Dir1
+   /Dir1/DirA
+   /Dir1/Dir2
+   /Dir1/Dir2/Dir3
+   /Dir1/Dir2/Dir3/test.txt
+   In this case, if test.txt is the target with the prune value set to -1 then test.txt, Dir3, and Dir2 will be deleted. The client will stop on Dir1 because it will not be empty, it still has a child of DirA.  	  
+
+
+### Download continuation
+
+When `manta.download_continuation`/`MANTA_DOWNLOAD_CONTINUATION` is set to `-1` or a positive value the client's HTTP helper class
+will check that the initial request/response for a GET request passes validation (described below) and will wrap the
+returned stream in with the information and helper classes needed to automatically resume a download. This is similar to
+automatic retries in that the client will automatically issue an HTTP request on behalf of the user but is currently resctricted 
+to GET requests only. In order to implement transparent swapping of source streams we wrap the content of the initial HTTP
+response in a pluggable `InputStream` which satisfies the following conditions:
+ - accepts an `InputStreamContinuator` which can produce new `InputStream`s to the same data source
+ - delegates reads to the underlying `InputStream`
+ - if a non-fatal exception is encountered, the current `InputStream` is closed and a new stream generated by the embedded
+ `InputStreamContinuator` is used instead
+
+Since this behaves similarly to the HttpClient retry behavior we also check that the `IOException` encountered while reading
+from the source stream is merely a transient error (e.g. `SocketTimeoutException` is non-fatal, `UnknownHostException` is unlikely
+but fatal). If the remote object has changed (either because the `ETag` or `Content-Length`/`Content-Range` changed) then 
+the encountered exception will be rethrown. If the caller indicates that they have read an invalid number of bytes (e.g. somehow
+total bytes read decreases) the continuator will complain about the impossible situation rethrow the encountered exception.
+
+Validation of the initial request/response includes:
+ - correct response code (200 for non-range requests, 206 for range requests)
+ - requests including a single `If-Match` header (only one is supported) should have the same value in the response's
+ `ETag` header
+ - requests including a single `Range` header (only one is supported) should have an appropriate value in the response's
+ `Content-Range` header
+
+No enhancement will be performed if any of the following conditions are met:
+ - the request is not a GET request
+ - the request headers were malformed or multi-valued
+ - the user passed in their own `HttpClientBuilder` through `MantaConnectionFactoryConfigurator` so we can't be sure
+ retry cancellation is supported
+
+We may pick up and validate additional response headers in the future (e.g. validate that `Content-MD5` never changes).

@@ -19,14 +19,14 @@ import java.io.InputStream;
 import java.util.Date;
 
 /**
- * {@link InputStream} implementation that wraps the input stream provided
- * from {@link MantaClient} and implements {@link MantaObject} so that you
- * can obtain metadata information.
+ * {@link InputStream} implementation that wraps the input stream provided from {@link MantaClient} and implements
+ * {@link MantaObject} so that you can obtain metadata information.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject,
         AutoCloseable {
+
     private static final long serialVersionUID = -4692104903008485259L;
 
     /**
@@ -42,7 +42,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     /**
      * The backing {@link InputStream} implementation.
      */
-    private final EofSensorInputStream backingStream;
+    private final InputStream backingStream;
 
     /**
      * The HTTP response sent from the Manta API.
@@ -50,8 +50,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     private final transient CloseableHttpResponse httpResponse;
 
     /**
-     * Create a new instance from the results of a GET HTTP call to the
-     * Manta API.
+     * Create a new instance from the results of a GET HTTP call to the Manta API.
      *
      * @param response Metadata object built from request
      * @param httpResponse Response object created
@@ -59,7 +58,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
      */
     public MantaObjectInputStream(final MantaObjectResponse response,
                                   final CloseableHttpResponse httpResponse,
-                                  final EofSensorInputStream backingStream) {
+                                  final InputStream backingStream) {
         this.backingStream = backingStream;
         this.response = response;
         this.httpResponse = httpResponse;
@@ -67,13 +66,11 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
 
     /**
      * Creates a new instance based on an existing instance.
+     *
      * @param copy instance to copy properties from
      */
-    @SuppressWarnings("unchecked")
     protected MantaObjectInputStream(final MantaObjectInputStream copy) {
-        this.backingStream = (EofSensorInputStream)copy.getBackingStream();
-        this.response = copy.response;
-        this.httpResponse = copy.httpResponse;
+        this(copy.response, copy.httpResponse, copy.backingStream);
     }
 
     @Override
@@ -210,14 +207,28 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     }
 
     /**
-     * Aborts this stream.
-     * This is a special version of {@link #close close()} which prevents
+     * <p>Aborts this stream.</p>
+     *
+     * <p>This is a special version of {@link #close close()} which prevents
      * re-use of the underlying connection, if any. Calling this method
      * indicates that there should be no attempt to read until the end of
-     * the stream.
+     * the stream.</p>
+     *
+     * <p>If the backing stream of the connection is not a
+     * {@link EofSensorInputStream}, this method with call {@link #close()}.</p>
+     *
+     * <p>This method is deprecated because we can't relay on the underlying
+     * backing stream to always be a {@link EofSensorInputStream}.</p>
+     *
      * @throws IOException thrown when unable to abort connection
      */
+    @Deprecated
     public void abortConnection() throws IOException {
-        backingStream.abortConnection();
+        if (backingStream instanceof EofSensorInputStream) {
+            ((EofSensorInputStream) backingStream).abortConnection();
+            IOUtils.closeQuietly(httpResponse);
+        } else {
+            close();
+        }
     }
 }

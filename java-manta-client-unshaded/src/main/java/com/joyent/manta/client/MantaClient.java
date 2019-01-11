@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
 import com.joyent.manta.client.jobs.MantaJob;
@@ -15,6 +16,8 @@ import com.joyent.manta.client.jobs.MantaJobError;
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.MantaClientMetricConfiguration;
+import com.joyent.manta.config.MetricReporterMode;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
@@ -40,6 +43,7 @@ import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -79,7 +83,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
@@ -101,6 +104,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_PRUNE_DEPTH;
 import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
@@ -111,6 +115,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 public class MantaClient implements AutoCloseable {
+
     /**
      * Directory separator used in Manta.
      */
@@ -132,6 +137,11 @@ public class MantaClient implements AutoCloseable {
      * Maximum number of results to return for a directory listing.
      */
     private static final int MAX_RESULTS = 1024;
+
+    /**
+     * Unique identifier for this client instance.
+     */
+    private final UUID clientId;
 
     /**
      * Flag indicating if the client instance has been closed.
@@ -156,16 +166,16 @@ public class MantaClient implements AutoCloseable {
             = (Collections.newSetFromMap(new ConcurrentWeakIdentityHashMap<>()));
 
     /**
-     * MBean supervisor.
-     */
-    private final MantaMBeanSupervisor beanSupervisor;
-
-    /**
      * ForkJoinPool used specifically for find() operations because we want
      * to make sure that the number of concurrent threads will not exceed
      * the maximum number of available connections.
      */
     private final ForkJoinPool findForkJoinPool;
+
+    /**
+     * Reporting agent used when metrics and JMX are enabled.
+     */
+    private final MantaClientAgent agent;
 
     /* We preform some sanity checks against the JVM in order to determine if
      * we can actually run on the platform. */
@@ -189,7 +199,7 @@ public class MantaClient implements AutoCloseable {
      *
      * Users opting into advanced configuration (i.e. not passing {@code null} as the second parameter)
      * should be comfortable with the internals of {@link CloseableHttpClient} and accept that we can only make a
-     * best effort to support all possible use-cases. For example, uses may pass in a builder which is wired to a
+     * best effort to support all possible use-cases. For example, users may pass in a builder which is wired to a
      * {@link org.apache.http.impl.conn.BasicHttpClientConnectionManager} and effectively make the client
      * single-threaded by eliminating the connection pool. Bug or feature? You decide!
      *
@@ -197,10 +207,54 @@ public class MantaClient implements AutoCloseable {
      * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
      */
     public MantaClient(final ConfigContext config,
-                final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator) {
+        this(config, connectionFactoryConfigurator, null, null);
+    }
+
+    /**
+     * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
+     * degree of customization at the cost of more involvement from the consumer.
+     *
+     * Users opting into advanced configuration (i.e. not passing {@code null} as the second parameter)
+     * should be comfortable with the internals of {@link CloseableHttpClient} and accept that we can only make a
+     * best effort to support all possible use-cases. For example, users may pass in a builder which is wired to a
+     * {@link org.apache.http.impl.conn.BasicHttpClientConnectionManager} and effectively make the client
+     * single-threaded by eliminating the connection pool. Bug or feature? You decide!
+     *
+     * @param config The configuration context that provides all of the configuration values
+     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
+     * @param metricConfiguration the metrics registry and configuration, or null to prepare one from the general config
+     */
+    public MantaClient(final ConfigContext config,
+                       final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
+                       final MantaClientMetricConfiguration metricConfiguration) {
+        this(config, connectionFactoryConfigurator, null, metricConfiguration);
+    }
+
+    /**
+     * Creates a new instance of the Manta client based on user-provided connection objects. This allows for a higher
+     * degree of customization at the cost of more involvement from the consumer.
+     *
+     * Users opting into advanced configuration (i.e. not passing {@code null} as the second parameter)
+     * should be comfortable with the internals of {@link CloseableHttpClient} and accept that we can only make a
+     * best effort to support all possible use-cases. For example, users may pass in a builder which is wired to a
+     * {@link org.apache.http.impl.conn.BasicHttpClientConnectionManager} and effectively make the client
+     * single-threaded by eliminating the connection pool. Bug or feature? You decide!
+     *
+     * @param config The configuration context that provides all of the configuration values
+     * @param connectionFactoryConfigurator pre-configured objects for use with a MantaConnectionFactory (or null)
+     * @param httpHelper helper object for executing http requests (or null to build one ourselves)
+     * @param metricConfiguration the metrics registry and configuration, or null to prepare one from the general config
+     */
+    MantaClient(final ConfigContext config,
+                final MantaConnectionFactoryConfigurator connectionFactoryConfigurator,
+                final HttpHelper httpHelper,
+                final MantaClientMetricConfiguration metricConfiguration) {
         dumpConfig(config);
 
         ConfigContext.validate(config);
+
+        this.clientId = UUID.randomUUID();
 
         if (config instanceof AuthAwareConfigContext) {
             this.config = (AuthAwareConfigContext) config;
@@ -208,25 +262,56 @@ public class MantaClient implements AutoCloseable {
             this.config = new AuthAwareConfigContext(config);
         }
 
-        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
-                config,
-                connectionFactoryConfigurator);
+        final boolean metricsEnabled = this.config.getMetricReporterMode() != null
+                && !this.config.getMetricReporterMode().equals(MetricReporterMode.DISABLED);
 
-        final MantaApacheHttpClientContext connectionContext = new MantaApacheHttpClientContext(connectionFactory);
-        final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
-
-        if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-            this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
+        final MantaClientMetricConfiguration metricConfig;
+        if (metricConfiguration != null) {
+            metricConfig = metricConfiguration;
+        } else if (metricsEnabled) {
+            metricConfig = new MantaClientMetricConfiguration(
+                    this.clientId,
+                    new MetricRegistry(),
+                    config.getMetricReporterMode(),
+                    config.getMetricReporterOutputInterval());
         } else {
-            this.httpHelper = new StandardHttpHelper(connectionContext, requestFactory, config);
+            metricConfig = null;
         }
 
-        this.beanSupervisor = new MantaMBeanSupervisor();
-        beanSupervisor.expose(this.config);
-        beanSupervisor.expose(connectionFactory);
+        final MantaConnectionFactory connectionFactory = new MantaConnectionFactory(
+                config,
+                connectionFactoryConfigurator,
+                metricConfig);
+
+        final MantaApacheHttpClientContext connectionContext =
+                new MantaApacheHttpClientContext(
+                        connectionFactory,
+                        metricConfig);
+
+        final MantaHttpRequestFactory requestFactory = new MantaHttpRequestFactory(this.config);
+
+        if (httpHelper != null) {
+            this.httpHelper = httpHelper;
+        } else if (BooleanUtils.isTrue(this.config.isClientEncryptionEnabled())) {
+            this.httpHelper = new EncryptionHttpHelper(connectionContext, requestFactory, config);
+        } else {
+            this.httpHelper = new StandardHttpHelper(
+                    connectionContext,
+                    requestFactory,
+                    ObjectUtils.firstNonNull(config.verifyUploads(), DefaultsConfigContext.DEFAULT_VERIFY_UPLOADS),
+                    config.downloadContinuations());
+        }
+
+        if (metricConfig != null) {
+            this.agent = new MantaClientAgent(metricConfig);
+            agent.register(this.config);
+        } else {
+            this.agent = null;
+        }
 
         this.findForkJoinPool = FindForkJoinPoolFactory.getInstance(config);
     }
+
 
     /* ======================================================================
      * Constructor Helpers
@@ -282,16 +367,42 @@ public class MantaClient implements AutoCloseable {
      *
      * @param rawPath The fully qualified path of the Manta object.
      * @throws IOException If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If an HTTP status code {@literal > 300} is returned.
+     * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
      */
     public void delete(final String rawPath) throws IOException {
-        Validate.notBlank(rawPath, "rawPath must not be blank");
-
-        String path = formatPath(rawPath);
-        LOG.debug("DELETE {}", path);
-
-        httpHelper.httpDelete(path);
+        this.delete(rawPath, null);
     }
+
+    /**
+     * Deletes an object from Manta, with optional headers.
+     *
+     * @param rawPath The fully qualified path of the Manta object.
+     * @param requestHeaders HTTP headers to attach to request (may be null)
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
+     */
+    public void delete(final String rawPath, final MantaHttpHeaders requestHeaders) throws IOException {
+        delete(rawPath, requestHeaders, config.getPruneEmptyParentDepth());
+    }
+
+    /**
+     * Deletes an object in Manta with the given path.
+     * @param rawPath  Path of the object you want to delete.
+     * @param requestHeaders  requestHeaders HTTP headers to attach to request (may be null)
+     * @param pruneDepth the number of parent directories to be deleted if empty.
+     * @throws IOException
+     */
+    void delete(final String rawPath, final MantaHttpHeaders requestHeaders, final Integer pruneDepth)
+            throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+        String path = formatPath(rawPath);
+        if (pruneDepth == null || pruneDepth == DEFAULT_PRUNE_DEPTH) {
+            LOG.debug("DELETE {}", path);
+            httpHelper.httpDelete(path, requestHeaders);
+        } else {
+            PruneEmptyParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
+        }
+   }
 
     /**
      * Recursively deletes an object in Manta.
@@ -774,6 +885,7 @@ public class MantaClient implements AutoCloseable {
          */
         try {
             if (!itr.hasNext()) {
+                itr.close();
                 return Stream.empty();
             }
         } catch (UncheckedIOException e) {
@@ -791,7 +903,9 @@ public class MantaClient implements AutoCloseable {
                 StreamSupport.stream(Spliterators.spliteratorUnknownSize(
                         itr, additionalCharacteristics), false);
 
-        Stream<MantaObject> stream = backingStream.map(MantaObjectConversionFunction.INSTANCE);
+        Stream<MantaObject> stream = backingStream
+            .map(MantaObjectConversionFunction.INSTANCE)
+            .onClose(itr::close);
 
         danglingStreams.add(stream);
 
@@ -1123,12 +1237,17 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * <p>Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
      * to add data to Manta because it requires an additional thread to be started in order
      * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
-     * the stream, the data will not be uploaded.
+     * the stream, the data will not be uploaded.</p>
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * <p>NOTE: Use of this method should be discouraged because it uses another thread
+     * and it uses reflection in order to provide an {@link java.io.OutputStream} implementation.
+     * It is provided for users who have no choice but to use an {@link java.io.OutputStream} to
+     * write data to Manta due to constraints in their object model.</p>
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return A OutputStream that allows for directly uploading to Manta
      */
     public MantaObjectOutputStream putAsOutputStream(final String path) {
@@ -1136,13 +1255,18 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * <p>Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
      * to add data to Manta because it requires an additional thread to be started in order
      * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
-     * the stream, the data will not be uploaded.
+     * the stream, the data will not be uploaded.</p>
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers  optional HTTP headers to include when copying the object
+     * <p>NOTE: Use of this method should be discouraged because it uses another thread
+     * and it uses reflection in order to provide an {@link java.io.OutputStream} implementation.
+     * It is provided for users who have no choice but to use an {@link java.io.OutputStream} to
+     * write data to Manta due to constraints in their object model.</p>
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers optional HTTP headers to include when copying the object
      * @return A OutputStream that allows for directly uploading to Manta
      */
     public MantaObjectOutputStream putAsOutputStream(final String path,
@@ -1151,12 +1275,17 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * <p>Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
      * to add data to Manta because it requires an additional thread to be started in order
      * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
-     * the stream, the data will not be uploaded.
+     * the stream, the data will not be uploaded.</p>
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * <p>NOTE: Use of this method should be discouraged because it uses another thread
+     * and it uses reflection in order to provide an {@link java.io.OutputStream} implementation.
+     * It is provided for users who have no choice but to use an {@link java.io.OutputStream} to
+     * write data to Manta due to constraints in their object model.</p>
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param metadata optional user-supplied metadata for object
      * @return A OutputStream that allows for directly uploading to Manta
      */
@@ -1166,14 +1295,19 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
+     * <p>Creates an OutputStream that wraps a PUT request to Manta. Try to avoid using this
      * to add data to Manta because it requires an additional thread to be started in order
      * to upload using an {@link java.io.OutputStream}. Additionally, if you do not close()
-     * the stream, the data will not be uploaded.
+     * the stream, the data will not be uploaded.</p>
      *
-     * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * <p>NOTE: Use of this method should be discouraged because it uses another thread
+     * and it uses reflection in order to provide an {@link java.io.OutputStream} implementation.
+     * It is provided for users who have no choice but to use an {@link java.io.OutputStream} to
+     * write data to Manta due to constraints in their object model.</p>
+     *
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param metadata optional user-supplied metadata for object
-     * @param headers  optional HTTP headers to include when copying the object
+     * @param headers optional HTTP headers to include when copying the object
      * @return A OutputStream that allows for directly uploading to Manta
      */
     public MantaObjectOutputStream putAsOutputStream(final String rawPath,
@@ -1258,7 +1392,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * path using supplied charset name.
      *
      * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
@@ -1274,7 +1408,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Copies the supplied {@link String} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * path using the supplied {@link Charset}.
      *
      * @param path   The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param string string to copy
@@ -1293,8 +1427,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1307,8 +1440,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1323,8 +1455,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1339,8 +1470,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied {@link File} to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
      * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param file     file to upload
@@ -1378,8 +1508,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1392,8 +1521,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1408,8 +1536,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1424,8 +1551,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Copies the supplied byte array to a remote Manta object at the specified
-     * path using the default JVM character encoding as a binary representation.
+     * Copies the supplied byte array to a remote Manta object at the specified path.
      *
      * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param bytes    byte array to upload
@@ -1576,13 +1702,14 @@ public class MantaClient implements AutoCloseable {
     /**
      * Creates a directory in Manta.
      *
-     * @param rawPath The fully qualified path of the Manta directory.
+     * @param rawPath   The fully qualified path of the Manta directory.
      * @param recursive recursive create all of the directories specified in the path
-     * @param headers Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException If an IO exception has occurred.
+     * @param headers   Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
+     * @throws IOException                      If an IO exception has occurred.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
-    public void putDirectory(final String rawPath, final boolean recursive,
+    public void putDirectory(final String rawPath,
+                             final boolean recursive,
                              final MantaHttpHeaders headers)
             throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
@@ -1592,23 +1719,12 @@ public class MantaClient implements AutoCloseable {
             return;
         }
 
-        final String[] parts = rawPath.split(SEPARATOR);
-        final Iterator<Path> itr = Paths.get("", parts).iterator();
-        final StringBuilder sb = new StringBuilder(SEPARATOR);
-
-        for (int i = 0; itr.hasNext(); i++) {
-            final String part = itr.next().toString();
-            sb.append(part);
-
-            // This means we aren't in the home nor in the reserved
-            // directory path (stor, public, jobs, etc)
-            if (i > 1) {
-                putDirectory(sb.toString(), headers);
-            }
-
-            if (itr.hasNext()) {
-                sb.append(SEPARATOR);
-            }
+        final Integer skipDepth = config.getSkipDirectoryDepth();
+        final RecursiveDirectoryCreationStrategy directoryCreationStrategy;
+        if (skipDepth != null && 0 < skipDepth) {
+            RecursiveDirectoryCreationStrategy.createWithSkipDepth(this, rawPath, headers, skipDepth);
+        } else {
+            RecursiveDirectoryCreationStrategy.createCompletely(this, rawPath, headers);
         }
     }
 
@@ -2513,27 +2629,29 @@ public class MantaClient implements AutoCloseable {
         }
 
         try {
-            httpHelper.close();
+            this.httpHelper.close();
         } catch (Exception e) {
             exceptions.add(e);
         }
 
         // Deregister associated MBeans
         try {
-            beanSupervisor.close();
+            if (this.agent != null) {
+                this.agent.close();
+            }
         } catch (Exception e) {
             exceptions.add(e);
         }
 
         try {
-            config.close();
+            this.config.close();
         } catch (final Exception e) {
             exceptions.add(e);
         }
 
         // Shut down the ForkJoinPool that may be executing find() operations
         try {
-            findForkJoinPool.shutdownNow();
+            this.findForkJoinPool.shutdownNow();
         } catch (Exception e) {
             exceptions.add(e);
         }

@@ -15,7 +15,7 @@ import java.security.spec.AlgorithmParameterSpec;
 /**
  * Implementation of an AESCipherDetails that MUST NOT be used within the current runtime.
  *
- * @author <a href="https://github.com/tjcelaya">Tomas Celayac</a>
+ * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  */
 public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
 
@@ -97,8 +97,15 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
         return null;
     }
 
+    @Deprecated
     @Override
     public Cipher getBouncyCastleCipher() {
+        fail();
+        return null;
+    }
+
+    @Override
+    public Cipher getCloneableCipher() {
         fail();
         return null;
     }

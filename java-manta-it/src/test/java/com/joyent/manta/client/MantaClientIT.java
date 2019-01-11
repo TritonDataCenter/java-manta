@@ -12,7 +12,7 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
-import com.joyent.manta.exception.MantaObjectException;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
@@ -227,6 +227,33 @@ public class MantaClientIT {
 
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
+    }
+
+    @Test
+    public final void canGetZeroByteFileAsInputStream() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] empty = new byte[0];
+
+        mantaClient.put(path, empty);
+        try (final MantaObjectInputStream gotObject = mantaClient.getAsInputStream(path)) {
+            Assert.assertEquals(gotObject.getContentLength().longValue(), 0);
+            byte[] actualBytes = IOUtils.toByteArray(gotObject);
+            Assert.assertEquals(actualBytes, empty,
+                    "Actual object was not the expected 0 bytes");
+        }
+    }
+
+    @Test
+    public final void canGetZeroByteFileAsString() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+        final byte[] empty = new byte[0];
+
+        mantaClient.put(path, empty);
+        final String actual = mantaClient.getAsString(path, StandardCharsets.UTF_8);
+        Assert.assertEquals(actual, "",
+                "Empty string not returned as expected");
     }
 
     @Test
@@ -515,7 +542,7 @@ public class MantaClientIT {
     }
 
     @SuppressWarnings("ReturnValueIgnored")
-    @Test(expectedExceptions = MantaObjectException.class)
+    @Test(expectedExceptions = MantaUnexpectedObjectTypeException.class)
     public final void testListNotADir() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

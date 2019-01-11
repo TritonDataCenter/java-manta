@@ -23,6 +23,7 @@ import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.CharUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionContext;
@@ -180,7 +181,6 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
                     // We don't know the final object name. The server will implement
                     // this as a feature in the future.
-
                     return new ServerSideMultipartUpload(id, null, uuidPrefixedPath(id));
                 }).collect(Collectors.toSet());
             } catch (IOException e) {
@@ -501,8 +501,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         if (result.equalsIgnoreCase("committing")) {
             return MantaMultipartStatus.COMMITTING;
         }
+        // For history of this case, see: https://github.com/joyent/java-manta/issues/452
         if (result.equalsIgnoreCase("committed")) {
-            return MantaMultipartStatus.COMMITTING;
+            return MantaMultipartStatus.COMPLETED;
         }
 
         return MantaMultipartStatus.UNKNOWN;
@@ -736,8 +737,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
 
     /**
      * Creates a <code>$home/uploads/directory/directory</code> path with
-     * the first letter of a uuid being the first directory and the uuid itself
-     * being the second directory.
+     * the first N letters of a uuid being the first directory and the uuid itself
+     * being the second directory. The first N letters are determined by the final
+     * digit in the string form of the object UUID.
      *
      * @param uuid uuid to create path from
      * @return uuid prefixed directories
@@ -746,10 +748,9 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         Validate.notNull(uuid, "UUID must not be null");
 
         final String uuidString = uuid.toString();
+        final String prefixDir = extrapolatePrefixDirectory(uuidString);
 
-        return uploadsPath() + SEPARATOR
-                + uuidString.substring(0, 1)
-                + SEPARATOR + uuidString;
+        return uploadsPath() + SEPARATOR + prefixDir + SEPARATOR + uuidString;
     }
 
     /**
@@ -814,6 +815,66 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         if (requestBody != null) {
             exception.setContextValue("requestBody", new String(requestBody,
                     StandardCharsets.UTF_8));
+        }
+    }
+
+    /**
+     * Returns the substring of the first N characters of the passed string. N
+     * is determined by the last digit in the passed string. The only valid
+     * characters as the last character in the passed string are the numbers
+     * 1-8.
+     *
+     * @param objectIdAsUUID MPU object UUID as string
+     * @return substring for the first N characters of the passed string
+     * @throws MantaMultipartException thrown if unable to parse input
+     */
+    @SuppressWarnings("MagicNumber")
+    static String extrapolatePrefixDirectory(final String objectIdAsUUID) {
+        Validate.notNull(objectIdAsUUID, "Object id (UUID) value must not be null");
+
+        final char lastChar;
+
+        try {
+            lastChar = objectIdAsUUID.charAt(objectIdAsUUID.length() - 1);
+        } catch (IndexOutOfBoundsException e) {
+            final String msg = "Illegal multipart object id specified. "
+                    + "Id cannot be an empty string.";
+            MantaMultipartException mme = new MantaMultipartException(msg, e);
+            mme.setContextValue("objectId", objectIdAsUUID);
+            throw mme;
+        }
+
+        final int prefixLength;
+
+        try {
+            prefixLength = CharUtils.toIntValue(lastChar);
+        } catch (IllegalArgumentException e) {
+            final String msg = "Illegal multipart object id specified. "
+                    + "The last character must be a digit.";
+            MantaMultipartException mme = new MantaMultipartException(msg, e);
+            mme.setContextValue("objectId", objectIdAsUUID);
+            mme.setContextValue("lastChar", lastChar);
+            throw mme;
+        }
+
+        if (prefixLength == 0 || prefixLength == 9) {
+            final String msg = String.format("Illegal multipart object id specified. "
+                    + "The last character must not be '%d'.", prefixLength);
+            MantaMultipartException mme = new MantaMultipartException(msg);
+            mme.setContextValue("objectId", objectIdAsUUID);
+            mme.setContextValue("lastChar", lastChar);
+            throw mme;
+        }
+
+        try {
+            return objectIdAsUUID.substring(0, prefixLength);
+        } catch (StringIndexOutOfBoundsException e) {
+            final String msg = "Illegal multipart object id specified. "
+                    + "The object id must not be smaller than the prefix length.";
+            MantaMultipartException mme = new MantaMultipartException(msg, e);
+            mme.setContextValue("objectId", objectIdAsUUID);
+            mme.setContextValue("lastChar", lastChar);
+            throw mme;
         }
     }
 }

@@ -11,6 +11,7 @@ import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.util.UnitTestConstants;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.protocol.HttpRequestExecutor;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -99,30 +100,30 @@ public class ConfigContextTest {
 
         // setTimeout
 
-        config.setTimeout(-1);
-        Assert.assertThrows(ConfigurationException.class, () ->
-            ConfigContext.validate(config));
-
         config.setTimeout(DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
         ConfigContext.validate(config);
 
-
         // setTcpSocketTimeout
-
-        config.setTcpSocketTimeout(-1);
-        Assert.assertThrows(ConfigurationException.class, () ->
-            ConfigContext.validate(config));
 
         config.setTcpSocketTimeout(DefaultsConfigContext.DEFAULT_TCP_SOCKET_TIMEOUT);
         ConfigContext.validate(config);
 
         // setConnectionRequestTimeout
 
-        config.setConnectionRequestTimeout(-1);
+        config.setConnectionRequestTimeout(DefaultsConfigContext.DEFAULT_CONNECTION_REQUEST_TIMEOUT);
+        ConfigContext.validate(config);
+
+        // setExpectContinueTimeout
+
+        config.setExpectContinueTimeout(-1);
         Assert.assertThrows(ConfigurationException.class, () ->
             ConfigContext.validate(config));
 
-        config.setConnectionRequestTimeout(DefaultsConfigContext.DEFAULT_CONNECTION_REQUEST_TIMEOUT);
+        config.setExpectContinueTimeout(DefaultsConfigContext.DEFAULT_EXPECT_CONTINUE_TIMEOUT);
         ConfigContext.validate(config);
+
+        config.setExpectContinueTimeout(HttpRequestExecutor.DEFAULT_WAIT_FOR_CONTINUE);
+        ConfigContext.validate(config);
+
     }
 }

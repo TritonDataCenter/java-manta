@@ -14,7 +14,6 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
@@ -26,6 +25,9 @@ import org.bouncycastle.jcajce.io.CipherInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.AEADBadTagException;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
@@ -33,9 +35,6 @@ import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.function.Supplier;
-import javax.crypto.AEADBadTagException;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 
 /**
  * <p>An {@link InputStream} implementation that decrypts client-side encrypted
@@ -563,22 +562,34 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return skipped;
         }
 
-        final int defaultBufferSize = calculateBufferSize();
+        final int defaultBufferSize = MantaEncryptedObjectInputStream.calculateBufferSize(this.getContentLength(),
+                                                                                          this.cipherDetails);
         final int bufferSize;
 
         if (numberOfBytesToSkip < defaultBufferSize) {
-            bufferSize = (int)numberOfBytesToSkip;
+            bufferSize = (int) numberOfBytesToSkip;
         } else {
             bufferSize = defaultBufferSize;
         }
 
-        byte[] buf = new byte[bufferSize];
+        final byte[] buf = new byte[bufferSize];
 
         long skipped = 0;
         int skippedInLastRead = 0;
 
         while (skippedInLastRead > EOF && skipped <= numberOfBytesToSkip) {
-            skippedInLastRead = read(buf);
+            final long bytesRemaining = numberOfBytesToSkip - skipped;
+
+            if (bytesRemaining == 0) {
+                // we're just looking for EOF
+                skippedInLastRead = read();
+            } else if (bytesRemaining < buf.length) {
+                // if the number of bytes remaining is less than the buffer size, do an offset/length read.
+                // it's fine to downcast the long to an int since we'd just loop again
+                skippedInLastRead = read(buf, 0, (int) bytesRemaining);
+            } else {
+                skippedInLastRead = read(buf);
+            }
 
             if (skippedInLastRead > EOF) {
                 skipped += skippedInLastRead;
@@ -635,7 +646,8 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
             return;
         }
 
-        final int bufferSize = calculateBufferSize();
+        final int bufferSize = MantaEncryptedObjectInputStream.calculateBufferSize(this.getContentLength(),
+                                                                                   this.cipherDetails);
         byte[] buf = new byte[bufferSize];
 
         while (read(buf, false) > EOF);
@@ -644,13 +656,16 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
     /**
      * Calculates the size of buffer to use when reading chunks of bytes based on the known
      * content length.
+     *
      * @return size of buffer to read into memory
+     * @param contentLength the content
+     * @param cipherDetails the cipher in use
      */
-    private int calculateBufferSize() {
-        long cipherTextContentLength = ObjectUtils.firstNonNull(getContentLength(), -1L);
+    static int calculateBufferSize(final Long contentLength, final SupportedCipherDetails cipherDetails) {
+        long cipherTextContentLength = ObjectUtils.firstNonNull(contentLength, -1L);
 
         if (cipherTextContentLength >= 0) {
-            cipherTextContentLength -= this.cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
+            cipherTextContentLength -= cipherDetails.getAuthenticationTagOrHmacLengthInBytes();
         }
 
         final int bufferSize;
@@ -721,37 +736,39 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         readRemainingBytes();
 
         try {
-            IOUtils.closeQuietly(cipherInputStream);
-        } catch (Exception e) {
+            cipherInputStream.close();
+        } catch (final Exception e) {
             LOGGER.warn("Error closing CipherInputStream", e);
-        }
+         }
 
-        if (hmac != null && authenticateCiphertext) {
-            byte[] checksum = new byte[hmac.getMacSize()];
-            hmac.doFinal(checksum, 0);
-            byte[] expected = readHmacFromEndOfStream();
+        try {
+            if (hmac != null && authenticateCiphertext) {
+                final byte[] checksum = new byte[hmac.getMacSize()];
+                hmac.doFinal(checksum, 0);
+                final byte[] expected = readHmacFromEndOfStream();
 
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Calculated HMAC is: {}", Hex.encodeHexString(checksum));
+                }
+
+                if (super.getBackingStream().read() >= 0) {
+                    final MantaIOException e = new MantaIOException("More bytes were available than the "
+                            + "expected HMAC length");
+                    annotateException(e);
+                    throw e;
+                }
+
+                if (!Arrays.equals(expected, checksum)) {
+                    final MantaClientEncryptionCiphertextAuthenticationException e =
+                            new MantaClientEncryptionCiphertextAuthenticationException();
+                    annotateException(e);
+                    e.setContextValue("expected", Hex.encodeHexString(expected));
+                    e.setContextValue("checksum", Hex.encodeHexString(checksum));
+                    throw e;
+                }
             }
-
-            if (super.getBackingStream().read() >= 0) {
-                MantaIOException e = new MantaIOException("More bytes were available than the "
-                        + "expected HMAC length");
-                annotateException(e);
-                throw e;
-            }
-
+        } finally {
             super.close();
-
-            if (!Arrays.equals(expected, checksum)) {
-                MantaClientEncryptionCiphertextAuthenticationException e =
-                        new MantaClientEncryptionCiphertextAuthenticationException();
-                annotateException(e);
-                e.setContextValue("expected", Hex.encodeHexString(expected));
-                e.setContextValue("checksum", Hex.encodeHexString(checksum));
-                throw e;
-            }
         }
     }
 

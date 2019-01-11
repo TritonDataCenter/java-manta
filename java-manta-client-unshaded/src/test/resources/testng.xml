@@ -10,6 +10,16 @@
             <package name="com.joyent.manta.http.*" />
         </packages>
     </test>
+    <test name="General Client tests">
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientTest" />
+            <class name="com.joyent.manta.client.MantaClientAgentTest" />
+            <class name="com.joyent.manta.client.MantaClientValidationTest" />
+            <class name="com.joyent.manta.client.MantaDirectoryListingIteratorTest" />
+            <class name="com.joyent.manta.client.MetricReporterSupplierTest" />
+            <class name="com.joyent.manta.client.PruneEmptyParentDirectoryStrategyTest" />
+        </classes>
+    </test>
     <test name="Configuration Context Tests">
         <groups>
             <define name="config" />
@@ -18,6 +28,8 @@
             <class name="com.joyent.manta.config.SystemSettingsConfigContextTest" />
             <class name="com.joyent.manta.config.TestConfigContextTest" />
             <class name="com.joyent.manta.config.ConfigContextTest" />
+            <class name="com.joyent.manta.config.ChainedConfigContextTest" />
+            <class name="com.joyent.manta.config.MantaClientMetricConfigurationTest" />
             <class name="com.joyent.manta.client.AuthAwareConfigContextTest" />
         </classes>
     </test>
@@ -50,13 +62,53 @@
         </classes>
     </test>
     <test name="Encryption Tests">
-        <packages>
-            <package name="com.joyent.manta.client.crypto.*" />
-        </packages>
         <classes>
             <class name="com.joyent.manta.http.EncryptedHttpHelperTest" />
             <class name="com.joyent.manta.http.MantaHttpHeadersByteRangeTest" />
             <class name="com.joyent.manta.http.MantaHttpHeadersTest" />
+            <class name="com.joyent.manta.client.crypto.ExternalSecurityProviderLoaderTest" />
+            <class name="com.joyent.manta.client.crypto.AesGcmCipherDetailsTest" />
+            <class name="com.joyent.manta.client.crypto.AesCbcCipherDetailsTest" />
+            <class name="com.joyent.manta.client.crypto.AesCtrCipherDetailsTest" />
+            <class name="com.joyent.manta.client.crypto.EncryptingEntityTest" />
+            <class name="com.joyent.manta.client.crypto.SecretKeyUtilsTest" />
+            <class name="com.joyent.manta.client.crypto.SupportedCiphersLookupMapTest" />
+            <class name="com.joyent.manta.client.crypto.AbstractMantaEncryptedObjectInputStreamTest" />
+            <class name="com.joyent.manta.client.crypto.EncryptionTypeTest" />
+            <class name="com.joyent.manta.client.crypto.ExternalSecurityProviderLoader" />
+            <class name="com.joyent.manta.client.crypto.IncompleteByteReadInputStream" />
+            <class name="com.joyent.manta.client.crypto.LocallyIllegalAesCipherDetailsTest" />
+            <class name="com.joyent.manta.client.crypto.MantaEncryptedObjectInputStreamTest" />
+            <class name="com.joyent.manta.client.crypto.MantaEncryptedObjectInputStreamAutoFailureRecoveryTest" />
+            <class name="com.joyent.manta.client.crypto.EncryptedMetadataUtilsTest" />
+            <class name="com.joyent.manta.client.crypto.ByteRangeConversionTest" />
+        </classes>
+    </test>
+    <test name="Multiple Provider Tests [BC]">
+        <parameter name="preferredProviders" value="BC" />
+        <groups>
+            <define name="encryption-provider" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.crypto.MultiCryptoProviderDecryptionTest" />
+        </classes>
+    </test>
+    <test name="Multiple Provider Tests [SunJCE]">
+        <parameter name="preferredProviders" value="SunJCE" />
+        <groups>
+            <define name="encryption-provider" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.crypto.MultiCryptoProviderDecryptionTest" />
+        </classes>
+    </test>
+    <test name="Multiple Provider Tests [SunPKCS11-NSS]">
+        <parameter name="preferredProviders" value="SunPKCS11-NSS" />
+        <groups>
+            <define name="encryption-provider" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.crypto.MultiCryptoProviderDecryptionTest" />
         </classes>
     </test>
 

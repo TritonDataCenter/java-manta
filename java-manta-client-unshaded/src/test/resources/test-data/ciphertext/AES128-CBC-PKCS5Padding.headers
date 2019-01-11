@@ -1,0 +1,24 @@
+etag: 465fbef5-4e01-4889-8b48-eb9077bcd86c
+last-modified: Sat, 29 Dec 2018 00:09:40 GMT
+m-encrypt-key-id: personal-256
+m-encrypt-plaintext-content-length: 2753
+m-encrypt-iv: OQFOzJAd3yPYxoXaQCA5og==
+m-encrypt-metadata: 9MyDXE6bwMrzZDc1BQ/AX8hVNqvSxQkG2xHkMVfO47NIfEAQB45ffMmM2dT5p29F
+m-encrypt-metadata-hmac: WlWFtM99bRHWvQv9L/9VtA==
+m-encrypt-type: client/1
+m-encrypt-cipher: AES128/CBC/PKCS5Padding
+m-encrypt-metadata-iv: q2tnbvo/d57bID+yDWQ1Rw==
+m-encrypt-hmac-type: HmacMD5
+durability-level: 2
+content-length: 2784
+content-md5: YY6wsZJo9SLUspDE35+KQA==
+content-type: application/octet-stream
+date: Sat, 29 Dec 2018 00:23:54 GMT
+server: Manta
+x-request-id: 139e4472-d124-40ad-af42-f4aae04dc803
+x-response-time: 324
+x-server-name: 39adec6c-bded-4a14-9d80-5a8bfc1121f9
+connection: keep-alive
+x-request-received: 1546043033097
+x-request-processing-time: 1501
+

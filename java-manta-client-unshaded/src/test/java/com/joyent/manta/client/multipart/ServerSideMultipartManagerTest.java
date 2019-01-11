@@ -185,7 +185,7 @@ public class ServerSideMultipartManagerTest {
                 HttpStatus.SC_NO_CONTENT, "NO_CONTENT");
         ServerSideMultipartManager manager = buildMockManager(statusLine, null);
 
-        UUID id = new UUID(0L, 0L);
+        UUID id = new UUID(0L, 7L);
         String partsDirectory = manager.uuidPrefixedPath(id);
         ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
                 id, null, partsDirectory);
@@ -197,7 +197,7 @@ public class ServerSideMultipartManagerTest {
                 HttpStatus.SC_CREATED, "NO_CONTENT");
         ServerSideMultipartManager manager = buildMockManager(statusLine, null);
 
-        UUID id = new UUID(0L, 0L);
+        UUID id = new UUID(0L, 7L);
         String partsDirectory = manager.uuidPrefixedPath(id);
         ServerSideMultipartUpload upload = new ServerSideMultipartUpload(
                 id, "/test/stor/myobject", partsDirectory);
@@ -342,6 +342,72 @@ public class ServerSideMultipartManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void willFailToCreateCommitRequestBodyWhenThereAreNoParts() {
         ServerSideMultipartManager.createCommitRequestBody(Stream.empty());
+    }
+
+    public void canExtrapolatePrefixDirectoryForObjectIdForOneToEight() {
+        final String uuidBase = "0077e0b8-fb7d-eddd-b106-8e8e3ca3d8b";
+
+        for (int lastDigit = 1; lastDigit < 9; lastDigit++) {
+            final String uuid = String.format("%s%d", uuidBase, lastDigit);
+            final String expected = uuidBase.substring(0, lastDigit);
+            final String actual = ServerSideMultipartManager.extrapolatePrefixDirectory(uuid);
+            Assert.assertEquals(actual, expected);
+        }
+    }
+
+    public void extrapolatePrefixDirectoryWillFailOnNonNumericFinalChar() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0077e0b8-fb7d-eddd-b106-8e8e3ca3d8ba");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause().getClass().equals(IllegalArgumentException.class);
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailOnFinalZeroChar() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0077e0b8-fb7d-eddd-b106-8e8e3ca3d8b0");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause() == null;
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailOnFinalNineChar() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0077e0b8-fb7d-eddd-b106-8e8e3ca3d8b9");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause() == null;
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailForEmptyString() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause().getClass().equals(StringIndexOutOfBoundsException.class);
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
+    }
+
+    public void extrapolatePrefixDirectoryWillFailForPrefixLargerThanString() {
+        boolean thrown = false;
+        try {
+            ServerSideMultipartManager.extrapolatePrefixDirectory("0078");
+        } catch (MantaMultipartException e) {
+            thrown = e.getCause().getClass().equals(StringIndexOutOfBoundsException.class);
+        }
+
+        Assert.assertTrue(thrown, "Expected exception wasn't thrown");
     }
 
     // TEST UTILITY METHODS
