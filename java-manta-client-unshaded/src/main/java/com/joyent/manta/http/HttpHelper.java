@@ -303,6 +303,17 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
             throws IOException;
 
     /**
+     * {@inheritDoc}
+     *
+     * <p>Note: This changes the signature of {@link AutoCloseable#close()} to
+     * only throw {@link IOException}.</p>
+     *
+     * @throws IOException thrown if there was a problem closing resources
+     */
+    @Override
+    void close() throws IOException;
+
+    /**
      * Extracts the request id from a {@link HttpRequest} object.
      *
      * @param response HTTP request object

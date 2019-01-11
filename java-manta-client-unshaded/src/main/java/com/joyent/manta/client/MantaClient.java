@@ -2630,10 +2630,6 @@ public class MantaClient implements AutoCloseable {
 
         try {
             this.httpHelper.close();
-        } catch (InterruptedException ie) {
-            /* Do nothing, but we won't capture the interrupted exception
-             * because even if we are interrupted, we want to close all open
-             * resources. */
         } catch (Exception e) {
             exceptions.add(e);
         }

@@ -18,6 +18,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
@@ -159,9 +160,9 @@ class MantaClientAgent implements AutoCloseable {
     /**
      * Prepare the agent for reuse.
      *
-     * @throws Exception if an exception is thrown by {@link #close()}
+     * @throws IOException if an exception is thrown by {@link #close()}
      */
-    void reset() throws Exception {
+    void reset() throws IOException {
         if (!beans.isEmpty()) {
             close();
         }
@@ -178,7 +179,7 @@ class MantaClientAgent implements AutoCloseable {
      * that they are no longer visible via JMX.
      */
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         if (closed.get()) {
             return;
         }
