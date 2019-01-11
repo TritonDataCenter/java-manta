@@ -159,10 +159,8 @@ class MantaClientAgent implements AutoCloseable {
 
     /**
      * Prepare the agent for reuse.
-     *
-     * @throws Exception if an exception is thrown by {@link #close()}
      */
-    void reset() throws Exception {
+    void reset() {
         if (!beans.isEmpty()) {
             close();
         }
