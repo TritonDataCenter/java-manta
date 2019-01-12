@@ -14,6 +14,9 @@ import com.joyent.manta.client.MantaClient;
  * jobs-based multipart manager and creates the underlying wrapped instance
  * so that the API consumer doesn't have to wrangle with so many generics.
  *
+ * @deprecated This class will be removed in the next major version. MPU
+ * functionality is now available server-side and no longer needs to be done
+ * using jobs.
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
