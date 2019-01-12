@@ -17,6 +17,7 @@ import com.joyent.manta.client.MantaClient;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
+@Deprecated
 public class EncryptedJobsMultipartManager
         extends EncryptedMultipartManager<JobsMultipartManager, JobsMultipartUpload> {
     /**

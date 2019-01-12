@@ -13,6 +13,7 @@ import java.util.UUID;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0
  */
+@Deprecated
 public class JobsMultipartUpload extends AbstractMultipartUpload {
     /**
      * Creates a new instance associated with the specified id

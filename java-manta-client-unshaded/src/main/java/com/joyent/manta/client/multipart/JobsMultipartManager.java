@@ -62,6 +62,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0 (moved from MantaMultipartManager)
  */
+@Deprecated
 public class JobsMultipartManager extends AbstractMultipartManager
         <JobsMultipartUpload, MantaMultipartUploadPart> {
     /**
