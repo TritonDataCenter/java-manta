@@ -8,6 +8,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Server-side MPU is hardcoded to create a directory prefix of only a single character](https://github.com/joyent/java-manta/issues/451)
  - [Server-side MPU returns a committed result but it is parsed as COMMITTING](https://github.com/joyent/java-manta/issues/452)
  - [InterruptedException could be thrown warnings have been resolved](https://github.com/joyent/java-manta/issues/322)
+ - [Prune empty directory depth configuration validation is incorrect](https://github.com/joyent/java-manta/issues/457) 
 
 ## [3.3.0] - 2018-12-02
 ### Changed
