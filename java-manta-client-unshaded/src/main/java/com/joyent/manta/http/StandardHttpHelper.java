@@ -18,6 +18,7 @@ import com.joyent.manta.exception.HttpDownloadContinuationException;
 import com.joyent.manta.exception.MantaChecksumFailedException;
 import com.joyent.manta.exception.MantaClientException;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaObjectException;
 import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.entity.DigestedEntity;
@@ -50,8 +51,13 @@ import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.DynamicMBean;
+import javax.management.MBeanException;
+import javax.management.OperationsException;
+import javax.management.ReflectionException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -625,8 +631,48 @@ public class StandardHttpHelper implements HttpHelper {
             throws IOException {
         Validate.notNull(request, "Request object must not be null");
 
-        CloseableHttpClient client = connectionContext.getHttpClient();
-        CloseableHttpResponse response = client.execute(request);
+        final CloseableHttpClient client = connectionContext.getHttpClient();
+        final CloseableHttpResponse response;
+
+        try {
+            response = client.execute(request);
+        /* This will catch ConnectionPoolTimeoutException and ConnectTimeoutException
+         * as well as the explicitly caught InterruptedIOException. By catching
+         * InterruptedIOException we are catching an exception in the java.io
+         * package and not a org.apache.http package which could be shaded/relocated
+         * leading us to have to do more complicated matching on the class name.
+         *
+         * When we have this class of exception, it is useful to get the pooling
+         * statistics because ConnectionPoolTimeoutException could indicate a
+         * resource link where connections are being returned to the pool.
+         */
+        } catch (InterruptedIOException e) {
+            if (connectionContext instanceof MantaApacheHttpClientContext) {
+                final MantaApacheHttpClientContext context = (MantaApacheHttpClientContext)connectionContext;
+                final MantaConnectionFactory connFactory = context.getConnectionFactory();
+                final DynamicMBean poolStats = connFactory.toMBean();
+                final MantaIOException mio = new MantaIOException(e);
+
+                try {
+                    mio.setContextValue("leased", poolStats.getAttribute("leased"));
+                    mio.setContextValue("pending", poolStats.getAttribute("pending"));
+                    mio.setContextValue("available", poolStats.getAttribute("available"));
+                    mio.setContextValue("max", poolStats.getAttribute("max"));
+                } catch (OperationsException | MBeanException | ReflectionException jmxException) {
+                    /* For whatever reason we couldn't get the pooling
+                     * statistics, so we just throw the original exception */
+                    throw e;
+                }
+
+                HttpHelper.annotateContextedException(mio, request, null);
+
+                throw mio;
+            }
+
+            /* If we don't have access to pull connection pool statistics, then
+             * we just pass along the exception as is. */
+            throw e;
+        }
 
         try {
             StatusLine statusLine = response.getStatusLine();
