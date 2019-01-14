@@ -59,9 +59,13 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
 /**
  * Class providing a jobs-based implementation multipart uploads to Manta.
  *
+ * @deprecated This class will be removed in the next major version. MPU
+ * functionality is now available server-side and no longer needs to be done
+ * using jobs.
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 2.5.0 (moved from MantaMultipartManager)
  */
+@Deprecated
 public class JobsMultipartManager extends AbstractMultipartManager
         <JobsMultipartUpload, MantaMultipartUploadPart> {
     /**

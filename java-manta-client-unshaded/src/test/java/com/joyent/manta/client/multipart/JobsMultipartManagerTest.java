@@ -26,7 +26,10 @@ import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
-@Test
+/* Tests are disabled because functionality is obsolete and overall test runtime
+ * is very long and expensive. */
+@Deprecated
+@Test(enabled = false)
 public class JobsMultipartManagerTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativePartNumbersAreRejected() {

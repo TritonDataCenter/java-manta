@@ -344,7 +344,7 @@ public interface ConfigContext extends MantaMBeanable {
             failureMessages.add("Manta skip directory depth must be 0 or greater");
         }
 
-        if (config.getPruneEmptyParentDepth() != null && config.getSkipDirectoryDepth() < -1) {
+        if (config.getPruneEmptyParentDepth() != null && config.getPruneEmptyParentDepth() < -1) {
             failureMessages.add("Manta prune empty parent depth must be -1 or greater");
         }
 

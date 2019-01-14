@@ -49,7 +49,10 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-@Test
+/* Tests are disabled because functionality is obsolete and overall test runtime
+ * is very long and expensive. */
+@Deprecated
+@Test(enabled = false)
 public class JobsMultipartManagerIT {
     private MantaClient mantaClient;
     private JobsMultipartManager multipart;
