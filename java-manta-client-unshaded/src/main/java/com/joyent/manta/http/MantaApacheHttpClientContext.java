@@ -91,4 +91,8 @@ public class MantaApacheHttpClientContext implements MantaConnectionContext {
         httpClient.close();
         connectionFactory.close();
     }
+
+    MantaConnectionFactory getConnectionFactory() {
+        return connectionFactory;
+    }
 }
