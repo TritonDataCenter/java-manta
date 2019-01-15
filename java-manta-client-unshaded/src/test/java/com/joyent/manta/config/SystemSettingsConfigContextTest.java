@@ -110,4 +110,49 @@ public class SystemSettingsConfigContextTest {
         assertEquals(config.getMantaUser(), user);
         assertNull(config.getMantaKeyPath());
     }
+
+    public void authenticationModeCanBeSetToMandatory() {
+        final String input = "Mandatory";
+        final EncryptionAuthenticationMode expected = EncryptionAuthenticationMode.Mandatory;
+
+        final Properties properties = new Properties();
+        properties.setProperty(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY, input);
+        final SystemSettingsConfigContext instance = new SystemSettingsConfigContext(
+                false, properties);
+
+        final EncryptionAuthenticationMode actual = instance.getEncryptionAuthenticationMode();
+        Assert.assertEquals(actual, expected, String.format(
+                "[%s] set for [%s] didn't set the authentication mode correctly",
+                input, MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY));
+    }
+
+    public void authenticationModeCanBeSetToOptional() {
+        final String input = "Optional";
+        final EncryptionAuthenticationMode expected = EncryptionAuthenticationMode.Optional;
+
+        final Properties properties = new Properties();
+        properties.setProperty(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY, input);
+        final SystemSettingsConfigContext instance = new SystemSettingsConfigContext(
+                false, properties);
+
+        final EncryptionAuthenticationMode actual = instance.getEncryptionAuthenticationMode();
+        Assert.assertEquals(actual, expected, String.format(
+                "[%s] set for [%s] didn't set the authentication mode correctly",
+                input, MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY));
+    }
+
+    public void authenticationModeCanBeSetToDisabled() {
+        final String input = "Disabled";
+        final EncryptionAuthenticationMode expected = EncryptionAuthenticationMode.Disabled;
+
+        final Properties properties = new Properties();
+        properties.setProperty(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY, input);
+        final SystemSettingsConfigContext instance = new SystemSettingsConfigContext(
+                false, properties);
+
+        final EncryptionAuthenticationMode actual = instance.getEncryptionAuthenticationMode();
+        Assert.assertEquals(actual, expected, String.format(
+                "[%s] set for [%s] didn't set the authentication mode correctly",
+                input, MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY));
+    }
 }
