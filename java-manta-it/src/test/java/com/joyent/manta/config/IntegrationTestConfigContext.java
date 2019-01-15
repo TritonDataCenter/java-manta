@@ -11,13 +11,14 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.UUID;
-import javax.crypto.SecretKey;
 
 
 /**
@@ -68,7 +69,12 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         if (usingEncryption) {
             context.setClientEncryptionEnabled(true);
             context.setEncryptionKeyId("integration-test-key");
-            context.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
+
+            EncryptionAuthenticationMode envSettingsMode = MantaUtils.parseEnumOrNull(
+                    encryptionAuthenticationMode(), EncryptionAuthenticationMode.class);
+
+            context.setEncryptionAuthenticationMode(ObjectUtils.firstNonNull(
+                    envSettingsMode, EncryptionAuthenticationMode.Optional));
 
             SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher,
                     DefaultsConfigContext.DEFAULT_CIPHER);
@@ -94,6 +100,13 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
     public static String encryptionCipher() {
         String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
         String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
+
+        return sysProp != null ? sysProp : envVar;
+    }
+
+    public static String encryptionAuthenticationMode() {
+        String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
+        String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY);
 
         return sysProp != null ? sysProp : envVar;
     }
