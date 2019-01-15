@@ -281,6 +281,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             throws IOException {
         final boolean hasRangeRequest = requestHeaders != null && requestHeaders.getRange() != null;
 
+        /* Errors when we attempt to do an HTTP range request when authentication
+         * mode is set to Mandatory because HTTP range requests will only work
+         * with authentication disabled. When you do a range request, it gets
+         * arbitrary bytes from the ciphertext of the source object which means
+         * that you will not be able to verify the ciphertext using the HMAC
+         * because you don't have all of the bytes available. */
         if (hasRangeRequest && encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Mandatory)) {
             String msg = "HTTP range requests (random reads) aren't supported when using "
                     + "client-side encryption in mandatory authentication mode.";
@@ -373,8 +379,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
                     secretKey, false, initialSkipBytes, plaintextRangeLength, unboundedEnd);
         } else {
+            /* We skip authentication on the ciphertext only when it is explicitly
+             * disabled. For the Mandatory and Optional modes, it is enabled. */
+            final boolean authenticateCiphertext =
+                    !encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Disabled);
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
-                    secretKey, true);
+                    secretKey, authenticateCiphertext);
         }
     }
 

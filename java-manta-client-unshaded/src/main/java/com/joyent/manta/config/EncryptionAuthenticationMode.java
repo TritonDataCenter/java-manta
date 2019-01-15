@@ -26,7 +26,13 @@ public enum EncryptionAuthenticationMode {
      * {@link com.joyent.manta.exception.UnauthenticatableOperationException}
      * exception.
      */
-    Mandatory;
+    Mandatory,
+
+    /**
+     * Disabled mode will disable ciphertext verification upon decryption.
+     * HMACs will still be created when encrypting.
+     */
+    Disabled;
 
     /**
      * The default encryption object authentication mode (Mandatory).
