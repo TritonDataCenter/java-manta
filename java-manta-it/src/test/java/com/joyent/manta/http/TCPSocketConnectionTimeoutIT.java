@@ -8,10 +8,14 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.config.*;
-
+import com.joyent.manta.config.AuthAwareConfigContext;
+import com.joyent.manta.config.ChainedConfigContext;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.http.conn.ConnectTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -19,7 +23,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -40,6 +43,7 @@ public class TCPSocketConnectionTimeoutIT {
 
     private ChainedConfigContext config = new ChainedConfigContext(
                 new StandardConfigContext()
+                        .setRetries(0)
                         .setTimeout(1000)
                         .setMantaUser(authConfig.getMantaUser())
                         .setMantaKeyId(authConfig.getMantaKeyId())
@@ -51,6 +55,12 @@ public class TCPSocketConnectionTimeoutIT {
                 new DefaultsConfigContext()
         );
 
+    /**
+     * Test that verifies that the connection timeout setting
+     * {@link ConfigContext#getTimeout()} is applied and is actually working.
+     *
+     * Note: this test will not work correctly when run through a proxy server.
+     */
     public void verifyConnectionTimeoutSettingWorks() throws IOException {
         String testPathPrefix = IntegrationTestConfigContext.generateBasePath(
                 config, this.getClass().getSimpleName());
@@ -61,9 +71,10 @@ public class TCPSocketConnectionTimeoutIT {
         try (MantaClient client = new MantaClient(config)) {
             start = Instant.now();
             client.head(testPathPrefix);
+        } catch (MantaIOException e) {
+            final Throwable cause = ExceptionUtils.getThrowableList(e).get(1);
 
-        } catch (InterruptedIOException e) {
-            Assert.assertEquals(e.getClass().getSimpleName(),
+            Assert.assertEquals(cause.getClass().getSimpleName(),
                     "ConnectTimeoutException",
                     "Expected exception ConnectTimeoutException was not thrown. Actual Exception:\n"
                             + ExceptionUtils.getStackTrace(e));
