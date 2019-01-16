@@ -993,7 +993,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         final CloseableHttpClient client = getConnectionContext().getHttpClient();
         final CloseableHttpResponse originalContentLengthUpdateResponse = client.execute(put);
-        IOUtils.closeQuietly(originalContentLengthUpdateResponse);
+
+        try {
+            originalContentLengthUpdateResponse.close();
+        } catch (IOException e) {
+            MantaIOException mio = new MantaIOException(e);
+            HttpHelper.annotateContextedException(mio, put, originalContentLengthUpdateResponse);
+            LOGGER.error("Unable to close HTTP response resource", mio);
+        }
 
         StatusLine statusLine = originalContentLengthUpdateResponse.getStatusLine();
         int code = statusLine.getStatusCode();

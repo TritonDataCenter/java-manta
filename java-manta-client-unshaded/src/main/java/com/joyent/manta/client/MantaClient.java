@@ -2115,7 +2115,13 @@ public class MantaClient implements AutoCloseable {
 
                 // We close the request that was previously opened, because it
                 // didn't have what we need.
-                IOUtils.closeQuietly(initialResponse);
+                try {
+                    initialResponse.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, initialRequest, initialResponse);
+                    LOG.error("Unable to close HTTP response object", mio);
+                }
 
                 CloseableHttpResponse archiveResponse = client.execute(archiveRequest);
                 lastResponse = archiveResponse;
@@ -2183,7 +2189,13 @@ public class MantaClient implements AutoCloseable {
             throw je;
         } finally {
             if (lastResponse != null) {
-                IOUtils.closeQuietly(lastResponse);
+                try {
+                    lastResponse.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, initialRequest, lastResponse);
+                    LOG.error("Unable to close HTTP response resource", mio);
+                }
             }
         }
 
@@ -2582,10 +2594,22 @@ public class MantaClient implements AutoCloseable {
         final BufferedReader br = new BufferedReader(reader);
 
         Stream<String> stream = br.lines().onClose(() -> {
-            IOUtils.closeQuietly(br);
+            try {
+                br.close();
+            } catch (IOException e) {
+                MantaIOException mio = new MantaIOException(e);
+                HttpHelper.annotateContextedException(mio, null, response);
+                LOG.error("Unable to close buffered reader", mio);
+            }
 
             if (response instanceof Closeable) {
-                IOUtils.closeQuietly((Closeable)response);
+                try {
+                    ((Closeable)response).close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, null, response);
+                    LOG.error("Unable to close HTTP response resource", mio);
+                }
             }
         });
 

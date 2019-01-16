@@ -691,7 +691,13 @@ public class StandardHttpHelper implements HttpHelper {
             return response;
         } finally {
             if (closeResponse) {
-                IOUtils.closeQuietly(response);
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, request, response);
+                    LOGGER.error("Unable to close HTTP response resource", mio);
+                }
             }
         }
     }
@@ -750,7 +756,13 @@ public class StandardHttpHelper implements HttpHelper {
             }
         } finally {
             if (closeResponse) {
-                IOUtils.closeQuietly(response);
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, request, response);
+                    LOGGER.error("Unable to close HTTP response object", mio);
+                }
             }
         }
     }

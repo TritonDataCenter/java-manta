@@ -7,6 +7,8 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -187,8 +189,19 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
                     this.backingStream, httpResponse);
         }
 
-        IOUtils.closeQuietly(backingStream);
-        IOUtils.closeQuietly(httpResponse);
+        try {
+            backingStream.close();
+        } catch (IOException e) {
+            LOGGER.error("Error closing backing stream", e);
+        }
+
+        try {
+            httpResponse.close();
+        } catch (IOException e) {
+            MantaIOException mio = new MantaIOException(e);
+            HttpHelper.annotateContextedException(mio, null, httpResponse);
+            LOGGER.error("Unable to close HTTP response resource", mio);
+        }
     }
 
     @Override
