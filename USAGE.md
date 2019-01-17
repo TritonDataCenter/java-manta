@@ -199,7 +199,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     encryption is enabled.
 * `manta.encryption_auth_mode` (**MANTA_ENCRYPTION_AUTH_MODE**)
     [EncryptionAuthenticationMode](/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/EncryptionAuthenticationMode.java)
-    enum type indicating that authenticating encryption verification is either `Mandatory`, `Optional` or `Disabled`.
+    enum type indicating that authenticating encryption verification is either `Mandatory`, `Optional` or `VerificationDisabled`.
 * `manta.encryption_key_path` (**MANTA_ENCRYPTION_KEY_PATH**)
     The path on the local filesystem or a URI understandable by the JVM indicating the
     location of the private key used to perform client-side encryption. If this value is

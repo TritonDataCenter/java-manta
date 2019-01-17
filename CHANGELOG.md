@@ -6,7 +6,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 ### Added
  - [Allow for authentication to be disabled in CSE](https://github.com/joyent/java-manta/issues/465)
    Client side encryption HMAC authentication of ciphertext for CTR/CBC ciphers
-   can now be disabled. The default authentication mode continues to be
+   can now be in VerificationDisabled mode. The default authentication mode continues to be
    Mandatory.
 ### Changed
  - [Deprecate Jobs Multipart implementation and disable integration tests](https://github.com/joyent/java-manta/issues/459)
