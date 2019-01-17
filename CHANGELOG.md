@@ -10,6 +10,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
    Mandatory.
 ### Changed
  - [Deprecate Jobs Multipart implementation and disable integration tests](https://github.com/joyent/java-manta/issues/459)
+ - Upgraded Bouncy Castle, Apache HTTP Client, Jackson and Java HTTP Signatures dependencies
 ### Fixed
  - [Client-side encryption does not use libnss when doing simple PUT](https://github.com/joyent/java-manta/issues/449)
  - [Server-side MPU is hardcoded to create a directory prefix of only a single character](https://github.com/joyent/java-manta/issues/451)
