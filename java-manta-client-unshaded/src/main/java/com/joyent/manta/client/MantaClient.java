@@ -2112,17 +2112,6 @@ public class MantaClient implements AutoCloseable {
                         config.getMantaHomeDirectory(), jobId);
 
                 final HttpUriRequest archiveRequest = httpHelper.getRequestFactory().get(archivePath);
-
-                // We close the request that was previously opened, because it
-                // didn't have what we need.
-                try {
-                    initialResponse.close();
-                } catch (IOException e) {
-                    MantaIOException mio = new MantaIOException(e);
-                    HttpHelper.annotateContextedException(mio, initialRequest, initialResponse);
-                    LOG.error("Unable to close HTTP response object", mio);
-                }
-
                 CloseableHttpResponse archiveResponse = client.execute(archiveRequest);
                 lastResponse = archiveResponse;
                 final StatusLine archiveStatusLine = archiveResponse.getStatusLine();

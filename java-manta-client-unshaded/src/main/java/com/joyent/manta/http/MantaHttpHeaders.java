@@ -1091,7 +1091,8 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         if (StringUtils.startsWith(byteRange, "-")) {
             endPos = Long.parseLong(byteRange);
         } else if (StringUtils.endsWith(byteRange, "-")) {
-            startPos = Long.parseLong(byteRange.split("-")[0]);
+            final String startRange = StringUtils.substringBefore(byteRange, "-");
+            startPos = Long.parseLong(startRange);
         } else if (rangeParts.length == 2) {
             startPos = Long.parseUnsignedLong(rangeParts[0]);
             endPos = Long.parseUnsignedLong(rangeParts[1]);

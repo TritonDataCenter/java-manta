@@ -167,7 +167,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
         final Provider pkcs11Provider = ExternalSecurityProviderLoader.getPkcs11Provider();
         final Cipher cipher;
 
-        if (pkcs11Provider != null && preferredProvider == pkcs11Provider) {
+        if (preferredProvider.equals(pkcs11Provider)) {
             /* Unfortunately, libnss via pkcs11 uses different strings to
              * identify ciphers (when doing a .containsKey() call, but not a
              * Cipher.getInstance(cipherName, provider) than Bouncy Castle or
