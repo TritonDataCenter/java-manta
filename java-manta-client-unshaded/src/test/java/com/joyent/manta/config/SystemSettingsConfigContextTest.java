@@ -141,9 +141,9 @@ public class SystemSettingsConfigContextTest {
                 input, MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY));
     }
 
-    public void authenticationModeCanBeSetToDisabled() {
-        final String input = "Disabled";
-        final EncryptionAuthenticationMode expected = EncryptionAuthenticationMode.Disabled;
+    public void authenticationModeCanBeSetToVerificationDisabled() {
+        final String input = "VerificationDisabled";
+        final EncryptionAuthenticationMode expected = EncryptionAuthenticationMode.VerificationDisabled;
 
         final Properties properties = new Properties();
         properties.setProperty(MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY, input);
