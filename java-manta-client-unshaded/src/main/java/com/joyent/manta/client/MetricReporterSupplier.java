@@ -73,9 +73,6 @@ final class MetricReporterSupplier implements Supplier<Closeable> {
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .prefixedWith(metricConfig.getClientId().toString())
                 .outputTo(LoggerFactory.getLogger(FMT_METRIC_LOGGER_NAME))
-                // .shutdownExecutorOnStop()
-                // .markWith()
-                // .withLoggingLevel()
                 .build();
     }
 
