@@ -32,7 +32,7 @@ public class MetricReporterSupplierTest {
         Assert.assertThrows(NullPointerException.class, () -> new MetricReporterSupplier(null));
     }
 
-    public void createsAndStartsJmxReporter() throws MalformedObjectNameException, InterruptedException {
+    public void createsAndStartsJmxReporter() throws MalformedObjectNameException {
         final UUID clientId = UUID.randomUUID();
         final MetricRegistry registry = new MetricRegistry();
         registry.meter(METRIC_NAME_RETRIES);
@@ -50,6 +50,7 @@ public class MetricReporterSupplierTest {
 
         assertFalse(platformMBeanServer.isRegistered(buildObjectName(clientId, METRIC_NAME_RETRIES)));
     }
+
     public void createsAndStartsSlf4jReporter() {
         final MantaClientMetricConfiguration metricConfig = new MantaClientMetricConfiguration(UUID.randomUUID(), new MetricRegistry(), MetricReporterMode.SLF4J, 1000);
         final Closeable jmxReporter = new MetricReporterSupplier(metricConfig).get();
@@ -58,6 +59,8 @@ public class MetricReporterSupplierTest {
         final Slf4jReporter reporter = (Slf4jReporter) jmxReporter;
         reporter.close();
     }
+
+    // TEST UTILITY METHOD
 
     private ObjectName buildObjectName(final UUID clientId, final String beanName) throws MalformedObjectNameException {
         return new ObjectName(String.format(MantaClientAgent.FMT_MBEAN_OBJECT_NAME, beanName, clientId));

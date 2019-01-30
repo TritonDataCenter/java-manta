@@ -85,9 +85,10 @@ final class MetricReporterSupplier implements Supplier<Closeable> {
     }
 
     /**
-     * Builds a JMX metric reporter based on the supplied configuration. We create an additional registry 'retries' which
-     * is used to track all configuration information associated with a specific client UUID. Running manta-monitor
-     * helps us in verifying all JMX and configuration metrics that have been exposed.
+     * Builds a JMX metric reporter based on the supplied configuration. We create additional registries
+     * `ConfigContextMBean` and 'retries' which are used to track all configuration information associated with a
+     * specific client UUID. Running manta-monitor helps us in verifying all JMX and configuration metrics that have
+     * been exposed.
      *
      * @param metricConfig details about the type of reporter to construct and add any necessary additional parameters
      */
