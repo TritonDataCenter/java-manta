@@ -49,7 +49,7 @@ public class ClientEncryptionRangeDownload {
                 .setEncryptionPrivateKeyBytes(Base64.getDecoder().decode("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
 
         try (MantaClient client = new MantaClient(config)) {
-            String mantaPath = "/" + mantaUserName + "/stor/foo";
+            String mantaPath = MantaClient.SEPARATOR + mantaUserName + "/stor/foo";
 
             // Divided into 16 byte block chunks for testing
             final String plaintext = "This is my secre" +

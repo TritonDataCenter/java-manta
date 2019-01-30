@@ -10,6 +10,8 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.config.*;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.io.IOException;
@@ -43,7 +45,8 @@ public class SimpleClientEncryption {
                 .setEncryptionPrivateKeyBytes(Base64.getDecoder().decode("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
 
         try (MantaClient client = new MantaClient(config)) {
-            String mantaPath = "/" + mantaUserName + "/stor/foo";
+            String mantaPath = SEPARATOR + mantaUserName + SEPARATOR
+                    + "stor" + SEPARATOR + "foo";
 
             MantaObjectResponse response = client.put(mantaPath, "This is my secret\nthat I want encrypted.");
 

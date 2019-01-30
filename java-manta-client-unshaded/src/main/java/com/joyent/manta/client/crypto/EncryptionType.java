@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.util.MantaVersion.CLIENT_SIDE_ENCRYPTION_MAX_VERSION;
 import static com.joyent.manta.util.MantaVersion.CLIENT_SIDE_ENCRYPTION_MIN_VERSION;
 
@@ -38,11 +39,6 @@ public final class EncryptionType {
      */
     private static final Map<String, EncryptionType> SUPPORTED_ENCRYPTION_TYPES =
             Collections.singletonMap(CLIENT.name, CLIENT);
-
-    /**
-     * Separator string between type name and version.
-     */
-    private static final String SEPARATOR = "/";
 
     /**
      * Encryption type name.
