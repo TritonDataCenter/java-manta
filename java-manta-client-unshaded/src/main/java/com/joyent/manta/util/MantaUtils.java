@@ -249,7 +249,7 @@ public final class MantaUtils {
     public static String[] parseAccount(final String account) {
         Validate.notNull(account, "Account must not be null");
 
-        final int slashPos = account.indexOf("/");
+        final int slashPos = account.indexOf(SEPARATOR);
 
         if (account.isEmpty()) {
             throw new IllegalArgumentException("Username can't be empty");

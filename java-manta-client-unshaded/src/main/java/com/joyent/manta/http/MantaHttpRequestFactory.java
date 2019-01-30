@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
 import com.joyent.manta.exception.MantaClientException;
@@ -247,7 +248,7 @@ public class MantaHttpRequestFactory {
         Validate.notNull(path, "Path must not be null");
 
         final String format;
-        if (path.startsWith("/")) {
+        if (path.startsWith(MantaClient.SEPARATOR)) {
             format = "%s%s";
         } else {
             format = "%s/%s";
