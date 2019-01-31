@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,17 +50,17 @@ public enum MantaErrorCode {
     ENTITY_EXISTS_ERROR("EntityExists"),
     /**
      * Known component sources: muskie
-     * */
+     */
     ENTITY_EXISTS_MUSKIE_ERROR("EntityAlreadyExists"),
     /**
      * Known component sources: muskie
-     * */
+     */
     ETAG_CONFLICT_ERROR("EtagConflictError"),
     EXPECTED_UPGRADE_ERROR("ExpectedUpgrade"),
     INTERNAL_ERROR("InternalError"),
     /**
      * Known component sources: muskie
-     * */
+     */
     INVALID_ALGORITHM_ERROR("InvalidAlgorithm"),
     INVALID_ARGUMENT_ERROR("InvalidArgumentError"),
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
@@ -77,7 +77,7 @@ public enum MantaErrorCode {
     INVALID_PARAMETER_ERROR("InvalidParameter"),
     /**
      * Known component sources: muskie
-     * */
+     */
     INVALID_PATH_ERROR("InvalidResource"),
     INVALID_QUERY_STRING_AUTHENTICATION_ERROR("InvalidQueryStringAuthentication"),
     INVALID_RESOURCE_ERROR("InvalidResource"),
@@ -89,7 +89,7 @@ public enum MantaErrorCode {
     JOB_STATE_ERROR("JobState"),
     /**
      * Known component sources: muskie
-     * */
+     */
     JOB_STATE_MUSKIE_ERROR("InvalidJobState"),
     KEY_DOES_NOT_EXIST_ERROR("KeyDoesNotExist"),
     LINK_NOT_FOUND_ERROR("LinkNotFound"),
@@ -97,36 +97,36 @@ public enum MantaErrorCode {
     LINK_REQUIRED_ERROR("LinkRequired"),
     /**
      * Known component sources: muskie
-     * */
+     */
     LINK_REQUIRED_MUSKIE_ERROR("LocationRequired"),
     LOCATION_REQUIRED_ERROR("LocationRequired"),
     /**
      * Known component sources: muskie
-     * */
+     */
     MAX_CONTENT_LENGTH_ERROR("InvalidMaxContentLength"),
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     /**
      * Known component sources: muskie
-     * */
+     */
     MAX_SIZE_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     METHOD_NOT_ALLOWED("MethodNotAllowedError"),
     MISSING_PERMISSION_ERROR("MissingPermission"),
     /**
      * Known component sources: muskie
-     * */
+     */
     MULTIPART_UPLOAD_CREATE_ERROR("MultipartUploadInvalidArgument"),
     MULTIPART_UPLOAD_INVALID_ARGUMENT("MultipartUploadInvalidArgument"),
     /**
      * Known component sources: muskie
-     * */
+     */
     MULTIPART_UPLOAD_INVALID_ARGUMENT_ERROR("MultipartUploadInvalidArgument"),
     /**
      * Known component sources: muskie
-     * */
+     */
     MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"),
     /**
      * Known component sources: muskie
-     * */
+     */
     MULTIPART_UPLOAD_STATE_ERROR("InvalidMultipartUploadState"),
     NO_API_SERVERS_AVAILABLE("NoApiServersAvailable"),
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
@@ -134,11 +134,11 @@ public enum MantaErrorCode {
     NOT_ENOUGH_SPACE_ERROR("NotEnoughSpace"),
     /**
      * Known component sources: muskie
-     * */
+     */
     NOT_IMPLEMENTED_ERROR("NotImplemented"),
     /**
      * Known component sources: muskie
-     * */
+     */
     OBJECT_NOT_FOUND_ERROR("ObjectNotFoundError"),
     OPERATION_NOT_ALLOWED_ON_DIRECTORY_ERROR("OperationNotAllowedOnDirectory"),
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
@@ -146,24 +146,24 @@ public enum MantaErrorCode {
     PRECONDITION_FAILED_ERROR("PreconditionFailed"),
     /**
      * Known component sources: muskie
-     * */
+     */
     PRECONDITION_FAILED_MUSKIE_ERROR("PreconditionFailedError"),
     PRE_SIGNED_REQUEST_ERROR("PreSignedRequest"),
     /**
      * Known component sources: muskie
-     * */
+     */
     PRE_SIGNED_REQUEST_MUSKIE_ERROR("InvalidQueryStringAuthentication"),
     REQUEST_ENTITY_TOO_LARGE_ERROR("RequestEntityTooLarge"),
     /**
      * Known component sources: muskie
-     * */
+     */
     REQUEST_TIMEOUT_ERROR("RequestTimeout"),
     REQUESTED_RANGE_NOT_SATISFIABLE_ERROR("RequestedRangeNotSatisfiable"),
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
     ROOT_DIRECTORY_ERROR("RootDirectory"),
     /**
      * Known component sources: muskie
-     * */
+     */
     ROOT_DIRECTORY_MUSKIE_ERROR("OperationNotAllowedOnRootDirectory"),
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     SERVICE_UNAVAILABLE_ERROR("ServiceUnavailable"),
@@ -173,15 +173,16 @@ public enum MantaErrorCode {
     SSL_REQUIRED_ERROR("SSLRequired"),
     /**
      * Known component sources: muskie
-     * */
+     */
     SSL_REQUIRED_MUSKIE_ERROR("SecureTransportRequired"),
     /**
      * Known component sources: muskie
-     * */
+     */
     THROTTLED_ERROR("ThrottledError"),
     /**
      * Known component sources: muskie
-     * */
+     */
+
     UNIQUE_ATTRIBUTE_ERROR("UniqueAttributeError"),
     UPLOAD_ABANDONED_ERROR("UploadAbandoned"),
     UPLOAD_TIMEOUT_ERROR("UploadTimeout"),
