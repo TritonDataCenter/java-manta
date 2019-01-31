@@ -25,6 +25,7 @@ import static org.apache.commons.lang3.Validate.notNull;
  * Helper class for building and starting a metric reporter given a {@link MantaClientMetricConfiguration}.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 final class MetricReporterSupplier implements Supplier<Closeable> {
 
