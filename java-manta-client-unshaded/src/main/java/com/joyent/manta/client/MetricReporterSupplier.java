@@ -24,6 +24,7 @@ import static org.apache.commons.lang3.Validate.notNull;
 /**
  * Helper class for building and starting a metric reporter given a {@link MantaClientMetricConfiguration}.
  *
+ * @see <a href="https://metrics.dropwizard.io/4.0.0/manual/core.html">Metrics Core</a>
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
