@@ -146,7 +146,7 @@ public class MantaJobBuilderIT {
         try {
             mantaClient.endJobInput(jobId);
         } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(MantaErrorCode.JOB_STATE_ERROR)) {
+            if (e.getServerCode().equals(MantaErrorCode.INVALID_JOB_STATE_ERROR)) {
                 failed = true;
             }
         }

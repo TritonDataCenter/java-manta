@@ -354,7 +354,7 @@ public class ServerSideMultipartManagerIT {
                     409,
                     "Unexpected response code");
             Assert.assertEquals(responseException.getServerCode(),
-                    MantaErrorCode.MULTIPART_UPLOAD_CREATE_ERROR,
+                    MantaErrorCode.MULTIPART_UPLOAD_INVALID_ARGUMENT,
                     "Unexpected error code");
 
             caught = true;
