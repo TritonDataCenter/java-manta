@@ -11,8 +11,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
-
 import java.security.Provider;
+import java.util.List;
 
 import static com.joyent.manta.client.crypto.SupportedCiphersLookupMap.INSTANCE;
 
@@ -37,17 +37,31 @@ public class SupportedCiphersLookupMapTest {
         Assert.assertTrue(INSTANCE.get("AES256/CBC/PKCS5Padding") instanceof AesCbcCipherDetails);
     }
 
+    /**
+     * Test all providers registered at runtime to see if the expected ciphers
+     * can be loaded. This provides a basic sanity check against the cryptographic
+     * providers that makes sure that we can get at the ciphers that are expected
+     * to be present.
+     */
     public void canFindCiphers() {
-        Provider provider = ExternalSecurityProviderLoader.getBouncyCastleProvider();
+        final List<Provider> providers = ExternalSecurityProviderLoader.getRankedPreferredProviders();
 
-        for (SupportedCipherDetails cipherDetails : INSTANCE.values()) {
-            String cipherAlgorithm = cipherDetails.getCipherAlgorithm();
-            Cipher cipher = SupportedCipherDetails.findCipher(cipherAlgorithm, provider);
-            Assert.assertNotNull(cipher, "Couldn't find cipher for algorithm: " + cipherDetails);
+        for (Provider provider : providers) {
+            for (SupportedCipherDetails cipherDetails : INSTANCE.values()) {
+                /* Libnss doesn't support accessing GCM, so we are not able to
+                 * use from that provider. */
+                if (provider.getName().equals("SunPKCS11-NSS") && cipherDetails instanceof AesGcmCipherDetails) {
+                    continue;
+                }
 
-            Cipher cipherLowercase = SupportedCipherDetails.findCipher(cipherAlgorithm.toLowerCase(),
-                    provider);
-            Assert.assertNotNull(cipherLowercase, "Couldn't find cipher for algorithm: " + cipherDetails);
+                String cipherAlgorithm = cipherDetails.getCipherAlgorithm();
+                Cipher cipher = SupportedCipherDetails.findCipher(cipherAlgorithm, provider);
+                Assert.assertNotNull(cipher, "Couldn't find cipher for algorithm: " + cipherDetails);
+
+                Cipher cipherLowercase = SupportedCipherDetails.findCipher(cipherAlgorithm.toLowerCase(),
+                        provider);
+                Assert.assertNotNull(cipherLowercase, "Couldn't find cipher for algorithm: " + cipherDetails);
+            }
         }
     }
 }

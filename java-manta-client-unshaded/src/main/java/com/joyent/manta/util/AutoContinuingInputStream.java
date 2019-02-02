@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.util;
 
-import org.apache.commons.io.IOUtils;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +134,7 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() {
         throw new UnsupportedOperationException("mark/reset not supported");
     }
 
@@ -145,14 +145,24 @@ public class AutoContinuingInputStream extends ContinuingInputStream {
 
     @Override
     public void close() throws IOException {
-        IOUtils.closeQuietly(this.continuator);
+        try {
+            if (continuator != null) {
+                continuator.close();
+            }
+        } catch (IOException e) {
+            String msg = "Error closing continuator";
+            throw new MantaResourceCloseException(msg, e);
+        }
 
         final InputStream wrapped = this.getWrapped();
 
-        if (wrapped == null) {
-            return;
+        try {
+            if (wrapped != null) {
+                wrapped.close();
+            }
+        } catch (IOException e) {
+            String msg = "Error closing wrapped InputStream";
+            throw new MantaResourceCloseException(msg, e);
         }
-
-        wrapped.close();
     }
 }

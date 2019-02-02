@@ -175,7 +175,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
             }
         }
 
-        setRequestId(HttpHelper.extractRequestId(response));
+        setRequestId(HttpHelper.extractRequestId(request, response));
         setStatusLine(response.getStatusLine());
 
         if (errorDetail == null) {

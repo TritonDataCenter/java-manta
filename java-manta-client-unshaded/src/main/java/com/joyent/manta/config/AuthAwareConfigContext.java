@@ -50,7 +50,8 @@ public class AuthAwareConfigContext
     }
 
     /**
-     * Build an AuthAwareConfigContext from an existing {@link ConfigContext}.
+     * Build an AuthAwareConfigContext from an existing
+     * {@link com.joyent.manta.config.ConfigContext}.
      *
      * @param config configuration context from which to extract values
      */
@@ -96,6 +97,7 @@ public class AuthAwareConfigContext
      * @param paramsFingerprint identifier for the new AuthContext
      * @return the new {@link AuthContext}
      */
+    @SuppressWarnings("ThreadLocalUsage")
     private AuthContext doLoad(final int paramsFingerprint) {
         if (BooleanUtils.isNotFalse(noAuth())) {
             return null;
@@ -193,7 +195,7 @@ public class AuthAwareConfigContext
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         if (authContext != null) {
             authContext.signer.clearAll();
         }

@@ -27,7 +27,6 @@ import com.joyent.manta.util.AutoContinuingInputStream;
 import com.joyent.manta.util.InputStreamContinuator;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.Pair;

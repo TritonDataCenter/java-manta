@@ -162,6 +162,7 @@ abstract class AbstractMantaEncryptedObjectInputStreamTest {
             throw new ClassCastException("Don't know how to build class: " + klass.getCanonicalName());
         }
 
+        @SuppressWarnings("unchecked")
         public static <T extends ReadBytes> ReadBytes build(final Class<T> klass, final long inputSize) {
             if (ReadPartialBytes.class.isAssignableFrom(klass)) {
                 return partialStrategy((Class<? extends ReadPartialBytes>) klass, inputSize);

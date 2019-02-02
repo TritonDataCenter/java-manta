@@ -13,7 +13,10 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.joyent.manta.http.InstrumentedPoolingHttpClientConnectionManager.*;
+import static com.joyent.manta.http.InstrumentedPoolingHttpClientConnectionManager.METRIC_NAME_CONNECTIONS_AVAILABLE;
+import static com.joyent.manta.http.InstrumentedPoolingHttpClientConnectionManager.METRIC_NAME_CONNECTIONS_LEASED;
+import static com.joyent.manta.http.InstrumentedPoolingHttpClientConnectionManager.METRIC_NAME_CONNECTIONS_MAX;
+import static com.joyent.manta.http.InstrumentedPoolingHttpClientConnectionManager.METRIC_NAME_CONNECTIONS_PENDING;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -39,7 +42,7 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest {
         final int maxConns = 5;
         connManager.setMaxTotal(maxConns);
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         final Map<String, Gauge> gauges = metricRegistry.getGauges();
 
         // pool stats are present

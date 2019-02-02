@@ -20,8 +20,8 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -119,7 +119,7 @@ public class MantaClientFindIT {
             mantaClient.put(file, TEST_DATA, StandardCharsets.UTF_8);
         }
 
-        List<String> allObjects = new LinkedList<>();
+        List<String> allObjects = new ArrayList<>();
         allObjects.addAll(level1Dirs);
         allObjects.addAll(level1Files);
         allObjects.addAll(level2Files);
@@ -266,7 +266,7 @@ public class MantaClientFindIT {
 
         String charsetName = StandardCharsets.UTF_8.name();
 
-        List<String> objects = new LinkedList<>();
+        List<String> objects = new ArrayList<>();
 
         try (Scanner scanner = new Scanner(process.getInputStream(), charsetName)) {
             while (scanner.hasNextLine()) {

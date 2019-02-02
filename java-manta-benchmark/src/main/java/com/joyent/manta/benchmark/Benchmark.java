@@ -15,7 +15,6 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
@@ -390,14 +389,13 @@ public final class Benchmark {
     private static Duration[] measureGet(final String path) throws IOException {
         final Instant start = Instant.now();
         final String serverLatencyString;
-        MantaObjectInputStream is = client.getAsInputStream(path);
 
-        try {
+
+        try (MantaObjectInputStream is = client.getAsInputStream(path)) {
             copyToTheEther(is);
             serverLatencyString = is.getHeader("x-response-time").toString();
-        } finally {
-            IOUtils.closeQuietly(is);
         }
+
         final Instant stop = Instant.now();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));

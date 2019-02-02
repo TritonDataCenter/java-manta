@@ -19,6 +19,7 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.exception.MantaMultipartException;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.ExposedByteArrayEntity;
@@ -317,8 +318,27 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
         put.setEntity(entity);
 
         final CloseableHttpClient httpClient = httpHelper.getConnectionContext().getHttpClient();
-        try (CloseableHttpResponse response = httpClient.execute(put, context)) {
+        final CloseableHttpResponse response;
 
+        try {
+            response = httpClient.execute(put, context);
+        } catch (MantaIOException e) {
+            HttpHelper.annotateContextedException(e, put, null);
+            e.setContextValue("partNumber", partNumber);
+            e.setContextValue("adjustedPartNumber", adjustedPartNumber);
+            e.setContextValue("upload", upload);
+            throw e;
+        } catch (IOException e) {
+            String msg = "Unable to execute multipart upload request";
+            MantaIOException mio = new MantaIOException(msg, e);
+            HttpHelper.annotateContextedException(mio, put, null);
+            mio.setContextValue("partNumber", partNumber);
+            mio.setContextValue("adjustedPartNumber", adjustedPartNumber);
+            mio.setContextValue("upload", upload);
+            throw mio;
+        }
+
+        try {
             validateStatusCode(
                     HttpStatus.SC_NO_CONTENT,
                     response.getStatusLine().getStatusCode(),
@@ -334,10 +354,23 @@ public class ServerSideMultipartManager extends AbstractMultipartManager
                 final MantaMultipartException mme =
                         new MantaMultipartException("ETag missing from part response");
                 HttpHelper.annotateContextedException(mme, put, response);
+                mme.setContextValue("partNumber", partNumber);
+                mme.setContextValue("adjustedPartNumber", adjustedPartNumber);
+                mme.setContextValue("upload", upload);
                 throw mme;
             }
 
             return new MantaMultipartUploadPart(partNumber, upload.getPath(), etagHeader.getValue());
+        } finally {
+            try {
+                if (response != null) {
+                    response.close();
+                }
+            } catch (IOException e) {
+                MantaIOException mio = new MantaResourceCloseException(e);
+                HttpHelper.annotateContextedException(mio, null, response);
+                LOGGER.error("Unable to close HTTP response object", mio);
+            }
         }
     }
 

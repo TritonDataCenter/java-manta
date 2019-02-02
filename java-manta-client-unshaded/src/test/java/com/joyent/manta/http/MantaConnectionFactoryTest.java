@@ -7,8 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.http.signature.Signer;
-import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -46,12 +44,11 @@ public class MantaConnectionFactoryTest {
     private MantaConnectionFactory connectionFactory;
 
     @BeforeMethod
-    public void setUp() throws IOException {
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
         builder.setConnectionManager(manager);
 
         final ImmutablePair<KeyPair, BaseChainedConfigContext> keypairAndConfig = TestConfigContext.generateKeyPairBackedConfig();
-        final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keypairAndConfig.left).providerCode("stdlib"));
         config = keypairAndConfig.right
                 .setMantaURL("https://localhost")
                 .setMantaUser("user");

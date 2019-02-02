@@ -8,10 +8,10 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.exception.MantaClientException;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaConnectionFactory;
 import com.joyent.manta.http.MantaHttpHeaders;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 
@@ -371,7 +371,14 @@ public class MantaSeekableByteChannel extends InputStream
         }
 
         MantaObjectInputStream stream = responseStream.getAndSet(null);
-        IOUtils.closeQuietly(stream);
+        try {
+            if (stream != null) {
+                stream.close();
+            }
+        } catch (IOException e) {
+            String msg = "Problem closing response stream";
+            throw new MantaResourceCloseException(msg, e);
+        }
 
         open = false;
     }

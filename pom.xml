@@ -160,14 +160,14 @@
         <dependency.http-client-signature.version>4.0.9</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.6</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.60</dependency.bouncycastle.version>
-        <dependency.fasterxml-uuid>3.1.4</dependency.fasterxml-uuid>
+        <dependency.fasterxml-uuid>3.1.5</dependency.fasterxml-uuid>
         <dependency.jackson.version>2.9.8</dependency.jackson.version>
         <dependency.jnagmp.version>2.1.0</dependency.jnagmp.version>
         <dependency.urlbuilder.version>2.0.9</dependency.urlbuilder.version>
 
-        <dependency.checkstyle.version>8.16</dependency.checkstyle.version>
+        <dependency.checkstyle.version>8.17</dependency.checkstyle.version>
         <dependency.logback.version>1.2.3</dependency.logback.version>
-        <dependency.mockito.version>2.23.4</dependency.mockito.version>
+        <dependency.mockito.version>2.24.0</dependency.mockito.version>
         <dependency.slfj.version>1.7.25</dependency.slfj.version>
         <dependency.testng.version>6.14.3</dependency.testng.version>
         <dependency.commons-collections.version>4.2</dependency.commons-collections.version>
@@ -180,7 +180,7 @@
         <dependency.objenesis.version>2.6</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.11</dependency.cloning.version>
-        <dependency.picocli.version>1.0.1</dependency.picocli.version>
+        <dependency.picocli.version>2.3.0</dependency.picocli.version>
         <dependency.dropwizard-metrics.version>4.0.5</dependency.dropwizard-metrics.version>
     </properties>
 

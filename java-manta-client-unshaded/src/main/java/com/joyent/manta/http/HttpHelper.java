@@ -316,27 +316,46 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
     /**
      * Extracts the request id from a {@link HttpRequest} object.
      *
+     * @param request HTTP request object
      * @param response HTTP request object
      * @return UUID as a string representing unique request or null if not available
      */
-    static String extractRequestId(final HttpResponse response) {
-        if (response == null) {
-            return null;
+    static String extractRequestId(final HttpRequest request,
+                                   final HttpResponse response) {
+        /* Prefer getting the request id from the response because we can be
+         * assured that the request id was received by the server and could
+         * be correlated in server-side logs. */
+        if (response != null) {
+            final Header responseIdHeader = response.getFirstHeader(REQUEST_ID);
+
+            if (responseIdHeader != null) {
+                return responseIdHeader.getValue();
+            }
         }
 
-        final Header responseIdHeader = response.getFirstHeader(REQUEST_ID);
-        final String requestId;
+        /* If we can't get the request id from the response, then we check to
+         * see what we sent with the request. This has the disadvantage that
+         * sometimes the client generates a request id, but the server never
+         * logs it due to an error somewhere between the client and the server's
+         * request processor.
+         */
+        if (request != null) {
+            final Header requestIdHeader = request.getFirstHeader(REQUEST_ID);
 
-
-        if (responseIdHeader != null) {
-            requestId = responseIdHeader.getValue();
-        } else if (MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING) != null) {
-            requestId = MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
-        } else {
-            requestId = null;
+            if (requestIdHeader != null) {
+                return requestIdHeader.getValue();
+            }
         }
 
-        return requestId;
+        /* Lastly, we try to pull the request id out of the logging MDC
+         * variables. This is a bit expensive and a bit error prone, so it is
+         * an action of last resort.
+         */
+        if (MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING) != null) {
+            return MDC.get(RequestIdInterceptor.MDC_REQUEST_ID_STRING);
+        }
+
+        return null;
     }
 
     /**
@@ -353,7 +372,7 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
         Validate.notNull(exception, "Exception context object must not be null");
 
         if (request != null) {
-            final String requestId = extractRequestId(response);
+            final String requestId = extractRequestId(request, response);
             exception.setContextValue("requestId", requestId);
 
             final String requestDump = reflectionToString(request, SHORT_PREFIX_STYLE);

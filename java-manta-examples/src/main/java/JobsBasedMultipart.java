@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Deprecated
 public class JobsBasedMultipart {
     public static void main(String... args) {
         ConfigContext config = new SystemSettingsConfigContext();
