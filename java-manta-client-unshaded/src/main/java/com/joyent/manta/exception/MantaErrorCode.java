@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -124,6 +124,7 @@ public enum MantaErrorCode {
     EXPECTED_UPGRADE_ERROR("ExpectedUpgrade"),
     /**
      * Known component sources: muskie
+     * This generally indicates a server-side bug
      */
     INTERNAL_ERROR("InternalError"),
     /**
@@ -276,6 +277,11 @@ public enum MantaErrorCode {
      */
     NO_API_SERVERS_AVAILABLE("NoApiServersAvailable"),
     /**
+     * Known component sources: moray
+     * Moray indicates a transient availability error due to request overload.
+     */
+    NO_DATABASE_PEERS_ERROR("NoDatabasePeersError"),
+    /**
      * Known component sources: muskie
      */
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
@@ -285,6 +291,8 @@ public enum MantaErrorCode {
     NOT_ACCEPTABLE_ERROR("NotAcceptable"),
     /**
      * Known component sources: muskie
+     * Manta does not have enough space available on any storage nodes for the
+     * write that was requested.
      */
     NOT_ENOUGH_SPACE_ERROR("NotEnoughSpace"),
     /**
@@ -340,7 +348,13 @@ public enum MantaErrorCode {
      */
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     /**
-     * Known component sources: muskie, muppet, moray.
+     * Known component sources: muskie, muppet, moray. Major Cases are:-
+     * At least one Moray instance is at its maximum queue length and
+     * is refusing new requests.
+     *
+     * There are not enough online storage nodes to handle the upload.
+     *
+     * Muskie did not respond to the request quickly enough.
      */
     SERVICE_UNAVAILABLE_ERROR("ServiceUnavailable"),
     /**
@@ -361,7 +375,7 @@ public enum MantaErrorCode {
      */
     SSL_REQUIRED_MUSKIE_ERROR("SecureTransportRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie, moray.
      */
     THROTTLED_ERROR("ThrottledError"),
     /**
@@ -370,6 +384,8 @@ public enum MantaErrorCode {
     UNIQUE_ATTRIBUTE_ERROR("UniqueAttributeError"),
     /**
      * Known component sources: muskie
+     * This is recorded when a client closes its socket before finishing a request.
+     * Elevated Muskie latency may be the reason.
      */
     UPLOAD_ABANDONED_ERROR("UploadAbandoned"),
     /**
