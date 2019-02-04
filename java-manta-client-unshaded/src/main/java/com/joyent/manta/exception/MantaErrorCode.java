@@ -33,11 +33,11 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings("checkstyle:JavadocVariable")
 public enum MantaErrorCode {
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     ACCOUNT_BLOCKED_ERROR("AccountBlocked"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     ACCOUNT_DOES_NOT_EXIST_ERROR("AccountDoesNotExist"),
     AUTH_SCHEME_ERROR("AuthScheme"),
@@ -51,11 +51,11 @@ public enum MantaErrorCode {
      */
     AUTHORIZATION_MUSKIE_ERROR("AuthorizationFailed"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     AUTHORIZATION_FAILED_ERROR("AuthorizationFailed"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     AUTHORIZATION_REQUIRED_ERROR("AuthorizationRequired"),
     /**
@@ -68,7 +68,7 @@ public enum MantaErrorCode {
     BAD_REQUEST_ERROR("BadRequest"),
     CHECKSUM_ERROR("Checksum"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     CHECKSUM_MUSKIE_ERROR("ContentMD5Mismatch"),
     /**
@@ -81,7 +81,7 @@ public enum MantaErrorCode {
      */
     CONTENT_LENGTH_MUSKIE_ERROR("ContentLengthRequired"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     CONTENT_LENGTH_REQUIRED_ERROR("ContentLengthRequired"),
     /**
@@ -89,12 +89,12 @@ public enum MantaErrorCode {
      */
     CONTENT_MD5_MISMATCH_ERROR("ContentMD5Mismatch"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),
     DIRECTORY_EXISTS_ERROR("DirectoryExists"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     DIRECTORY_LIMIT_ERROR("DirectoryLimitExceeded"),
     /**
@@ -102,12 +102,12 @@ public enum MantaErrorCode {
      */
     DIRECTORY_LIMIT_EXCEEDED_ERROR("DirectoryLimitExceeded"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie, piranha.
      */
     DIRECTORY_NOT_EMPTY_ERROR("DirectoryNotEmpty"),
     DIRECTORY_OPERATION_ERROR("DirectoryOperation"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     DIRECTORY_OPERATION_MUSKIE_ERROR("OperationNotAllowedOnDirectory"),
     ENTITY_EXISTS_ERROR("EntityExists"),
@@ -124,7 +124,7 @@ public enum MantaErrorCode {
      */
     EXPECTED_UPGRADE_ERROR("ExpectedUpgrade"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      * This generally indicates a server-side bug.
      */
     INTERNAL_ERROR("InternalError"),
@@ -137,7 +137,7 @@ public enum MantaErrorCode {
      */
     INVALID_ARGUMENT_ERROR("InvalidArgumentError"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
     INVALID_CREDENTIALS_ERROR("InvalidCredentials"),
@@ -147,7 +147,7 @@ public enum MantaErrorCode {
     INVALID_DURABILITY_LEVEL_ERROR("InvalidDurabilityLevel"),
     INVALID_HEADER_ERROR("InvalidHeader"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_HTTP_AUTH_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     /**
@@ -160,11 +160,15 @@ public enum MantaErrorCode {
     INVALID_JOB_ERROR("InvalidJob"),
     INVALID_JOB_STATE_ERROR("InvalidJobState"),
     /**
+     * Known component sources: piranha.
+     */
+    INVALID_KEY_ERROR("InvalidKey"),
+    /**
      * Known component sources: muskie.
      */
     INVALID_KEY_ID_ERROR("InvalidKeyId"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_LINK_ERROR("InvalidLink"),
     INVALID_LIMIT_ERROR("InvalidLimit"),
@@ -173,7 +177,7 @@ public enum MantaErrorCode {
      */
     INVALID_LIMIT_MUSKIE_ERROR("InvalidArgumentError"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_MAX_CONTENT_LENGTH_ERROR("InvalidMaxContentLength"),
     /**
@@ -181,7 +185,7 @@ public enum MantaErrorCode {
      */
     INVALID_PARAMETER_ERROR("InvalidParameter"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_PATH_ERROR("InvalidResource"),
     /**
@@ -190,15 +194,15 @@ public enum MantaErrorCode {
     INVALID_QUERY_STRING_AUTHENTICATION_ERROR("InvalidQueryStringAuthentication"),
     INVALID_RESOURCE_ERROR("InvalidResource"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_ROLE_ERROR("InvalidRole"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_ROLE_TAG_ERROR("InvalidRoleTag"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     INVALID_SIGNATURE_ERROR("InvalidSignature"),
     /**
@@ -215,21 +219,21 @@ public enum MantaErrorCode {
      */
     JOB_STATE_MUSKIE_ERROR("InvalidJobState"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     KEY_DOES_NOT_EXIST_ERROR("KeyDoesNotExist"),
     LINK_NOT_FOUND_ERROR("LinkNotFound"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     LINK_NOT_FOUND_MUSKIE_ERROR("SourceObjectNotFound"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     LINK_NOT_OBJECT_ERROR("LinkNotObject"),
     LINK_REQUIRED_ERROR("LinkRequired"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     LINK_REQUIRED_MUSKIE_ERROR("LocationRequired"),
     /**
@@ -237,7 +241,7 @@ public enum MantaErrorCode {
      */
     LOCATION_REQUIRED_ERROR("LocationRequired"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     MAX_CONTENT_LENGTH_ERROR("InvalidMaxContentLength"),
     /**
@@ -245,12 +249,12 @@ public enum MantaErrorCode {
      */
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     MAX_SIZE_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     METHOD_NOT_ALLOWED("MethodNotAllowedError"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     MISSING_PERMISSION_ERROR("MissingPermission"),
     /**
@@ -283,7 +287,7 @@ public enum MantaErrorCode {
      */
     NO_DATABASE_PEERS_ERROR("NoDatabasePeersError"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     /**
@@ -291,13 +295,13 @@ public enum MantaErrorCode {
      */
     NOT_ACCEPTABLE_ERROR("NotAcceptable"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      * Manta does not have enough space available on any storage nodes for the
      * write that was requested.
      */
     NOT_ENOUGH_SPACE_ERROR("NotEnoughSpace"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     NOT_IMPLEMENTED_ERROR("NotImplemented"),
     /**
@@ -313,7 +317,7 @@ public enum MantaErrorCode {
      */
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     PARENT_NOT_DIRECTORY_ERROR("ParentNotDirectory"),
     PRECONDITION_FAILED_ERROR("PreconditionFailed"),
@@ -336,7 +340,7 @@ public enum MantaErrorCode {
      */
     REQUESTED_RANGE_NOT_SATISFIABLE_ERROR("RequestedRangeNotSatisfiable"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
     ROOT_DIRECTORY_ERROR("RootDirectory"),
@@ -349,7 +353,7 @@ public enum MantaErrorCode {
      */
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     /**
-     * Known component sources: muskie, muppet, moray. Major Cases are:
+     * Known component sources: muskie, muppet, moray, piranha. Major Cases are:
      * At least one Moray instance is at its maximum queue length and
      * is refusing new requests.
      *
@@ -384,17 +388,17 @@ public enum MantaErrorCode {
      */
     UNIQUE_ATTRIBUTE_ERROR("UniqueAttributeError"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      * This is recorded when a client closes its socket before finishing a request.
      * Elevated Muskie latency may be the reason.
      */
     UPLOAD_ABANDONED_ERROR("UploadAbandoned"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     UPLOAD_TIMEOUT_ERROR("UploadTimeout"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, piranha.
      */
     USER_DOES_NOT_EXIST_ERROR("UserDoesNotExist"),
     USER_TASK_ERROR("UserTaskError"),
