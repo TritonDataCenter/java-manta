@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @see <a href="https://apidocs.joyent.com/manta/api.html#errors">Manta Errors</a>
  * @see <a href="https://github.com/joyent/manta-muskie/blob/master/lib/errors.js">Muskie Errors</a>
+ * @see <a href="https://github.com/joyent/manta-marlin/blob/master/common/lib/errors.js">Marlin Errors</a>
  * @see <a href="https://joyent.github.io/manta-debugging-guide/#_incident_response_decision_tree">Manta Debugging Guide</a>
  * @see <a href="https://joyent.github.io/manta-debugging-guide/#_quick_references">Quick References</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
@@ -37,7 +38,8 @@ public enum MantaErrorCode {
      */
     ACCOUNT_BLOCKED_ERROR("AccountBlocked"),
     /**
-     * Known component sources: muskie, piranha.
+     * Known component sources: muskie, piranha, mahi, sdc-imgapi.
+     * No account exists with the given login
      */
     ACCOUNT_DOES_NOT_EXIST_ERROR("AccountDoesNotExist"),
     AUTH_SCHEME_ERROR("AuthScheme"),
@@ -45,6 +47,9 @@ public enum MantaErrorCode {
      * Known component sources: muskie.
      */
     AUTH_SCHEME_MUSKIE_ERROR("AuthorizationSchemeNotAllowed"),
+    /**
+     * Known component sources: marlin.
+     */
     AUTHORIZATION_ERROR("Authorization"),
     /**
      * Known component sources: muskie.
@@ -63,7 +68,7 @@ public enum MantaErrorCode {
      */
     AUTHORIZATION_SCHEME_NOT_ALLOWED_ERROR("AuthorizationSchemeNotAllowed"),
     /**
-     * Known component sources: muppet.
+     * Known component sources: muppet, mahi, haproxy, sdc-cloudapi.
      */
     BAD_REQUEST_ERROR("BadRequest"),
     CHECKSUM_ERROR("Checksum"),
@@ -92,7 +97,7 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),
-    DIRECTORY_EXISTS_ERROR("DirectoryExists"),
+    DIRECTORY_EXISTS_ERROR("DirectoryExists"), // should be deprecated
     /**
      * Known component sources: muskie, piranha.
      */
@@ -105,18 +110,21 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_NOT_EMPTY_ERROR("DirectoryNotEmpty"),
-    DIRECTORY_OPERATION_ERROR("DirectoryOperation"),
+    DIRECTORY_OPERATION_ERROR("DirectoryOperation"),// should be deprecated
     /**
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_OPERATION_MUSKIE_ERROR("OperationNotAllowedOnDirectory"),
+    /**
+     * If the specified path already exists and is not a directory
+     */
     ENTITY_EXISTS_ERROR("EntityExists"),
     /**
      * Known component sources: muskie.
      */
     ENTITY_EXISTS_MUSKIE_ERROR("EntityAlreadyExists"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, moray, electric-moray.
      */
     ETAG_CONFLICT_ERROR("EtagConflictError"),
     /**
@@ -124,7 +132,7 @@ public enum MantaErrorCode {
      */
     EXPECTED_UPGRADE_ERROR("ExpectedUpgrade"),
     /**
-     * Known component sources: muskie, piranha.
+     * Known component sources: muskie, moray, piranha, marlin.
      * This generally indicates a server-side bug.
      */
     INTERNAL_ERROR("InternalError"),
@@ -133,13 +141,16 @@ public enum MantaErrorCode {
      */
     INVALID_ALGORITHM_ERROR("InvalidAlgorithm"),
     /**
-     * Known component sources: muskie.
+     * Known component sources: muskie, marlin.
      */
     INVALID_ARGUMENT_ERROR("InvalidArgumentError"),
     /**
      * Known component sources: muskie, piranha.
      */
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
+    /**
+     * Known component sources: piranha.
+     */
     INVALID_CREDENTIALS_ERROR("InvalidCredentials"),
     /**
      * Known component sources: muskie.
@@ -209,6 +220,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie.
      */
     INVALID_UPDATE_ERROR("InvalidUpdate"),
+    /**
+     * Known component sources: marlin.
+     */
+    JOB_CANCELLED_ERROR("JobCancelledError"),
     /**
      * Known component sources: muskie.
      */
@@ -340,7 +355,7 @@ public enum MantaErrorCode {
      */
     REQUESTED_RANGE_NOT_SATISFIABLE_ERROR("RequestedRangeNotSatisfiable"),
     /**
-     * Known component sources: muskie, piranha.
+     * Known component sources: muskie, piranha, marlin.
      */
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
     ROOT_DIRECTORY_ERROR("RootDirectory"),
@@ -353,7 +368,7 @@ public enum MantaErrorCode {
      */
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     /**
-     * Known component sources: muskie, muppet, moray, piranha. Major Cases are:
+     * Known component sources: muskie, muppet, moray, marlin, piranha. Major Cases are:
      * At least one Moray instance is at its maximum queue length and
      * is refusing new requests.
      *
@@ -380,6 +395,14 @@ public enum MantaErrorCode {
      */
     SSL_REQUIRED_MUSKIE_ERROR("SecureTransportRequired"),
     /**
+     * Known component sources: marlin.
+     */
+    TASK_INIT_ERROR("TaskInitError"),
+    /**
+     * Known component sources: marlin.
+     */
+    TASK_KILLED_ERROR("TaskKilledError"),
+    /**
      * Known component sources: muskie, moray.
      */
     THROTTLED_ERROR("ThrottledError"),
@@ -401,6 +424,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     USER_DOES_NOT_EXIST_ERROR("UserDoesNotExist"),
+    /**
+     * Known component sources: marlin.
+     * User's script returned a non-zero status or one of its processes dumped core.
+     */
     USER_TASK_ERROR("UserTaskError"),
 
     /**
