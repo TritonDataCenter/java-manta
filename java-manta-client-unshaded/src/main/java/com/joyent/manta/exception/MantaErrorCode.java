@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @see <a href="https://apidocs.joyent.com/manta/api.html#errors">Manta Errors</a>
  * @see <a href="https://github.com/joyent/manta-muskie/blob/master/lib/errors.js">Muskie Errors</a>
  * @see <a href="https://joyent.github.io/manta-debugging-guide/#_incident_response_decision_tree">Manta Debugging Guide</a>
+ * @see <a href="https://joyent.github.io/manta-debugging-guide/#_quick_references">Quick References</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
