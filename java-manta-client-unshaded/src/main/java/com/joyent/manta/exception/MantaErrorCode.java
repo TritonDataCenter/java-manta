@@ -33,72 +33,72 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings("checkstyle:JavadocVariable")
 public enum MantaErrorCode {
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     ACCOUNT_BLOCKED_ERROR("AccountBlocked"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     ACCOUNT_DOES_NOT_EXIST_ERROR("AccountDoesNotExist"),
     AUTH_SCHEME_ERROR("AuthScheme"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     AUTH_SCHEME_MUSKIE_ERROR("AuthorizationSchemeNotAllowed"),
     AUTHORIZATION_ERROR("Authorization"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     AUTHORIZATION_MUSKIE_ERROR("AuthorizationFailed"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     AUTHORIZATION_FAILED_ERROR("AuthorizationFailed"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     AUTHORIZATION_REQUIRED_ERROR("AuthorizationRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     AUTHORIZATION_SCHEME_NOT_ALLOWED_ERROR("AuthorizationSchemeNotAllowed"),
     /**
-     * Known component sources: muppet
+     * Known component sources: muppet.
      */
     BAD_REQUEST_ERROR("BadRequest"),
     CHECKSUM_ERROR("Checksum"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     CHECKSUM_MUSKIE_ERROR("ContentMD5Mismatch"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     CONCURRENT_REQUEST_ERROR("ConcurrentRequest"),
     CONTENT_LENGTH_ERROR("ContentLength"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     CONTENT_LENGTH_MUSKIE_ERROR("ContentLengthRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     CONTENT_LENGTH_REQUIRED_ERROR("ContentLengthRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     CONTENT_MD5_MISMATCH_ERROR("ContentMD5Mismatch"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),
     DIRECTORY_EXISTS_ERROR("DirectoryExists"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     DIRECTORY_LIMIT_ERROR("DirectoryLimitExceeded"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     DIRECTORY_LIMIT_EXCEEDED_ERROR("DirectoryLimitExceeded"),
     /**
@@ -107,249 +107,249 @@ public enum MantaErrorCode {
     DIRECTORY_NOT_EMPTY_ERROR("DirectoryNotEmpty"),
     DIRECTORY_OPERATION_ERROR("DirectoryOperation"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     DIRECTORY_OPERATION_MUSKIE_ERROR("OperationNotAllowedOnDirectory"),
     ENTITY_EXISTS_ERROR("EntityExists"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     ENTITY_EXISTS_MUSKIE_ERROR("EntityAlreadyExists"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     ETAG_CONFLICT_ERROR("EtagConflictError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     EXPECTED_UPGRADE_ERROR("ExpectedUpgrade"),
     /**
-     * Known component sources: muskie
-     * This generally indicates a server-side bug
+     * Known component sources: muskie.
+     * This generally indicates a server-side bug.
      */
     INTERNAL_ERROR("InternalError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_ALGORITHM_ERROR("InvalidAlgorithm"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_ARGUMENT_ERROR("InvalidArgumentError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
     INVALID_CREDENTIALS_ERROR("InvalidCredentials"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_DURABILITY_LEVEL_ERROR("InvalidDurabilityLevel"),
     INVALID_HEADER_ERROR("InvalidHeader"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_HTTP_AUTH_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_HTTP_AUTHENTICATION_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_JOB_ERROR("InvalidJob"),
     INVALID_JOB_STATE_ERROR("InvalidJobState"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_KEY_ID_ERROR("InvalidKeyId"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_LINK_ERROR("InvalidLink"),
     INVALID_LIMIT_ERROR("InvalidLimit"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_LIMIT_MUSKIE_ERROR("InvalidArgumentError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_MAX_CONTENT_LENGTH_ERROR("InvalidMaxContentLength"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_PARAMETER_ERROR("InvalidParameter"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_PATH_ERROR("InvalidResource"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_QUERY_STRING_AUTHENTICATION_ERROR("InvalidQueryStringAuthentication"),
     INVALID_RESOURCE_ERROR("InvalidResource"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_ROLE_ERROR("InvalidRole"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_ROLE_TAG_ERROR("InvalidRoleTag"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_SIGNATURE_ERROR("InvalidSignature"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     INVALID_UPDATE_ERROR("InvalidUpdate"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     JOB_NOT_FOUND_ERROR("JobNotFound"),
     JOB_STATE_ERROR("JobState"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     JOB_STATE_MUSKIE_ERROR("InvalidJobState"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     KEY_DOES_NOT_EXIST_ERROR("KeyDoesNotExist"),
     LINK_NOT_FOUND_ERROR("LinkNotFound"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     LINK_NOT_FOUND_MUSKIE_ERROR("SourceObjectNotFound"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     LINK_NOT_OBJECT_ERROR("LinkNotObject"),
     LINK_REQUIRED_ERROR("LinkRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     LINK_REQUIRED_MUSKIE_ERROR("LocationRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     LOCATION_REQUIRED_ERROR("LocationRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MAX_CONTENT_LENGTH_ERROR("InvalidMaxContentLength"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MAX_SIZE_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     METHOD_NOT_ALLOWED("MethodNotAllowedError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MISSING_PERMISSION_ERROR("MissingPermission"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MULTIPART_UPLOAD_CREATE_ERROR("MultipartUploadInvalidArgument"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MULTIPART_UPLOAD_INVALID_ARGUMENT("MultipartUploadInvalidArgument"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MULTIPART_UPLOAD_INVALID_ARGUMENT_ERROR("MultipartUploadInvalidArgument"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     MULTIPART_UPLOAD_STATE_ERROR("InvalidMultipartUploadState"),
     /**
-     * Known component sources: muppet
+     * Known component sources: muppet.
      */
     NO_API_SERVERS_AVAILABLE("NoApiServersAvailable"),
     /**
-     * Known component sources: moray
+     * Known component sources: moray.
      * Moray indicates a transient availability error due to request overload.
      */
     NO_DATABASE_PEERS_ERROR("NoDatabasePeersError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     NOT_ACCEPTABLE_ERROR("NotAcceptable"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      * Manta does not have enough space available on any storage nodes for the
      * write that was requested.
      */
     NOT_ENOUGH_SPACE_ERROR("NotEnoughSpace"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     NOT_IMPLEMENTED_ERROR("NotImplemented"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     OBJECT_NOT_FOUND_ERROR("ObjectNotFoundError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     OPERATION_NOT_ALLOWED_ON_DIRECTORY_ERROR("OperationNotAllowedOnDirectory"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     PARENT_NOT_DIRECTORY_ERROR("ParentNotDirectory"),
     PRECONDITION_FAILED_ERROR("PreconditionFailed"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     PRECONDITION_FAILED_MUSKIE_ERROR("PreconditionFailedError"),
     PRE_SIGNED_REQUEST_ERROR("PreSignedRequest"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     PRE_SIGNED_REQUEST_MUSKIE_ERROR("InvalidQueryStringAuthentication"),
     REQUEST_ENTITY_TOO_LARGE_ERROR("RequestEntityTooLarge"),
     /**
-     * Known component sources: muskie, muppet
+     * Known component sources: muskie, muppet.
      */
     REQUEST_TIMEOUT_ERROR("RequestTimeout"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     REQUESTED_RANGE_NOT_SATISFIABLE_ERROR("RequestedRangeNotSatisfiable"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
     ROOT_DIRECTORY_ERROR("RootDirectory"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     ROOT_DIRECTORY_MUSKIE_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     /**
-     * Known component sources: muskie, muppet, moray. Major Cases are:-
+     * Known component sources: muskie, muppet, moray. Major Cases are:
      * At least one Moray instance is at its maximum queue length and
      * is refusing new requests.
      *
@@ -363,16 +363,16 @@ public enum MantaErrorCode {
      */
     SHARDS_EXHAUSTED_ERROR("InternalError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     SNAPLINKS_DISABLED_ERROR("SnaplinksDisabledError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     SOURCE_OBJECT_NOT_FOUND_ERROR("SourceObjectNotFound"),
     SSL_REQUIRED_ERROR("SSLRequired"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     SSL_REQUIRED_MUSKIE_ERROR("SecureTransportRequired"),
     /**
@@ -380,21 +380,21 @@ public enum MantaErrorCode {
      */
     THROTTLED_ERROR("ThrottledError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     UNIQUE_ATTRIBUTE_ERROR("UniqueAttributeError"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      * This is recorded when a client closes its socket before finishing a request.
      * Elevated Muskie latency may be the reason.
      */
     UPLOAD_ABANDONED_ERROR("UploadAbandoned"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     UPLOAD_TIMEOUT_ERROR("UploadTimeout"),
     /**
-     * Known component sources: muskie
+     * Known component sources: muskie.
      */
     USER_DOES_NOT_EXIST_ERROR("UserDoesNotExist"),
     USER_TASK_ERROR("UserTaskError"),
