@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @see <a href="https://github.com/joyent/manta-marlin/blob/master/common/lib/errors.js">Marlin Errors</a>
  * @see <a href="https://github.com/joyent/manta-muskie/blob/master/lib/errors.js">Muskie Errors</a>
  * @see <a href="https://github.com/joyent/piranha-storage/blob/master/lib/errors.js">Piranha-Storage Errors</a>
- * @see <a href="https://joyent.github.io/manta-debugging-guide/#_incident_response_decision_tree">Manta Debugging Guide</a>
+ * @see <a href="https://joyent.github.io/manta-debugging-guide">Manta Debugging Guide</a>
  * @see <a href="https://joyent.github.io/manta-debugging-guide/#_quick_references">Quick References</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
@@ -128,7 +128,7 @@ public enum MantaErrorCode {
      */
     DIRECTORY_OPERATION_MUSKIE_ERROR("OperationNotAllowedOnDirectory"),
     /**
-     * If the specified path already exists and is not a directory
+     * If the specified path already exists and is not a directory.
      */
     ENTITY_EXISTS_ERROR("EntityExists"),
     /**
