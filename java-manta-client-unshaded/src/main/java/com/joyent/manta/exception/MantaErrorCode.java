@@ -180,7 +180,7 @@ public enum MantaErrorCode {
     /**
      * Known component sources: muskie.
      */
-    INVALID_HTTP_AInvalidHttpAuthenticationTokeUTHENTICATION_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
+    INVALID_HTTP_AUTHENTICATION_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     /**
      * Known component sources: muskie.
      */
