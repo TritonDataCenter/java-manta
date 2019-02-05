@@ -41,9 +41,12 @@ public enum MantaErrorCode {
     ACCOUNT_BLOCKED_ERROR("AccountBlocked"),
     /**
      * Known component sources: muskie, piranha, mahi, sdc-imgapi.
-     * No account exists with the given login
+     * No account exists with the given login.
      */
     ACCOUNT_DOES_NOT_EXIST_ERROR("AccountDoesNotExist"),
+    /**
+     * Add the latest dependency to your Maven.
+     */
     AUTH_SCHEME_ERROR("AuthScheme"),
     /**
      * Known component sources: muskie.
@@ -66,13 +69,20 @@ public enum MantaErrorCode {
      */
     AUTHORIZATION_REQUIRED_ERROR("AuthorizationRequired"),
     /**
+     * @deprecated since 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #AUTH_SCHEME_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     AUTHORIZATION_SCHEME_NOT_ALLOWED_ERROR("AuthorizationSchemeNotAllowed"),
     /**
      * Known component sources: muppet, mahi, haproxy, sdc-cloudapi.
      */
     BAD_REQUEST_ERROR("BadRequest"),
+    /**
+     * No known server-side code with that name, should be deprecated.
+     * Is rest-code = ChecksumError ?
+     */
     CHECKSUM_ERROR("Checksum"),
     /**
      * Known component sources: muskie, piranha.
@@ -82,18 +92,30 @@ public enum MantaErrorCode {
      * Known component sources: muskie.
      */
     CONCURRENT_REQUEST_ERROR("ConcurrentRequest"),
+    /**
+     * @deprecated 3.3.2
+     * No known server-side code with that name currently.
+     * <p>Deprecated: Use {@link #CONTENT_LENGTH_MUSKIE_ERROR} instead.</p>
+     */
+    @Deprecated
     CONTENT_LENGTH_ERROR("ContentLength"),
     /**
      * Known component sources: muskie.
      */
     CONTENT_LENGTH_MUSKIE_ERROR("ContentLengthRequired"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie, piranha.
+     * <p>Deprecated: Use {@link #CONTENT_LENGTH_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     CONTENT_LENGTH_REQUIRED_ERROR("ContentLengthRequired"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #CHECKSUM_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     CONTENT_MD5_MISMATCH_ERROR("ContentMD5Mismatch"),
     /**
      * Known component sources: mahi.
@@ -104,24 +126,31 @@ public enum MantaErrorCode {
      */
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     DIRECTORY_EXISTS_ERROR("DirectoryExists"),
     /**
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_LIMIT_ERROR("DirectoryLimitExceeded"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #DIRECTORY_LIMIT_ERROR} instead.</p>
      */
+    @Deprecated
     DIRECTORY_LIMIT_EXCEEDED_ERROR("DirectoryLimitExceeded"),
     /**
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_NOT_EMPTY_ERROR("DirectoryNotEmpty"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     DIRECTORY_OPERATION_ERROR("DirectoryOperation"),
     /**
      * Known component sources: muskie, piranha.
@@ -178,8 +207,11 @@ public enum MantaErrorCode {
      */
     INVALID_HTTP_AUTH_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #INVALID_HTTP_AUTH_TOKEN_ERROR} instead.</p>
      */
+    @Deprecated
     INVALID_HTTP_AUTHENTICATION_TOKEN_ERROR("InvalidHttpAuthenticationToken"),
     /**
      * Known component sources: muskie.
@@ -202,8 +234,10 @@ public enum MantaErrorCode {
      */
     INVALID_LINK_ERROR("InvalidLink"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     INVALID_LIMIT_ERROR("InvalidLimit"),
     /**
      * Known component sources: muskie.
@@ -222,12 +256,18 @@ public enum MantaErrorCode {
      */
     INVALID_PATH_ERROR("InvalidResource"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #PRE_SIGNED_REQUEST_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     INVALID_QUERY_STRING_AUTHENTICATION_ERROR("InvalidQueryStringAuthentication"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie, piranha.
+     * <p>Deprecated: Use {@link #INVALID_PATH_ERROR} instead.</p>
      */
+    @Deprecated
     INVALID_RESOURCE_ERROR("InvalidResource"),
     /**
      * Known component sources: muskie, piranha, mahi.
@@ -254,8 +294,10 @@ public enum MantaErrorCode {
      */
     JOB_NOT_FOUND_ERROR("JobNotFound"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     JOB_STATE_ERROR("JobState"),
     /**
      * Known component sources: muskie.
@@ -266,8 +308,10 @@ public enum MantaErrorCode {
      */
     KEY_DOES_NOT_EXIST_ERROR("KeyDoesNotExist"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     LINK_NOT_FOUND_ERROR("LinkNotFound"),
     /**
      * Known component sources: muskie, piranha.
@@ -278,24 +322,32 @@ public enum MantaErrorCode {
      */
     LINK_NOT_OBJECT_ERROR("LinkNotObject"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     LINK_REQUIRED_ERROR("LinkRequired"),
     /**
      * Known component sources: muskie, piranha.
      */
     LINK_REQUIRED_MUSKIE_ERROR("LocationRequired"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #LINK_REQUIRED_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     LOCATION_REQUIRED_ERROR("LocationRequired"),
     /**
      * Known component sources: muskie, piranha.
      */
     MAX_CONTENT_LENGTH_ERROR("InvalidMaxContentLength"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #MAX_SIZE_EXCEEDED_ERROR} instead.</p>
      */
+    @Deprecated
     MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     /**
      * Known component sources: muskie, piranha.
@@ -318,12 +370,17 @@ public enum MantaErrorCode {
      */
     MULTIPART_UPLOAD_INVALID_ARGUMENT("MultipartUploadInvalidArgument"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #MULTIPART_UPLOAD_CREATE_ERROR} instead.</p>
      */
+    @Deprecated
     MULTIPART_UPLOAD_INVALID_ARGUMENT_ERROR("MultipartUploadInvalidArgument"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
      */
+    @Deprecated
     MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"),
     /**
      * Known component sources: muskie.
@@ -365,8 +422,11 @@ public enum MantaErrorCode {
      */
     OPERATION_NOT_ALLOWED_ON_DIRECTORY_ERROR("OperationNotAllowedOnDirectory"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #ROOT_DIRECTORY_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
      * Known component sources: muskie, piranha.
@@ -381,16 +441,20 @@ public enum MantaErrorCode {
      */
     PRECONDITION_FAILED_MUSKIE_ERROR("PreconditionFailedError"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     PRE_SIGNED_REQUEST_ERROR("PreSignedRequest"),
     /**
      * Known component sources: muskie.
      */
     PRE_SIGNED_REQUEST_MUSKIE_ERROR("InvalidQueryStringAuthentication"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     REQUEST_ENTITY_TOO_LARGE_ERROR("RequestEntityTooLarge"),
     /**
      * Known component sources: muskie, muppet, marlin.
@@ -405,8 +469,10 @@ public enum MantaErrorCode {
      */
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
      */
+    @Deprecated
     ROOT_DIRECTORY_ERROR("RootDirectory"),
     /**
      * Known component sources: muskie.
@@ -417,8 +483,11 @@ public enum MantaErrorCode {
      */
     RULES_EVALUATION_FAILED_ERROR("RulesEvaluationFailed"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie.
+     * <p>Deprecated: Use {@link #SSL_REQUIRED_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     /**
      * Known component sources: muskie, muppet, moray, marlin, piranha. Major Cases are:
@@ -439,12 +508,18 @@ public enum MantaErrorCode {
      */
     SNAPLINKS_DISABLED_ERROR("SnaplinksDisabledError"),
     /**
+     * @deprecated 3.3.2
      * Known component sources: muskie, piranha.
+     * <p>Deprecated: Use {@link #LINK_NOT_FOUND_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     SOURCE_OBJECT_NOT_FOUND_ERROR("SourceObjectNotFound"),
     /**
+     * @deprecated 3.3.2
      * No known server-side code with that name, should be deprecated.
+     * <p>Deprecated: Use {@link #SSL_REQUIRED_MUSKIE_ERROR} instead.</p>
      */
+    @Deprecated
     SSL_REQUIRED_ERROR("SSLRequired"),
     /**
      * Known component sources: muskie.
