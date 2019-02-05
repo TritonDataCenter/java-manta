@@ -103,7 +103,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),
-    DIRECTORY_EXISTS_ERROR("DirectoryExists"), // should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    DIRECTORY_EXISTS_ERROR("DirectoryExists"),
     /**
      * Known component sources: muskie, piranha.
      */
@@ -116,7 +119,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     DIRECTORY_NOT_EMPTY_ERROR("DirectoryNotEmpty"),
-    DIRECTORY_OPERATION_ERROR("DirectoryOperation"),// should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    DIRECTORY_OPERATION_ERROR("DirectoryOperation"),
     /**
      * Known component sources: muskie, piranha.
      */
@@ -195,7 +201,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     INVALID_LINK_ERROR("InvalidLink"),
-    INVALID_LIMIT_ERROR("InvalidLimit"),// should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    INVALID_LIMIT_ERROR("InvalidLimit"),
     /**
      * Known component sources: muskie.
      */
@@ -219,7 +228,7 @@ public enum MantaErrorCode {
     /**
      * Known component sources: muskie, piranha.
      */
-    INVALID_RESOURCE_ERROR("InvalidResource"), // should be deprecated
+    INVALID_RESOURCE_ERROR("InvalidResource"),
     /**
      * Known component sources: muskie, piranha, mahi.
      */
@@ -244,7 +253,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie.
      */
     JOB_NOT_FOUND_ERROR("JobNotFound"),
-    JOB_STATE_ERROR("JobState"), // should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    JOB_STATE_ERROR("JobState"),
     /**
      * Known component sources: muskie.
      */
@@ -253,7 +265,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha, mahi.
      */
     KEY_DOES_NOT_EXIST_ERROR("KeyDoesNotExist"),
-    LINK_NOT_FOUND_ERROR("LinkNotFound"),// should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    LINK_NOT_FOUND_ERROR("LinkNotFound"),
     /**
      * Known component sources: muskie, piranha.
      */
@@ -262,7 +277,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha.
      */
     LINK_NOT_OBJECT_ERROR("LinkNotObject"),
-    LINK_REQUIRED_ERROR("LinkRequired"), // should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    LINK_REQUIRED_ERROR("LinkRequired"),
     /**
      * Known component sources: muskie, piranha.
      */
@@ -278,7 +296,7 @@ public enum MantaErrorCode {
     /**
      * Known component sources: muskie.
      */
-    MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),// should be deprecated
+    MAX_CONTENT_LENGTH_EXCEEDED_ERROR("MaxContentLengthExceeded"),
     /**
      * Known component sources: muskie, piranha.
      */
@@ -306,7 +324,7 @@ public enum MantaErrorCode {
     /**
      * Known component sources: muskie.
      */
-    MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"), // should be deprecated
+    MULTIPART_UPLOAD_PART_SIZE("MultipartUploadPartSize"),
     /**
      * Known component sources: muskie.
      */
@@ -362,12 +380,18 @@ public enum MantaErrorCode {
      * Known component sources: muskie, sdc-napi, sdc-cnapi.
      */
     PRECONDITION_FAILED_MUSKIE_ERROR("PreconditionFailedError"),
-    PRE_SIGNED_REQUEST_ERROR("PreSignedRequest"), // should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    PRE_SIGNED_REQUEST_ERROR("PreSignedRequest"),
     /**
      * Known component sources: muskie.
      */
     PRE_SIGNED_REQUEST_MUSKIE_ERROR("InvalidQueryStringAuthentication"),
-    REQUEST_ENTITY_TOO_LARGE_ERROR("RequestEntityTooLarge"), // should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    REQUEST_ENTITY_TOO_LARGE_ERROR("RequestEntityTooLarge"),
     /**
      * Known component sources: muskie, muppet, marlin.
      */
@@ -380,7 +404,10 @@ public enum MantaErrorCode {
      * Known component sources: muskie, piranha, marlin.
      */
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
-    ROOT_DIRECTORY_ERROR("RootDirectory"), // should be deprecated
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    ROOT_DIRECTORY_ERROR("RootDirectory"),
     /**
      * Known component sources: muskie.
      */
@@ -414,8 +441,11 @@ public enum MantaErrorCode {
     /**
      * Known component sources: muskie, piranha.
      */
-    SOURCE_OBJECT_NOT_FOUND_ERROR("SourceObjectNotFound"), // should be deprecated due to redundancy
-    SSL_REQUIRED_ERROR("SSLRequired"), // should be deprecated due to redundancy
+    SOURCE_OBJECT_NOT_FOUND_ERROR("SourceObjectNotFound"),
+    /**
+     * No known server-side code with that name, should be deprecated.
+     */
+    SSL_REQUIRED_ERROR("SSLRequired"),
     /**
      * Known component sources: muskie.
      */
