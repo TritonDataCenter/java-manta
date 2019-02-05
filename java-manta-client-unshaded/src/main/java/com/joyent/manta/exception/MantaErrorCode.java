@@ -93,11 +93,8 @@ public enum MantaErrorCode {
      */
     CONCURRENT_REQUEST_ERROR("ConcurrentRequest"),
     /**
-     * @deprecated 3.3.2
      * No known server-side code with that name currently.
-     * <p>Deprecated: Use {@link #CONTENT_LENGTH_MUSKIE_ERROR} instead.</p>
      */
-    @Deprecated
     CONTENT_LENGTH_ERROR("ContentLength"),
     /**
      * Known component sources: muskie.
@@ -234,10 +231,8 @@ public enum MantaErrorCode {
      */
     INVALID_LINK_ERROR("InvalidLink"),
     /**
-     * @deprecated 3.3.2
-     * No known server-side code with that name, should be deprecated.
+     * No known server-side code with that name.
      */
-    @Deprecated
     INVALID_LIMIT_ERROR("InvalidLimit"),
     /**
      * Known component sources: muskie.
