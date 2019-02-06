@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.3.1] -
+## [3.3.1] - 2019-02-05
 ### Added
  - [Allow for authentication to be disabled in CSE](https://github.com/joyent/java-manta/issues/465)
    Client side encryption HMAC authentication of ciphertext for CTR/CBC ciphers
