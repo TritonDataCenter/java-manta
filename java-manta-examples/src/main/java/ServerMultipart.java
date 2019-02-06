@@ -12,6 +12,8 @@ import com.joyent.manta.config.*;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.exception.ContextedRuntimeException;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -45,7 +47,8 @@ public class ServerMultipart {
     }
 
     private static void multipartUpload(ServerSideMultipartManager multipart) {
-        String uploadObject = "/" + mantaUsername + "/stor/multipart";
+        String uploadObject = SEPARATOR + mantaUsername + SEPARATOR
+                + "stor" + SEPARATOR + "multipart";
 
 
         // We catch network errors and handle them here

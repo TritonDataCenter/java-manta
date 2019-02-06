@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -205,7 +206,7 @@ public class MantaClientSigningIT {
             if (connection.getResponseCode() != 200) {
                 String errorText = IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset());
 
-                if (config.getMantaUser().contains("/")) {
+                if (config.getMantaUser().contains(SEPARATOR)) {
                     String msg = String.format("This fails due to an outstanding bug: MANTA-2839.\n%s",
                             errorText);
                     throw new SkipException(msg);

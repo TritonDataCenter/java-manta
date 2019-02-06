@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.http;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.crypto.AesCbcCipherDetails;
 import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
@@ -33,6 +34,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,7 +75,7 @@ public class EncryptedHttpHelperTest {
 
         boolean caught = false;
         try {
-            URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
+            URI uri = URI.create(DEFAULT_MANTA_URL + SEPARATOR + path);
             HttpGet get = new HttpGet(uri);
             MantaHttpHeaders headers = new MantaHttpHeaders();
             httpHelper.httpRequestAsInputStream(get, headers);
@@ -108,7 +110,7 @@ public class EncryptedHttpHelperTest {
                 new MantaHttpRequestFactory(UnitTestConstants.UNIT_TEST_URL),
                 config);
 
-        URI uri = URI.create(DEFAULT_MANTA_URL + "/" + path);
+        URI uri = URI.create(DEFAULT_MANTA_URL + SEPARATOR + path);
 
         CloseableHttpResponse fakeResponse = mock(CloseableHttpResponse.class);
         StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,

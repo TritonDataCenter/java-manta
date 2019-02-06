@@ -42,6 +42,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 /**
@@ -389,7 +390,7 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
-        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + SEPARATOR;
         mantaClient.putDirectory(newDir);
         final String newPath = newDir + "this-is-a-new-name.txt";
 
@@ -403,7 +404,7 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
-        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + SEPARATOR;
 
         final String newPath = newDir + "this-is-a-new-name.txt";
 
@@ -417,7 +418,7 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.put(path, TEST_DATA);
-        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + SEPARATOR;
 
         final String newPath = newDir + "this-is-a-new-name.txt";
 
@@ -441,7 +442,7 @@ public class MantaClientIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         mantaClient.putDirectory(path);
-        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + "/";
+        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + SEPARATOR;
 
         mantaClient.move(path, newDir);
         boolean newLocationExists = mantaClient.existsAndIsAccessible(newDir);
@@ -507,7 +508,7 @@ public class MantaClientIT {
     public final void canMoveDirectoryWithContents() throws IOException {
         final String name = "source-" + UUID.randomUUID().toString();
         final String source = testPathPrefix + name + MantaClient.SEPARATOR;
-        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "/";
+        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + SEPARATOR;
         moveDirectoryWithContents(source, destination);
     }
 
@@ -515,7 +516,7 @@ public class MantaClientIT {
     public final void canMoveDirectoryWithContentsAndErrorProneCharacters() throws IOException {
         final String name = "source-" + UUID.randomUUID().toString() + "- -!@#$%^&*()";
         final String source = testPathPrefix + name + MantaClient.SEPARATOR;
-        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "- -!@#$%^&*" + "/";
+        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + "- -!@#$%^&*" + SEPARATOR;
         moveDirectoryWithContents(source, destination);
     }
 
@@ -527,7 +528,7 @@ public class MantaClientIT {
 
         mantaClient.put(String.format("%s/%s", pathPrefix, UUID.randomUUID()), "");
         mantaClient.put(String.format("%s/%s", pathPrefix, UUID.randomUUID()), "");
-        final String subDir = pathPrefix + "/" + UUID.randomUUID().toString();
+        final String subDir = pathPrefix + SEPARATOR + UUID.randomUUID().toString();
         mantaClient.putDirectory(subDir, null);
         mantaClient.put(String.format("%s/%s", subDir, UUID.randomUUID()), "");
         final Stream<MantaObject> objs = mantaClient.listObjects(pathPrefix);

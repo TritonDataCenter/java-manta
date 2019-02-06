@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.bouncycastle.crypto.macs.HMac;
 
@@ -195,7 +196,7 @@ public interface SupportedCipherDetails {
                     + "[%s] provider", cipherName, provider.getName());
             throw new MantaClientEncryptionException(msg, e);
         } catch (NoSuchPaddingException e) {
-            String[] split = cipherName.split("/");
+            String[] split = cipherName.split(MantaClient.SEPARATOR);
             if (split.length >= 3) {
                 String padding = split[2];
                 String msg = String.format("Invalid padding mode specified: %s",

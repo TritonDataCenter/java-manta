@@ -40,7 +40,7 @@ public class ClientEncryptionMetadata {
                 .setEncryptionPrivateKeyBytes(Base64.getDecoder().decode("RkZGRkZGRkJEOTY3ODNDNkM5MUUyMjIyMTExMTIyMjI="));
 
         try (MantaClient client = new MantaClient(config)) {
-            String mantaPath = "/" + mantaUserName + "/stor/meta";
+            String mantaPath = MantaClient.SEPARATOR + mantaUserName + "/stor/meta";
 
             MantaMetadata metadata = new MantaMetadata();
             metadata.put("e-secretkey", "My Secret Value");
