@@ -26,7 +26,7 @@ public class ClientEncryptionDownloadException {
         String mantaUserName = "USERNAME";
         String privateKeyPath = "PATH/.ssh/id_rsa";
         String publicKeyId = "04:92:7b:23:bc:08:4f:d7:3b:5a:38:9e:4a:17:2e:df";
-        String mantaPath = "/" + mantaUserName + "/stor/foo";
+        String mantaPath = MantaClient.SEPARATOR + mantaUserName + "/stor/foo";
 
         ConfigContext uploadConfig = new ChainedConfigContext(
                 new DefaultsConfigContext(),

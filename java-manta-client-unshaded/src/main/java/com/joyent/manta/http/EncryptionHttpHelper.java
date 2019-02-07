@@ -282,7 +282,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         /* Errors when we attempt to do an HTTP range request when authentication
          * mode is set to Mandatory because HTTP range requests will only work
-         * with authentication disabled. When you do a range request, it gets
+         * with authentication in verification disabled mode. When you do a range request, it gets
          * arbitrary bytes from the ciphertext of the source object which means
          * that you will not be able to verify the ciphertext using the HMAC
          * because you don't have all of the bytes available. */
@@ -379,9 +379,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     secretKey, false, initialSkipBytes, plaintextRangeLength, unboundedEnd);
         } else {
             /* We skip authentication on the ciphertext only when it is explicitly
-             * disabled. For the Mandatory and Optional modes, it is enabled. */
+             * in verification disabled mode. For the Mandatory and Optional modes, it is enabled. */
             final boolean authenticateCiphertext =
-                    !encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.Disabled);
+                    !encryptionAuthenticationMode.equals(EncryptionAuthenticationMode.VerificationDisabled);
             return new MantaEncryptedObjectInputStream(rawStream, this.cipherDetails,
                     secretKey, authenticateCiphertext);
         }

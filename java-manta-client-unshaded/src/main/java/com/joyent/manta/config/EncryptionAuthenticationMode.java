@@ -29,10 +29,10 @@ public enum EncryptionAuthenticationMode {
     Mandatory,
 
     /**
-     * Disabled mode will disable ciphertext verification upon decryption.
+     * VerificationDisabled mode will disable ciphertext verification upon decryption.
      * HMACs will still be created when encrypting.
      */
-    Disabled;
+    VerificationDisabled;
 
     /**
      * The default encryption object authentication mode (Mandatory).

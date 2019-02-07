@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.UUID;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
+
 
 /**
  * {@link ConfigContext} implementation that loads
@@ -123,7 +125,7 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
 
 
     public static String generateBasePath(final ConfigContext config, final String testBaseName) {
-        return generateSuiteBasePath(config) + testBaseName + "/";
+        return generateSuiteBasePath(config) + testBaseName + SEPARATOR;
     }
 
     public static void cleanupTestDirectory(final MantaClient mantaClient, final String testPathPrefix) throws IOException {

@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
@@ -36,7 +37,7 @@ public class MantaClientTest {
         final MantaClient clientSpy = spy(client);
         doReturn(iteratorMock).when(clientSpy).streamingIterator(anyString());
 
-        final Stream<MantaObject> listing = clientSpy.listObjects("/");
+        final Stream<MantaObject> listing = clientSpy.listObjects(SEPARATOR);
         listing.close();
 
         verify(iteratorMock).close();
@@ -52,7 +53,7 @@ public class MantaClientTest {
         final MantaClient clientSpy = spy(client);
         doReturn(iteratorMock).when(clientSpy).streamingIterator(anyString());
 
-        final Stream<MantaObject> listing = clientSpy.listObjects("/");
+        final Stream<MantaObject> listing = clientSpy.listObjects(SEPARATOR);
         listing.close();
 
         verify(iteratorMock).close();

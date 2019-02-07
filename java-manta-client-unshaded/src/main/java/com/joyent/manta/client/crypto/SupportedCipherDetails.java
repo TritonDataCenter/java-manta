@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client.crypto;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.exception.MantaClientEncryptionException;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.crypto.macs.HMac;
@@ -196,7 +197,7 @@ public interface SupportedCipherDetails {
                     + "[%s] provider", cipherName, provider.getName());
             throw new MantaClientEncryptionException(msg, e);
         } catch (NoSuchPaddingException e) {
-            final String[] split = StringUtils.split(cipherName, "/", 3);
+            final String[] split = StringUtils.split(cipherName, MantaClient.SEPARATOR, 3);
 
             if (split.length >= 3) {
                 String padding = split[2];
