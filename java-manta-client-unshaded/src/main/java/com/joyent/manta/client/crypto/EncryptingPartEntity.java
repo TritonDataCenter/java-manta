@@ -20,7 +20,6 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -135,12 +134,17 @@ public class EncryptingPartEntity implements HttpEntity {
 
         try {
             IOUtils.copy(contentStream, cout, BUFFER_SIZE);
-            cipherStream.flush();
-            if (lastPartCallback != null) {
-                ByteArrayOutputStream remainderStream = lastPartCallback.call(cout.getByteCount());
+
+            if (lastPartCallback == null) {
+                cout.flush();
+            } else {
+                final long bytesWritten = cout.getByteCount();
+                // This call will close cout/cipherStream
+                final ByteArrayOutputStream remainderStream = lastPartCallback.call(bytesWritten);
+
                 if (remainderStream.size() > 0) {
-                    // Don't use stream
-                    IOUtils.copy(new ByteArrayInputStream(remainderStream.toByteArray()), httpOut, BUFFER_SIZE);
+                    final byte[] remainder = remainderStream.toByteArray();
+                    httpOut.write(remainder);
                 }
             }
         } catch (Exception e) {
