@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -213,8 +215,9 @@ public final class Benchmark {
 
         final long testEnd = System.nanoTime();
 
-        final long fullAverage = Math.round(fullAggregation / iterations);
-        final long serverAverage = Math.round(serverAggregation / iterations);
+        final long fullAverage = new BigDecimal(fullAggregation)
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
+        final long serverAverage = new BigDecimal(serverAggregation).divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
         final long totalTime = testEnd - testStart;
 
         System.out.printf("Average full latency: %d ms\n", fullAverage);
@@ -315,8 +318,10 @@ public final class Benchmark {
 
         final long testEnd = System.nanoTime();
 
-        final long fullAverage = Math.round(fullAggregation.get() / iterations);
-        final long serverAverage = Math.round(serverAggregation.get() / iterations);
+        final long fullAverage = new BigDecimal(fullAggregation.get())
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
+        final long serverAverage = new BigDecimal(serverAggregation.get())
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
         final long totalTime = Duration.ofNanos(testEnd - testStart).toMillis();
 
         System.out.printf("Average full latency: %d ms\n", fullAverage);
