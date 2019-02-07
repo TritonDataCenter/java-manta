@@ -7,10 +7,10 @@
  */
 package com.joyent.manta.client.multipart;
 
+import javax.crypto.Cipher;
 import java.io.OutputStream;
 import java.util.Objects;
 import java.util.UUID;
-import javax.crypto.Cipher;
 
 /**
  * This class holds references to clones of stateful objects used in streaming encryption operations.
@@ -101,7 +101,7 @@ class EncryptionStateSnapshot {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof EncryptionStateSnapshot)) {
             return false;
         }
 

@@ -127,7 +127,7 @@ public class ErrorDetail implements Entity {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof ErrorDetail)) {
             return false;
         }
 

@@ -53,7 +53,7 @@ public abstract class AbstractMultipartUpload implements MantaMultipartUpload {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof AbstractMultipartUpload)) {
             return false;
         }
 

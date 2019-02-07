@@ -609,7 +609,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * @return {@code "Content-MD5"} header value as a {@code java.lang.String} value
      */
     public String getContentMD5() {
-        return getMultipleValuesAsString((HttpHeaders.CONTENT_MD5));
+        return getMultipleValuesAsString(HttpHeaders.CONTENT_MD5);
     }
 
     /**
@@ -1488,9 +1488,10 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof MantaHttpHeaders)) {
             return false;
         }
+
         MantaHttpHeaders headers = (MantaHttpHeaders) o;
         return Objects.equals(
                 wrappedHeaders,

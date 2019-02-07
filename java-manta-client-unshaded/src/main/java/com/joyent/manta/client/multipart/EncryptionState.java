@@ -172,7 +172,7 @@ public class EncryptionState {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof EncryptionState)) {
             return false;
         }
 

@@ -89,7 +89,7 @@ class PlaintextByteRangePosition {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof PlaintextByteRangePosition)) {
             return false;
         }
 

@@ -281,7 +281,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof AbstractAesCipherDetails)) {
             return false;
         }
 

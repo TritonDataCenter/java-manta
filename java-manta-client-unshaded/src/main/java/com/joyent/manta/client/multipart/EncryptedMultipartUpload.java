@@ -113,7 +113,7 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof EncryptedMultipartUpload)) {
             return false;
         }
 
