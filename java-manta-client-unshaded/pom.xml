@@ -156,9 +156,19 @@
             <groupId>uk.com.robust-it</groupId>
             <artifactId>cloning</artifactId>
             <version>${dependency.cloning.version}</version>
+            <exclusions>
+                <!-- all uk.com.robust-it:cloning unit tests passed when bumping
+                     the objenesis dependency to 3.0.1 - see:
+                     https://github.com/kostaskougios/cloning/pull/81 -->
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
-        <!-- object instantiation library, needed by uk.com.robust-it:cloning and the kryo module -->
+        <!-- object instantiation library, needed by uk.com.robust-it:cloning
+             and the kryo module  -->
         <dependency>
             <groupId>org.objenesis</groupId>
             <artifactId>objenesis</artifactId>
