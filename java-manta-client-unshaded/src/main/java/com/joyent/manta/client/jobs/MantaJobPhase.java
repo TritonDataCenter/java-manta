@@ -202,7 +202,7 @@ public class MantaJobPhase {
         if (this == other) {
             return true;
         }
-        if (other == null || getClass() != other.getClass()) {
+        if (!(other instanceof MantaJobPhase)) {
             return false;
         }
         MantaJobPhase that = (MantaJobPhase) other;

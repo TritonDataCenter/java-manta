@@ -172,8 +172,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
     @Override
     public boolean equals(final Object object) {
-        return getClass().equals(object.getClass())
-                && innerMap.equals(object);
+        return (object instanceof Map) && innerMap.equals(object);
     }
 
     @Override

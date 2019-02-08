@@ -266,9 +266,14 @@ public class EncryptionStateRecorderTest {
         );
 
         final ByteArrayOutputStream lastOutput = new ByteArrayOutputStream();
+
         state.getLock().lock();
-        lastEntity.writeTo(lastOutput);
-        state.getLock().unlock();
+
+        try {
+            lastEntity.writeTo(lastOutput);
+        } finally {
+            state.getLock().unlock();
+        }
 
         return lastOutput.toByteArray();
     }

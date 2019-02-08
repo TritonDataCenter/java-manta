@@ -16,6 +16,7 @@ import java.util.List;
 
 import static com.joyent.manta.client.crypto.SupportedCiphersLookupMap.INSTANCE;
 
+@SuppressWarnings("BadImport")
 @Test
 public class SupportedCiphersLookupMapTest {
 

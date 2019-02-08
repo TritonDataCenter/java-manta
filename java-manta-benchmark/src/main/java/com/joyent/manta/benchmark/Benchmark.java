@@ -217,7 +217,8 @@ public final class Benchmark {
 
         final long fullAverage = new BigDecimal(fullAggregation)
                 .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
-        final long serverAverage = new BigDecimal(serverAggregation).divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
+        final long serverAverage = new BigDecimal(serverAggregation)
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
         final long totalTime = testEnd - testStart;
 
         System.out.printf("Average full latency: %d ms\n", fullAverage);

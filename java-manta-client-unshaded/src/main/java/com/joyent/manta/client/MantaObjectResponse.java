@@ -334,33 +334,36 @@ public class MantaObjectResponse implements MantaObject {
     }
 
     @Override
-    @SuppressWarnings("checkstyle:designforextension")
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof MantaObject)) {
+        if (o instanceof MantaObjectResponse) {
+            MantaObjectResponse that = (MantaObjectResponse)o;
+            return Objects.equals(path, that.path)
+                    && Objects.equals(getContentLength(), that.getContentLength())
+                    && Objects.equals(getContentType(), that.getContentType())
+                    && Objects.equals(getEtag(), that.getEtag())
+                    && Objects.equals(getMtime(), that.getMtime())
+                    && Objects.equals(httpHeaders, that.httpHeaders);
+        } else if (o instanceof MantaObject) {
+            MantaObject that = (MantaObject)o;
+            return Objects.equals(getContentLength(), that.getContentLength())
+                    && Objects.equals(getContentType(), that.getContentType())
+                    && Objects.equals(getEtag(), that.getEtag())
+                    && Objects.equals(getMtime(), that.getMtime());
+        } else {
             return false;
         }
-        MantaObjectResponse that = (MantaObjectResponse)o;
-        return Objects.equals(path, that.path)
-                && Objects.equals(getContentLength(), that.getContentLength())
-                && Objects.equals(getContentType(), that.getContentType())
-                && Objects.equals(getEtag(), that.getEtag())
-                && Objects.equals(getMtime(), that.getMtime())
-                && Objects.equals(httpHeaders, that.httpHeaders);
     }
 
     @Override
-    @SuppressWarnings("checkstyle:designforextension")
     public int hashCode() {
         return Objects.hash(
-                path,
                 getContentLength(),
                 getContentType(),
                 getEtag(),
-                getMtime(),
-                httpHeaders);
+                getMtime());
     }
 
     @Override

@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@SuppressWarnings("ModifiedButNotUsed") // Errorprone is confused by these tests
 public class MantaMetadataTest {
     @Test
     public void canAddMetadataKeyValue() {

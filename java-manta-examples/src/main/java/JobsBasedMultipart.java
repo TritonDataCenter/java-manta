@@ -57,7 +57,8 @@ public class JobsBasedMultipart {
         // We catch network errors and handle them here
         try {
             // We get a response object
-            JobsMultipartUpload upload = multipart.initiateUpload(uploadObject);
+            JobsMultipartUpload upload = multipart.initiateUpload(uploadObject,
+                    metadata, headers);
 
             // It contains a UUID transaction id
             UUID id = upload.getId();

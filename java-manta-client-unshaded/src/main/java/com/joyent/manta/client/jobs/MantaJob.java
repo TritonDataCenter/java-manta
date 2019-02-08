@@ -243,7 +243,7 @@ public class MantaJob {
             return true;
         }
 
-        if (that == null || getClass() != that.getClass()) {
+        if (!(that instanceof MantaJob)) {
             return false;
         }
 

@@ -906,7 +906,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             return true;
         }
 
-        if (other == null || getClass() != other.getClass()) {
+        if (!(other instanceof BaseChainedConfigContext)) {
             return false;
         }
 

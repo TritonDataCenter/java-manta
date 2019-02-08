@@ -83,7 +83,7 @@ public class MantaMultipartUploadTuple implements Serializable,
             return true;
         }
 
-        if (that == null || getClass() != that.getClass()) {
+        if (!(that instanceof MantaMultipartUploadTuple)) {
             return false;
         }
 

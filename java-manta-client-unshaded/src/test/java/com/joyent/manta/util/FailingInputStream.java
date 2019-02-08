@@ -109,7 +109,7 @@ public class FailingInputStream extends InputStream {
     }
 
     private void preReadFailure(final int willRead) throws IOException {
-        if (PRE_READ != (this.failureOrder)) {
+        if (PRE_READ != this.failureOrder) {
             return;
         }
 
@@ -117,7 +117,7 @@ public class FailingInputStream extends InputStream {
     }
 
     private void postReadFailure() throws IOException {
-        if (POST_READ != (this.failureOrder)) {
+        if (POST_READ != this.failureOrder) {
             return;
         }
 
