@@ -56,6 +56,7 @@ public class MantaObjectDepthComparatorTest {
         assertOrdering(objects);
     }
 
+    @Test(enabled = false) // This test uses too much heap for TravisCI
     public void verifyOrderingWithMoreSubdirectoriesDataSet() {
         List<MantaObject> objects = new ArrayList<>();
         List<MantaObject> dirs = dirObjects(29);
