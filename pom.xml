@@ -179,7 +179,7 @@
         <dependency.kryo.version>4.0.2</dependency.kryo.version>
         <dependency.objenesis.version>3.0.1</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
-        <dependency.cloning.version>1.9.11</dependency.cloning.version>
+        <dependency.cloning.version>1.9.12</dependency.cloning.version>
         <dependency.picocli.version>3.9.3</dependency.picocli.version>
         <dependency.dropwizard-metrics.version>4.0.5</dependency.dropwizard-metrics.version>
     </properties>
