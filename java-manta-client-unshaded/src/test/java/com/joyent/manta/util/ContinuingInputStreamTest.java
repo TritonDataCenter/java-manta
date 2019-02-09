@@ -364,7 +364,7 @@ public class ContinuingInputStreamTest {
         paramList.add(params);
     }
 
-    public void testAvailableCanAlsoThrow() throws IOException {
+    public void testAvailableCanAlsoThrow() {
         final ContinuingInputStream cis = new ContinuingInputStream(new BrokenInputStream());
 
         assertThrows(IOException.class, () -> cis.available());

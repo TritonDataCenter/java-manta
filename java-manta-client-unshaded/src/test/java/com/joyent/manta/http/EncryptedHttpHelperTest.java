@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.crypto.AesCbcCipherDetails;
 import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.SecretKeyUtils;

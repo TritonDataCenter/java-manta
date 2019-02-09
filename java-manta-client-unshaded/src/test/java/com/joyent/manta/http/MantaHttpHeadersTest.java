@@ -58,7 +58,7 @@ public class MantaHttpHeadersTest {
         Assert.assertEquals(headers.getRequestId(), DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.get("X-Response-Time"), DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.get("X-Server-Name"), DIR_LIST_HEADERS[i++].getValue());
-        Assert.assertEquals(headers.get(HttpHeaders.CONNECTION), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(headers.get(HttpHeaders.CONNECTION), DIR_LIST_HEADERS[i].getValue());
     }
 
     public void canExportApacheHeaders() {

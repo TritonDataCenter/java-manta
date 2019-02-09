@@ -113,8 +113,6 @@ public class MantaClientConnectionFailuresIT {
 
     /**
      * Test is disabled in testng.xml, the MantaClient constructor needs to be revisted.
-     *
-     * @throws IOException
      */
     @Test(enabled = false)
     public void canRetryOnNoHttpResponseException() throws IOException {

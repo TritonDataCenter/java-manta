@@ -24,6 +24,8 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,8 +37,6 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Stream;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 @CommandLine.Command(name = "java-manta-cli", sortOptions = false,
         header = {
@@ -82,7 +82,7 @@ public final class MantaCLI {
         final CommandLine application = new CommandLine(new MantaCLI());
         application.registerConverter(Path.class, Paths::get);
 
-        List<CommandLine> parsedCommands = null;
+        List<CommandLine> parsedCommands;
         try {
             parsedCommands = application.parse(args);
         } catch (CommandLine.ParameterException ex) {
@@ -90,7 +90,7 @@ public final class MantaCLI {
             CommandLine.usage(new MantaCLI(), System.err);
             return;
         }
-        MantaCLI cli = (MantaCLI) parsedCommands.get(0).getCommand();
+        MantaCLI cli = parsedCommands.get(0).getCommand();
         if (cli.isHelpRequested) {
             application.usage(System.out);
             return;

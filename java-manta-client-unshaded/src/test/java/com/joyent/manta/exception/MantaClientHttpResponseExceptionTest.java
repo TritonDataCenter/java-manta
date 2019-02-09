@@ -34,9 +34,9 @@ import static org.mockito.Mockito.when;
  * Unit test that verifies that exception class can handle JSON correctly.
  */
 @Test
-@SuppressWarnings("DeadException")
+@SuppressWarnings({"DeadException", "ThrowableNotThrown"})
 public class MantaClientHttpResponseExceptionTest {
-    public void canHandleJson() throws Exception {
+    public void canHandleJson() {
         final String jsonResponse = "{ \"code\":\"InternalError\", \"message\":\"Unit test message.\"}";
 
         final HttpRequest request = request();

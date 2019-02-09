@@ -100,7 +100,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorTest {
                         CONTENT_RANGE, singleValueHeaderList(CONTENT_RANGE, STUB_CONTENT_RANGE.render())));
 
         ApacheHttpGetResponseEntityContentContinuator continuator;
-        HttpDownloadContinuationMarker marker = null;
+        HttpDownloadContinuationMarker marker;
         try {
             marker = HttpDownloadContinuationMarker.validateInitialExchange(
                     extractDownloadRequestFingerprint(req),
