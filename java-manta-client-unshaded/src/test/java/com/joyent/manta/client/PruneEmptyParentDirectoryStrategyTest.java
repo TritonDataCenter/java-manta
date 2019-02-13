@@ -162,6 +162,31 @@ public class PruneEmptyParentDirectoryStrategyTest {
         Mockito.verifyNoMoreInteractions(clientSpy);
     }
 
+    public void canPruneEmptyDirectoriesWithLimitThree() throws IOException {
+        final MantaClient clientSpy = spy(client);
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        final String path = "/user/stor/dir1/dir2/dir3/object.txt";
+        final int limit = 3;
+
+        // Prevent the client from actually calling out to a real Manta
+        Mockito.doNothing().when(clientSpy)
+                .delete(startsWith("/user/stor"), any(MantaHttpHeaders.class), isNull());
+
+        pruneParentDirectories(clientSpy, headers, path, limit);
+
+        Mockito.verify(clientSpy, times(1))
+                .delete(path, headers, null);
+        Mockito.verify(clientSpy, times(1))
+                .delete("/user/stor/dir1/dir2/dir3", headers, null);
+        Mockito.verify(clientSpy, times(1))
+                .delete("/user/stor/dir1/dir2", headers, null);
+        Mockito.verify(clientSpy, times(1))
+                .delete("/user/stor/dir1", headers, null);
+
+        // Verify that is the only call that we made
+        Mockito.verifyNoMoreInteractions(clientSpy);
+    }
+
     public void canPruneEmptyDirectoriesWithLimitFour() throws IOException {
         final MantaClient clientSpy = spy(client);
         final MantaHttpHeaders headers = new MantaHttpHeaders();
