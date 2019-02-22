@@ -10,6 +10,7 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
@@ -20,9 +21,8 @@ import com.joyent.test.util.FailingInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.http.entity.ContentType;
 import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.SkipException;
@@ -50,10 +50,8 @@ import static org.testng.Assert.assertTrue;
 @Test(groups = { "encrypted" })
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerIT {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerIT.class);
-
     private MantaClient mantaClient;
+
     private EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
@@ -281,7 +279,10 @@ public class EncryptedServerSideMultipartManagerIT {
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
 
-        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, null, headers);
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put("e-encrypted-test-string", "This is a test");
+
+        EncryptedMultipartUpload<ServerSideMultipartUpload> upload = multipart.initiateUpload(path, metadata, headers);
         MantaMultipartUploadPart part1 = multipart.uploadPart(upload, 1, content1);
         MantaMultipartUploadPart part2 = multipart.uploadPart(upload, 2, content2);
 
@@ -296,8 +297,18 @@ public class EncryptedServerSideMultipartManagerIT {
             AssertJUnit.assertArrayEquals("Uploaded multipart data doesn't equal actual object data",
                     content, out.toByteArray());
 
+            Assert.assertEquals(in.getMetadata().get("e-encrypted-test-string"), "This is a test",
+                    "Uploaded encrypted metadata can't be read");
+
             Assert.assertEquals(in.getContentType(), contentType,
                     "Set content-type doesn't match actual content type");
+        }
+
+        try (MantaClient unencryptedClient = new MantaClient(new IntegrationTestConfigContext(false))) {
+            MantaObjectResponse unencryptedResponse = unencryptedClient.head(path);
+            Assert.assertEquals(unencryptedResponse.getContentType(),
+                    ContentType.APPLICATION_OCTET_STREAM.toString(),
+                    "Plaintext content type was leaked");
         }
     }
 
