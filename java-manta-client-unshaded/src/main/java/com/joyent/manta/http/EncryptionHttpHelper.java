@@ -40,6 +40,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.bouncycastle.crypto.macs.HMac;
@@ -83,6 +84,12 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Maximum size of metadata ciphertext in bytes.
      */
     private static final int MAX_METADATA_CIPHERTEXT_BASE64_SIZE = 4_000;
+
+    /**
+     * Content-type to send to Manta for ciphertext objects.
+     */
+    private static final String CIPHERTEXT_CONTENT_TYPE =
+            ContentType.APPLICATION_OCTET_STREAM.toString();
 
     /**
      * The unique identifier of the key used for encryption.
@@ -236,6 +243,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
             metadata.put(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE, contentType);
         }
 
+        // Force all objects stored in ciphertext to use the same content type
+        httpHeaders.put(HttpHeaders.CONTENT_TYPE, CIPHERTEXT_CONTENT_TYPE);
+
         // Insert all of the headers needed for identifying the ciphers and HMACs used to encrypt
         attachEncryptionCipherHeaders(metadata);
         // Insert all of the headers and metadata needed for describing the encrypted entity
@@ -355,6 +365,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     encryptionType, metadataIvBase64, metadataCiphertextBase64,
                     hmacId, metadataHmacBase64, request, response);
             rawStream.getMetadata().putAll(encryptedMetadata);
+
+            /* Overwrite the content-type returned by Manta with the encrypted
+             * content type of the original file. */
+            final String encryptedContentType = encryptedMetadata.get(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE);
+            if (encryptedContentType != null) {
+                rawStream.getHttpHeaders().put(HttpHeaders.CONTENT_TYPE, encryptedContentType);
+            }
         }
 
         if (hasRangeRequest) {
@@ -801,11 +818,9 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      *
      * @param metadata Manta metadata object
      * @param cipher cipher used to encrypt the object and metadata
-     * @throws IOException thrown when unable to append metadata
      */
     public void attachEncryptedEntityHeaders(final MantaMetadata metadata,
-                                             final Cipher cipher)
-            throws IOException {
+                                             final Cipher cipher) {
         Validate.notNull(metadata, "Metadata object must not be null");
         Validate.notNull(cipher, "Cipher object must not be null");
 
@@ -869,8 +884,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * @param metadata metadata to append additional values to
      * @throws IOException thrown when there is a problem attaching metadata
      */
-    public void attachEncryptedMetadata(final MantaMetadata metadata)
-        throws IOException {
+    public void attachEncryptedMetadata(final MantaMetadata metadata) {
 
         // Create and add encrypted metadata
         Cipher metadataCipher = buildMetadataEncryptCipher();

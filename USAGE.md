@@ -575,9 +575,12 @@ When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to
    /Dir1
    /Dir1/Dir2
    /Dir1/Dir2/Dir3
-   /Dir1/Dir2/Dir3/test.txt
-   If you have prune_empty_parent_depth set to 1 then delete test.txt, the client should delete Dir3 as well.
- 
+   /Dir1/Dir2/Dir3/Dir4
+   /Dir1/Dir2/Dir3/Dir4/test.txt
+   If you have prune_empty_parent_depth set to 1 then delete test.txt, the client should delete Dir4 as well.
+   If you have prune_empty_parent_depth set to 2 the client should delete Dir3, with the directories and file in the previous case.
+   If you have prune_empty_parent_depth set to 3 the client should delete Dir2, with the directories and file cumulatively included from the previous cases.
+   If you have prune_empty_parent_depth set to 4 the client should delete Dir1, with the directories and file cumulatively included from the previous cases. 
 #### Scenario 2 : Prune Empty Parent Depth -1
 - Given the directory structure : 
    /Dir1
