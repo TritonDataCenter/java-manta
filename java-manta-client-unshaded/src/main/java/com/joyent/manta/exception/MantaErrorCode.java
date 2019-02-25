@@ -495,10 +495,6 @@ public enum MantaErrorCode {
      */
     SERVICE_UNAVAILABLE_ERROR("ServiceUnavailable"),
     /**
-     * Known component sources: muskie, moray.
-     */
-    SHARDS_EXHAUSTED_ERROR("InternalError"),
-    /**
      * Known component sources: muskie.
      */
     SNAPLINKS_DISABLED_ERROR("SnaplinksDisabledError"),
