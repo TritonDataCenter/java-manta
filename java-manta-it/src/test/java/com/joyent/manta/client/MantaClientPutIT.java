@@ -16,6 +16,8 @@ import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.http.entity.ContentType;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
@@ -49,10 +51,12 @@ public class MantaClientPutIT {
     private MantaClient mantaClient;
 
     private String testPathPrefix;
+    private Boolean usingEncryption;
 
     @BeforeClass
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+        this.usingEncryption = usingEncryption;
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
@@ -253,6 +257,15 @@ public class MantaClientPutIT {
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
+
+        if (BooleanUtils.isTrue(usingEncryption)) {
+            try (MantaClient unencryptedClient = new MantaClient(new IntegrationTestConfigContext(false))) {
+                MantaObjectResponse unencryptedResponse = unencryptedClient.head(path);
+                Assert.assertEquals(unencryptedResponse.getContentType(),
+                        ContentType.APPLICATION_OCTET_STREAM.toString(),
+                        "Plaintext content type was leaked");
+            }
+        }
     }
 
     @Test
@@ -327,7 +340,6 @@ public class MantaClientPutIT {
             String contentType = response.getContentType();
             Assert.assertEquals(contentType, "image/jpeg",
                     "Content type wasn't detected correctly");
-
 
             try (InputStream in = mantaClient.getAsInputStream(path)) {
                 byte[] actual = IOUtils.toByteArray(in);

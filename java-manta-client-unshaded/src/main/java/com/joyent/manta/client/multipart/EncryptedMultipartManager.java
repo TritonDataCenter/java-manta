@@ -190,6 +190,16 @@ public class EncryptedMultipartManager
             headers = httpHeaders;
         }
 
+        final String contentType = headers.getContentType();
+
+        /* Remove the original content type specified and put it in the
+         * encrypted headers in order to prevent it from being uploaded to
+         * Manta in plaintext. */
+        if (contentType != null) {
+            metadata.putIfAbsent(MantaHttpHeaders.ENCRYPTED_CONTENT_TYPE, contentType);
+            headers.remove(HttpHeaders.CONTENT_TYPE);
+        }
+
         final EncryptionContext encryptionContext = buildEncryptionContext();
         final Cipher cipher = encryptionContext.getCipher();
 
