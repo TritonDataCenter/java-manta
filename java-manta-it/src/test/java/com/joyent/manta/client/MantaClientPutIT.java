@@ -244,8 +244,8 @@ public class MantaClientPutIT {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
         final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
+        final String contentType = "text/plain; charset=UTF-8";
 
-        String contentType = "text/plain; charset=UTF-8";
         MantaHttpHeaders headers = new MantaHttpHeaders();
         headers.setContentType(contentType);
         MantaObject response = mantaClient.put(path, content, headers);
@@ -253,10 +253,13 @@ public class MantaClientPutIT {
         Assert.assertEquals(response.getContentType(), contentType,
                 "Content type wasn't set to expected default");
 
-        final String actual = mantaClient.getAsString(path, StandardCharsets.UTF_8);
-
-        Assert.assertEquals(actual, TEST_DATA,
-                "Uploaded byte array was malformed");
+        try (MantaObjectInputStream in = mantaClient.getAsInputStream(path)) {
+            final String actual = IOUtils.toString(in, StandardCharsets.UTF_8);
+            Assert.assertEquals(actual, TEST_DATA,
+                    "Uploaded byte array was malformed");
+            Assert.assertEquals(in.getContentType(), contentType,
+                    "Content type wasn't set to expected default");
+        }
 
         if (BooleanUtils.isTrue(usingEncryption)) {
             try (MantaClient unencryptedClient = new MantaClient(new IntegrationTestConfigContext(false))) {
