@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.3.2] -
+### Fixed
+ - [Content-Type is not set to application/octet-stream when doing CSE](https://github.com/joyent/java-manta/issues/486) 
+
 ## [3.3.1] - 2019-02-05
 ### Added
  - [Allow for authentication to be disabled in CSE](https://github.com/joyent/java-manta/issues/465)
