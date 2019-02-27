@@ -538,7 +538,7 @@ abstract class AbstractMantaEncryptedObjectInputStreamTest {
         }
 
         Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
-        verifyContinuatorWasUsedIfPresent(in, failureOrder);
+        verifyContinuatorWasUsedIfPresent(in);
     }
 
 
@@ -694,7 +694,7 @@ abstract class AbstractMantaEncryptedObjectInputStreamTest {
             Mockito.verify(inSpy, Mockito.atLeastOnce()).close();
         }
 
-        verifyContinuatorWasUsedIfPresent(in, failureOrder);
+        verifyContinuatorWasUsedIfPresent(in);
     }
 
 
@@ -902,8 +902,7 @@ abstract class AbstractMantaEncryptedObjectInputStreamTest {
      * In case a test injected a failure, it would have also build a continuator to recover from that failure. If we
      * see a continuator, we verify it was used.
      */
-    private void verifyContinuatorWasUsedIfPresent(final Pair<InputStream, InputStreamContinuator> inputs,
-                                                   final FailureOrder failureOrder) throws IOException {
+    private void verifyContinuatorWasUsedIfPresent(final Pair<InputStream, InputStreamContinuator> inputs) throws IOException {
         if (inputs.getRight() == null) {
             return;
         }

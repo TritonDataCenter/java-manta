@@ -50,7 +50,6 @@ public class MantaClientRangeIT {
             "Of his array tell I no longer tale.";
 
     private MantaClient mantaClient;
-    private ConfigContext config;
 
     private String testPathPrefix;
 
@@ -66,7 +65,6 @@ public class MantaClientRangeIT {
         }
 
         mantaClient = new MantaClient(config);
-        this.config = config;
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }

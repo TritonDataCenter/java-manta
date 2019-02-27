@@ -10,8 +10,6 @@ package com.joyent.manta.client.crypto;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import javax.crypto.SecretKey;
-
 @Test
 public class AesCbcCipherDetailsTest extends AbstractCipherDetailsTest {
     public void size1024bCalculationWorksRoundTripAes128() {
@@ -80,23 +78,20 @@ public class AesCbcCipherDetailsTest extends AbstractCipherDetailsTest {
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void canQueryCiphertextByteRangeAes128() throws Exception {
+    public void canQueryCiphertextByteRangeAes128() {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_128_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         cipherDetails.translateByteRange(0, 128);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class, groups = {"unlimited-crypto"})
-    public void canQueryCiphertextByteRangeAes192() throws Exception {
+    public void canQueryCiphertextByteRangeAes192() {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_192_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         cipherDetails.translateByteRange(0, 128);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class, groups = {"unlimited-crypto"})
-    public void canQueryCiphertextByteRangeAes256() throws Exception {
+    public void canQueryCiphertextByteRangeAes256() {
         SupportedCipherDetails cipherDetails = AesCbcCipherDetails.INSTANCE_256_BIT;
-        SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
         cipherDetails.translateByteRange(0, 128);
     }
 

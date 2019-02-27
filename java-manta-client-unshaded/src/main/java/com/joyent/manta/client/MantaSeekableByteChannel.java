@@ -59,7 +59,7 @@ public class MantaSeekableByteChannel extends InputStream
     /**
      * Current position in bytes from the start of the file.
      */
-    private AtomicLong position = new AtomicLong(0L);
+    private AtomicLong position;
 
     /**
      * Helper class providing useful HTTP functions.

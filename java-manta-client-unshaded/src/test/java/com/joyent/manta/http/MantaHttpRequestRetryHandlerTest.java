@@ -28,7 +28,11 @@ public class MantaHttpRequestRetryHandlerTest {
 
     public void createsRetriesMetricInRegistry() {
         final MetricRegistry registry = new MetricRegistry();
-        final MantaHttpRequestRetryHandler retryHandler = new MantaHttpRequestRetryHandler(0, new MantaClientMetricConfiguration(UUID.randomUUID(), registry));
+        final UUID id = new UUID(0L, 1L);
+
+        /* Registration of the registry is a side-effect of creating a new handler.
+         * In order for this test to run successfully, this instance *must* be created. */
+        new MantaHttpRequestRetryHandler(0, new MantaClientMetricConfiguration(id, registry));
 
         final Collection<Meter> meters = registry.getMeters(FILTER_RETRY_METRIC).values();
         assertEquals(meters.size(), 1);

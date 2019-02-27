@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Deprecated
+@SuppressWarnings({"UnusedVariable", "unused"})
 public class JobsBasedMultipart {
     public static void main(String... args) {
         ConfigContext config = new SystemSettingsConfigContext();

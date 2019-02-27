@@ -35,7 +35,7 @@ public class RandomInputStreamTest {
         try (RandomInputStream stream = new RandomInputStream(expectedBytes)) {
             long actualBytesRead = 0;
             int lastReadBytes;
-            byte buffer[] = new byte[16];
+            byte[] buffer = new byte[16];
 
             while ((lastReadBytes = stream.read(buffer, 0, 16)) != -1) {
                 actualBytesRead += lastReadBytes;

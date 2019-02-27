@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
  * @see <a href="https://github.com/ehcache/ehcache3/blob/351a49a45afbf18c48df665210b5cf07f5e7b221/core/src/main/java/org/ehcache/core/internal/util/ConcurrentWeakIdentityHashMap.java">github page of source</a>
  * @author Alex Snaps
  */
+@SuppressWarnings("EqualsGetClass")
 public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> {
 
     private final ConcurrentMap<WeakReference<K>, V> map = new ConcurrentHashMap<WeakReference<K>, V>();
@@ -51,7 +52,7 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
     @Override
     public boolean remove(final Object key, final Object value) {
         purgeKeys();
-        return map.remove(new WeakReference<Object>(key, null), value);
+        return map.remove(new WeakReference<Object>( key, null), value);
     }
 
     @Override
@@ -59,6 +60,7 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
         purgeKeys();
         return map.replace(newKey(key), oldValue, newValue);
     }
+
 
     @Override
     public V replace(final K key, final V value) {
@@ -202,7 +204,7 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
 
         @Override
         public boolean equals(final Object obj) {
-            return obj != null && obj.getClass() == this.getClass() && (this == obj || this.get() == ((WeakReference) obj).get());
+            return obj != null && obj.getClass() == this.getClass() && (this == obj || this.get() == ((WeakReference)obj).get());
         }
 
         @Override
@@ -247,6 +249,7 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
         public void remove() {
             throw new UnsupportedOperationException();
         }
+
 
         protected abstract T extract(U u);
     }

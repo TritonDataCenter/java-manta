@@ -23,6 +23,7 @@ import java.util.stream.Stream;
  * against the API and passing the job id to each API call. Here is an example that
  * processes 4 input files, greps them for 'foo' and returns the unique values.
  */
+@SuppressWarnings({"UnusedVariable", "unused"})
 public class JobsWithMantaClient {
     public static void main(String... args) throws IOException, InterruptedException {
         ConfigContext config = new SystemSettingsConfigContext();

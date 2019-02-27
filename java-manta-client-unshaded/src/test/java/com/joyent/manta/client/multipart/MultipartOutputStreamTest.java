@@ -23,13 +23,13 @@ public class MultipartOutputStreamTest {
         MultipartOutputStream mpos = new MultipartOutputStream(16);
 
         mpos.setNext(s1);
-        mpos.write("foo".getBytes("UTF-8"));
-        mpos.write("foo".getBytes("UTF-8"));
+        mpos.write("foo".getBytes(StandardCharsets.UTF_8));
+        mpos.write("foo".getBytes(StandardCharsets.UTF_8));
         Assert.assertEquals(s1.toString("UTF-8"), "");
         mpos.flushBuffer();
 
         mpos.setNext(s2);
-        mpos.write("bar".getBytes("UTF-8"));
+        mpos.write("bar".getBytes(StandardCharsets.UTF_8));
         mpos.flushBuffer();
 
         mpos.setNext(s3);

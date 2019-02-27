@@ -11,7 +11,7 @@ import javax.crypto.Cipher;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Class for constructing AesCipherDetails which may or may not be useable in the current runtime.
+ * Class for constructing AesCipherDetails which may or may not be usable in the current runtime.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
  */

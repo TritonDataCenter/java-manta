@@ -7,9 +7,6 @@
  */
 package com.joyent.manta.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,8 +23,6 @@ public class FailingInputStream extends InputStream {
         POST_READ,
         ON_EOF,
     }
-
-    private static final Logger LOG = LoggerFactory.getLogger(FailingInputStream.class);
 
     /**
      * End of file magic number.

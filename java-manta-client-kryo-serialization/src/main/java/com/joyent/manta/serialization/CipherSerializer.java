@@ -122,7 +122,7 @@ public class CipherSerializer extends AbstractManualSerializer<Cipher> {
         Class<?> sessionRefClass = findClass("sun.security.pkcs11.SessionRef");
 
         if (sessionRefClass != null) {
-            kryo.register(sessionRefClass, new SessionRefSerializer(kryo));
+            kryo.register(sessionRefClass, new SessionRefSerializer());
         }
 
         Class<?> pkcs11Class = findClass("sun.security.pkcs11.wrapper.PKCS11");

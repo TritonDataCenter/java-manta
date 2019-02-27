@@ -1720,7 +1720,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         final Integer skipDepth = config.getSkipDirectoryDepth();
-        final RecursiveDirectoryCreationStrategy directoryCreationStrategy;
+
         if (skipDepth != null && 0 < skipDepth) {
             RecursiveDirectoryCreationStrategy.createWithSkipDepth(this, rawPath, headers, skipDepth);
         } else {

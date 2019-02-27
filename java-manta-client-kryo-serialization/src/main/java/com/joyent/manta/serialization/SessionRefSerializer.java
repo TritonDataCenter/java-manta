@@ -41,25 +41,9 @@ public class SessionRefSerializer extends AbstractManualSerializer<Object> {
 
     /**
      * Creates a new serializaer instance.
-     *
-     * @param kryo Kryo instance
      */
-    public SessionRefSerializer(final Kryo kryo) {
+    public SessionRefSerializer() {
         super(SESSION_REF_CLASS);
-        registerClasses(kryo);
-    }
-
-    /**
-     * Registers the classes needed for serialization with Kryo.
-     *
-     * @param kryo Kryo instance
-     */
-    private void registerClasses(final Kryo kryo) {
-//        Class<?> tokenClass = findClass("sun.security.pkcs11.Token");
-//
-//        if (tokenClass != null) {
-//            kryo.register(tokenClass);
-//        }
     }
 
     @Override

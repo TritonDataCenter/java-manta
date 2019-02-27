@@ -31,8 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MantaDirectoryListingIteratorIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private ConfigContext config;
-
     private MantaClient mantaClient;
 
     private String testPathPrefix;
@@ -42,7 +40,7 @@ public class MantaDirectoryListingIteratorIT {
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(usingEncryption);
+        final ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());

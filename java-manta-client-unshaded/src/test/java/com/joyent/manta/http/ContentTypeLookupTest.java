@@ -47,8 +47,6 @@ public class ContentTypeLookupTest {
     @Test(enabled = false)
     public void canfindByMultipleMethodsNull() throws Exception {
         MantaHttpHeaders headers = new MantaHttpHeaders(EXAMPLE_HEADERS);
-        ContentType troff = ContentType.create("application/x-troff");
-        ContentType jsonStream = ContentType.create("application/x-json-stream");
 
         File temp = File.createTempFile("upload", ".unknown");
         FileUtils.forceDeleteOnExit(temp);
