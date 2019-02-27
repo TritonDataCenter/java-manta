@@ -158,8 +158,8 @@
 
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>4.0.9</dependency.http-client-signature.version>
-        <dependency.apache-http-client.version>4.5.6</dependency.apache-http-client.version>
-        <dependency.bouncycastle.version>1.60</dependency.bouncycastle.version>
+        <dependency.apache-http-client.version>5.0-beta1</dependency.apache-http-client.version>
+        <dependency.bouncycastle.version>1.61</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>3.1.4</dependency.fasterxml-uuid>
         <dependency.jackson.version>2.9.4</dependency.jackson.version>
         <dependency.jnagmp.version>2.1.0</dependency.jnagmp.version>
