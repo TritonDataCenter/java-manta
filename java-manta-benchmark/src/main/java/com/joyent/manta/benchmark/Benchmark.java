@@ -73,11 +73,6 @@ public final class Benchmark {
     private static final long CHECK_INTERVAL = Duration.ofSeconds(1).getSeconds();
 
     /**
-     * Configuration context that informs the Manta client about its settings.
-     */
-    private static ConfigContext config;
-
-    /**
      * Manta client library.
      */
     private static MantaClient client;
@@ -114,13 +109,14 @@ public final class Benchmark {
     /**
      * Entrance to benchmark utility.
      * @param argv param1: method, param2: size of object in kb, param3: no of iterations, param4: threads
-     * @throws Exception when something goes wrong
      */
-    public static void main(final String[] argv) throws Exception {
-        config = new ChainedConfigContext(
+    public static void main(final String[] argv) {
+        // Configuration context that informs the Manta client about its settings.
+        final ConfigContext config = new ChainedConfigContext(
                 new DefaultsConfigContext(),
                 new SystemSettingsConfigContext()
         );
+
         client = new MantaClient(config);
         testDirectory = String.format("%s/stor/java-manta-integration-tests/benchmark-%s",
                 config.getMantaHomeDirectory(), testRunId);
@@ -234,12 +230,11 @@ public final class Benchmark {
      * @param path path to store benchmarking test data
      * @param iterations number of iterations to run
      * @param concurrency number of threads to run
-     * @throws IOException thrown when we can't communicate with the server
      */
     private static void multithreadedBenchmark(final String method,
                                                final String path,
                                                final int iterations,
-                                               final int concurrency) throws IOException {
+                                               final int concurrency) {
         final AtomicLong fullAggregation = new AtomicLong(0L);
         final AtomicLong serverAggregation = new AtomicLong(0L);
         final AtomicLong count = new AtomicLong(0L);

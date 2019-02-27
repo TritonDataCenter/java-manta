@@ -42,7 +42,7 @@ public class InstrumentedPoolingHttpClientConnectionManagerTest {
         final int maxConns = 5;
         connManager.setMaxTotal(maxConns);
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings({"rawtypes"})
         final Map<String, Gauge> gauges = metricRegistry.getGauges();
 
         // pool stats are present

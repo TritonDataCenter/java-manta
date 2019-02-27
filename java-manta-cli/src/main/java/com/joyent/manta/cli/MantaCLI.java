@@ -70,9 +70,11 @@ import java.util.stream.Stream;
 // Documented through CLI annotations
 @SuppressWarnings({"checkstyle:javadocmethod", "checkstyle:javadoctype", "checkstyle:javadocvariable"})
 public final class MantaCLI {
+    @SuppressWarnings("unused")
     @CommandLine.Option(names = {"-v", "--version"}, help = true)
     private boolean isVersionRequested;
 
+    @SuppressWarnings("unused")
     @CommandLine.Option(names = {"-h", "--help"}, help = true)
     private boolean isHelpRequested;
 
@@ -106,7 +108,7 @@ public final class MantaCLI {
         }
         CommandLine deepest = parsedCommands.get(parsedCommands.size() - 1);
 
-        MantaSubCommand subcommand = (MantaSubCommand) deepest.getCommand();
+        MantaSubCommand subcommand = deepest.getCommand();
         if (subcommand.isHelpRequested) {
             CommandLine.usage(deepest.getCommand(), System.err);
             return;
@@ -127,15 +129,18 @@ public final class MantaCLI {
                          parameterListHeading = "%n@|bold,underline Parameters:|@%n",
                          optionListHeading = "%n@|bold,underline Options:|@%n")
     public abstract static class MantaSubCommand {
-        public enum CommandLogLevel { TRACE, DEBUG, INFO, WARN, ERROR };
+        @SuppressWarnings("unused")
+        public enum CommandLogLevel { TRACE, DEBUG, INFO, WARN, ERROR }
 
         protected static final String BR = System.lineSeparator();
 
         protected static final String INDENT = "  ";
 
+        @SuppressWarnings("unused")
         @CommandLine.Option(names = {"-h", "--help"}, help = true)
         private boolean isHelpRequested;
 
+        @SuppressWarnings("unused")
         @CommandLine.Option(names = {"--log-level"},
                             description = "TRACE, DEBUG, INFO, WARN(default), ERROR")
         private CommandLogLevel logLevel;
@@ -207,11 +212,15 @@ public final class MantaCLI {
                          description = "Generates a client-side encryption key with the specified "
                          + "cipher and bits at the specified path.")
     public static class GenerateKey extends MantaSubCommand {
-
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "cipher to generate key for")
         private String cipher;
+
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "1", description = "number of bits of the key")
         private int bits;
+
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "2", description = "path to write the key to")
         private Path path;
 
@@ -244,8 +253,9 @@ public final class MantaCLI {
 
     @CommandLine.Command(name = "ls",
                          header = "list",
-                         description = "List directry contents")
+                         description = "List directory contents")
     public static class ListDir extends MantaSubCommand {
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "dir to ls")
         private String dirPath;
 
@@ -255,9 +265,7 @@ public final class MantaCLI {
             ConfigContext config = buildConfig();
             try (MantaClient client = new MantaClient(config)) {
                 final Stream<MantaObject> objs = client.listObjects(dirPath);
-                objs.forEach(obj -> {
-                        b.append(INDENT).append(obj.getPath()).append(BR);
-                    });
+                objs.forEach(obj -> b.append(INDENT).append(obj.getPath()).append(BR));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -278,6 +286,7 @@ public final class MantaCLI {
                             + "name as filename")
         private boolean inferOutputFileName = false;
 
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "Object path in Manta to download")
         private String filePath;
 
@@ -310,10 +319,13 @@ public final class MantaCLI {
 
     @CommandLine.Command(name = "put-file",
                          header = "Performs a put of a local file to Manta",
-                         description = "Performs a put of a local file to Mantan.")
+                         description = "Performs a put of a local file to Manta.")
     public static class PutFile extends MantaSubCommand {
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "file to upload/put")
         private String filePath;
+
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "1", description = "path in Manta to upload to")
         private String mantaPath;
 
@@ -346,6 +358,7 @@ public final class MantaCLI {
                          header = "show HTTP headers for a Manta object",
                          description = "show HTTP headers for a Manta object.")
     public static class ObjectInfo extends MantaSubCommand {
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "path in Manta to check")
         private String mantaPath;
 
@@ -367,8 +380,11 @@ public final class MantaCLI {
                          description = "Validates that the supplied key is supported by the "
                          + "SDK's client-side encryption functionality.")
     public static class ValidateKey extends MantaSubCommand {
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "cipher to validate the key against")
         private String cipher;
+
+        @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "1", description = "path to read the key from")
         private Path path;
 

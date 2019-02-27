@@ -92,8 +92,7 @@ public class EncryptedHttpHelperTest {
      * be configured for one cipher/mode and executes requests in another
      * cipher/mode.
      */
-    private static EncryptionHttpHelper fakeEncryptionHttpHelper(String path)
-            throws Exception {
+    private static EncryptionHttpHelper fakeEncryptionHttpHelper(String path) {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
         StandardConfigContext config = new StandardConfigContext();
@@ -108,8 +107,6 @@ public class EncryptedHttpHelperTest {
                 connectionContext,
                 new MantaHttpRequestFactory(UnitTestConstants.UNIT_TEST_URL),
                 config);
-
-        URI uri = URI.create(DEFAULT_MANTA_URL + SEPARATOR + path);
 
         CloseableHttpResponse fakeResponse = mock(CloseableHttpResponse.class);
         StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,

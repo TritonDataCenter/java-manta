@@ -95,7 +95,7 @@ public class MantaConnectionFactoryTest {
         verify(manager, never()).shutdown();
     }
 
-    public void willConfigureClientToUseProvidedManager() throws IOException, ReflectiveOperationException {
+    public void willConfigureClientToUseProvidedManager() throws ReflectiveOperationException {
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
         connectionFactory = new MantaConnectionFactory(config, conf);
 
@@ -106,7 +106,7 @@ public class MantaConnectionFactoryTest {
     }
 
     public void willActuallyDisableRetriesOnInternallyConstructedBuilderWhenSetToZero()
-            throws IOException, ReflectiveOperationException {
+            throws ReflectiveOperationException {
         config.setRetries(0);
 
         connectionFactory = new MantaConnectionFactory(config);
@@ -117,7 +117,7 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue((Boolean) FieldUtils.readField(internallyCreatedBuilder, "automaticRetriesDisabled", true));
     }
 
-    public void willActuallyDisableRetriesOnProvidedBuilderWhenSetToZero() throws IOException, ReflectiveOperationException {
+    public void willActuallyDisableRetriesOnProvidedBuilderWhenSetToZero() throws ReflectiveOperationException {
         config.setRetries(0);
 
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
@@ -127,7 +127,7 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue((Boolean) FieldUtils.readField(factoryInternalBuilder, "automaticRetriesDisabled", true));
     }
 
-    public void willAttachInternalRetryHandlersToInternalBuilder() throws IOException, ReflectiveOperationException {
+    public void willAttachInternalRetryHandlersToInternalBuilder() throws ReflectiveOperationException {
         config.setRetries(1);
 
         connectionFactory = new MantaConnectionFactory(config);
@@ -142,7 +142,7 @@ public class MantaConnectionFactoryTest {
         Assert.assertTrue(serviceUnavailStrategy instanceof MantaServiceUnavailableRetryStrategy);
     }
 
-    public void willAttachInternalRetryHandlersToProvidedBuilder() throws IOException, ReflectiveOperationException {
+    public void willAttachInternalRetryHandlersToProvidedBuilder() throws ReflectiveOperationException {
         config.setRetries(1);
 
         final MantaConnectionFactoryConfigurator conf = new MantaConnectionFactoryConfigurator(builder);
