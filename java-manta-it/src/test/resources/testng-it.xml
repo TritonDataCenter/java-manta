@@ -28,6 +28,24 @@
         </packages>
     </test>
     <!-- We run many of the integration tests over again using client-side encryption -->
+    <test name="Manta Client Integration Tests [Modified Time]">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="mtime" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+        </classes>
+    </test>
+    <test name="Manta Client Integration Tests [Move Operations]">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="move" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+        </classes>
+    </test>
     <test name="Manta Client Integration Tests [AES128/CTR Encrypted]">
         <parameter name="usingEncryption" value="true"/>
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
