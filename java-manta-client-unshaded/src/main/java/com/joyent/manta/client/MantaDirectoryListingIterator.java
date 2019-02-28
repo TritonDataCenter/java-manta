@@ -10,15 +10,17 @@ package com.joyent.manta.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joyent.manta.domain.ObjectType;
+import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
@@ -54,6 +56,10 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  */
 public class MantaDirectoryListingIterator implements Iterator<Map<String, Object>>,
         AutoCloseable {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(MantaDirectoryListingIterator.class);
 
     /**
      * Maximum number of results to return for a directory listing.
@@ -164,7 +170,16 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
             String query = String.format("?limit=%d", pagingSize);
             final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
-            IOUtils.closeQuietly(currentResponse);
+            try {
+                if (currentResponse != null) {
+                    currentResponse.close();
+                }
+            } catch (IOException e) {
+                MantaIOException mio = new MantaIOException(e);
+                HttpHelper.annotateContextedException(mio, request, currentResponse);
+                throw mio;
+            }
+
             currentResponse = httpHelper.executeRequest(request, null);
             HttpEntity entity = currentResponse.getEntity();
             String contentType;
@@ -186,9 +201,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                     MantaHttpHeaders headers = new MantaHttpHeaders(currentResponse.getAllHeaders());
                     e.setResponseHeaders(headers);
                 } catch (RuntimeException re) {
-                    LoggerFactory.getLogger(MantaDirectoryListingIterator.class).warn(
-                            "Unable to convert response headers to MantaHttpHeaders", e
-                    );
+                    LOG.warn("Unable to convert response headers to MantaHttpHeaders", e);
                 }
 
                 throw e;
@@ -206,8 +219,7 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
                     pagingSize, URLEncoder.encode(lastMarker, "UTF-8"));
             final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
-            IOUtils.closeQuietly(br);
-            IOUtils.closeQuietly(currentResponse);
+            closeResources();
 
             currentResponse = httpHelper.executeRequest(request, null);
             HttpEntity entity = currentResponse.getEntity();
@@ -295,8 +307,34 @@ public class MantaDirectoryListingIterator implements Iterator<Map<String, Objec
     @Override
     public void close() {
         finished.set(true);
-        IOUtils.closeQuietly(br);
-        IOUtils.closeQuietly(currentResponse);
+
+        closeResources();
+    }
+
+    /**
+     * Closes dependent resources. If there is a problem closing the resources
+     * an exception is logged but not thrown.
+     */
+    private void closeResources() {
+        try {
+            if (br != null) {
+                br.close();
+            }
+        } catch (IOException e) {
+            MantaIOException mio = new MantaResourceCloseException(e);
+            HttpHelper.annotateContextedException(mio, null, currentResponse);
+            LOG.error("Unable to close BufferedReader", mio);
+        }
+
+        try {
+            if (currentResponse != null) {
+                currentResponse.close();
+            }
+        } catch (IOException e) {
+            MantaIOException mio = new MantaResourceCloseException(e);
+            HttpHelper.annotateContextedException(mio, null, currentResponse);
+            LOG.error("Unable to close HTTP response object", mio);
+        }
     }
 
     /**

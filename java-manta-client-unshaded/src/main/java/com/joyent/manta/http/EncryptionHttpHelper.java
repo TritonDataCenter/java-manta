@@ -26,7 +26,6 @@ import com.joyent.manta.exception.MantaClientEncryptionException;
 import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.entity.NoContentEntity;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -1007,7 +1006,14 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
         final CloseableHttpClient client = getConnectionContext().getHttpClient();
         final CloseableHttpResponse originalContentLengthUpdateResponse = client.execute(put);
-        IOUtils.closeQuietly(originalContentLengthUpdateResponse);
+
+        try {
+            originalContentLengthUpdateResponse.close();
+        } catch (IOException e) {
+            MantaIOException mio = new MantaIOException(e);
+            HttpHelper.annotateContextedException(mio, put, originalContentLengthUpdateResponse);
+            LOGGER.error("Unable to close HTTP response resource", mio);
+        }
 
         StatusLine statusLine = originalContentLengthUpdateResponse.getStatusLine();
         int code = statusLine.getStatusCode();

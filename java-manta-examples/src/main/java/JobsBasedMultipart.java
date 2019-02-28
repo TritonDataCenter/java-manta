@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Deprecated
+@SuppressWarnings({"UnusedVariable", "unused"})
 public class JobsBasedMultipart {
     public static void main(String... args) {
         ConfigContext config = new SystemSettingsConfigContext();
@@ -56,7 +58,8 @@ public class JobsBasedMultipart {
         // We catch network errors and handle them here
         try {
             // We get a response object
-            JobsMultipartUpload upload = multipart.initiateUpload(uploadObject);
+            JobsMultipartUpload upload = multipart.initiateUpload(uploadObject,
+                    metadata, headers);
 
             // It contains a UUID transaction id
             UUID id = upload.getId();

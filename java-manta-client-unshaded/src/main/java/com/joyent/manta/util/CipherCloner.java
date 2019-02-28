@@ -44,7 +44,7 @@ public final class CipherCloner implements Cloner<Cipher> {
          * a sensible error message rather than the inscrutable message that is
          * returned if we attempt the clone operation. */
 
-        if (pkcs11Provider != null && cipherProvider == pkcs11Provider) {
+        if (pkcs11Provider != null && cipherProvider.equals(pkcs11Provider)) {
             String msg = String.format("Cannot create clone of Cipher with provider: %s",
                     source.getProvider());
             throw new MantaMemoizationException(msg);

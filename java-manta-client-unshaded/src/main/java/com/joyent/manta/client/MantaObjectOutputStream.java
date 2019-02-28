@@ -8,10 +8,10 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.http.entity.EmbeddedHttpContent;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ClosedOutputStream;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -336,7 +336,14 @@ public class MantaObjectOutputStream extends OutputStream {
             this.httpContent.getWriter().flush();
         }
 
-        IOUtils.closeQuietly(this.httpContent);
+        /* This should never be null. We propagate any problems closing to the
+         * caller. */
+        try {
+            httpContent.close();
+        } catch (RuntimeException e) {
+            String msg = "Problem closing HTTP content stream";
+            throw new MantaResourceCloseException(msg, e);
+        }
 
         /* Now that we have marked the httpContent instance as properly closed,
          * we wake up the the sleeping thread in order for it properly exit the

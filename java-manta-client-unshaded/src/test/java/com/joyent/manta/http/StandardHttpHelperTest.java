@@ -25,7 +25,6 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
 import org.bouncycastle.crypto.Digest;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
@@ -51,14 +50,9 @@ import static org.mockito.Mockito.when;
 
 @Test
 public class StandardHttpHelperTest {
-
-    @Mock
     private final CloseableHttpClient client = mock(CloseableHttpClient.class);
-    @Mock
     private final CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    @Mock
     private final MantaConnectionContext connCtx = mock(MantaConnectionContext.class);
-    @Mock
     private final StatusLine statusLine = mock(StatusLine.class);
 
     private BaseChainedConfigContext config;

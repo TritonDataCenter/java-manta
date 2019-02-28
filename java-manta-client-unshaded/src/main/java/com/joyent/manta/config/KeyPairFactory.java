@@ -10,8 +10,6 @@ package com.joyent.manta.config;
 import com.joyent.http.signature.KeyFingerprinter;
 import com.joyent.http.signature.KeyPairLoader;
 import com.joyent.manta.exception.ConfigurationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,11 +23,6 @@ import java.security.KeyPair;
  * @since 3.0.0
  */
 public class KeyPairFactory {
-    /**
-     * Logger instance.
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(KeyPairFactory.class);
-
     /**
      * Manta configuration object.
      */

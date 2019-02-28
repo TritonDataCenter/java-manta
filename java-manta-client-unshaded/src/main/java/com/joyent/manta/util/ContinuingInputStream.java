@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.util;
 
-import org.apache.commons.io.IOUtils;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,8 +213,13 @@ public class ContinuingInputStream extends InputStream {
 
         this.closed = true;
 
-        if (this.wrapped != null) {
-            wrapped.close();
+        try {
+            if (this.wrapped != null) {
+                wrapped.close();
+            }
+        } catch (IOException e) {
+            String msg = "Unable to close wrapped InputStream";
+            throw new MantaResourceCloseException(msg, e);
         }
     }
 
@@ -231,7 +236,14 @@ public class ContinuingInputStream extends InputStream {
 
     @SuppressWarnings("checkstyle:JavadocMethod")
     private void closeAndDiscardWrapped() {
-        IOUtils.closeQuietly(this.wrapped);
+        try {
+            if (this.wrapped != null) {
+                this.wrapped.close();
+            }
+        } catch (IOException e) {
+            LOG.error("Error closing wrapped InputStream", e);
+        }
+
         this.wrapped = null;
     }
 

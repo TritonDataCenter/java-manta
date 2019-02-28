@@ -14,7 +14,6 @@ import com.joyent.manta.client.multipart.EncryptedMultipartUpload;
 import com.joyent.manta.client.multipart.EncryptionState;
 
 import javax.crypto.SecretKey;
-import java.lang.reflect.Field;
 
 /**
  * Kryo serializer for serializing {@link EncryptedMultipartUpload}
@@ -27,10 +26,6 @@ import java.lang.reflect.Field;
  */
 public class EncryptedMultipartSerializer<WRAPPED extends AbstractMultipartUpload>
         extends FieldSerializer<EncryptedMultipartUpload<WRAPPED>> {
-    private Field encryptionStateField = ReflectionUtils.getField(
-            EncryptedMultipartUpload.class, "encryptionState");
-    private Field encryptionContextField = ReflectionUtils.getField(
-            EncryptionState.class, "encryptionContext");
 
     /**
      * Secret key to inject upon deserialization.

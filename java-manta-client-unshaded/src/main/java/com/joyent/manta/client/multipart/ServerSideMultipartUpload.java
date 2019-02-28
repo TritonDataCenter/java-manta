@@ -54,7 +54,7 @@ public class ServerSideMultipartUpload extends AbstractMultipartUpload {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof ServerSideMultipartUpload)) {
             return false;
         }
         if (!super.equals(o)) {

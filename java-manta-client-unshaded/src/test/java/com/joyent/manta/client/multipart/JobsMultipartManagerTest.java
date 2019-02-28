@@ -17,7 +17,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,7 +61,7 @@ public class JobsMultipartManagerTest {
         final UUID id = new UUID(0L, 24L);
         final JobsMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
-        List<MantaMultipartUploadPart> partsList = new LinkedList<>();
+        List<MantaMultipartUploadPart> partsList = new ArrayList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {
@@ -80,7 +79,7 @@ public class JobsMultipartManagerTest {
         final UUID id = new UUID(0L, 36L);
         final JobsMultipartUpload upload =  new JobsMultipartUpload(id, "/dev/null");
 
-        List<MantaMultipartUploadPart> partsList = new LinkedList<>();
+        List<MantaMultipartUploadPart> partsList = new ArrayList<>();
 
         final int totalParts = 64;
         for (int i = 1; i <= totalParts; i++) {

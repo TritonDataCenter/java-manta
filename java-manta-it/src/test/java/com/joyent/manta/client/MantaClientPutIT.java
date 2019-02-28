@@ -202,6 +202,7 @@ public class MantaClientPutIT {
         try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
             Assert.assertEquals(object.getPath(), path, "path not returned as written");
             byte[] actualBytes = IOUtils.readFully(object, length);
+            Assert.assertTrue(actualBytes.length > 0);
         }
     }
 

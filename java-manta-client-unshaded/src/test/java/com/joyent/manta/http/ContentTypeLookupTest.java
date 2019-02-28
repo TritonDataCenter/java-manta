@@ -9,8 +9,6 @@ package com.joyent.manta.http;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ContentType;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.testng.Assert;
@@ -49,8 +47,6 @@ public class ContentTypeLookupTest {
     @Test(enabled = false)
     public void canfindByMultipleMethodsNull() throws Exception {
         MantaHttpHeaders headers = new MantaHttpHeaders(EXAMPLE_HEADERS);
-        ContentType troff = ContentType.create("application/x-troff");
-        ContentType jsonStream = ContentType.create("application/x-json-stream");
 
         File temp = File.createTempFile("upload", ".unknown");
         FileUtils.forceDeleteOnExit(temp);

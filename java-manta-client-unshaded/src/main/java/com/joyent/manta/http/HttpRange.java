@@ -310,11 +310,7 @@ public abstract class HttpRange {
             return true;
         }
 
-        if (o == null) {
-            return false;
-        }
-
-        if (!this.getClass().equals(o.getClass())) {
+        if (!(o instanceof HttpRange)) {
             return false;
         }
 

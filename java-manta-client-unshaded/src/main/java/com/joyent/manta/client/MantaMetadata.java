@@ -14,7 +14,7 @@ import org.apache.commons.collections4.map.PredicatedMap;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
@@ -172,8 +172,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
     @Override
     public boolean equals(final Object object) {
-        return getClass().equals(object.getClass())
-                && innerMap.equals(object);
+        return (object instanceof Map) && innerMap.equals(object);
     }
 
     @Override
@@ -274,13 +273,9 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          * @return true if the string is entirely iso8859-1, false otherwise.
          */
         private boolean isIso88591(final String input) {
-            try {
-                final byte[] bytes = input.getBytes("ISO-8859-1");
-                final String result = new String(bytes, "ISO-8859-1");
-                return result.equals(input);
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException("JVM doesn't support \"ISO-8859-1\" encoding", e);
-            }
+            final byte[] bytes = input.getBytes(StandardCharsets.ISO_8859_1);
+            final String result = new String(bytes, StandardCharsets.ISO_8859_1);
+            return result.equals(input);
         }
 
         /**

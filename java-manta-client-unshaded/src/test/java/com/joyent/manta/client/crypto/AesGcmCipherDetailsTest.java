@@ -14,8 +14,8 @@ import org.testng.annotations.Test;
 public class AesGcmCipherDetailsTest extends AbstractCipherDetailsTest {
 
     @Test(groups = {"unlimited-crypto"})
-    public void doesntCalculateHmac() throws Exception {
-        Assert.assertEquals(AesGcmCipherDetails.INSTANCE_256_BIT.getAuthenticationHmac(), null);
+    public void doesntCalculateHmac() {
+        Assert.assertNull(AesGcmCipherDetails.INSTANCE_256_BIT.getAuthenticationHmac());
     }
 
     public void size1024bCalculationWorksRoundTripAes128() {

@@ -15,7 +15,6 @@ import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.text.CharacterPredicates;
 import org.apache.commons.text.RandomStringGenerator;
@@ -25,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -72,11 +73,6 @@ public final class Benchmark {
     private static final long CHECK_INTERVAL = Duration.ofSeconds(1).getSeconds();
 
     /**
-     * Configuration context that informs the Manta client about its settings.
-     */
-    private static ConfigContext config;
-
-    /**
      * Manta client library.
      */
     private static MantaClient client;
@@ -113,13 +109,14 @@ public final class Benchmark {
     /**
      * Entrance to benchmark utility.
      * @param argv param1: method, param2: size of object in kb, param3: no of iterations, param4: threads
-     * @throws Exception when something goes wrong
      */
-    public static void main(final String[] argv) throws Exception {
-        config = new ChainedConfigContext(
+    public static void main(final String[] argv) {
+        // Configuration context that informs the Manta client about its settings.
+        final ConfigContext config = new ChainedConfigContext(
                 new DefaultsConfigContext(),
                 new SystemSettingsConfigContext()
         );
+
         client = new MantaClient(config);
         testDirectory = String.format("%s/stor/java-manta-integration-tests/benchmark-%s",
                 config.getMantaHomeDirectory(), testRunId);
@@ -214,8 +211,10 @@ public final class Benchmark {
 
         final long testEnd = System.nanoTime();
 
-        final long fullAverage = Math.round(fullAggregation / iterations);
-        final long serverAverage = Math.round(serverAggregation / iterations);
+        final long fullAverage = new BigDecimal(fullAggregation)
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
+        final long serverAverage = new BigDecimal(serverAggregation)
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
         final long totalTime = testEnd - testStart;
 
         System.out.printf("Average full latency: %d ms\n", fullAverage);
@@ -231,12 +230,11 @@ public final class Benchmark {
      * @param path path to store benchmarking test data
      * @param iterations number of iterations to run
      * @param concurrency number of threads to run
-     * @throws IOException thrown when we can't communicate with the server
      */
     private static void multithreadedBenchmark(final String method,
                                                final String path,
                                                final int iterations,
-                                               final int concurrency) throws IOException {
+                                               final int concurrency) {
         final AtomicLong fullAggregation = new AtomicLong(0L);
         final AtomicLong serverAggregation = new AtomicLong(0L);
         final AtomicLong count = new AtomicLong(0L);
@@ -316,8 +314,10 @@ public final class Benchmark {
 
         final long testEnd = System.nanoTime();
 
-        final long fullAverage = Math.round(fullAggregation.get() / iterations);
-        final long serverAverage = Math.round(serverAggregation.get() / iterations);
+        final long fullAverage = new BigDecimal(fullAggregation.get())
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
+        final long serverAverage = new BigDecimal(serverAggregation.get())
+                .divide(new BigDecimal(iterations), RoundingMode.HALF_UP).longValue();
         final long totalTime = Duration.ofNanos(testEnd - testStart).toMillis();
 
         System.out.printf("Average full latency: %d ms\n", fullAverage);
@@ -390,14 +390,13 @@ public final class Benchmark {
     private static Duration[] measureGet(final String path) throws IOException {
         final Instant start = Instant.now();
         final String serverLatencyString;
-        MantaObjectInputStream is = client.getAsInputStream(path);
 
-        try {
+
+        try (MantaObjectInputStream is = client.getAsInputStream(path)) {
             copyToTheEther(is);
             serverLatencyString = is.getHeader("x-response-time").toString();
-        } finally {
-            IOUtils.closeQuietly(is);
         }
+
         final Instant stop = Instant.now();
 
         Duration serverLatency = Duration.ofMillis(Long.parseLong(serverLatencyString));

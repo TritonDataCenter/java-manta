@@ -439,7 +439,7 @@ public class EncryptedServerSideMultipartManagerIT {
         final ArrayList<MantaMultipartUploadTuple> uploadedParts =
                 new ArrayList<>();
 
-        Throwable exception = null;
+        Throwable exception;
         //0
         MantaMultipartUploadTuple uploaded0 = multipart.uploadPart(upload, 1, parts[0]);
         uploadedParts.add(uploaded0);

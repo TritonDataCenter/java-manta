@@ -163,7 +163,7 @@ public class EncryptionContext {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof EncryptionContext)) {
             return false;
         }
 

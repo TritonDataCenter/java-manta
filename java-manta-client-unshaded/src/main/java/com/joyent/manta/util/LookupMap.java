@@ -22,31 +22,30 @@ import java.util.function.Function;
  * Custom built {@link Map} implementation that supports case-sensitive and
  * case-insensitive operations.
  *
- * @param <String> key as string because we provide case-insensitive operations
+ * @param <K> key as string because we provide case-insensitive operations
  * @param <V> value to be looking up
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  * @since 3.0.0
  */
-@SuppressWarnings("JavaLangClash") // Suppress false positive with error prone compiler
-public class LookupMap<String, V> implements Map<String, V>  {
+public class LookupMap<K extends String, V> implements Map<K, V>  {
     /**
      /**
      * Wrapped unmodifiable map instance providing data.
      */
-    private final Map<String, V> wrapped;
+    private final Map<K, V> wrapped;
 
     /**
      * Wrapped unmodifiable case-insensitive instance providing data.
      */
-    private final CaseInsensitiveMap<String, V> lowercaseWrapped;
+    private final CaseInsensitiveMap<K, V> lowercaseWrapped;
 
     /**
      * Creates a new instance of a lookup map backed by the specified map.
      *
      * @param backingMap map to back lookup map
      */
-    public LookupMap(final Map<String, V> backingMap) {
+    public LookupMap(final Map<K, V> backingMap) {
         if (isUnmodifiable(backingMap)) {
             this.wrapped = backingMap;
         } else {
@@ -61,7 +60,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
      * @param map map to check
      * @return true if unmodifiable
      */
-    private boolean isUnmodifiable(final Map<String, V> map) {
+    private boolean isUnmodifiable(final Map<K, V> map) {
         return map.getClass().getName().equals("java.util.Collections$UnmodifiableMap")
                || map.getClass().getName().equals("org.apache.commons.collections4.map.UnmodifiableMap")
                || map.getClass().getName().equals("com.google.common.collect.ImmutableMap")
@@ -71,7 +70,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
     /**
      * @return the key set all in lowercase.
      */
-    public Set<String> lowercaseKeySet() {
+    public Set<K> lowercaseKeySet() {
         return this.lowercaseWrapped.keySet();
     }
 
@@ -80,7 +79,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
      * @param key case-insensitive key
      * @return true if exists otherwise false
      */
-    public boolean containsKeyCaseInsensitive(final String key) {
+    public boolean containsKeyCaseInsensitive(final K key) {
         return this.lowercaseWrapped.containsKey(key);
     }
 
@@ -89,7 +88,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
      * @param key case-insensitive key
      * @return associated value or null when not found
      */
-    public V getWithCaseInsensitiveKey(final String key) {
+    public V getWithCaseInsensitiveKey(final K key) {
         return this.lowercaseWrapped.get(key);
     }
 
@@ -119,7 +118,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
-    public V put(final String key, final V value) {
+    public V put(final K key, final V value) {
         return wrapped.put(key, value);
     }
 
@@ -129,7 +128,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
-    public void putAll(final Map<? extends String, ? extends V> m) {
+    public void putAll(final Map<? extends K, ? extends V> m) {
         wrapped.putAll(m);
     }
 
@@ -139,7 +138,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
-    public Set<String> keySet() {
+    public Set<K> keySet() {
         return wrapped.keySet();
     }
 
@@ -149,7 +148,7 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
-    public Set<Entry<String, V>> entrySet() {
+    public Set<Entry<K, V>> entrySet() {
         return wrapped.entrySet();
     }
 
@@ -170,17 +169,17 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
-    public void forEach(final BiConsumer<? super String, ? super V> action) {
+    public void forEach(final BiConsumer<? super K, ? super V> action) {
         wrapped.forEach(action);
     }
 
     @Override
-    public void replaceAll(final BiFunction<? super String, ? super V, ? extends V> function) {
+    public void replaceAll(final BiFunction<? super K, ? super V, ? extends V> function) {
         wrapped.replaceAll(function);
     }
 
     @Override
-    public V putIfAbsent(final String key, final V value) {
+    public V putIfAbsent(final K key, final V value) {
         return wrapped.putIfAbsent(key, value);
     }
 
@@ -190,34 +189,34 @@ public class LookupMap<String, V> implements Map<String, V>  {
     }
 
     @Override
-    public boolean replace(final String key, final V oldValue, final V newValue) {
+    public boolean replace(final K key, final V oldValue, final V newValue) {
         return wrapped.replace(key, oldValue, newValue);
     }
 
     @Override
-    public V replace(final String key, final V value) {
+    public V replace(final K key, final V value) {
         return wrapped.replace(key, value);
     }
 
     @Override
-    public V computeIfAbsent(final String key, final Function<? super String, ? extends V> mappingFunction) {
+    public V computeIfAbsent(final K key, final Function<? super K, ? extends V> mappingFunction) {
         return wrapped.computeIfAbsent(key, mappingFunction);
     }
 
     @Override
-    public V computeIfPresent(final String key,
-                              final BiFunction<? super String, ? super V, ? extends V> remappingFunction) {
+    public V computeIfPresent(final K key,
+                              final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         return wrapped.computeIfPresent(key, remappingFunction);
     }
 
     @Override
-    public V compute(final String key,
-                     final BiFunction<? super String, ? super V, ? extends V> remappingFunction) {
+    public V compute(final K key,
+                     final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         return wrapped.compute(key, remappingFunction);
     }
 
     @Override
-    public V merge(final String key,
+    public V merge(final K key,
                    final V value,
                    final BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         return wrapped.merge(key, value, remappingFunction);

@@ -8,6 +8,8 @@
 package com.joyent.manta.client.crypto;
 
 import com.joyent.manta.client.multipart.MultipartOutputStream;
+import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.exception.MantaResourceCloseException;
 import com.joyent.manta.http.MantaContentTypes;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CountingOutputStream;
@@ -16,8 +18,8 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
+import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -132,15 +134,56 @@ public class EncryptingPartEntity implements HttpEntity {
 
         try {
             IOUtils.copy(contentStream, cout, BUFFER_SIZE);
-            cipherStream.flush();
-            if (lastPartCallback != null) {
-                ByteArrayOutputStream remainderStream = lastPartCallback.call(cout.getByteCount());
+
+            if (lastPartCallback == null) {
+                cout.flush();
+            } else {
+                final long bytesWritten = cout.getByteCount();
+                // This call will close cout/cipherStream
+                final ByteArrayOutputStream remainderStream = lastPartCallback.call(bytesWritten);
+
                 if (remainderStream.size() > 0) {
-                    IOUtils.copy(new ByteArrayInputStream(remainderStream.toByteArray()), httpOut, BUFFER_SIZE);
+                    final byte[] remainder = remainderStream.toByteArray();
+                    httpOut.write(remainder);
                 }
             }
-        } finally {
-            IOUtils.closeQuietly(contentStream);
+        } catch (Exception e) {
+            // Attempt to close the input stream and in the case where we can't
+            // we log because we can't deal with two exceptions at once.
+            try {
+                contentStream.close();
+            } catch (IOException ioe) {
+                LoggerFactory.getLogger(getClass()).error(
+                        "Unable to close the encrypting part entity content stream", e);
+            }
+
+            if (e instanceof IOException) {
+                String msg = "Unable to copy multipart source data to Manta";
+                MantaIOException mio = new MantaIOException(msg, e);
+                mio.setContextValue("contentStream", contentStream);
+                mio.setContextValue("bytesWritten", cout.getByteCount());
+                throw mio;
+            } else {
+                throw e;
+            }
+        }
+
+        /* If an exception is thrown on close() here, it will propagate up
+         * the stack through the line where httpClient.execute() statement
+         * was invoked. We leave the handling of any exceptions related to
+         * closing this stream up to the user and intentionally do not
+         * suppress them. The user may catch it specifically by catching the
+         * MantaResourceCloseException type.
+         */
+        try {
+            contentStream.close();
+        } catch (IOException e) {
+            String msg = "Unable to close the encrypting part entity content stream";
+            MantaResourceCloseException mrce = new MantaResourceCloseException(msg, e);
+            mrce.setContextValue("contentStream", contentStream);
+            mrce.setContextValue("bytesWritten", cout.getByteCount());
+
+            throw mrce;
         }
     }
 

@@ -20,6 +20,9 @@ import static org.testng.Assert.assertNotNull;
 @Test
 public class ExternalSecurityProviderLoaderTest {
     static {
+        /* We force the class to be loaded here in order to execute the code paths
+         * defined in static scope. */
+        @SuppressWarnings({"UnusedVariable", "unused"})
         Class<ExternalSecurityProviderLoader> c = ExternalSecurityProviderLoader.class;
     }
 

@@ -1720,7 +1720,7 @@ public class MantaClient implements AutoCloseable {
         }
 
         final Integer skipDepth = config.getSkipDirectoryDepth();
-        final RecursiveDirectoryCreationStrategy directoryCreationStrategy;
+
         if (skipDepth != null && 0 < skipDepth) {
             RecursiveDirectoryCreationStrategy.createWithSkipDepth(this, rawPath, headers, skipDepth);
         } else {
@@ -2112,11 +2112,6 @@ public class MantaClient implements AutoCloseable {
                         config.getMantaHomeDirectory(), jobId);
 
                 final HttpUriRequest archiveRequest = httpHelper.getRequestFactory().get(archivePath);
-
-                // We close the request that was previously opened, because it
-                // didn't have what we need.
-                IOUtils.closeQuietly(initialResponse);
-
                 CloseableHttpResponse archiveResponse = client.execute(archiveRequest);
                 lastResponse = archiveResponse;
                 final StatusLine archiveStatusLine = archiveResponse.getStatusLine();
@@ -2183,7 +2178,13 @@ public class MantaClient implements AutoCloseable {
             throw je;
         } finally {
             if (lastResponse != null) {
-                IOUtils.closeQuietly(lastResponse);
+                try {
+                    lastResponse.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, initialRequest, lastResponse);
+                    LOG.error("Unable to close HTTP response resource", mio);
+                }
             }
         }
 
@@ -2582,10 +2583,22 @@ public class MantaClient implements AutoCloseable {
         final BufferedReader br = new BufferedReader(reader);
 
         Stream<String> stream = br.lines().onClose(() -> {
-            IOUtils.closeQuietly(br);
+            try {
+                br.close();
+            } catch (IOException e) {
+                MantaIOException mio = new MantaIOException(e);
+                HttpHelper.annotateContextedException(mio, null, response);
+                LOG.error("Unable to close buffered reader", mio);
+            }
 
             if (response instanceof Closeable) {
-                IOUtils.closeQuietly((Closeable)response);
+                try {
+                    ((Closeable)response).close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, null, response);
+                    LOG.error("Unable to close HTTP response resource", mio);
+                }
             }
         });
 

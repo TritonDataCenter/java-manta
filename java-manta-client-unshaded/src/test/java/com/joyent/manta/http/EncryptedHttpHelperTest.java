@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.crypto.AesCbcCipherDetails;
 import com.joyent.manta.client.crypto.AesGcmCipherDetails;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
@@ -48,7 +47,7 @@ public class EncryptedHttpHelperTest {
     @Test(groups = {"unlimited-crypto"})
     public void doesntAllowDifferentCipherForObjectAndConfigHeadIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
-        EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
+        EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper();
         httpHelper.httpHead(path);
     }
 
@@ -59,7 +58,7 @@ public class EncryptedHttpHelperTest {
     @Test(groups = {"unlimited-crypto"})
     public void allowDifferentCipherForObjectAndConfigGetIfOnlyReadingUnencryptedMetadata() throws Exception {
         String path = "/user/path/encrypted-object";
-        EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
+        EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper();
         httpHelper.httpGet(path);
     }
 
@@ -71,7 +70,7 @@ public class EncryptedHttpHelperTest {
     @Test(groups = {"unlimited-crypto"})
     public void doesntAllowDifferentCipherForObjectAndConfigInputStream() throws Exception {
         String path = "/user/path/encrypted-object";
-        EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper(path);
+        EncryptionHttpHelper httpHelper = fakeEncryptionHttpHelper();
 
         boolean caught = false;
         try {
@@ -93,8 +92,7 @@ public class EncryptedHttpHelperTest {
      * be configured for one cipher/mode and executes requests in another
      * cipher/mode.
      */
-    private static EncryptionHttpHelper fakeEncryptionHttpHelper(String path)
-            throws Exception {
+    private static EncryptionHttpHelper fakeEncryptionHttpHelper() {
         MantaConnectionContext connectionContext = mock(MantaConnectionContext.class);
 
         StandardConfigContext config = new StandardConfigContext();
@@ -109,8 +107,6 @@ public class EncryptedHttpHelperTest {
                 connectionContext,
                 new MantaHttpRequestFactory(UnitTestConstants.UNIT_TEST_URL),
                 config);
-
-        URI uri = URI.create(DEFAULT_MANTA_URL + SEPARATOR + path);
 
         CloseableHttpResponse fakeResponse = mock(CloseableHttpResponse.class);
         StatusLine statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1,

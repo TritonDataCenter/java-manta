@@ -69,7 +69,7 @@ public class EncryptingEntityTest {
         ExposedStringEntity stringEntity = new ExposedStringEntity("boo",
                 StandardCharsets.US_ASCII);
 
-        EncryptingEntity entity = new EncryptingEntity(key, cipherDetails, stringEntity);
+        new EncryptingEntity(key, cipherDetails, stringEntity);
     }
 
     /* AES-GCM-NoPadding Tests */

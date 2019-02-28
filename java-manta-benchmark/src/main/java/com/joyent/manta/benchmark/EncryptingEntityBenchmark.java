@@ -24,10 +24,10 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.util.NullOutputStream;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
-import javax.crypto.SecretKey;
 
 
 /**
@@ -48,13 +48,14 @@ public class EncryptingEntityBenchmark {
     // NOTE: EncryptingEntity requires modification for this to be
     // configurable for testing
     @Param({"128"})
+    @SuppressWarnings({"UnusedVariable", "unused"})
     private int blockSize;
 
     private SupportedCipherDetails cipherDetails;
     private SecretKey secretKey;
 
     @Setup
-    public void setup() throws IOException {
+    public void setup() {
         cipherDetails = SupportedCiphersLookupMap.INSTANCE.get(encryptionAlgorithm);
         secretKey = SecretKeyUtils.generate(cipherDetails);
         System.out.println("\n#Provider: " + cipherDetails.getCipher().getProvider().getName());

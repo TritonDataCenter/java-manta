@@ -22,20 +22,32 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
-
-import static com.joyent.manta.client.crypto.ExternalSecurityProviderLoader.*;
-import static com.joyent.manta.http.MantaHttpHeaders.*;
-import static org.apache.http.HttpHeaders.*;
-import static org.apache.commons.codec.binary.Hex.decodeHex;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Provider;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import static com.joyent.manta.client.crypto.ExternalSecurityProviderLoader.buildRankedPreferredProviders;
+import static com.joyent.manta.client.crypto.ExternalSecurityProviderLoader.setRankedPreferredProviders;
+import static com.joyent.manta.http.MantaHttpHeaders.*;
+import static org.apache.commons.codec.binary.Hex.decodeHex;
+import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
+import static org.apache.http.HttpHeaders.CONTENT_MD5;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 
 /**
  * This test verifies that each of the supported ciphers and modes can be used to decrypt
@@ -205,8 +217,8 @@ public class MultiCryptoProviderDecryptionTest {
     }
 
     private static SecretKey generateSecretKey(final SupportedCipherDetails cipherDetails) throws DecoderException {
-        final byte[] secretKey = decodeHex((
-                "8b30335ba65d1d0619c6192edb15318763d9a1be3ff916aaf46f4717232a504a").toCharArray());
+        final byte[] secretKey = decodeHex(
+                "8b30335ba65d1d0619c6192edb15318763d9a1be3ff916aaf46f4717232a504a".toCharArray());
         final int keySizeInBytes = cipherDetails.getKeyLengthBits() >> 3; // convert bits to bytes
         final byte[] secret = Arrays.copyOfRange(secretKey, 0, keySizeInBytes);
         return SecretKeyUtils.loadKey(secret, cipherDetails);

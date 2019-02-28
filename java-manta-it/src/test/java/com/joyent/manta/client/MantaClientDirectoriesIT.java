@@ -248,7 +248,6 @@ public class MantaClientDirectoriesIT {
      * This test will create a set of directories, then it will
      * set the pruneEmptyParentDepth = -1, meaning it will
      * delete all empty directories in the hierarchy.
-     * @throws IOException
      */
     @Test
     public void pruneParentDirectoriesFull() throws IOException {
@@ -371,7 +370,6 @@ public class MantaClientDirectoriesIT {
      *
      * @param parent - the directory to create this from.
      * @param depth - the desired depth from the parent.
-     * @return
      */
     private String createRandomDirectory(final String parent, final int depth) throws IOException {
         final StringBuilder parentDirBuilder = new StringBuilder(parent);

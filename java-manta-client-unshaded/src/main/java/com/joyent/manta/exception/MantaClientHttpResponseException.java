@@ -143,7 +143,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
                                             final HttpResponse response,
                                             final String path,
                                             final int... expectedResponseCodes) {
-        super(buildExceptionMessageFromHttpExchange(request, response, path, expectedResponseCodes));
+        super(buildExceptionMessageFromHttpExchange(response, path, expectedResponseCodes));
         final HttpEntity entity = response.getEntity();
         final ContentType jsonContentType = ContentType.APPLICATION_JSON;
 
@@ -175,7 +175,7 @@ public class MantaClientHttpResponseException extends MantaIOException {
             }
         }
 
-        setRequestId(HttpHelper.extractRequestId(response));
+        setRequestId(HttpHelper.extractRequestId(request, response));
         setStatusLine(response.getStatusLine());
 
         if (errorDetail == null) {
@@ -203,14 +203,12 @@ public class MantaClientHttpResponseException extends MantaIOException {
     /**
      * Build an exception message tailored to the arguments passed to the most complex constructor.
      *
-     * @param request HTTP request object
      * @param response HTTP response object
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param expectedResponseCodes list of allowed response codes
      * @return a relevant error message
      */
-    private static String buildExceptionMessageFromHttpExchange(final HttpRequest request,
-                                                                final HttpResponse response,
+    private static String buildExceptionMessageFromHttpExchange(final HttpResponse response,
                                                                 final String path,
                                                                 final int... expectedResponseCodes) {
         if (expectedResponseCodes != null) {

@@ -87,7 +87,7 @@ public class MantaObjectOutputStreamIT {
             out.close();
         }
 
-        MantaObject uploaded = out.getObjectResponse();
+        Assert.assertNotNull(out.getObjectResponse());
 
         Assert.assertTrue(mantaClient.existsAndIsAccessible(path),
                 "File wasn't uploaded: " + path);

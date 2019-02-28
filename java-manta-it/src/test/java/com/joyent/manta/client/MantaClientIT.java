@@ -51,7 +51,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-//@Test(dependsOnGroups = { "directory" })
+@Test
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -125,14 +125,9 @@ public class MantaClientIT {
         File temp = File.createTempFile("object-" + name, ".data");
         FileUtils.forceDeleteOnExit(temp);
 
-        InputStream in = mantaClient.getAsInputStream(path);
-        FileOutputStream out = new FileOutputStream(temp);
-
-        try {
+        try (InputStream in = mantaClient.getAsInputStream(path);
+             FileOutputStream out = new FileOutputStream(temp)) {
             IOUtils.copyLarge(in, out);
-        } finally {
-            in.close();
-            out.close();
         }
     }
 

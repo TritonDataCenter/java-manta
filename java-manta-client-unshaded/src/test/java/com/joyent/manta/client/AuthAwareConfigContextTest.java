@@ -14,10 +14,8 @@ import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.TestConfigContext;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.text.RandomStringGenerator;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -28,24 +26,14 @@ import java.security.KeyPair;
 
 @Test
 public class AuthAwareConfigContextTest {
-
-    private static final RandomStringGenerator STRING_GENERATOR =
-            new RandomStringGenerator.Builder()
-                    .withinRange((int) 'a', (int) 'z')
-                    .build();
-
     private BaseChainedConfigContext config;
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    public void setUp() {
         final ImmutablePair<KeyPair, BaseChainedConfigContext> keypairAndConfig = TestConfigContext.generateKeyPairBackedConfig();
         config = keypairAndConfig.right
                 .setMantaURL("https://localhost")
                 .setMantaUser("user");
-    }
-
-    @AfterMethod
-    public void tearDown() throws Exception {
     }
 
     // PERHAPS: split this out into several tests since they're all pretty self-contained?

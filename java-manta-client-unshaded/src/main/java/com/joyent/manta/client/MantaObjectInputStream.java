@@ -7,8 +7,10 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.exception.MantaResourceCloseException;
+import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.EofSensorInputStream;
 import org.slf4j.Logger;
@@ -187,8 +189,34 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
                     this.backingStream, httpResponse);
         }
 
-        IOUtils.closeQuietly(backingStream);
-        IOUtils.closeQuietly(httpResponse);
+        try {
+            if (backingStream != null) {
+                backingStream.close();
+            }
+        } catch (IOException e) {
+            /* Since we will be throwing an exception when closing the backing
+             * stream, we will only log the error thrown when closing the
+             * response because we can only throw up a single exception. */
+            try {
+                httpResponse.close();
+            } catch (IOException ioe) {
+                MantaIOException responseMio = new MantaIOException(ioe);
+                HttpHelper.annotateContextedException(responseMio, null, httpResponse);
+                LOGGER.error("Unable to close HTTP response resource", responseMio);
+            }
+
+            MantaIOException mio = new MantaIOException(e);
+            HttpHelper.annotateContextedException(mio, null, httpResponse);
+            throw mio;
+        }
+
+        try {
+            httpResponse.close();
+        } catch (IOException e) {
+            MantaIOException mio = new MantaIOException(e);
+            HttpHelper.annotateContextedException(mio, null, httpResponse);
+            throw mio;
+        }
     }
 
     @Override
@@ -226,7 +254,15 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     public void abortConnection() throws IOException {
         if (backingStream instanceof EofSensorInputStream) {
             ((EofSensorInputStream) backingStream).abortConnection();
-            IOUtils.closeQuietly(httpResponse);
+            try {
+                if (httpResponse != null) {
+                    httpResponse.close();
+                }
+            } catch (IOException e) {
+                MantaIOException mio = new MantaResourceCloseException(e);
+                HttpHelper.annotateContextedException(mio, null, httpResponse);
+                LOGGER.error("Unable to close HTTP response object", mio);
+            }
         } else {
             close();
         }

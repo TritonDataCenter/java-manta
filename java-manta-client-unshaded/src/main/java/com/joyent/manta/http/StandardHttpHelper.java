@@ -27,7 +27,6 @@ import com.joyent.manta.util.AutoContinuingInputStream;
 import com.joyent.manta.util.InputStreamContinuator;
 import com.joyent.manta.util.MantaUtils;
 import com.twmacinta.util.FastMD5Digest;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -691,7 +690,13 @@ public class StandardHttpHelper implements HttpHelper {
             return response;
         } finally {
             if (closeResponse) {
-                IOUtils.closeQuietly(response);
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, request, response);
+                    LOGGER.error("Unable to close HTTP response resource", mio);
+                }
             }
         }
     }
@@ -750,7 +755,13 @@ public class StandardHttpHelper implements HttpHelper {
             }
         } finally {
             if (closeResponse) {
-                IOUtils.closeQuietly(response);
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    MantaIOException mio = new MantaIOException(e);
+                    HttpHelper.annotateContextedException(mio, request, response);
+                    LOGGER.error("Unable to close HTTP response object", mio);
+                }
             }
         }
     }

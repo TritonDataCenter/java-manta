@@ -7,10 +7,8 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.http.signature.Signer;
 import com.joyent.http.signature.ThreadLocalSigner;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.KeyPairFactory;
 import com.joyent.manta.config.TestConfigContext;
 import com.joyent.manta.exception.MantaNoHttpResponseException;
 import com.joyent.manta.http.MantaConnectionFactory;
@@ -115,15 +113,9 @@ public class MantaClientConnectionFailuresIT {
 
     /**
      * Test is disabled in testng.xml, the MantaClient constructor needs to be revisted.
-     *
-     * @throws IOException
      */
     @Test(enabled = false)
     public void canRetryOnNoHttpResponseException() throws IOException {
-        final KeyPairFactory keyPairFactory = new KeyPairFactory(config);
-        final KeyPair keyPair = keyPairFactory.createKeyPair();
-        final ThreadLocalSigner signer = new ThreadLocalSigner(new Signer.Builder(keyPair));
-
         // This should be done with mocks
         MantaClient mantaClient = new MantaClient(config);
 

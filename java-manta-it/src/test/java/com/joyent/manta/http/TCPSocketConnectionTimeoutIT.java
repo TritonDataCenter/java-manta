@@ -16,8 +16,6 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -35,8 +33,6 @@ import java.time.Instant;
 
 @Test
 public class TCPSocketConnectionTimeoutIT {
-    private static final Logger LOG = LoggerFactory.getLogger(TCPSocketConnectionTimeoutIT.class);
-
     // Let TestNG configuration take precedence over environment variables
     private AuthAwareConfigContext authConfig = new AuthAwareConfigContext(
             new IntegrationTestConfigContext());

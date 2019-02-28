@@ -5,9 +5,7 @@ import com.joyent.manta.util.MantaVersion;
 import org.apache.http.*;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.DefaultHttpResponseFactory;
-import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
-import org.apache.http.protocol.HTTP;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

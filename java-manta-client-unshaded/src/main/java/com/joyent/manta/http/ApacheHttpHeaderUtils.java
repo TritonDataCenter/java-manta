@@ -42,7 +42,7 @@ final class ApacheHttpHeaderUtils {
      * present.
      *
      * @param message the {@link org.apache.http.HttpRequest} or {@link org.apache.http.HttpResponse}
-     * @param headerName the name of the request/repsonse header
+     * @param headerName the name of the request/response header
      * @return the single header value if there was only one present, or null if it was missing
      * @throws ProtocolException When the header is present more than once, or is present but blank.
      */

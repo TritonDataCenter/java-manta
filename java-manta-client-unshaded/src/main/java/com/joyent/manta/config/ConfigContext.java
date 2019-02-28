@@ -426,7 +426,7 @@ public interface ConfigContext extends MantaMBeanable {
             failureMessages.add("Encryption key id must not contain whitespace");
         }
         if (config.getEncryptionKeyId() != null && !StringUtils.isAsciiPrintable(config.getEncryptionKeyId())) {
-            failureMessages.add(("Encryption key id must only contain printable ASCII characters"));
+            failureMessages.add("Encryption key id must only contain printable ASCII characters");
         }
 
         // AUTHENTICATION MODE VALIDATIONS
