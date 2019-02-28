@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
-@Test
+@Test(groups = { "nightly" })
 public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 

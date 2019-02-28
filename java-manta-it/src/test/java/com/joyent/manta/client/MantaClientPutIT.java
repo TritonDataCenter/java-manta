@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -70,7 +70,7 @@ public class MantaClientPutIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
+    @Test(groups = { "nightly" })
     public final void testPutWithStringUTF8() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -104,7 +104,7 @@ public class MantaClientPutIT {
         }
     }
 
-    @Test
+    @Test(groups = { "nightly" })
     public final void testPutWithStringUTF16() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -271,7 +271,7 @@ public class MantaClientPutIT {
         }
     }
 
-    @Test
+    @Test(groups = { "nightly" })
     public final void testPutWithPlainTextFileUTF8RomanCharacters() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -289,7 +289,7 @@ public class MantaClientPutIT {
                 "Uploaded file didn't match expectation");
     }
 
-    @Test
+    @Test(groups = { "nightly" })
     public final void testPutWithPlainTextFileUTF8NonRomanCharacters() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

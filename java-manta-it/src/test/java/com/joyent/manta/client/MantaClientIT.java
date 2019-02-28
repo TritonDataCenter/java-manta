@@ -164,7 +164,7 @@ public class MantaClientIT {
         }
     }
 
-    @Test
+    @Test(groups = { "nightly" })
     public final void testManyOperations() throws IOException {
         String dir = testPathPrefix + "multiple";
         mantaClient.putDirectory(dir);
@@ -269,7 +269,7 @@ public class MantaClientIT {
                 "text/html", "Content type wasn't auto-assigned");
     }
 
-    @Test
+    @Test(groups = { "nightly" })
     public final void testRecursiveDeleteObject() throws IOException {
         final String dir1 = String.format("%s1", testPathPrefix);
                 mantaClient.putDirectory(testPathPrefix + "1", null);
@@ -504,7 +504,7 @@ public class MantaClientIT {
                 + source);
     }
 
-    @Test
+    @Test(groups = { "move" })
     public final void canMoveDirectoryWithContents() throws IOException {
         final String name = "source-" + UUID.randomUUID().toString();
         final String source = testPathPrefix + name + MantaClient.SEPARATOR;

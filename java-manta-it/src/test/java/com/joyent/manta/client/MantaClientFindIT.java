@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
-@Test
+@Test(groups = { "nightly" })
 public class MantaClientFindIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 

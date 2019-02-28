@@ -91,6 +91,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+    @Test(groups = { "nightly" })
     public final void canListUploadsInProgress() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -211,6 +212,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+    @Test(groups = { "nightly" })
     public final void canUploadWithSinglePartByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -281,6 +283,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+    @Test(groups = { "nightly" })
     public void errorWhenMissingPart() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -307,6 +310,7 @@ public class ServerSideMultipartManagerIT {
         assertTrue(thrown, "Exception wasn't thrown");
     }
 
+    @Test(groups = { "nightly" })
     public void cantUploadSmallMultipartString() throws IOException {
         String[] parts = new String[] {
                 "Hello ",

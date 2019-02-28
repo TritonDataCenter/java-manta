@@ -27,7 +27,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test( groups = { "metadata" })
+@Test(groups = { "metadata" })
 public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
