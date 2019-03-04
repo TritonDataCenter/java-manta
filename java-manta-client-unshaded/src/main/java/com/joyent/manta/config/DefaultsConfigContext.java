@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -82,6 +82,11 @@ public class DefaultsConfigContext implements ConfigContext {
           + "TLS_RSA_WITH_AES_128_CBC_SHA256";
 
     /**
+     * Usage of content type auto-detection while uploading files in Manta is enabled by default.
+     */
+    public static final boolean DEFAULT_CONTENT_TYPE_DETECTION_ENABLED = true;
+
+    /**
      * HTTP Signatures for authentication are enabled by default.
      */
     public static final boolean DEFAULT_NO_AUTH = false;
@@ -90,11 +95,6 @@ public class DefaultsConfigContext implements ConfigContext {
      * Usage of native extensions for http signatures is enabled by default.
      */
     public static final boolean DEFAULT_DISABLE_NATIVE_SIGNATURES = false;
-
-    /**
-     * Usage of content type auto-detection while uploading files in Manta is enabled by default.
-     */
-    public static final boolean DEFAULT_DISABLE_CONTENT_TYPE_DETECTION = false;
 
     /**
      * The default number of empty ancestor directories (depth) to prune to when
@@ -233,9 +233,6 @@ public class DefaultsConfigContext implements ConfigContext {
     }
 
     @Override
-    public Boolean disableContentTypeDetection() { return DEFAULT_DISABLE_CONTENT_TYPE_DETECTION; }
-
-    @Override
     public Integer getTcpSocketTimeout() {
         return DEFAULT_TCP_SOCKET_TIMEOUT;
     }
@@ -289,6 +286,9 @@ public class DefaultsConfigContext implements ConfigContext {
     public Boolean isClientEncryptionEnabled() {
         return false;
     }
+
+    @Override
+    public Boolean isContentTypeDetectionEnabled() { return DEFAULT_CONTENT_TYPE_DETECTION_ENABLED; }
 
     @Override
     public String getEncryptionKeyId() {

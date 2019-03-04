@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -88,11 +88,6 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_NO_AUTH_KEY = "manta.no_auth";
 
     /**
-     * Property key for disabling automatic detection of content type while uploading files in Manta.
-     */
-    public static final String MANTA_NO_CONTENT_TYPE_DETECTION_KEY = "manta.no_content_type_detection";
-
-    /**
      * Property key for disabling native code support for generating signatures.
      */
     public static final String MANTA_NO_NATIVE_SIGS_KEY = "manta.disable_native_sigs";
@@ -153,6 +148,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
 
     /**
+     * Property key for enabling automatic detection of content type while uploading files in Manta.
+     */
+    public static final String MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY = "manta.content_type_detection";
+
+    /**
      * Property key for setting an identifier for the client-side encryption key used.
      */
     public static final String MANTA_ENCRYPTION_KEY_ID_KEY = "manta.encryption_key_id";
@@ -205,7 +205,6 @@ public class MapConfigContext implements ConfigContext {
             MANTA_PASSWORD_KEY, MANTA_HTTP_BUFFER_SIZE_KEY,
             MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
-            MANTA_NO_CONTENT_TYPE_DETECTION_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
             MANTA_VERIFY_UPLOADS_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
@@ -216,6 +215,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_METRIC_REPORTER_MODE_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
+            MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_KEY_ID_KEY,
             MANTA_ENCRYPTION_ALGORITHM_KEY,
@@ -360,18 +360,6 @@ public class MapConfigContext implements ConfigContext {
     }
 
     @Override
-    public Boolean disableContentTypeDetection() {
-        Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_NO_CONTENT_TYPE_DETECTION_KEY));
-
-        if (mapValue != null) {
-            return mapValue;
-        }
-
-        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_NO_CONTENT_TYPE_DETECTION_KEY));
-    }
-
-
-    @Override
     public Integer getTcpSocketTimeout() {
         Integer mapValue = MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_TCP_SOCKET_TIMEOUT_KEY));
 
@@ -495,6 +483,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY));
+    }
+
+    @Override
+    public Boolean isContentTypeDetectionEnabled() {
+        Boolean enabled = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY));
+
+        if (enabled != null) {
+            return enabled;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY));
     }
 
     @Override

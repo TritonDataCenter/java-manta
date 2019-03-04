@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@ public class ChainedConfigContextTest {
         context1.setMantaKeyPath(expectedKeyPath);
         context1.setMantaURL("https://manta.host.com");
         context1.setClientEncryptionEnabled(true);
-        context1.setDisableContentTypeDetection(true);
+        context1.setContentTypeDetectionEnabled(true);
         context1.setTimeout(3000);
         context1.setTcpSocketTimeout(40);
 
@@ -57,7 +57,7 @@ public class ChainedConfigContextTest {
         Assert.assertEquals(chained.getPassword(), defaults.getPassword());
         Assert.assertEquals(chained.getMaximumConnections(), defaults.getMaximumConnections());
         Assert.assertEquals(chained.isClientEncryptionEnabled(), context1.isClientEncryptionEnabled());
+        Assert.assertEquals(chained.isContentTypeDetectionEnabled(), context1.isContentTypeDetectionEnabled());
         Assert.assertEquals(chained.disableNativeSignatures(), defaults.disableNativeSignatures());
-        Assert.assertEquals(chained.disableContentTypeDetection(), defaults.disableContentTypeDetection());
     }
 }

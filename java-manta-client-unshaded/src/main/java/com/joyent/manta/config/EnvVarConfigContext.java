@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -85,11 +85,6 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_NO_AUTH_ENV_KEY = "MANTA_NO_AUTH";
 
     /**
-     * Environment variable for disabling automatic content type detection while uploading a file.
-     */
-    public static final String MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY = "MANTA_NO_CONTENT_TYPE_DETECTION";
-
-    /**
      * Environment variable for disabling native code support for generating signatures.
      */
     public static final String MANTA_NO_NATIVE_SIGS_ENV_KEY = "MANTA_NO_NATIVE_SIGS";
@@ -129,7 +124,6 @@ public class EnvVarConfigContext implements ConfigContext {
      */
     public static final String MANTA_PRUNE_EMPTY_PARENT_DEPTH_ENV_KEY = "MANTA_PRUNE_EMPTY_PARENT_DEPTH";
 
-
     /**
      * Environment variable for setting whether download continuation is enabled.
      */
@@ -149,6 +143,11 @@ public class EnvVarConfigContext implements ConfigContext {
      * Environment variable for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY = "MANTA_CLIENT_ENCRYPTION";
+
+    /**
+     * Environment variable for disabling automatic content type detection while uploading a file.
+     */
+    public static final String MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY = "MANTA_CONTENT_TYPE_DETECTION";
 
     /**
      * Environment variable for setting an identifier for the client-side encryption key used.
@@ -194,7 +193,6 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_BUFFER_SIZE_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
-            MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY,
             MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY,
@@ -206,6 +204,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_METRIC_REPORTER_MODE_ENV_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY,
+            MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY,
             MANTA_ENCRYPTION_KEY_ID_ENV_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_ENV_KEY,
             MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY,
@@ -313,12 +312,6 @@ public class EnvVarConfigContext implements ConfigContext {
     }
 
     @Override
-    public Boolean disableContentTypeDetection() {
-        String disableContentTypeDetection = getEnv(MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY);
-        return MantaUtils.parseBooleanOrNull(disableContentTypeDetection);
-    }
-
-    @Override
     public Integer getTcpSocketTimeout() {
         String timeoutString = getEnv(MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY);
 
@@ -383,6 +376,12 @@ public class EnvVarConfigContext implements ConfigContext {
         String enabled = getEnv(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY);
 
         return MantaUtils.parseBooleanOrNull(enabled);
+    }
+
+    @Override
+    public Boolean isContentTypeDetectionEnabled() {
+        String enableContentTypeDetection = getEnv(MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY);
+        return MantaUtils.parseBooleanOrNull(enableContentTypeDetection);
     }
 
     @Override

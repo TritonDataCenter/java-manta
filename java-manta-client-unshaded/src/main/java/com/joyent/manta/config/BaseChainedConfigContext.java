@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,11 +58,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Flag indicating if HTTP signature native code generation is turned off.
      */
     private volatile Boolean disableNativeSignatures;
-
-    /**
-     * Flag indicating if automatic content type detection while uploading files in Manta is turned off.
-     */
-    private volatile Boolean disableContentTypeDetection;
 
     /**
      * Flag indicating if we verify the uploaded file's checksum against the
@@ -152,6 +147,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Flag indicating when client-side encryption is enabled.
      */
     private volatile Boolean clientEncryptionEnabled;
+
+    /**
+     * Flag indicating if automatic content type detection is enabled while uploading files in Manta is turned off.
+     */
+    private volatile Boolean contentTypeDetectionEnabled;
 
     /**
      * The unique identifier of the key used for encryption.
@@ -285,9 +285,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public Boolean disableContentTypeDetection() { return disableContentTypeDetection; }
-
-    @Override
     public Integer getTcpSocketTimeout() {
         return tcpSocketTimeout;
     }
@@ -340,6 +337,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public Boolean isClientEncryptionEnabled() {
         return clientEncryptionEnabled;
+    }
+
+    @Override
+    public Boolean isContentTypeDetectionEnabled() {
+        return contentTypeDetectionEnabled;
     }
 
     @Override
@@ -464,10 +466,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
 
-        if (context.disableContentTypeDetection() != null) {
-            this.disableContentTypeDetection = context.disableContentTypeDetection();
-        }
-
         if (context.getHttpBufferSize() != null) {
             this.httpBufferSize = context.getHttpBufferSize();
         }
@@ -514,6 +512,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (context.isContentTypeDetectionEnabled() != null) {
+            this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
         }
 
         if (context.getEncryptionKeyId() != null) {
@@ -593,10 +595,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
 
-        if (this.disableContentTypeDetection() == null) {
-            this.disableContentTypeDetection = context.disableContentTypeDetection();
-        }
-
         if (this.httpBufferSize == null) {
             this.httpBufferSize = context.getHttpBufferSize();
         }
@@ -643,6 +641,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.clientEncryptionEnabled == null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (this.contentTypeDetectionEnabled == null) {
+            this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
         }
 
         if (this.encryptionKeyId == null) {
@@ -790,13 +792,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public BaseChainedConfigContext setDisableContentTypeDetection(final Boolean disableContentTypeDetection) {
-        this.disableContentTypeDetection = disableContentTypeDetection;
-
-        return this;
-    }
-
-    @Override
     public BaseChainedConfigContext setTcpSocketTimeout(final Integer tcpSocketTimeout) {
         this.tcpSocketTimeout = tcpSocketTimeout;
 
@@ -867,6 +862,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
+
+        return this;
+    }
+
+    @Override
+    public BaseChainedConfigContext setContentTypeDetectionEnabled(final Boolean contentTypeDetectionEnabled) {
+        this.contentTypeDetectionEnabled = contentTypeDetectionEnabled;
 
         return this;
     }
@@ -948,7 +950,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
-                && Objects.equals(disableContentTypeDetection, that.disableContentTypeDetection)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(connectionRequestTimeout, that.connectionRequestTimeout)
                 && Objects.equals(expectContinueTimeout, that.expectContinueTimeout)
@@ -960,6 +961,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
+                && Objects.equals(contentTypeDetectionEnabled, that.contentTypeDetectionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
                 && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
@@ -973,7 +975,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, disableContentTypeDetection,
+                disableNativeSignatures,
                 tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 skipDirectoryDepth,
@@ -981,6 +983,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 metricReporterMode,
                 metricReporterOutputInterval,
                 clientEncryptionEnabled, encryptionKeyId,
+                contentTypeDetectionEnabled,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
                 Arrays.hashCode(encryptionPrivateKeyBytes));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -128,14 +128,6 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setDisableNativeSignatures(Boolean disableNativeSignatures);
 
     /**
-     * Sets flag indicating when to disable content type auto-detection while uploading a file.
-     *
-     * @param disableContentTypeDetection true to disable
-     * @return the current instance of {@link T}
-     */
-    T setDisableContentTypeDetection(Boolean disableContentTypeDetection);
-
-    /**
      * Sets the time in milliseconds to wait to see if a TCP socket has timed out.
      *
      * @see java.net.SocketOptions#SO_TIMEOUT
@@ -227,6 +219,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @return the current instance of {@link T}
      */
     T setClientEncryptionEnabled(Boolean clientEncryptionEnabled);
+
+    /**
+     * Sets flag indicating when content type auto-detection is enabled while uploading a file in Manta.
+     *
+     * @param contentTypeDetectionEnabled true if content type auto-detection is enabled.
+     * @return the current instance of {@link T}
+     */
+    T setContentTypeDetectionEnabled(Boolean contentTypeDetectionEnabled);
 
     /**
      * Sets a plain-text identifier for the encryption key used. It shouldn't
@@ -353,10 +353,6 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case EnvVarConfigContext.MANTA_NO_NATIVE_SIGS_ENV_KEY:
                 config.disableNativeSignatures();
                 break;
-            case MapConfigContext.MANTA_NO_CONTENT_TYPE_DETECTION_KEY:
-            case EnvVarConfigContext.MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY:
-                config.disableContentTypeDetection();
-                break;
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:
                 config.setTcpSocketTimeout(MantaUtils.parseIntegerOrNull(value));
@@ -395,6 +391,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 config.setClientEncryptionEnabled(MantaUtils.parseBooleanOrNull(value));
+                break;
+            case MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY:
+            case EnvVarConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY:
+                config.setContentTypeDetectionEnabled(MantaUtils.parseBooleanOrNull(value));
                 break;
             case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:

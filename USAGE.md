@@ -105,6 +105,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
 | manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
+| manta.content_type_detection       | MANTA_CONTENT_TYPE_DETECTION   | true                                 |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
 | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    | false                                |                          |
@@ -188,6 +189,8 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     is set to `SLF4J`. Defaults to `null`.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
+* `manta.content_type_detection` (**MANTA_CONTENT_TYPE_DETECTION**)
+    Boolean indicating if automatic content type detection while uploading a file in Manta is enabled.    
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
     Unique ID of the client-side encryption key being used. It must be in US-ASCII
     using only printable characters and with no whitespace.
@@ -256,6 +259,13 @@ was not modified.
 *Note* each instance of a MantaClient will only support the encryption/decryption for the algorithm configured for that instance.
 
 ### Improving Encryption Performance
+
+## Disabling Automated Content-Type Detection
+In order to explicitly disable content type detection while uploading a file in Manta using the SDK, please set the following
+system properties. Please consult the [Configuration Parameters list](/USAGE.md#parameters) for the corresponding
+environment variable.
+
+- `manta.content_type_detection` - set to `fasle`
 
 #### Enabling libnss Support via PKCS11
 

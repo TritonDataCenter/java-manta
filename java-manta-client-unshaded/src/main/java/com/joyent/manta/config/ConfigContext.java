@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -115,11 +115,6 @@ public interface ConfigContext extends MantaMBeanable {
     Boolean disableNativeSignatures();
 
     /**
-     * @return true when automatic content-type detection is disabled based on datatype being uploaded
-     */
-    Boolean disableContentTypeDetection();
-
-    /**
      * Defines the socket timeout ({@code SO_TIMEOUT}) in milliseconds,
      * which is the timeout for waiting for data  or, put differently,
      * a maximum period inactivity between two consecutive data packets).
@@ -188,6 +183,11 @@ public interface ConfigContext extends MantaMBeanable {
      * @return true when client-side encryption is enabled.
      */
     Boolean isClientEncryptionEnabled();
+
+    /**
+     * @return true when automatic content-type detection is enabled based on datatype being uploaded.
+     */
+    Boolean isContentTypeDetectionEnabled();
 
     /**
      * @return true when downloading unencrypted files is allowed in encryption mode
@@ -278,6 +278,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
         sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
+        sb.append(",contentTypeDetectionEnabled=").append(context.isContentTypeDetectionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
         sb.append(", encryptionKeyId=").append(context.getEncryptionKeyId());
@@ -367,6 +368,10 @@ public interface ConfigContext extends MantaMBeanable {
             encryptionSettings(config, failureMessages);
         }
 
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            encryptionSettings(config, failureMessages);
+        }
+
         if (!failureMessages.isEmpty()) {
             String messages = StringUtils.join(failureMessages, System.lineSeparator());
             ConfigurationException e = new ConfigurationException(
@@ -391,6 +396,8 @@ public interface ConfigContext extends MantaMBeanable {
             e.setContextValue(MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY, redactedPrivateKeyContent);
             e.setContextValue(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
                     config.isClientEncryptionEnabled());
+            e.setContextValue(MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY,
+                    config.isContentTypeDetectionEnabled());
 
             if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
                 e.setContextValue(MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY,
@@ -559,6 +566,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();
+            case MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY:
+            case EnvVarConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY:
+                return config.isContentTypeDetectionEnabled();
             case MapConfigContext.MANTA_VERIFY_UPLOADS_KEY:
             case EnvVarConfigContext.MANTA_VERIFY_UPLOADS_ENV_KEY:
                 return config.verifyUploads();
