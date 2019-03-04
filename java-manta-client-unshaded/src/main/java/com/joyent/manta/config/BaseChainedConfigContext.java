@@ -60,6 +60,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Boolean disableNativeSignatures;
 
     /**
+     * Flag indicating if automatic content type detection while uploading files in Manta is turned off.
+     */
+    private volatile Boolean disableContentTypeDetection;
+
+    /**
      * Flag indicating if we verify the uploaded file's checksum against the
      * server's checksum (MD5).
      */
@@ -280,6 +285,9 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Boolean disableContentTypeDetection() { return disableContentTypeDetection; }
+
+    @Override
     public Integer getTcpSocketTimeout() {
         return tcpSocketTimeout;
     }
@@ -456,6 +464,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
 
+        if (context.disableContentTypeDetection() != null) {
+            this.disableContentTypeDetection = context.disableContentTypeDetection();
+        }
+
         if (context.getHttpBufferSize() != null) {
             this.httpBufferSize = context.getHttpBufferSize();
         }
@@ -579,6 +591,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.disableNativeSignatures() == null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
+        }
+
+        if (this.disableContentTypeDetection() == null) {
+            this.disableContentTypeDetection = context.disableContentTypeDetection();
         }
 
         if (this.httpBufferSize == null) {
@@ -774,6 +790,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setDisableContentTypeDetection(final Boolean disableContentTypeDetection) {
+        this.disableContentTypeDetection = disableContentTypeDetection;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setTcpSocketTimeout(final Integer tcpSocketTimeout) {
         this.tcpSocketTimeout = tcpSocketTimeout;
 
@@ -925,6 +948,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
+                && Objects.equals(disableContentTypeDetection, that.disableContentTypeDetection)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
                 && Objects.equals(connectionRequestTimeout, that.connectionRequestTimeout)
                 && Objects.equals(expectContinueTimeout, that.expectContinueTimeout)
@@ -949,7 +973,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
+                disableNativeSignatures, disableContentTypeDetection,
+                tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 skipDirectoryDepth,
                 downloadContinuations,

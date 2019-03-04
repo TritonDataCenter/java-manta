@@ -115,6 +115,11 @@ public interface ConfigContext extends MantaMBeanable {
     Boolean disableNativeSignatures();
 
     /**
+     * @return true when automatic content-type detection is disabled based on datatype being uploaded
+     */
+    Boolean disableContentTypeDetection();
+
+    /**
      * Defines the socket timeout ({@code SO_TIMEOUT}) in milliseconds,
      * which is the timeout for waiting for data  or, put differently,
      * a maximum period inactivity between two consecutive data packets).

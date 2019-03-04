@@ -92,6 +92,11 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final boolean DEFAULT_DISABLE_NATIVE_SIGNATURES = false;
 
     /**
+     * Usage of content type auto-detection while uploading files in Manta is enabled by default.
+     */
+    public static final boolean DEFAULT_DISABLE_CONTENT_TYPE_DETECTION = false;
+
+    /**
      * The default number of empty ancestor directories (depth) to prune to when
      * prune depth is set to null.
      */
@@ -226,6 +231,9 @@ public class DefaultsConfigContext implements ConfigContext {
     public Boolean disableNativeSignatures() {
         return DEFAULT_DISABLE_NATIVE_SIGNATURES;
     }
+
+    @Override
+    public Boolean disableContentTypeDetection() { return DEFAULT_DISABLE_CONTENT_TYPE_DETECTION; }
 
     @Override
     public Integer getTcpSocketTimeout() {

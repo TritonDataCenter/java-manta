@@ -128,6 +128,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setDisableNativeSignatures(Boolean disableNativeSignatures);
 
     /**
+     * Sets flag indicating when to disable content type auto-detection while uploading a file.
+     *
+     * @param disableContentTypeDetection true to disable
+     * @return the current instance of {@link T}
+     */
+    T setDisableContentTypeDetection(Boolean disableContentTypeDetection);
+
+    /**
      * Sets the time in milliseconds to wait to see if a TCP socket has timed out.
      *
      * @see java.net.SocketOptions#SO_TIMEOUT
@@ -344,6 +352,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY:
             case EnvVarConfigContext.MANTA_NO_NATIVE_SIGS_ENV_KEY:
                 config.disableNativeSignatures();
+                break;
+            case MapConfigContext.MANTA_NO_CONTENT_TYPE_DETECTION_KEY:
+            case EnvVarConfigContext.MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY:
+                config.disableContentTypeDetection();
                 break;
             case MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY:

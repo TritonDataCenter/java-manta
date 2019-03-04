@@ -88,6 +88,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_NO_AUTH_KEY = "manta.no_auth";
 
     /**
+     * Property key for disabling automatic detection of content type while uploading files in Manta.
+     */
+    public static final String MANTA_NO_CONTENT_TYPE_DETECTION_KEY = "manta.no_content_type_detection";
+
+    /**
      * Property key for disabling native code support for generating signatures.
      */
     public static final String MANTA_NO_NATIVE_SIGS_KEY = "manta.disable_native_sigs";
@@ -200,6 +205,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_PASSWORD_KEY, MANTA_HTTP_BUFFER_SIZE_KEY,
             MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
+            MANTA_NO_CONTENT_TYPE_DETECTION_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
             MANTA_VERIFY_UPLOADS_KEY,
             MANTA_UPLOAD_BUFFER_SIZE_KEY,
@@ -352,6 +358,18 @@ public class MapConfigContext implements ConfigContext {
 
         return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_NO_NATIVE_SIGS_ENV_KEY));
     }
+
+    @Override
+    public Boolean disableContentTypeDetection() {
+        Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_NO_CONTENT_TYPE_DETECTION_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_NO_CONTENT_TYPE_DETECTION_KEY));
+    }
+
 
     @Override
     public Integer getTcpSocketTimeout() {

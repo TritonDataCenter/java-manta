@@ -22,6 +22,7 @@ public class ChainedConfigContextTest {
         context1.setMantaKeyPath(expectedKeyPath);
         context1.setMantaURL("https://manta.host.com");
         context1.setClientEncryptionEnabled(true);
+        context1.setDisableContentTypeDetection(true);
         context1.setTimeout(3000);
         context1.setTcpSocketTimeout(40);
 
@@ -57,5 +58,6 @@ public class ChainedConfigContextTest {
         Assert.assertEquals(chained.getMaximumConnections(), defaults.getMaximumConnections());
         Assert.assertEquals(chained.isClientEncryptionEnabled(), context1.isClientEncryptionEnabled());
         Assert.assertEquals(chained.disableNativeSignatures(), defaults.disableNativeSignatures());
+        Assert.assertEquals(chained.disableContentTypeDetection(), defaults.disableContentTypeDetection());
     }
 }

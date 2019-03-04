@@ -85,6 +85,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_NO_AUTH_ENV_KEY = "MANTA_NO_AUTH";
 
     /**
+     * Environment variable for disabling automatic content type detection while uploading a file.
+     */
+    public static final String MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY = "MANTA_NO_CONTENT_TYPE_DETECTION";
+
+    /**
      * Environment variable for disabling native code support for generating signatures.
      */
     public static final String MANTA_NO_NATIVE_SIGS_ENV_KEY = "MANTA_NO_NATIVE_SIGS";
@@ -189,6 +194,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_BUFFER_SIZE_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
+            MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY,
             MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY,
@@ -304,6 +310,12 @@ public class EnvVarConfigContext implements ConfigContext {
     public Boolean disableNativeSignatures() {
         String disableNativeString = getEnv(MANTA_NO_NATIVE_SIGS_ENV_KEY);
         return MantaUtils.parseBooleanOrNull(disableNativeString);
+    }
+
+    @Override
+    public Boolean disableContentTypeDetection() {
+        String disableContentTypeDetection = getEnv(MANTA_NO_CONTENT_TYPE_DETECTION_ENV_KEY);
+        return MantaUtils.parseBooleanOrNull(disableContentTypeDetection);
     }
 
     @Override
