@@ -37,6 +37,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
         super(new StandardConfigContext()
                 .setMaximumConnections(DEFAULT_CONFIG.getMaximumConnections())
                 .setRetries(DEFAULT_CONFIG.getRetries())
+                .setContentTypeDetectionEnabled(DEFAULT_CONFIG.isContentTypeDetectionEnabled())
                 .setHttpsProtocols(DEFAULT_CONFIG.getHttpsProtocols())
                 .setHttpsCipherSuites(DEFAULT_CONFIG.getHttpsCipherSuites())
                 .setMantaURL(UNIT_TEST_URL)

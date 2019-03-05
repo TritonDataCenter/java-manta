@@ -44,6 +44,7 @@ public class ConfigContextTest {
         config.setMantaKeyId(UnitTestConstants.FINGERPRINT);
         config.setMantaKeyPath(mantaAuthPrivateKey.getAbsolutePath());
         config.setClientEncryptionEnabled(false);
+        config.setContentTypeDetectionEnabled(false);
 
         ConfigContext.validate(config);
     }
@@ -63,6 +64,7 @@ public class ConfigContextTest {
         config.setMantaKeyId(UnitTestConstants.FINGERPRINT);
         config.setMantaKeyPath(mantaAuthPrivateKey.getAbsolutePath());
         config.setClientEncryptionEnabled(true);
+        config.setContentTypeDetectionEnabled(true);
         config.setEncryptionKeyId("test-key-1");
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);
@@ -79,6 +81,7 @@ public class ConfigContextTest {
         config.setMantaKeyId("ac:95:92:ff:88:f7:3d:cd:ba:23:7b:54:44:21:60:02");
         config.setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY);
         config.setClientEncryptionEnabled(true);
+        config.setContentTypeDetectionEnabled(true);
         config.setEncryptionKeyId("test-key-1");
         config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.DEFAULT_MODE);
         config.setPermitUnencryptedDownloads(false);

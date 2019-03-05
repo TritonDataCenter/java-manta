@@ -99,13 +99,6 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         return BooleanUtils.toBoolean(sysProp) || BooleanUtils.toBoolean(envVar);
     }
 
-    public static boolean contentTypeDetectionEnabled() {
-        String sysProp = System.getProperty(MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY);
-        String envVar = System.getenv(EnvVarConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY);
-
-        return BooleanUtils.toBoolean(sysProp) || BooleanUtils.toBoolean(envVar);
-    }
-
     public static String encryptionCipher() {
         String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
         String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);

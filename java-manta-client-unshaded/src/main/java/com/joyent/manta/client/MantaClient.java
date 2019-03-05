@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -1142,8 +1142,14 @@ public class MantaClient implements AutoCloseable {
         Validate.notNull(source, "Input stream must not be null");
         final String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
-                ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType;
+
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            contentType = ContentTypeLookup.findOrDefaultContentType(headers,
+                    ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            contentType = ContentType.APPLICATION_OCTET_STREAM;
+        }
 
         final int preLoadSize = config.getUploadBufferSize();
         final HttpEntity entity;
@@ -1316,10 +1322,16 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "rawPath must not be blank");
         final String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
-                headers,
-                path,
-                ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType;
+
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            contentType = ContentTypeLookup.findOrDefaultContentType(
+                    headers,
+                    path,
+                    ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            contentType = ContentType.APPLICATION_OCTET_STREAM;
+        }
 
         MantaObjectOutputStream stream = new MantaObjectOutputStream(path, httpHelper, headers, metadata, contentType);
 
@@ -1348,9 +1360,13 @@ public class MantaClient implements AutoCloseable {
 
         String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
-                headers,
-                ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType;
+
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            contentType = ContentTypeLookup.findOrDefaultContentType(headers, ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            contentType = ContentType.APPLICATION_OCTET_STREAM;
+        }
 
         /* We remove the content-type from the headers, because
          * it will be automatically from the string specific entity.
@@ -1499,9 +1515,14 @@ public class MantaClient implements AutoCloseable {
             throw new IOException(msg);
         }
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
-                path, file, ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType;
 
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            contentType = ContentTypeLookup.findOrDefaultContentType(headers,
+                    path, file, ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            contentType = ContentType.APPLICATION_OCTET_STREAM;
+        }
         final HttpEntity entity = new FileEntity(file, contentType);
 
         return httpHelper.httpPut(path, headers, entity, metadata);
@@ -1568,8 +1589,14 @@ public class MantaClient implements AutoCloseable {
         Validate.notNull(bytes, "Byte array must not be null");
         final String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
-                headers, path, ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType;
+
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            contentType = ContentTypeLookup.findOrDefaultContentType(
+                    headers, path, ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            contentType = ContentType.APPLICATION_OCTET_STREAM;
+        }
 
         final HttpEntity entity = new ExposedByteArrayEntity(bytes, contentType);
 

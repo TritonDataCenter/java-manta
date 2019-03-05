@@ -278,7 +278,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
         sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
-        sb.append(",contentTypeDetectionEnabled=").append(context.isContentTypeDetectionEnabled());
+        sb.append(", contentTypeDetectionEnabled=").append(context.isContentTypeDetectionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
         sb.append(", encryptionAuthenticationMode=").append(context.getEncryptionAuthenticationMode());
         sb.append(", encryptionKeyId=").append(context.getEncryptionKeyId());
@@ -365,10 +365,6 @@ public interface ConfigContext extends MantaMBeanable {
         }
 
         if (BooleanUtils.isTrue(config.isClientEncryptionEnabled())) {
-            encryptionSettings(config, failureMessages);
-        }
-
-        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
             encryptionSettings(config, failureMessages);
         }
 
