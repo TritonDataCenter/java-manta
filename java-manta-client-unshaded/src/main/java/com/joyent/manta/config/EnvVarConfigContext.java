@@ -17,6 +17,7 @@ import java.util.Base64;
  * from expected environment variables.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class EnvVarConfigContext implements ConfigContext {
     /**

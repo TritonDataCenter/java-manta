@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@ import java.util.Objects;
  * we aren't passed a value.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @SuppressWarnings("unused")
 public abstract class BaseChainedConfigContext implements SettableConfigContext<BaseChainedConfigContext> {
@@ -149,7 +150,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile Boolean clientEncryptionEnabled;
 
     /**
-     * Flag indicating if automatic content type detection is enabled while uploading files in Manta is turned off.
+     * Flag indicating if automatic content type detection is enabled while uploading files in Manta.
      */
     private volatile Boolean contentTypeDetectionEnabled;
 
@@ -381,7 +382,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     /**
-     * Overwrites the configuration values with the values of the passed context
+     * Overwrites configuration values with values of the passed context
      * if those values are not null and aren't empty.
      *
      * @param context context to overwrite configuration with
@@ -445,87 +446,66 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
             this.privateKeyContent = context.getPrivateKeyContent();
         }
-
         if (isPresent(context.getPassword())) {
             this.password = context.getPassword();
         }
-
         if (isPresent(context.getHttpsProtocols())) {
             this.httpsProtocols = context.getHttpsProtocols();
         }
-
         if (isPresent(context.getHttpsCipherSuites())) {
             this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
-
         if (context.noAuth() != null) {
             this.noAuth = context.noAuth();
         }
-
         if (context.disableNativeSignatures() != null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
-
         if (context.getHttpBufferSize() != null) {
             this.httpBufferSize = context.getHttpBufferSize();
         }
-
         if (context.getTcpSocketTimeout() != null) {
             this.tcpSocketTimeout = context.getTcpSocketTimeout();
         }
-
         if (context.getConnectionRequestTimeout() != null) {
             this.connectionRequestTimeout = context.getConnectionRequestTimeout();
         }
-
         if (context.getExpectContinueTimeout() != null) {
             this.expectContinueTimeout = context.getExpectContinueTimeout();
         }
-
         if (context.verifyUploads() != null) {
             this.verifyUploads = context.verifyUploads();
         }
-
         if (context.getUploadBufferSize() != null) {
             this.uploadBufferSize = context.getUploadBufferSize();
         }
-
         if (context.getSkipDirectoryDepth() != null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
-
         if (context.getPruneEmptyParentDepth() != null) {
             this.pruneEmptyParentDepth = context.getPruneEmptyParentDepth();
         }
-
         if (context.downloadContinuations() != null) {
             this.downloadContinuations = context.downloadContinuations();
         }
-
         if (context.getMetricReporterMode() != null) {
             this.metricReporterMode = context.getMetricReporterMode();
         }
-
         if (context.getMetricReporterOutputInterval() != null) {
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
-
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
-
         if (context.isContentTypeDetectionEnabled() != null) {
             this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
         }
-
         if (context.getEncryptionKeyId() != null) {
             this.encryptionKeyId = context.getEncryptionKeyId();
         }
-
         if (context.getEncryptionAlgorithm() != null) {
             this.encryptionAlgorithm = context.getEncryptionAlgorithm();
         }
-
         if (context.getEncryptionAuthenticationMode() != null) {
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
