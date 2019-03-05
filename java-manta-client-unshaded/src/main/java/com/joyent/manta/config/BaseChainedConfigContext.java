@@ -382,11 +382,12 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     /**
-     * Overwrites configuration values with values of the passed context
+     * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
      *
      * @param context context to overwrite configuration with
      */
+    @SuppressWarnings("Duplicates")
     public void overwriteWithContext(final ConfigContext context) {
         /* If a default context is being used to overwrite after this
          * context has been initialized, then we want to be careful to not
@@ -426,10 +427,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
-        if (context.getTimeout() != null) {
-            this.timeout = context.getTimeout();
-        }
-
         if (context.getRetries() != null) {
             this.retries = context.getRetries();
         }
@@ -446,78 +443,133 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
             this.privateKeyContent = context.getPrivateKeyContent();
         }
+
         if (isPresent(context.getPassword())) {
             this.password = context.getPassword();
         }
+
         if (isPresent(context.getHttpsProtocols())) {
             this.httpsProtocols = context.getHttpsProtocols();
         }
+
         if (isPresent(context.getHttpsCipherSuites())) {
             this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
+
         if (context.noAuth() != null) {
             this.noAuth = context.noAuth();
         }
+
         if (context.disableNativeSignatures() != null) {
             this.disableNativeSignatures = context.disableNativeSignatures();
         }
+
         if (context.getHttpBufferSize() != null) {
             this.httpBufferSize = context.getHttpBufferSize();
         }
-        if (context.getTcpSocketTimeout() != null) {
-            this.tcpSocketTimeout = context.getTcpSocketTimeout();
-        }
-        if (context.getConnectionRequestTimeout() != null) {
-            this.connectionRequestTimeout = context.getConnectionRequestTimeout();
-        }
-        if (context.getExpectContinueTimeout() != null) {
-            this.expectContinueTimeout = context.getExpectContinueTimeout();
-        }
+
+        overwriteWithContextTimeouts(context);
+
         if (context.verifyUploads() != null) {
             this.verifyUploads = context.verifyUploads();
         }
+
         if (context.getUploadBufferSize() != null) {
             this.uploadBufferSize = context.getUploadBufferSize();
         }
+
         if (context.getSkipDirectoryDepth() != null) {
             this.skipDirectoryDepth = context.getSkipDirectoryDepth();
         }
+
         if (context.getPruneEmptyParentDepth() != null) {
             this.pruneEmptyParentDepth = context.getPruneEmptyParentDepth();
         }
+
         if (context.downloadContinuations() != null) {
             this.downloadContinuations = context.downloadContinuations();
         }
+
         if (context.getMetricReporterMode() != null) {
             this.metricReporterMode = context.getMetricReporterMode();
         }
+
         if (context.getMetricReporterOutputInterval() != null) {
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
-        if (context.isClientEncryptionEnabled() != null) {
-            this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
-        }
+
         if (context.isContentTypeDetectionEnabled() != null) {
             this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
         }
+
+        overwriteWithContextEncryptionParams(context);
+
+    }
+
+    /**
+     * Overwrites the configuration timeouts values with values of passed context
+     * if those values are not null and aren't empty.
+     *
+     * @param context context to overwrite configuration with
+     */
+    private void overwriteWithContextTimeouts(final ConfigContext context) {
+        boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
+
+        if (context.getTimeout() != null) {
+            this.timeout = context.getTimeout();
+        }
+
+        if (context.getTcpSocketTimeout() != null) {
+            this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
+        if (context.getConnectionRequestTimeout() != null) {
+            this.connectionRequestTimeout = context.getConnectionRequestTimeout();
+        }
+
+        if (context.getExpectContinueTimeout() != null) {
+            this.expectContinueTimeout = context.getExpectContinueTimeout();
+        }
+
+    }
+
+    /**
+     * Overwrites the configuration values with values of passed context
+     * if those values are not null and aren't empty.
+     *
+     * @param context context to overwrite configuration with
+     */
+    private void overwriteWithContextEncryptionParams(final ConfigContext context) {
+        boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
+
+        if (context.isClientEncryptionEnabled() != null) {
+            this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
         if (context.getEncryptionKeyId() != null) {
             this.encryptionKeyId = context.getEncryptionKeyId();
         }
+
         if (context.getEncryptionAlgorithm() != null) {
             this.encryptionAlgorithm = context.getEncryptionAlgorithm();
         }
+
         if (context.getEncryptionAuthenticationMode() != null) {
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
+
         if (context.getEncryptionPrivateKeyPath() != null) {
             this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
         }
+
         if (context.getEncryptionPrivateKeyBytes() != null) {
             this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
         }
+
         if (context.permitUnencryptedDownloads() != null) {
             this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
         }
+
     }
 
     /**

@@ -190,7 +190,7 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.content_type_detection` (**MANTA_CONTENT_TYPE_DETECTION**)
-    Boolean indicating if automatic content type detection while uploading a file in Manta is enabled.    
+    Boolean indicating if automatic content-type detection while uploading a file in Manta is enabled.    
 * `manta.encryption_key_id` (**MANTA_CLIENT_ENCRYPTION_KEY_ID**)
     Unique ID of the client-side encryption key being used. It must be in US-ASCII
     using only printable characters and with no whitespace.
@@ -260,12 +260,14 @@ was not modified.
 
 ### Improving Encryption Performance
 
-## Disabling Automated Content-Type Detection
-In order to explicitly disable content type detection while uploading a file in Manta using the SDK, please set the following
-system properties. Please consult the [Configuration Parameters list](/USAGE.md#parameters) for the corresponding
-environment variable.
+## Automated Content-Type Detection
 
-- `manta.content_type_detection` - set to `fasle`
+While uploading any file in Manta using the Java SDK, depending on the data type, Users could opt to disable a particular 
+feature of the SDK which enables it to internally detect the HTTP content-type of any given file or stream. The following 
+system properties are configured for this purpose. Please consult the [Configuration Parameters list](/USAGE.md#parameters) 
+for the corresponding environment variable.
+
+- `manta.content_type_detection` - set to `false`
 
 #### Enabling libnss Support via PKCS11
 
