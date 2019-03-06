@@ -2,9 +2,42 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.3.2] -
+## [3.4.0] -
+### Added
+ - Configuration parameter `manta.content_type_detection` is now added to allow for the user to explicitly disable
+   automatic content type detection dependent on the data type being uploaded to Manta using the SDK. 
+   It is updated to a default value of true (which aligns with the default behaviour of the SDK).    
+ - [Updated Prune-Depth Documentation. Add Unit Tests for more limit values](https://github.com/joyent/java-manta/pull/484)
+### Changed
+ - [Upgraded dependencies to latest stable versions:](https://github.com/joyent/java-manta/commit/1ea4694b2747c42fa7b8b60733fbd7699a3f2426)
+     - HTTP Signatures dependency: 4.0.9 → 4.0.10
+     - BouncyCastle: 1.60 → 1.61
+     - Apache HttpClient: 4.5.6 → 4.5.7
+     - Extra-Enforcer-Rules 1.0-beta-6 → 1.1
+     - Javac-ErrorProne 2.8.2 → 2.8.5
+     - Error-Prone-Core 2.1.1 → 2.3.3
+     - FasterXml-UUID 3.1.4 → 3.1.5
+     - Jackson 2.9.4 → 2.9.8
+     - Checkstyle 8.2 → 8.18
+     - Mockito 2.16.0 → 2.24.5
+     - TestNG 6.11 → 6.14.3
+     - Commons-Collections 4.1 → 4.3
+     - Commons-Lang 3.6 → 3.8.1
+     - Commons-IO 2.5 → 2.6
+     - Commons-Codec 1.10 → 1.12
+     - Commons-Text 1.1 → 1.6
+     - Kryo 4.0.1 → 4.0.2
+     - Objenesis 2.6 →  3.0.1
+     - Cloning 1.9.6 → 1.9.12
+     - Picocli 1.0.1 → 3.9.5
+     - Dropwizard-Metrics 4.0.2 → 4.0.5
+     - JMH 1.19 → 1.21
+     - Wiremock 2.18.0 → 2.21.0 
 ### Fixed
+ - [Create configuration setting that allows for disabling content-type autodetection](https://github.com/joyent/java-manta/issues/488)
  - [Content-Type is not set to application/octet-stream when doing CSE](https://github.com/joyent/java-manta/issues/486) 
+ - [Invalid MantaUser results in 500 Internal Server Error](https://github.com/joyent/java-manta/issues/123)
+ - [Change all hard coded "/" values to MantaClient.SEPARATOR ](https://github.com/joyent/java-manta/issues/363)  
 
 ## [3.3.1] - 2019-02-05
 ### Added
