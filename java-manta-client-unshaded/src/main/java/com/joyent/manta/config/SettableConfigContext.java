@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@ import java.util.Objects;
  *
  * @param <T> Type of class implemented so we can have builder style setters.
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.0.0
  */
 public interface SettableConfigContext<T> extends ConfigContext {
@@ -221,6 +222,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setClientEncryptionEnabled(Boolean clientEncryptionEnabled);
 
     /**
+     * Sets flag indicating when content type auto-detection is enabled while uploading a file in Manta.
+     *
+     * @param contentTypeDetectionEnabled true if content type auto-detection is enabled.
+     * @return the current instance of {@link T}
+     */
+    T setContentTypeDetectionEnabled(Boolean contentTypeDetectionEnabled);
+
+    /**
      * Sets a plain-text identifier for the encryption key used. It shouldn't
      * contain whitespace and is encoded in US-ASCII. The value of this setting
      * has no current functional impact.
@@ -276,10 +285,9 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setEncryptionPrivateKeyBytes(byte[] encryptionPrivateKeyBytes);
 
     /**
-     * Utility method for setting a {@link SettableConfigContext} values via
-     * String parameters. Note, this method will set null for values when the
-     * inputs are invalid for integer or boolean types. For other types it
-     * will just not set anything.
+     * Utility method for setting {@link SettableConfigContext} values via String parameters.
+     * Note, this method will set null for values when inputs are invalid for integer or boolean types.
+     * For other types it will not set anything.
      *
      * @param name string key to set via
      * @param value value to set to context
@@ -374,7 +382,6 @@ public interface SettableConfigContext<T> extends ConfigContext {
                     // error parsing enum value, so we just exit the function
                     return;
                 }
-
                 break;
             case MapConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY:
             case EnvVarConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY:
@@ -383,6 +390,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 config.setClientEncryptionEnabled(MantaUtils.parseBooleanOrNull(value));
+                break;
+            case MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY:
+            case EnvVarConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY:
+                config.setContentTypeDetectionEnabled(MantaUtils.parseBooleanOrNull(value));
                 break;
             case MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY:
@@ -410,7 +421,6 @@ public interface SettableConfigContext<T> extends ConfigContext {
                     // error parsing enum value, so we just exit the function
                     return;
                 }
-
                 break;
             case MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY:
             case EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY:
@@ -428,7 +438,6 @@ public interface SettableConfigContext<T> extends ConfigContext {
                     if (StringUtils.isEmpty(base64)) {
                         return;
                     }
-
                     config.setEncryptionPrivateKeyBytes(Base64.decode(base64));
                 }
                 break;

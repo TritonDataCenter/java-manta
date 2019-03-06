@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -336,6 +336,59 @@ public class MantaClient implements AutoCloseable {
             System.out.println("========================================");
             System.out.println(ConfigContext.toString(context));
             System.out.println("========================================");
+        }
+    }
+
+
+    /* ======================================================================
+     * MantaClient content-type Utility Methods
+     * ====================================================================== */
+
+    /**
+     * Depending on the configuration value to enable/disable automatic content-type detection
+     * within the Client SDK {@link ConfigContext#isContentTypeDetectionEnabled()}, assign
+     * content-type value accordingly.
+     *
+     * @param headers optional HTTP headers to include when copying the object.
+     * @param path The formatted path to the Manta object.
+     * @param file file to upload in Manta using the SDK.
+     * @return content type object
+     * @throws IOException when there is a problem sending the object over the network
+     */
+    private ContentType assignContentType(final MantaHttpHeaders headers,
+                                          final String path,
+                                          final File file) throws IOException {
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            return ContentTypeLookup.findOrDefaultContentType(headers,
+                    path,
+                    file,
+                    ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            return ContentType.APPLICATION_OCTET_STREAM;
+        }
+    }
+
+    /**
+     * Depending on the configuration value to enable/disable automatic content-type detection
+     * within the Client SDK {@link ConfigContext#isContentTypeDetectionEnabled()}, assign
+     * content-type value accordingly.
+     *
+     * @param headers optional HTTP headers to include when copying the object.
+     * @param path The formatted path to the Manta object.
+     * @return content type object
+     */
+    @SuppressWarnings("Duplicates")
+    private ContentType assignContentType(final MantaHttpHeaders headers,
+                                          final String path) {
+        Validate.notBlank(path, "path must not be blank");
+
+        if (BooleanUtils.isTrue(config.isContentTypeDetectionEnabled())) {
+            return ContentTypeLookup.findOrDefaultContentType(
+                    headers,
+                    path,
+                    ContentType.APPLICATION_OCTET_STREAM);
+        } else {
+            return ContentType.APPLICATION_OCTET_STREAM;
         }
     }
 
@@ -1316,10 +1369,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notBlank(rawPath, "rawPath must not be blank");
         final String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
-                headers,
-                path,
-                ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType = assignContentType(headers, path);
 
         MantaObjectOutputStream stream = new MantaObjectOutputStream(path, httpHelper, headers, metadata, contentType);
 
@@ -1499,8 +1549,7 @@ public class MantaClient implements AutoCloseable {
             throw new IOException(msg);
         }
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(headers,
-                path, file, ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType = assignContentType(headers, path, file);
 
         final HttpEntity entity = new FileEntity(file, contentType);
 
@@ -1568,8 +1617,7 @@ public class MantaClient implements AutoCloseable {
         Validate.notNull(bytes, "Byte array must not be null");
         final String path = formatPath(rawPath);
 
-        final ContentType contentType = ContentTypeLookup.findOrDefaultContentType(
-                headers, path, ContentType.APPLICATION_OCTET_STREAM);
+        final ContentType contentType = assignContentType(headers, path);
 
         final HttpEntity entity = new ExposedByteArrayEntity(bytes, contentType);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@ import java.util.Objects;
  * we aren't passed a value.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @SuppressWarnings("unused")
 public abstract class BaseChainedConfigContext implements SettableConfigContext<BaseChainedConfigContext> {
@@ -147,6 +148,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Flag indicating when client-side encryption is enabled.
      */
     private volatile Boolean clientEncryptionEnabled;
+
+    /**
+     * Flag indicating if automatic content type detection is enabled while uploading files in Manta.
+     */
+    private volatile Boolean contentTypeDetectionEnabled;
 
     /**
      * The unique identifier of the key used for encryption.
@@ -335,6 +341,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Boolean isContentTypeDetectionEnabled() {
+        return contentTypeDetectionEnabled;
+    }
+
+    @Override
     public String getEncryptionKeyId() {
         return encryptionKeyId;
     }
@@ -376,6 +387,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      *
      * @param context context to overwrite configuration with
      */
+    @SuppressWarnings("Duplicates")
     public void overwriteWithContext(final ConfigContext context) {
         /* If a default context is being used to overwrite after this
          * context has been initialized, then we want to be careful to not
@@ -413,10 +425,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.getMetricReporterOutputInterval() != null) {
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
-        }
-
-        if (context.getTimeout() != null) {
-            this.timeout = context.getTimeout();
         }
 
         if (context.getRetries() != null) {
@@ -460,17 +468,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.httpBufferSize = context.getHttpBufferSize();
         }
 
-        if (context.getTcpSocketTimeout() != null) {
-            this.tcpSocketTimeout = context.getTcpSocketTimeout();
-        }
-
-        if (context.getConnectionRequestTimeout() != null) {
-            this.connectionRequestTimeout = context.getConnectionRequestTimeout();
-        }
-
-        if (context.getExpectContinueTimeout() != null) {
-            this.expectContinueTimeout = context.getExpectContinueTimeout();
-        }
+        overwriteWithContextTimeouts(context);
 
         if (context.verifyUploads() != null) {
             this.verifyUploads = context.verifyUploads();
@@ -500,6 +498,50 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
+        if (context.isContentTypeDetectionEnabled() != null) {
+            this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
+        }
+
+        overwriteWithContextEncryptionParams(context);
+
+    }
+
+    /**
+     * Overwrites the configuration timeouts values with values of passed context
+     * if those values are not null and aren't empty.
+     *
+     * @param context context to overwrite configuration with
+     */
+    private void overwriteWithContextTimeouts(final ConfigContext context) {
+        boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
+
+        if (context.getTimeout() != null) {
+            this.timeout = context.getTimeout();
+        }
+
+        if (context.getTcpSocketTimeout() != null) {
+            this.tcpSocketTimeout = context.getTcpSocketTimeout();
+        }
+
+        if (context.getConnectionRequestTimeout() != null) {
+            this.connectionRequestTimeout = context.getConnectionRequestTimeout();
+        }
+
+        if (context.getExpectContinueTimeout() != null) {
+            this.expectContinueTimeout = context.getExpectContinueTimeout();
+        }
+
+    }
+
+    /**
+     * Overwrites the configuration values with values of passed context
+     * if those values are not null and aren't empty.
+     *
+     * @param context context to overwrite configuration with
+     */
+    private void overwriteWithContextEncryptionParams(final ConfigContext context) {
+        boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
+
         if (context.isClientEncryptionEnabled() != null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
         }
@@ -515,15 +557,19 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (context.getEncryptionAuthenticationMode() != null) {
             this.encryptionAuthenticationMode = context.getEncryptionAuthenticationMode();
         }
+
         if (context.getEncryptionPrivateKeyPath() != null) {
             this.encryptionPrivateKeyPath = context.getEncryptionPrivateKeyPath();
         }
+
         if (context.getEncryptionPrivateKeyBytes() != null) {
             this.encryptionPrivateKeyBytes = context.getEncryptionPrivateKeyBytes();
         }
+
         if (context.permitUnencryptedDownloads() != null) {
             this.permitUnencryptedDownloads = context.permitUnencryptedDownloads();
         }
+
     }
 
     /**
@@ -627,6 +673,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.clientEncryptionEnabled == null) {
             this.clientEncryptionEnabled = context.isClientEncryptionEnabled();
+        }
+
+        if (this.contentTypeDetectionEnabled == null) {
+            this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
         }
 
         if (this.encryptionKeyId == null) {
@@ -849,6 +899,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setContentTypeDetectionEnabled(final Boolean contentTypeDetectionEnabled) {
+        this.contentTypeDetectionEnabled = contentTypeDetectionEnabled;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setEncryptionKeyId(final String keyId) {
         this.encryptionKeyId = keyId;
 
@@ -936,6 +993,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
+                && Objects.equals(contentTypeDetectionEnabled, that.contentTypeDetectionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
                 && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
                 && Objects.equals(permitUnencryptedDownloads, that.permitUnencryptedDownloads)
@@ -949,13 +1007,15 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
                 httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
-                disableNativeSignatures, tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
+                disableNativeSignatures,
+                tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,
                 skipDirectoryDepth,
                 downloadContinuations,
                 metricReporterMode,
                 metricReporterOutputInterval,
                 clientEncryptionEnabled, encryptionKeyId,
+                contentTypeDetectionEnabled,
                 encryptionAlgorithm, permitUnencryptedDownloads,
                 encryptionAuthenticationMode, encryptionPrivateKeyPath,
                 Arrays.hashCode(encryptionPrivateKeyBytes));

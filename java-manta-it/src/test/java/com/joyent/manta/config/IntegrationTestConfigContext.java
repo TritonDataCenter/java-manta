@@ -22,7 +22,6 @@ import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
-
 /**
  * {@link ConfigContext} implementation that loads
  * configuration parameters in an order that makes sense for unit testing

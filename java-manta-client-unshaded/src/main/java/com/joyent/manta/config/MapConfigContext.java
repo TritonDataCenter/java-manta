@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@ import static com.joyent.manta.config.EnvVarConfigContext.*;
  * from a Map. This class is as thread-safe as the {@link #backingMap}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class MapConfigContext implements ConfigContext {
     /**
@@ -148,6 +149,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
 
     /**
+     * Property key for enabling automatic detection of content type while uploading files in Manta.
+     */
+    public static final String MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY = "manta.content_type_detection";
+
+    /**
      * Property key for setting an identifier for the client-side encryption key used.
      */
     public static final String MANTA_ENCRYPTION_KEY_ID_KEY = "manta.encryption_key_id";
@@ -210,6 +216,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_METRIC_REPORTER_MODE_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
+            MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
             MANTA_ENCRYPTION_KEY_ID_KEY,
             MANTA_ENCRYPTION_ALGORITHM_KEY,
@@ -477,6 +484,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY));
+    }
+
+    @Override
+    public Boolean isContentTypeDetectionEnabled() {
+        Boolean enabled = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY));
+
+        if (enabled != null) {
+            return enabled;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_CONTENT_TYPE_DETECTION_ENABLED_ENV_KEY));
     }
 
     @Override
