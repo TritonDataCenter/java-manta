@@ -98,9 +98,15 @@ Known edge cases and other topics are covered in [the FAQ](/FAQ.md).
 Contributions are welcome! Please read the [CONTRIBUTING.md](/CONTRIBUTING.md) document for details
 on getting started.
 
+## Developing
+
+There are portions of the SDK that are somewhat complex or fiddly. Please read the [DEVELOPING.md](/DEVELOPING.md) 
+document for details, before developing the Java SDK.
+
 ### Testing
 
-Please refer to the [testing documentation](/TESTING.md).
+Contributing developers are strongly encouraged to add unit-tests and integration-tests. Refer to the [testing documentation](/TESTING.md)
+for information on full test suite requirements.
 
 ### Releasing
 
