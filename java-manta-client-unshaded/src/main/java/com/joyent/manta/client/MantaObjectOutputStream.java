@@ -325,7 +325,7 @@ public class MantaObjectOutputStream extends OutputStream {
      * <p>NOTE: This close method calls flush() on the inner {@link OutputStream}
      * and then closes it if possible.</p>
      *
-     * @throws IOException
+     * @throws IOException if the output stream has been closed erroneously.
      */
     @Override
     public synchronized void close() throws IOException {

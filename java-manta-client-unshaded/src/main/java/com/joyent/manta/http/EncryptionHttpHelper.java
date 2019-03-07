@@ -882,7 +882,6 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
      * Attaches encrypted metadata (with e-* values) to the object.
      *
      * @param metadata metadata to append additional values to
-     * @throws IOException thrown when there is a problem attaching metadata
      */
     public void attachEncryptedMetadata(final MantaMetadata metadata) {
 
