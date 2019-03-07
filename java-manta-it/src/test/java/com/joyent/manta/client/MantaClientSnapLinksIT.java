@@ -9,8 +9,12 @@ package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.http.MantaHttpHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.*;
 
 import java.io.IOException;
@@ -26,6 +30,8 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  */
 @Test(groups = "snaplinks")
 public class MantaClientSnapLinksIT {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MantaClientSnapLinksIT.class);
 
     private static final String TEST_DATA = "Arise,Awake And Do Not Stop Until Your Goal Is Reached.";
 
@@ -111,7 +117,7 @@ public class MantaClientSnapLinksIT {
         Assert.assertNotNull(mantaDirectoryHead.getPath());
 
         final String linkName = UUID.randomUUID().toString();
-        mantaClient.putSnapLink(testPathPrefix + linkName, testPathPrefix + objectName, null);
+        skipSnapLinkTest(testPathPrefix + linkName, testPathPrefix + objectName);
         final MantaObjectResponse mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
         Assert.assertNotNull(mantaLinkHead);
         Assert.assertNotNull(mantaLinkHead.getContentType());
@@ -132,7 +138,7 @@ public class MantaClientSnapLinksIT {
         mantaClient.put(path, TEST_DATA);
 
         final String link = UUID.randomUUID().toString();
-        mantaClient.putSnapLink(testPathPrefix + link, testPathPrefix + name, null);
+        skipSnapLinkTest(testPathPrefix + link, testPathPrefix + name);
         final String linkContent = mantaClient.getAsString(testPathPrefix + link);
         Assert.assertEquals(linkContent, TEST_DATA);
     }
@@ -148,7 +154,7 @@ public class MantaClientSnapLinksIT {
         mantaClient.put(path, testData, headers);
 
         final String linkPath = testPathPrefix + UUID.randomUUID() + ".json";
-        mantaClient.putSnapLink(linkPath, path, null);
+        skipSnapLinkTest(linkPath, path);
         final String linkContent = mantaClient.getAsString(linkPath);
         Assert.assertEquals(linkContent, testData);
     }
@@ -194,5 +200,18 @@ public class MantaClientSnapLinksIT {
         boolean sourceIsDeleted = !mantaClient.existsAndIsAccessible(source);
         Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
                 + source);
+    }
+
+    private void skipSnapLinkTest(final String linkPath, final String objectPath) throws IOException {
+        try {
+            mantaClient.putSnapLink( linkPath, objectPath, null);
+        } catch (MantaClientHttpResponseException e) {
+            final String message =
+                    "This integration-test class can't be run since SnapLinks" +
+                            "have been disabled for this account";
+            LOG.warn(message);
+
+            throw new SkipException(message, e);
+        }
     }
 }
