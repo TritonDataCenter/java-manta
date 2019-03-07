@@ -71,7 +71,15 @@
             </package>
         </packages>
     </test>
-
+    <test name="Manta Client Snaplinks Tests ">
+        <parameter name="usingEncryption" value="true"/>
+        <groups>
+            <define name="snaplinks" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientSnapLinksIT" />
+        </classes>
+    </test>
     <test name="Manta Job Tests">
         <packages>
             <package name="com.joyent.manta.client.jobs.*"/>
