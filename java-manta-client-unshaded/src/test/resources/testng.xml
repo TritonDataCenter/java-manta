@@ -111,7 +111,21 @@
             <class name="com.joyent.manta.client.crypto.MultiCryptoProviderDecryptionTest" />
         </classes>
     </test>
-
+    <test name="Encryption Cipher Tests">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="unlimited-crypto" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.crypto.AesGcmCipherDetailsTest" />
+            <class name="com.joyent.manta.client.crypto.SupportedCiphersLookupMapTest" />
+            <class name="com.joyent.manta.client.crypto.MantaEncryptedObjectInputStreamTest" />
+            <class name="com.joyent.manta.client.crypto.MantaEncryptedObjectInputStreamAutoFailureRecoveryTest" />
+            <class name="com.joyent.manta.http.EncryptedHttpHelperTest" />
+            <class name="com.joyent.manta.util.CipherClonerTest" />
+            <class name="com.joyent.manta.util.HmacClonerTest" />
+        </classes>
+    </test>
     <!-- This is commented out because it is an integration test and it doesn't
          play nicely with unit test only runs in CI -->
     <!--<test name="Integration Tests Depending on Shaded Resources">-->

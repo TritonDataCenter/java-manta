@@ -1,8 +1,23 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Kryo Serialization Test Suite" verbose="1">
     <test name="Serializer Tests">
+        <groups>
+            <define name="serializer" />
+            <run>
+                <exclude name="unlimited-crypto" />
+            </run>
+        </groups>
         <packages>
             <package name="com.joyent.manta.serialization.*" />
         </packages>
+    </test>
+    <test name="Encryption Cipher Tests">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="unlimited-crypto" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.serialization.CipherSerializerTest" />
+        </classes>
     </test>
 </suite>
