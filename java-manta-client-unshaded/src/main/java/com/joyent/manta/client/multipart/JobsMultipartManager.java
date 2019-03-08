@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,7 +90,22 @@ public class JobsMultipartManager extends AbstractMultipartManager
     /**
      * Metadata file containing information about final multipart file.
      */
-    static final String METADATA_FILE = "metadata.json";
+    private static final String METADATA_FILE = "metadata.json";
+
+    /**
+     * Manta job state is queued.
+     */
+    private static final String JOB_STATE_QUEUED = "queued";
+
+    /**
+     * Manta job state is running.
+     */
+    private static final String JOB_STATE_RUNNING = "running";
+
+    /**
+     * Manta job state is done.
+     */
+    private static final String JOB_STATE_DONE = "done";
 
     /**
      * Number of seconds to poll Manta to see if a job is complete.
@@ -391,9 +406,9 @@ public class JobsMultipartManager extends AbstractMultipartManager
                     return MantaMultipartStatus.UNKNOWN;
                 } else if (job.getCancelled() != null && job.getCancelled()) {
                     return MantaMultipartStatus.ABORTED;
-                } else if (job.getState().equals("done")) {
+                } else if (job.getState().equals(JOB_STATE_DONE)) {
                     return MantaMultipartStatus.COMPLETED;
-                } else if (job.getState().equals("running")) {
+                } else if (job.getState().equals(JOB_STATE_RUNNING)) {
                     return MantaMultipartStatus.COMMITTING;
                 } else {
                     MantaException mioe = new MantaException("Unexpected job state");
@@ -437,7 +452,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
             /* If we still have the directory associated with the multipart
              * upload AND we have the job id, we are in a state where the
              * job hasn't finished clearing out the data files. */
-        if (state.equals("done") || state.equals("running") || state.equals("queued")) {
+        if (state.equals(JOB_STATE_DONE) || state.equals(JOB_STATE_RUNNING)
+                || state.equals(JOB_STATE_QUEUED)) {
             return MantaMultipartStatus.COMMITTING;
         } else {
             return MantaMultipartStatus.UNKNOWN;
@@ -483,8 +499,8 @@ public class JobsMultipartManager extends AbstractMultipartManager
 
         LOGGER.debug("Aborting multipart upload [{}]", upload.getId());
 
-        if (job != null && (job.getState().equals("running")
-                || job.getState().equals("queued"))) {
+        if (job != null && (job.getState().equals(JOB_STATE_RUNNING)
+                || job.getState().equals(JOB_STATE_QUEUED))) {
             LOGGER.debug("Aborting multipart upload [{}] backing job [{}]", upload.getId(), job);
             mantaClient.cancelJob(job.getId());
         }

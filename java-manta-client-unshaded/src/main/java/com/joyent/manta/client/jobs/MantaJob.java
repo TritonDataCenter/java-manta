@@ -238,16 +238,16 @@ public class MantaJob {
     }
 
     @Override
-    public boolean equals(final Object that) {
-        if (this == that) {
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
         }
 
-        if (!(that instanceof MantaJob)) {
+        if (!(o instanceof MantaJob)) {
             return false;
         }
 
-        MantaJob mantaJob = (MantaJob) that;
+        MantaJob mantaJob = (MantaJob) o;
         return Objects.equals(id, mantaJob.id)
                 && Objects.equals(name, mantaJob.name)
                 && Objects.equals(state, mantaJob.state)

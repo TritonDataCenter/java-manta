@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,6 +45,7 @@ import java.util.stream.Stream;
  * Manta performance from the command line.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public final class Benchmark {
     /**
@@ -71,6 +72,16 @@ public final class Benchmark {
      * Time to wait until checking to see if a thread pool has finished.
      */
     private static final long CHECK_INTERVAL = Duration.ofSeconds(1).getSeconds();
+
+    /**
+     * String value for name of a put operation performed by client.
+     */
+    private static final String METHOD_PUT = "put";
+
+    /**
+     * String value for name of a put-directory operation from client.
+     */
+    private static final String METHOD_PUT_DIR = "putDir";
 
     /**
      * Manta client library.
@@ -179,6 +190,7 @@ public final class Benchmark {
      * @param iterations number of iterations to run
      * @throws IOException thrown when we can't communicate with the server
      */
+    @SuppressWarnings("Duplicates")
     private static void singleThreadedBenchmark(final String method,
                                                 final String path,
                                                 final int iterations) throws IOException {
@@ -192,9 +204,9 @@ public final class Benchmark {
         for (int i = 0; i < iterations; i++) {
             Duration[] durations;
 
-            if (method.equals("put")) {
+            if (method.equals(METHOD_PUT)) {
                 durations = measurePut(sizeInBytesOrNoOfDirs);
-            } else if (method.equals("putDir")) {
+            } else if (method.equals(METHOD_PUT_DIR)) {
                 durations = measurePutDir(sizeInBytesOrNoOfDirs);
             } else {
                 durations = measureGet(path);
@@ -231,6 +243,7 @@ public final class Benchmark {
      * @param iterations number of iterations to run
      * @param concurrency number of threads to run
      */
+    @SuppressWarnings("Duplicates")
     private static void multithreadedBenchmark(final String method,
                                                final String path,
                                                final int iterations,
@@ -250,9 +263,9 @@ public final class Benchmark {
             for (int i = 0; i < perThreadCount; i++) {
                 Duration[] durations;
 
-                if (method.equals("put")) {
+                if (method.equals(METHOD_PUT)) {
                     durations = measurePut(sizeInBytesOrNoOfDirs);
-                } else if (method.equals("putDir")) {
+                } else if (method.equals(METHOD_PUT_DIR)) {
                     durations = measurePutDir(sizeInBytesOrNoOfDirs);
                 } else {
                     durations = measureGet(path);

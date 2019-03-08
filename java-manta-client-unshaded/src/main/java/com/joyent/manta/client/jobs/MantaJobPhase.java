@@ -198,14 +198,14 @@ public class MantaJobPhase {
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) {
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
         }
-        if (!(other instanceof MantaJobPhase)) {
+        if (!(o instanceof MantaJobPhase)) {
             return false;
         }
-        MantaJobPhase that = (MantaJobPhase) other;
+        MantaJobPhase that = (MantaJobPhase) o;
         return Objects.equals(assets, that.assets)
                 && Objects.equals(exec, that.exec)
                 && Objects.equals(type, that.type)
