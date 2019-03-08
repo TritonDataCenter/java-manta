@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -171,8 +171,8 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public boolean equals(final Object object) {
-        return (object instanceof Map) && innerMap.equals(object);
+    public boolean equals(final Object o) {
+        return (o instanceof Map) && innerMap.equals(o);
     }
 
     @Override

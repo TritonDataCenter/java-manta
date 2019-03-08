@@ -203,8 +203,8 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
         }
 
         @Override
-        public boolean equals(final Object obj) {
-            return obj != null && obj.getClass() == this.getClass() && (this == obj || this.get() == ((WeakReference)obj).get());
+        public boolean equals(final Object o) {
+            return o != null && o.getClass() == this.getClass() && (this == o || this.get() == ((WeakReference)o).get());
         }
 
         @Override

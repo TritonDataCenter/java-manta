@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,7 @@ import java.util.function.Function;
  * @param <V> value to be looking up
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.0.0
  */
 public class LookupMap<K extends String, V> implements Map<K, V>  {
@@ -39,6 +40,21 @@ public class LookupMap<K extends String, V> implements Map<K, V>  {
      * Wrapped unmodifiable case-insensitive instance providing data.
      */
     private final CaseInsensitiveMap<K, V> lowercaseWrapped;
+
+    /**
+     * Class name for unmodifiable maps in Java Utils.
+     */
+    private static final String JAVA_UNMODIFIABLE_MAP = "java.util.Collections$UnmodifiableMap";
+
+    /**
+     * Class name for unmodifiable maps in Apache Collections.
+     */
+    private static final String APACHE_UNMODIFIABLE_MAP = "org.apache.commons.collections4.map.UnmodifiableMap";
+
+    /**
+     * Class name for immutable maps in Google Collections.
+     */
+    private static final String IMMUTABLE_MAP = "com.google.common.collect.ImmutableMap";
 
     /**
      * Creates a new instance of a lookup map backed by the specified map.
@@ -61,17 +77,10 @@ public class LookupMap<K extends String, V> implements Map<K, V>  {
      * @return true if unmodifiable
      */
     private boolean isUnmodifiable(final Map<K, V> map) {
-        return map.getClass().getName().equals("java.util.Collections$UnmodifiableMap")
-               || map.getClass().getName().equals("org.apache.commons.collections4.map.UnmodifiableMap")
-               || map.getClass().getName().equals("com.google.common.collect.ImmutableMap")
+        return map.getClass().getName().equals(JAVA_UNMODIFIABLE_MAP)
+               || map.getClass().getName().equals(APACHE_UNMODIFIABLE_MAP)
+               || map.getClass().getName().equals(IMMUTABLE_MAP)
                || map instanceof UnmodifiableMap;
-    }
-
-    /**
-     * @return the key set all in lowercase.
-     */
-    public Set<K> lowercaseKeySet() {
-        return this.lowercaseWrapped.keySet();
     }
 
     /**
