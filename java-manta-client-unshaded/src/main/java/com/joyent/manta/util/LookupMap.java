@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -81,6 +82,13 @@ public class LookupMap<K extends String, V> implements Map<K, V>  {
                || map.getClass().getName().equals(APACHE_UNMODIFIABLE_MAP)
                || map.getClass().getName().equals(IMMUTABLE_MAP)
                || map instanceof UnmodifiableMap;
+    }
+
+    /**
+     * @return the key set all in lowercase.
+     */
+    public Set<K> lowercaseKeySet() {
+        return this.lowercaseWrapped.keySet();
     }
 
     /**
@@ -162,9 +170,16 @@ public class LookupMap<K extends String, V> implements Map<K, V>  {
     }
 
     @Override
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     public boolean equals(final Object o) {
-        return wrapped.equals(o);
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Map)) {
+            return false;
+        }
+
+        final Map that = (Map) o;
+        return Objects.equals(wrapped, that);
     }
 
     @Override

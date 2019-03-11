@@ -242,12 +242,11 @@ public class MantaJob {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof MantaJob)) {
             return false;
         }
 
-        MantaJob mantaJob = (MantaJob) o;
+        final MantaJob mantaJob = (MantaJob) o;
         return Objects.equals(id, mantaJob.id)
                 && Objects.equals(name, mantaJob.name)
                 && Objects.equals(state, mantaJob.state)
