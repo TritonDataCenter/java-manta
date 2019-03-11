@@ -61,8 +61,7 @@ public class ServerSideMultipartUpload extends AbstractMultipartUpload {
             return false;
         }
 
-        ServerSideMultipartUpload that = (ServerSideMultipartUpload)o;
-
+        final ServerSideMultipartUpload that = (ServerSideMultipartUpload)o;
         return Objects.equals(partsDirectory, that.partsDirectory);
     }
 

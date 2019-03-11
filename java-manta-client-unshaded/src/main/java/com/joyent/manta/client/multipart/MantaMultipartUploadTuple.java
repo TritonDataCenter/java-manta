@@ -82,13 +82,12 @@ public class MantaMultipartUploadTuple implements Serializable,
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof MantaMultipartUploadTuple)) {
             return false;
         }
 
-        MantaMultipartUploadTuple tuple = (MantaMultipartUploadTuple) o;
-        return partNumber == tuple.partNumber
+        final MantaMultipartUploadTuple tuple = (MantaMultipartUploadTuple) o;
+        return Objects.equals(partNumber, tuple.partNumber)
                 && Objects.equals(etag, tuple.etag);
     }
 

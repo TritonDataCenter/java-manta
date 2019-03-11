@@ -126,13 +126,11 @@ public class ErrorDetail implements Entity {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof ErrorDetail)) {
             return false;
         }
 
         final ErrorDetail that = (ErrorDetail) o;
-
         return Objects.equals(code, that.code)
                 && Objects.equals(message, that.message)
                 && Objects.equals(errors, that.errors);

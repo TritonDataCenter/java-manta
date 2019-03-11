@@ -138,7 +138,7 @@ public class MantaJobError {
             return false;
         }
 
-        MantaJobError that = (MantaJobError) o;
+        final MantaJobError that = (MantaJobError) o;
         return phase == that.phase
                 && Objects.equals(what, that.what)
                 && Objects.equals(p0input, that.p0input)

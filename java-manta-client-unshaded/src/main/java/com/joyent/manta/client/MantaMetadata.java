@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -35,6 +36,7 @@ import java.util.function.Function;
  * <p>This class is NOT thread-safe.</p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
@@ -172,7 +174,15 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
     @Override
     public boolean equals(final Object o) {
-        return (o instanceof Map) && innerMap.equals(o);
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Map)) {
+            return false;
+        }
+
+        final Map that = (Map) o;
+        return Objects.equals(innerMap, that);
     }
 
     @Override

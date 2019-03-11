@@ -88,12 +88,11 @@ class PlaintextByteRangePosition {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof PlaintextByteRangePosition)) {
             return false;
         }
 
-        PlaintextByteRangePosition that = (PlaintextByteRangePosition) o;
+        final PlaintextByteRangePosition that = (PlaintextByteRangePosition) o;
         return initialPlaintextSkipBytes == that.initialPlaintextSkipBytes
                 && plaintextRangeLength == that.plaintextRangeLength
                 && plaintextStart == that.plaintextStart

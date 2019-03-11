@@ -962,12 +962,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof BaseChainedConfigContext)) {
             return false;
         }
 
-        BaseChainedConfigContext that = (BaseChainedConfigContext) o;
+        final BaseChainedConfigContext that = (BaseChainedConfigContext) o;
         return Objects.equals(mantaURL, that.mantaURL)
                 && Objects.equals(account, that.account)
                 && Objects.equals(mantaKeyId, that.mantaKeyId)

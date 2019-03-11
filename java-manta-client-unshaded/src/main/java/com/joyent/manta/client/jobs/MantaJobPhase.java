@@ -205,7 +205,8 @@ public class MantaJobPhase {
         if (!(o instanceof MantaJobPhase)) {
             return false;
         }
-        MantaJobPhase that = (MantaJobPhase) o;
+
+        final MantaJobPhase that = (MantaJobPhase) o;
         return Objects.equals(assets, that.assets)
                 && Objects.equals(exec, that.exec)
                 && Objects.equals(type, that.type)

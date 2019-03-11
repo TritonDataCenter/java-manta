@@ -285,8 +285,7 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
             return false;
         }
 
-        AbstractAesCipherDetails that = (AbstractAesCipherDetails)o;
-
+        final AbstractAesCipherDetails that = (AbstractAesCipherDetails)o;
         return authenticationTagOrHmacLength == that.authenticationTagOrHmacLength
                 && keyLengthBits == that.keyLengthBits
                 && isAEADCipher == that.isAEADCipher
