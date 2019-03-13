@@ -64,7 +64,6 @@ public class MantaClientSnapLinksIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
     public final void canMoveDirectoryWithContents() throws IOException {
         final String name = "source-" + UUID.randomUUID().toString();
         final String source = testPathPrefix + name + MantaClient.SEPARATOR;
@@ -72,7 +71,6 @@ public class MantaClientSnapLinksIT {
         moveDirectoryWithContents(source, destination);
     }
 
-    @Test
     public final void canMoveFileToDifferentPrecreatedDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -86,7 +84,6 @@ public class MantaClientSnapLinksIT {
         Assert.assertEquals(movedContent, TEST_DATA);
     }
 
-    @Test
     public final void canMoveFileToDifferentUncreatedDirectoryCreationEnabled() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -100,7 +97,6 @@ public class MantaClientSnapLinksIT {
         Assert.assertEquals(movedContent, TEST_DATA);
     }
 
-    @Test
     public final void testHead() throws IOException {
         final String objectName = UUID.randomUUID().toString();
         final String path = testPathPrefix + objectName;
@@ -139,7 +135,6 @@ public class MantaClientSnapLinksIT {
         Assert.assertEquals(mantaObjectHead.getEtag(), mantaLinkHead.getEtag());
     }
 
-    @Test
     public final void testPutLink() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -151,7 +146,6 @@ public class MantaClientSnapLinksIT {
         Assert.assertEquals(linkContent, TEST_DATA);
     }
 
-    @Test
     public final void testPutJsonLink() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name + ".json";
@@ -210,7 +204,7 @@ public class MantaClientSnapLinksIT {
                 + source);
     }
 
-    private void skipSnapLinkTest(final String linkPath, final String objectPath) throws IOException {
+    private void skipSnapLinkTest(final String linkPath, final String objectPath) throws IOException, MantaClientHttpResponseException {
         try {
             mantaClient.putSnapLink( linkPath, objectPath, null);
         } catch (MantaClientHttpResponseException e) {
