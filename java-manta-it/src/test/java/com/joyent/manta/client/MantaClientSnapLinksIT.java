@@ -25,6 +25,14 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
 /**
  * Tests the basic functionality of operations related to snaplinks
  * for the {@link MantaClient} class.
+ * <p>
+ * Since we want to make it possible to run this test without a code change, this test throws a {@link
+ * org.testng.SkipException} if snaplinks are disabled for the "manta.user" account, the method
+ * {@link MantaClientSnapLinksIT#skipSnapLinkTest(String, String)} will skip this integration-test from running.
+ * </p>
+ * <p>Remember to also pass system properties for client configuration (manta.user/etc.) or set the values in the
+ * environment (MANTA_USER/etc).
+ * </p>
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
