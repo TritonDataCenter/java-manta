@@ -45,7 +45,6 @@ import java.util.stream.Stream;
  * Manta performance from the command line.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public final class Benchmark {
     /**
