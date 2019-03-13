@@ -20,6 +20,7 @@ import org.testng.annotations.*;
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.SNAPLINKS_DISABLED_ERROR;
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
 /**
@@ -204,16 +205,19 @@ public class MantaClientSnapLinksIT {
                 + source);
     }
 
-    private void skipSnapLinkTest(final String linkPath, final String objectPath) throws IOException, MantaClientHttpResponseException {
+    private void skipSnapLinkTest(final String linkPath, final String objectPath) throws IOException {
         try {
-            mantaClient.putSnapLink( linkPath, objectPath, null);
+            mantaClient.putSnapLink(linkPath, objectPath, null);
         } catch (MantaClientHttpResponseException e) {
-            final String message =
-                    "This integration-test class can't be run since SnapLinks" +
-                            "have been disabled for this account";
-            LOG.warn(message);
+            if (e.getServerCode().equals(SNAPLINKS_DISABLED_ERROR)) {
+                final String message =
+                        "This integration-test class can't be run since SnapLinks" +
+                                "have been disabled for this account";
+                LOG.warn(message);
+                throw new SkipException(message, e);
+            }
 
-            throw new SkipException(message, e);
+            throw e;
         }
     }
 }

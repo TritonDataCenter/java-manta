@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @see <a href="https://apidocs.joyent.com/manta/api.html#errors">Manta Errors</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @SuppressWarnings("checkstyle:JavadocVariable")
 public enum MantaErrorCode {
@@ -89,6 +90,7 @@ public enum MantaErrorCode {
     ROOT_DIRECTORY_ERROR("RootDirectory"),
     SECURE_TRANSPORT_REQUIRED_ERROR("SecureTransportRequired"),
     SERVICE_UNAVAILABLE_ERROR("ServiceUnavailable"),
+    SNAPLINKS_DISABLED_ERROR("SnaplinksDisabledError"),
     SOURCE_OBJECT_NOT_FOUND_ERROR("SourceObjectNotFound"),
     SSL_REQUIRED_ERROR("SSLRequired"),
     UPLOAD_ABANDONED_ERROR("UploadAbandoned"),
