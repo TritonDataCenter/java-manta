@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,6 +50,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  *
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test
 public class MantaClientIT {
@@ -312,102 +313,6 @@ public class MantaClientIT {
         Assert.assertTrue(thrown, "Bad request response not received");
     }
 
-    @Test
-    public final void testHead() throws IOException {
-        final String objectName = UUID.randomUUID().toString();
-        final String path = testPathPrefix + objectName;
-
-        mantaClient.put(path, TEST_DATA);
-        final MantaObjectResponse mantaObjectHead = mantaClient.head(testPathPrefix + objectName);
-        Assert.assertNotNull(mantaObjectHead);
-        Assert.assertNotNull(mantaObjectHead.getContentType());
-        Assert.assertNotNull(mantaObjectHead.getContentLength());
-        Assert.assertNotNull(mantaObjectHead.getEtag());
-        Assert.assertNotNull(mantaObjectHead.getMtime());
-        Assert.assertNotNull(mantaObjectHead.getPath());
-
-        final String directoryName = UUID.randomUUID().toString();
-        mantaClient.putDirectory(testPathPrefix + directoryName, null);
-        final MantaObjectResponse mantaDirectoryHead = mantaClient.head(testPathPrefix + directoryName);
-        Assert.assertNotNull(mantaDirectoryHead);
-        Assert.assertNotNull(mantaDirectoryHead.getContentType());
-        Assert.assertNull(mantaDirectoryHead.getContentLength());
-        Assert.assertNull(mantaDirectoryHead.getEtag());
-        Assert.assertNotNull(mantaDirectoryHead.getMtime());
-        Assert.assertNotNull(mantaDirectoryHead.getPath());
-
-        final String linkName = UUID.randomUUID().toString();
-        mantaClient.putSnapLink(testPathPrefix + linkName, testPathPrefix + objectName, null);
-        final MantaObjectResponse mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
-        Assert.assertNotNull(mantaLinkHead);
-        Assert.assertNotNull(mantaLinkHead.getContentType());
-        Assert.assertNotNull(mantaLinkHead.getContentLength());
-        Assert.assertNotNull(mantaLinkHead.getEtag());
-        Assert.assertNotNull(mantaLinkHead.getMtime());
-        Assert.assertNotNull(mantaLinkHead.getPath());
-
-        Assert.assertEquals(mantaObjectHead.getContentType(), mantaLinkHead.getContentType());
-        Assert.assertEquals(mantaObjectHead.getContentLength(), mantaLinkHead.getContentLength());
-        Assert.assertEquals(mantaObjectHead.getEtag(), mantaLinkHead.getEtag());
-    }
-
-    @Test
-    public final void testPutLink() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        mantaClient.put(path, TEST_DATA);
-
-        final String link = UUID.randomUUID().toString();
-        mantaClient.putSnapLink(testPathPrefix + link, testPathPrefix + name, null);
-        final String linkContent = mantaClient.getAsString(testPathPrefix + link);
-        Assert.assertEquals(linkContent, TEST_DATA);
-
-    }
-
-    @Test
-    public final void testPutJsonLink() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name + ".json";
-        final String testData = "{}";
-
-        MantaHttpHeaders headers = new MantaHttpHeaders();
-        headers.setContentType("application/json");
-        mantaClient.put(path, testData, headers);
-
-        final String linkPath = testPathPrefix + UUID.randomUUID() + ".json";
-        mantaClient.putSnapLink(linkPath, path, null);
-        final String linkContent = mantaClient.getAsString(linkPath);
-        Assert.assertEquals(linkContent, testData);
-    }
-
-    @Test(groups = "move")
-    public final void canMoveFileToDifferentPrecreatedDirectory() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        mantaClient.put(path, TEST_DATA);
-        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + SEPARATOR;
-        mantaClient.putDirectory(newDir);
-        final String newPath = newDir + "this-is-a-new-name.txt";
-
-        mantaClient.move(path, newPath);
-        final String movedContent = mantaClient.getAsString(newPath);
-        Assert.assertEquals(movedContent, TEST_DATA);
-    }
-
-    @Test(groups = "move")
-    public final void canMoveFileToDifferentUncreatedDirectoryCreationEnabled() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
-        mantaClient.put(path, TEST_DATA);
-        final String newDir = testPathPrefix + "subdir-" + UUID.randomUUID() + SEPARATOR;
-
-        final String newPath = newDir + "this-is-a-new-name.txt";
-
-        mantaClient.move(path, newPath, true);
-        final String movedContent = mantaClient.getAsString(newPath);
-        Assert.assertEquals(movedContent, TEST_DATA);
-    }
-
     @Test(groups = "move")
     public final void canMoveFileToDifferentUncreatedDirectoryCreationDisabled() throws IOException {
         final String name = UUID.randomUUID().toString();
@@ -497,14 +402,6 @@ public class MantaClientIT {
         boolean sourceIsDeleted = !mantaClient.existsAndIsAccessible(source);
         Assert.assertTrue(sourceIsDeleted, "Source directory didn't get deleted: "
                 + source);
-    }
-
-    @Test
-    public final void canMoveDirectoryWithContents() throws IOException {
-        final String name = "source-" + UUID.randomUUID().toString();
-        final String source = testPathPrefix + name + MantaClient.SEPARATOR;
-        final String destination = testPathPrefix + "dest-" + UUID.randomUUID() + SEPARATOR;
-        moveDirectoryWithContents(source, destination);
     }
 
     @Test(enabled = false) // Triggers server side bug: MANTA-2409
