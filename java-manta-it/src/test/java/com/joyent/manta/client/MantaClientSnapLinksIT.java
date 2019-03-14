@@ -29,7 +29,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * <p>
  * Since we want to make it possible to run this test without a code change, this test throws a {@link
  * org.testng.SkipException} if snaplinks are disabled for the "manta.user" account, the method
- * {@link MantaClientSnapLinksIT#skipSnapLinkTest(String, String)} will skip this integration-test from running.
+ * {@link MantaClientSnapLinksIT#putSnapLinkAndSkipIfUnsupported(String, String)} will skip this integration-test from running.
  * </p>
  * <p>Remember to also pass system properties for client configuration (manta.user/etc.) or set the values in the
  * environment (MANTA_USER/etc).
@@ -65,6 +65,7 @@ public class MantaClientSnapLinksIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
+    @Test(dependsOnMethods = "testPutLink")
     public final void canMoveDirectoryWithContents() throws IOException {
         final String name = "source-" + UUID.randomUUID().toString();
         final String source = testPathPrefix + name + MantaClient.SEPARATOR;
@@ -72,6 +73,7 @@ public class MantaClientSnapLinksIT {
         moveDirectoryWithContents(source, destination);
     }
 
+    @Test(dependsOnMethods = "testPutLink")
     public final void canMoveFileToDifferentPrecreatedDirectory() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -85,6 +87,7 @@ public class MantaClientSnapLinksIT {
         Assert.assertEquals(movedContent, TEST_DATA);
     }
 
+    @Test(dependsOnMethods = "testPutLink")
     public final void canMoveFileToDifferentUncreatedDirectoryCreationEnabled() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -122,7 +125,7 @@ public class MantaClientSnapLinksIT {
         Assert.assertNotNull(mantaDirectoryHead.getPath());
 
         final String linkName = UUID.randomUUID().toString();
-        skipSnapLinkTest(testPathPrefix + linkName, testPathPrefix + objectName);
+        putSnapLinkAndSkipIfUnsupported(testPathPrefix + linkName, testPathPrefix + objectName);
         final MantaObjectResponse mantaLinkHead = mantaClient.head(testPathPrefix + linkName);
         Assert.assertNotNull(mantaLinkHead);
         Assert.assertNotNull(mantaLinkHead.getContentType());
@@ -142,7 +145,7 @@ public class MantaClientSnapLinksIT {
         mantaClient.put(path, TEST_DATA);
 
         final String link = UUID.randomUUID().toString();
-        skipSnapLinkTest(testPathPrefix + link, testPathPrefix + name);
+        putSnapLinkAndSkipIfUnsupported(testPathPrefix + link, testPathPrefix + name);
         final String linkContent = mantaClient.getAsString(testPathPrefix + link);
         Assert.assertEquals(linkContent, TEST_DATA);
     }
@@ -157,7 +160,7 @@ public class MantaClientSnapLinksIT {
         mantaClient.put(path, testData, headers);
 
         final String linkPath = testPathPrefix + UUID.randomUUID() + ".json";
-        skipSnapLinkTest(linkPath, path);
+        putSnapLinkAndSkipIfUnsupported(linkPath, path);
         final String linkContent = mantaClient.getAsString(linkPath);
         Assert.assertEquals(linkContent, testData);
     }
@@ -205,7 +208,7 @@ public class MantaClientSnapLinksIT {
                 + source);
     }
 
-    private void skipSnapLinkTest(final String linkPath, final String objectPath) throws IOException {
+    private void putSnapLinkAndSkipIfUnsupported(final String linkPath, final String objectPath) throws IOException {
         try {
             mantaClient.putSnapLink(linkPath, objectPath, null);
         } catch (MantaClientHttpResponseException e) {
