@@ -12,7 +12,7 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.4.0</version>
+        <version>3.4.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>java-manta-benchmark</artifactId>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client-unshaded</artifactId>
-            <version>3.4.0</version>
+            <version>3.4.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
