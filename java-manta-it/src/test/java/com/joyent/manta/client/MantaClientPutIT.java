@@ -70,7 +70,7 @@ public class MantaClientPutIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test(groups = { "nightly" })
+    @Test
     public final void testPutWithStringUTF8() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -104,7 +104,7 @@ public class MantaClientPutIT {
         }
     }
 
-    @Test(groups = { "nightly" })
+    @Test
     public final void testPutWithStringUTF16() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -271,7 +271,7 @@ public class MantaClientPutIT {
         }
     }
 
-    @Test(groups = { "nightly" })
+    @Test
     public final void testPutWithPlainTextFileUTF8RomanCharacters() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -289,7 +289,7 @@ public class MantaClientPutIT {
                 "Uploaded file didn't match expectation");
     }
 
-    @Test(groups = { "nightly" })
+    @Test
     public final void testPutWithPlainTextFileUTF8NonRomanCharacters() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

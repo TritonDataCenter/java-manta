@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
-@Test(groups = { "nightly" })
+@Test
 public class MantaClientFindIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 

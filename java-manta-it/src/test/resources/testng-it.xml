@@ -27,6 +27,7 @@
                 <exclude name="encryption-provider" />
                 <exclude name="directory" />
                 <exclude name="jobs" />
+                <exclude name="nightly" />
             </run>
         </groups>
         <packages>
@@ -39,19 +40,11 @@
         <parameter name="usingEncryption" value="true" />
         <groups>
             <define name="nightly" />
-            <run>
-                <include name="directory" />
-                <include name="jobs" />
-                <include name="move" />
-                <include name="metadata" />
-            </run>
         </groups>
         <classes>
-            <class name="com.joyent.manta.client.MantaClientIT" />
-            <class name="com.joyent.manta.client.MantaClientFindIT" />
-            <class name="com.joyent.manta.client.MantaClientPutIT" />
-            <class name="com.joyent.manta.client.MantaClientRangeIT" />
-            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
+            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
+            <class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />
+            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />
             <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
         </classes>
     </test>
@@ -132,9 +125,12 @@
     <test name="Manta Job Tests">
         <groups>
             <define name="jobs" />
+            <run>
+                <exclude name="nightly" />
+            </run>
         </groups>
-        <packages>
-            <package name="com.joyent.manta.client.jobs.*"/>
-        </packages>
+        <classes>
+            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
+        </classes>
     </test>
 </suite>

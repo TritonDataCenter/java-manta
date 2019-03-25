@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,6 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-//@Test(dependsOnGroups = { "directory" })
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -164,7 +163,7 @@ public class MantaClientIT {
         }
     }
 
-    @Test(groups = { "nightly" })
+    @Test
     public final void testManyOperations() throws IOException {
         String dir = testPathPrefix + "multiple";
         mantaClient.putDirectory(dir);
@@ -269,7 +268,7 @@ public class MantaClientIT {
                 "text/html", "Content type wasn't auto-assigned");
     }
 
-    @Test(groups = { "nightly" })
+    @Test
     public final void testRecursiveDeleteObject() throws IOException {
         final String dir1 = String.format("%s1", testPathPrefix);
                 mantaClient.putDirectory(testPathPrefix + "1", null);

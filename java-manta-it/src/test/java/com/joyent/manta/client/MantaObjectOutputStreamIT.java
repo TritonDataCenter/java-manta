@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
-@Test(groups = { "nightly" })
+@Test
 public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
