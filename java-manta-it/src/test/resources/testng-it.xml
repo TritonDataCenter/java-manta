@@ -11,12 +11,23 @@
             <class name="com.joyent.test.util.RandomInputStreamTest"/>
         </classes>
     </test>
-
+    <test name="Manta Client Directory Tests">
+        <groups>
+            <define name="directory" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientDirectoriesIT" />
+            <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
+        </classes>
+    </test>
     <test name="Manta Client Integration Tests [Unencrypted]">
         <groups>
             <run>
-                <exclude name="encrypted"/>
+                <exclude name="encrypted" />
                 <exclude name="encryption-provider" />
+                <exclude name="directory" />
+                <exclude name="jobs" />
+                <exclude name="nightly" />
             </run>
         </groups>
         <packages>
@@ -28,12 +39,52 @@
         </packages>
     </test>
     <!-- We run many of the integration tests over again using client-side encryption -->
+    <test name="Manta Client Heavyweight Tests">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="nightly" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
+            <class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />
+            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
+        </classes>
+    </test>
+    <test name="Manta Client Integration Tests [Modified Time]">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="mtime" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+        </classes>
+    </test>
+    <test name="Manta Client Integration Tests [Move Operations]">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="move" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+        </classes>
+    </test>
+    <test name="Manta Client Metadata Tests [Metadata Operations]">
+        <parameter name="usingEncryption" value="true" />
+        <groups>
+            <define name="metadata" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+        </classes>
+    </test>
     <test name="Manta Client Integration Tests [AES128/CTR Encrypted]">
         <parameter name="usingEncryption" value="true"/>
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <groups>
             <run>
                 <exclude name="encryption-provider" />
+                <exclude name="nightly" />
             </run>
         </groups>
         <packages>
@@ -49,6 +100,7 @@
         <groups>
             <run>
                 <exclude name="encryption-provider" />
+                <exclude name="nightly" />
             </run>
         </groups>
         <packages>
@@ -63,6 +115,7 @@
         <groups>
             <run>
                 <exclude name="encryption-provider" />
+                <exclude name="nightly" />
             </run>
         </groups>
         <packages>
@@ -81,8 +134,14 @@
         </classes>
     </test>
     <test name="Manta Job Tests">
-        <packages>
-            <package name="com.joyent.manta.client.jobs.*"/>
-        </packages>
+        <groups>
+            <define name="jobs" />
+            <run>
+                <exclude name="nightly" />
+            </run>
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
+        </classes>
     </test>
 </suite>
