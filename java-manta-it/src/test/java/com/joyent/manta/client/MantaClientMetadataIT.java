@@ -26,8 +26,9 @@ import java.util.UUID;
  * Tests for verifying the behavior of metadata with {@link MantaClient}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
-@Test(groups = { "metadata" })
+@Test(groups = {"metadata"})
 public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -35,15 +36,19 @@ public class MantaClientMetadataIT {
 
     private String testPathPrefix;
 
-    @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"encryptionCipher"})
+    public MantaClientMetadataIT(final @Optional String encryptionCipher) {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
@@ -177,7 +182,7 @@ public class MantaClientMetadataIT {
         }
     }
 
-    @Test(groups = "encrypted")
+    @Test(groups = "encryptable")
     public void verifyAddEncryptedMetadataToObjectOnPut() throws IOException {
         if (!mantaClient.getContext().isClientEncryptionEnabled()) {
             throw new SkipException("Test is only relevant when client-side encryption is enabled");
@@ -207,7 +212,7 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("e-force"), "true");
     }
 
-    @Test(groups = "encrypted")
+    @Test(groups = "encryptable")
     public final void verifyEncryptedMetadataCanBeAddedLater() throws IOException {
         if (!mantaClient.getContext().isClientEncryptionEnabled()) {
             throw new SkipException("Test is only relevant when client-side encryption is enabled");

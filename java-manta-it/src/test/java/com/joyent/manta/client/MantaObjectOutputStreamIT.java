@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,23 +29,34 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
-@Test
+/**
+ * Tests for verifying the behavior of {@link MantaObjectOutputStream} with
+ * {@link MantaClient}.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
+ */
+@Test(groups = {"encryptable"})
 public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
+
+    @Parameters({"encryptionCipher"})
+    public MantaObjectOutputStreamIT(final @Optional String encryptionCipher) throws IOException {
+
+        // Let TestNG configuration take precedence over environment variables
+        ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
+
+        mantaClient = new MantaClient(config);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
 
     @BeforeClass()
     @Parameters({"usingEncryption"})
     public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-
-        // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
-
-        mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

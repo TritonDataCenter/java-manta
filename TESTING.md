@@ -64,6 +64,17 @@ possible torun a subset of the test suite by adding
 mvn test -DexcludedGroups=unlimited-crypto
 ```
 
+## Dry run
+	
+It's possible to print a list of which integration tests would run and their relevant
+parameters using the following invocation:
+	
+```
+mvn verify -Dit.dryrun=true
+```
+	
+Note: This has not yet been expanded to unit tests.
+	
 # Writing Tests
 
 The `java-manta-client` module contains unit tests. Integration tests generally
