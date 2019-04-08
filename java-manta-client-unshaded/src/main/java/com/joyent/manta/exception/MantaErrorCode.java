@@ -399,7 +399,7 @@ public enum MantaErrorCode {
      */
     SERVICE_UNAVAILABLE_ERROR("ServiceUnavailable"),
     /**
-     *  Known component sources: muskie
+     *  Known component sources: muskie.
      */
     SNAPLINKS_DISABLED_ERROR("SnaplinksDisabledError"),
     /**

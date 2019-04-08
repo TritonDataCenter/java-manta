@@ -18,8 +18,6 @@ import static com.joyent.manta.exception.MantaErrorCode.NO_API_SERVERS_AVAILABLE
 import static com.joyent.manta.exception.MantaErrorCode.OBJECT_NOT_FOUND_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.ROOT_DIRECTORY_ERROR;
 
-
-
 /**
  * Tests the behavior of the {@link MantaErrorCode} enumeration.
  *
