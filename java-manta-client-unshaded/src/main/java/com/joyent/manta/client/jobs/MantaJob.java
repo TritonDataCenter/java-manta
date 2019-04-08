@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -238,16 +238,15 @@ public class MantaJob {
     }
 
     @Override
-    public boolean equals(final Object that) {
-        if (this == that) {
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
         }
-
-        if (!(that instanceof MantaJob)) {
+        if (!(o instanceof MantaJob)) {
             return false;
         }
 
-        MantaJob mantaJob = (MantaJob) that;
+        final MantaJob mantaJob = (MantaJob) o;
         return Objects.equals(id, mantaJob.id)
                 && Objects.equals(name, mantaJob.name)
                 && Objects.equals(state, mantaJob.state)

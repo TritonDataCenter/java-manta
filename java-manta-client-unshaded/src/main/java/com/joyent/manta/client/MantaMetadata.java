@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -35,6 +36,7 @@ import java.util.function.Function;
  * <p>This class is NOT thread-safe.</p>
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @NotThreadSafe
 public class MantaMetadata implements Map<String, String>, Cloneable, Serializable {
@@ -171,8 +173,16 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public boolean equals(final Object object) {
-        return (object instanceof Map) && innerMap.equals(object);
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Map)) {
+            return false;
+        }
+
+        final Map that = (Map) o;
+        return Objects.equals(innerMap, that);
     }
 
     @Override

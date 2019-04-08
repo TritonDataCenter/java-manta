@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @see <a href="https://github.com/ehcache/ehcache3/blob/351a49a45afbf18c48df665210b5cf07f5e7b221/core/src/main/java/org/ehcache/core/internal/util/ConcurrentWeakIdentityHashMap.java">github page of source</a>
  * @author Alex Snaps
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @SuppressWarnings("EqualsGetClass")
 public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> {
@@ -203,8 +204,15 @@ public class ConcurrentWeakIdentityHashMap<K, V> implements ConcurrentMap<K, V> 
         }
 
         @Override
-        public boolean equals(final Object obj) {
-            return obj != null && obj.getClass() == this.getClass() && (this == obj || this.get() == ((WeakReference)obj).get());
+        public boolean equals(final Object o) {
+            if (o != null) if (o.getClass() == this.getClass()) {
+                if (this == o) {
+                    return true;
+                }
+                final WeakReference that = (WeakReference) o;
+                return this.get() == that.get();
+            }
+            return false;
         }
 
         @Override

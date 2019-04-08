@@ -958,16 +958,15 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) {
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
         }
-
-        if (!(other instanceof BaseChainedConfigContext)) {
+        if (!(o instanceof BaseChainedConfigContext)) {
             return false;
         }
 
-        BaseChainedConfigContext that = (BaseChainedConfigContext) other;
+        final BaseChainedConfigContext that = (BaseChainedConfigContext) o;
         return Objects.equals(mantaURL, that.mantaURL)
                 && Objects.equals(account, that.account)
                 && Objects.equals(mantaKeyId, that.mantaKeyId)

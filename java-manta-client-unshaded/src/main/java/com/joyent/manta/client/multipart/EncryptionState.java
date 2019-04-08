@@ -171,13 +171,11 @@ public class EncryptionState {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof EncryptionState)) {
             return false;
         }
 
         final EncryptionState that = (EncryptionState) o;
-
         return lastPartNumber == that.lastPartNumber
             && lastPartAuthWritten == that.lastPartAuthWritten
             && Objects.equals(encryptionContext, that.encryptionContext);

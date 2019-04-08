@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,7 @@ import static com.joyent.manta.http.MantaHttpHeaders.COMPUTED_MD5;
  * <p>I/O is performed via the methods on the {@link MantaClient} class.</p>
  *
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class MantaObjectResponse implements MantaObject {
 
@@ -339,7 +340,7 @@ public class MantaObjectResponse implements MantaObject {
             return true;
         }
         if (o instanceof MantaObjectResponse) {
-            MantaObjectResponse that = (MantaObjectResponse)o;
+            final MantaObjectResponse that = (MantaObjectResponse)o;
             return Objects.equals(path, that.path)
                     && Objects.equals(getContentLength(), that.getContentLength())
                     && Objects.equals(getContentType(), that.getContentType())
@@ -347,7 +348,7 @@ public class MantaObjectResponse implements MantaObject {
                     && Objects.equals(getMtime(), that.getMtime())
                     && Objects.equals(httpHeaders, that.httpHeaders);
         } else if (o instanceof MantaObject) {
-            MantaObject that = (MantaObject)o;
+            final MantaObject that = (MantaObject)o;
             return Objects.equals(getContentLength(), that.getContentLength())
                     && Objects.equals(getContentType(), that.getContentType())
                     && Objects.equals(getEtag(), that.getEtag())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2018-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,6 @@
 package com.joyent.manta.http;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.http.ProtocolException;
 
 import java.util.Objects;
@@ -20,6 +19,7 @@ import static org.apache.commons.lang3.Validate.notNull;
  * <a href="https://tools.ietf.org/html/rfc7233#section-4.2">Content-Range</a> headers.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.2.2
  */
 public abstract class HttpRange {
@@ -309,18 +309,14 @@ public abstract class HttpRange {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof HttpRange)) {
             return false;
         }
 
         final HttpRange that = (HttpRange) o;
-
-        return new EqualsBuilder()
-                .append(this.startInclusive, that.startInclusive)
-                .append(this.endInclusive, that.endInclusive)
-                .append(this.size, that.size)
-                .build();
+        return startInclusive == that.startInclusive
+                && Objects.equals(this.endInclusive, that.endInclusive)
+                && Objects.equals(this.size, that.size);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,6 +81,7 @@ public final class EncryptionType {
      * @param encryptionType string of encryption type and version to parse and validate
      * @throws MantaEncryptionException when encryption type can't be validated
      */
+    @SuppressWarnings({"Duplicates"})
     public static void validateEncryptionTypeIsSupported(final String encryptionType) {
         if (encryptionType == null) {
             String msg = "Invalid encryption type identifier must not be null";
@@ -156,7 +157,6 @@ public final class EncryptionType {
         }
 
         final EncryptionType that = (EncryptionType) o;
-
         return minVersionSupported == that.minVersionSupported
             && maxVersionSupported == that.maxVersionSupported
             && Objects.equals(name, that.name);

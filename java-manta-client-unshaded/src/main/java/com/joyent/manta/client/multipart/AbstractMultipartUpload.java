@@ -52,13 +52,11 @@ public abstract class AbstractMultipartUpload implements MantaMultipartUpload {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof AbstractMultipartUpload)) {
             return false;
         }
 
         final MantaMultipartUpload that = (MantaMultipartUpload) o;
-
         return Objects.equals(id, that.getId())
             && Objects.equals(path, that.getPath());
     }

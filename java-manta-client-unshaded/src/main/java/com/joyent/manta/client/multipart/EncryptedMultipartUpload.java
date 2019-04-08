@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -112,13 +112,11 @@ public class EncryptedMultipartUpload<WRAPPED extends MantaMultipartUpload>
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof EncryptedMultipartUpload)) {
             return false;
         }
 
         final EncryptedMultipartUpload<?> that = (EncryptedMultipartUpload<?>) o;
-
         return Objects.equals(wrapped, that.wrapped);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -135,6 +135,7 @@ public class EncryptionContext {
      * the cipher is ready to be used to encrypt.
      * @param suppliedIv IV to use in case of a retry or test case, null indicates we should generate one
      */
+    @SuppressWarnings({"Duplicates"})
     private void initializeCipher(final byte[] suppliedIv) {
         try {
             final byte[] iv;
@@ -162,13 +163,11 @@ public class EncryptionContext {
         if (this == o) {
             return true;
         }
-
         if (!(o instanceof EncryptionContext)) {
             return false;
         }
 
         final EncryptionContext that = (EncryptionContext) o;
-
         return Objects.equals(key, that.key)
                && Objects.equals(cipherDetails, that.cipherDetails)
                && requireCloneableCipher == that.requireCloneableCipher;

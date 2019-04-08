@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@ import java.security.Provider;
 import java.util.List;
 
 import static com.joyent.manta.client.crypto.SupportedCiphersLookupMap.INSTANCE;
+import static com.joyent.manta.client.crypto.ExternalSecurityProviderLoader.PKCS11_PROVIDER_NAME;
 
 @SuppressWarnings("BadImport")
 @Test
@@ -51,7 +52,7 @@ public class SupportedCiphersLookupMapTest {
             for (SupportedCipherDetails cipherDetails : INSTANCE.values()) {
                 /* Libnss doesn't support accessing GCM, so we are not able to
                  * use from that provider. */
-                if (provider.getName().equals("SunPKCS11-NSS") && cipherDetails instanceof AesGcmCipherDetails) {
+                if (provider.getName().equals(PKCS11_PROVIDER_NAME) && cipherDetails instanceof AesGcmCipherDetails) {
                     continue;
                 }
 

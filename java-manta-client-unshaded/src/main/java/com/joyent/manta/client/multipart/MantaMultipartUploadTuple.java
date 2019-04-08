@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -78,17 +78,16 @@ public class MantaMultipartUploadTuple implements Serializable,
     }
 
     @Override
-    public boolean equals(final Object that) {
-        if (this == that) {
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
         }
-
-        if (!(that instanceof MantaMultipartUploadTuple)) {
+        if (!(o instanceof MantaMultipartUploadTuple)) {
             return false;
         }
 
-        MantaMultipartUploadTuple tuple = (MantaMultipartUploadTuple) that;
-        return partNumber == tuple.partNumber
+        final MantaMultipartUploadTuple tuple = (MantaMultipartUploadTuple) o;
+        return Objects.equals(partNumber, tuple.partNumber)
                 && Objects.equals(etag, tuple.etag);
     }
 
