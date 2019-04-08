@@ -2,7 +2,27 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.4.0] -
+## [3.4.1]
+### Added
+ - Updated `MantaErrorCode` Enum Values, mapping more errors from Manta components including muskie, mahi,
+   moray, electric-moray, piranha and marlin. Deprecated errors with invalid rest codes and removed undefined 
+   Manta Errors in the SDK.
+ - [Developer's Guide](https://github.com/joyent/java-manta/pull/495) added for professionals within Joyent, Inc
+   and the community interested in making open-source contributions.
+ - Integration-Test `MantaClientSnapLinksIT` to verify behaviour of the SDK for user accounts that
+   have `snaplinks` disabled.
+ - More documentation in `MetricReporterSupplier` to provide information regarding how the SDK exposes client metrics
+   to [manta-monitor](https://github.com/joyent/manta-monitor).
+### Changed
+ - Copyright Header updates for files that have been modified recently within the Client Java SDK.     
+### Fixed
+ - [Standardize .equals() and .hashCode() behaviour](https://github.com/joyent/java-manta/issues/477)
+ - [Review correctness of integer division in floating point context](https://github.com/joyent/java-manta/issues/479)
+ - [Integration tests structured better to support accounts having SnapLinks disabled](https://github.com/joyent/java-manta/issues/480)
+ - [NoApiServersAvailable is not present in MantaErrorCode enums](https://github.com/joyent/java-manta/issues/470)
+ - [Formatting Mbean attribute 999thPercentile for the metric object requests](https://github.com/joyent/java-manta/issues/436)
+ 
+## [3.4.0] - 2019-03-22
 ### Added
  - Configuration parameter `manta.content_type_detection` is now added to allow for the user to explicitly disable
    automatic content type detection dependent on the data type being uploaded to Manta using the SDK. 
