@@ -524,7 +524,7 @@ public enum MantaErrorCode {
     /**
      * Populates an Inclusive Error Map for {@link MantaErrorCode} by its code value.
      *
-     * @return a thread-safe Manta Errors HashMap.
+     * @return a Manta Errors HashMap.
      * @throws MantaClientException if a thread-safe access is not granted for Error Map.
      */
     public static Map<String, MantaErrorCode> createErrorMap() throws MantaClientException {

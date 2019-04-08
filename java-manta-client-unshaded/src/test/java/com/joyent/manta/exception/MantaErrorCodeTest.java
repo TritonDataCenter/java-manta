@@ -10,6 +10,16 @@ package com.joyent.manta.exception;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import static com.joyent.manta.exception.MantaErrorCode.UNKNOWN_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.SSL_REQUIRED_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.INVALID_LIMIT_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.NO_API_SERVERS_AVAILABLE;
+import static com.joyent.manta.exception.MantaErrorCode.OBJECT_NOT_FOUND_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.ROOT_DIRECTORY_ERROR;
+
+
+
 /**
  * Tests the behavior of the {@link MantaErrorCode} enumeration.
  *
@@ -19,40 +29,32 @@ import org.testng.annotations.Test;
 @Test
 public class MantaErrorCodeTest {
     public void valueOfCodeCanFindByMatchingCode() {
-        final MantaErrorCode expectedLimitError = MantaErrorCode.INVALID_LIMIT_ERROR;
-        final MantaErrorCode expectedNoApiError = MantaErrorCode.NO_API_SERVERS_AVAILABLE;
-        final MantaErrorCode expectedObjectNotFoundError = MantaErrorCode.OBJECT_NOT_FOUND_ERROR;
         final MantaErrorCode actualLimitError = MantaErrorCode.valueOfCode("InvalidLimit");
         final MantaErrorCode actualNoApiError = MantaErrorCode.valueOfCode("NoApiServersAvailable");
         final MantaErrorCode actualObjectNotFoundError = MantaErrorCode.valueOfCode("ObjectNotFoundError");
 
-
-        Assert.assertEquals(actualLimitError, expectedLimitError);
-        Assert.assertEquals(actualNoApiError, expectedNoApiError);
-        Assert.assertEquals(actualObjectNotFoundError, expectedObjectNotFoundError);
+        Assert.assertEquals(actualLimitError, INVALID_LIMIT_ERROR);
+        Assert.assertEquals(actualNoApiError, NO_API_SERVERS_AVAILABLE);
+        Assert.assertEquals(actualObjectNotFoundError, OBJECT_NOT_FOUND_ERROR);
     }
 
     public void valueOfCodeCanFindByNonmatching() {
-        final MantaErrorCode expected = MantaErrorCode.UNKNOWN_ERROR;
         final MantaErrorCode actual = MantaErrorCode.valueOfCode("Who knows?");
 
-        Assert.assertEquals(actual, expected);
+        Assert.assertEquals(actual, UNKNOWN_ERROR);
     }
 
     public void valueOfCodeCanFindByNull() {
-        final MantaErrorCode expected = MantaErrorCode.NO_CODE_ERROR;
         final MantaErrorCode actual = MantaErrorCode.valueOfCode(null);
 
-        Assert.assertEquals(actual, expected);
+        Assert.assertEquals(actual, NO_CODE_ERROR);
     }
 
     public void valueOfCodeCanFindInDeprectaedErrors() {
-        final MantaErrorCode expectedSslError = MantaErrorCode.SSL_REQUIRED_ERROR;
-        final MantaErrorCode expectedRootDirectoryError = MantaErrorCode.ROOT_DIRECTORY_ERROR;
         final MantaErrorCode actualSslError = MantaErrorCode.valueOfCode("SSLRequired");
         final MantaErrorCode actualRootDirectoryError = MantaErrorCode.valueOfCode("RootDirectory");
 
-        Assert.assertEquals(actualSslError, expectedSslError);
-        Assert.assertEquals(actualRootDirectoryError, expectedRootDirectoryError);
+        Assert.assertEquals(actualSslError, SSL_REQUIRED_ERROR);
+        Assert.assertEquals(actualRootDirectoryError, ROOT_DIRECTORY_ERROR);
     }
 }
