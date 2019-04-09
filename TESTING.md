@@ -66,8 +66,8 @@ mvn test -DexcludedGroups=unlimited-crypto
 
 ## Dry run
 	
-It's possible to print a list of which integration tests would run and their relevant
-parameters using the following invocation:
+The following invocation will print a list of which integration tests would run and their relevant
+parameters::
 	
 ```
 mvn verify -Dit.dryrun=true

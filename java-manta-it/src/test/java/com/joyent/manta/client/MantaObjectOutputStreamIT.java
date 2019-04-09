@@ -55,8 +55,7 @@ public class MantaObjectOutputStreamIT {
     }
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
