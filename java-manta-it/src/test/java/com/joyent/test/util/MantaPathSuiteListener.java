@@ -40,7 +40,7 @@ public class MantaPathSuiteListener implements ISuiteListener {
         String path = IntegrationTestConfigContext.generateSuiteBasePath(config);
 
         if (ObjectUtils.firstNonNull(
-                BooleanUtils.toBoolean(System.getProperty("it.dryrun")),
+                BooleanUtils.toBoolean(System.getProperty("it.dryRun")),
                 false)) {
             LOG.warn("Skipping suite cleanup since dry-run is enabled.");
             return;

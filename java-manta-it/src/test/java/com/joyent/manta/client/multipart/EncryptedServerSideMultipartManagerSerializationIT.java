@@ -25,7 +25,6 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -47,25 +46,27 @@ import static org.testng.Assert.fail;
 @Test(groups = {"encryptable", "multipart"})
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerSerializationIT {
-    private static final Logger LOGGER = LoggerFactory.getLogger
-            (EncryptedServerSideMultipartManagerSerializationIT.class);
-    private MantaClient mantaClient;
-    private EncryptedServerSideMultipartManager multipart;
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerSerializationIT.class);
+
+    private final MantaClient mantaClient;
+
+    private final EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
     private Kryo kryo = new Kryo();
 
-    private ConfigContext config;
+    private final ConfigContext config;
 
-    @Parameters({"encryptionCipher"})
-    public EncryptedServerSideMultipartManagerSerializationIT(final @Optional String encryptionCipher) throws IOException {
+    public EncryptedServerSideMultipartManagerSerializationIT(final @Optional String encryptionCipher) {
+
         // Let TestNG configuration take precedence over environment variables
-
         config = new IntegrationTestConfigContext(encryptionCipher);
+
         mantaClient = new MantaClient(config);
+
         multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
     }

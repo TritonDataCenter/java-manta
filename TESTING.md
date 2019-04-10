@@ -70,7 +70,7 @@ The following invocation will print a list of which integration tests would run 
 parameters::
 	
 ```
-mvn verify -Dit.dryrun=true
+mvn verify -Dit.dryRun=true
 ```
 	
 Note: This has not yet been expanded to unit tests.

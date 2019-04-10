@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Test method listener for determining which tests will actually run.
  *
- * Enabled by: -Dit.dryrun=true
+ * Enabled by: -Dit.dryRun=true
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class TestListingInterceptor implements IMethodInterceptor, ISuiteListener {
@@ -42,7 +42,7 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
 
     static {
         DRY_RUN_ENABLED = ObjectUtils.firstNonNull(
-                BooleanUtils.toBoolean(System.getProperty("it.dryrun")),
+                BooleanUtils.toBoolean(System.getProperty("it.dryRun")),
                 false);
     }
 
@@ -80,10 +80,10 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
         final String[] sortedTests = observedTests.toArray(new String[0]);
         Arrays.sort(sortedTests);
 
-        System.out.println("DRY-RUN: Listing ["+ sortedTests.length +"] tests that would have run");
+        LOG.info("DRY-RUN: Listing ["+ sortedTests.length +"] tests that would have run");
 
         for (final String testNameAndParams : sortedTests) {
-            System.out.println(testNameAndParams);
+            LOG.info(testNameAndParams);
         }
     }
 }
