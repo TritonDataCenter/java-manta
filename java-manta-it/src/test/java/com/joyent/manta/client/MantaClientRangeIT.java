@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,7 +7,11 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.*;
+import com.joyent.manta.config.BaseChainedConfigContext;
+import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.SettableConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -23,6 +27,13 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
+/**
+ * Tests for verifying the correct behavior of range operations performed by
+ * the {@link MantaClient} class.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
+ */
 @Test
 public class MantaClientRangeIT {
     private static final String TEST_DATA =
@@ -49,23 +60,30 @@ public class MantaClientRangeIT {
             "Girt with a seint* of silk, with barres small; " +
             "Of his array tell I no longer tale.";
 
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private String testPathPrefix;
+    private final ConfigContext config;
 
-    @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    private final String testPathPrefix;
+
+    @Parameters({"encryptionCipher"})
+    public MantaClientRangeIT(final @Optional String encryptionCipher) {
+
         // Let TestNG configuration take precedence over environment variables
-        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
-
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
             config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
         }
 
         mantaClient = new MantaClient(config);
+        this.config = config;
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

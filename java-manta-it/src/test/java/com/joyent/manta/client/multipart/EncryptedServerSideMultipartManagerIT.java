@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,6 @@ import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -47,29 +46,44 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-@Test(groups = { "encrypted" })
+/**
+ * Tests for verifying the behavior of {@link EncryptedServerSideMultipartManager} with
+ * {@link MantaClient}.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
+ */
+@Test(groups = {"encryptable", "multipart"})
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerIT {
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private EncryptedServerSideMultipartManager multipart;
+    private final ConfigContext config;
+
+    private final EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
 
     private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
+
+    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional String encryptionCipher) {
+
+        // Let TestNG configuration take precedence over environment variables
+        config = new IntegrationTestConfigContext(encryptionCipher);
+
+        mantaClient = new MantaClient(config);
+
+        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
 
     @BeforeClass()
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@org.testng.annotations.Optional Boolean usingEncryption) throws IOException {
-        // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
-
+    public void beforeClass() throws IOException {
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
         }
-        mantaClient = new MantaClient(config);
 
         // sanity check
         if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory())) {
@@ -81,8 +95,6 @@ public class EncryptedServerSideMultipartManagerIT {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
-        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 

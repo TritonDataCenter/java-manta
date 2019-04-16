@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,21 +37,18 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test(groups = { "seekable" })
+@Test(groups = {"seekable", "encryptable"})
 public class MantaClientSeekableByteChannelIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
-
-    @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-
+    @Parameters({"encryptionCipher"})
+    public MantaClientSeekableByteChannelIT(final @Optional String encryptionCipher) {
         // Let TestNG configuration take precedence over environment variables
-        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(usingEncryption);
+        SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
 
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
@@ -60,6 +57,10 @@ public class MantaClientSeekableByteChannelIT {
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
@@ -68,7 +69,6 @@ public class MantaClientSeekableByteChannelIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
     public final void seekableByteSize() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -82,7 +82,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test
     public final void getAllSeekableBytes() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -94,7 +93,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test
     public final void getAllSeekableBytesAtPosition() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -109,7 +107,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test
     public final void readFromDifferentPositions() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -133,7 +130,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test
     public final void readAllSeekableBytesFromPositionAsInputStream() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -157,7 +153,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test
     public final void skipUsingInputStream() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -223,7 +218,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test( groups = { "seekable" })
     public final void getFromForwardPosition() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -241,7 +235,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test( groups = { "seekable" } )
     public final void getFromBaseChannelThenForwardPosition() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -262,7 +255,6 @@ public class MantaClientSeekableByteChannelIT {
         }
     }
 
-    @Test( groups = { "seekable" } )
     public final void getFromForwardPositionThenBackwardPosition() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

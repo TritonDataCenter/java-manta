@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,6 @@ import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -33,8 +31,9 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * failures.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
-@Test(groups = { "error" })
+@Test(groups = {"error"})
 public class MantaClientErrorIT {
     private MantaClient mantaClient;
 
@@ -43,11 +42,9 @@ public class MantaClientErrorIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-
+    public void beforeClass() throws IOException {
         // Let TestNG configuration take precedence over environment variables
-        config = new IntegrationTestConfigContext(usingEncryption);
+        config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());

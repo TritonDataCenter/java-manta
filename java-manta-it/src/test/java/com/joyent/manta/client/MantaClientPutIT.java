@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,13 @@ import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
-@Test
+/**
+ * Tests the basic functionality of the put operations in {@link MantaClient} class.
+ *
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
+ */
+@Test(groups = {"put"})
 public class MantaClientPutIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";

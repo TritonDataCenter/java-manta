@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,6 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -27,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test
+@Test(groups={"directory"})
 public class MantaDirectoryListingIteratorIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
@@ -36,11 +34,10 @@ public class MantaDirectoryListingIteratorIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    public void beforeClass() throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        final ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext();
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
