@@ -168,7 +168,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "nightly" })
+    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllJobIDs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
         final UUID job1id = mantaClient.createJob(job1);
@@ -198,7 +198,7 @@ public class MantaClientJobIT {
      * and development environments. The code path for testing job lists is
      * tested elsewhere, but not the specific operation of listing ALL jobs.
      */
-    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "nightly" })
+    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllJobs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
         final UUID job1id = mantaClient.createJob(job1);
@@ -229,7 +229,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "nightly" })
+    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllRunningJobIDs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
         final UUID job1id = mantaClient.createJob(job1);
@@ -262,7 +262,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "nightly" })
+    @Test(enabled = false, dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllRunningJobs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
         final UUID job1id = mantaClient.createJob(job1);

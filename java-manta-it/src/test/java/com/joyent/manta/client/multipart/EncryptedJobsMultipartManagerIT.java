@@ -55,7 +55,7 @@ import static org.testng.Assert.fail;
 /* Tests are disabled because functionality is obsolete and overall test runtime
  * is very long and expensive. */
 @Deprecated
-@Test(groups = { "nightly" }, enabled = false)
+@Test(groups = { "expensive" }, enabled = false)
 public class EncryptedJobsMultipartManagerIT {
     private MantaClient mantaClient;
     private EncryptedJobsMultipartManager multipart;

@@ -81,7 +81,7 @@
                 <exclude name="gcm-cipher" />
                 <exclude name="encryption-provider" />
                 <exclude name="jobs" />
-                <exclude name="nightly" />
+                <exclude name="expensive" />
                 <exclude name="seekable" />
             </run>
         </groups>
@@ -110,7 +110,7 @@
         <parameter name="usingEncryption" value="true" />
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <groups>
-            <define name="nightly" />
+            <define name="expensive" />
         </groups>
         <classes>
             <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
@@ -160,7 +160,7 @@
             <run>
                 <include name="encryptable" />
                 <exclude name="encryption-provider" />
-                <exclude name="nightly" />
+                <exclude name="expensive" />
             </run>
         </groups>
         <classes>
@@ -179,7 +179,7 @@
             <run>
                 <include name="encryptable" />
                 <exclude name="encryption-provider" />
-                <exclude name="nightly" />
+                <exclude name="expensive" />
                 <exclude name="multipart" />
             </run>
         </groups>
@@ -191,7 +191,7 @@
             <run>
                 <include name="encryptable"/>
                 <exclude name="encryption-provider" />
-                <exclude name="nightly" />
+                <exclude name="expensive" />
                 <exclude name="multipart" />
             </run>
         </groups>
@@ -221,7 +221,7 @@
         <groups>
             <define name="jobs" />
             <run>
-                <exclude name="nightly" />
+                <exclude name="expensive" />
             </run>
         </groups>
         <classes>

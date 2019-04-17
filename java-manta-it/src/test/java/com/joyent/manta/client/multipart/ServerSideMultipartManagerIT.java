@@ -91,7 +91,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "nightly" }, enabled = false)
+    @Test(groups = { "expensive" }, enabled = false)
     public final void canListUploadsInProgress() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
