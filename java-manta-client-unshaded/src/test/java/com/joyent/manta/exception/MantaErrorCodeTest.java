@@ -48,6 +48,7 @@ public class MantaErrorCodeTest {
         Assert.assertEquals(actual, NO_CODE_ERROR);
     }
 
+    @SuppressWarnings("deprecation")
     public void valueOfCodeCanFindInDeprectaedErrors() {
         final MantaErrorCode actualSslError = MantaErrorCode.valueOfCode("SSLRequired");
         final MantaErrorCode actualRootDirectoryError = MantaErrorCode.valueOfCode("RootDirectory");
