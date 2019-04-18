@@ -16,6 +16,7 @@ import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_LIMIT_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.NO_API_SERVERS_AVAILABLE;
 import static com.joyent.manta.exception.MantaErrorCode.OBJECT_NOT_FOUND_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.PARENT_NOT_BUCKET_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.ROOT_DIRECTORY_ERROR;
 
 /**
@@ -30,10 +31,12 @@ public class MantaErrorCodeTest {
         final MantaErrorCode actualLimitError = MantaErrorCode.valueOfCode("InvalidLimit");
         final MantaErrorCode actualNoApiError = MantaErrorCode.valueOfCode("NoApiServersAvailable");
         final MantaErrorCode actualObjectNotFoundError = MantaErrorCode.valueOfCode("ObjectNotFoundError");
+        final MantaErrorCode actualParentNotBucketError = MantaErrorCode.valueOfCode("ParentNotBucket");
 
         Assert.assertEquals(actualLimitError, INVALID_LIMIT_ERROR);
         Assert.assertEquals(actualNoApiError, NO_API_SERVERS_AVAILABLE);
         Assert.assertEquals(actualObjectNotFoundError, OBJECT_NOT_FOUND_ERROR);
+        Assert.assertEquals(actualParentNotBucketError, PARENT_NOT_BUCKET_ERROR);
     }
 
     public void valueOfCodeCanFindByNonmatching() {

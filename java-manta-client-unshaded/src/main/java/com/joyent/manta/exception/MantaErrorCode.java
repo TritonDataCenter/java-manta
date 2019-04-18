@@ -335,6 +335,14 @@ public enum MantaErrorCode {
      */
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
+     * Known component sources: muskie.
+     */
+    PARENT_NOT_BUCKET_ERROR("ParentNotBucket"),
+    /**
+     * Known component sources: muskie.
+     */
+    PARENT_NOT_BUCKET_ROOT_ERROR("ParentNotBucketRoot"),
+    /**
      * Known component sources: muskie, piranha.
      */
     PARENT_NOT_DIRECTORY_ERROR("ParentNotDirectory"),
@@ -513,6 +521,7 @@ public enum MantaErrorCode {
      * @param object object to read .toString() from, if null - it is passed on
      * @return Manta error code enum associated with serverCode parameter
      */
+    @SuppressWarnings("unused")
     public static MantaErrorCode valueOfCode(final Object object) {
         if (object == null) {
             return valueOfCode(null);
