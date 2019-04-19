@@ -59,5 +59,6 @@ public class ChainedConfigContextTest {
         Assert.assertEquals(chained.isClientEncryptionEnabled(), context1.isClientEncryptionEnabled());
         Assert.assertEquals(chained.isContentTypeDetectionEnabled(), context1.isContentTypeDetectionEnabled());
         Assert.assertEquals(chained.disableNativeSignatures(), defaults.disableNativeSignatures());
+        Assert.assertEquals(chained.tlsInsecure(), defaults.tlsInsecure());
     }
 }

@@ -167,8 +167,10 @@ $JAVA_HOME/bin/keytool -import -alias "<ALIAS OF YOUR CHOICE>" \
 -keystore $JAVA_HOME/lib/security/cacerts -file "/tmp/manta-ssl.crt"
 ```
 
-7. Set `MANTA_URL` to be the CN you entered in `/etc/hosts`, and set
-`MANTA_TLS_INSECURE=true` to allow for the self-signed certificate. You may also
+7. Set `MANTA_URL` to be the CN you entered in `/etc/hosts`. You may also
 set these values as Java system properties rather than environment variables.
 You should now be able to connect to your Manta deployment from the `java-manta`
 client.
+
+Alternatively, setting `MANTA_TLS_INSECURE=true` will disable *all* TLS
+certificate checks.

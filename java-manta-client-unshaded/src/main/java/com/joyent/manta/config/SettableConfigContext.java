@@ -114,6 +114,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     /**
      * Change the state of whether or not HTTP signatures are sent to the Manta API.
      *
+     * @param tlsInsecure to disable
+     * @return the current instance of {@link T}
+     */
+    T setTlsInsecure(Boolean tlsInsecure);
+
+    /**
+     * Change the state of whether or not HTTP signatures are sent to the Manta API.
+     *
      * @param noAuth true to disable HTTP signatures
      * @return the current instance of {@link T}
      */
@@ -293,6 +301,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
      * @param value value to set to context
      * @param config config value to set
      */
+    @SuppressWarnings("MethodLength")
     static void setAttributeFromContext(final String name,
                                         final Object value,
                                         final SettableConfigContext<?> config) {
@@ -344,6 +353,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_HTTPS_CIPHERS_KEY:
             case EnvVarConfigContext.MANTA_HTTPS_CIPHERS_ENV_KEY:
                 config.setHttpsCipherSuites(Objects.toString(value));
+                break;
+            case MapConfigContext.MANTA_TLS_INSECURE_KEY:
+            case EnvVarConfigContext.MANTA_TLS_INSECURE_KEY:
+                config.setTlsInsecure(MantaUtils.parseBooleanOrNull(value));
                 break;
             case MapConfigContext.MANTA_NO_AUTH_KEY:
             case EnvVarConfigContext.MANTA_NO_AUTH_ENV_KEY:

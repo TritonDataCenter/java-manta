@@ -106,6 +106,12 @@ public interface ConfigContext extends MantaMBeanable {
     String getHttpsCipherSuites();
 
     /**
+     * @return true when all TLS cert verification is disabled.  Not recommended
+     * for production use.
+     */
+    Boolean tlsInsecure();
+
+    /**
      * @return true when we disable sending HTTP signatures
      */
     Boolean noAuth();
@@ -267,6 +273,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", httpBufferSize='").append(context.getHttpBufferSize()).append('\'');
         sb.append(", httpsProtocols='").append(context.getHttpsProtocols()).append('\'');
         sb.append(", httpsCiphers='").append(context.getHttpsCipherSuites()).append('\'');
+        sb.append(", tlsInsecure=").append(context.tlsInsecure());
         sb.append(", noAuth=").append(context.noAuth());
         sb.append(", disableNativeSignatures=").append(context.disableNativeSignatures());
         sb.append(", tcpSocketTimeout=").append(context.getTcpSocketTimeout());
@@ -380,6 +387,7 @@ public interface ConfigContext extends MantaMBeanable {
             e.setContextValue(MapConfigContext.MANTA_URL_KEY, config.getMantaURL());
             e.setContextValue(MapConfigContext.MANTA_USER_KEY, config.getMantaUser());
             e.setContextValue(MapConfigContext.MANTA_KEY_ID_KEY, config.getMantaKeyId());
+            e.setContextValue(MapConfigContext.MANTA_TLS_INSECURE_KEY, config.tlsInsecure());
             e.setContextValue(MapConfigContext.MANTA_NO_AUTH_KEY, config.noAuth());
             e.setContextValue(MapConfigContext.MANTA_KEY_PATH_KEY, config.getMantaKeyPath());
 
@@ -545,6 +553,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_HTTPS_CIPHERS_KEY:
             case EnvVarConfigContext.MANTA_HTTPS_CIPHERS_ENV_KEY:
                 return config.getHttpsCipherSuites();
+            case MapConfigContext.MANTA_TLS_INSECURE_KEY:
+            case EnvVarConfigContext.MANTA_TLS_INSECURE_KEY:
+                return config.tlsInsecure();
             case MapConfigContext.MANTA_NO_AUTH_KEY:
             case EnvVarConfigContext.MANTA_NO_AUTH_ENV_KEY:
                 return config.noAuth();

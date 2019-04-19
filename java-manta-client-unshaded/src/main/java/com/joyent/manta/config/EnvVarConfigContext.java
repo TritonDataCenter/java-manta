@@ -81,6 +81,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_HTTPS_CIPHERS_ENV_KEY = "MANTA_HTTPS_CIPHERS";
 
     /**
+     * Environment variable for disabling all TLS certificate validation.
+     */
+    public static final String MANTA_TLS_INSECURE_KEY = "MANTA_TLS_INSECURE";
+
+    /**
      * Environment variable for disabling HTTP signatures.
      */
     public static final String MANTA_NO_AUTH_ENV_KEY = "MANTA_NO_AUTH";
@@ -193,6 +198,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_KEY_CONTENT_ENV_KEY,
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_BUFFER_SIZE_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
+            MANTA_TLS_INSECURE_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY,
@@ -298,6 +304,12 @@ public class EnvVarConfigContext implements ConfigContext {
     @Override
     public String getHttpsCipherSuites() {
         return getEnv(MANTA_HTTPS_CIPHERS_ENV_KEY);
+    }
+
+    @Override
+    public Boolean tlsInsecure() {
+        String tlsInsecureString = getEnv(MANTA_TLS_INSECURE_KEY);
+        return MantaUtils.parseBooleanOrNull(tlsInsecureString);
     }
 
     @Override
