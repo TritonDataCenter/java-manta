@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,7 @@ import java.util.Objects;
  * not) but we're using a private object as a lock in order to at least synchronize reloads and field updates.
  *
  * @author <a href="https://github.com/tjcelaya">Tomas Celaya</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.1.7
  */
 public class AuthAwareConfigContext
@@ -392,6 +393,15 @@ public class AuthAwareConfigContext
     }
 
     @Override
+    public AuthAwareConfigContext setExpectContinueTimeout(final Integer expectContinueTimeout) {
+        synchronized (lock) {
+            super.setExpectContinueTimeout(expectContinueTimeout);
+        }
+
+        return this;
+    }
+
+    @Override
     public AuthAwareConfigContext setVerifyUploads(final Boolean verify) {
         synchronized (lock) {
             super.setVerifyUploads(verify);
@@ -404,6 +414,33 @@ public class AuthAwareConfigContext
     public AuthAwareConfigContext setUploadBufferSize(final Integer size) {
         synchronized (lock) {
             super.setUploadBufferSize(size);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setSkipDirectoryDepth(final Integer depth) {
+        synchronized (lock) {
+            super.setSkipDirectoryDepth(depth);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setPruneEmptyParentDepth(final Integer depth) {
+        synchronized (lock) {
+            super.setPruneEmptyParentDepth(depth);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setDownloadContinuations(final Integer continuation) {
+        synchronized (lock) {
+            super.setDownloadContinuations(continuation);
         }
 
         return this;
@@ -431,6 +468,15 @@ public class AuthAwareConfigContext
     public AuthAwareConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         synchronized (lock) {
             super.setClientEncryptionEnabled(clientEncryptionEnabled);
+        }
+
+        return this;
+    }
+
+    @Override
+    public AuthAwareConfigContext setContentTypeDetectionEnabled(final Boolean contentTypeDetectionEnabled) {
+        synchronized (lock) {
+            super.setContentTypeDetectionEnabled(contentTypeDetectionEnabled);
         }
 
         return this;
