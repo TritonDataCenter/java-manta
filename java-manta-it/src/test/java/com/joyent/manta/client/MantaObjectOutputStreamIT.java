@@ -32,9 +32,6 @@ import java.util.UUID;
 /**
  * Tests for verifying the behavior of {@link MantaObjectOutputStream} with
  * {@link MantaClient}.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = {"encryptable"})
 public class MantaObjectOutputStreamIT {

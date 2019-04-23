@@ -22,8 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests the proper functioning of the dynamically paging iterator.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups={"directory"})
 public class MantaDirectoryListingIteratorIT {

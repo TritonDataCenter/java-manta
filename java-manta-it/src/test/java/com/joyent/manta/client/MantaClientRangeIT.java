@@ -30,9 +30,6 @@ import java.util.UUID;
 /**
  * Tests for verifying the correct behavior of range operations performed by
  * the {@link MantaClient} class.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test
 public class MantaClientRangeIT {

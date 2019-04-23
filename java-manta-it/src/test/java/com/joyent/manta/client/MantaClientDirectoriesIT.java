@@ -29,8 +29,6 @@ import static com.joyent.manta.util.MantaUtils.writeablePrefixPaths;
 /**
  * Tests for verifying the correct functioning of making remote requests
  * against Manta directories.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = {"directory"})
 public class MantaClientDirectoriesIT {

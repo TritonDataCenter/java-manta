@@ -44,9 +44,6 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 
 /**
  * Tests the basic functionality of the put operations in {@link MantaClient} class.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = {"put"})
 public class MantaClientPutIT {

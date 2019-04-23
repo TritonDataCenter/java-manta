@@ -49,9 +49,6 @@ import static org.testng.Assert.assertTrue;
 /**
  * Tests for verifying the behavior of {@link EncryptedServerSideMultipartManager} with
  * {@link MantaClient}.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = {"encryptable", "multipart"})
 @SuppressWarnings("Duplicates")

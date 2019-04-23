@@ -24,20 +24,17 @@ import java.util.UUID;
 
 /**
  * Tests for verifying the behavior of metadata with {@link MantaClient}.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = {"metadata"})
 public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
     @Parameters({"encryptionCipher"})
-    public void beforeClass(final @Optional String encryptionCipher) throws IOException {
+    public MantaClientMetadataIT(final @Optional String encryptionCipher) {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);

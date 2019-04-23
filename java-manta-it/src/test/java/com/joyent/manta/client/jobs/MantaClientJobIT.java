@@ -33,9 +33,6 @@ import java.util.stream.Stream;
 
 /**
  * Tests the execution of Manta compute jobs.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013>Ashwin A Nair</a>
  */
 @Test(groups = { "jobs" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {

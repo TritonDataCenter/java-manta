@@ -29,9 +29,6 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * Tests for verifying the correct behavior of error handling from Manta API
  * failures.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = {"error"})
 public class MantaClientErrorIT {

@@ -159,6 +159,7 @@
             <define name="ctr-cipher" />
             <run>
                 <include name="encryptable" />
+                <include name="multipart" />
                 <exclude name="encryption-provider" />
                 <exclude name="expensive" />
             </run>

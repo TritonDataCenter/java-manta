@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 
 /**
  * Tests the execution of Manta compute jobs using the builder fluent interface.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = "jobs")
 public class MantaJobBuilderIT {

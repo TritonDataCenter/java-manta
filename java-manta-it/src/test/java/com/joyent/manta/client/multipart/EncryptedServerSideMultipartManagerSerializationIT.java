@@ -39,9 +39,6 @@ import static org.testng.Assert.fail;
 /**
  * Tests for verifying the behavior of {@link com.joyent.manta.serialization.EncryptedMultipartSerializer}
  * and {@link EncryptedServerSideMultipartManager} with {@link MantaClient}.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = {"encryptable", "multipart"})
 @SuppressWarnings("Duplicates")

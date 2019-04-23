@@ -34,8 +34,6 @@ import java.util.UUID;
 /**
  * Tests for verifying the behavior of {@link SeekableByteChannel} with
  * {@link MantaClient}.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @Test(groups = {"seekable", "encryptable"})
 public class MantaClientSeekableByteChannelIT {
