@@ -83,7 +83,7 @@ public class EnvVarConfigContext implements ConfigContext {
     /**
      * Environment variable for disabling all TLS certificate validation.
      */
-    public static final String MANTA_TLS_INSECURE_KEY = "MANTA_TLS_INSECURE";
+    public static final String MANTA_TLS_INSECURE_ENV_KEY = "MANTA_TLS_INSECURE";
 
     /**
      * Environment variable for disabling HTTP signatures.
@@ -198,7 +198,7 @@ public class EnvVarConfigContext implements ConfigContext {
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_KEY_CONTENT_ENV_KEY,
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_BUFFER_SIZE_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
-            MANTA_TLS_INSECURE_KEY,
+            MANTA_TLS_INSECURE_ENV_KEY,
             MANTA_NO_AUTH_ENV_KEY, MANTA_NO_NATIVE_SIGS_ENV_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_ENV_KEY,
             MANTA_CONNECTION_REQUEST_TIMEOUT_ENV_KEY,
@@ -308,7 +308,7 @@ public class EnvVarConfigContext implements ConfigContext {
 
     @Override
     public Boolean tlsInsecure() {
-        String tlsInsecureString = getEnv(MANTA_TLS_INSECURE_KEY);
+        String tlsInsecureString = getEnv(MANTA_TLS_INSECURE_ENV_KEY);
         return MantaUtils.parseBooleanOrNull(tlsInsecureString);
     }
 

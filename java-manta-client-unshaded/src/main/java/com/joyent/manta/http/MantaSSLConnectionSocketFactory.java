@@ -9,6 +9,7 @@ package com.joyent.manta.http;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.exception.MantaException;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -88,8 +89,9 @@ public class MantaSSLConnectionSocketFactory extends SSLConnectionSocketFactory 
                     .loadTrustMaterial(new TrustAllStrategy())
                     .build();
             } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException e) {
-                LOG.error("error while disabling TLS security", e);
-                throw new RuntimeException(e);
+                final String msg = "error while disabling TLS security";
+                LOG.error(msg, e);
+                throw new MantaException(msg, e);
             }
         } else {
             return SSLContexts.createDefault();

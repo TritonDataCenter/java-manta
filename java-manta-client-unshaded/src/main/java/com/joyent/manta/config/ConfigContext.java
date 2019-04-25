@@ -554,7 +554,7 @@ public interface ConfigContext extends MantaMBeanable {
             case EnvVarConfigContext.MANTA_HTTPS_CIPHERS_ENV_KEY:
                 return config.getHttpsCipherSuites();
             case MapConfigContext.MANTA_TLS_INSECURE_KEY:
-            case EnvVarConfigContext.MANTA_TLS_INSECURE_KEY:
+            case EnvVarConfigContext.MANTA_TLS_INSECURE_ENV_KEY:
                 return config.tlsInsecure();
             case MapConfigContext.MANTA_NO_AUTH_KEY:
             case EnvVarConfigContext.MANTA_NO_AUTH_ENV_KEY:

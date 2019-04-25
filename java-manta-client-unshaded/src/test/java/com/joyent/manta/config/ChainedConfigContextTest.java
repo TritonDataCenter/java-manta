@@ -39,6 +39,7 @@ public class ChainedConfigContextTest {
         Assert.assertEquals(chained.getHttpsCipherSuites(), defaults.getHttpsCipherSuites());
         Assert.assertEquals(chained.getHttpsProtocols(), defaults.getHttpsProtocols());
         Assert.assertEquals(chained.getEncryptionAuthenticationMode(), defaults.getEncryptionAuthenticationMode());
+        Assert.assertEquals(chained.tlsInsecure(), defaults.tlsInsecure());
         Assert.assertTrue(Arrays.equals(chained.getEncryptionPrivateKeyBytes(), defaults.getEncryptionPrivateKeyBytes()));
         Assert.assertEquals(chained.getPrivateKeyContent(), defaults.getPrivateKeyContent());
         Assert.assertEquals(chained.getEncryptionPrivateKeyPath(), defaults.getEncryptionPrivateKeyPath());

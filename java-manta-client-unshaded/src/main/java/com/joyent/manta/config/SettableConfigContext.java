@@ -355,7 +355,7 @@ public interface SettableConfigContext<T> extends ConfigContext {
                 config.setHttpsCipherSuites(Objects.toString(value));
                 break;
             case MapConfigContext.MANTA_TLS_INSECURE_KEY:
-            case EnvVarConfigContext.MANTA_TLS_INSECURE_KEY:
+            case EnvVarConfigContext.MANTA_TLS_INSECURE_ENV_KEY:
                 config.setTlsInsecure(MantaUtils.parseBooleanOrNull(value));
                 break;
             case MapConfigContext.MANTA_NO_AUTH_KEY:

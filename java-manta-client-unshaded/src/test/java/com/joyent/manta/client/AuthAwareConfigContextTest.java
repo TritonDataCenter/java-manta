@@ -62,6 +62,11 @@ public class AuthAwareConfigContextTest {
         authConfig.reload();
         Assert.assertNotSame(currentSigner, authConfig.getSigner());
 
+        // tls inscure
+        authConfig.setTlsInsecure(true);
+        authConfig.reload();
+        differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
+
         // disable auth entirely
         authConfig.setNoAuth(true);
         authConfig.reload();

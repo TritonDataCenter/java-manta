@@ -100,7 +100,7 @@ public class ConfigContextMBean implements DynamicMBean {
                 // MapConfigContext.MANTA_NO_AUTH_KEY omitted
                 new MBeanAttributeInfo(MapConfigContext.MANTA_TLS_INSECURE_KEY,
                         Boolean.class.getName(),
-                        "Flag that indicates of TLS certificate verification is disabled",
+                        "Flag indicating TLS certificate verification is disabled",
                         true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_NO_NATIVE_SIGS_KEY,
                         Boolean.class.getName(),
