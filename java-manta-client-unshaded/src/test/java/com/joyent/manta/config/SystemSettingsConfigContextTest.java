@@ -17,7 +17,9 @@ import static com.joyent.manta.config.MapConfigContext.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 @Test
 public class SystemSettingsConfigContextTest {
@@ -155,4 +157,34 @@ public class SystemSettingsConfigContextTest {
                 "[%s] set for [%s] didn't set the authentication mode correctly",
                 input, MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY));
     }
+
+    // node-manta documents MANTA_TLS_INSECURE in terms of a 0/1, flag instead
+    // of true/false.  Make sure what java-manta is doing is reasonable both in
+    // terms of node-manta and java idioms
+    public void testBooleanCoercion() {
+        Properties propDefault = new Properties();
+        ConfigContext configDefault = new SystemSettingsConfigContext(false, propDefault);
+        assertFalse(configDefault.tlsInsecure());
+
+        Properties propTrue = new Properties();
+        propTrue.setProperty(MANTA_TLS_INSECURE_KEY, "true");
+        ConfigContext configTrue = new SystemSettingsConfigContext(false, propTrue);
+        assertTrue(configTrue.tlsInsecure());
+
+        Properties propFalse = new Properties();
+        propFalse.setProperty(MANTA_TLS_INSECURE_KEY, "false");
+        ConfigContext configFalse = new SystemSettingsConfigContext(false, propFalse);
+        assertFalse(configFalse.tlsInsecure());
+
+        Properties propZero = new Properties();
+        propZero.setProperty(MANTA_TLS_INSECURE_KEY, "0");
+        ConfigContext configZero = new SystemSettingsConfigContext(false, propZero);
+        assertFalse(configZero.tlsInsecure());
+
+        Properties propOne = new Properties();
+        propOne.setProperty(MANTA_TLS_INSECURE_KEY, "1");
+        ConfigContext configOne = new SystemSettingsConfigContext(false, propOne);
+        assertTrue(configOne.tlsInsecure());
+    }
+
 }

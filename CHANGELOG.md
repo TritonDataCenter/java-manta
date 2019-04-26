@@ -4,6 +4,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.4.1]
 ### Added
+ - Added `MANTA_TLS_INSECURE` to allow disabling TLS certificate verification in
+   certain test environmnts.  Not intended to be used in porduction.
  - Updated `MantaErrorCode` Enum Values, mapping more errors from Manta components including muskie, mahi,
    moray, electric-moray, piranha and marlin. Deprecated errors with invalid rest codes and removed undefined 
    Manta Errors in the SDK.

@@ -7,21 +7,29 @@
  */
 package com.joyent.manta.http;
 
-import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.ConfigurationException;
+import com.joyent.manta.exception.MantaException;
+import com.joyent.manta.util.MantaUtils;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 
 /**
  * Custom {@link SSLConnectionSocketFactory} implementation that consumes Manta
@@ -51,10 +59,10 @@ public class MantaSSLConnectionSocketFactory extends SSLConnectionSocketFactory 
      * @param config configuration context containing SSL config params
      */
     public MantaSSLConnectionSocketFactory(final ConfigContext config) {
-        super(buildContext(),
+        super(buildContext(config),
               MantaUtils.csv2array(config.getHttpsProtocols()),
               MantaUtils.csv2array(config.getHttpsCipherSuites()),
-              getDefaultHostnameVerifier());
+              buildHostnameVerifier(config));
 
         if (config.getHttpsProtocols() != null) {
             this.supportedProtocols = new LinkedHashSet<>(MantaUtils.fromCsv(config.getHttpsProtocols()));
@@ -70,10 +78,36 @@ public class MantaSSLConnectionSocketFactory extends SSLConnectionSocketFactory 
     }
 
     /**
+     * @param config configuration context containing SSL config params
      * @return reference to SSL Context
      */
-    private static SSLContext buildContext() {
-        return SSLContexts.createDefault();
+    private static SSLContext buildContext(final ConfigContext config) {
+        if (config.tlsInsecure()) {
+            try {
+                LOG.warn("Configuration: tlsInsecure is true.  ALL TLS VERIFICATION IS DISABLED!");
+                return SSLContextBuilder.create()
+                    .loadTrustMaterial(new TrustAllStrategy())
+                    .build();
+            } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException e) {
+                final String msg = "error while disabling TLS security";
+                LOG.error(msg, e);
+                throw new MantaException(msg, e);
+            }
+        } else {
+            return SSLContexts.createDefault();
+        }
+    }
+
+    /**
+     * @param config configuration context containing SSL config params
+     * @return a HostnameVerifier
+     */
+    private static HostnameVerifier buildHostnameVerifier(final ConfigContext config) {
+        if (config.tlsInsecure()) {
+                return new NoopHostnameVerifier();
+        } else {
+            return getDefaultHostnameVerifier();
+        }
     }
 
     @Override

@@ -84,6 +84,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_HTTPS_CIPHERS_KEY = "https.cipherSuites";
 
     /**
+     * Property key for disabling TLS certificate verification.
+     */
+    public static final String MANTA_TLS_INSECURE_KEY = "manta.tls_insecure";
+
+    /**
      * Property key for disabling HTTP signatures.
      */
     public static final String MANTA_NO_AUTH_KEY = "manta.no_auth";
@@ -205,6 +210,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_MAX_CONNS_KEY, MANTA_PRIVATE_KEY_CONTENT_KEY,
             MANTA_PASSWORD_KEY, MANTA_HTTP_BUFFER_SIZE_KEY,
             MANTA_HTTPS_PROTOCOLS_KEY, MANTA_HTTPS_CIPHERS_KEY,
+            MANTA_TLS_INSECURE_KEY,
             MANTA_NO_AUTH_KEY, MANTA_NO_NATIVE_SIGS_KEY,
             MANTA_TCP_SOCKET_TIMEOUT_KEY,
             MANTA_VERIFY_UPLOADS_KEY,
@@ -336,6 +342,18 @@ public class MapConfigContext implements ConfigContext {
     public String getHttpsCipherSuites() {
         return normalizeEmptyAndNullAndDefaultToStringValue(
                 MANTA_HTTPS_CIPHERS_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY);
+    }
+
+
+    @Override
+    public Boolean tlsInsecure() {
+        Boolean mapValue = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_TLS_INSECURE_KEY));
+
+        if (mapValue != null) {
+            return mapValue;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_TLS_INSECURE_KEY));
     }
 
     @Override

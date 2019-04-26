@@ -95,6 +95,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.http_buffer_size             | MANTA_HTTP_BUFFER_SIZE         | 4096                                 |                          |
 | https.protocols                    | MANTA_HTTPS_PROTOCOLS          | TLSv1.2                              |                          |
 | https.cipherSuites                 | MANTA_HTTPS_CIPHERS            | value too big - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L78) | |
+| manta.tls_insecure                 | MANTA_TLS_INSECURE             | false                                |                          |
 | manta.tcp_socket_timeout           | MANTA_TCP_SOCKET_TIMEOUT       | 20000                                |                          |
 | manta.connection_request_timeout   | MANTA_CONNECTION_REQUEST_TIMEOUT | 1000                               |                          |
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
@@ -130,6 +131,8 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     `manta.key_path` and can't be specified at the same time `manta.key_content`.
 * `manta.password` ( **MANTA_PASSWORD**)
     The password associated with the key specified. This is optional and not normally needed.
+* `manta_tls_insecure` ( **MANTA_TLS_INSECURE** )
+    Disable all TLS certificate verification.  WARNING: Insecure; not intended for production use.
 * `manta.no_auth` (**MANTA_NO_AUTH**)
     When set to true, this disables HTTP Signature authentication entirely. This is
     only really useful when you are running the library as part of a Manta job.

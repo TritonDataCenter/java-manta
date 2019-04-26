@@ -44,6 +44,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
                 .setMantaUser("username")
                 .setMantaKeyId(UnitTestConstants.FINGERPRINT)
                 .setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY)
+                .setTlsInsecure(false)
         );
     }
 

@@ -51,6 +51,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     private volatile String password;
 
     /**
+     * Flag indicating if TLS certificate validation is disabled.
+     */
+    private volatile Boolean tlsInsecure;
+
+    /**
      * Flag indicating if HTTP signatures are turned off.
      */
     private volatile Boolean noAuth;
@@ -276,6 +281,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public Boolean tlsInsecure() {
+        return tlsInsecure;
+    }
+
+    @Override
     public Boolean noAuth() {
         return noAuth;
     }
@@ -456,6 +466,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.httpsCipherSuites = context.getHttpsCipherSuites();
         }
 
+        if (context.tlsInsecure() != null) {
+            this.tlsInsecure = context.tlsInsecure();
+        }
+
         if (context.noAuth() != null) {
             this.noAuth = context.noAuth();
         }
@@ -617,6 +631,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (!isPresent(this.getHttpsCipherSuites())) {
             this.httpsCipherSuites = context.getHttpsCipherSuites();
+        }
+
+        if (this.tlsInsecure() == null) {
+            this.tlsInsecure = context.tlsInsecure();
         }
 
         if (this.noAuth() == null) {
@@ -810,6 +828,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setTlsInsecure(final Boolean tlsInsecure) {
+        this.tlsInsecure = tlsInsecure;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setNoAuth(final Boolean noAuth) {
         this.noAuth = noAuth;
 
@@ -979,6 +1004,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(httpBufferSize, that.httpBufferSize)
                 && Objects.equals(httpsProtocols, that.httpsProtocols)
                 && Objects.equals(httpsCipherSuites, that.httpsCipherSuites)
+                && Objects.equals(tlsInsecure, that.tlsInsecure)
                 && Objects.equals(noAuth, that.noAuth)
                 && Objects.equals(disableNativeSignatures, that.disableNativeSignatures)
                 && Objects.equals(tcpSocketTimeout, that.tcpSocketTimeout)
@@ -1005,7 +1031,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     public int hashCode() {
         return Objects.hash(mantaURL, account, mantaKeyId, mantaKeyPath,
                 timeout, retries, maxConnections, privateKeyContent, password,
-                httpBufferSize, httpsProtocols, httpsCipherSuites, noAuth,
+                httpBufferSize, httpsProtocols, httpsCipherSuites, tlsInsecure, noAuth,
                 disableNativeSignatures,
                 tcpSocketTimeout, connectionRequestTimeout, expectContinueTimeout,
                 verifyUploads, uploadBufferSize,

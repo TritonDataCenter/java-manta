@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -185,6 +185,7 @@ public class AuthAwareConfigContext
      */
     private static int calculateAuthParamsFingerprint(final ConfigContext config) {
         return Objects.hash(
+                config.tlsInsecure(),
                 config.noAuth(),
                 config.disableNativeSignatures(),
                 config.getMantaUser(),
@@ -350,6 +351,16 @@ public class AuthAwareConfigContext
     public AuthAwareConfigContext setHttpsCipherSuites(final String httpsCipherSuites) {
         synchronized (lock) {
             super.setHttpsCipherSuites(httpsCipherSuites);
+        }
+
+        return this;
+    }
+
+
+    @Override
+    public AuthAwareConfigContext setTlsInsecure(final Boolean tlsInsecure) {
+        synchronized (lock) {
+            super.setTlsInsecure(tlsInsecure);
         }
 
         return this;

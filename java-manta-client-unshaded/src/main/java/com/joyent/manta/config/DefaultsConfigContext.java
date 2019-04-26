@@ -88,6 +88,11 @@ public class DefaultsConfigContext implements ConfigContext {
     public static final boolean DEFAULT_CONTENT_TYPE_DETECTION_ENABLED = true;
 
     /**
+     * Being insecure is definitely *not* the default.
+     */
+    public static final boolean DEFAULT_TLS_INSECURE = false;
+
+    /**
      * HTTP Signatures for authentication are enabled by default.
      */
     public static final boolean DEFAULT_NO_AUTH = false;
@@ -221,6 +226,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public String getHttpsCipherSuites() {
         return DEFAULT_HTTPS_CIPHERS;
+    }
+
+    @Override
+    public Boolean tlsInsecure() {
+        return DEFAULT_TLS_INSECURE;
     }
 
     @Override
