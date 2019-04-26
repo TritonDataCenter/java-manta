@@ -33,7 +33,7 @@ import java.util.UUID;
  * Tests for verifying the behavior of {@link MantaObjectOutputStream} with
  * {@link MantaClient}.
  */
-@Test(groups = {"encryptable"})
+@Test(groups = {"encrypted"})
 public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 

@@ -54,15 +54,23 @@ property or `MANTA_IT_NO_CLEANUP` environment variable.
 
 # Running Tests
 
-Run `mvn verify` from the project root to run all tests. Some Maven goals will
-not work
+Run `mvn verify` from the project root to run all tests. Some Maven goals will not work.
 
 While the Java Cryptography Extensions are expected to be installed, it is
-possible torun a subset of the test suite by adding
+possible to run a subset of the test suite by adding
 `-DexcludedGroups=unlimited-crypto`, e.g.:
 ```
 mvn test -DexcludedGroups=unlimited-crypto
 ```
+
+Also, if we are running a defined TestNG group, invoke
+`-Dgroups=groupname`, e.g:
+```
+mvn clean verify -Dgroups=headers
+```
+
+Note: Since we have transitioned from wildcard to explicit test definition, it is **essential**
+for engineers to add tests complying with the nature of their corresponding test-groups.
 
 ## Dry run
 	

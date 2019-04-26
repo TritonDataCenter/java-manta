@@ -50,7 +50,7 @@ import static org.testng.Assert.assertTrue;
  * Tests for verifying the behavior of {@link EncryptedServerSideMultipartManager} with
  * {@link MantaClient}.
  */
-@Test(groups = {"encryptable", "multipart"})
+@Test(groups = {"encrypted", "multipart"})
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerIT {
     private final MantaClient mantaClient;

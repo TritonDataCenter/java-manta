@@ -178,7 +178,7 @@ public class MantaClientMetadataIT {
         }
     }
 
-    @Test(groups = "encryptable")
+    @Test(groups = "encrypted")
     public void verifyAddEncryptedMetadataToObjectOnPut() throws IOException {
         if (!mantaClient.getContext().isClientEncryptionEnabled()) {
             throw new SkipException("Test is only relevant when client-side encryption is enabled");
@@ -208,7 +208,7 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("e-force"), "true");
     }
 
-    @Test(groups = "encryptable")
+    @Test(groups = "encrypted")
     public final void verifyEncryptedMetadataCanBeAddedLater() throws IOException {
         if (!mantaClient.getContext().isClientEncryptionEnabled()) {
             throw new SkipException("Test is only relevant when client-side encryption is enabled");

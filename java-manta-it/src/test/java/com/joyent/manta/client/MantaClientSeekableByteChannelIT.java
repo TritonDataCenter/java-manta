@@ -35,7 +35,7 @@ import java.util.UUID;
  * Tests for verifying the behavior of {@link SeekableByteChannel} with
  * {@link MantaClient}.
  */
-@Test(groups = {"seekable", "encryptable"})
+@Test(groups = {"seekable", "encrypted"})
 public class MantaClientSeekableByteChannelIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 

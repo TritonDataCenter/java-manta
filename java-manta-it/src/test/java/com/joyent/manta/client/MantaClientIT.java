@@ -48,7 +48,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * Tests the basic functionality of the {@link MantaClient} class.
  */
-@Test(groups = {"encryptable"})
+@Test(groups = {"encrypted"})
 public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";

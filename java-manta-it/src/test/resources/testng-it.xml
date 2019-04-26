@@ -75,7 +75,7 @@
                 <include name="move" />
                 <include name="mtime" />
                 <include name="metadata" />
-                <exclude name="encryptable" />
+                <exclude name="encrypted" />
                 <exclude name="cbc-cipher" />
                 <exclude name="ctr-cipher" />
                 <exclude name="gcm-cipher" />
@@ -87,7 +87,7 @@
         </groups>
         <!--
 	          excluding tests by group only works if everything is in a group. e.g. we are currently unable to exclude
-	          EncryptedServerSideMultipartManagerSerializationIT by adding groups > run > exclude = "encryptable" group
+	          EncryptedServerSideMultipartManagerSerializationIT by adding groups > run > exclude = "encrypted" group
 	          so we resort to listing all desired unencrypted tests. This also helps discoverability!
 	          -->
         <classes>
@@ -98,31 +98,37 @@
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
             <class name="com.joyent.manta.client.MantaClientSigningIT" />
             <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
-
-            <!-- Jobs-based MPU tests-->
-            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />
-            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
         </classes>
     </test>
 
     <!-- We run many of the integration tests over again using client-side encryption -->
     <test name="Manta Client Heavyweight Tests">
-        <parameter name="usingEncryption" value="true" />
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <groups>
             <define name="expensive" />
         </groups>
         <classes>
-            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
-            <class name="com.joyent.manta.client.multipart.EncryptedJobsMultipartManagerIT" />
-            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerIT" />
-            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" >
+            <methods>
+                <include name="canListUploadsInProgress" />
+            </methods>
+            </class>
+            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" >
+            <methods>
+                <include name="createJob" />
+                <include name="getJob" />
+                <include name="canListAllJobIDs" />
+                <include name="canListAllJobs" />
+                <include name="canListAllRunningJobIDs" />
+                <include name="canListAllRunningJobs" />
+            </methods>
+            </class>
         </classes>
     </test>
     <test name="Manta Client Encrypted Integration Tests">
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <groups>
-            <define name="encryptable" />
+            <define name="encrypted" />
             <run>
                 <include name="put" />
                 <exclude name="seekable" />
@@ -158,7 +164,7 @@
         <groups>
             <define name="ctr-cipher" />
             <run>
-                <include name="encryptable" />
+                <include name="encrypted" />
                 <include name="multipart" />
                 <exclude name="encryption-provider" />
                 <exclude name="expensive" />
@@ -171,6 +177,7 @@
             <!-- MPU only supports AES/CTR -->
             <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT" />
             <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerSerializationIT" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
         </classes>
     </test>
     <test name="Manta Client Integration Tests [AES128/GCM Encrypted]">
@@ -178,24 +185,34 @@
         <groups>
             <define name="gcm-cipher" />
             <run>
-                <include name="encryptable" />
+                <include name="encrypted" />
                 <exclude name="encryption-provider" />
                 <exclude name="expensive" />
                 <exclude name="multipart" />
             </run>
         </groups>
+        <packages>
+            <package name="com.joyent.manta.client.*">
+                <exclude name="com.joyent.manta.client.jobs"/>
+            </package>
+        </packages>
     </test>
     <test name="Manta Client Integration Tests [AES128/CBC Encrypted]">
         <parameter name="encryptionCipher" value="AES128/CBC/PKCS5Padding"/>
         <groups>
             <define name="cbc-cipher" />
             <run>
-                <include name="encryptable"/>
+                <include name="encrypted"/>
                 <exclude name="encryption-provider" />
                 <exclude name="expensive" />
                 <exclude name="multipart" />
             </run>
         </groups>
+        <packages>
+            <package name="com.joyent.manta.client.*">
+                <exclude name="com.joyent.manta.client.jobs"/>
+            </package>
+        </packages>
     </test>
     <test name="Manta Client Snaplinks Tests ">
         <parameter name="usingEncryption" value="true"/>
@@ -210,24 +227,19 @@
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <groups>
             <define name="multipart" />
-        </groups>
-        <classes>
-            <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT" />
-            <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerSerializationIT" />
-        </classes>
-    </test>
-
-    <!-- Jobs tests not related to MPU -->
-    <test name="Manta Job Tests">
-        <groups>
-            <define name="jobs" />
             <run>
                 <exclude name="expensive" />
             </run>
         </groups>
         <classes>
-            <class name="com.joyent.manta.client.jobs.MantaClientJobIT" />
-            <class name="com.joyent.manta.client.jobs.MantaJobBuilderIT" />
+            <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerIT" />
+            <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerIT" />
+            <class name="com.joyent.manta.client.multipart.EncryptedServerSideMultipartManagerSerializationIT" />
         </classes>
+    </test>
+    <test name="Manta Job Tests">
+    <packages>
+        <package name="com.joyent.manta.client.jobs.*"/>
+    </packages>
     </test>
 </suite>
