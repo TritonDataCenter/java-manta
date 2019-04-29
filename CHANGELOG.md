@@ -4,6 +4,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.4.1]
 ### Added
+ - [Updated](https://github.com/joyent/java-manta/pull/512) `AuthAwareConfigContext` with missing configuration parameters and exposed 
+   client configuration parameters like `MANTA_DOWNLOAD_CONTINUATIONS_KEY` and  `MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY` 
+   using `MetricReporterSupplier`.
  - Added `MANTA_TLS_INSECURE` to allow disabling TLS certificate verification in
    certain test environmnts.  Not intended to be used in porduction.
  - Updated `MantaErrorCode` Enum Values, mapping more errors from Manta components including muskie, mahi,
