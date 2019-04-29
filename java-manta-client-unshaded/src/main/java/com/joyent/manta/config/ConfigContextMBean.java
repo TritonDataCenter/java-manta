@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,6 +32,7 @@ import javax.management.ReflectionException;
  * via JMX.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.0.0
  */
 public class ConfigContextMBean implements DynamicMBean {
@@ -155,6 +156,10 @@ public class ConfigContextMBean implements DynamicMBean {
                         Integer.class.getName(),
                         "The depth of parent directories to delete when empty",
                         true, this.isSettable, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_DOWNLOAD_CONTINUATIONS_KEY,
+                            Integer.class.getName(),
+                            "Maximum number of continuations in downloads for one request",
+                            true, this.isSettable, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_METRIC_REPORTER_MODE_KEY,
                         MetricReporterMode.class.getName(),
                         "Method through which client metrics are reported",
@@ -167,6 +172,10 @@ public class ConfigContextMBean implements DynamicMBean {
                         Boolean.class.getName(),
                         "Flag indicating client-side encryption is enabled",
                         true, false, false),
+                new MBeanAttributeInfo(MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY,
+                            Boolean.class.getName(),
+                            "Flag indicating content-type detection is enabled",
+                            true, false, false),
                 new MBeanAttributeInfo(MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY,
                         String.class.getName(),
                         "The unique identifier of the key used for encryption",

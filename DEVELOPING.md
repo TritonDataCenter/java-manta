@@ -34,6 +34,9 @@ To submit a new configuration parameter to the Java-Manta SDK:
  - Add code to the methods `overwriteWithContext()` and `overwriteWithDefaultContext()` in [BaseChainedConfigContext](https://github.com/joyent/java-manta/blob/master/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/SettableConfigContext.java) 
   to ensure the overwrite behavior works correctly.
   
+ - Add introduced configuration parameter in [AuthAwareConfigContext](https://github.com/joyent/java-manta/blob/master/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/AuthAwareConfigContext.java) and [ConfigContextMBean](https://github.com/joyent/java-manta/blob/master/java-manta-client-unshaded/src/main/java/com/joyent/manta/config/ConfigContextMBean.java).
+   The latter determines which configuration parameters of the SDK are exposed leveraging the `MetricReporterSupplier` class using `JMX` or `SLF4J`. 
+  
  - Update the test file [ChainedConfigContextTest](https://github.com/joyent/java-manta/blob/master/java-manta-client-unshaded/src/test/java/com/joyent/manta/config/ChainedConfigContextTest.java) to verify the behavior for the added parameter.
   
  - Update [USAGE.md](https://github.com/joyent/java-manta/blob/master/USAGE.md#configuration) to include the new configuration parameter and to add clear instructions on how to use it.

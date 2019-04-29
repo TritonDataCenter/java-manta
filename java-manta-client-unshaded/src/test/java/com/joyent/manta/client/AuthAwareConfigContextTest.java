@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,6 +48,10 @@ public class AuthAwareConfigContextTest {
         FileUtils.writeStringToFile(keyFile, authConfig.getPrivateKeyContent(), StandardCharsets.UTF_8);
         authConfig.setPrivateKeyContent(null);
         authConfig.setMantaKeyPath(keyFile.getAbsolutePath());
+        authConfig.setContentTypeDetectionEnabled(false);
+        authConfig.setSkipDirectoryDepth(1);
+        authConfig.setPruneEmptyParentDepth(4);
+        authConfig.setDownloadContinuations(0);
         authConfig.reload();
         differentKeyPairsSameContent(currentKeyPair, authConfig.getKeyPair());
 
