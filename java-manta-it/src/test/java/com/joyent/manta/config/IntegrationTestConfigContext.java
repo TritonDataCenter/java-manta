@@ -122,9 +122,12 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         return integrationTestBase;
     }
 
-
     public static String generateBasePath(final ConfigContext config, final String testBaseName) {
         return generateSuiteBasePath(config) + testBaseName + SEPARATOR;
+    }
+
+    public static String generateBucketsBasePath(final ConfigContext config, final String testBaseName) {
+        return generateSuiteBasePath(config) + testBaseName + SEPARATOR + "buckets" + SEPARATOR;
     }
 
     public static void cleanupTestDirectory(final MantaClient mantaClient, final String testPathPrefix) throws IOException {
