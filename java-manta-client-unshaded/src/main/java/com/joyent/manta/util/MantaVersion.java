@@ -22,7 +22,7 @@ public final class MantaVersion {
     /**
      * Release version of the SDK.
      */
-    public static final String VERSION = "3.3.2-SNAPSHOT";
+    public static final String VERSION = "3.4.1-SNAPSHOT";
 
     /**
      * Minimum version of client-side encryption supported.
@@ -37,5 +37,5 @@ public final class MantaVersion {
     /**
      * Release date of the SDK.
      */
-    public static final Instant DATE = Instant.parse("2019-02-27T18:21:45Z");
+    public static final Instant DATE = Instant.now();
 }
