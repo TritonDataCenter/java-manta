@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 /**
  * Tests the execution of Manta compute jobs.
  */
-@Test(groups = { "jobs" , "expensive" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
+@Test(groups = { "jobs", "expensive" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClientJobIT.class);
 
