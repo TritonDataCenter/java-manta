@@ -161,7 +161,7 @@
         <dependency.apache-http-client.version>4.5.7</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.61</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>3.1.5</dependency.fasterxml-uuid>
-        <dependency.jackson.version>2.9.8</dependency.jackson.version>
+        <dependency.jackson.version>2.9.9</dependency.jackson.version>
         <dependency.jnagmp.version>2.1.0</dependency.jnagmp.version>
         <dependency.urlbuilder.version>2.0.9</dependency.urlbuilder.version>
 
@@ -343,7 +343,7 @@
                         <id>enforce</id>
                         <configuration>
                             <rules>
-                                <dependencyConvergence />
+                                <dependencyConvergence/>
                             </rules>
                         </configuration>
                         <goals>
@@ -371,7 +371,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <banCircularDependencies />
+                                <banCircularDependencies/>
                             </rules>
                             <fail>true</fail>
                         </configuration>
