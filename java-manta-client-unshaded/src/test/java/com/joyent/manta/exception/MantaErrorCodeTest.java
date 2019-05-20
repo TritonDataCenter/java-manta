@@ -30,7 +30,7 @@ public class MantaErrorCodeTest {
     public void valueOfCodeCanFindByMatchingCode() {
         final MantaErrorCode actualLimitError = MantaErrorCode.valueOfCode("InvalidLimit");
         final MantaErrorCode actualNoApiError = MantaErrorCode.valueOfCode("NoApiServersAvailable");
-        final MantaErrorCode actualObjectNotFoundError = MantaErrorCode.valueOfCode("ObjectNotFoundError");
+        final MantaErrorCode actualObjectNotFoundError = MantaErrorCode.valueOfCode("ObjectNotFound");
         final MantaErrorCode actualParentNotBucketError = MantaErrorCode.valueOfCode("ParentNotBucket");
 
         Assert.assertEquals(actualLimitError, INVALID_LIMIT_ERROR);
