@@ -152,22 +152,27 @@ of the `loadbalancer` zone and can be found by running `ifconfig` from that
 zone.
 
 5. On the machine from which you want to run the `java-manta` client, edit
-`/etc/hosts` to add an entry mapping the Manta IP address to the Manta CN - for
-example:
+`/etc/hosts` to add an entry mapping the Manta IP address to the Manta CN you
+just retrieved - for example, if the CN is `CN=manta.virtual.example.com` and
+the Manta front-door IP address is `10.99.99.5`, `/etc/hosts` should have an
+entry that looks like:
 ```
 10.99.99.5 manta.virtual.example.com
 ```
 
-6. Add the certificate to your Java installation's keystore - this is often
+6. Convert the certificate to x509 format:
+`openssl x509 -in /tmp/manta-ssl.crt -out /tmp/manta-ssl.pem`
+
+7. Add the converted certificate to your Java installation's keystore - this is often
 found at `$JAVA_HOME/lib/security/cacerts` but can be customized. To add the
 certificate, run:
 
 ```
 $JAVA_HOME/bin/keytool -import -alias "<ALIAS OF YOUR CHOICE>" \
--keystore $JAVA_HOME/lib/security/cacerts -file "/tmp/manta-ssl.crt"
+-keystore $JAVA_HOME/lib/security/cacerts -file "/tmp/manta-ssl.pem"
 ```
 
-7. Set `MANTA_URL` to be the CN you entered in `/etc/hosts`. You may also
+8. Set `MANTA_URL` to be the CN you entered in `/etc/hosts`. You may also
 set these values as Java system properties rather than environment variables.
 You should now be able to connect to your Manta deployment from the `java-manta`
 client.
