@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-@Test(groups = { "multipart", "expensive" })
+@Test(groups = {"expensive" })
 @SuppressWarnings("Duplicates")
 public class ServerSideMultipartManagerIT {
     private MantaClient mantaClient;
@@ -69,7 +69,6 @@ public class ServerSideMultipartManagerIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test(groups = { "multipart" })
     public void nonExistentFileHasNotStarted() throws IOException {
         String path = testPathPrefix + UUID.randomUUID().toString();
         UUID unknownId = new UUID(0L, 3);
@@ -79,7 +78,6 @@ public class ServerSideMultipartManagerIT {
                 MantaMultipartStatus.UNKNOWN);
     }
 
-    @Test(groups = { "multipart" })
     public final void canAbortUpload() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -110,7 +108,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "multipart" })
     public final void canGetStatus() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -169,7 +166,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "multipart" })
     public final void canGetPart() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -191,7 +187,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "multipart" })
     public final void canListParts() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -217,7 +212,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "multipart" })
     public final void canUploadWithSinglePartByteArray() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -257,7 +251,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "multipart" })
     public final void canUploadWithByteArrayAndMultipleParts() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -289,7 +282,6 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
-    @Test(groups = { "multipart" })
     public void errorWhenMissingPart() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
@@ -316,7 +308,6 @@ public class ServerSideMultipartManagerIT {
         assertTrue(thrown, "Exception wasn't thrown");
     }
 
-    @Test(groups = { "multipart" })
     public void cantUploadSmallMultipartString() throws IOException {
         String[] parts = new String[] {
                 "Hello ",

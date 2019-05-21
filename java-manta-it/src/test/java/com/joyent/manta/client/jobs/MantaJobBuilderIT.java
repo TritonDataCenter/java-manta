@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Tests the execution of Manta compute jobs using the builder fluent interface.
  */
-@Test(groups = "jobs")
+@Test
 public class MantaJobBuilderIT {
     private static final String TEST_DATA =
               "line 01 aa\n"

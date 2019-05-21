@@ -40,7 +40,7 @@ import static org.testng.Assert.fail;
  * Tests for verifying the behavior of {@link com.joyent.manta.serialization.EncryptedMultipartSerializer}
  * and {@link EncryptedServerSideMultipartManager} with {@link MantaClient}.
  */
-@Test(groups = {"encrypted", "multipart"})
+@Test(groups = {"encrypted"})
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerSerializationIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerSerializationIT.class);

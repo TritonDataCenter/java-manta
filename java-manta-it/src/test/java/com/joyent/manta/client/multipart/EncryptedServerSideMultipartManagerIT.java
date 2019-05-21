@@ -50,7 +50,7 @@ import static org.testng.Assert.assertTrue;
  * Tests for verifying the behavior of {@link EncryptedServerSideMultipartManager} with
  * {@link MantaClient}.
  */
-@Test(groups = {"encrypted", "multipart"})
+@Test(groups = {"encrypted", "expensive"})
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerIT {
     private final MantaClient mantaClient;
@@ -126,6 +126,7 @@ public class EncryptedServerSideMultipartManagerIT {
         }
     }
 
+    @Test(groups = {"expensive"})
     public final void canListUploadsInProgress() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;

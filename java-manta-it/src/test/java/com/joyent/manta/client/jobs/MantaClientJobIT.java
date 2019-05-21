@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 /**
  * Tests the execution of Manta compute jobs.
  */
-@Test(groups = { "jobs", "expensive" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
+@Test(groups = { "expensive" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {
     private static final Logger LOG = LoggerFactory.getLogger(MantaClientJobIT.class);
 
@@ -64,7 +64,7 @@ public class MantaClientJobIT {
         IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test(groups = { "jobs", "expensive" })
+    @Test(groups = { "expensive" })
     public void createJob() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
@@ -74,7 +74,7 @@ public class MantaClientJobIT {
         Assert.assertTrue(accepted, "Cancel request was not accepted");
     }
 
-    @Test(groups = { "jobs", "expensive" }, dependsOnMethods = { "createJob" })
+    @Test(groups = { "expensive" }, dependsOnMethods = { "createJob" })
     public void getJob() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
@@ -98,7 +98,7 @@ public class MantaClientJobIT {
         mantaClient.cancelJob(jobId);
     }
 
-    @Test(groups = { "jobs" }, dependsOnMethods = { "createJob", "getJob" })
+    @Test(dependsOnMethods = { "createJob", "getJob" })
     public void cancelJob() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
@@ -121,7 +121,7 @@ public class MantaClientJobIT {
         Assert.assertNotNull(jobResponse.getTimeCreated());
     }
 
-    @Test(groups = { "jobs" }, dependsOnMethods = {"createJob"}, successPercentage = 66)
+    @Test(dependsOnMethods = {"createJob"}, successPercentage = 66)
     public void canAddAndGetInputsFromIterator() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
@@ -143,7 +143,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(groups = { "jobs" }, dependsOnMethods = { "createJob" }, successPercentage = 66)
+    @Test(dependsOnMethods = { "createJob" }, successPercentage = 66)
     public void canAddAndGetInputsFromStream() throws IOException {
         MantaJob job = buildJob();
         UUID jobId = mantaClient.createJob(job);
@@ -292,7 +292,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(groups = { "jobs" }, dependsOnMethods = { "createJob", "getJob" })
+    @Test(dependsOnMethods = { "createJob", "getJob" })
     public void canListJobIdsByName() throws IOException {
         final String name = String.format("by_name_%s", UUID.randomUUID());
         final MantaJob job1 = buildJob(name, "cat");
@@ -316,7 +316,7 @@ public class MantaClientJobIT {
         }
     }
 
-    @Test(groups = { "jobs" })
+    @Test
     public void canListOutputsForJobWithNoInputs() throws IOException, InterruptedException {
         final MantaJob job = buildJob();
         final UUID jobId = mantaClient.createJob(job);
@@ -330,7 +330,7 @@ public class MantaClientJobIT {
         Assert.assertEquals(outputs.size(), 0);
     }
 
-    @Test(groups = { "jobs" })
+    @Test
     public void canListOutputsForJobWithOneInput() throws IOException, InterruptedException {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path, TEST_DATA);
@@ -356,7 +356,7 @@ public class MantaClientJobIT {
                 "Output wasn't the same as input");
     }
 
-    @Test(groups = { "jobs" })
+    @Test
     public void canListOutputsForJobAsStreams() throws IOException, InterruptedException {
         String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
@@ -392,7 +392,7 @@ public class MantaClientJobIT {
         Assert.assertEquals(count.get(), 2, "Missing both outputs");
     }
 
-    @Test(groups = { "jobs" })
+    @Test
     public void canListOutputsForJobAsStrings() throws IOException, InterruptedException {
         String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
@@ -423,7 +423,7 @@ public class MantaClientJobIT {
         Assert.assertEquals(count.get(), 2, "Missing both outputs");
     }
 
-    @Test(groups = { "jobs" })
+    @Test
     public void canListFailedJobs() throws IOException, InterruptedException {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path, TEST_DATA);
@@ -445,7 +445,7 @@ public class MantaClientJobIT {
         Assert.assertEquals(failures.size(), 1, "There should only be a single failure");
     }
 
-    @Test(groups = { "jobs" })
+    @Test
     public void canGetJobErrors() throws IOException, InterruptedException {
         String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
