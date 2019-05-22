@@ -401,6 +401,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * is important to preserve that the manta key path was set
      * originally (and only) by the DefaultConfigContext)
      *
+     * @return boolean - true if mantaKeyPath came from
+     * DefaultConfigContext, false otherwise
      * @see overwriteWithContext for implementation details
      */
     protected boolean isMantaKeyPathSetOnlyByDefaults() {
@@ -424,7 +426,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
         /* see isMantaKeyPathSetOnlyByDefaults above for more details,
          * this local variable is used to set the field variable of
          * the same name */
-        boolean mantaKeyPathSetOnlyByDefaults = false;
+        boolean contextMantaKeyPathSetOnlyByDefaults = false;
 
         if (isDefaultContext) {
             overwriteWithDefaultContext((DefaultsConfigContext)context);
@@ -445,17 +447,18 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         /* track provenence of Manta key path (use chained hierarchy
          * specific accessor) */
-        if(BaseChainedConfigContext.class.isAssignableFrom(context.getClass())) {
-            mantaKeyPathSetOnlyByDefaults = ((BaseChainedConfigContext)context).isMantaKeyPathSetOnlyByDefaults();
+        if (BaseChainedConfigContext.class.isAssignableFrom(context.getClass())) {
+            contextMantaKeyPathSetOnlyByDefaults = ((BaseChainedConfigContext)context)
+                .isMantaKeyPathSetOnlyByDefaults();
         }
 
         if (isPresent(context.getMantaKeyPath())) {
-            if (isPresent(context.getPrivateKeyContent()) && !mantaKeyPathSetOnlyByDefaults) {
+            if (isPresent(context.getPrivateKeyContent()) && !contextMantaKeyPathSetOnlyByDefaults) {
                 String msg = "You can't set both a private key path and private key content";
                 throw new IllegalArgumentException(msg);
             }
 
-            this.mantaKeyPathSetOnlyByDefaults = mantaKeyPathSetOnlyByDefaults;
+            this.mantaKeyPathSetOnlyByDefaults = contextMantaKeyPathSetOnlyByDefaults;
             this.mantaKeyPath = context.getMantaKeyPath();
         }
 
