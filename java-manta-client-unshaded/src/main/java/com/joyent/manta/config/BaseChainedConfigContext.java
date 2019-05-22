@@ -392,6 +392,23 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     /**
+     * Accessor for field that tracks provenance of manta key path
+     * field, specifically set to `true` if the manta key path has
+     * only been set because a DefaultConfigContext was added to the
+     * chain of configs. It's important to preserve this information
+     * up the chain (for example if a StandardConfigContext is created
+     * with a DefaultConfigContext and then added to another chain, it
+     * is important to preserve that the manta key path was set
+     * originally (and only) by the DefaultConfigContext)
+     *
+     * @see overwriteWithContext for implementation details
+     */
+    protected boolean isMantaKeyPathSetOnlyByDefaults() {
+        return mantaKeyPathSetOnlyByDefaults;
+    }
+
+
+    /**
      * Overwrites the configuration values with the values of the passed context
      * if those values are not null and aren't empty.
      *
@@ -403,6 +420,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
          * context has been initialized, then we want to be careful to not
          * overwrite values that have already been set by non-default contexts. */
         boolean isDefaultContext = context.getClass().equals(DefaultsConfigContext.class);
+
+        /* see isMantaKeyPathSetOnlyByDefaults above for more details,
+         * this local variable is used to set the field variable of
+         * the same name */
+        boolean mantaKeyPathSetOnlyByDefaults = false;
 
         if (isDefaultContext) {
             overwriteWithDefaultContext((DefaultsConfigContext)context);
@@ -421,12 +443,31 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.mantaKeyId = context.getMantaKeyId();
         }
 
+        /* track provenence of Manta key path (use chained hierarchy
+         * specific accessor) */
+        if(BaseChainedConfigContext.class.isAssignableFrom(context.getClass())) {
+            mantaKeyPathSetOnlyByDefaults = ((BaseChainedConfigContext)context).isMantaKeyPathSetOnlyByDefaults();
+        }
+
         if (isPresent(context.getMantaKeyPath())) {
-            if (isPresent(context.getPrivateKeyContent())) {
+            if (isPresent(context.getPrivateKeyContent()) && !mantaKeyPathSetOnlyByDefaults) {
                 String msg = "You can't set both a private key path and private key content";
                 throw new IllegalArgumentException(msg);
             }
+
+            this.mantaKeyPathSetOnlyByDefaults = mantaKeyPathSetOnlyByDefaults;
             this.mantaKeyPath = context.getMantaKeyPath();
+        }
+
+        if (isPresent(context.getPrivateKeyContent())) {
+            // NOTE: that this.mantaKeyPathSetOnlyByDefaults is set
+            // above, order matters here!
+            if (isPresent(mantaKeyPath) && !this.mantaKeyPathSetOnlyByDefaults) {
+                String msg = "You can't set both a private key path and private key content";
+                throw new IllegalArgumentException(msg);
+            }
+
+            this.privateKeyContent = context.getPrivateKeyContent();
         }
 
         if (context.getMetricReporterMode() != null) {
@@ -443,15 +484,6 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (context.getMaximumConnections() != null) {
             this.maxConnections = context.getMaximumConnections();
-        }
-
-        if (isPresent(context.getPrivateKeyContent())) {
-            if (isPresent(mantaKeyPath) && !this.mantaKeyPathSetOnlyByDefaults) {
-                String msg = "You can't set both a private key path and private key content";
-                throw new IllegalArgumentException(msg);
-            }
-
-            this.privateKeyContent = context.getPrivateKeyContent();
         }
 
         if (isPresent(context.getPassword())) {
