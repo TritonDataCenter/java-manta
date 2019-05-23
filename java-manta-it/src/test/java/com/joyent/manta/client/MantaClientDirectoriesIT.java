@@ -54,9 +54,8 @@ public class MantaClientDirectoriesIT {
     public void beforeClass() throws IOException {
         config = new IntegrationTestConfigContext();
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        //Remove the extra '/' from the testPathPrefix
-        testPathPrefix = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(SEPARATOR));
+        testPathPrefix = IntegrationTestConfigContext.generateBasePathWithoutSeparator(config,
+                this.getClass().getSimpleName());
     }
 
     @AfterClass

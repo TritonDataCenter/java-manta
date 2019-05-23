@@ -51,9 +51,8 @@ public class MantaClientErrorIT {
         config = new IntegrationTestConfigContext(usingEncryption);
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        //Remove the extra '/' from the testPathPrefix
-        testPathPrefix = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(SEPARATOR));
+        testPathPrefix = IntegrationTestConfigContext.generateBasePathWithoutSeparator(config,
+                this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
