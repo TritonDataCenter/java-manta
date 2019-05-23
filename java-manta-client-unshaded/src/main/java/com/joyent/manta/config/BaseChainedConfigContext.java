@@ -403,7 +403,8 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      *
      * @return boolean - true if mantaKeyPath came from
      * DefaultConfigContext, false otherwise
-     * @see overwriteWithContext for implementation details
+     * @see BaseChainedConfigContext#overwriteWithContext
+     * overwriteWithContext for implementation details
      */
     protected boolean isMantaKeyPathSetOnlyByDefaults() {
         return mantaKeyPathSetOnlyByDefaults;
@@ -445,7 +446,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.mantaKeyId = context.getMantaKeyId();
         }
 
-        /* track provenence of Manta key path (use chained hierarchy
+        /* track provenance of Manta key path (use chained hierarchy
          * specific accessor) */
         if (BaseChainedConfigContext.class.isAssignableFrom(context.getClass())) {
             contextMantaKeyPathSetOnlyByDefaults = ((BaseChainedConfigContext)context)
