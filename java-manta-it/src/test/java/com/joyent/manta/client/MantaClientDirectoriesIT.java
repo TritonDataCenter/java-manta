@@ -55,6 +55,8 @@ public class MantaClientDirectoriesIT {
         config = new IntegrationTestConfigContext();
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        //Remove the extra '/' from the testPathPrefix
+        testPathPrefix = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(SEPARATOR));
     }
 
     @AfterClass

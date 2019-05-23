@@ -129,7 +129,8 @@ public class MantaClientJobIT {
         UUID jobId = mantaClient.createJob(job);
 
         List<String> inputs = new ArrayList<>();
-        String objPath = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        
+        String objPath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(objPath, TEST_DATA);
         inputs.add(objPath);
 
@@ -151,7 +152,8 @@ public class MantaClientJobIT {
         UUID jobId = mantaClient.createJob(job);
 
         List<String> inputs = new ArrayList<>();
-        String objPath = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        
+        String objPath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(objPath, TEST_DATA);
         inputs.add(objPath);
 
@@ -334,7 +336,7 @@ public class MantaClientJobIT {
 
     @Test
     public void canListOutputsForJobWithOneInput() throws IOException, InterruptedException {
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path, TEST_DATA);
 
         final MantaJob job = buildJob();
@@ -360,10 +362,10 @@ public class MantaClientJobIT {
 
     @Test
     public void canListOutputsForJobAsStreams() throws IOException, InterruptedException {
-        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
-
-        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        
+        String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path2, TEST_DATA);
 
         final MantaJob job = buildJob();
@@ -396,10 +398,10 @@ public class MantaClientJobIT {
 
     @Test
     public void canListOutputsForJobAsStrings() throws IOException, InterruptedException {
-        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
 
-        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path2, TEST_DATA);
 
         final MantaJob job = buildJob();
@@ -427,7 +429,7 @@ public class MantaClientJobIT {
 
     @Test
     public void canListFailedJobs() throws IOException, InterruptedException {
-        String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path, TEST_DATA);
 
         final MantaJob job = buildJob("failed_job", "grep foo");
@@ -449,10 +451,10 @@ public class MantaClientJobIT {
 
     @Test
     public void canGetJobErrors() throws IOException, InterruptedException {
-        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
 
-        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path2, TEST_DATA);
 
         final MantaJob job = buildJob("failed_job", "grep foo");
