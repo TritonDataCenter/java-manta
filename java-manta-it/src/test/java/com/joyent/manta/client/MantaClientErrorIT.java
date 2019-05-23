@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.UUID;
 
-import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.exception.MantaErrorCode.ACCOUNT_DOES_NOT_EXIST_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
