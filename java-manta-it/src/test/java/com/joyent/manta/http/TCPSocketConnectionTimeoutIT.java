@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2018-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@ import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -25,19 +26,50 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Integration tests for verifying the connection timeout behaviour for an invalid connection.
+ * Integration tests for verifying the connection timeout behaviour for an invalid connection,
+ * implies having an invalid value for MANTA_URL.
  * This Integration test is written for the sole purpose of verifying Issue #441.
  *
  * @author <a href="https://github.com/dekobon">Ashwin A Nair</a>
  */
-
 @Test
 public class TCPSocketConnectionTimeoutIT {
-    // Let TestNG configuration take precedence over environment variables
-    private AuthAwareConfigContext authConfig = new AuthAwareConfigContext(
-            new IntegrationTestConfigContext());
+    private MantaClient mantaClient;
 
-    private ChainedConfigContext config = new ChainedConfigContext(
+    private String testPathPrefix;
+
+    private ConfigContext config;
+
+    public TCPSocketConnectionTimeoutIT() {
+        // Let TestNG configuration take precedence over environment variables
+
+        config = new IntegrationTestConfigContext();
+        mantaClient = new MantaClient(config);
+        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
+        mantaClient.putDirectory(testPathPrefix, true);
+    }
+
+    @AfterClass
+    public void cleanup() throws IOException {
+        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+    }
+
+    /**
+     * Test that verifies that the connection timeout setting
+     * {@link ConfigContext#getTimeout()} is applied and is actually working.
+     *
+     * Note: this test will not work correctly when run through a proxy server.
+     */
+    public void verifyConnectionTimeoutSettingWorks() throws IOException {
+        final AuthAwareConfigContext authConfig = new AuthAwareConfigContext(
+                new IntegrationTestConfigContext());
+
+        final ConfigContext badConfig = new ChainedConfigContext(
+                config,
                 new StandardConfigContext()
                         .setRetries(0)
                         .setTimeout(1000)
@@ -51,20 +83,10 @@ public class TCPSocketConnectionTimeoutIT {
                 new DefaultsConfigContext()
         );
 
-    /**
-     * Test that verifies that the connection timeout setting
-     * {@link ConfigContext#getTimeout()} is applied and is actually working.
-     *
-     * Note: this test will not work correctly when run through a proxy server.
-     */
-    public void verifyConnectionTimeoutSettingWorks() throws IOException {
-        String testPathPrefix = IntegrationTestConfigContext.generateBasePath(
-                config, this.getClass().getSimpleName());
-
         Instant start = null;
         Instant stop;
 
-        try (MantaClient client = new MantaClient(config)) {
+        try (MantaClient client = new MantaClient(badConfig)){
             start = Instant.now();
             client.head(testPathPrefix);
         } catch (MantaIOException e) {
@@ -81,15 +103,10 @@ public class TCPSocketConnectionTimeoutIT {
         Duration totalTime = Duration.between(start, stop);
 
         if (totalTime.getSeconds() != 1) {
-            String msg = String.format("Expected total connection time duration "
+            final String msg = String.format("Expected total connection time duration "
                     + "to be 1 second. Actually [%d] ms",
                     totalTime.toMillis());
             Assert.fail(msg);
         }
-    }
-
-    @AfterClass
-    public void afterClass() throws Exception {
-        authConfig.close();
     }
 }
