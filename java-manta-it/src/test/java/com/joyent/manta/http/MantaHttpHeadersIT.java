@@ -302,6 +302,6 @@ public class MantaHttpHeadersIT {
     }
 
     private String generatePath() {
-        return String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        return String.format("%s%s", testPathPrefix, UUID.randomUUID());
     }
 }

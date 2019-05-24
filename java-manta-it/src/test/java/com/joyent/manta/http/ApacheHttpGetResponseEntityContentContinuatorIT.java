@@ -338,7 +338,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
     }
 
     private String generatePath() {
-        return String.format("%s/%s", this.testPathPrefix, UUID.randomUUID());
+        return String.format("%s%s", this.testPathPrefix, UUID.randomUUID());
     }
 
     private MantaClient prepareClient(final SupportedCipherDetails cipherDetails,
