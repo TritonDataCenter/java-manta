@@ -4,6 +4,9 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
 ## [3.4.1]
 ### Added
+ - [Fixed bug](https://github.com/joyent/java-manta/pull/527) where
+   `ChainedConfigContext` would "forget" that `mantaKeyPath` was set
+   by a `DefaultConfigContext`
  - [Updated](https://github.com/joyent/java-manta/pull/512) `AuthAwareConfigContext` with missing configuration parameters and exposed 
    client configuration parameters like `MANTA_DOWNLOAD_CONTINUATIONS_KEY` and  `MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY` 
    using `MetricReporterSupplier`.
