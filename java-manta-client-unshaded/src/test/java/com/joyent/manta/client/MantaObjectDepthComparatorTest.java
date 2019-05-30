@@ -149,4 +149,14 @@ public class MantaObjectDepthComparatorTest {
 
         return object;
     }
+
+    private static MantaObject mockBucket(final Object path) {
+        final MantaObject object = mock(MantaObject.class);
+        when(object.getType()).thenReturn(MantaObject.MANTA_OBJECT_TYPE_BUCKET);
+        when(object.getContentType()).thenReturn(MantaContentTypes.BUCKET.toString());
+        when(object.getPath()).thenReturn(path.toString());
+        when(object.toString()).thenReturn("[D] " + path.toString());
+
+        return object;
+    }
 }

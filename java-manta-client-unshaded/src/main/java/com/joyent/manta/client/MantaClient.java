@@ -416,6 +416,57 @@ public class MantaClient implements AutoCloseable {
      * ====================================================================== */
 
     /**
+     * Creates a bucket in Manta.
+     *
+     * @param path The fully qualified path of the Manta bucket.
+     * @return true when bucket was created
+     * @throws IOException                                     If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     */
+    public boolean createBucket(final String path) throws IOException {
+        return createBucket(path, null);
+    }
+
+    /**
+     * Creates a bucket in Manta.
+     *
+     * @param rawPath The fully qualified path of the Manta bucket.
+     * @param rawHeaders Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
+     * @return true when bucket was created
+     * @throws IOException                                     If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     */
+    public boolean createBucket(final String rawPath, final MantaHttpHeaders rawHeaders)
+            throws IOException {
+        Validate.notBlank(rawPath, "CREATE bucket must not be empty nor null");
+
+        String path = formatPath(rawPath);
+
+        LOG.debug("CREATE    {} [bucket]", path);
+
+        final HttpPut put = httpHelper.getRequestFactory().put(path);
+
+        final MantaHttpHeaders headers;
+
+        if (rawHeaders == null) {
+            headers = new MantaHttpHeaders();
+        } else {
+            headers = rawHeaders;
+        }
+
+        MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
+
+        put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.BUCKET.getContentType());
+
+        HttpResponse response = httpHelper.executeAndCloseRequest(put,
+                HttpStatus.SC_NO_CONTENT,
+                "PUT    {} response [{}] {} ");
+
+        // When LastModified is set, the bucket already exists
+        return response.getFirstHeader(HttpHeaders.LAST_MODIFIED) == null;
+    }
+
+    /**
      * Deletes an object from Manta.
      *
      * @param rawPath The fully qualified path of the Manta object.
@@ -1074,6 +1125,35 @@ public class MantaClient implements AutoCloseable {
         } catch (ExecutionException e) {
             throw new MantaException(e.getCause());
         }
+    }
+
+    /**
+     * Return a boolean indicating if a bucket is empty.
+     *
+     * @param path buckets path
+     * @return true if bucket is empty, otherwise false
+     * @throws IOException thrown when we are unable to list the bucket over the network
+     */
+    public boolean isBucketEmpty(final String path) throws IOException {
+        final MantaObject object = this.head(path);
+
+        if (!object.isBucket()) {
+            MantaClientException e = new MantaClientException("The requested object was not a bucket");
+            e.setContextValue("bucket-path", path);
+            throw e;
+        }
+
+        Long size = object.getHttpHeaders().getResultSetSize();
+
+        if (size == null) {
+            MantaClientException e = new MantaClientException(
+                    "Expected result-set-size header to be non-null but it was not"
+                            + " part of the response");
+            e.setContextValue("path", path);
+            throw e;
+        }
+
+        return size == 0;
     }
 
     /**

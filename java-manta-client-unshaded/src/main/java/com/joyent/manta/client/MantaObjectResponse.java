@@ -38,6 +38,11 @@ public class MantaObjectResponse implements MantaObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaObjectResponse.class);
 
     /**
+     * The content-type used to represent Manta bucket resources in http responses.
+     */
+    public static final String BUCKET_RESPONSE_CONTENT_TYPE = "application/x-json-stream; type=bucket";
+
+    /**
      * The content-type used to represent Manta directory resources in http responses.
      */
     public static final String DIRECTORY_RESPONSE_CONTENT_TYPE = "application/x-json-stream; type=directory";
@@ -168,6 +173,8 @@ public class MantaObjectResponse implements MantaObject {
                 this.type = null;
             } else if (contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
                 this.type = "directory";
+            } else if (contentType.equals(BUCKET_RESPONSE_CONTENT_TYPE)) {
+                this.type = "bucket";
             } else {
                 this.type = "object";
             }
@@ -325,6 +332,11 @@ public class MantaObjectResponse implements MantaObject {
     }
 
     @Override
+    public final boolean isBucket() {
+        return MANTA_OBJECT_TYPE_BUCKET.equals(this.type);
+    }
+
+    @Override
     public final boolean isDirectory() {
         return MANTA_OBJECT_TYPE_DIRECTORY.equals(this.type);
     }
@@ -380,6 +392,7 @@ public class MantaObjectResponse implements MantaObject {
         sb.append(", type='").append(getType()).append('\'');
         sb.append(", requestId='").append(getRequestId()).append('\'');
         sb.append(", httpHeaders=").append(httpHeaders);
+        sb.append(", bucket=").append(isBucket());
         sb.append(", directory=").append(isDirectory());
         sb.append('}');
         return sb.toString();

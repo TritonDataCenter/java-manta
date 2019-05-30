@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,8 +17,14 @@ import java.util.Date;
  * {@link MantaClient} must implement.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public interface MantaObject extends Serializable {
+    /**
+     * The type value for buckets within the manta service.
+     */
+    String MANTA_OBJECT_TYPE_BUCKET = "bucket";
+
     /**
      * The type value for data objects within the manta service.
      */
@@ -126,6 +132,11 @@ public interface MantaObject extends Serializable {
      * @return UUID string representing a request id
      */
     String getRequestId();
+
+    /**
+     * @return whether this object is a Manta bucket.
+     */
+    boolean isBucket();
 
     /**
      * @return whether this object is a Manta directory.
