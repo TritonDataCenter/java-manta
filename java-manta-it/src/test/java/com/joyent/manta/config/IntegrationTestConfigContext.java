@@ -129,6 +129,10 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
     public static String generateBucketsBasePath(final ConfigContext config, final String testBaseName) {
         return generateSuiteBasePath(config) + testBaseName + SEPARATOR + "buckets" + SEPARATOR;
     }
+  
+    public static String generateBasePathWithoutSeparator(final ConfigContext config, final String testBaseName) {
+        return generateSuiteBasePath(config) + testBaseName;
+    }
 
     public static void cleanupTestDirectory(final MantaClient mantaClient, final String testPathPrefix) throws IOException {
         final Boolean skipCleanup = Boolean.valueOf(

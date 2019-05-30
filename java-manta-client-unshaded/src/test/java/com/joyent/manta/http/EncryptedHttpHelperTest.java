@@ -33,7 +33,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
-import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -74,7 +73,7 @@ public class EncryptedHttpHelperTest {
 
         boolean caught = false;
         try {
-            URI uri = URI.create(DEFAULT_MANTA_URL + SEPARATOR + path);
+            URI uri = URI.create(DEFAULT_MANTA_URL + path);
             HttpGet get = new HttpGet(uri);
             MantaHttpHeaders headers = new MantaHttpHeaders();
             httpHelper.httpRequestAsInputStream(get, headers);

@@ -415,7 +415,7 @@ public class MantaClientIT {
 
     @Test
     public final void testList() throws IOException {
-        final String pathPrefix = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        final String pathPrefix = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(pathPrefix, null);
 
         mantaClient.put(String.format("%s/%s", pathPrefix, UUID.randomUUID()), "");
