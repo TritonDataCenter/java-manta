@@ -146,11 +146,12 @@
         <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
         <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
         <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
-        <maven-directory-maven-plugin.version>0.2</maven-directory-maven-plugin.version>
+        <maven-directory-maven-plugin.version>0.3.1</maven-directory-maven-plugin.version>
         <maven-build-helper-maven-plugin.version>3.0.0</maven-build-helper-maven-plugin.version>
         <maven-maven-resources-plugin.version>3.0.2</maven-maven-resources-plugin.version>
         <maven-build-helper-maven-plugin.version>3.0.0</maven-build-helper-maven-plugin.version>
         <maven-spotbugs-maven-plugin.version>3.1.3</maven-spotbugs-maven-plugin.version>
+        <maven-assembly-plugin.version>3.1.0</maven-assembly-plugin.version>
 
         <!-- Maven plugin dependency versions -->
         <maven-plexus-compiler-javac-errorprone.version>2.8.5</maven-plexus-compiler-javac-errorprone.version>
