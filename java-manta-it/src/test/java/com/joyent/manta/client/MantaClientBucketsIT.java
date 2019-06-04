@@ -35,6 +35,10 @@ public class MantaClientBucketsIT {
         final String bucketname = String.format("/ashwin.nair/buckets/MantaClientBucketsIT-%s", UUID.randomUUID());
 
         final boolean finished = mantaClient.createBucket(bucketname);
+        MantaObjectResponse mor = mantaClient.getBucket(bucketname);
+        System.out.print(mor.toString());
+        mantaClient.deleteBucket(bucketname);
+
         Assert.assertTrue(finished);
     }
 }

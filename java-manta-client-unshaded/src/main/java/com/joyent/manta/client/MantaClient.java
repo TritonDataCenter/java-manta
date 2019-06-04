@@ -509,6 +509,48 @@ public class MantaClient implements AutoCloseable {
    }
 
     /**
+     * Deletes a bucket in Manta with the given path.
+     * @param rawPath  Path of the object you want to delete.
+     * @param requestHeaders  requestHeaders HTTP headers to attach to request (may be null)
+     * @throws IOException
+     */
+    void deleteBucket(final String rawPath, final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+        final String path = formatPath(rawPath);
+        LOG.debug("DELETE {} bucket", path);
+
+            try {
+                httpHelper.httpDelete(path, requestHeaders);
+            } catch (MantaClientHttpResponseException e) {
+
+                if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_FOUND_ERROR) ||
+                        (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR))) {
+                    final MantaIOException mioe = new MantaIOException("Unable to delete bucket", e);
+                    mioe.setContextValue("bucket", path);
+                    throw mioe;
+                }
+            } catch (ConnectionPoolTimeoutException e) {
+                LOG.debug("{} for deleting bucket {}", e.getMessage(), path);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        LOG.debug("Finished deleting bucket {}.", path);
+
+    }
+
+    /**
+     * Deletes an object from Manta.
+     *
+     * @param rawPath The fully qualified path of the Manta bucket.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
+     */
+    public void deleteBucket(final String rawPath) throws IOException {
+        this.deleteBucket(rawPath, null);
+    }
+
+    /**
      * Recursively deletes an object in Manta.
      *
      * @param path The fully qualified path of the Manta object.
@@ -667,6 +709,24 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+
+        String path = formatPath(rawPath);
+        final HttpResponse response = httpHelper.httpGet(path);
+        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
+        return new MantaObjectResponse(path, headers);
+    }
+
+    /**
+     * Get the metadata for a Manta object. The difference with this method vs head() is
+     * that the request being made against the Manta API is done via a GET.
+     *
+     * @param rawPath The fully qualified path of the bucket. i.e. /user/stor/foo/bar/baz
+     * @return The {@link MantaObjectResponse}.
+     * @throws IOException                                     If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     */
+    public MantaObjectResponse getBucket(final String rawPath) throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
 
         String path = formatPath(rawPath);
