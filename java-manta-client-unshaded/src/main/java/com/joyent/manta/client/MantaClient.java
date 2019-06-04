@@ -524,6 +524,7 @@ public class MantaClient implements AutoCloseable {
                 httpHelper.httpDelete(path, requestHeaders);
             } catch (MantaClientHttpResponseException e) {
 
+                // Attempting to delete a non-empty bucket will result in an error
                 if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_FOUND_ERROR) ||
                         (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR))) {
                     final MantaIOException mioe = new MantaIOException("Unable to delete bucket", e);
@@ -1031,6 +1032,30 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path) {
+        return streamingBucketIterator(path, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path, final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
      * Return a stream of the contents of a directory in Manta.
      *
      * @param path The fully qualified path of the directory.
@@ -1070,6 +1095,45 @@ public class MantaClient implements AutoCloseable {
         Stream<MantaObject> stream = backingStream
             .map(MantaObjectConversionFunction.INSTANCE)
             .onClose(itr::close);
+
+        danglingStreams.add(stream);
+
+        return stream;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param path The fully qualified path of the directory.
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the directory.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String path) throws IOException {
+        final MantaBucketListingIterator itr = streamingBucketIterator(path);
+
+        try {
+            if (!itr.hasNext()) {
+                itr.close();
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                throw e.getCause();
+            } else {
+                throw e;
+            }
+        }
+
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        itr, additionalCharacteristics), false);
+
+        Stream<MantaObject> stream = backingStream
+                .map(MantaObjectConversionFunction.INSTANCE)
+                .onClose(itr::close);
 
         danglingStreams.add(stream);
 
@@ -1189,6 +1253,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Return a boolean indicating if a bucket is empty.
+     * This API call will be implemented after pre-deployment phase is completed.
      *
      * @param path buckets path
      * @return true if bucket is empty, otherwise false
@@ -1205,13 +1270,13 @@ public class MantaClient implements AutoCloseable {
 
         Long size = object.getHttpHeaders().getResultSetSize();
 
-        if (size == null) {
+        /*if (size == null) {
             MantaClientException e = new MantaClientException(
                     "Expected result-set-size header to be non-null but it was not"
                             + " part of the response");
             e.setContextValue("path", path);
             throw e;
-        }
+        }*/
 
         return size == 0;
     }

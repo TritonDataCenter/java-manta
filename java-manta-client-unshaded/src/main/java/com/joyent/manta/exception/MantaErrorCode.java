@@ -173,6 +173,12 @@ public enum MantaErrorCode {
      */
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
     /**
+     * @since 3.4.1
+     * Known component sources: muskie.
+     * * statusCode: 422.
+     */
+    INVALID_BUCKET_NAME_ERROR("InvalidBucketName"),
+    /**
      * Known component sources: piranha.
      */
     INVALID_CREDENTIALS_ERROR("InvalidCredentials"),
