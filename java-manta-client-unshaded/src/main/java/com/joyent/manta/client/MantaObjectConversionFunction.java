@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  * to a {@link MantaObject}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ *  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.1.7
  */
 public class MantaObjectConversionFunction implements Function<Map<String, Object>, MantaObject> {
@@ -97,6 +98,8 @@ public class MantaObjectConversionFunction implements Function<Map<String, Objec
             headers.setContentType(contentType);
         } else if (type.equals(MantaObject.MANTA_OBJECT_TYPE_DIRECTORY)) {
             headers.setContentType(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
+        } else if (type.equals(MantaObject.MANTA_OBJECT_TYPE_BUCKET)) {
+            headers.setContentType(MantaObjectResponse.BUCKET_RESPONSE_CONTENT_TYPE);
         }
 
         if (item.containsKey(ETAG_FIELD_KEY)) {

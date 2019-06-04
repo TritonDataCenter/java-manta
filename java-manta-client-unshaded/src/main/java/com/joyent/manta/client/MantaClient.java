@@ -510,7 +510,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Deletes a bucket in Manta with the given path.
-     * @param rawPath  Path of the object you want to delete.
+     * @param rawPath  Path of the bucket you want to delete.
      * @param requestHeaders  requestHeaders HTTP headers to attach to request (may be null)
      * @throws IOException
      */
@@ -540,7 +540,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Deletes an object from Manta.
+     * Deletes a bucket from Manta.
      *
      * @param rawPath The fully qualified path of the Manta bucket.
      * @throws IOException If an IO exception has occurred.
@@ -718,7 +718,7 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Get the metadata for a Manta object. The difference with this method vs head() is
+     * Get the metadata for a Manta bucket. The difference with this method vs head() is
      * that the request being made against the Manta API is done via a GET.
      *
      * @param rawPath The fully qualified path of the bucket. i.e. /user/stor/foo/bar/baz
