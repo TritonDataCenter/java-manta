@@ -26,6 +26,11 @@ public interface MantaObject extends Serializable {
     String MANTA_OBJECT_TYPE_BUCKET = "bucket";
 
     /**
+     * The type value for data objects stored in buckets within the manta service.
+     */
+    String MANTA_OBJECT_TYPE_BUCKETOBJECT = "bucketobject";
+
+    /**
      * The type value for data objects within the manta service.
      */
     String MANTA_OBJECT_TYPE_OBJECT = "object";
@@ -137,6 +142,11 @@ public interface MantaObject extends Serializable {
      * @return whether this object is a Manta bucket.
      */
     boolean isBucket();
+
+    /**
+     * @return whether this object is a Manta bucket object.
+     */
+    boolean isBucketObject();
 
     /**
      * @return whether this object is a Manta directory.

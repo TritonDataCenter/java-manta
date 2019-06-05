@@ -100,6 +100,8 @@ public class MantaObjectConversionFunction implements Function<Map<String, Objec
             headers.setContentType(MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
         } else if (type.equals(MantaObject.MANTA_OBJECT_TYPE_BUCKET)) {
             headers.setContentType(MantaObjectResponse.BUCKET_RESPONSE_CONTENT_TYPE);
+        } else if (type.equals(MantaObject.MANTA_OBJECT_TYPE_BUCKETOBJECT)) {
+            headers.setContentType(MantaObjectResponse.BUCKETOBJECT_RESPONSE_CONTENT_TYPE);
         }
 
         if (item.containsKey(ETAG_FIELD_KEY)) {

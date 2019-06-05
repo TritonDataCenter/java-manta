@@ -141,6 +141,11 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     }
 
     @Override
+    public boolean isBucketObject() {
+        return response.isBucketObject();
+    }
+
+    @Override
     public boolean isDirectory() {
         return response.isDirectory();
     }
