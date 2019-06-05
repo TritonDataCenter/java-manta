@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,6 +81,11 @@ public class DefaultsConfigContext implements ConfigContext {
           + "TLS_RSA_WITH_AES_128_GCM_SHA256,"
           + "TLS_RSA_WITH_AES_256_CBC_SHA256,"
           + "TLS_RSA_WITH_AES_128_CBC_SHA256";
+
+    /**
+     * Usage of Buckets while uploading files in Manta is disabled by default.
+     */
+    public static final boolean DEFAULT_BUCKETS_ENABLED = false;
 
     /**
      * Usage of content type auto-detection while uploading files in Manta is enabled by default.
@@ -291,6 +296,11 @@ public class DefaultsConfigContext implements ConfigContext {
     @Override
     public Integer getMetricReporterOutputInterval() {
         return null;
+    }
+
+    @Override
+    public Boolean isBucketsEnabled() {
+        return DEFAULT_BUCKETS_ENABLED;
     }
 
     @Override

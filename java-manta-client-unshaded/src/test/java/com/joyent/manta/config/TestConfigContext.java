@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,6 +37,7 @@ public class TestConfigContext extends BaseChainedConfigContext {
         super(new StandardConfigContext()
                 .setMaximumConnections(DEFAULT_CONFIG.getMaximumConnections())
                 .setRetries(DEFAULT_CONFIG.getRetries())
+                .setBucketsEnabled(DEFAULT_CONFIG.isBucketsEnabled())
                 .setContentTypeDetectionEnabled(DEFAULT_CONFIG.isContentTypeDetectionEnabled())
                 .setHttpsProtocols(DEFAULT_CONFIG.getHttpsProtocols())
                 .setHttpsCipherSuites(DEFAULT_CONFIG.getHttpsCipherSuites())

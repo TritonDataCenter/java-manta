@@ -31,6 +31,11 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_ACCOUNT_ENV_KEY = "MANTA_USER";
 
     /**
+     * Environment variable for disabling automatic content type detection while uploading a file.
+     */
+    public static final String MANTA_BUCKETS_ENABLED_ENV_KEY = "MANTA_BUCKETS_ENABLED";
+
+    /**
      * Environment variable for looking up a RSA fingerprint.
      */
     public static final String MANTA_KEY_ID_ENV_KEY = "MANTA_KEY_ID";
@@ -193,8 +198,10 @@ public class EnvVarConfigContext implements ConfigContext {
      * Array of all environment variable names used.
      */
     public static final String[] ALL_PROPERTIES = {
-            MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY, MANTA_KEY_ID_ENV_KEY,
-            MANTA_KEY_PATH_ENV_KEY, MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
+            MANTA_URL_ENV_KEY, MANTA_ACCOUNT_ENV_KEY,
+            MANTA_BUCKETS_ENABLED_ENV_KEY,
+            MANTA_KEY_ID_ENV_KEY, MANTA_KEY_PATH_ENV_KEY,
+            MANTA_TIMEOUT_ENV_KEY, MANTA_RETRIES_ENV_KEY,
             MANTA_MAX_CONNS_ENV_KEY, MANTA_PRIVATE_KEY_CONTENT_ENV_KEY,
             MANTA_PASSWORD_ENV_KEY, MANTA_HTTP_BUFFER_SIZE_ENV_KEY,
             MANTA_HTTPS_PROTOCOLS_ENV_KEY, MANTA_HTTPS_CIPHERS_ENV_KEY,
@@ -382,6 +389,13 @@ public class EnvVarConfigContext implements ConfigContext {
         String buffString = getEnv(MANTA_UPLOAD_BUFFER_SIZE_ENV_KEY);
 
         return MantaUtils.parseIntegerOrNull(buffString);
+    }
+
+    @Override
+    public Boolean isBucketsEnabled() {
+        String enabled = getEnv(MANTA_BUCKETS_ENABLED_ENV_KEY);
+
+        return MantaUtils.parseBooleanOrNull(enabled);
     }
 
     @Override

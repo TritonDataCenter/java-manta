@@ -476,6 +476,15 @@ public class AuthAwareConfigContext
     }
 
     @Override
+    public AuthAwareConfigContext setBucketsEnabled(final Boolean bucketsEnabled) {
+        synchronized (lock) {
+            super.setBucketsEnabled(bucketsEnabled);
+        }
+
+        return this;
+    }
+
+    @Override
     public AuthAwareConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         synchronized (lock) {
             super.setClientEncryptionEnabled(clientEncryptionEnabled);

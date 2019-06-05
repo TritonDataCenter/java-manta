@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -187,6 +187,11 @@ public interface ConfigContext extends MantaMBeanable {
     Integer getMetricReporterOutputInterval();
 
     /**
+     * @return true when buckets is enabled.
+     */
+    Boolean isBucketsEnabled();
+
+    /**
      * @return true when client-side encryption is enabled.
      */
     Boolean isClientEncryptionEnabled();
@@ -285,6 +290,7 @@ public interface ConfigContext extends MantaMBeanable {
         sb.append(", downloadContinuations=").append(context.downloadContinuations());
         sb.append(", metricReporterMode=").append(context.getMetricReporterMode());
         sb.append(", metricReporterOutputInterval=").append(context.getMetricReporterOutputInterval());
+        sb.append(", bucketsEnabled=").append(context.isBucketsEnabled());
         sb.append(", clientEncryptionEnabled=").append(context.isClientEncryptionEnabled());
         sb.append(", contentTypeDetectionEnabled=").append(context.isContentTypeDetectionEnabled());
         sb.append(", permitUnencryptedDownloads=").append(context.permitUnencryptedDownloads());
@@ -399,6 +405,8 @@ public interface ConfigContext extends MantaMBeanable {
             }
 
             e.setContextValue(MapConfigContext.MANTA_PRIVATE_KEY_CONTENT_KEY, redactedPrivateKeyContent);
+            e.setContextValue(MapConfigContext.MANTA_BUCKETS_ENABLED_KEY,
+                    config.isBucketsEnabled());
             e.setContextValue(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
                     config.isClientEncryptionEnabled());
             e.setContextValue(MapConfigContext.MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY,
@@ -571,6 +579,9 @@ public interface ConfigContext extends MantaMBeanable {
             case MapConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_KEY:
             case EnvVarConfigContext.MANTA_EXPECT_CONTINUE_TIMEOUT_ENV_KEY:
                 return config.getExpectContinueTimeout();
+            case MapConfigContext.MANTA_BUCKETS_ENABLED_KEY:
+            case EnvVarConfigContext.MANTA_BUCKETS_ENABLED_ENV_KEY:
+                return config.isBucketsEnabled();
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:
                 return config.isClientEncryptionEnabled();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -149,6 +149,11 @@ public class MapConfigContext implements ConfigContext {
     public static final String MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY = "manta.metric_reporter.output_interval";
 
     /**
+     * Property key for flag indicating when buckets is enabled..
+     */
+    public static final String MANTA_BUCKETS_ENABLED_KEY = "manta.buckets";
+
+    /**
      * Property key for flag indicating when client-side encryption is enabled.
      */
     public static final String MANTA_CLIENT_ENCRYPTION_ENABLED_KEY = "manta.client_encryption";
@@ -221,6 +226,7 @@ public class MapConfigContext implements ConfigContext {
             MANTA_DOWNLOAD_CONTINUATIONS_KEY,
             MANTA_METRIC_REPORTER_MODE_KEY,
             MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY,
+            MANTA_BUCKETS_ENABLED_KEY,
             MANTA_CLIENT_ENCRYPTION_ENABLED_KEY,
             MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY,
             MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY,
@@ -491,6 +497,17 @@ public class MapConfigContext implements ConfigContext {
         }
 
         return MantaUtils.parseIntegerOrNull(backingMap.get(MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY));
+    }
+
+    @Override
+    public Boolean isBucketsEnabled() {
+        Boolean enabled = MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_BUCKETS_ENABLED_KEY));
+
+        if (enabled != null) {
+            return enabled;
+        }
+
+        return MantaUtils.parseBooleanOrNull(backingMap.get(MANTA_BUCKETS_ENABLED_ENV_KEY));
     }
 
     @Override

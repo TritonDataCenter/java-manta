@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,6 +43,7 @@ public class ConfigContextTest {
         config.setMantaUser("username");
         config.setMantaKeyId(UnitTestConstants.FINGERPRINT);
         config.setMantaKeyPath(mantaAuthPrivateKey.getAbsolutePath());
+        config.setBucketsEnabled(true);
         config.setClientEncryptionEnabled(false);
         config.setContentTypeDetectionEnabled(false);
 
@@ -63,6 +64,7 @@ public class ConfigContextTest {
         config.setMantaUser("username");
         config.setMantaKeyId(UnitTestConstants.FINGERPRINT);
         config.setMantaKeyPath(mantaAuthPrivateKey.getAbsolutePath());
+        config.setBucketsEnabled(false);
         config.setClientEncryptionEnabled(true);
         config.setContentTypeDetectionEnabled(true);
         config.setEncryptionKeyId("test-key-1");
@@ -80,6 +82,7 @@ public class ConfigContextTest {
         config.setMantaUser("username");
         config.setMantaKeyId("ac:95:92:ff:88:f7:3d:cd:ba:23:7b:54:44:21:60:02");
         config.setPrivateKeyContent(UnitTestConstants.PRIVATE_KEY);
+        config.setBucketsEnabled(false);
         config.setClientEncryptionEnabled(true);
         config.setContentTypeDetectionEnabled(true);
         config.setEncryptionKeyId("test-key-1");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -222,6 +222,14 @@ public interface SettableConfigContext<T> extends ConfigContext {
     T setMetricReporterOutputInterval(Integer metricReporterOutputInterval);
 
     /**
+     * Sets flag indicating when buckets is enabled.
+     *
+     * @param bucketsEnabled true if buckets for Manta is enabled
+     * @return the current instance of {@link T}
+     */
+    T setBucketsEnabled(Boolean bucketsEnabled);
+
+    /**
      * Sets flag indicating when client-side encryption is enabled.
      *
      * @param clientEncryptionEnabled true if client-side encryption is enabled
@@ -399,6 +407,10 @@ public interface SettableConfigContext<T> extends ConfigContext {
             case MapConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_KEY:
             case EnvVarConfigContext.MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY:
                 config.setMetricReporterOutputInterval(MantaUtils.parseIntegerOrNull(value));
+                break;
+            case MapConfigContext.MANTA_BUCKETS_ENABLED_KEY:
+            case EnvVarConfigContext.MANTA_BUCKETS_ENABLED_ENV_KEY:
+                config.setBucketsEnabled(MantaUtils.parseBooleanOrNull(value));
                 break;
             case MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY:
             case EnvVarConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_ENV_KEY:

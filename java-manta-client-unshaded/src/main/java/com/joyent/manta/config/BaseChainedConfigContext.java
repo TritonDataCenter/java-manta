@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -148,6 +148,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
      * Metrics output interval in seconds for modes that report metrics periodically.
      */
     private volatile Integer metricReporterOutputInterval;
+
+    /**
+     * Flag indicating when buckets is enabled.
+     */
+    private volatile Boolean bucketsEnabled;
 
     /**
      * Flag indicating when client-side encryption is enabled.
@@ -343,6 +348,11 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     @Override
     public Integer getUploadBufferSize() {
         return uploadBufferSize;
+    }
+
+    @Override
+    public Boolean isBucketsEnabled() {
+        return bucketsEnabled;
     }
 
     @Override
@@ -548,6 +558,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
         }
 
+        if (context.isBucketsEnabled() != null) {
+            this.bucketsEnabled = context.isBucketsEnabled();
+        }
+
         if (context.isContentTypeDetectionEnabled() != null) {
             this.contentTypeDetectionEnabled = context.isContentTypeDetectionEnabled();
         }
@@ -723,6 +737,10 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
 
         if (this.getMetricReporterOutputInterval() == null) {
             this.metricReporterOutputInterval = context.getMetricReporterOutputInterval();
+        }
+
+        if (this.bucketsEnabled == null) {
+            this.bucketsEnabled = context.isBucketsEnabled();
         }
 
         if (this.clientEncryptionEnabled == null) {
@@ -953,6 +971,13 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
     }
 
     @Override
+    public BaseChainedConfigContext setBucketsEnabled(final Boolean bucketsEnabled) {
+        this.bucketsEnabled = bucketsEnabled;
+
+        return this;
+    }
+
+    @Override
     public BaseChainedConfigContext setClientEncryptionEnabled(final Boolean clientEncryptionEnabled) {
         this.clientEncryptionEnabled = clientEncryptionEnabled;
 
@@ -1053,6 +1078,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 && Objects.equals(downloadContinuations, that.downloadContinuations)
                 && Objects.equals(metricReporterMode, that.metricReporterMode)
                 && Objects.equals(metricReporterOutputInterval, that.metricReporterOutputInterval)
+                && Objects.equals(bucketsEnabled, that.bucketsEnabled)
                 && Objects.equals(clientEncryptionEnabled, that.clientEncryptionEnabled)
                 && Objects.equals(contentTypeDetectionEnabled, that.contentTypeDetectionEnabled)
                 && Objects.equals(encryptionKeyId, that.encryptionKeyId)
@@ -1075,6 +1101,7 @@ public abstract class BaseChainedConfigContext implements SettableConfigContext<
                 downloadContinuations,
                 metricReporterMode,
                 metricReporterOutputInterval,
+                bucketsEnabled,
                 clientEncryptionEnabled, encryptionKeyId,
                 contentTypeDetectionEnabled,
                 encryptionAlgorithm, permitUnencryptedDownloads,
