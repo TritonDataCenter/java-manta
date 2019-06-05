@@ -31,11 +31,6 @@ public class EnvVarConfigContext implements ConfigContext {
     public static final String MANTA_ACCOUNT_ENV_KEY = "MANTA_USER";
 
     /**
-     * Environment variable for disabling automatic content type detection while uploading a file.
-     */
-    public static final String MANTA_BUCKETS_ENABLED_ENV_KEY = "MANTA_BUCKETS_ENABLED";
-
-    /**
      * Environment variable for looking up a RSA fingerprint.
      */
     public static final String MANTA_KEY_ID_ENV_KEY = "MANTA_KEY_ID";
@@ -149,6 +144,11 @@ public class EnvVarConfigContext implements ConfigContext {
      * Environment variable for setting the depth of directories to assume exists.
      */
     public static final String MANTA_METRIC_REPORTER_OUTPUT_INTERVAL_ENV_KEY = "MANTA_METRIC_REPORTER_OUTPUT_INTERVAL";
+
+    /**
+     * Environment variable for disabling automatic content type detection while uploading a file.
+     */
+    public static final String MANTA_BUCKETS_ENABLED_ENV_KEY = "MANTA_BUCKETS_ENABLED";
 
     /**
      * Environment variable for flag indicating when client-side encryption is enabled.

@@ -101,10 +101,11 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
 | manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
-| manta.prune_empty_parent_depth     | MANTA_PRUNE_EMPTY_PARENT_DEPTH |                                     |                          |
+| manta.prune_empty_parent_depth     | MANTA_PRUNE_EMPTY_PARENT_DEPTH |                                      |                          |
 | manta.download_continuations       | MANTA_DOWNLOAD_CONTINUATIONS   | 0                                    |                          |
 | manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
 | manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
+| manta.buckets_enabled              | MANTA_BUCKETS_ENABLED          | false                                |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
 | manta.content_type_detection       | MANTA_CONTENT_TYPE_DETECTION   | true                                 |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
@@ -190,6 +191,8 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
     Nullable integer interval in seconds at which metrics are reported by periodic reporters.
     This number must be set and greater than zero if `manta.metric_reporter.mode`/`MANTA_METRIC_REPORTER_MODE`
     is set to `SLF4J`. Defaults to `null`.
+* `manta.buckets_enabled` (**MANTA_BUCKETS_ENABLED**)
+    Boolean indicating if buckets for Manta is enabled.
 * `manta.client_encryption` (**MANTA_CLIENT_ENCRYPTION**)
     Boolean indicating if client-side encryption is enabled.
 * `manta.content_type_detection` (**MANTA_CONTENT_TYPE_DETECTION**)
@@ -219,6 +222,8 @@ Note: Dynamic Updates marked with an asterisk (*) are enabled by the `AuthAwareC
 
 See the examples for a [typical configuration using defaults](/java-manta-examples/src/main/java/SimpleClient.java) and another
 [configuration with client-side encryption enabled](/java-manta-examples/src/main/java/SimpleClientEncryption.java)
+
+## Buckets in Manta
 
 ## Client-side Encryption
 
@@ -263,7 +268,7 @@ was not modified.
 
 ### Improving Encryption Performance
 
-## Automated Content-Type Detection
+#### Automated Content-Type Detection
 
 While uploading any file in Manta using the Java SDK, depending on the data type, Users could opt to disable a particular 
 feature of the SDK which enables it to internally detect the HTTP content-type of any given file or stream. The following 

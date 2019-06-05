@@ -151,7 +151,7 @@ public class MapConfigContext implements ConfigContext {
     /**
      * Property key for flag indicating when buckets is enabled..
      */
-    public static final String MANTA_BUCKETS_ENABLED_KEY = "manta.buckets";
+    public static final String MANTA_BUCKETS_ENABLED_KEY = "manta.buckets_enabled";
 
     /**
      * Property key for flag indicating when client-side encryption is enabled.
