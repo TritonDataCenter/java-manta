@@ -17,12 +17,19 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -31,12 +38,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -78,12 +79,22 @@ public class MantaClientSigningIT {
        a lab instance without a self signed cert), we will also need to refrain
        from checking the certs on the resulting signed urls. */
     private HttpURLConnection openHttpURLConnection(URI uri, MantaClient client) throws IOException {
-        boolean tlsInsecure = client.getContext().tlsInsecure();
-        HttpURLConnection connection = (HttpsURLConnection)uri.toURL().openConnection();
+        final boolean tlsInsecure = client.getContext().tlsInsecure();
+
+        final HttpURLConnection httpURLConnection;
+        final URLConnection urlConnection = uri.toURL().openConnection();
+
+        if (urlConnection instanceof HttpURLConnection) {
+            httpURLConnection = (HttpURLConnection)urlConnection;
+        } else {
+            String msg = "Only HTTP or HTTPS connections are supported";
+            throw new IllegalArgumentException(msg);
+        }
+
         // Before calling methods like setSSLSocketFactory, we need to make sure
         // we are dealing with an http*s* connection.
-        if (tlsInsecure && connection instanceof HttpsURLConnection) {
-            HttpsURLConnection secureConn  = (HttpsURLConnection)connection;
+        if (tlsInsecure && httpURLConnection instanceof HttpsURLConnection) {
+            HttpsURLConnection secureConn  = (HttpsURLConnection)httpURLConnection;
 
             TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
                     @Override
@@ -99,19 +110,20 @@ public class MantaClientSigningIT {
                 }
             };
 
-            HostnameVerifier hostnameVerifier = (hostname, session) -> true;
+            final HostnameVerifier hostnameVerifier = (hostname, session) -> true;
 
             try {
                 SSLContext sslContext = SSLContext.getInstance("SSL");
                 sslContext.init(null, trustAllCerts, new SecureRandom());
                 secureConn.setSSLSocketFactory(sslContext.getSocketFactory());
                 secureConn.setHostnameVerifier(hostnameVerifier);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } catch (GeneralSecurityException e) {
+                throw new RuntimeException("Unable to set test SSL context "
+                        + "on HTTPS connection", e);
             }
         }
 
-        return connection;
+        return httpURLConnection;
     }
 
 
