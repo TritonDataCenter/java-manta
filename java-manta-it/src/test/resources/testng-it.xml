@@ -101,7 +101,7 @@
             <!-- class name="com.joyent.manta.client.MantaObjectOutputStreamIT" -->
         </classes>
     </test>
-    <test name="Manta Client Snaplinks Tests ">
+    <test name="Manta Client Snaplinks Tests">
         <parameter name="usingEncryption" value="true"/>
         <classes>
             <class name="com.joyent.manta.client.MantaClientSnapLinksIT" />
