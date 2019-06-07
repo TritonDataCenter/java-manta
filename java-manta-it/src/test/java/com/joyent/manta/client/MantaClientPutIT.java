@@ -17,7 +17,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.http.entity.ContentType;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
@@ -266,7 +265,7 @@ public class MantaClientPutIT {
             try (MantaClient unencryptedClient = new MantaClient(new IntegrationTestConfigContext(false))) {
                 MantaObjectResponse unencryptedResponse = unencryptedClient.head(path);
                 Assert.assertEquals(unencryptedResponse.getContentType(),
-                        ContentType.APPLICATION_OCTET_STREAM.toString(),
+                        "application/octet-stream",
                         "Plaintext content type was leaked");
             }
         }

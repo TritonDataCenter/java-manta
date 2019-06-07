@@ -21,7 +21,6 @@ import com.joyent.test.util.FailingInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.http.entity.ContentType;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
@@ -307,7 +306,7 @@ public class EncryptedServerSideMultipartManagerIT {
         try (MantaClient unencryptedClient = new MantaClient(new IntegrationTestConfigContext(false))) {
             MantaObjectResponse unencryptedResponse = unencryptedClient.head(path);
             Assert.assertEquals(unencryptedResponse.getContentType(),
-                    ContentType.APPLICATION_OCTET_STREAM.toString(),
+                    "application/octet-stream",
                     "Plaintext content type was leaked");
         }
     }
