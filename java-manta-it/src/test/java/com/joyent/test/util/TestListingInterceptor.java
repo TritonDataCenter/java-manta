@@ -19,15 +19,19 @@ import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Test method listener for determining which tests will actually run.
+ * Test method listener for determining which tests will actually run
+ * when we invoke mvn verify -Dit.dryRun=true. This test listener has
+ * been introduced to leverage TestNG feature @since 6.8.21 of determining
+ * order of tests without executing them.
  *
  * Enabled by: -Dit.dryRun=true
+ * @see <a href="https://github.com/cbeust/testng/issues/1503">Feature Reference</a>
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class TestListingInterceptor implements IMethodInterceptor, ISuiteListener {
@@ -50,6 +54,14 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
         return observedTests.size();
     }
 
+    /**
+     * This method is used to alter the list of test methods that TestNG
+     * is about to run. It returns an empty list if -Dit.dryRun=false
+     *
+     * @param methods represents list of test methods that will be running.
+     * @param context passed in intercept method so implementers set user values and look-up while generating reports.
+     * @return list of methods run by TestNG consistent with the order returned.
+     */
     @Override
     public List<IMethodInstance> intercept(final List<IMethodInstance> methods, final ITestContext context) {
         for (final IMethodInstance method : methods) {
@@ -77,13 +89,12 @@ public class TestListingInterceptor implements IMethodInterceptor, ISuiteListene
             return;
         }
 
-        final String[] sortedTests = observedTests.toArray(new String[0]);
-        Arrays.sort(sortedTests);
-
-        LOG.info("DRY-RUN: Listing ["+ sortedTests.length +"] tests that would have run");
-
-        for (final String testNameAndParams : sortedTests) {
-            LOG.info(testNameAndParams);
+        if (LOG.isInfoEnabled()) {
+            LOG.info("DRY-RUN: Listing [{}] tests that would have run",
+                    observedTests.size());
+            try (Stream<String> stream = observedTests.stream()) {
+                stream.sorted().forEach(LOG::info);
+            }
         }
     }
 }

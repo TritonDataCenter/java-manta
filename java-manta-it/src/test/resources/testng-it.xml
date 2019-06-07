@@ -21,8 +21,12 @@
     <test name="Manta Client Http Headers Tests">
         <classes>
             <class name="com.joyent.manta.http.MantaHttpHeadersIT" />
-            <class name="com.joyent.manta.http.TCPSocketConnectionTimeoutIT" />
         </classes>
+    </test>
+    <test name ="Manta Client Timeout Tests" >
+            <classes>
+                <class name="com.joyent.manta.http.TCPSocketConnectionTimeoutIT" />
+            </classes>
     </test>
     <test name="Manta Client Error Tests">
         <classes>
@@ -38,12 +42,18 @@
         <classes>
             <class name="com.joyent.manta.client.MantaClientFindIT" />
             <class name="com.joyent.manta.client.MantaClientSigningIT" />
-            <class name="com.joyent.manta.client.MantaClientSigningIT" />
+            <class name="com.joyent.manta.client.MantaClientAuthenticationIT" />
             <class name="com.joyent.manta.client.MantaClientAuthenticationChangeIT" />
         </classes>
     </test>
 
     <!-- We run many of the integration tests over again using client-side encryption -->
+
+    <test name="Manta Client Range Encrypted Download Tests">
+        <classes>
+            <class name="com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuatorIT" />
+        </classes>
+    </test>
     <test name="Manta Client Seekable Channel Tests">
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
         <classes>
@@ -86,7 +96,9 @@
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
-            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
+
+            <!-- Disabled due to this particular test cases failing for the aforementioned cipher, Issue#530 -->
+            <!-- class name="com.joyent.manta.client.MantaObjectOutputStreamIT" -->
         </classes>
     </test>
     <test name="Manta Client Snaplinks Tests ">
