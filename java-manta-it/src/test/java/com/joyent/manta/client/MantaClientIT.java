@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -20,7 +21,9 @@ import com.joyent.test.util.MantaFunction;
 import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
@@ -57,25 +60,48 @@ public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
+    private Boolean bucketsEnabled = false;
+
     private MantaClient mantaClient;
 
     private String testPathPrefix;
 
+    private String bucketsTestPathPrefix;
+
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(@Optional Boolean usingEncryption,
+                            @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+
+        if(testType != null && testType.equals("buckets")) {
+            if(IntegrationTestHelper.verifyBucketsSupport(config, mantaClient)) {
+                bucketsEnabled = true;
+                bucketsTestPathPrefix = IntegrationTestHelper.setupBucketsPath(config, testName);
+                //When the buckets api is ready create the bucket here.
+                testPathPrefix = IntegrationTestHelper.setupBucketObjectBasePath(bucketsTestPathPrefix);
+            } else {
+                throw new SkipException("Buckets operations not supported by the server");
+            }
+        } else {
+            testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, testName);
+            mantaClient.putDirectory(testPathPrefix, true);
+        }
+
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        if(BooleanUtils.isTrue(bucketsEnabled)) {
+            IntegrationTestHelper.cleanupTestBucket(mantaClient, bucketsTestPathPrefix);
+        } else {
+            IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        }
     }
 
     @Test
