@@ -16,7 +16,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.Validate;
-import org.apache.http.HttpStatus;
 import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
@@ -125,7 +124,7 @@ public class MantaClientAuthenticationChangeIT {
                 MantaClientHttpResponseException.class,
                 () -> mantaClient.head(home + "/stor"));
 
-        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, forbidden.getStatusCode());
+        Assert.assertEquals(403, forbidden.getStatusCode());
 
         config.setNoAuth(false);
         config.reload();

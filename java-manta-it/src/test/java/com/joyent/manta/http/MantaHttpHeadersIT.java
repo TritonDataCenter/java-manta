@@ -18,7 +18,6 @@ import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -288,7 +287,7 @@ public class MantaHttpHeadersIT {
                 MantaClientHttpResponseException.class,
                 () -> mantaClient.delete(path, headers));
 
-        assertEquals(badIfMatchEx.getStatusCode(), HttpStatus.SC_PRECONDITION_FAILED);
+        assertEquals(badIfMatchEx.getStatusCode(), 412);
 
         // the object should still exist
         assertTrue(mantaClient.existsAndIsAccessible(path));
