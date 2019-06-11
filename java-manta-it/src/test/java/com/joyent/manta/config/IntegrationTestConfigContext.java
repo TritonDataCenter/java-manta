@@ -141,6 +141,10 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         return generateSuiteBasePath(config) + testBaseName + SEPARATOR;
     }
 
+    public static String generateBasePathWithoutSeparator(final ConfigContext config, final String testBaseName) {
+        return generateSuiteBasePath(config) + testBaseName;
+    }
+
     public static void cleanupTestDirectory(final MantaClient mantaClient, final String testPathPrefix) throws IOException {
         final Boolean skipCleanup = Boolean.valueOf(
                 ObjectUtils.firstNonNull(System.getenv("MANTA_IT_NO_CLEANUP"), System.getProperty("manta.it.no_cleanup")));

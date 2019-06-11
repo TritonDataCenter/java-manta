@@ -68,10 +68,10 @@ public class MantaJobBuilderIT {
         final MantaJobBuilder builder = mantaClient.jobBuilder();
 
         String jobName = String.format("job_%s", UUID.randomUUID());
-
-        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        String path3 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+       
+        String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        String path3 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
 
         mantaClient.put(path1, TEST_DATA);
         mantaClient.put(path2, TEST_DATA);
@@ -115,9 +115,9 @@ public class MantaJobBuilderIT {
 
         String jobName = String.format("job_%s", UUID.randomUUID());
 
-        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        String path3 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        String path3 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
 
         mantaClient.put(path1, TEST_DATA);
         mantaClient.put(path2, TEST_DATA);
@@ -158,9 +158,9 @@ public class MantaJobBuilderIT {
 
         String jobName = String.format("job_%s", UUID.randomUUID());
 
-        String path1 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        String path2 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
-        String path3 = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        String path3 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
 
         mantaClient.put(path1, TEST_DATA);
         mantaClient.put(path2, TEST_DATA);

@@ -151,7 +151,7 @@ public class MantaClientMetadataIT {
 
     @Test(groups = { "metadata", "directory" })
     public void canAddMetadataToDirectory() throws IOException {
-        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
         MantaMetadata metadata = new MantaMetadata();

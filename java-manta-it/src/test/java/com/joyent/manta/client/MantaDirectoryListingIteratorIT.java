@@ -48,7 +48,7 @@ public class MantaDirectoryListingIteratorIT {
     }
 
     public void isPagingCorrectly() throws IOException {
-        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
         final int MAX = 30;
@@ -96,7 +96,7 @@ public class MantaDirectoryListingIteratorIT {
 
     @Test
     public void isPagingConcurrentlyCorrectly() throws IOException {
-        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
         final int MAX = 300;
@@ -152,7 +152,7 @@ public class MantaDirectoryListingIteratorIT {
     }
 
     public void canListEmptyDirectory() throws IOException {
-        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);
 
         try (MantaDirectoryListingIterator itr = mantaClient.streamingIterator(dir, 10)) {
@@ -193,13 +193,13 @@ public class MantaDirectoryListingIteratorIT {
     }
 
     public void canListDirectoryUsingSmallPagingSize() throws IOException {
-        String dir = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
+        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         listDirectoryUsingSmallPagingSize(dir);
     }
 
     @Test(enabled = false) // Triggers server side bug: MANTA-2409
     public void canListDirectoryUsingSmallPagingSizeAndErrorProneName() throws IOException {
-        String dir = String.format("%s/%s/%s", testPathPrefix, UUID.randomUUID(), "- -!@#$%^&*()");
+        String dir = String.format("%s%s/%s", testPathPrefix, UUID.randomUUID(), "- -!@#$%^&*()");
         listDirectoryUsingSmallPagingSize(dir);
     }
 }
