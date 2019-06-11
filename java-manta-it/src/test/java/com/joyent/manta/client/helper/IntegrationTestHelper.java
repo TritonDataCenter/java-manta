@@ -2,10 +2,12 @@ package com.joyent.manta.client.helper;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import org.apache.commons.lang3.BooleanUtils;
+import org.testng.SkipException;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A helper class that contains methods to assist in the Integration testing of
@@ -16,35 +18,63 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IntegrationTestHelper {
 
-    public static String setupBucketsPath(final ConfigContext config, final String testName) {
-        String testPathPrefix = String.format("%s/buckets/%s", config.getMantaHomeDirectory(),
-                testName + UUID.randomUUID());
-        return testPathPrefix + MantaClient.SEPARATOR;
+    private static String setupBucketsPath(final ConfigContext config, final String testName) {
+        String bucketPathPrefix = String.format("%s%sbuckets%s%s", config.getMantaHomeDirectory(),
+                MantaClient.SEPARATOR, MantaClient.SEPARATOR, testName + UUID.randomUUID());
+        return bucketPathPrefix + MantaClient.SEPARATOR + "objects" + MantaClient.SEPARATOR;
     }
 
-    public static boolean verifyBucketsSupport(final ConfigContext config,
+    private static boolean verifyBucketsSupport(final ConfigContext config,
                                                final MantaClient client) {
-        AtomicBoolean isBucketsSupported = new AtomicBoolean();
+        boolean isBucketsSupported;
         try {
-            String path = String.format("%s/buckets", config.getMantaHomeDirectory());
+            String path = String.format("%s%sbuckets", config.getMantaHomeDirectory(),
+                    MantaClient.SEPARATOR);
             client.get(path);
-            isBucketsSupported.set(true);
+            isBucketsSupported = true;
         } catch (IOException io) {
-            isBucketsSupported.set(false);
+            isBucketsSupported = false;
         }
 
-        return isBucketsSupported.get();
+        return isBucketsSupported;
     }
 
-    public static String setupBucketObjectBasePath(final String bucketTestPathPrefix) {
-        return bucketTestPathPrefix + "objects" + MantaClient.SEPARATOR;
+    public static void cleanupTestBucketOrDirectory(final MantaClient client,
+                                          final String testPath) throws IOException {
+
+        String bucketObjectsSubstring = String.format("%sobjects%s", MantaClient.SEPARATOR,
+                MantaClient.SEPARATOR);
+        if (testPath.contains(bucketObjectsSubstring)) {
+            String bucketPath = testPath.substring(0, testPath.lastIndexOf(bucketObjectsSubstring));
+            //Delete bucket here
+        } else {
+            IntegrationTestConfigContext.cleanupTestDirectory(client, testPath);
+        }
     }
 
-    public static String setupBucketObjectBasePathWithoutSeparator(final String bucketTestPathPrefix) {
-        return bucketTestPathPrefix + "objects";
+    public static String setupTestPath(final ConfigContext config,
+                                       final MantaClient client,
+                                       final String testName,
+                                       final String testType) {
+        if ("buckets".equals(testType)) {
+            if (BooleanUtils.isTrue(verifyBucketsSupport(config, client))) {
+                return setupBucketsPath(config, testName);
+            } else {
+                throw new SkipException("Bucket operations not supported by the server");
+            }
+        }
+
+        return IntegrationTestConfigContext.generateBasePath(config, testName);
     }
 
-    public static void cleanupTestBucket(final MantaClient client, final String bucketPath) {
-        //Delete the bucket here
+    public static void createTestBucketOrDirectory(final MantaClient client,
+                                      final String testPath,
+                                      final String testType) throws IOException {
+        if ("buckets".equals(testType)) {
+            //Create bucket here
+        } else {
+            client.putDirectory(testPath, true);
+        }
+
     }
 }

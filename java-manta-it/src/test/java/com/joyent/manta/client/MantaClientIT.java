@@ -60,13 +60,9 @@ public class MantaClientIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private Boolean bucketsEnabled = false;
-
     private MantaClient mantaClient;
 
     private String testPathPrefix;
-
-    private String bucketsTestPathPrefix;
 
     @BeforeClass
     @Parameters({"usingEncryption", "testType"})
@@ -78,30 +74,15 @@ public class MantaClientIT {
         String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
 
-        if(testType != null && testType.equals("buckets")) {
-            if(IntegrationTestHelper.verifyBucketsSupport(config, mantaClient)) {
-                bucketsEnabled = true;
-                bucketsTestPathPrefix = IntegrationTestHelper.setupBucketsPath(config, testName);
-                //When the buckets api is ready create the bucket here.
-                testPathPrefix = IntegrationTestHelper.setupBucketObjectBasePath(bucketsTestPathPrefix);
-            } else {
-                throw new SkipException("Buckets operations not supported by the server");
-            }
-        } else {
-            testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, testName);
-            mantaClient.putDirectory(testPathPrefix, true);
-        }
-
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        if(BooleanUtils.isTrue(bucketsEnabled)) {
-            IntegrationTestHelper.cleanupTestBucket(mantaClient, bucketsTestPathPrefix);
-        } else {
-            IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
-        }
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test
