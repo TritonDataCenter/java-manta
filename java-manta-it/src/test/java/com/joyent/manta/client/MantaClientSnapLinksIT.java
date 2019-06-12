@@ -37,7 +37,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
-@Test(groups = "snaplinks")
+@Test(groups = {"snaplinks"})
 public class MantaClientSnapLinksIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(MantaClientSnapLinksIT.class);

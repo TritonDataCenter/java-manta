@@ -58,24 +58,28 @@ Run `mvn verify` from the project root to run all tests. Some Maven goals will n
 
 While the Java Cryptography Extensions are expected to be installed, it is
 possible to run a subset of the test suite by adding
-`-Dtestnames=Manta Client Error Tests,Manta Client Timeout Tests`, e.g
+`-DexcludedGroups=unlimited-crypto` or `-Dgroups=headers,error`, e.g.
 ```
-mvn test -Dtestnames=Manta Client Error Tests,Manta Client Timeout Tests
+mvn test -DexcludedGroups=unlimited-crypto
+mvn verify -Dgroups=headers,error
 ```
 
-Also, if we are running a defined TestNG testname, invoke
-`-Dtestname=testname`, e.g:
+Also, if we are running a defined TestNG group, invoke
+`-Dgroups=headers`, e.g:
 
 ```
-mvn clean verify -Dtestname=Manta Client Snaplinks Tests
+mvn clean verify -Dgroups=headers
 ```
 
 Note: Since we have transitioned from wildcard to explicit test definition, it is **essential**
 for engineers to add integration-tests in `testng-it.xml` file complying with the nature of their 
-corresponding test-names. For instance, if we create a new integration-test `ExampleHttpHeadersIT.java` 
-for headers, that test will be defined under:
+corresponding TestNG groups. For instance, if we create a new integration-test `ExampleHttpHeadersIT.java` 
+for `headers`, that test will be defined under:
 ```
     <test name="Manta Client Http Headers Tests">
+        <groups>
+            <define name="headers" />
+        </groups>
         <classes>
             <class name="com.joyent.manta.http.MantaHttpHeadersIT" />
             <class name="com.joyent.manta.http.ExampleHttpHeadersIT" />
