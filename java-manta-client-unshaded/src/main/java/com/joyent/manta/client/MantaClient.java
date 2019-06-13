@@ -1116,6 +1116,30 @@ public class MantaClient implements AutoCloseable {
     public boolean existsAndIsAccessible(final String path) {
         try {
             head(path);
+        } catch (MantaClientHttpResponseException e) {
+                if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_DOES_NOT_EXIST_ERROR)) {
+                    LOG.error("{} Directory invalid for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.ACCOUNT_DOES_NOT_EXIST_ERROR)) {
+                    LOG.error("{} Non-existent account for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.AUTHORIZATION_FAILED_ERROR)
+                    || e.getServerCode().equals(MantaErrorCode.INVALID_CREDENTIALS_ERROR)) {
+                    LOG.error("{} Invalid authorization credentials for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                    LOG.error("{} Unavailable Resource for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.INVALID_KEY_ID_ERROR)) {
+                    LOG.error("{} Invalid key-id for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.JOB_NOT_FOUND_ERROR)) {
+                    LOG.error("{} Non-existent Job Id for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.MULTIPART_UPLOAD_STATE_ERROR)) {
+                    LOG.error("{} Unavailable Resource for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.REQUEST_TIMEOUT_ERROR)) {
+                    LOG.error("{} Request time-out for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.INTERNAL_ERROR)) {
+                    LOG.error("{} Internal Server error for given path: {}", e.getMessage(), path);
+                } else if (e.getServerCode().equals(MantaErrorCode.SNAPLINKS_DISABLED_ERROR)) {
+                    LOG.error("{} Snaplinks disabled for given path: {}", e.getMessage(), path);
+                }
+            return false;
         } catch (IOException e) {
             return false;
         }
