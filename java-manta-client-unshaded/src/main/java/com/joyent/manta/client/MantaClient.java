@@ -896,6 +896,23 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
+     * Get the options associated with a Manta object.
+     *
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return The {@link MantaObjectResponse}.
+     * @throws IOException                                     If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     */
+    public MantaObjectResponse options(final String rawPath) throws IOException {
+        Validate.notBlank(rawPath, "Path must not be empty nor null");
+
+        String path = formatPath(rawPath);
+        final HttpResponse response = httpHelper.httpOptions(path);
+        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
+        return new MantaObjectResponse(path, headers);
+    }
+
+    /**
      * Return a stream of the contents of a directory in Manta as an {@link Iterator}.
      *
      * @param path The fully qualified path of the directory.

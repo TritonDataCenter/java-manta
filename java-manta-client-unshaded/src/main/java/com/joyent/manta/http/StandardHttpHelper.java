@@ -38,12 +38,13 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.ProtocolException;
 import org.apache.http.StatusLine;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -213,6 +214,16 @@ public class StandardHttpHelper implements HttpHelper {
 
         final HttpHead head = requestFactory.head(path);
         return executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
+    }
+
+    @Override
+    public HttpResponse httpOptions(final String path) throws IOException {
+        Validate.notNull(path, "Path must not be null");
+
+        LOGGER.debug("OPTIONS   {}", path);
+
+        final HttpOptions options = requestFactory.options(path);
+        return executeAndCloseRequest(options, "HEAD   {} response [{}] {} ");
     }
 
     @Override

@@ -26,17 +26,14 @@ public class IntegrationTestHelper {
 
     private static boolean verifyBucketsSupport(final ConfigContext config,
                                                final MantaClient client) {
-        boolean isBucketsSupported;
         try {
             String path = String.format("%s%sbuckets", config.getMantaHomeDirectory(),
                     MantaClient.SEPARATOR);
-            client.get(path);
-            isBucketsSupported = true;
+            client.options(path);
         } catch (IOException io) {
-            isBucketsSupported = false;
+            return false;
         }
-
-        return isBucketsSupported;
+        return true;
     }
 
     public static void cleanupTestBucketOrDirectory(final MantaClient client,
