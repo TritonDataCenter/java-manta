@@ -3,6 +3,8 @@ package com.joyent.manta.client.helper;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import org.apache.commons.lang3.BooleanUtils;
 import org.testng.SkipException;
 
@@ -20,18 +22,21 @@ public class IntegrationTestHelper {
 
     private static String setupBucketsPath(final ConfigContext config, final String testName) {
         String bucketPathPrefix = String.format("%s%sbuckets%s%s", config.getMantaHomeDirectory(),
-                MantaClient.SEPARATOR, MantaClient.SEPARATOR, testName + UUID.randomUUID());
+                MantaClient.SEPARATOR, MantaClient.SEPARATOR,
+                testName.toLowerCase() + UUID.randomUUID());
         return bucketPathPrefix + MantaClient.SEPARATOR + "objects" + MantaClient.SEPARATOR;
     }
 
     private static boolean verifyBucketsSupport(final ConfigContext config,
-                                               final MantaClient client) {
+                                               final MantaClient client) throws IOException {
         try {
             String path = String.format("%s%sbuckets", config.getMantaHomeDirectory(),
                     MantaClient.SEPARATOR);
             client.options(path);
-        } catch (IOException io) {
-            return false;
+        } catch (MantaClientHttpResponseException me) {
+            if (MantaErrorCode.RESOURCE_NOT_FOUND_ERROR.equals(me.getServerCode())) {
+                return false;
+            }
         }
         return true;
     }
@@ -52,7 +57,7 @@ public class IntegrationTestHelper {
     public static String setupTestPath(final ConfigContext config,
                                        final MantaClient client,
                                        final String testName,
-                                       final String testType) {
+                                       final String testType) throws IOException {
         if ("buckets".equals(testType)) {
             if (BooleanUtils.isTrue(verifyBucketsSupport(config, client))) {
                 return setupBucketsPath(config, testName);
