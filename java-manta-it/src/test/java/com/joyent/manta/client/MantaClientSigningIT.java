@@ -10,13 +10,17 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpStatus;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -31,12 +35,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -289,7 +287,7 @@ public class MantaClientSigningIT {
             conn.setReadTimeout(3000);
             conn.connect();
 
-            Assert.assertEquals(conn.getResponseCode(), HttpStatus.SC_OK);
+            Assert.assertEquals(conn.getResponseCode(), 200);
             Assert.assertEquals(IOUtils.toString(is, UTF_8), TEST_DATA);
         } finally {
             conn.disconnect();
