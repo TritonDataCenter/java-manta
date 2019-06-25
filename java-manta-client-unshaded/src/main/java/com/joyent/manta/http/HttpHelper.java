@@ -50,6 +50,15 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
     HttpResponse httpHead(String path) throws IOException;
 
     /**
+     * Executes a HTTP OPTIONS against the remote Manta API.
+     *
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @return Apache HTTP Client response object
+     * @throws IOException when there is a problem getting the object over the network
+     */
+    HttpResponse httpOptions(String path) throws IOException;
+
+    /**
      * Executes a HTTP GET against the remote Manta API.
      *
      * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz

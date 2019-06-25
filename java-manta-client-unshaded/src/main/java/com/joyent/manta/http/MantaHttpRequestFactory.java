@@ -23,6 +23,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.message.BasicHeader;
 
@@ -93,6 +94,17 @@ public class MantaHttpRequestFactory {
      */
     public HttpDelete delete(final String path) {
         final HttpDelete request = new HttpDelete(uriForPath(path));
+        prepare(request);
+        return request;
+    }
+
+    /**
+     * Convenience method used for building OPTIONS operations.
+     * @param path path to resource
+     * @return instance of configured {@link org.apache.http.client.methods.HttpRequestBase} object.
+     */
+    public HttpOptions options(final String path) {
+        final HttpOptions request = new HttpOptions(uriForPath(path));
         prepare(request);
         return request;
     }
