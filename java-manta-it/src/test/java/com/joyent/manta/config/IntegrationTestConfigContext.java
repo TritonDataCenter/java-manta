@@ -125,10 +125,6 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
     public static String generateBasePath(final ConfigContext config, final String testBaseName) {
         return generateSuiteBasePath(config) + testBaseName + SEPARATOR;
     }
-
-    public static String generateBucketsBasePath(final ConfigContext config, final String testBaseName) {
-        return generateSuiteBasePath(config) + testBaseName + SEPARATOR + "buckets" + SEPARATOR;
-    }
   
     public static String generateBasePathWithoutSeparator(final ConfigContext config, final String testBaseName) {
         return generateSuiteBasePath(config) + testBaseName;
