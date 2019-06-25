@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -223,7 +223,7 @@ public class StandardHttpHelper implements HttpHelper {
         LOGGER.debug("OPTIONS   {}", path);
 
         final HttpOptions options = requestFactory.options(path);
-        return executeAndCloseRequest(options, "HEAD   {} response [{}] {} ");
+        return executeAndCloseRequest(options, "OPTIONS   {} response [{}] {} ");
     }
 
     @Override

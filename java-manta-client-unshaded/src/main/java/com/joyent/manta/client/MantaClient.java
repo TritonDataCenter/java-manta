@@ -1008,9 +1008,9 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Get the options associated with a Manta object.
+     * Get the allowed methods associated with a Manta bucket.
      *
-     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param rawPath The fully qualified path of the object. i.e. /user/buckets
      * @return The {@link MantaObjectResponse}.
      * @throws IOException                                     If an IO exception has occurred.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.

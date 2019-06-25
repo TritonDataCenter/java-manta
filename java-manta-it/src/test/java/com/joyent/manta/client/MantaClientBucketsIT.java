@@ -32,25 +32,27 @@ public class MantaClientBucketsIT {
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(usingEncryption);
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format(SEPARATOR + config.getMantaUser() + SEPARATOR
-                + "buckets" + SEPARATOR + this.getClass().getSimpleName().toLowerCase());
+        testPathPrefix = String.format(config.getMantaBucketsDirectory() + "%s%s"
+                , SEPARATOR, this.getClass().getSimpleName().toLowerCase());
     }
 
     public void createAndDeleteBucket() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String bucketPath = testPathPrefix + name;
+        final boolean finished = mantaClient.createBucket(bucketPath);
 
-        final String bucketname = String.format(testPathPrefix + "bucket-100");
-        final boolean finished = mantaClient.createBucket(bucketname);
-        mantaClient.deleteBucket(bucketname);
+        mantaClient.deleteBucket(bucketPath);
         Assert.assertTrue(finished);
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketname));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
     }
 
     public void createBucketStartingWithUpperCase() throws IOException {
-        final String bucketName = String.format(testPathPrefix + "bucket-%s", UUID.randomUUID());
+        final String name = UUID.randomUUID().toString();
+        final String bucketPath = testPathPrefix + name;
         boolean failed = false;
 
         try {
-            final boolean finished = mantaClient.createBucket(bucketName);
+            final boolean finished = mantaClient.createBucket(bucketPath);
             Assert.assertFalse(finished);
         } catch (MantaClientHttpResponseException e) {
             if (e.getServerCode().equals(INVALID_BUCKET_NAME_ERROR)) {
@@ -59,15 +61,15 @@ public class MantaClientBucketsIT {
         }
 
         Assert.assertTrue(failed, "bucket-name doesn't comply with server rules");
-        mantaClient.deleteBucket(bucketName);
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketName));
+        mantaClient.deleteBucket(bucketPath);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
     }
 
     public void updateNonExistentBucketObjectMetadata() throws IOException {
-
-        final String bucketname = String.format("/ashwin.nair/buckets/MantaClientBucketsIT-%s", UUID.randomUUID());
-        final boolean finished = mantaClient.createBucket(bucketname);
-        mantaClient.deleteBucket(bucketname);
+        final String name = UUID.randomUUID().toString();
+        final String bucketPath = testPathPrefix + name;
+        final boolean finished = mantaClient.createBucket(bucketPath);
+        mantaClient.deleteBucket(bucketPath);
 
         Assert.assertTrue(finished);
     }

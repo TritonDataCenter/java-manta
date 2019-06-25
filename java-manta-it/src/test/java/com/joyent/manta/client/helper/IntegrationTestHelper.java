@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.client.helper;
 
 import com.joyent.manta.client.MantaClient;
@@ -11,27 +18,28 @@ import org.testng.SkipException;
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
+
 /**
  * A helper class that contains methods to assist in the Integration testing of
  * manta buckets functionality.
  *
  * @author <a href="https://github.com/1010sachin">Sachin Gupta</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
-
 public class IntegrationTestHelper {
 
     private static String setupBucketsPath(final ConfigContext config, final String testName) {
-        String bucketPathPrefix = String.format("%s%sbuckets%s%s", config.getMantaHomeDirectory(),
-                MantaClient.SEPARATOR, MantaClient.SEPARATOR,
-                testName.toLowerCase() + UUID.randomUUID());
-        return bucketPathPrefix + MantaClient.SEPARATOR + "objects" + MantaClient.SEPARATOR;
+        String bucketPathPrefix = String.format("%s%s%s", config.getMantaBucketsDirectory(),
+                SEPARATOR, testName.toLowerCase() + UUID.randomUUID());
+
+        return bucketPathPrefix + SEPARATOR + "objects" + SEPARATOR;
     }
 
     private static boolean verifyBucketsSupport(final ConfigContext config,
                                                final MantaClient client) throws IOException {
         try {
-            String path = String.format("%s%sbuckets", config.getMantaHomeDirectory(),
-                    MantaClient.SEPARATOR);
+            String path = config.getMantaBucketsDirectory();
             client.options(path);
         } catch (MantaClientHttpResponseException me) {
             if (MantaErrorCode.RESOURCE_NOT_FOUND_ERROR.equals(me.getServerCode())) {
@@ -43,12 +51,12 @@ public class IntegrationTestHelper {
 
     public static void cleanupTestBucketOrDirectory(final MantaClient client,
                                           final String testPath) throws IOException {
-
-        String bucketObjectsSubstring = String.format("%sobjects%s", MantaClient.SEPARATOR,
-                MantaClient.SEPARATOR);
+        String bucketObjectsSubstring = String.format("%sobjects%s", SEPARATOR,
+                SEPARATOR);
         if (testPath.contains(bucketObjectsSubstring)) {
             String bucketPath = testPath.substring(0, testPath.lastIndexOf(bucketObjectsSubstring));
             //Delete bucket here
+            client.deleteBucket(bucketPath);
         } else {
             IntegrationTestConfigContext.cleanupTestDirectory(client, testPath);
         }
@@ -74,9 +82,9 @@ public class IntegrationTestHelper {
                                       final String testType) throws IOException {
         if ("buckets".equals(testType)) {
             //Create bucket here
+            client.createBucket(testPath);
         } else {
             client.putDirectory(testPath, true);
         }
-
     }
 }
