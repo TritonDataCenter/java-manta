@@ -1,16 +1,36 @@
+/*
+ * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.client;
 
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaIOException;
+import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.joyent.manta.util.MantaUtils.generateBucketName;
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_BUCKET_NAME_ERROR;
+import static com.joyent.manta.exception.MantaErrorCode.BUCKET_EXISTS_ERROR;
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
+import static org.testng.Assert.*;
 
 /**
  * Tests for verifying buckets operations of {@link MantaClient}
@@ -19,6 +39,9 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  */
 @Test(groups = { "buckets" })
 public class MantaClientBucketsIT {
+
+    private static final String TEST_DATA = "Buckets, how you doing ?";
+
     private MantaClient mantaClient;
 
     private ConfigContext config;
@@ -32,45 +55,190 @@ public class MantaClientBucketsIT {
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(usingEncryption);
         mantaClient = new MantaClient(config);
-        testPathPrefix = String.format(config.getMantaBucketsDirectory() + "%s%s"
-                , SEPARATOR, this.getClass().getSimpleName().toLowerCase());
+        testPathPrefix = String.format(config.getMantaBucketsDirectory() + "%s", SEPARATOR);
     }
+
+    /*
+    @AfterClass
+    public void afterClass() throws IOException {
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
+    }
+    */
 
     public void createAndDeleteBucket() throws IOException {
-        final String name = UUID.randomUUID().toString();
+        final String name = generateBucketName(testPathPrefix);
         final String bucketPath = testPathPrefix + name;
-        final boolean finished = mantaClient.createBucket(bucketPath);
-
-        mantaClient.deleteBucket(bucketPath);
-        Assert.assertTrue(finished);
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
-    }
-
-    public void createBucketStartingWithUpperCase() throws IOException {
-        final String name = UUID.randomUUID().toString();
-        final String bucketPath = testPathPrefix + name;
-        boolean failed = false;
-
-        try {
-            final boolean finished = mantaClient.createBucket(bucketPath);
-            Assert.assertFalse(finished);
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(INVALID_BUCKET_NAME_ERROR)) {
-                failed = true;
-            }
-        }
-
-        Assert.assertTrue(failed, "bucket-name doesn't comply with server rules");
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
         mantaClient.deleteBucket(bucketPath);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
     }
 
-    public void updateNonExistentBucketObjectMetadata() throws IOException {
-        final String name = UUID.randomUUID().toString();
+    public void createAndOverwriteExistingBucket() throws IOException {
+        final String name = generateBucketName(testPathPrefix);
         final String bucketPath = testPathPrefix + name;
-        final boolean finished = mantaClient.createBucket(bucketPath);
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
+
+        //Create another bucket with same name
+        MantaAssert.assertResponseFailureStatusCode(409, BUCKET_EXISTS_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.createBucket(bucketPath));
+
+        // Deleting created bucket after verification is complete
+        mantaClient.deleteBucket(bucketPath);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    public void checkNonExistentBucket() {
+        final String name = generateBucketName(testPathPrefix);
+        final String bucketPath = testPathPrefix + name;
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+        Assert.assertThrows(MantaIOException.class, () -> mantaClient.deleteBucket(bucketPath));
+    }
+
+    public void createBucketWithUnderscores() throws IOException {
+        final String name = generateBucketName(testPathPrefix) + "___" + "754";
+        final String bucketPath = testPathPrefix + name;
+        verifyBucketNamingRestrictions(bucketPath);
+    }
+
+    public void createBucketEndingWithNonAlphaNumeric() throws IOException {
+        final String name = generateBucketName(testPathPrefix) + "-";
+        final String bucketPath = testPathPrefix + name;
+        verifyBucketNamingRestrictions(bucketPath);
+    }
+
+    public void createBucketWithUpperCaseCharacters() throws IOException {
+        final String name = generateBucketName(testPathPrefix).toUpperCase();
+        final String bucketPath = testPathPrefix + name;
+        verifyBucketNamingRestrictions(bucketPath);
+    }
+
+    public void createBucketWithSubsequentPeriods() throws IOException {
+        final String name = generateBucketName(testPathPrefix) + ".." + "118";
+        final String bucketPath = testPathPrefix + name;
+        verifyBucketNamingRestrictions(bucketPath);
+    }
+
+    public void createBucketWithFormattedIPAddress() throws IOException {
+        final String bucketPath = config.getMantaBucketsDirectory()
+                + SEPARATOR +"192.0.2.0";
+        verifyBucketNamingRestrictions(bucketPath);
+    }
+
+    public void createBucketWithoutFormattedIPAddress() throws IOException {
+        final String name = generateBucketName(testPathPrefix) + "172.25.1234.1";
+        final String bucketPath = testPathPrefix + name;
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
+        mantaClient.deleteBucket(bucketPath);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    public void createBucketWithErrorProneCharacters() throws IOException {
+        final String name = generateBucketName(testPathPrefix) + ".-";
+        final String bucketPath = testPathPrefix + name;
+        verifyBucketNamingRestrictions(bucketPath);
+    }
+
+    public void createBucketWithSmallAndLargeNames() throws IOException {
+        final String name = generateBucketName(testPathPrefix) + "wehaveaverylargetbucketnamecomingoutexceedingmaxlimit64646466165";
+        final String largeName = testPathPrefix + name;
+        final String smallName = String.format(config.getMantaBucketsDirectory()+"%s%s", SEPARATOR, "ab");
+        verifyBucketNamingRestrictions(largeName);
+        verifyBucketNamingRestrictions(smallName);
+    }
+
+    public void checkBucketObjectOperations() throws IOException {
+        final String name = generateBucketName(testPathPrefix);
+        final String bucketPath = testPathPrefix + name;
+        final String objectPath = generateBucketObjectPath(bucketPath) + UUID.randomUUID().toString();
+
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
+
+        mantaClient.put(objectPath, TEST_DATA);
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(bucketPath));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(objectPath));
+
+        mantaClient.delete(objectPath);
+        mantaClient.deleteBucket(bucketPath);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    public void checkConditionalDeleteForBucketObjects() throws IOException {
+        final String name = generateBucketName(testPathPrefix);
+        final String bucketPath = testPathPrefix + name;
+        final String objectPath = generateBucketObjectPath(bucketPath) + UUID.randomUUID().toString();
+
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
+
+        final MantaObjectResponse empty = mantaClient.put(objectPath, new byte[0]);
+        // the etag reversed should not be equal to the etag (so we can fail if-match on purpose)
+
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(bucketPath));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(objectPath));
+
+        assertNotEquals(StringUtils.reverse(empty.getEtag()), empty.getEtag());
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+
+        // fail on bad if-match
+        headers.setIfMatch(StringUtils.reverse(empty.getEtag()));
+        final MantaClientHttpResponseException badIfMatchEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(objectPath, headers));
+
+        assertEquals(badIfMatchEx.getStatusCode(), HttpStatus.SC_PRECONDITION_FAILED);
+
+        // the object should still exist
+        assertTrue(mantaClient.existsAndIsAccessible(objectPath));
+
+        // set the correct If-Match header
+        headers.setIfMatch(empty.getEtag());
+        mantaClient.delete(objectPath, headers);
         mantaClient.deleteBucket(bucketPath);
 
-        Assert.assertTrue(finished);
+        // the object should not exist
+        assertFalse(mantaClient.existsAndIsAccessible(objectPath));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    public void canSetDurabilityForBucketObjects() throws IOException {
+        final String name = generateBucketName(testPathPrefix);
+        final String bucketPath = testPathPrefix + name;
+        final String objectPath = generateBucketObjectPath(bucketPath) + UUID.randomUUID().toString();
+
+        assertTrue(mantaClient.createBucket(bucketPath));
+
+        final int durability = 3;
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        headers.setDurabilityLevel(durability);
+
+        mantaClient.put(objectPath, TEST_DATA, headers);
+
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(bucketPath));
+        Assert.assertTrue(mantaClient.existsAndIsAccessible(objectPath));
+
+        MantaObject object = mantaClient.get(objectPath);
+        MantaHttpHeaders actualHeaders = object.getHttpHeaders();
+        assertEquals(actualHeaders.getDurabilityLevel().intValue(), durability,
+                "Durability not set to value on put");
+        mantaClient.delete(objectPath);
+        mantaClient.deleteBucket(bucketPath);
+
+        // the object should not exist
+        assertFalse(mantaClient.existsAndIsAccessible(objectPath));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    // TEST UTILITY METHODS
+
+    private void verifyBucketNamingRestrictions(final String bucketPath) throws IOException {
+        MantaAssert.assertResponseFailureStatusCode(422, INVALID_BUCKET_NAME_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.createBucket(bucketPath));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    private String generateBucketObjectPath(final String bucketPath) {
+        return bucketPath + MantaUtils.formatPath(SEPARATOR + "objects"
+                                + SEPARATOR);
     }
 }

@@ -7,7 +7,6 @@
  */
 package com.joyent.manta.config;
 
-import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;

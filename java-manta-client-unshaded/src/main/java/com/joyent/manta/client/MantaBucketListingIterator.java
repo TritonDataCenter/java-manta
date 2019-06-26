@@ -69,7 +69,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     static final String DEFAULT_PREFIX = "";
 
     /**
-     * Boolean value indicating whether we have an ordered bucket listing
+     * Boolean value indicating whether we have an ordered bucket listing.
      */
     private final boolean isSorted;
 

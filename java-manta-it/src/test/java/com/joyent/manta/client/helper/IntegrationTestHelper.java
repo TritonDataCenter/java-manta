@@ -41,8 +41,8 @@ public class IntegrationTestHelper {
         try {
             String path = config.getMantaBucketsDirectory();
             client.options(path);
-        } catch (MantaClientHttpResponseException me) {
-            if (MantaErrorCode.RESOURCE_NOT_FOUND_ERROR.equals(me.getServerCode())) {
+        } catch (MantaClientHttpResponseException e) {
+            if (MantaErrorCode.RESOURCE_NOT_FOUND_ERROR.equals(e.getServerCode())) {
                 return false;
             }
         }
@@ -56,7 +56,14 @@ public class IntegrationTestHelper {
         if (testPath.contains(bucketObjectsSubstring)) {
             String bucketPath = testPath.substring(0, testPath.lastIndexOf(bucketObjectsSubstring));
             //Delete bucket here
-            client.deleteBucket(bucketPath);
+            try {
+                client.deleteBucket(bucketPath);
+            } catch (MantaClientHttpResponseException e) {
+                if (MantaErrorCode.BUCKET_NOT_EMPTY_ERROR.equals(e.getServerCode())) {
+                    e.setContextValue("Cleanup of non-empty test bucket attempted at:", testPath);
+                    throw e;
+                }
+            }
         } else {
             IntegrationTestConfigContext.cleanupTestDirectory(client, testPath);
         }

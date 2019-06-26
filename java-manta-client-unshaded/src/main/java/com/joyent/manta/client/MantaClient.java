@@ -525,8 +525,8 @@ public class MantaClient implements AutoCloseable {
             } catch (MantaClientHttpResponseException e) {
 
                 // Attempting to delete a non-empty bucket will result in an error
-                if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_FOUND_ERROR) ||
-                        (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR))) {
+                if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_FOUND_ERROR)
+                        || (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR))) {
                     final MantaIOException mioe = new MantaIOException("Unable to delete bucket", e);
                     mioe.setContextValue("bucket", path);
                     throw mioe;
