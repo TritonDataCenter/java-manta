@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Test method listener for determining which tests will actually run
  * when we invoke mvn verify -Dit.dryRun=true. This test listener has
- * been introduced to leverage TestNG feature @since 6.8.21 of determining
+ * been introduced to leverage TestNG feature since version 6.8.21 of determining
  * order of tests without executing them.
  *
  * Enabled by: -Dit.dryRun=true

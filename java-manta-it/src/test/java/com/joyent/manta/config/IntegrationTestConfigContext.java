@@ -60,7 +60,6 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
      */
     public IntegrationTestConfigContext(final String encryptionCipher) {
         this(encryptionCipher != null, encryptionCipher);
-
     }
 
     /**

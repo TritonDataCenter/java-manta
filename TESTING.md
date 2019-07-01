@@ -71,10 +71,10 @@ Also, if we are running a defined TestNG group, invoke
 mvn clean verify -Dgroups=headers
 ```
 
-Note: Since we have transitioned from wildcard to explicit test definition, it is **essential**
-for engineers to add integration-tests in `testng-it.xml` file complying with the nature of their 
-corresponding TestNG groups. For instance, if we create a new integration-test `ExampleHttpHeadersIT.java` 
-for `headers`, that test will be defined under:
+Note: Since we have transitioned from wildcard to explicit test definition (i.e `package-level` 
+to `class-level` hierarchy), engineers are required to add integration-tests in `testng-it.xml` file 
+complying with the nature of their corresponding TestNG groups. For instance, if we create a new 
+integration-test `ExampleHttpHeadersIT.java` for `headers`, that test will be defined under:
 ```
     <test name="Manta Client Http Headers Tests">
         <groups>
@@ -96,7 +96,7 @@ parameters::
 mvn verify -Dit.dryRun=true
 ```
 	
-Note: This has not yet been expanded to unit tests.
+Note: This feature is invalid for unit tests.
 	
 # Writing Tests
 
