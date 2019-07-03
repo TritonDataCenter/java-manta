@@ -32,7 +32,7 @@ import java.time.Instant;
  *
  * @author <a href="https://github.com/dekobon">Ashwin A Nair</a>
  */
-@Test
+@Test(groups = {"timeout"})
 public class TCPSocketConnectionTimeoutIT {
     private MantaClient mantaClient;
 

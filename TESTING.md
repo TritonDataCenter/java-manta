@@ -54,16 +54,50 @@ property or `MANTA_IT_NO_CLEANUP` environment variable.
 
 # Running Tests
 
-Run `mvn verify` from the project root to run all tests. Some Maven goals will
-not work
+Run `mvn verify` from the project root to run all tests. Some Maven goals will not work.
 
 While the Java Cryptography Extensions are expected to be installed, it is
-possible torun a subset of the test suite by adding
-`-DexcludedGroups=unlimited-crypto`, e.g.:
+possible to run a subset of the test suite by adding
+`-DexcludedGroups=unlimited-crypto` or `-Dgroups=headers,error`, e.g.
 ```
 mvn test -DexcludedGroups=unlimited-crypto
+mvn verify -Dgroups=headers,error
 ```
 
+Also, if we are running a defined TestNG group, invoke
+`-Dgroups=headers`, e.g:
+
+```
+mvn clean verify -Dgroups=headers
+```
+
+Note: Since we have transitioned from wildcard to explicit test definition (i.e `package-level` 
+to `class-level` hierarchy), engineers are required to add integration-tests in `testng-it.xml` file 
+complying with the nature of their corresponding TestNG groups. For instance, if we create a new 
+integration-test `ExampleHttpHeadersIT.java` for `headers`, that test will be defined under:
+```
+    <test name="Manta Client Http Headers Tests">
+        <groups>
+            <define name="headers" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.http.MantaHttpHeadersIT" />
+            <class name="com.joyent.manta.http.ExampleHttpHeadersIT" />
+        </classes>
+    </test>
+```
+
+## Dry run
+	
+The following invocation will print a list of which integration tests would run and their relevant
+parameters::
+	
+```
+mvn verify -Dit.dryRun=true
+```
+	
+Note: This feature is invalid for unit tests.
+	
 # Writing Tests
 
 The `java-manta-client` module contains unit tests. Integration tests generally
