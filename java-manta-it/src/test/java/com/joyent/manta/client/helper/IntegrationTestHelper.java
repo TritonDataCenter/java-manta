@@ -13,6 +13,8 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import org.apache.commons.lang3.BooleanUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
 
 import java.io.IOException;
@@ -28,12 +30,19 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class IntegrationTestHelper {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(IntegrationTestHelper.class);
+
+    public static final String bucketObjectsSubstring = String.format("%sobjects%s"
+            , SEPARATOR, SEPARATOR);
 
     private static String setupBucketsPath(final ConfigContext config, final String testName) {
         String bucketPathPrefix = String.format("%s%s%s", config.getMantaBucketsDirectory(),
                 SEPARATOR, testName.toLowerCase() + UUID.randomUUID());
 
-        return bucketPathPrefix + SEPARATOR + "objects" + SEPARATOR;
+        return bucketPathPrefix + bucketObjectsSubstring;
     }
 
     private static boolean verifyBucketsSupport(final ConfigContext config,
@@ -43,23 +52,22 @@ public class IntegrationTestHelper {
             client.options(path);
         } catch (MantaClientHttpResponseException e) {
             if (MantaErrorCode.RESOURCE_NOT_FOUND_ERROR.equals(e.getServerCode())) {
-                return false;
+                LOG.info("Buckets not supported in current Manta: {}", e.getStatusMessage());
             }
+            return false;
         }
         return true;
     }
 
     public static void cleanupTestBucketOrDirectory(final MantaClient client,
                                           final String testPath) throws IOException {
-        String bucketObjectsSubstring = String.format("%sobjects%s", SEPARATOR,
-                SEPARATOR);
         if (testPath.contains(bucketObjectsSubstring)) {
-            String bucketPath = testPath.substring(0, testPath.lastIndexOf(bucketObjectsSubstring));
+            final String bucketPath = parseBucketPath(testPath);
             //Delete bucket here
             try {
                 client.deleteBucket(bucketPath);
             } catch (MantaClientHttpResponseException e) {
-                if (MantaErrorCode.BUCKET_NOT_EMPTY_ERROR.equals(e.getServerCode())) {
+                if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR)) {
                     e.setContextValue("Cleanup of non-empty test bucket attempted at:", testPath);
                     throw e;
                 }
@@ -89,9 +97,14 @@ public class IntegrationTestHelper {
                                       final String testType) throws IOException {
         if ("buckets".equals(testType)) {
             //Create bucket here
-            client.createBucket(testPath);
+            final String bucketPath = parseBucketPath(testPath);
+            client.createBucket(bucketPath);
         } else {
             client.putDirectory(testPath, true);
         }
+    }
+
+    private static String parseBucketPath(final String testPath) {
+            return testPath.substring(0, testPath.lastIndexOf(bucketObjectsSubstring));
     }
 }

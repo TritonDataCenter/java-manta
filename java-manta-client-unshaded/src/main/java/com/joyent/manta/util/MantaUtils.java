@@ -390,7 +390,7 @@ public final class MantaUtils {
         Validate.notEmpty(bucketPath, "Path to Bucket must not be null or empty");
 
         final String[] prefixes = MantaUtils.prefixPaths(bucketPath);
-        if ((!prefixes[1].contains("buckets"))) {
+        if (!prefixes[1].contains("buckets")) {
             throw new IllegalArgumentException(
                     "Method was not used in the buckets directory");
         }

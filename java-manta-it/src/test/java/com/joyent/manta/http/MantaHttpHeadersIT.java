@@ -10,6 +10,7 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -21,6 +22,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -65,19 +68,24 @@ public class MantaHttpHeadersIT {
             "secondary");
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(@Optional Boolean usingEncryption,
+                            @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext();
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
-    public void cleanup() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+    public void afterClass() throws IOException {
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public void cantSetUnknownTags() throws IOException {
@@ -90,6 +98,9 @@ public class MantaHttpHeadersIT {
 
         MantaAssert.assertResponseFailureStatusCode(409, INVALID_ROLE_TAG_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.put(path, TEST_DATA, headers));
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canSetSingleRoleTag() throws IOException {
@@ -125,6 +136,9 @@ public class MantaHttpHeadersIT {
                                        asString(roles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canSetMultipleRoleTags() throws IOException {
@@ -162,6 +176,9 @@ public class MantaHttpHeadersIT {
                     asString(roles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canOverwriteRoleTags() throws IOException {
@@ -216,6 +233,9 @@ public class MantaHttpHeadersIT {
                                        asString(updatedRoles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canClearRoles() throws IOException {
@@ -255,6 +275,9 @@ public class MantaHttpHeadersIT {
                                        asString(actualUpdatedRoles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canSetDurability() throws IOException {
@@ -270,6 +293,9 @@ public class MantaHttpHeadersIT {
         MantaHttpHeaders actualHeaders = object.getHttpHeaders();
         Assert.assertEquals(actualHeaders.getDurabilityLevel().intValue(), durability,
                 "Durability not set to value on put");
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canFailToDeleteDirectoryOnBadIfMatch() throws IOException {

@@ -676,6 +676,8 @@ public class MantaClient implements AutoCloseable {
                     break;
                 } else if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
                     continue;
+                } else if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR)) {
+                    continue;
                 }
 
                 MantaIOException mioe = new MantaIOException("Unable to delete path", e);
@@ -710,24 +712,6 @@ public class MantaClient implements AutoCloseable {
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String rawPath) throws IOException {
-        Validate.notBlank(rawPath, "rawPath must not be blank");
-
-        String path = formatPath(rawPath);
-        final HttpResponse response = httpHelper.httpGet(path);
-        final MantaHttpHeaders headers = new MantaHttpHeaders(response.getAllHeaders());
-        return new MantaObjectResponse(path, headers);
-    }
-
-    /**
-     * Get the metadata for a Manta bucket. The difference with this method vs head() is
-     * that the request being made against the Manta API is done via a GET.
-     *
-     * @param rawPath The fully qualified path of the bucket. i.e. /user/stor/foo/bar/baz
-     * @return The {@link MantaObjectResponse}.
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
-     */
-    public MantaObjectResponse getBucket(final String rawPath) throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
 
         String path = formatPath(rawPath);
@@ -1119,45 +1103,6 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Return a stream of the contents of a bucket in Manta.
-     *
-     * @param path The fully qualified path of the directory.
-     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the directory.
-     * @throws IOException thrown when there is a problem getting the listing over the network
-     */
-    public Stream<MantaObject> listBucketObjects(final String path) throws IOException {
-        final MantaBucketListingIterator itr = streamingBucketIterator(path);
-
-        try {
-            if (!itr.hasNext()) {
-                itr.close();
-                return Stream.empty();
-            }
-        } catch (UncheckedIOException e) {
-            if (e.getCause() instanceof MantaClientHttpResponseException) {
-                throw e.getCause();
-            } else {
-                throw e;
-            }
-        }
-
-        final int additionalCharacteristics = Spliterator.CONCURRENT
-                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
-
-        Stream<Map<String, Object>> backingStream =
-                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                        itr, additionalCharacteristics), false);
-
-        Stream<MantaObject> stream = backingStream
-                .map(MantaObjectConversionFunction.INSTANCE)
-                .onClose(itr::close);
-
-        danglingStreams.add(stream);
-
-        return stream;
-    }
-
-    /**
      * <p>Finds all directories and files recursively under a given path. Since
      * this method returns a {@link Stream}, consumers can add their own
      * additional filtering based on path, object type or other criteria.</p>
@@ -1255,6 +1200,115 @@ public class MantaClient implements AutoCloseable {
 
         /* Due to the way we concatenate the results will be quite out of order
          * if a consumer needs sorted results that is their responsibility. */
+            final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
+
+            danglingStreams.add(stream);
+
+            return stream;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Stream.empty();
+        } catch (ExecutionException e) {
+            throw new MantaException(e.getCause());
+        }
+    }
+
+    /**
+     * <p>Finds all bucket objects under a given path. Since
+     * this method returns a {@link Stream}, consumers can add their own
+     * additional filtering based on object type or other criteria.</p>
+     *
+     * <p>Parallelism settings are set by JDK system property:
+     * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
+     *
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
+     * safe if other operations are performed on the bucket path while
+     * it is running.</p>
+     *
+     * @param path bucket path
+     * @return A unsorted {@link Stream} of {@link MantaObject}
+     *         instances representing all contents of bucket.
+     */
+    public Stream<MantaObject> findBucketObject(final String path) {
+        return findBucketObject(path, null);
+    }
+
+    /**
+     * <p>Finds all bucket objects under a given path. Since
+     * this method returns a {@link Stream}, consumers can add their own
+     * additional filtering based on object type or other criteria.</p>
+     *
+     * <p>Parallelism settings are set by JDK system property:
+     * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
+     *
+     * <p>When using a filter with this method, if the filter matches a directory,
+     * then all subdirectory results for that directory will be excluded. If you
+     * want to perform a match against all results, then use {@link #find(String)}
+     * and then filter on the stream returned.</p>
+     *
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
+     * safe if other operations are performed on the bucket path while
+     * it is running.</p>
+     *
+     * @param path directory path
+     * @param filter predicate class used to filter all results returned
+     * @return A recursive unsorted {@link Stream} of {@link MantaObject}
+     *         instances representing the contents of all subdirectories.
+     */
+    public Stream<MantaObject> findBucketObject(final String path,
+                                    final Predicate<? super MantaObject> filter) {
+        /* We read directly from the iterator here to reduce the total stack
+         * frames and to reduce the amount of abstraction to a minimum.
+         *
+         * Within this loop, we store all of the objects found in memory so
+         * that we can later query find() methods for the directory objects
+         * in parallel. */
+        final Stream.Builder<MantaObject> objectBuilder = Stream.builder();
+        final Stream.Builder<MantaObject> dirBuilder = Stream.builder();
+
+        try (MantaBucketListingIterator itr = streamingBucketIterator(path)) {
+            while (itr.hasNext()) {
+                final Map<String, Object> item = itr.next();
+                final MantaObject obj = MantaObjectConversionFunction.INSTANCE.apply(item);
+
+                /* We take a predicate as a method parameter because it allows
+                 * us to filter at the highest level within this iterator. If
+                 * we just passed the stream as is back to the user, then
+                 * they would have to filter the results *after* all of the
+                 * HTTP requests were made. This way the filter can help limit
+                 * the total number of HTTP requests made to Manta. */
+                if (filter == null || filter.test(obj)) {
+                    objectBuilder.accept(obj);
+
+                    if (obj.isDirectory()) {
+                        dirBuilder.accept(obj);
+                    }
+                }
+            }
+        }
+
+        /* All objects within this directory should be included in the results,
+         * so we have a stream stored here that will later be concatenated. */
+        final Stream<MantaObject> objectStream = objectBuilder.build();
+
+        /* Directories are processed in parallel because it is the only unit
+         * within our abstractions that can be properly done in parallel.
+         * MantaDirectoryListingIterator forces all paging of directory
+         * listings to be sequential requests. However, it works fine to
+         * run multiple MantaDirectoryListingIterator instances per request.
+         * That is exactly what we are doing here using streams which is
+         * allowing us to do the recursive calls in a lazy fashion.
+         *
+         * From a HTTP request perspective, this means that only the listing for
+         * this current highly directory is performed and no other listing
+         * will be performed until the stream is read.
+         */
+        try {
+            final Stream<MantaObject> dirStream = findForkJoinPool.submit(() ->
+                    dirBuilder.build().parallel().flatMap(obj -> find(obj.getPath(), filter))).get();
+
+            /* Due to the way we concatenate the results will be quite out of order
+             * if a consumer needs sorted results that is their responsibility. */
             final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
 
             danglingStreams.add(stream);

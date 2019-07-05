@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
@@ -50,24 +51,29 @@ public class MantaClientPutIT {
     private MantaClient mantaClient;
 
     private String testPathPrefix;
+
     private Boolean usingEncryption;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-        this.usingEncryption = usingEncryption;
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(@Optional Boolean usingEncryption,
+                            @Optional String testType) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
-    @AfterClass
+    /*@AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
-    }
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
+    }*/
 
     @Test
     public final void testPutWithStringUTF8() throws IOException {
@@ -85,6 +91,8 @@ public class MantaClientPutIT {
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -101,6 +109,8 @@ public class MantaClientPutIT {
             Assert.assertEquals(response.getPath(), path, "path not returned as written");
             Assert.assertEquals(object.getPath(), path, "path not returned as written");
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -119,6 +129,8 @@ public class MantaClientPutIT {
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -141,6 +153,8 @@ public class MantaClientPutIT {
                 byte[] actualBytes = IOUtils.readFully(in, (int) localFile.length());
                 AssertJUnit.assertArrayEquals(expectedBytes, actualBytes);
             }
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -156,6 +170,8 @@ public class MantaClientPutIT {
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             Assert.assertFalse(testDataInputStream.markSupported());
             mantaClient.put(path, testDataInputStream);
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -169,6 +185,8 @@ public class MantaClientPutIT {
         final int length = 20 * 1024;
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             mantaClient.put(path, testDataInputStream, length, null, null);
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -182,6 +200,8 @@ public class MantaClientPutIT {
         final int length = mantaClient.getContext().getUploadBufferSize() + 1024;
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             mantaClient.put(path, testDataInputStream, length, null, null);
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -203,6 +223,8 @@ public class MantaClientPutIT {
             byte[] actualBytes = IOUtils.readFully(object, length);
             Assert.assertTrue(actualBytes.length > 0);
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -220,6 +242,8 @@ public class MantaClientPutIT {
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -237,6 +261,8 @@ public class MantaClientPutIT {
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -269,6 +295,8 @@ public class MantaClientPutIT {
                         "Plaintext content type was leaked");
             }
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -287,6 +315,9 @@ public class MantaClientPutIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded file didn't match expectation");
+
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -307,6 +338,9 @@ public class MantaClientPutIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, content,
                 "Uploaded file didn't match expectation");
+
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -326,6 +360,9 @@ public class MantaClientPutIT {
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded file didn't match expectation");
         Assert.assertEquals(response.getPath(), path, "path returned as written");
+
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -351,6 +388,8 @@ public class MantaClientPutIT {
                 Assert.assertTrue(Arrays.equals(actual, expected),
                         "Uploaded file isn't the same as actual file");
             }
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
