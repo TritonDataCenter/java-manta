@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-@Test
+@Test(groups = {"expensive" })
 @SuppressWarnings("Duplicates")
 public class ServerSideMultipartManagerIT {
     private MantaClient mantaClient;
@@ -91,6 +91,7 @@ public class ServerSideMultipartManagerIT {
         }
     }
 
+    @Test(groups = { "expensive" })
     public final void canListUploadsInProgress() throws IOException {
         final String name = UUID.randomUUID().toString();
         final String path = testPathPrefix + name;
