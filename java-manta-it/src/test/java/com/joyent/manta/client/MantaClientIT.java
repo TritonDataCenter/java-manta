@@ -58,11 +58,10 @@ public class MantaClientIT {
 
     private final String testPathPrefix;
 
-    @ Parameters({"encryptionCipher", "testType"})
-    public MantaClientIT(final @Optional String encryptionCipher) {
+    @Parameters({"encryptionCipher", "testType"})
+    public MantaClientIT(final @Optional String encryptionCipher, final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
         String testName = this.getClass().getSimpleName();
 
@@ -72,7 +71,8 @@ public class MantaClientIT {
     }
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
         IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
