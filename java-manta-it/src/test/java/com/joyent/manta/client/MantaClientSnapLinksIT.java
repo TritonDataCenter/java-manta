@@ -32,7 +32,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * {@link MantaClientSnapLinksIT#putSnapLinkAndSkipIfUnsupported(String, String)} will skip this integration-test from running.
  * </p>
  * <p>Remember to also pass system properties for client configuration (manta.user/etc.) or set the values in the
- * environment (MANTA_USER/etc).
+ * environment (MANTA_USER/etc). Note: Snaplinks are disabled for the Manta Buckets environment.
  * </p>
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
@@ -50,7 +50,7 @@ public class MantaClientSnapLinksIT {
 
     @BeforeClass
     @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    public void beforeClass(final @Optional Boolean usingEncryption) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);

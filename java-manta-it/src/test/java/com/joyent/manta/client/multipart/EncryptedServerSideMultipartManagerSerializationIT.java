@@ -39,6 +39,7 @@ import static org.testng.Assert.fail;
 /**
  * Tests for verifying the behavior of {@link com.joyent.manta.serialization.EncryptedMultipartSerializer}
  * and {@link EncryptedServerSideMultipartManager} with {@link MantaClient}.
+ * <p>Note: Multipart Uploads are disabled for the Manta Buckets environment.</p>
  */
 @Test(groups = {"encrypted"})
 @SuppressWarnings("Duplicates")

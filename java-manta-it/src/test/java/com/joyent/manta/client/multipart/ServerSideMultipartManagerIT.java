@@ -37,6 +37,10 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+/**
+ * Tests the basic functionality of the {@link ServerSideMultipartManager} class.
+ * <p> Note: Multipart Uploads are disabled for the Manta Buckets environment.</p>
+ */
 @Test(groups = {"expensive" })
 @SuppressWarnings("Duplicates")
 public class ServerSideMultipartManagerIT {

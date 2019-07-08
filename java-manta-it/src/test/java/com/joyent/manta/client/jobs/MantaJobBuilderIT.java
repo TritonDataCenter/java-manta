@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * Tests the execution of Manta compute jobs using the builder fluent interface.
+ * <p>Note: Jobs are disabled for the Manta Buckets environment.</p>
  */
 @Test
 public class MantaJobBuilderIT {

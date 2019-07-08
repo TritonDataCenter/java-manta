@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 /**
  * Tests the execution of Manta compute jobs.
+ * <p>Note: Jobs are disabled for the Manta Buckets environment.</p>
  */
 @Test(groups = { "expensive" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {

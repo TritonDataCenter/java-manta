@@ -48,6 +48,7 @@ import static org.testng.Assert.assertTrue;
 /**
  * Tests for verifying the behavior of {@link EncryptedServerSideMultipartManager} with
  * {@link MantaClient}.
+ * <p>Note: Multipart Uploads are disabled for the Manta Buckets environment.</p>
  */
 @Test(groups = {"encrypted", "expensive"})
 @SuppressWarnings("Duplicates")
