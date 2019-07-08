@@ -138,16 +138,6 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
     public static String generateBasePath(final ConfigContext config, final String testBaseName) {
         return generateSuiteBasePath(config) + testBaseName + SEPARATOR;
     }
-
-    public static String generateBucketsSuiteBasePath(final ConfigContext config) {
-        final String integrationTestBase = ObjectUtils.firstNonNull(
-                System.getenv("MANTA_IT_PATH"),
-                System.getProperty("manta.it.path"),
-                String.format("%s/buckets/java-manta-integration-tests/%s/",
-                        config.getMantaHomeDirectory(),
-                        suiteRunId));
-        return integrationTestBase;
-    }
   
     public static String generateBasePathWithoutSeparator(final ConfigContext config, final String testBaseName) {
         return generateSuiteBasePath(config) + testBaseName;

@@ -98,6 +98,10 @@ Known edge cases and other topics are covered in [the FAQ](/FAQ.md).
 Contributions are welcome! Please read the [CONTRIBUTING.md](/CONTRIBUTING.md) document for details
 on getting started.
 
+### Buckets
+
+Please refer to the [buckets documentation](/BUCKETS.md).
+
 ## Developing
 
 There are portions of the SDK that are somewhat complex or fiddly. Please read the [DEVELOPING.md](/DEVELOPING.md) 
