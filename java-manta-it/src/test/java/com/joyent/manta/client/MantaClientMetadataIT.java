@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,26 +24,27 @@ import java.util.UUID;
 
 /**
  * Tests for verifying the behavior of metadata with {@link MantaClient}.
- *
- * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
-@Test( groups = { "metadata" })
+@Test(groups = {"metadata"})
 public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private MantaClient mantaClient;
+    private final MantaClient mantaClient;
 
-    private String testPathPrefix;
+    private final String testPathPrefix;
 
-    @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"encryptionCipher"})
+    public MantaClientMetadataIT(final @Optional String encryptionCipher) {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+    }
+
+    @BeforeClass
+    public void beforeClass() throws IOException {
         mantaClient.putDirectory(testPathPrefix, true);
     }
 
@@ -148,7 +149,7 @@ public class MantaClientMetadataIT {
                 String.format("Actual metadata: %s", get.getMetadata()));
     }
 
-    @Test(groups = { "metadata", "directory" })
+    @Test
     public void canAddMetadataToDirectory() throws IOException {
         String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.putDirectory(dir);

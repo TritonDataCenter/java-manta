@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,7 +52,7 @@ import static org.testng.Assert.fail;
 /* Tests are disabled because functionality is obsolete and overall test runtime
  * is very long and expensive. */
 @Deprecated
-@Test(enabled = false)
+@Test(groups = { "expensive" }, enabled = false)
 public class JobsMultipartManagerIT {
     private MantaClient mantaClient;
     private JobsMultipartManager multipart;

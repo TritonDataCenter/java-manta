@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,6 +10,8 @@ package com.joyent.test.util;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.ISuite;
@@ -32,8 +34,18 @@ public class MantaPathSuiteListener implements ISuiteListener {
 
     @Override
     public void onFinish(ISuite suite) {
+        LOG.info("Expected test count: " + TestListingInterceptor.getObservedTestCount());
+
         MantaClient mantaClient = new MantaClient(config);
         String path = IntegrationTestConfigContext.generateSuiteBasePath(config);
+
+        if (ObjectUtils.firstNonNull(
+                BooleanUtils.toBoolean(System.getProperty("it.dryRun")),
+                false)) {
+            LOG.warn("Skipping suite cleanup since dry-run is enabled.");
+            return;
+        }
+
         try {
             if (mantaClient.isDirectoryEmpty(path)) {
                 LOG.info("Removing base suite path: {}", path);

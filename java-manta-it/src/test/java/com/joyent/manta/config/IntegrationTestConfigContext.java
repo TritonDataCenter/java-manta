@@ -28,6 +28,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * and allows for TestNG parameters to be loaded.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
 
@@ -50,6 +51,15 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         super(enableTestEncryption(new StandardConfigContext(),
                 (encryptionEnabled() && usingEncryption == null) ||
                         BooleanUtils.isTrue(usingEncryption), encryptionCipher()));
+    }
+
+    /**
+     * Populate configuration from defaults, environment variables, system
+     * properties and an addition context passed in. Assigns hard-coded
+     * client-side encryption cipher algorithm settings.
+     */
+    public IntegrationTestConfigContext(final String encryptionCipher) {
+        this(encryptionCipher != null, encryptionCipher);
     }
 
     /**
@@ -84,7 +94,10 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
             SecretKey key = SecretKeyUtils.generate(cipherDetails);
             context.setEncryptionPrivateKeyBytes(key.getEncoded());
 
-            System.out.printf("Unique secret key used for test (base64):\n%s\n",
+            System.out.printf(
+                    "Integration test encryption enabled: %s\n"
+                            + "Unique secret key used for test (base64):\n%s\n",
+                    cipherDetails.getCipherId(),
                     Base64.getEncoder().encodeToString(key.getEncoded()));
         }
 

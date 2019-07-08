@@ -34,10 +34,7 @@ import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
 import static com.joyent.manta.util.MantaUtils.asString;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
+import static org.testng.Assert.*;
 
 /**
  * Integration tests for verifying the behavior of HTTP header assignment.
@@ -303,7 +300,7 @@ public class MantaHttpHeadersIT {
 
         final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
         // the etag reversed should not be equal to the etag (so we can fail if-match on purpose)
-        assertFalse(empty.getEtag().equals(StringUtils.reverse(empty.getEtag())));
+        assertNotEquals(StringUtils.reverse(empty.getEtag()), empty.getEtag());
 
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
