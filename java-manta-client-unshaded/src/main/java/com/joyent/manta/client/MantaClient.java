@@ -1057,6 +1057,52 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath) throws IOException {
+        final MantaBucketListingIterator itr = streamingBucketIterator(bucketPath);
+
+        /* We preemptively check the iterator for a next value because that will
+         * trigger an error if the path doesn't exist or is otherwise inaccessible.
+         * This error typically takes the form of an UncheckedIOException, so we
+         * unwind that exception if the cause is a MantaClientHttpResponseException
+         * and rethrow another MantaClientHttpResponseException, so that the
+         * stacktrace will point to this running method.
+         */
+        try {
+            if (!itr.hasNext()) {
+                itr.close();
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                throw e.getCause();
+            } else {
+                throw e;
+            }
+        }
+
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        itr, additionalCharacteristics), false);
+
+        Stream<MantaObject> stream = backingStream
+                .map(MantaObjectConversionFunction.INSTANCE)
+                .onClose(itr::close);
+
+        danglingStreams.add(stream);
+
+        return stream;
+    }
+
+    /**
      * Return a stream of the contents of a directory in Manta.
      *
      * @param path The fully qualified path of the directory.
@@ -1225,12 +1271,12 @@ public class MantaClient implements AutoCloseable {
      * safe if other operations are performed on the bucket path while
      * it is running.</p>
      *
-     * @param path bucket path
+     * @param bucketPath bucket path
      * @return A unsorted {@link Stream} of {@link MantaObject}
      *         instances representing all contents of bucket.
      */
-    public Stream<MantaObject> findBucketObject(final String path) {
-        return findBucketObject(path, null);
+    public Stream<MantaObject> findBucketObject(final String bucketPath) {
+        return findBucketObject(bucketPath, null);
     }
 
     /**
@@ -1241,32 +1287,26 @@ public class MantaClient implements AutoCloseable {
      * <p>Parallelism settings are set by JDK system property:
      * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
      *
-     * <p>When using a filter with this method, if the filter matches a directory,
-     * then all subdirectory results for that directory will be excluded. If you
-     * want to perform a match against all results, then use {@link #find(String)}
-     * and then filter on the stream returned.</p>
-     *
      * <p><strong>WARNING:</strong> this method is not atomic and thereby not
      * safe if other operations are performed on the bucket path while
      * it is running.</p>
      *
-     * @param path directory path
+     * @param bucketPath bucket path
      * @param filter predicate class used to filter all results returned
-     * @return A recursive unsorted {@link Stream} of {@link MantaObject}
-     *         instances representing the contents of all subdirectories.
+     * @return A unsorted {@link Stream} of {@link MantaObject}
+     *         instances representing the contents of given bucket.
      */
-    public Stream<MantaObject> findBucketObject(final String path,
+    public Stream<MantaObject> findBucketObject(final String bucketPath,
                                     final Predicate<? super MantaObject> filter) {
         /* We read directly from the iterator here to reduce the total stack
          * frames and to reduce the amount of abstraction to a minimum.
          *
          * Within this loop, we store all of the objects found in memory so
-         * that we can later query find() methods for the directory objects
+         * that we can later query find() methods for the bucket objects
          * in parallel. */
         final Stream.Builder<MantaObject> objectBuilder = Stream.builder();
-        final Stream.Builder<MantaObject> dirBuilder = Stream.builder();
 
-        try (MantaBucketListingIterator itr = streamingBucketIterator(path)) {
+        try (MantaBucketListingIterator itr = streamingBucketIterator(bucketPath)) {
             while (itr.hasNext()) {
                 final Map<String, Object> item = itr.next();
                 final MantaObject obj = MantaObjectConversionFunction.INSTANCE.apply(item);
@@ -1279,45 +1319,16 @@ public class MantaClient implements AutoCloseable {
                  * the total number of HTTP requests made to Manta. */
                 if (filter == null || filter.test(obj)) {
                     objectBuilder.accept(obj);
-
-                    if (obj.isDirectory()) {
-                        dirBuilder.accept(obj);
-                    }
                 }
             }
         }
 
-        /* All objects within this directory should be included in the results,
-         * so we have a stream stored here that will later be concatenated. */
         final Stream<MantaObject> objectStream = objectBuilder.build();
 
-        /* Directories are processed in parallel because it is the only unit
-         * within our abstractions that can be properly done in parallel.
-         * MantaDirectoryListingIterator forces all paging of directory
-         * listings to be sequential requests. However, it works fine to
-         * run multiple MantaDirectoryListingIterator instances per request.
-         * That is exactly what we are doing here using streams which is
-         * allowing us to do the recursive calls in a lazy fashion.
-         *
-         * From a HTTP request perspective, this means that only the listing for
-         * this current highly directory is performed and no other listing
-         * will be performed until the stream is read.
-         */
         try {
-            final Stream<MantaObject> dirStream = findForkJoinPool.submit(() ->
-                    dirBuilder.build().parallel().flatMap(obj -> find(obj.getPath(), filter))).get();
-
-            /* Due to the way we concatenate the results will be quite out of order
-             * if a consumer needs sorted results that is their responsibility. */
-            final Stream<MantaObject> stream = Stream.concat(objectStream, dirStream);
-
-            danglingStreams.add(stream);
-
-            return stream;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return Stream.empty();
-        } catch (ExecutionException e) {
+            danglingStreams.add(objectStream);
+            return objectStream;
+        } catch (RuntimeException e) {
             throw new MantaException(e.getCause());
         }
     }
@@ -1341,13 +1352,13 @@ public class MantaClient implements AutoCloseable {
 
         Long size = object.getHttpHeaders().getResultSetSize();
 
-        /*if (size == null) {
+        if (size == null) {
             MantaClientException e = new MantaClientException(
                     "Expected result-set-size header to be non-null but it was not"
                             + " part of the response");
             e.setContextValue("path", path);
             throw e;
-        }*/
+        }
 
         return size == 0;
     }
@@ -2086,13 +2097,14 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * <p>Moves an object from one path to another path. When moving
-     * directories or files between different directories, this operation is
+     * directories/buckets or files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.</p>
      *
-     * <p><em>Note: If you need to do a rename, then use
-     * {@link #putSnapLink(String, String, MantaHttpHeaders)}</em></p>
+     * <p><em>Note: If you are renaming a bucket use {@link #move(String, String)}</em>
+     * <em>Note: If you need to do a rename, then use {@link #putSnapLink(String, String, MantaHttpHeaders)}</em>
+     * </p>
      *
      * @param source Original path to move from
      * @param destination Destination path to move to
@@ -2130,6 +2142,8 @@ public class MantaClient implements AutoCloseable {
 
         if (entry.isDirectory()) {
             moveDirectory(source, destination, entry);
+        } else if (entry.isBucket()) {
+            moveBucket(source, destination, entry);
         } else {
             moveFile(source, destination, recursivelyCreateDestinationDirectories);
         }
@@ -2207,6 +2221,65 @@ public class MantaClient implements AutoCloseable {
         });
 
         deleteRecursive(source);
+    }
+
+    /**
+     * Moves a bucket from one path to another path. This operation is not
+     * transactional and may fail or produce inconsistent result if the source
+     * or the destination is modified while the operation is in progress.
+     *
+     * @param source Original path to move from
+     * @param destination Destination path to move to
+     * @param entry Bucket supplemental data object
+     * @throws IOException thrown when something goes wrong
+     * @throws MantaClientHttpResponseException Source doesn't exist or destination has invalid name
+     * @throws MantaClientException If this operation is applied to a directory.
+     */
+    private void moveBucket(final String source, final String destination,
+                               final MantaObjectResponse entry)
+            throws IOException {
+        try {
+            createBucket(destination);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getServerCode().equals(MantaErrorCode.INVALID_BUCKET_NAME_ERROR)) {
+                final String msg = String.format("Invalid Bucket Name used for destination: %s", destination);
+                throw new MantaClientException(msg, e.getCause());
+            }
+        }
+
+        MantaHttpHeaders sourceHeaders = entry.getHttpHeaders();
+        Long contentsCount = sourceHeaders.getResultSetSize();
+
+        /* If we were just copying an empty bucket, we just create the
+           new bucket and delete the original */
+        if (contentsCount != null && contentsCount == 0L) {
+            deleteBucket(source);
+            return;
+        }
+
+        MantaObjectResponse destBucket = head(destination);
+        String destBucketPath = destBucket.getPath();
+        String sourceBucketPath = entry.getPath();
+
+        listBucketObjects(source).forEach(mantaObject -> {
+            try {
+                String sourcePath = mantaObject.getPath();
+                String relPath = sourcePath.substring(sourceBucketPath.length());
+                String destFullPath = destBucketPath + SEPARATOR + relPath;
+
+                if (mantaObject.isBucketObject()) {
+                    move(mantaObject.getPath(), destFullPath);
+                }
+                if (mantaObject.isDirectory()) {
+                    final String msg = String.format("moveBucket operation applied in a directory: %s ", sourcePath);
+                    throw new MantaClientException(msg);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+
+        deleteBucket(source);
     }
 
     /* ======================================================================
