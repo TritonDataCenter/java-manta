@@ -8,13 +8,17 @@
 package com.joyent.manta.client.jobs;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
@@ -48,20 +52,25 @@ public class MantaJobBuilderIT {
     private MantaClient mantaClient;
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
+        if (testType.equals("buckets")) {
+            throw new SkipException("Skipping tests since jobs are disabled in Manta Buckets");
+        }
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void cleanup() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test

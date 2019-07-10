@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@ import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
@@ -28,6 +29,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -67,11 +69,11 @@ public class MantaHttpHeadersIT {
     @BeforeClass
     @Parameters({"usingEncryption", "testType"})
     public void beforeClass(@Optional Boolean usingEncryption,
-                            @Optional String testType) throws IOException {
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
-        String testName = this.getClass().getSimpleName();
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
@@ -81,8 +83,39 @@ public class MantaHttpHeadersIT {
     }
 
     @AfterClass
-    public void afterClass() throws IOException {
+    public void cleanup() throws IOException {
         IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
+    }
+
+
+    @Test(groups = { "mtime" })
+    public final void testGetLastModifiedDate() {
+        final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
+        final Date expected = MantaUtils.parseHttpDate(mtime);
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
+        obj.setMtime(mtime);
+
+        Assert.assertEquals(obj.getLastModifiedTime(), expected,
+                "Last modified date should equal input to mtime");
+    }
+
+    @Test(groups = { "mtime" })
+    public final void testGetNullLastModifiedDate() {
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
+        obj.setMtime(null);
+
+        Assert.assertNull(obj.getLastModifiedTime(),
+                "Last modified date should be null when mtime is null");
+    }
+
+    @Test(groups = { "mtime" })
+    public final void testGetLastModifiedDateWithUnparseableMtime() {
+        final String mtime = "Bad unparseable string";
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
+        obj.setMtime(mtime);
+
+        Assert.assertNull(obj.getLastModifiedTime(),
+                "Last modified date should be null when mtime is null");
     }
 
     public void cantSetUnknownTags() throws IOException {
@@ -95,9 +128,6 @@ public class MantaHttpHeadersIT {
 
         MantaAssert.assertResponseFailureStatusCode(409, INVALID_ROLE_TAG_ERROR,
                 (MantaFunction<Object>) () -> mantaClient.put(path, TEST_DATA, headers));
-
-        mantaClient.delete(path);
-        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canSetSingleRoleTag() throws IOException {

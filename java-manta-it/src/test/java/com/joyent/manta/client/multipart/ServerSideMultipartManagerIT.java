@@ -10,6 +10,7 @@ package com.joyent.manta.client.multipart;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -24,6 +25,7 @@ import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -52,10 +54,12 @@ public class ServerSideMultipartManagerIT {
     private String testPathPrefix;
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @org.testng.annotations.Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
+        final String testName = this.getClass().getSimpleName();
         mantaClient = new MantaClient(config);
 
         if (!mantaClient.existsAndIsAccessible(config.getMantaHomeDirectory()
@@ -64,13 +68,15 @@ public class ServerSideMultipartManagerIT {
         }
 
         multipart = new ServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {

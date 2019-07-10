@@ -7,8 +7,11 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -20,6 +23,8 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 
 /**
@@ -33,24 +38,27 @@ public class MantaClientMetadataIT {
 
     private final String testPathPrefix;
 
-    @Parameters({"encryptionCipher"})
-    public MantaClientMetadataIT(final @Optional String encryptionCipher) {
+    public MantaClientMetadataIT(final @Optional String encryptionCipher,
+                                 final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
     }
 
     @BeforeClass
-    public void beforeClass() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void cleanup() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public final void verifyAddMetadataToObjectOnPut() throws IOException {
@@ -76,6 +84,10 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("m-Yoda"), "Master");
         Assert.assertEquals(get.getHeaderAsString("m-Droids"), "1");
         Assert.assertEquals(get.getHeaderAsString("m-force"), "true");
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public final void verifyMetadataCanBeAddedLater() throws IOException {
@@ -118,6 +130,9 @@ public class MantaClientMetadataIT {
                 Assert.assertEquals(actualMetadata.get(key), val);
             }
         }
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public final void verifyCanRemoveMetadata() throws IOException, CloneNotSupportedException {
@@ -147,35 +162,10 @@ public class MantaClientMetadataIT {
         MantaObject get = mantaClient.get(path);
         Assert.assertNull(get.getMetadata().get("m-force"),
                 String.format("Actual metadata: %s", get.getMetadata()));
-    }
 
-    @Test
-    public void canAddMetadataToDirectory() throws IOException {
-        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
-        mantaClient.putDirectory(dir);
-
-        MantaMetadata metadata = new MantaMetadata();
-        metadata.put("m-test", "value");
-
-        mantaClient.putMetadata(dir, metadata);
-
-        {
-            MantaObject head = mantaClient.head(dir);
-            MantaMetadata remoteMetadata = head.getMetadata();
-
-            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
-            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
-                    "Set metadata doesn't equal actual metadata");
-        }
-
-        {
-            MantaObject get = mantaClient.get(dir);
-            MantaMetadata remoteMetadata = get.getMetadata();
-
-            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
-            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
-                    "Set metadata doesn't equal actual metadata");
-        }
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     @Test(groups = "encrypted")
@@ -206,6 +196,10 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("e-Yoda"), "Master");
         Assert.assertEquals(get.getHeaderAsString("e-Droids"), "1");
         Assert.assertEquals(get.getHeaderAsString("e-force"), "true");
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     @Test(groups = "encrypted")
@@ -254,5 +248,9 @@ public class MantaClientMetadataIT {
                 Assert.assertEquals(actualMetadata.get(key), val);
             }
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 }

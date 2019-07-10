@@ -7,10 +7,13 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.BaseChainedConfigContext;
 import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.SettableConfigContext;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -31,6 +34,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 /**
  * Tests for verifying the behavior of {@link SeekableByteChannel} with
  * {@link MantaClient}.
@@ -43,10 +48,11 @@ public class MantaClientSeekableByteChannelIT {
 
     private final String testPathPrefix;
 
-    @Parameters({"encryptionCipher"})
-    public MantaClientSeekableByteChannelIT(final @Optional String encryptionCipher) {
+    public MantaClientSeekableByteChannelIT(final @Optional String encryptionCipher,
+                                            final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
+        final String testName = this.getClass().getSimpleName();
 
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
@@ -54,17 +60,19 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
     }
 
     @BeforeClass
-    public void beforeClass() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public final void seekableByteSize() throws IOException {
@@ -78,6 +86,10 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(channel.size(), expectedSize,
                     "Size was not equal to uploaded test data");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void getAllSeekableBytes() throws IOException {
@@ -89,6 +101,10 @@ public class MantaClientSeekableByteChannelIT {
             String actual = new String(readAllBytes(channel), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, TEST_DATA, "Couldn't read the same bytes as written");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void getAllSeekableBytesAtPosition() throws IOException {
@@ -103,6 +119,10 @@ public class MantaClientSeekableByteChannelIT {
             String actual = new String(readAllBytes(channel), StandardCharsets.UTF_8);
             Assert.assertEquals(actual, expected, "Couldn't read the same bytes as written");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void readFromDifferentPositions() throws IOException {
@@ -126,6 +146,10 @@ public class MantaClientSeekableByteChannelIT {
                         "Couldn't read the same bytes as written");
             }
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void readAllSeekableBytesFromPositionAsInputStream() throws IOException {
@@ -149,6 +173,10 @@ public class MantaClientSeekableByteChannelIT {
                         secondExpected, "Couldn't read the same bytes as written");
             }
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void skipUsingInputStream() throws IOException {
@@ -167,6 +195,10 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(channel.position(), TEST_DATA.length(),
                     "Position didn't update properly");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @SuppressWarnings("try")
@@ -184,6 +216,10 @@ public class MantaClientSeekableByteChannelIT {
 
             channel.read(buffer);
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @SuppressWarnings("try")
@@ -202,6 +238,10 @@ public class MantaClientSeekableByteChannelIT {
 
             channel.size();
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test(expectedExceptions = NonWritableChannelException.class)
@@ -214,6 +254,10 @@ public class MantaClientSeekableByteChannelIT {
             ByteBuffer buffer = ByteBuffer.wrap(new byte[2]);
             channel.write(buffer);
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void getFromForwardPosition() throws IOException {
@@ -231,6 +275,10 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(actual, expectedPosition1,
                     "Couldn't read the same bytes as written to specified position");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void getFromBaseChannelThenForwardPosition() throws IOException {
@@ -251,6 +299,10 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(positionActual, expectedPosition1,
                     "Couldn't read the same bytes as written to specified position");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void getFromForwardPositionThenBackwardPosition() throws IOException {
@@ -279,6 +331,10 @@ public class MantaClientSeekableByteChannelIT {
             Assert.assertEquals(position2Actual, expectedPosition2,
                     "Couldn't read the same bytes as written to specified position");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public static byte[] readAllBytes(SeekableByteChannel sbc) throws IOException {

@@ -7,13 +7,18 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import javax.net.ssl.HostnameVerifier;
@@ -37,6 +42,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -56,21 +62,23 @@ public class MantaClientSigningIT {
     private ConfigContext config;
 
     @BeforeClass()
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext();
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
-
 
     /* When MantaClient TLS security is disabled (such as when testing against
        a lab instance without a self signed cert), we will also need to refrain
@@ -145,6 +153,10 @@ public class MantaClientSigningIT {
         } finally {
             connection.disconnect();
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public final void testCanCreateSignedHEADUriFromPath() throws IOException {
@@ -181,6 +193,10 @@ public class MantaClientSigningIT {
         } finally {
             connection.disconnect();
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public final void testCanCreateSignedPUTUriFromPath()
@@ -221,6 +237,10 @@ public class MantaClientSigningIT {
 
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, TEST_DATA);
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public final void testCanCreateSignedOPTIONSUriFromPath()
@@ -268,6 +288,10 @@ public class MantaClientSigningIT {
         } finally {
             connection.disconnect();
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public final void testCanCreateSignedURIWithEncodedCharacters() throws IOException {
@@ -292,5 +316,9 @@ public class MantaClientSigningIT {
         } finally {
             conn.disconnect();
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 }

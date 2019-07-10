@@ -7,7 +7,10 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.exception.MantaClientException;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.lang3.RandomUtils;
@@ -15,12 +18,20 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
@@ -49,16 +60,22 @@ public class MantaClientDirectoriesIT {
     private IntegrationTestConfigContext config;
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String testType) throws IOException {
+        if (testType.equals("buckets")) {
+            throw new SkipException("Directory tests will be skipped in Manta Buckets");
+        }
+
         config = new IntegrationTestConfigContext();
+        final String testName = this.getClass().getSimpleName();
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePathWithoutSeparator(config,
-                this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestConfigContext.generateBasePathWithoutSeparator(config, testName);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test
@@ -155,6 +172,94 @@ public class MantaClientDirectoriesIT {
     }
 
     @Test
+    public final void testList() throws IOException {
+        final String pathPrefix = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.putDirectory(pathPrefix, null);
+
+        mantaClient.put(String.format("%s/%s", pathPrefix, UUID.randomUUID()), "");
+        mantaClient.put(String.format("%s/%s", pathPrefix, UUID.randomUUID()), "");
+        final String subDir = pathPrefix + SEPARATOR + UUID.randomUUID().toString();
+        mantaClient.putDirectory(subDir, null);
+        mantaClient.put(String.format("%s/%s", subDir, UUID.randomUUID()), "");
+        final Stream<MantaObject> objs = mantaClient.listObjects(pathPrefix);
+
+        final AtomicInteger count = new AtomicInteger(0);
+        objs.forEach(obj -> {
+            count.incrementAndGet();
+            Assert.assertTrue(obj.getPath().startsWith(testPathPrefix));
+        });
+
+        Assert.assertEquals(3, count.get());
+    }
+
+    @Test
+    public final void testDirectoryExists() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+
+        mantaClient.putDirectory(dir);
+
+        final boolean actual = mantaClient.existsAndIsAccessible(dir);
+        Assert.assertTrue(actual, "File object should exist");
+    }
+
+    @Test
+    public final void testIsDirectoryEmptyWithEmptyDir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+        mantaClient.putDirectory(dir);
+
+        Assert.assertTrue(mantaClient.isDirectoryEmpty(dir),
+                "Empty directory is not reported as empty");
+    }
+
+    @Test
+    public final void testIsDirectoryEmptyWithDirWithFiles() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String dir = testPathPrefix + name;
+        mantaClient.putDirectory(dir);
+
+        mantaClient.put(String.format("%s/%s", dir, UUID.randomUUID()), TEST_DATA);
+
+        Assert.assertFalse(mantaClient.isDirectoryEmpty(dir),
+                "Empty directory is not reported as empty");
+    }
+
+    @Test(expectedExceptions = { MantaClientException.class })
+    public final void testIsDirectoryEmptyWithAFileNotDir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String file = testPathPrefix + name;
+
+        mantaClient.put(file, TEST_DATA);
+
+        mantaClient.isDirectoryEmpty(file);
+    }
+
+    @Test
+    public final void verifyYouCanJustSpecifyDirNameWhenPuttingFile() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.putDirectory(path);
+
+        File temp = File.createTempFile("upload", ".txt");
+
+        boolean thrown = false;
+
+        try {
+            Files.write(temp.toPath(), TEST_DATA.getBytes(StandardCharsets.UTF_8));
+            mantaClient.put(path, temp);
+        } catch (MantaClientHttpResponseException e) {
+            thrown = e.getStatusCode() == 400;
+        }
+        finally {
+            Files.delete(temp.toPath());
+        }
+
+        Assert.assertTrue(thrown, "Bad request response not received");
+    }
+
+    @Test
     public void canCreateDirectoriesNormallyWhenNewDirectoryDepthLessThanSkipDepth() throws IOException {
         if (!mantaClient.existsAndIsAccessible(testPathPrefix)) {
             Assert.fail("Base directory is missing");
@@ -171,6 +276,59 @@ public class MantaClientDirectoriesIT {
         // check that number of operations is exactly the same as the writeable directories
         // (i.e. no extra operations and no fewer operations)
         Assert.assertEquals(operations, childDirectoryDepth);
+    }
+
+    @Test
+    public final void testRecursiveDeleteObject() throws IOException {
+        final String dir1 = String.format("%s1", testPathPrefix);
+        mantaClient.putDirectory(testPathPrefix + "1", null);
+        mantaClient.putDirectory(dir1, null);
+        final String path1 = String.format("%s/%s", dir1, UUID.randomUUID());
+        mantaClient.put(path1, TEST_DATA);
+
+        final String dir2 = String.format("%s/2", dir1);
+        mantaClient.putDirectory(dir2, null);
+        final String path2 = String.format("%s/%s", dir2, UUID.randomUUID());
+        mantaClient.put(path2, TEST_DATA);
+
+        final String dir3 = String.format("%s/3", dir2);
+        mantaClient.putDirectory(dir3, null);
+        final String path3 = String.format("%s/%s", dir3, UUID.randomUUID());
+        mantaClient.put(path3, TEST_DATA);
+
+        mantaClient.deleteRecursive(testPathPrefix + "1");
+
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + "1"));
+    }
+
+    @Test
+    public void canAddMetadataToDirectory() throws IOException {
+        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        mantaClient.putDirectory(dir);
+
+        MantaMetadata metadata = new MantaMetadata();
+        metadata.put("m-test", "value");
+
+        mantaClient.putMetadata(dir, metadata);
+
+        {
+            MantaObject head = mantaClient.head(dir);
+            MantaMetadata remoteMetadata = head.getMetadata();
+
+            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
+            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
+                    "Set metadata doesn't equal actual metadata");
+        }
+
+        {
+            MantaObject get = mantaClient.get(dir);
+            MantaMetadata remoteMetadata = get.getMetadata();
+
+            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
+            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
+                    "Set metadata doesn't equal actual metadata");
+        }
     }
 
     @Test
@@ -379,7 +537,4 @@ public class MantaClientDirectoriesIT {
         mantaClient.putDirectory(dirPath, true);
         return dirPath;
     }
-
-
-
 }

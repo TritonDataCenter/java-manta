@@ -13,6 +13,8 @@
         </classes>
     </test>
     <test name="Manta Client Directory Tests">
+        <parameter name="usingEncryption" value="true"/>
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="directory" />
         </groups>
@@ -22,6 +24,8 @@
         </classes>
     </test>
     <test name="Manta Client Http Headers Tests">
+        <parameter name="usingEncryption" value="true"/>
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="headers" />
         </groups>
@@ -30,6 +34,7 @@
         </classes>
     </test>
     <test name ="Manta Client Timeout Tests" >
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="timeout" />
         </groups>
@@ -38,6 +43,7 @@
         </classes>
     </test>
     <test name="Manta Client Error Tests">
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="error" />
         </groups>
@@ -51,6 +57,7 @@
 	        EncryptedServerSideMultipartManagerSerializationIT by adding groups > run > exclude = "encrypted" group
 	        so we resort to listing all desired unencrypted tests. This also helps discoverability!
 	        -->
+        <parameter name="testType" value="directory"/>
         <classes>
             <class name="com.joyent.manta.client.MantaClientFindIT" />
             <class name="com.joyent.manta.client.MantaClientSigningIT" />
@@ -61,7 +68,30 @@
 
     <!-- We run many of the integration tests over again using client-side encryption -->
 
+    <test name="Manta Client Buckets Tests" >
+        <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
+        <parameter name="testType" value="buckets"/>
+        <groups>
+            <define name="buckets" />
+        </groups>
+        <classes>
+            <class name="com.joyent.manta.client.MantaClientIT" />
+            <class name="com.joyent.manta.client.MantaClientAuthenticationIT" />
+            <class name="com.joyent.manta.client.MantaClientAuthenticationChangeIT" />
+            <class name="com.joyent.manta.client.MantaClientBucketsIT" />
+            <class name="com.joyent.manta.client.MantaClientErrorIT" />
+            <class name="com.joyent.manta.client.MantaClientPutIT" />
+            <class name="com.joyent.manta.client.MantaClientRangeIT" />
+            <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />
+            <class name="com.joyent.manta.client.MantaClientSigningIT" />
+            <class name="com.joyent.manta.client.MantaObjectOutputStreamIT" />
+            <class name="com.joyent.manta.http.ApacheHttpGetResponseEntityContentContinuatorIT" />
+            <class name="com.joyent.manta.http.MantaHttpHeadersIT" />
+            <class name="com.joyent.manta.http.TCPSocketConnectionTimeoutIT" />
+        </classes>
+    </test>
     <test name="Manta Client Range Encrypted Download Tests">
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="range-downloads" />
         </groups>
@@ -71,6 +101,7 @@
     </test>
     <test name="Manta Client Seekable Channel Tests">
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="seekable" />
         </groups>
@@ -80,6 +111,7 @@
     </test>
     <test name="Manta Client Integration Tests [AES128/CTR Encrypted]">
         <parameter name="encryptionCipher" value="AES128/CTR/NoPadding"/>
+        <parameter name="testType" value="directory"/>
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
@@ -96,6 +128,7 @@
     </test>
     <test name="Manta Client Integration Tests [AES128/GCM Encrypted]">
         <parameter name="encryptionCipher" value="AES128/GCM/NoPadding"/>
+        <parameter name="testType" value="directory"/>
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
@@ -105,6 +138,7 @@
     </test>
     <test name="Manta Client Integration Tests [AES128/CBC Encrypted]">
         <parameter name="encryptionCipher" value="AES128/CBC/PKCS5Padding"/>
+        <parameter name="testType" value="directory"/>
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
@@ -116,6 +150,7 @@
     </test>
     <test name="Manta Client Snaplinks Tests">
         <parameter name="usingEncryption" value="true"/>
+        <parameter name="testType" value="directory"/>
         <groups>
             <define name="snaplinks" />
         </groups>

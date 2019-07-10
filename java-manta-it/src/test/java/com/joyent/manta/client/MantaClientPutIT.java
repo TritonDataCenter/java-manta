@@ -64,7 +64,7 @@ public class MantaClientPutIT {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
-        String testName = this.getClass().getSimpleName();
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,

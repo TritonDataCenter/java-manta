@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
@@ -16,6 +17,8 @@ import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -39,23 +42,30 @@ public class MantaClientErrorIT {
     private String testPathPrefix;
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext();
-
+        final String testName = this.getClass().getSimpleName();
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePathWithoutSeparator(config,
-                this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+
+        if (testType.equals("buckets")) {
+            testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                    testName, testType);
+        } else {
+            testPathPrefix = IntegrationTestConfigContext.generateBasePathWithoutSeparator(config, testName);
+        }
+
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test
-    public void incorrectLogin() throws IOException {
+    public void incorrectLogin() {
         Properties properties = new Properties();
         properties.setProperty(MapConfigContext.MANTA_USER_KEY, "baduser");
 
@@ -75,7 +85,7 @@ public class MantaClientErrorIT {
     }
 
     @Test
-    public void badHomeDirectory() throws IOException {
+    public void badHomeDirectory() {
         String path = "/badpath";
 
         MantaAssert.assertResponseFailureStatusCode(403, ACCOUNT_DOES_NOT_EXIST_ERROR,
@@ -83,7 +93,7 @@ public class MantaClientErrorIT {
     }
 
     @Test
-    public void fileNotFoundWithNoContent() throws IOException {
+    public void fileNotFoundWithNoContent() {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
 
         MantaAssert.assertResponseFailureStatusCode(404, NO_CODE_ERROR,
@@ -91,7 +101,7 @@ public class MantaClientErrorIT {
     }
 
     @Test
-    public void fileNotFoundWithContent() throws IOException {
+    public void fileNotFoundWithContent() {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
 
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,

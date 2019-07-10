@@ -13,6 +13,7 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
@@ -25,14 +26,15 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.security.Provider;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
-import javax.crypto.SecretKey;
 
 import static org.testng.Assert.fail;
 
@@ -58,18 +60,21 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
 
     private final ConfigContext config;
 
-    public EncryptedServerSideMultipartManagerSerializationIT(final @Optional String encryptionCipher) {
+    public EncryptedServerSideMultipartManagerSerializationIT(final @Optional String encryptionCipher,
+                                                              final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(encryptionCipher);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-
         multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
     }
 
     @BeforeClass()
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
         }
@@ -79,12 +84,12 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
-        mantaClient.putDirectory(testPathPrefix, true);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public final void canResumeUploadWithByteArrayAndMultipleParts() throws Exception {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,10 +8,13 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.client.crypto.ExternalSecurityProviderLoader;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -25,6 +28,8 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -40,6 +45,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 @Test
 public class MantaClientAuthenticationChangeIT {
 
@@ -52,11 +59,14 @@ public class MantaClientAuthenticationChangeIT {
     private StandardConfigContext backupConfig;
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         config = new AuthAwareConfigContext(new IntegrationTestConfigContext());
+        final String testName = this.getClass().getSimpleName();
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
 
         // stash authentication parameters so we can restore them between test methods
         backupConfig = new StandardConfigContext();
@@ -69,7 +79,7 @@ public class MantaClientAuthenticationChangeIT {
             backupConfig.setMantaKeyPath(config.getMantaKeyPath());
         }
 
-        mantaClient.putDirectory(testPathPrefix, true);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @BeforeMethod
@@ -97,8 +107,8 @@ public class MantaClientAuthenticationChangeIT {
     }
 
     @AfterClass
-    public void afterClass() throws Exception {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+    public void afterClass() throws IOException {
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
         config.close();
     }
 
@@ -112,6 +122,9 @@ public class MantaClientAuthenticationChangeIT {
 
         Assert.assertTrue(homeListing.contains(home + "/stor"));
         Assert.assertTrue(homeListing.contains(home + "/public"));
+        if (testPathPrefix.contains("buckets")) {
+            Assert.assertTrue(homeListing.contains(home + "/buckets"));
+        }
 
         config.setNoAuth(true);
         config.reload();
@@ -151,6 +164,10 @@ public class MantaClientAuthenticationChangeIT {
         final byte[] retrievedContent = new byte[testContent.length];
         IOUtils.read(mantaClient.getAsInputStream(testFile), retrievedContent);
         AssertJUnit.assertArrayEquals(testContent, retrievedContent);
+
+        mantaClient.delete(testFile);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(testFile));
     }
 
     public void canTogglePasswordOnKeyAndContinueAccessingPrivateObjects() throws Exception {
@@ -185,6 +202,10 @@ public class MantaClientAuthenticationChangeIT {
         final byte[] retrievedContent = new byte[testContent.length];
         IOUtils.read(mantaClient.getAsInputStream(testFile), retrievedContent);
         AssertJUnit.assertArrayEquals(testContent, retrievedContent);
+
+        mantaClient.delete(testFile);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.get(testFile));
     }
 
     private static void swapKeyLocation(final AuthAwareConfigContext config, final boolean fromPathToContent) throws IOException {

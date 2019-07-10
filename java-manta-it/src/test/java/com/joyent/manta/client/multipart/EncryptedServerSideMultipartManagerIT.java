@@ -12,6 +12,7 @@ import com.joyent.manta.client.MantaMetadata;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.MantaEncryptedObjectInputStream;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientException;
@@ -27,6 +28,7 @@ import org.testng.AssertJUnit;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -65,19 +67,24 @@ public class EncryptedServerSideMultipartManagerIT {
 
     private final String testPathPrefix;
 
-    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional String encryptionCipher) {
+    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional String encryptionCipher,
+                                                 final @org.testng.annotations.Optional String testType)
+            throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
+        final String testName = this.getClass().getSimpleName();
         config = new IntegrationTestConfigContext(encryptionCipher);
 
         mantaClient = new MantaClient(config);
 
         multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
     }
 
     @BeforeClass()
-    public void beforeClass() throws IOException {
+    @Parameters({"testType"})
+    public void beforeClass(final @org.testng.annotations.Optional String testType) throws IOException {
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
         }
@@ -92,12 +99,12 @@ public class EncryptedServerSideMultipartManagerIT {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
-        mantaClient.putDirectory(testPathPrefix, true);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public void nonExistentFileHasNotStarted() throws IOException {

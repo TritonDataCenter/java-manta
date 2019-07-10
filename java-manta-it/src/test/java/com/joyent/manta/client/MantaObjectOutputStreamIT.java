@@ -7,9 +7,12 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaIOException;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -29,6 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 /**
  * Tests for verifying the behavior of {@link MantaObjectOutputStream} with
  * {@link MantaClient}.
@@ -41,24 +46,27 @@ public class MantaObjectOutputStreamIT {
 
     private final String testPathPrefix;
 
-    @Parameters({"encryptionCipher"})
-    public MantaObjectOutputStreamIT(final @Optional String encryptionCipher) throws IOException {
+    public MantaObjectOutputStreamIT(final @Optional String encryptionCipher,
+                                     final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
     }
 
-    @BeforeClass()
-    public void beforeClass() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+    @BeforeClass
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public void canUploadSmallString() throws IOException {
@@ -82,6 +90,10 @@ public class MantaObjectOutputStreamIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded bytes don't match");
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public void canUploadSmallStringWithErrorProneName() throws IOException {
@@ -98,6 +110,10 @@ public class MantaObjectOutputStreamIT {
 
         Assert.assertTrue(mantaClient.existsAndIsAccessible(path),
                 "File wasn't uploaded: " + path);
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public void canUploadMuchLargerFile() throws IOException {
@@ -137,6 +153,10 @@ public class MantaObjectOutputStreamIT {
             AssertJUnit.assertArrayEquals("Bytes written via OutputStream don't match read bytes",
                     expected, actual);
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 
     public void canUploadMuchLargerFileWithPeriodicWaits() throws Exception {
@@ -199,5 +219,9 @@ public class MantaObjectOutputStreamIT {
                             + "OutputStream doesn't match read bytes",
                     expected, actual);
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                (MantaFunction<Object>) () -> mantaClient.head(path));
     }
 }
