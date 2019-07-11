@@ -1,4 +1,4 @@
-MORE RANDOM CHANGE
+MORE RANDOM CHANGE!
 
 [![Build Status](https://travis-ci.org/joyent/java-manta.svg?branch=travis)](https://travis-ci.org/joyent/java-manta)
 
