@@ -57,7 +57,7 @@ public class MantaClientSnapLinksIT {
     @Parameters({"usingEncryption", "testType"})
     public void beforeClass(final @Optional Boolean usingEncryption,
                             final @Optional String testType) throws IOException {
-        if (testType.equals("buckets")) {
+        if ("buckets".equals(testType)) {
             throw new SkipException("Skipping tests since snaplinks are disabled in Manta Buckets");
         }
 

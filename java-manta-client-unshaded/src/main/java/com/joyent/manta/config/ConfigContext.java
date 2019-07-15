@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
@@ -84,7 +85,7 @@ public interface ConfigContext extends MantaMBeanable {
      * @return String of buckets directory based on Manta username.
      */
     default String getMantaBucketsDirectory() {
-        return deriveHomeDirectoryFromUser(getMantaUser()) + "/buckets";
+        return deriveHomeDirectoryFromUser(getMantaUser()) + MantaClient.SEPARATOR + "buckets";
     }
 
     /**

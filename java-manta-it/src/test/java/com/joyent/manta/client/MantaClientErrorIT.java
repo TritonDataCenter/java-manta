@@ -49,7 +49,7 @@ public class MantaClientErrorIT {
         final String testName = this.getClass().getSimpleName();
         mantaClient = new MantaClient(config);
 
-        if (testType.equals("buckets")) {
+        if ("buckets".equals(testType)) {
             testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
                     testName, testType);
         } else {

@@ -53,7 +53,7 @@ public class MantaClientJobIT {
     @BeforeClass
     @Parameters({"testType"})
     public void beforeClass(final @Optional String testType) throws IOException {
-        if (testType.equals("buckets")) {
+        if ("buckets".equals(testType)) {
             throw new SkipException("Skipping tests since jobs are disabled in Manta Buckets");
         }
 

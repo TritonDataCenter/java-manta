@@ -13,13 +13,11 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
@@ -36,17 +34,15 @@ public class IntegrationTestHelper {
      */
     private static final Logger LOG = LoggerFactory.getLogger(IntegrationTestHelper.class);
 
-    public static final String bucketObjectsSubstring = String.format("%sobjects%s"
+    private  static final String bucketObjectsSubstring = String.format("%sobjects%s"
             , SEPARATOR, SEPARATOR);
 
-    @SuppressWarnings("MagicNumber")
+    private static final String integrationTestBucket = "java-integration-tests";
+
     private static String setupBucketsPath(final ConfigContext config, final String testName) {
-        // Substring is being taken to comply with the bucket naming conventions
-
-        String bucketPathPrefix = String.format("%s%s%s", config.getMantaBucketsDirectory(),
-                SEPARATOR, testName.toLowerCase().substring(0, RandomUtils.nextInt(5, 20)) + UUID.randomUUID());
-
-        return bucketPathPrefix + bucketObjectsSubstring;
+        final String bucketPathPrefix = String.format("%s%s%s", config.getMantaBucketsDirectory(),
+                SEPARATOR, integrationTestBucket);
+        return bucketPathPrefix + bucketObjectsSubstring + testName;
     }
 
     private static boolean verifyBucketsSupport(final ConfigContext config,
@@ -100,9 +96,18 @@ public class IntegrationTestHelper {
                                       final String testPath,
                                       final String testType) throws IOException {
         if ("buckets".equals(testType)) {
-            //Create bucket here
             final String bucketPath = parseBucketPath(testPath);
-            client.createBucket(bucketPath);
+            //Create bucket here
+            try {
+                client.createBucket(bucketPath);
+            } catch (MantaClientHttpResponseException e) {
+                if (e.getServerCode().equals(MantaErrorCode.BUCKET_EXISTS_ERROR)) {
+                    LOG.error("Test Bucket named {} already exists leading to {}"
+                            , integrationTestBucket, e.getStatusMessage());
+                    e.setContextValue("Creating test bucket failed at :", testPath);
+                    throw e;
+                }
+            }
         } else {
             client.putDirectory(testPath, true);
         }

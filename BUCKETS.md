@@ -29,7 +29,7 @@ Note: Some complex operations will be potentially included in later stages:
 - s3.deleteBucket(bucket_name).                                      3. delete bucket
 - s3.doesBucketExist(bucket_name).                                   4. head bucket
 - s3.listObjects(bucket_name).                                       5. list objects
-- s3.putObject(bucket_name, key_name, new File(file_path)).          6.  put object(s)
+- s3.putObject(bucket_name, key_name, new File(file_path)).          6. put object(s)
 - s3.getObject(bucket_name, key_name).                               7. get object(s)
 - s3.deleteObject(bucket_name, summary.getKey()).                    8. delete object
 - s3.deleteObjects(deleteObjectRequest).                             9. delete object(s)

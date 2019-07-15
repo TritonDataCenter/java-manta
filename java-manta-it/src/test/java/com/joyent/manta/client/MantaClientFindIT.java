@@ -47,7 +47,7 @@ public class MantaClientFindIT {
     @BeforeClass
     @Parameters({"testType"})
     public void beforeClass(final @Optional String testType) throws IOException {
-        if (testType.equals("buckets")) {
+        if ("buckets".equals(testType)) {
             throw new SkipException("Directory tests will be skipped in Manta Buckets");
         }
 

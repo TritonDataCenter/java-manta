@@ -63,7 +63,7 @@ public class MantaClientDirectoriesIT {
     @Parameters({"usingEncryption", "testType"})
     public void beforeClass(final @Optional Boolean usingEncryption,
                             final @Optional String testType) throws IOException {
-        if (testType.equals("buckets")) {
+        if ("buckets".equals(testType)) {
             throw new SkipException("Directory tests will be skipped in Manta Buckets");
         }
 
