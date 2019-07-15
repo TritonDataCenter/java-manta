@@ -137,7 +137,7 @@ import static org.testng.Assert.fail;
  * HTTP it provides no way to terminate in-flight requests.
  * </p>
  */
-@Test(groups = {"range-downloads"}, singleThreaded = true)
+@Test(groups = {"range-downloads", "buckets"}, singleThreaded = true)
 public class ApacheHttpGetResponseEntityContentContinuatorIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(ApacheHttpGetResponseEntityContentContinuatorIT.class);

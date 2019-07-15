@@ -55,20 +55,22 @@ import static org.testng.Assert.assertTrue;
 @Test(groups = {"encrypted", "expensive"})
 @SuppressWarnings("Duplicates")
 public class EncryptedServerSideMultipartManagerIT {
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final ConfigContext config;
+    private ConfigContext config;
 
-    private final EncryptedServerSideMultipartManager multipart;
+    private EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
 
     private static final String TEST_FILENAME = "Master-Yoda.jpg";
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
-    public EncryptedServerSideMultipartManagerIT(final @org.testng.annotations.Optional String encryptionCipher,
-                                                 final @org.testng.annotations.Optional String testType)
+    @BeforeClass()
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @org.testng.annotations.Optional String encryptionCipher,
+                            final @org.testng.annotations.Optional String testType)
             throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
@@ -77,14 +79,6 @@ public class EncryptedServerSideMultipartManagerIT {
 
         mantaClient = new MantaClient(config);
 
-        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
-                testName, testType);
-    }
-
-    @BeforeClass()
-    @Parameters({"testType"})
-    public void beforeClass(final @org.testng.annotations.Optional String testType) throws IOException {
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
         }
@@ -99,6 +93,9 @@ public class EncryptedServerSideMultipartManagerIT {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
+        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
         IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 

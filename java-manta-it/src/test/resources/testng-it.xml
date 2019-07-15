@@ -20,6 +20,7 @@
         </groups>
         <classes>
             <class name="com.joyent.manta.client.MantaClientDirectoriesIT" />
+            <class name="com.joyent.manta.client.MantaClientFindIT" />
             <class name="com.joyent.manta.client.MantaDirectoryListingIteratorIT" />
         </classes>
     </test>
@@ -73,6 +74,15 @@
         <parameter name="testType" value="buckets"/>
         <groups>
             <define name="buckets" />
+            <run>
+                <include name="error" />
+                <include name="headers" />
+                <include name="metadata" />
+                <include name="put" />
+                <include name="range-downloads" />
+                <include name="seekable" />
+                <include name="timeout" />
+            </run>
         </groups>
         <classes>
             <class name="com.joyent.manta.client.MantaClientIT" />
@@ -80,6 +90,7 @@
             <class name="com.joyent.manta.client.MantaClientAuthenticationChangeIT" />
             <class name="com.joyent.manta.client.MantaClientBucketsIT" />
             <class name="com.joyent.manta.client.MantaClientErrorIT" />
+            <class name="com.joyent.manta.client.MantaClientMetadataIT" />
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientRangeIT" />
             <class name="com.joyent.manta.client.MantaClientSeekableByteChannelIT" />

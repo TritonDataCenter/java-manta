@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 
 import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
-@Test
+@Test(groups = { "buckets" })
 public class MantaClientAuthenticationChangeIT {
 
     private AuthAwareConfigContext config;

@@ -13,6 +13,7 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
@@ -38,9 +39,12 @@ public class IntegrationTestHelper {
     public static final String bucketObjectsSubstring = String.format("%sobjects%s"
             , SEPARATOR, SEPARATOR);
 
+    @SuppressWarnings("MagicNumber")
     private static String setupBucketsPath(final ConfigContext config, final String testName) {
+        // Substring is being taken to comply with the bucket naming conventions
+
         String bucketPathPrefix = String.format("%s%s%s", config.getMantaBucketsDirectory(),
-                SEPARATOR, testName.toLowerCase() + UUID.randomUUID());
+                SEPARATOR, testName.toLowerCase().substring(0, RandomUtils.nextInt(5, 20)) + UUID.randomUUID());
 
         return bucketPathPrefix + bucketObjectsSubstring;
     }

@@ -45,7 +45,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
 /**
  * Tests the basic functionality of the put operations in {@link MantaClient} class.
  */
-@Test(groups = {"put"})
+@Test(groups = {"put", "buckets"})
 public class MantaClientPutIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";

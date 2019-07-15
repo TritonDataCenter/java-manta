@@ -50,7 +50,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  *
  * @author Elijah Zupancic
  */
-@Test
+@Test(groups = { "buckets" })
 public class MantaClientSigningIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -156,7 +156,7 @@ public class MantaClientSigningIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void testCanCreateSignedHEADUriFromPath() throws IOException {
@@ -196,7 +196,7 @@ public class MantaClientSigningIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void testCanCreateSignedPUTUriFromPath()
@@ -240,7 +240,7 @@ public class MantaClientSigningIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void testCanCreateSignedOPTIONSUriFromPath()
@@ -291,7 +291,7 @@ public class MantaClientSigningIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void testCanCreateSignedURIWithEncodedCharacters() throws IOException {
@@ -319,6 +319,6 @@ public class MantaClientSigningIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

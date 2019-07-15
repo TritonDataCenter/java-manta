@@ -8,22 +8,14 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.client.helper.IntegrationTestHelper;
-import com.joyent.manta.config.BaseChainedConfigContext;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.EncryptionAuthenticationMode;
-import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.SettableConfigContext;
+import com.joyent.manta.config.*;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +28,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * Tests for verifying the correct behavior of range operations performed by
  * the {@link MantaClient} class.
  */
-@Test
+@Test(groups = {"buckets"})
 public class MantaClientRangeIT {
     private static final String TEST_DATA =
             "A SERGEANT OF THE LAW, wary and wise, " +
@@ -62,14 +54,16 @@ public class MantaClientRangeIT {
             "Girt with a seint* of silk, with barres small; " +
             "Of his array tell I no longer tale.";
 
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final ConfigContext config;
+    private ConfigContext config;
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
-    public MantaClientRangeIT(final @Optional String encryptionCipher,
-                              final @Optional String testType) throws IOException {
+    @BeforeClass
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @Optional String encryptionCipher,
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
@@ -84,11 +78,6 @@ public class MantaClientRangeIT {
         this.config = config;
         testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
                 testName, testType);
-    }
-
-    @BeforeClass
-    @Parameters({"testType"})
-    public void beforeClass(final @Optional String testType) throws IOException {
         IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
@@ -115,7 +104,7 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithComputedRangeHeader() throws IOException {
@@ -135,7 +124,7 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithUnboundedEndRange() throws IOException {
@@ -156,7 +145,7 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithUnboundedStartRange() throws IOException {
@@ -177,7 +166,7 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithEndRangeBeyondObjectSize() throws IOException {
@@ -198,7 +187,7 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithZeroRange() throws IOException {
@@ -219,7 +208,7 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test
@@ -253,6 +242,6 @@ public class MantaClientRangeIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

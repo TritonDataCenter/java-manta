@@ -48,33 +48,28 @@ import static org.testng.Assert.fail;
 public class EncryptedServerSideMultipartManagerSerializationIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptedServerSideMultipartManagerSerializationIT.class);
 
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final EncryptedServerSideMultipartManager multipart;
+    private EncryptedServerSideMultipartManager multipart;
 
     private static final int FIVE_MB = 5242880;
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
     private Kryo kryo = new Kryo();
 
-    private final ConfigContext config;
+    private ConfigContext config;
 
-    public EncryptedServerSideMultipartManagerSerializationIT(final @Optional String encryptionCipher,
-                                                              final @Optional String testType) throws IOException {
+    @BeforeClass()
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @Optional String encryptionCipher,
+                            final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         config = new IntegrationTestConfigContext(encryptionCipher);
         final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
-        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
-                testName, testType);
-    }
 
-    @BeforeClass()
-    @Parameters({"testType"})
-    public void beforeClass(final @Optional String testType) throws IOException {
         if (!config.isClientEncryptionEnabled()) {
             throw new SkipException("Skipping tests if encryption is disabled");
         }
@@ -84,6 +79,9 @@ public class EncryptedServerSideMultipartManagerSerializationIT {
             throw new SkipException("Server side uploads aren't supported in this Manta version");
         }
 
+        multipart = new EncryptedServerSideMultipartManager(this.mantaClient);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
         IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 

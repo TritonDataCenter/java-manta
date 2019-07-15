@@ -47,7 +47,7 @@ import static org.testng.Assert.*;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @SuppressWarnings("Duplicates")
-@Test(groups = { "headers" })
+@Test(groups = {"headers", "buckets"})
 public class MantaHttpHeadersIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";

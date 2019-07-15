@@ -33,7 +33,7 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * Tests for verifying the correct behavior of error handling from Manta API
  * failures.
  */
-@Test(groups = {"error"})
+@Test(groups = {"error", "buckets"})
 public class MantaClientErrorIT {
     private MantaClient mantaClient;
 

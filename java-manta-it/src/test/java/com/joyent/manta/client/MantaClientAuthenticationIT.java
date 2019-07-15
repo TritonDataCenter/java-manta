@@ -26,6 +26,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>-
  */
+@Test(groups = { "buckets" })
 public class MantaClientAuthenticationIT {
     private static final String TEST_DATA = "Arise,Awake And Do Not Stop Until Your Goal Is Reached.";
 

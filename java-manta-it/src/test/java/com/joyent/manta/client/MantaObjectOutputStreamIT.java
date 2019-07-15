@@ -19,11 +19,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,16 +34,18 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * Tests for verifying the behavior of {@link MantaObjectOutputStream} with
  * {@link MantaClient}.
  */
-@Test(groups = {"encrypted"})
+@Test(groups = {"buckets"})
 public class MantaObjectOutputStreamIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
-    public MantaObjectOutputStreamIT(final @Optional String encryptionCipher,
-                                     final @Optional String testType) throws IOException {
+    @BeforeClass
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @Optional String encryptionCipher,
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
@@ -56,11 +54,6 @@ public class MantaObjectOutputStreamIT {
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
                 testName, testType);
-    }
-
-    @BeforeClass
-    @Parameters({"testType"})
-    public void beforeClass(final @Optional String testType) throws IOException {
         IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 

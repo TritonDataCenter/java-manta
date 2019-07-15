@@ -16,11 +16,7 @@ import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,16 +36,18 @@ import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR
  * Tests for verifying the behavior of {@link SeekableByteChannel} with
  * {@link MantaClient}.
  */
-@Test(groups = {"seekable", "encrypted"})
+@Test(groups = {"seekable", "buckets"})
 public class MantaClientSeekableByteChannelIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
-    public MantaClientSeekableByteChannelIT(final @Optional String encryptionCipher,
-                                            final @Optional String testType) throws IOException {
+    @BeforeClass
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @Optional String encryptionCipher,
+                            final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
         final String testName = this.getClass().getSimpleName();
@@ -62,11 +60,6 @@ public class MantaClientSeekableByteChannelIT {
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
                 testName, testType);
-    }
-
-    @BeforeClass
-    @Parameters({"testType"})
-    public void beforeClass(final @Optional String testType) throws IOException {
         IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
