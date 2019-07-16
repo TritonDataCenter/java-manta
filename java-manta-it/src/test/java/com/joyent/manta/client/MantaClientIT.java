@@ -313,7 +313,7 @@ public class MantaClientIT {
 
         mantaClient.delete(path);
         MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.existsAndIsAccessible(path));
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test
