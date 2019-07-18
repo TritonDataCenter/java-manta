@@ -20,12 +20,13 @@ import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.DateUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
 import static com.joyent.manta.util.MantaUtils.asString;
+import static org.apache.commons.lang3.time.DateUtils.addDays;
 import static org.testng.Assert.*;
 
 /**
@@ -325,7 +327,7 @@ public class MantaHttpHeadersIT {
         assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
-    public void canFailToDeleteDirectoryOnBadIfMatch() throws IOException {
+    public void canFailToDeleteObjectOnBadIfMatch() throws IOException {
         final String path = generatePath();
 
         final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
@@ -350,6 +352,71 @@ public class MantaHttpHeadersIT {
         mantaClient.delete(path, headers);
 
         // the object should not exist
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    public void canFailToDeleteObjectOnBadIfNoneMatch() throws IOException {
+        final String path = generatePath();
+
+        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
+        assertNotEquals(StringUtils.reverse(empty.getEtag()), empty.getEtag());
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+
+        headers.setIfNoneMatch(empty.getEtag());
+        final MantaClientHttpResponseException badIfNoneMatchEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(path, headers));
+
+        assertEquals(badIfNoneMatchEx.getStatusCode(), 412);
+        assertTrue(mantaClient.existsAndIsAccessible(path));
+
+        headers.setIfNoneMatch(StringUtils.reverse(empty.getEtag()));
+        mantaClient.delete(path, headers);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    public void canFailToDeleteObjectOnBadIfModifiedSince() throws IOException {
+        final String path = generatePath();
+
+        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+
+        headers.setIfModifiedSince(DateUtils.formatDate(empty.getLastModifiedTime()));
+        final MantaClientHttpResponseException badIfModifiedSinceEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(path, headers));
+
+        assertEquals(badIfModifiedSinceEx.getStatusCode(), 412);
+        assertTrue(mantaClient.existsAndIsAccessible(path));
+
+        if (testPathPrefix.contains("buckets")) {
+            final Date ifModifiedSinceDate = addDays(empty.getLastModifiedTime(),-3);
+            headers.setIfUnmodifiedSince(DateUtils.formatDate(ifModifiedSinceDate));
+            mantaClient.delete(path, headers);
+        }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    public void canFailToDeleteObjectOnBadIfUnmodifiedSince() throws IOException {
+        final String path = generatePath();
+
+        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        final Date ifUnmodifiedSinceDate = addDays(empty.getLastModifiedTime(), -3);
+
+        headers.setIfUnmodifiedSince(DateUtils.formatDate(ifUnmodifiedSinceDate));
+        final MantaClientHttpResponseException badIfUnmodifiedSinceEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(path, headers));
+
+        assertEquals(badIfUnmodifiedSinceEx.getStatusCode(), 412);
+        assertTrue(mantaClient.existsAndIsAccessible(path));
+
+        headers.setIfUnmodifiedSince(DateUtils.formatDate(empty.getLastModifiedTime()));
+        mantaClient.delete(path, headers);
         assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
