@@ -64,7 +64,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     static final int MAX_RESULTS = 1024;
 
     /**
-     * Maximum number of results to return for a bucket listing.
+     * Prefix filter that helps in optimizing a buckets listing.
      */
     static final String DEFAULT_PREFIX = "";
 
