@@ -162,8 +162,8 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @param httpHelper HTTP request helper class
      */
     public MantaBucketListingIterator(final String url,
-                                         final String path,
-                                         final HttpHelper httpHelper) {
+                                      final String path,
+                                      final HttpHelper httpHelper) {
         this(path, httpHelper, false, DEFAULT_PREFIX);
     }
 
@@ -174,7 +174,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @param httpHelper HTTP request helper class
      */
     public MantaBucketListingIterator(final String path,
-                                         final HttpHelper httpHelper) {
+                                      final HttpHelper httpHelper) {
         this(path, httpHelper, false, DEFAULT_PREFIX);
     }
 

@@ -917,8 +917,6 @@ public class MantaClient implements AutoCloseable {
                     break;
                 } else if (e.getServerCode().equals(MantaErrorCode.DIRECTORY_NOT_EMPTY_ERROR)) {
                     continue;
-                } else if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR)) {
-                    continue;
                 }
 
                 MantaIOException mioe = new MantaIOException("Unable to delete path", e);
@@ -1233,9 +1231,10 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Get the allowed methods associated with a Manta bucket.
+     * Get the allowed methods or options associated with a Manta object or bucket.
      *
-     * @param rawPath The fully qualified path of the object. i.e. /user/buckets
+     * @param rawPath The fully qualified path of the bcukets root directory or object.
+     * i.e. /user/buckets, /user/stor/foo/bar/baz.
      * @return The {@link MantaObjectResponse}.
      * @throws IOException                                     If an IO exception has occurred.
      * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.

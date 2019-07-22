@@ -49,7 +49,7 @@ public class IntegrationTestHelper {
     private static String setupBucketsPath(final ConfigContext config, final String testName) {
         final String bucketPathPrefix = String.format("%s%s%s", config.getMantaBucketsDirectory(),
                 SEPARATOR, integrationTestBucket);
-        return bucketPathPrefix + bucketObjectsSubstring + testName;
+        return bucketPathPrefix + bucketObjectsSubstring + testName + SEPARATOR;
     }
 
     /**

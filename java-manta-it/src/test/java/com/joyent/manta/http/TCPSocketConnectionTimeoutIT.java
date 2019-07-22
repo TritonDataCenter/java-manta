@@ -18,7 +18,11 @@ import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -39,7 +43,9 @@ public class TCPSocketConnectionTimeoutIT {
 
     private ConfigContext config;
 
-    public TCPSocketConnectionTimeoutIT(final @Optional String testType) throws IOException{
+    @BeforeClass()
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
 
         config = new IntegrationTestConfigContext();

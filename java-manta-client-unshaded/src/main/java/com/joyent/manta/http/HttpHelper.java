@@ -52,7 +52,7 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
     /**
      * Executes a HTTP OPTIONS against the remote Manta API.
      *
-     * @param path The fully qualified path of buckets in Manta. i.e. /user/buckets
+     * @param path The fully qualified path of buckets or object in Manta. i.e. /user/buckets
      * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the buckets directory over the network
      */
