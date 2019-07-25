@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import static com.joyent.manta.client.MantaBucketListingIterator.MAX_RESULTS;
 import static com.joyent.manta.util.UnitTestConstants.UNIT_TEST_URL;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,26 +60,53 @@ public class MantaBucketListingIteratorTest {
         Mockito.validateMockitoUsage();
     }
 
-    public void allowsSkippingFirstResult() throws Exception {
-        String dirListing =
-                "{\"name\":\".joyent\",\"type\":\"bucket\",\"mtime\":\"2015-04-16T22:50:11.353Z\"}\n"
-                        + "{\"name\":\"foo\",\"type\":\"bucket\",\"mtime\":\"2017-04-16T23:20:12.393Z\"}";
+    public void allowsSkippingFirstResultForBucket() throws Exception {
+        String bucketListing =
+                "{\"name\":\".joyent\",\"type\":\"bucket\",\"mtime\":\"2019-07-01T21:54:40.354Z\"}\n"
+                        + "{\"name\":\"foo\",\"type\":\"bucket\",\"mtime\":\"2019-07-12T18:37:33.640Z\"}";
         final Header contentTypeHeader = new BasicHeader(CONTENT_TYPE,
                 MantaObjectResponse.BUCKET_RESPONSE_CONTENT_TYPE);
         when(responseEntity.getContentType()).thenReturn(contentTypeHeader);
         when(response.getAllHeaders()).thenReturn( new Header[] {contentTypeHeader});
         when(responseEntity.getContent()).thenReturn(IOUtils.toInputStream(
-                dirListing, StandardCharsets.UTF_8));
+                bucketListing, StandardCharsets.UTF_8));
 
         final MantaBucketListingIterator itr = new MantaBucketListingIterator(
-                "/usr/buckets", httpHelper);
+                "/usr/buckets", httpHelper, MAX_RESULTS);
 
         itr.next();
         Map<String, Object> secondResult = itr.next();
 
         Assert.assertEquals(secondResult.get("name"), "foo");
         Assert.assertEquals(secondResult.get("type"), "bucket");
-        Assert.assertEquals(secondResult.get("mtime"), "2017-04-16T23:20:12.393Z");
+        Assert.assertEquals(secondResult.get("mtime"), "2019-07-12T18:37:33.640Z");
+        Assert.expectThrows(NoSuchElementException.class, itr::next);
+    }
+
+    public void allowsSkippingFirstResultForBucketObject() throws Exception {
+        String bucketObjectsListing =
+                "{\"name\":\".joyent\",\"type\":\"bucketobject\",\"etag\":\"2968452a-9f78-edbe-a5fa-fe167963f4cf\",\"size\":\"10\",\"contentType\":\"application/json; type=bucketobject\",\"contentMD5\":\"1B2M2Y8AsgTpgAmY7PhCfg==\",\"mtime\":\"2019-06-19T21:12:57.995Z\"}\n"
+                        + "{\"name\":\"foo\",\"type\":\"bucketobject\",\"etag\":\"fc2133b3-716e-c888-96e7-fb7f0d356e58\",\"size\":\"18\",\"contentType\":\"application/json; type=bucketobject\",\"contentMD5\":\"1B2M2Y8AsgTpgAmY7PhCfg==\",\"mtime\":\"2019-06-19T21:14:16.448Z\"}";
+        final Header contentTypeHeader = new BasicHeader(CONTENT_TYPE,
+                MantaObjectResponse.BUCKETOBJECT_RESPONSE_CONTENT_TYPE);
+        when(responseEntity.getContentType()).thenReturn(contentTypeHeader);
+        when(response.getAllHeaders()).thenReturn( new Header[] {contentTypeHeader});
+        when(responseEntity.getContent()).thenReturn(IOUtils.toInputStream(
+                bucketObjectsListing, StandardCharsets.UTF_8));
+
+        final MantaBucketListingIterator itr = new MantaBucketListingIterator(
+                "/usr/buckets/test-bucket/objects", httpHelper, MAX_RESULTS);
+
+        itr.next();
+        Map<String, Object> secondResult = itr.next();
+
+        Assert.assertEquals(secondResult.get("name"), "foo");
+        Assert.assertEquals(secondResult.get("type"), "bucketobject");
+        Assert.assertEquals(secondResult.get("etag"), "fc2133b3-716e-c888-96e7-fb7f0d356e58");
+        Assert.assertEquals(secondResult.get("size"), "18");
+        Assert.assertEquals(secondResult.get("contentType"), "application/json; type=bucketobject");
+        Assert.assertEquals(secondResult.get("contentMD5"), "1B2M2Y8AsgTpgAmY7PhCfg==");
+        Assert.assertEquals(secondResult.get("mtime"), "2019-06-19T21:14:16.448Z");
         Assert.expectThrows(NoSuchElementException.class, itr::next);
     }
 }

@@ -54,6 +54,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
+@SuppressWarnings("Duplicates")
 public class MantaDirectoryListingIterator implements Iterator<Map<String, Object>>,
         AutoCloseable {
     /**

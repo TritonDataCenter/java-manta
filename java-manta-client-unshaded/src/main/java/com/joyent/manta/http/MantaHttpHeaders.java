@@ -70,6 +70,12 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     public static final String CONTENT_SHA256 = "m-content-sha256";
 
     /**
+     * Manta HTTP header containing the next result returned from the server after
+     * pagination support for listing buckets reached its limit.
+     */
+    public static final String NEXT_MARKER = "Next-Marker";
+
+    /**
      * HTTP header containing the size of a set of results returned from Manta.
      */
     public static final String RESULT_SET_SIZE = "result-set-size";
@@ -424,6 +430,15 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      */
     public Long getResultSetSize() {
         return getLongFromHeader(RESULT_SET_SIZE);
+    }
+
+    /**
+     * Parses the value of the Result-Set-Size HTTP header returned from Manta.
+     *
+     * @return long value of header value, or null if it can't be found or parsed
+     */
+    public String getNextMarker() {
+        return getFirstHeaderStringValue(NEXT_MARKER);
     }
 
     /**

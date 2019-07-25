@@ -11,6 +11,7 @@ import io.mikael.urlbuilder.util.Decoder;
 import io.mikael.urlbuilder.util.Encoder;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.CharUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.Validate;
@@ -174,6 +175,43 @@ public final class MantaUtils {
             parsed = BooleanUtils.toBoolean(string);
         } catch (Exception e) {
             String msg = "Error parsing value as boolean. Value: %s";
+            LOGGER.warn(String.format(msg, value), e);
+            parsed = null;
+        }
+
+        return parsed;
+    }
+
+    /**
+     * Parses an arbitrary object for a character. If it can't be found, return null.
+     *
+     * @param value Object to parse for a character
+     * @return if parsing fails, return null
+     */
+    public static Character parseCharOrNull(final Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Character) {
+            return (Character)value;
+        }
+
+        String string = toStringEmptyToNull(value);
+        if (string == null) {
+            return null;
+        }
+
+        if (string.equals("%2f")) {
+            return CharUtils.toChar(SEPARATOR);
+        }
+
+        Character parsed;
+
+        try {
+            parsed = CharUtils.toChar(string);
+        } catch (Exception e) {
+            String msg = "Error parsing value as character. Value: %s";
             LOGGER.warn(String.format(msg, value), e);
             parsed = null;
         }

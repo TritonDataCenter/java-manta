@@ -741,7 +741,7 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaBucketListingIterator streamingBucketIterator(final String path, final int pagingSize) {
         MantaBucketListingIterator itr =
-                new MantaBucketListingIterator(path, httpHelper);
+                new MantaBucketListingIterator(path, httpHelper, pagingSize);
         danglingStreams.add(itr);
         return itr;
     }
