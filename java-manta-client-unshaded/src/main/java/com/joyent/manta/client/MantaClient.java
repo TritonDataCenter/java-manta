@@ -495,10 +495,9 @@ public class MantaClient implements AutoCloseable {
             clientException.setContextValue("path", path);
             throw clientException;
 
-        } catch (IOException e) {
-            throw new IOException(e);
         }
-        LOG.debug("Finished deleting bucket {}.", path);
+
+        LOG.debug("DELETE    {} [bucket]", path);
     }
 
     /**
@@ -587,36 +586,6 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Return a boolean indicating if a bucket is empty.
-     * This API call will be implemented after pre-deployment phase is completed.
-     *
-     * @param path buckets path
-     * @return true if bucket is empty, otherwise false
-     * @throws IOException thrown when we are unable to list the bucket over the network
-     */
-    public boolean isBucketEmpty(final String path) throws IOException {
-        final MantaObject object = this.head(path);
-
-        if (!object.isBucket()) {
-            MantaClientException e = new MantaClientException("The requested object was not a bucket");
-            e.setContextValue("bucket-path", path);
-            throw e;
-        }
-
-        Long size = object.getHttpHeaders().getResultSetSize();
-
-        if (size == null) {
-            MantaClientException e = new MantaClientException(
-                    "Expected result-set-size header to be non-null but it was not"
-                            + " part of the response");
-            e.setContextValue("path", path);
-            throw e;
-        }
-
-        return size == 0;
-    }
-
-    /**
      * Return a stream of the contents of a bucket in Manta.
      *
      * @param bucketPath The fully qualified path of a bucket.
@@ -660,66 +629,6 @@ public class MantaClient implements AutoCloseable {
         danglingStreams.add(stream);
 
         return stream;
-    }
-
-
-    /**
-     * Moves a bucket from one path to another path. This operation is not
-     * transactional and may fail or produce inconsistent result if the source
-     * or the destination is modified while the operation is in progress.
-     *
-     * @param source Original path to move from
-     * @param destination Destination path to move to
-     * @param entry Bucket supplemental data object
-     * @throws IOException thrown when something goes wrong
-     * @throws MantaClientHttpResponseException Source doesn't exist or destination has invalid name
-     * @throws MantaClientException If this operation is applied to a directory.
-     */
-    private void moveBucket(final String source, final String destination,
-                            final MantaObjectResponse entry)
-            throws IOException {
-        try {
-            createBucket(destination);
-        } catch (MantaClientHttpResponseException e) {
-            if (e.getServerCode().equals(MantaErrorCode.INVALID_BUCKET_NAME_ERROR)) {
-                final String msg = String.format("Invalid Bucket Name used for destination: %s", destination);
-                throw new MantaClientException(msg, e.getCause());
-            }
-        }
-
-        MantaHttpHeaders sourceHeaders = entry.getHttpHeaders();
-        Long contentsCount = sourceHeaders.getResultSetSize();
-
-        /* If we were just copying an empty bucket, we just create the
-           new bucket and delete the original */
-        if (contentsCount != null && contentsCount == 0L) {
-            deleteBucket(source);
-            return;
-        }
-
-        MantaObjectResponse destBucket = head(destination);
-        String destBucketPath = destBucket.getPath();
-        String sourceBucketPath = entry.getPath();
-
-        listBucketObjects(source).forEach(mantaObject -> {
-            try {
-                String sourcePath = mantaObject.getPath();
-                String relPath = sourcePath.substring(sourceBucketPath.length());
-                String destFullPath = destBucketPath + SEPARATOR + relPath;
-
-                if (mantaObject.isBucketObject()) {
-                    move(mantaObject.getPath(), destFullPath);
-                }
-                if (mantaObject.isDirectory()) {
-                    final String msg = String.format("moveBucket operation applied in a directory: %s ", sourcePath);
-                    throw new MantaClientException(msg);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
-
-        deleteBucket(source);
     }
 
     /**
@@ -2208,8 +2117,6 @@ public class MantaClient implements AutoCloseable {
 
         if (entry.isDirectory()) {
             moveDirectory(source, destination, entry);
-        } else if (entry.isBucket()) {
-            moveBucket(source, destination, entry);
         } else {
             moveFile(source, destination, recursivelyCreateDestinationDirectories);
         }

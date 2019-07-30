@@ -54,7 +54,7 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
      *
      * @param path The fully qualified path of buckets or object in Manta. i.e. /user/buckets
      * @return Apache HTTP Client response object
-     * @throws IOException when there is a problem getting the buckets directory over the network
+     * @throws IOException when there is a problem getting the object over the network
      */
     HttpResponse httpOptions(String path) throws IOException;
 

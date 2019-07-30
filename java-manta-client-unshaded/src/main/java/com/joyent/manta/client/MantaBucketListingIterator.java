@@ -350,7 +350,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             finished.set(true);
             return;
         } else if (nextMarkerHeader == null) {
-             LOG.info("Next-Marker value parsed is null, pagination completed");
+             LOG.info("Next-Marker value parsed is null, buckets listing completed");
         } else {
                 marker = nextMarkerHeader.getValue();
             }
@@ -454,9 +454,10 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * Validates whether the given listing operation (GET API call) has been
      * made to a valid buckets path and not to an unsupported directory.
      *
+     * @param entity Apache HTTP Client content entity object
      * @throws MantaUnexpectedObjectTypeException Iterator applied to a directory.
      */
-    private synchronized void validateEntityForBuckets(final HttpEntity entity) {
+    private void validateEntityForBuckets(final HttpEntity entity) {
         final String contentType;
 
         if (entity.getContentType() != null) {
@@ -484,31 +485,38 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     }
 
     /**
-     * Generates query that is executed by the server after verifying which query
-     * parameters like marker, prefix, delimiter are non-null and consequently
-     * generating the appropriate query for the server.
+     * Generates query after verifying which query parameters like marker, prefix,
+     * delimiter are non-null and consequently generating the appropriate executable
+     * query for the Manta server.
      *
      * @return desired executable query for Manta Server
      */
-    private synchronized String queryGenerator() {
+    private String queryGenerator() {
         final String finalQuery;
 
         if (marker == null) {
-            finalQuery = prependQueryWithParms(String.format("?limit=%d", pagingSize));
+            finalQuery = prependQueryWithParams(String.format("?limit=%d", pagingSize));
         } else {
-            finalQuery = prependQueryWithParms(String.format("?limit=%d&marker=%s",
+            finalQuery = prependQueryWithParams(String.format("?limit=%d&marker=%s",
                     pagingSize, UTF8_URL_ENCODER.encodeQueryElement(marker)));
         }
 
         return finalQuery;
     }
 
-    private synchronized String prependQueryWithParms(final String query) {
+    /**
+     * Helper method for {@link MantaBucketListingIterator#queryGenerator()}.
+     *
+     * @param query baseQuery that is to be configured
+     * @return formatted query for Manta Server
+     */
+    private String prependQueryWithParams(final String query) {
         Validate.notNull(query, "Query generated must never be null");
 
-        if (prefix != null ) {
+        if (prefix != null) {
             prependIfMissing(query, String.format("?prefix=%s", prefix));
-        } if (delimiter != null) {
+        }
+        if (delimiter != null) {
             prependIfMissing(query, String.format("?delimiter=%c", delimiter));
         }
         return query;
