@@ -15,6 +15,7 @@ import com.joyent.manta.exception.MantaResourceCloseException;
 import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpHeaders;
+import io.mikael.urlbuilder.util.Encoder;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -29,7 +30,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,8 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.joyent.manta.client.MantaObjectResponse.BUCKETOBJECT_RESPONSE_CONTENT_TYPE;
+import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
 import static com.joyent.manta.util.MantaUtils.formatPath;
+import static org.apache.commons.lang3.StringUtils.prependIfMissing;
 
 /**
  * <p>Class that wraps the paging of buckets listing in Manta to a single
@@ -63,6 +64,11 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     private static final Logger LOG = LoggerFactory.getLogger(MantaBucketListingIterator.class);
 
     /**
+     * Shared url encoder instance.
+     */
+    private static final Encoder UTF8_URL_ENCODER = new Encoder(StandardCharsets.UTF_8);
+
+    /**
      * Maximum number of results to return for a bucket listing.
      */
     static final int MAX_RESULTS = 1024;
@@ -75,12 +81,12 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     /**
      * Prefix filter that helps in optimizing a buckets listing.
      */
-    private final String prefix;
+    private volatile String prefix;
 
     /**
      * Filter used to group names with a common prefix.
      */
-    private final Character delimiter;
+    private volatile Character delimiter;
 
     /**
      * Path to bucket in which we will iterate through its contents.
@@ -145,6 +151,8 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
                                       final int pagingSize) {
         Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
+        Validate.notNull(prefix, "Prefix parameter must not be null");
+        Validate.notNull(delimiter, "Delimiter parameter must not be null");
 
         this.path = path;
         this.httpHelper = httpHelper;
@@ -171,8 +179,20 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
                                       final HttpHelper httpHelper,
                                       final String prefix,
                                       final int pagingSize) {
+        Validate.notBlank(path, "Path must not be blank");
+        Validate.notNull(httpHelper, "HTTP help must not be null");
+        Validate.notNull(prefix, "Prefix parameter must not be null");
 
-        this(path, httpHelper, prefix, null, pagingSize);
+        this.path = path;
+        this.httpHelper = httpHelper;
+
+        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+            throw new IllegalArgumentException("Paging size must be greater than "
+                    + "1 and less than or equal to 1024");
+        }
+
+        this.pagingSize = pagingSize;
+        this.prefix = prefix;
     }
 
     /**
@@ -185,10 +205,22 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      */
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
-                                      final char delimiter,
+                                      final Character delimiter,
                                       final int pagingSize) {
+        Validate.notBlank(path, "Path must not be blank");
+        Validate.notNull(httpHelper, "HTTP help must not be null");
+        Validate.notNull(delimiter, "Delimiter parameter must not be null");
 
-        this(path, httpHelper, null, delimiter, pagingSize);
+        this.path = path;
+        this.httpHelper = httpHelper;
+
+        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+            throw new IllegalArgumentException("Paging size must be greater than "
+                    + "1 and less than or equal to 1024");
+        }
+
+        this.pagingSize = pagingSize;
+        this.delimiter = delimiter;
     }
 
     /**
@@ -201,8 +233,18 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
                                       final int pagingSize) {
+        Validate.notBlank(path, "Path must not be blank");
+        Validate.notNull(httpHelper, "HTTP help must not be null");
 
-        this(path, httpHelper, null, pagingSize);
+        this.path = path;
+        this.httpHelper = httpHelper;
+
+        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+            throw new IllegalArgumentException("Paging size must be greater than "
+                    + "1 and less than or equal to 1024");
+        }
+
+        this.pagingSize = pagingSize;
     }
 
     /**
@@ -254,8 +296,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      */
     private synchronized void selectReader() throws IOException {
         if (marker == null) {
-            String query = String.format("?prefix=%s&delimiter=%c&limit=%d",
-                    prefix, delimiter, pagingSize);
+            String query = queryGenerator();
             final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
             try {
@@ -271,30 +312,8 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             currentResponse = httpHelper.executeRequest(request, null);
             HttpEntity entity = currentResponse.getEntity();
 
-            String contentType;
-
-            if (entity.getContentType() != null) {
-                contentType = entity.getContentType().getValue();
-            } else {
-                contentType = null;
-            }
-
-            if (!BUCKETOBJECT_RESPONSE_CONTENT_TYPE.equals(contentType)) {
-                String msg = "A file/directory has been supplied in the bucket listing path. "
-                        + "Only the contents of buckets can be listed.";
-                MantaUnexpectedObjectTypeException e = new MantaUnexpectedObjectTypeException(msg,
-                        ObjectType.BUCKET, ObjectType.FILE);
-                e.setContextValue("path", path);
-
-                try {
-                    MantaHttpHeaders headers = new MantaHttpHeaders(currentResponse.getAllHeaders());
-                    e.setResponseHeaders(headers);
-                } catch (RuntimeException re) {
-                    LOG.warn("Unable to convert response headers to MantaHttpHeaders", e);
-                }
-
-                throw e;
-            }
+            /* See description */
+            validateEntityForBuckets(entity);
 
             InputStream contentStream = entity.getContent();
             Objects.requireNonNull(contentStream, "A bucket listing without "
@@ -305,8 +324,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             br = new BufferedReader(streamReader);
 
         } else {
-            String query = String.format("?prefix=%s&delimiter=%c&limit=%d&marker=%s",
-                    prefix, delimiter, pagingSize, URLEncoder.encode(marker, "UTF-8"));
+            String query = queryGenerator();
             final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
             closeResources();
@@ -321,17 +339,21 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             br.readLine();
         }
 
-        /* If we have an empty bucket, we mark as done right here
-         * so that no other methods have additional work left. */
-        Header nextMarkerHeader = currentResponse.getFirstHeader(MantaHttpHeaders.NEXT_MARKER);
-        if (nextMarkerHeader.getValue() == null) {
-                finished.set(true);
-                return;
-
-        }
-
         nextLine.set(br.readLine());
         lines.incrementAndGet();
+
+
+        /* If we have an empty bucket with Next-Marker header as null, we mark as done right here
+         * so that no other methods have additional work left. */
+        Header nextMarkerHeader = currentResponse.getFirstHeader(MantaHttpHeaders.NEXT_MARKER);
+        if (nextLine.get() == null && nextMarkerHeader == null) {
+            finished.set(true);
+            return;
+        } else if (nextMarkerHeader == null) {
+             LOG.info("Next-Marker value parsed is null, pagination completed");
+        } else {
+                marker = nextMarkerHeader.getValue();
+            }
 
         // We are done if the first read is a null
         finished.set(nextLine.get() == null);
@@ -398,6 +420,10 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
         closeResources();
     }
 
+    /* ======================================================================
+     * Class Helper Methods
+     * ====================================================================== */
+
     /**
      * Closes dependent resources. If there is a problem closing the resources
      * an exception is logged but not thrown.
@@ -422,6 +448,70 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             HttpHelper.annotateContextedException(mio, null, currentResponse);
             LOG.error("Unable to close HTTP response object", mio);
         }
+    }
+
+    /**
+     * Validates whether the given listing operation (GET API call) has been
+     * made to a valid buckets path and not to an unsupported directory.
+     *
+     * @throws MantaUnexpectedObjectTypeException Iterator applied to a directory.
+     */
+    private synchronized void validateEntityForBuckets(final HttpEntity entity) {
+        final String contentType;
+
+        if (entity.getContentType() != null) {
+            contentType = entity.getContentType().getValue();
+        } else {
+            contentType = null;
+        }
+
+        if (DIRECTORY_RESPONSE_CONTENT_TYPE.equals(contentType)) {
+            String msg = "A file/directory has been supplied in the bucket listing path. "
+                    + "Only the contents of buckets can be listed.";
+            MantaUnexpectedObjectTypeException e = new MantaUnexpectedObjectTypeException(msg,
+                    ObjectType.BUCKET, ObjectType.DIRECTORY);
+            e.setContextValue("path", path);
+
+            try {
+                MantaHttpHeaders headers = new MantaHttpHeaders(currentResponse.getAllHeaders());
+                e.setResponseHeaders(headers);
+            } catch (RuntimeException re) {
+                LOG.warn("Unable to convert response headers to MantaHttpHeaders", e);
+            }
+
+            throw e;
+        }
+    }
+
+    /**
+     * Generates query that is executed by the server after verifying which query
+     * parameters like marker, prefix, delimiter are non-null and consequently
+     * generating the appropriate query for the server.
+     *
+     * @return desired executable query for Manta Server
+     */
+    private synchronized String queryGenerator() {
+        final String finalQuery;
+
+        if (marker == null) {
+            finalQuery = prependQueryWithParms(String.format("?limit=%d", pagingSize));
+        } else {
+            finalQuery = prependQueryWithParms(String.format("?limit=%d&marker=%s",
+                    pagingSize, UTF8_URL_ENCODER.encodeQueryElement(marker)));
+        }
+
+        return finalQuery;
+    }
+
+    private synchronized String prependQueryWithParms(final String query) {
+        Validate.notNull(query, "Query generated must never be null");
+
+        if (prefix != null ) {
+            prependIfMissing(query, String.format("?prefix=%s", prefix));
+        } if (delimiter != null) {
+            prependIfMissing(query, String.format("?delimiter=%c", delimiter));
+        }
+        return query;
     }
 
     /**

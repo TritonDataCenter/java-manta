@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import com.joyent.manta.http.HttpHelper;
 import com.joyent.manta.http.MantaHttpRequestFactory;
 import org.apache.commons.io.IOUtils;
@@ -108,5 +109,21 @@ public class MantaBucketListingIteratorTest {
         Assert.assertEquals(secondResult.get("contentMD5"), "1B2M2Y8AsgTpgAmY7PhCfg==");
         Assert.assertEquals(secondResult.get("mtime"), "2019-06-19T21:14:16.448Z");
         Assert.expectThrows(NoSuchElementException.class, itr::next);
+    }
+
+    public void throwsAppropriateExceptionWhenListingObject() {
+        final String dirPath = "/user/stor/directory";
+        final Header contentTypeHeader = new BasicHeader(CONTENT_TYPE, MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE);
+
+        when(responseEntity.getContentType()).thenReturn(contentTypeHeader);
+        when(response.getFirstHeader(CONTENT_TYPE)).thenReturn(contentTypeHeader);
+        when(response.getAllHeaders()).thenReturn( new Header[] {contentTypeHeader});
+
+        // uncomment once it's okay to call next before hasNext
+        Assert.expectThrows(MantaUnexpectedObjectTypeException.class, () ->
+                new MantaBucketListingIterator(dirPath, httpHelper, MantaDirectoryListingIterator.MAX_RESULTS).next());
+
+        Assert.expectThrows(MantaUnexpectedObjectTypeException.class, () ->
+                new MantaBucketListingIterator(dirPath, httpHelper, MantaDirectoryListingIterator.MAX_RESULTS).hasNext());
     }
 }

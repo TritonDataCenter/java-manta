@@ -54,7 +54,6 @@ public final class MantaUtils {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(MantaUtils.class);
 
-
     /**
      * Shared url encoder instance.
      */
