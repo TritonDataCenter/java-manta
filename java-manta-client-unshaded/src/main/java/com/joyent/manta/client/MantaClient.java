@@ -445,7 +445,6 @@ public class MantaClient implements AutoCloseable {
         LOG.debug("CREATE    {} [bucket]", path);
 
         final HttpPut put = httpHelper.getRequestFactory().put(path);
-
         final MantaHttpHeaders headers;
 
         if (rawHeaders == null) {
@@ -457,7 +456,6 @@ public class MantaClient implements AutoCloseable {
         MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
 
         put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.BUCKET.getContentType());
-
         HttpResponse response = httpHelper.executeAndCloseRequest(put,
                 HttpStatus.SC_NO_CONTENT,
                 "PUT    {} response [{}] {} ");
@@ -519,9 +517,10 @@ public class MantaClient implements AutoCloseable {
      * <p>Parallelism settings are set by JDK system property:
      * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
      *
-     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
-     * safe if other operations are performed on the bucket path while
-     * it is running.</p>
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby unsafe
+     * if other operations like concurrently inserting objects in the buckets,
+     * moving them or deletions due to which object(s) might get lost are performed
+     * on the bucket path while it is running.</p>
      *
      * @param bucketPath bucket path
      * @return A unsorted {@link Stream} of {@link MantaObject}
@@ -539,9 +538,10 @@ public class MantaClient implements AutoCloseable {
      * <p>Parallelism settings are set by JDK system property:
      * <code>java.util.concurrent.ForkJoinPool.common.parallelism</code></p>
      *
-     * <p><strong>WARNING:</strong> this method is not atomic and thereby not
-     * safe if other operations are performed on the bucket path while
-     * it is running.</p>
+     * <p><strong>WARNING:</strong> this method is not atomic and thereby unsafe
+     * if other operations like concurrently inserting objects in the buckets,
+     * moving them or deletions due to which object(s) might get lost are performed
+     * on the bucket path while it is running.</p>
      *
      * @param bucketPath bucket path
      * @param filter predicate class used to filter all results returned
@@ -2072,14 +2072,13 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * <p>Moves an object from one path to another path. When moving
-     * directories/buckets or files between different directories/buckets, this operation is
+     * directories or files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.</p>
      *
-     * <p><em>Note: If you are renaming a bucket use {@link #move(String, String)}</em>
-     * <em>Note: If you need to do a rename, then use {@link #putSnapLink(String, String, MantaHttpHeaders)}</em>
-     * </p>
+     * <p><em>Note: If you need to do a rename, then use
+     * {@link #putSnapLink(String, String, MantaHttpHeaders)}</em></p>
      *
      * @param source Original path to move from
      * @param destination Destination path to move to
@@ -2092,7 +2091,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * <p>Moves an object from one path to another path. When moving
-     * directories or files between different directories, this operation is
+     * directories or files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.</p>
@@ -2124,7 +2123,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Moves a file from one path to another path. When moving
-     * files between different directories, this operation is
+     * files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.

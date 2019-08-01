@@ -3,6 +3,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +16,11 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -70,17 +74,62 @@ public class MantaBucketListingIteratorIT {
 
     @Test
     public final void testBucketListing() throws IOException {
-        mantaClient.put(String.format("%s%s", testPathPrefix, UUID.randomUUID()), TEST_DATA);
+        final String objectPath = testPathPrefix + UUID.randomUUID();
+        final String objectPath1 = testPathPrefix + UUID.randomUUID();
+        final String objectPath2 = testPathPrefix + UUID.randomUUID();
+        final String objectPath3 = testPathPrefix + UUID.randomUUID();
+        final String objectPath4 = testPathPrefix + UUID.randomUUID();
 
-        final String pathPrefix = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(MantaClient.SEPARATOR));
-        final Stream<MantaObject> objs = mantaClient.listBucketObjects(pathPrefix);
+        mantaClient.put(objectPath, TEST_DATA);
+        mantaClient.put(objectPath1, TEST_DATA);
+        mantaClient.put(objectPath2, TEST_DATA);
+        mantaClient.put(objectPath3, TEST_DATA);
+        mantaClient.put(objectPath4, TEST_DATA);
 
+        final String bucketObjectsDir = prefixObjectPath();
+        final Stream<MantaObject> objs = mantaClient.listBucketObjects(bucketObjectsDir);
         final AtomicInteger count = new AtomicInteger(0);
         objs.forEach(obj -> {
             count.incrementAndGet();
             Assert.assertTrue(obj.getPath().startsWith(testPathPrefix));
         });
 
-        Assert.assertEquals(1, count.get());
+        Assert.assertEquals(5, count.get());
+
+        mantaClient.deleteBucket(objectPath);
+        mantaClient.deleteBucket(objectPath1);
+        mantaClient.deleteBucket(objectPath2);
+        mantaClient.deleteBucket(objectPath3);
+        mantaClient.deleteBucket(objectPath4);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath1));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath2));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath3));
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath4));
+    }
+
+    public void canFindASingleFile() throws IOException {
+        final String filePath = testPathPrefix + UUID.randomUUID();
+        final String bucketObjectsDir = prefixObjectPath();
+
+        mantaClient.put(filePath, TEST_DATA, StandardCharsets.UTF_8);
+
+        try (Stream<MantaObject> stream = mantaClient.findBucketObject(bucketObjectsDir)) {
+            List<MantaObject> results = stream.collect(Collectors.toList());
+
+            Assert.assertFalse(results.isEmpty(), "At the least one file returned");
+            Assert.assertEquals(results.get(0).getPath(), filePath);
+            Assert.assertFalse(results.get(0).isBucket());
+        }
+
+        mantaClient.deleteBucket(filePath);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(filePath));
+    }
+
+    private String prefixObjectPath() {
+        final String objectPath = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(MantaClient.SEPARATOR));
+
+        Validate.notNull(objectPath, "Parsing object path failed");
+        return objectPath;
     }
 }

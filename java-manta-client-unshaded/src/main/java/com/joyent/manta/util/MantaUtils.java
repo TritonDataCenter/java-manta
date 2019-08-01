@@ -11,7 +11,6 @@ import io.mikael.urlbuilder.util.Decoder;
 import io.mikael.urlbuilder.util.Encoder;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ContextedException;
@@ -36,7 +35,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
@@ -376,27 +374,6 @@ public final class MantaUtils {
 
         final Path lastPart = asNioPath.getName(count - 1);
         return lastPart.toString();
-    }
-
-    /**
-     * Generates an allowed bucket name from the path provided.
-     *
-     * @param bucketPath URL or Unix-style file path
-     * @return the generated bucket name
-     */
-    @SuppressWarnings("MagicNumber")
-    public static String generateBucketName(final String bucketPath) {
-        Validate.notEmpty(bucketPath, "Path to Bucket must not be null or empty");
-
-        final String[] prefixes = MantaUtils.prefixPaths(bucketPath);
-        if (!prefixes[1].contains("buckets")) {
-            throw new IllegalArgumentException(
-                    "Method was not used in the buckets directory");
-        }
-
-        final String name = formatPath(lastItemInPath(bucketPath) + UUID.randomUUID().toString());
-        return name.toLowerCase().substring(0, RandomUtils.nextInt(5, 35)).
-                    replaceAll("[^a-zA-Z0-9]", StringUtils.EMPTY);
     }
 
     /**

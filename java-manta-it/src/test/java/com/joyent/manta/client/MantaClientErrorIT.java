@@ -8,9 +8,9 @@
 package com.joyent.manta.client;
 
 import com.joyent.manta.client.helper.IntegrationTestHelper;
-import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.MapConfigContext;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
@@ -27,7 +27,6 @@ import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.ACCOUNT_DOES_NOT_EXIST_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.NO_CODE_ERROR;
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 /**
  * Tests for verifying the correct behavior of error handling from Manta API
@@ -104,7 +103,7 @@ public class MantaClientErrorIT {
     public void fileNotFoundWithContent() {
         String path = String.format("%s/%s", testPathPrefix, UUID.randomUUID());
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

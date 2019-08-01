@@ -57,7 +57,6 @@ import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 import static java.lang.Math.floorDiv;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
@@ -265,7 +264,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         assertTrue(0 < exceptions.getCount());
 
         client.delete(unencryptedObjectPath);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> client.get(unencryptedObjectPath));
         client.close();
     }
@@ -301,7 +300,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         assertTrue(0 < exceptions.getCount());
 
         client.delete(unencryptedObjectPath);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> client.get(unencryptedObjectPath));
         client.close();
     }
@@ -324,7 +323,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         assertTrue(0 < exceptions.getCount());
 
         client.delete(encryptedObjectPath);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> client.get(encryptedObjectPath));
         client.close();
     }
@@ -360,7 +359,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
                      ArrayUtils.subarray(STUB_PLAINTEXT_OBJECT_CONTENT, offset, STUB_PLAINTEXT_OBJECT_CONTENT.length));
 
         client.delete(encryptedObjectPath);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> client.get(encryptedObjectPath));
         client.close();
     }

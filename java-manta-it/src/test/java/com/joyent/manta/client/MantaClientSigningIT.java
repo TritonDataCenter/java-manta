@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -155,7 +154,7 @@ public class MantaClientSigningIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -195,7 +194,7 @@ public class MantaClientSigningIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -239,7 +238,7 @@ public class MantaClientSigningIT {
         Assert.assertEquals(actual, TEST_DATA);
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -290,7 +289,7 @@ public class MantaClientSigningIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -318,7 +317,7 @@ public class MantaClientSigningIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

@@ -45,8 +45,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
-
 @Test(groups = { "buckets" })
 public class MantaClientAuthenticationChangeIT {
 
@@ -166,7 +164,7 @@ public class MantaClientAuthenticationChangeIT {
         AssertJUnit.assertArrayEquals(testContent, retrievedContent);
 
         mantaClient.delete(testFile);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testFile));
     }
 
@@ -204,7 +202,7 @@ public class MantaClientAuthenticationChangeIT {
         AssertJUnit.assertArrayEquals(testContent, retrievedContent);
 
         mantaClient.delete(testFile);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testFile));
     }
 

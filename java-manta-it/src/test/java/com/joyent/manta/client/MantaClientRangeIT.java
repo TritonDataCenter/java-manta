@@ -15,14 +15,16 @@ import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.UUID;
-
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 /**
  * Tests for verifying the correct behavior of range operations performed by
@@ -103,7 +105,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -123,7 +125,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -144,7 +146,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -165,7 +167,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -186,7 +188,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -207,7 +209,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -241,7 +243,7 @@ public class MantaClientRangeIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

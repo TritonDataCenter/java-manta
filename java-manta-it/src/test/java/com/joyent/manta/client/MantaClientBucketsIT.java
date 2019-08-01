@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
+import static com.joyent.manta.client.helper.IntegrationTestHelper.generateBucketName;
 import static com.joyent.manta.exception.MantaErrorCode.BUCKET_EXISTS_ERROR;
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_BUCKET_NAME_ERROR;
-import static com.joyent.manta.util.MantaUtils.generateBucketName;
 
 /**
  * Tests for verifying buckets operations of {@link MantaClient}
@@ -52,12 +52,11 @@ public class MantaClientBucketsIT {
         testPathPrefix = String.format(config.getMantaBucketsDirectory() + "%s", SEPARATOR);
     }
 
-    /*
-    @AfterClass
-    public void afterClass() throws IOException {
-        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
+    @Test(expectedExceptions = { IllegalArgumentException.class })
+    public final void generateBucketNameInNonBucketsDirectory() {
+        final String path = "/username/stor/";
+        generateBucketName(path);
     }
-    */
 
     public void createAndDeleteBucket() throws IOException {
         final String name = generateBucketName(testPathPrefix);

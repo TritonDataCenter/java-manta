@@ -153,12 +153,6 @@ public class MantaUtilsTest {
         Assert.assertEquals(actual, expected);
     }
 
-    @Test(expectedExceptions = { IllegalArgumentException.class })
-    public final void generateBucketNameInNonBucketsDirectory() {
-        final String path = "/username/stor/";
-        MantaUtils.generateBucketName(path);
-    }
-
     public void lastItemInPathIsCorrectFileWithTrailingSeparator() {
         final String expected = new UUID(24, 48).toString();
         final String path = String.format("/foo/bar/%s/", expected);

@@ -77,8 +77,6 @@
             <run>
                 <include name="error" />
                 <include name="headers" />
-                <include name="metadata" />
-                <include name="put" />
                 <include name="range-downloads" />
                 <include name="seekable" />
                 <include name="timeout" />

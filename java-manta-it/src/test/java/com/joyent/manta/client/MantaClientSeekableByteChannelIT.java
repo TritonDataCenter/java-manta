@@ -16,7 +16,11 @@ import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,8 +33,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 /**
  * Tests for verifying the behavior of {@link SeekableByteChannel} with
@@ -81,7 +83,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -96,7 +98,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -114,7 +116,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -141,7 +143,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -168,7 +170,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -190,7 +192,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -208,11 +210,11 @@ public class MantaClientSeekableByteChannelIT {
             channel.close();
 
             channel.read(buffer);
-        }
 
-        mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(path));
+            mantaClient.delete(path);
+            MantaAssert.assertResponseFailureCode(404,
+                    (MantaFunction<Object>) () -> mantaClient.get(path));
+        }
     }
 
     @SuppressWarnings("try")
@@ -230,11 +232,11 @@ public class MantaClientSeekableByteChannelIT {
             channel.close();
 
             channel.size();
-        }
 
-        mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(path));
+            mantaClient.delete(path);
+            MantaAssert.assertResponseFailureCode(404,
+                    (MantaFunction<Object>) () -> mantaClient.get(path));
+        }
     }
 
     @Test(expectedExceptions = NonWritableChannelException.class)
@@ -246,11 +248,11 @@ public class MantaClientSeekableByteChannelIT {
         try (SeekableByteChannel channel = mantaClient.getSeekableByteChannel(path)) {
             ByteBuffer buffer = ByteBuffer.wrap(new byte[2]);
             channel.write(buffer);
-        }
 
-        mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.get(path));
+            mantaClient.delete(path);
+            MantaAssert.assertResponseFailureCode(404,
+                    (MantaFunction<Object>) () -> mantaClient.get(path));
+        }
     }
 
     public final void getFromForwardPosition() throws IOException {
@@ -270,7 +272,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -294,7 +296,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -326,7 +328,7 @@ public class MantaClientSeekableByteChannelIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 

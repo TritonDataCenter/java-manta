@@ -10,19 +10,20 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.SkipException;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
-
-
 /**
  * Tests for verifying the behavior of metadata with {@link MantaClient}.
  */
@@ -78,8 +79,8 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("m-force"), "true");
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void verifyMetadataCanBeAddedLater() throws IOException {
@@ -98,7 +99,8 @@ public class MantaClientMetadataIT {
         metadata.put("m-Droids", "1");
         metadata.put("m-force", "true");
 
-        final MantaObject metadataResult = mantaClient.putMetadata(path, metadata);
+        final String metadataPath = formatBucketsMetadataPath(path);
+        final MantaObject metadataResult = mantaClient.putMetadata(metadataPath, metadata);
 
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
@@ -123,8 +125,8 @@ public class MantaClientMetadataIT {
             }
         }
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void verifyCanRemoveMetadata() throws IOException, CloneNotSupportedException {
@@ -144,7 +146,8 @@ public class MantaClientMetadataIT {
         MantaMetadata updated = (MantaMetadata)metadata.clone();
         updated.delete("m-force");
 
-        MantaObject updateResult = mantaClient.putMetadata(path, updated);
+        final String metadataPath = formatBucketsMetadataPath(path);
+        MantaObject updateResult = mantaClient.putMetadata(metadataPath, updated);
         Assert.assertEquals(updated, updateResult.getMetadata());
 
         MantaObject head = mantaClient.head(path);
@@ -156,8 +159,8 @@ public class MantaClientMetadataIT {
                 String.format("Actual metadata: %s", get.getMetadata()));
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test(groups = "encrypted")
@@ -190,8 +193,8 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("e-force"), "true");
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test(groups = "encrypted")
@@ -215,7 +218,8 @@ public class MantaClientMetadataIT {
         metadata.put("e-Droids", "1");
         metadata.put("e-force", "true");
 
-        final MantaObject metadataResult = mantaClient.putMetadata(path, metadata);
+        final String metadataPath = formatBucketsMetadataPath(path);
+        final MantaObject metadataResult = mantaClient.putMetadata(metadataPath, metadata);
 
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
@@ -242,7 +246,17 @@ public class MantaClientMetadataIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
+    }
+
+    private String formatBucketsMetadataPath(final String path) throws IOException {
+        String metadataPath = path;
+        if (IntegrationTestHelper.verifyBucketsSupport(mantaClient.getContext(), mantaClient)) {
+            metadataPath = MantaUtils.formatPath(String.format("%s" + MantaClient.SEPARATOR + "%s",
+                    path, "metadata"));
+        }
+
+        return metadataPath;
     }
 }

@@ -19,7 +19,11 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.exception.ExceptionContext;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,8 +31,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
-
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 /**
  * Tests for verifying the behavior of {@link MantaObjectOutputStream} with
@@ -85,8 +87,8 @@ public class MantaObjectOutputStreamIT {
                 "Uploaded bytes don't match");
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public void canUploadSmallStringWithErrorProneName() throws IOException {
@@ -105,8 +107,8 @@ public class MantaObjectOutputStreamIT {
                 "File wasn't uploaded: " + path);
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public void canUploadMuchLargerFile() throws IOException {
@@ -148,8 +150,8 @@ public class MantaObjectOutputStreamIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public void canUploadMuchLargerFileWithPeriodicWaits() throws Exception {
@@ -214,7 +216,7 @@ public class MantaObjectOutputStreamIT {
         }
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
-                (MantaFunction<Object>) () -> mantaClient.head(path));
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }
