@@ -249,8 +249,6 @@ public class MantaClientSigningIT {
             connection.setRequestMethod("OPTIONS");
             connection.connect();
 
-            Map<String, List<String>> headers = connection.getHeaderFields();
-
             if (connection.getResponseCode() != 200) {
                 String errorText = IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset());
 
@@ -263,8 +261,8 @@ public class MantaClientSigningIT {
                 Assert.fail(errorText);
             }
 
-            Assert.assertNotNull(headers);
-            Assert.assertEquals(headers.get("Server").get(0), "Manta");
+            String server = connection.getHeaderField("Server");
+            Assert.assertEquals(server, "Manta");
         } finally {
             connection.disconnect();
         }
