@@ -47,6 +47,7 @@ public class MantaClientMetadataIT {
         mantaClient = new MantaClient(config);
         testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
                 testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass

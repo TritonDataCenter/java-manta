@@ -27,6 +27,7 @@ import com.joyent.manta.exception.MantaIOException;
 import com.joyent.manta.http.entity.NoContentEntity;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -66,6 +67,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
 /**
  * {@link HttpHelper} implementation that transparently handles client-side
@@ -534,7 +537,13 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
          * the encryption-specific metadata headers. While at the same time
          * overwriting all other metadata values. Unfortunately, this process
          * requires two steps. */
-        HttpResponse response = httpHead(path);
+        String metadataPath = path;
+        if (StringUtils.endsWith(path, SEPARATOR + "metadata")) {
+                    metadataPath = StringUtils.substring(path, 0, path.lastIndexOf(SEPARATOR));
+        }
+
+        Validate.notNull(metadataPath, "Http Response cannot be retrieved for an empty path");
+        HttpResponse response = httpHead(metadataPath);
 
         boolean isEncryptedObject = response.getFirstHeader(MantaHttpHeaders.ENCRYPTION_CIPHER) != null;
         Header contentType = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);

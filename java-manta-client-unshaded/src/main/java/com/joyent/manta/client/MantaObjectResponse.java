@@ -45,7 +45,7 @@ public class MantaObjectResponse implements MantaObject {
     /**
      * The content-type used to represent Manta bucket resources in http responses.
      */
-    public static final String BUCKETOBJECT_RESPONSE_CONTENT_TYPE = "application/json; type=bucketobject";
+    public static final String BUCKETOBJECT_RESPONSE_CONTENT_TYPE = "application/json";
 
     /**
      * The content-type used to represent Manta directory resources in http responses.
