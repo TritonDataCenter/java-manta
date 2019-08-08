@@ -539,7 +539,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
          * requires two steps. */
         String metadataPath = path;
         if (StringUtils.endsWith(path, SEPARATOR + "metadata")) {
-                    metadataPath = StringUtils.substring(path, 0, path.lastIndexOf(SEPARATOR));
+                    metadataPath = StringUtils.substringBeforeLast(path, SEPARATOR);
         }
 
         Validate.notNull(metadataPath, "Http Response cannot be retrieved for an empty path");

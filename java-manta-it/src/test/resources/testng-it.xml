@@ -74,15 +74,9 @@
         <parameter name="testType" value="buckets"/>
         <groups>
             <define name="buckets" />
-            <run>
-                <include name="error" />
-                <include name="headers" />
-                <include name="range-downloads" />
-                <include name="seekable" />
-                <include name="timeout" />
-            </run>
         </groups>
         <classes>
+            <class name="com.joyent.manta.client.MantaBucketListingIteratorIT" />
             <class name="com.joyent.manta.client.MantaClientIT" />
             <class name="com.joyent.manta.client.MantaClientAuthenticationIT" />
             <class name="com.joyent.manta.client.MantaClientAuthenticationChangeIT" />

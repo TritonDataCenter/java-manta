@@ -3,6 +3,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
@@ -18,10 +19,14 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.joyent.manta.client.MantaClient.SEPARATOR;
 
 /**
  * Tests for verifying correct functioning of making remote requests i.e GET bucket(s)/object(s))
@@ -31,7 +36,7 @@ import java.util.stream.Stream;
  * or else it will throw a {@link org.testng.SkipException}
  * </p>
  */
-@SuppressWarnings("unused")
+@Test(groups = { "buckets" }) @SuppressWarnings("unused")
 public class MantaBucketListingIteratorIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(MantaBucketListingIteratorIT.class);
@@ -72,7 +77,6 @@ public class MantaBucketListingIteratorIT {
         IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
-    @Test
     public final void testBucketListing() throws IOException {
         final String objectPath = testPathPrefix + UUID.randomUUID();
         final String objectPath1 = testPathPrefix + UUID.randomUUID();
@@ -96,11 +100,11 @@ public class MantaBucketListingIteratorIT {
 
         Assert.assertEquals(5, count.get());
 
-        mantaClient.deleteBucket(objectPath);
-        mantaClient.deleteBucket(objectPath1);
-        mantaClient.deleteBucket(objectPath2);
-        mantaClient.deleteBucket(objectPath3);
-        mantaClient.deleteBucket(objectPath4);
+        mantaClient.delete(objectPath);
+        mantaClient.delete(objectPath1);
+        mantaClient.delete(objectPath2);
+        mantaClient.delete(objectPath3);
+        mantaClient.delete(objectPath4);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath1));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath2));
@@ -122,12 +126,67 @@ public class MantaBucketListingIteratorIT {
             Assert.assertFalse(results.get(0).isBucket());
         }
 
-        mantaClient.deleteBucket(filePath);
+        mantaClient.delete(filePath);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(filePath));
     }
 
+    public void isPagingForBucketsCorrectly() throws IOException {
+        String basePath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        final String bucketObjectsDir = prefixObjectPath();
+        final int MAX = 30;
+
+        // Add files 1-30
+        for (int i = 1; i <= MAX; i++) {
+            String name = String.format("%05d", i);
+            String path = String.format("%s%s", basePath, name);
+
+            mantaClient.put(path, TEST_DATA);
+        }
+
+        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(bucketObjectsDir, 5)) {
+            // Make sure we can get the first element
+            Assert.assertTrue(itr.hasNext(), "We should have the first element");
+            Map<String, Object> first = itr.next();
+            final String baseName = StringUtils.substringAfterLast(basePath, SEPARATOR);
+            Assert.assertEquals(first.get("name").toString(), baseName + "00001");
+
+            // Scroll forward to the last element
+            for (int i = 2; i < MAX; i++) {
+                Assert.assertTrue(itr.hasNext(), "We should have the next element");
+                Map<String, Object> next = itr.next();
+                Assert.assertEquals(next.get("name").toString(), baseName + String.format("%05d", i));
+            }
+
+            // Make sure that we can get the last element
+            Assert.assertTrue(itr.hasNext(), "We should have the last element");
+            Map<String, Object> last = itr.next();
+            Assert.assertEquals(last.get("name").toString(), baseName + String.format("%05d", MAX));
+
+            // Make sure that we are at the end of the iteration
+            Assert.assertFalse(itr.hasNext());
+
+            boolean failed = false;
+
+            try {
+                itr.next();
+            } catch (NoSuchElementException e) {
+                failed = true;
+            }
+
+            Assert.assertTrue(failed, "Iterator failed to throw NoSuchElementException");
+        }
+
+        // Delete files 1-30
+        for (int i = 1; i <= MAX; i++) {
+            String name = String.format("%05d", i);
+            String path = String.format("%s%s", basePath, name);
+
+            mantaClient.delete(path);
+        }
+    }
+
     private String prefixObjectPath() {
-        final String objectPath = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(MantaClient.SEPARATOR));
+        final String objectPath = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(SEPARATOR));
 
         Validate.notNull(objectPath, "Parsing object path failed");
         return objectPath;

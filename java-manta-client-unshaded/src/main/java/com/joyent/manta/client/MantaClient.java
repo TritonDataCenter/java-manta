@@ -106,6 +106,7 @@ import java.util.stream.StreamSupport;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_PRUNE_DEPTH;
 import static com.joyent.manta.util.MantaUtils.formatPath;
+import static org.apache.commons.lang3.StringUtils.startsWith;
 
 /**
  * Manta client object that allows for doing CRUD operations against the Manta HTTP
@@ -113,6 +114,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  *
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class MantaClient implements AutoCloseable {
 
@@ -693,7 +695,8 @@ public class MantaClient implements AutoCloseable {
             throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
         String path = formatPath(rawPath);
-        if (pruneDepth == null || pruneDepth == DEFAULT_PRUNE_DEPTH) {
+        if (pruneDepth == null || pruneDepth == DEFAULT_PRUNE_DEPTH
+                || startsWith(path, config.getMantaBucketsDirectory())) {
             LOG.debug("DELETE {}", path);
             httpHelper.httpDelete(path, requestHeaders);
         } else {
