@@ -72,6 +72,9 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
     /**
      * Manta HTTP header containing the next result returned from the server after
      * pagination support for listing buckets reached its limit.
+     * If the response is truncated, Manta buckets returns this parameter with
+     * a token. It is then specified as the {@link com.joyent.manta.client.MantaBucketListingIterator}
+     * marker in the subsequent request to retrieve the next page of results.
      */
     public static final String NEXT_MARKER = "Next-Marker";
 

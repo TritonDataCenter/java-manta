@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.joyent.manta.client.MantaObjectResponse.DIRECTORY_RESPONSE_CONTENT_TYPE;
 import static com.joyent.manta.util.MantaUtils.formatPath;
-import static org.apache.commons.lang3.StringUtils.prependIfMissing;
+import static org.apache.commons.lang3.StringUtils.startsWith;
 
 /**
  * <p>Class that wraps the paging of buckets listing in Manta to a single
@@ -81,12 +81,12 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     /**
      * Prefix filter that helps in optimizing a buckets listing.
      */
-    private volatile String prefix;
+    private volatile String prefix = null;
 
     /**
-     * Filter used to group names with a common prefix.
+     * Filter to group names with a common prefix ending in its first occurrence.
      */
-    private volatile Character delimiter;
+    private volatile Character delimiter = null;
 
     /**
      * Path to bucket in which we will iterate through its contents.
@@ -119,7 +119,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     private final ObjectMapper mapper = MantaObjectMapper.INSTANCE;
 
     /**
-     * The last marker we used to request against the Manta API.
+     * The marker we use to request against the Manta API.
      */
     private volatile String marker;
 
@@ -142,7 +142,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @param httpHelper HTTP request helper class
      * @param prefix prefix filter that helps in optimizing a buckets listing
      * @param pagingSize size of result set requested against the Manta API (2-1024)
-     * @param delimiter filter used to group names with a common prefix
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
      */
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
@@ -200,7 +200,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      *
      * @param path path to bucket in which we will iterate through its contents
      * @param httpHelper HTTP request helper class
-     * @param delimiter filter used to group names with a common prefix
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
      * @param pagingSize size of result set requested against the Manta API (2-1024).
      */
     public MantaBucketListingIterator(final String path,
@@ -245,46 +245,6 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
         }
 
         this.pagingSize = pagingSize;
-    }
-
-    /**
-     * Create a new instance of a bucket list iterator.
-     *
-     * @param path path to bucket in which we will iterate through its contents
-     * @param httpHelper HTTP request helper class
-     * @param prefix prefix filter that helps in optimizing a buckets listing
-     */
-    public MantaBucketListingIterator(final String path,
-                                      final HttpHelper httpHelper,
-                                      final String prefix) {
-
-        this(path, httpHelper, prefix, MAX_RESULTS);
-    }
-
-    /**
-     * Create a new instance of a bucket list iterator.
-     *
-     * @param path path to bucket in which we will iterate through its contents
-     * @param httpHelper HTTP request helper class
-     * @param delimiter filter used to group names with a common prefix
-     */
-    public MantaBucketListingIterator(final String path,
-                                      final HttpHelper httpHelper,
-                                      final Character delimiter) {
-
-        this(path, httpHelper, delimiter, MAX_RESULTS);
-    }
-
-    /**
-     * Create a new instance of a bucket list iterator.
-     *
-     * @param path path to bucket in which we will iterate through its contents
-     * @param httpHelper HTTP request helper class
-     */
-    public MantaBucketListingIterator(final String path,
-                                      final HttpHelper httpHelper) {
-
-        this(path, httpHelper, MAX_RESULTS);
     }
 
     /**
@@ -297,7 +257,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     private synchronized void selectReader() throws IOException {
         if (marker == null) {
             String query = queryGenerator();
-            final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
+             final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
 
             try {
                 if (currentResponse != null) {
@@ -322,7 +282,6 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             Reader streamReader = new InputStreamReader(entity.getContent(),
                     StandardCharsets.UTF_8.name());
             br = new BufferedReader(streamReader);
-
         } else {
             String query = queryGenerator();
             final HttpGet request = httpHelper.getRequestFactory().get(formatPath(path) + query);
@@ -334,9 +293,6 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             Reader streamReader = new InputStreamReader(entity.getContent(),
                     StandardCharsets.UTF_8.name());
             br = new BufferedReader(streamReader);
-
-            // We read one line to clear it because it is our marker
-            br.readLine();
         }
 
         nextLine.set(br.readLine());
@@ -351,9 +307,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             return;
         } else if (nextMarkerHeader == null) {
              LOG.info("Next-Marker value parsed is null, buckets listing completed");
-        } else {
-                marker = nextMarkerHeader.getValue();
-            }
+        }
 
         // We are done if the first read is a null
         finished.set(nextLine.get() == null);
@@ -491,35 +445,35 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      *
      * @return desired executable query for Manta Server
      */
-    private String queryGenerator() {
-        final String finalQuery;
+    private synchronized String queryGenerator() {
+        StringBuilder finalQuery = new StringBuilder(String.format("&limit=%d", pagingSize));
 
-        if (marker == null) {
-            finalQuery = prependQueryWithParams(String.format("?limit=%d", pagingSize));
-        } else {
-            finalQuery = prependQueryWithParams(String.format("?limit=%d&marker=%s",
-                    pagingSize, UTF8_URL_ENCODER.encodeQueryElement(marker)));
+        if (marker != null) {
+            finalQuery.append(String.format("&marker=%s", UTF8_URL_ENCODER.encodeQueryElement(marker)));
         }
 
-        return finalQuery;
+        prependQueryWithParams(finalQuery);
+        finalQuery.deleteCharAt(0).insert(0, "?");
+        Validate.isTrue(startsWith(finalQuery, "?"),
+                "Executable query incorrectly generated");
+
+        return finalQuery.toString();
     }
 
     /**
      * Helper method for {@link MantaBucketListingIterator#queryGenerator()}.
      *
      * @param query baseQuery that is to be configured
-     * @return formatted query for Manta Server
      */
-    private String prependQueryWithParams(final String query) {
-        Validate.notNull(query, "Query generated must never be null");
+    private void prependQueryWithParams(final StringBuilder query) {
+        Validate.notNull(query, "Query parsed must never be null");
 
         if (prefix != null) {
-            prependIfMissing(query, String.format("?prefix=%s", prefix));
+            query.insert(0, String.format("&prefix=%s", prefix));
         }
         if (delimiter != null) {
-            prependIfMissing(query, String.format("?delimiter=%c", delimiter));
+            query.insert(0, String.format("?delimiter=%c", delimiter));
         }
-        return query;
     }
 
     /**

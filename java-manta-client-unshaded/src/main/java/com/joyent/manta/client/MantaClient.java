@@ -657,6 +657,95 @@ public class MantaClient implements AutoCloseable {
         return itr;
     }
 
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path, final char delimiter) {
+        return streamingBucketIterator(path, delimiter, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final char delimiter,
+                                                              final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, delimiter, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix prefix filter that helps in optimizing a buckets listing
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path, final String prefix) {
+        return streamingBucketIterator(path, prefix, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final String prefix,
+                                                              final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, prefix, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final String prefix,
+                                                              final char delimiter) {
+        return streamingBucketIterator(path, prefix, delimiter, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix prefix filter that helps in optimizing a buckets listing
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final String prefix,
+                                                              final char delimiter,
+                                                              final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, prefix, delimiter, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
     /* ======================================================================
      * Object Access
      * ====================================================================== */
