@@ -20,9 +20,18 @@ import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.lang3.BooleanUtils;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +39,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
+
+import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
  * Tests the basic functionality of the put operations in {@link MantaClient} class.
@@ -70,7 +81,7 @@ public class MantaClientPutIT {
     @Test
     public final void testPutWithStringUTF8() throws IOException {
         final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
 
         MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_8);
         String contentType = response.getContentType();
@@ -90,7 +101,7 @@ public class MantaClientPutIT {
     @Test
     public final void testPutWithErrorProneCharacters() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -`~!@#$%^&*().txt";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
 
         MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_8);
         try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
@@ -108,7 +119,7 @@ public class MantaClientPutIT {
     @Test
     public final void testPutWithStringUTF16() throws IOException {
         final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
 
         MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_16);
         String contentType = response.getContentType();
@@ -200,7 +211,7 @@ public class MantaClientPutIT {
     @Test
     public final void testPutWithStreamAndErrorProneName() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -!@#$%^&*().txt";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
@@ -241,7 +252,7 @@ public class MantaClientPutIT {
     @Test
     public final void testPutWithByteArrayAndErrorProneCharacters() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -!@#$%^&*().bin";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
         final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
 
         MantaObject response = mantaClient.put(path, content);
@@ -338,7 +349,7 @@ public class MantaClientPutIT {
     @Test
     public final void testPutWithPlainTextFileWithErrorProneName() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -~!@#$%^&*().txt";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
         File temp = File.createTempFile("upload", ".txt");
         FileUtils.forceDeleteOnExit(temp);
 

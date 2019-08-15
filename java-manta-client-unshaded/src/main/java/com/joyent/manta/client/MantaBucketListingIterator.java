@@ -86,7 +86,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     /**
      * Filter to group names with a common prefix ending in its first occurrence.
      */
-    private volatile Character delimiter = null;
+    private Character delimiter = null;
 
     /**
      * Path to bucket in which we will iterate through its contents.
@@ -306,7 +306,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
             finished.set(true);
             return;
         } else if (nextMarkerHeader == null) {
-             LOG.info("Next-Marker value parsed is null, buckets listing completed");
+             LOG.info("Next-Marker value parsed is null for buckets listing");
         }
 
         // We are done if the first read is a null

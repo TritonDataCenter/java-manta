@@ -63,30 +63,30 @@ public enum MantaErrorCode {
      */
     AUTH_SCHEME_ERROR("AuthScheme"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muppet, mahi, haproxy, sdc-cloudapi.
      */
     BAD_REQUEST_ERROR("BadRequest"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muskie.
      * statusCode: 409.
      */
     BUCKET_EXISTS_ERROR("BucketAlreadyExists"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muskie.
      * statusCode: 409.
      */
     BUCKET_NOT_EMPTY_ERROR("BucketNotEmpty"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muskie.
      * statusCode: 404.
      */
     BUCKET_NOT_FOUND_ERROR("BucketNotFound"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * No known server-side code with that name, should be deprecated.
      * Server status /rest-code = ChecksumError
      */
@@ -118,7 +118,7 @@ public enum MantaErrorCode {
      */
     DIRECTORY_DOES_NOT_EXIST_ERROR("DirectoryDoesNotExist"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #DIRECTORY_DOES_NOT_EXIST_ERROR} instead.</p>
      */
@@ -133,7 +133,7 @@ public enum MantaErrorCode {
      */
     DIRECTORY_NOT_EMPTY_ERROR("DirectoryNotEmpty"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #OPERATION_NOT_ALLOWED_ON_DIRECTORY_ERROR} instead.</p>
      */
@@ -173,7 +173,7 @@ public enum MantaErrorCode {
      */
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muskie.
      * * statusCode: 422.
      */
@@ -260,7 +260,7 @@ public enum MantaErrorCode {
      */
     JOB_NOT_FOUND_ERROR("JobNotFound"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #INVALID_JOB_STATE_ERROR} instead.</p>
      */
@@ -271,7 +271,7 @@ public enum MantaErrorCode {
      */
     KEY_DOES_NOT_EXIST_ERROR("KeyDoesNotExist"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #LINK_NOT_OBJECT_ERROR} instead.</p>
      */
@@ -282,7 +282,7 @@ public enum MantaErrorCode {
      */
     LINK_NOT_OBJECT_ERROR("LinkNotObject"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #SNAPLINKS_DISABLED_ERROR} instead.</p>
      */
@@ -348,7 +348,7 @@ public enum MantaErrorCode {
      */
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     /**
-     * @since 3.4.1, rest code for error corrected.
+     * @since 3.5.0, rest code for error corrected.
      * Known component sources: muskie, moray, electric-moray, marlin, manta-mako, manta-mola.
      * statusCode: 404.
      */
@@ -362,13 +362,13 @@ public enum MantaErrorCode {
      */
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muskie.
      * statusCode: 400.
      */
     PARENT_NOT_BUCKET_ERROR("ParentNotBucket"),
     /**
-     * @since 3.4.1
+     * @since 3.5.0
      * Known component sources: muskie.
      * statusCode: 400.
      */
@@ -386,7 +386,7 @@ public enum MantaErrorCode {
      */
     PRECONDITION_FAILED_MUSKIE_ERROR("PreconditionFailedError"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #PRECONDITION_FAILED_MUSKIE_ERROR}
      * or {@link #PRECONDITION_FAILED_ERROR}instead.</p>
@@ -398,7 +398,7 @@ public enum MantaErrorCode {
      */
     REQUESTED_RANGE_NOT_SATISFIABLE_ERROR("RequestedRangeNotSatisfiable"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #REQUESTED_RANGE_NOT_SATISFIABLE_ERROR} instead.</p>
      */
@@ -413,7 +413,7 @@ public enum MantaErrorCode {
      */
     RESOURCE_NOT_FOUND_ERROR("ResourceNotFound"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR} instead.</p>
      */
@@ -446,7 +446,7 @@ public enum MantaErrorCode {
      */
     SOURCE_OBJECT_NOT_FOUND_ERROR("SourceObjectNotFound"),
     /**
-     * @deprecated 3.4.1
+     * @deprecated 3.5.0
      * No known server-side code with that name, should be deprecated.
      * <p>Deprecated: Use {@link #SECURE_TRANSPORT_REQUIRED_ERROR} instead.</p>
      */

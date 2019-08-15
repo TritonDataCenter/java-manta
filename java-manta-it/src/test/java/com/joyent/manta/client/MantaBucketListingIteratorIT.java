@@ -3,23 +3,26 @@ package com.joyent.manta.client;
 import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.testng.Assert;
 import org.testng.SkipException;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
+import static com.joyent.manta.util.MantaUtils.formatPath;
+import static org.apache.commons.lang3.StringUtils.substringAfterLast;
 
 /**
  * Tests for verifying correct functioning of making remote requests i.e GET bucket(s)/object(s))
@@ -66,14 +69,10 @@ public class MantaBucketListingIteratorIT {
         final String objectPath = testPathPrefix + UUID.randomUUID();
         final String objectPath1 = testPathPrefix + UUID.randomUUID();
         final String objectPath2 = testPathPrefix + UUID.randomUUID();
-        final String objectPath3 = testPathPrefix + UUID.randomUUID();
-        final String objectPath4 = testPathPrefix + UUID.randomUUID();
 
         mantaClient.put(objectPath, TEST_DATA);
         mantaClient.put(objectPath1, TEST_DATA);
         mantaClient.put(objectPath2, TEST_DATA);
-        mantaClient.put(objectPath3, TEST_DATA);
-        mantaClient.put(objectPath4, TEST_DATA);
 
         final String bucketObjectsDir = prefixObjectPath();
         final Stream<MantaObject> objs = mantaClient.listBucketObjects(bucketObjectsDir);
@@ -83,39 +82,17 @@ public class MantaBucketListingIteratorIT {
             Assert.assertTrue(obj.getPath().startsWith(testPathPrefix));
         });
 
-        Assert.assertEquals(5, count.get());
+        Assert.assertEquals(3, count.get());
 
         mantaClient.delete(objectPath);
         mantaClient.delete(objectPath1);
         mantaClient.delete(objectPath2);
-        mantaClient.delete(objectPath3);
-        mantaClient.delete(objectPath4);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath1));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath2));
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath3));
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath4));
     }
 
-    public void canFindASingleFile() throws IOException {
-        final String filePath = testPathPrefix + UUID.randomUUID();
-        final String bucketObjectsDir = prefixObjectPath();
-
-        mantaClient.put(filePath, TEST_DATA, StandardCharsets.UTF_8);
-
-        try (Stream<MantaObject> stream = mantaClient.findBucketObject(bucketObjectsDir)) {
-            List<MantaObject> results = stream.collect(Collectors.toList());
-
-            Assert.assertFalse(results.isEmpty(), "At the least one file returned");
-            Assert.assertEquals(results.get(0).getPath(), filePath);
-            Assert.assertFalse(results.get(0).isBucket());
-        }
-
-        mantaClient.delete(filePath);
-        Assert.assertFalse(mantaClient.existsAndIsAccessible(filePath));
-    }
-
-    public void isPagingForBucketsCorrectly() throws IOException {
+    public void isPagingForBucketsCorrect() throws IOException {
         String basePath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         final String bucketObjectsDir = prefixObjectPath();
         final int MAX = 100;
@@ -132,7 +109,7 @@ public class MantaBucketListingIteratorIT {
             // Make sure we can get the first element
             Assert.assertTrue(itr.hasNext(), "We should have the first element");
             Map<String, Object> first = itr.next();
-            final String baseName = StringUtils.substringAfterLast(basePath, SEPARATOR);
+            final String baseName = substringAfterLast(basePath, SEPARATOR);
             Assert.assertEquals(first.get("name").toString(), baseName + "00001");
 
             // Scroll forward to the last element
@@ -170,48 +147,188 @@ public class MantaBucketListingIteratorIT {
         }
     }
 
-    public void isPrefixPagingForBucketsCorrectly() throws IOException {
-        String basePath1 = String.format("%s%s", testPathPrefix, "6c4cf02f-bcbb-4d12-b1e9-3d36c1486ee8");
-        String basePath2 = String.format("%s%s", testPathPrefix, "bd40d6e2-dbdd-4f99-b181-1eb1ae26838c");
+    public void isPrefixPagingForBucketsCorrect() throws IOException {
+        final String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        final String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         final String bucketObjectsDir = prefixObjectPath();
-        final int MAX = 20;
+        final int pagingSize = 10;
+        final int count1 = 20;
+        final int count2 = 30;
+
+        putMultipleObjects(path1, count1);
+        putMultipleObjects(path2,count2);
+
+        final String prefix1 = substringAfterLast(path1, SEPARATOR);
+        final String prefix2 = substringAfterLast(path2, SEPARATOR);
+        verifyPrefixPagingForBuckets(bucketObjectsDir, prefix1, pagingSize, count1);
+        verifyPrefixPagingForBuckets(bucketObjectsDir, prefix2, pagingSize, count2);
+
+        deleteMultipleObjects(path1, count1);
+        deleteMultipleObjects(path2, count2);
+    }
+
+    public void prefixPaginationListForBucketsCorrect() throws IOException {
+        final String path1 = String.format("%s%s", testPathPrefix, "7d3d5d84-2124-443b-9257-680887befa07");
+        final String path2 = String.format("%s%s", testPathPrefix, "594c434b-231a-4");
+        final String bucketObjectsDir = prefixObjectPath();
+        final int count1 = 20;
+        final int count2 = 30;
+
+        putMultipleObjects(path1, count1);
+        putMultipleObjects(path2, count2);
+
+        final String prefix1 = substringAfterLast(path1, SEPARATOR);
+        final String prefix2 = substringAfterLast(path2, SEPARATOR);
+        verifyListCountForBuckets(bucketObjectsDir, prefix1, count1);
+        verifyListCountForBuckets(bucketObjectsDir, prefix2, count2);
+
+        deleteMultipleObjects(path1, count1);
+        deleteMultipleObjects(path2, count2);
+    }
+
+    public void isDelimiterPagingForBucketsCorrect() throws IOException {
+        final String path = formatPath(String.format("%s%s", testPathPrefix, UUID.randomUUID()));
+        final String bucketObjectsDir = prefixObjectPath();
+        final char delimiter = testPathPrefix.charAt(testPathPrefix.length() - 1);
+        final int count = 30;
+
+        putMultipleObjects(path, count);
+        verifyDelimiterPagingForBuckets(bucketObjectsDir,
+                this.getClass().getSimpleName() + delimiter, delimiter);
+        deleteMultipleObjects(path, count);
+    }
+
+    public void listBucketObjectsWithSmallPagingSize() throws IOException {
+        final String path = formatPath(String.format("%s%s", testPathPrefix, UUID.randomUUID()));
+        final String bucketObjectsDir = prefixObjectPath();
+        final int pagingSize = 2;
+        final int count = 60;
+
+        putMultipleObjects(path, count);
+
+        final String prefixName = substringAfterLast(path, SEPARATOR);
+        verifyPrefixPagingForBuckets(bucketObjectsDir, prefixName, pagingSize, count);
+
+        deleteMultipleObjects(path, count);
+    }
+
+    public void canListEmptyBucket() {
+        final String bucketObjectsDir = prefixObjectPath();
+        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(bucketObjectsDir, 10)) {
+            Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
+            boolean failed = false;
+            try {
+                itr.next();
+            } catch (NoSuchElementException e) {
+                failed = true;
+            }
+            Assert.assertTrue(failed, "Iterator failed to throw NoSuchElementException");
+        }
+    }
+
+    public void isPagingForBucketsCorrectlyConcurrent() throws IOException {
+        final String basePath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
+        final String bucketObjectsDir = prefixObjectPath();
+
+        final int MAX = 600;
+        final Map<String, Boolean> valuesFound = new ConcurrentHashMap<>(MAX);
 
         for (int i = 1; i <= MAX; i++) {
-            String name = String.format("%05d", i);
-            String path1 = String.format("%s%s", basePath1, name);
-            String path2 = String.format("%s%s", basePath2, name);
-            mantaClient.put(path1, TEST_DATA);
-            mantaClient.put(path2, TEST_DATA);
+            final String name = String.format("%05d", i);
+            final String path = String.format("%s%s", basePath, name);
+            final String baseName = substringAfterLast(path, SEPARATOR);
+            valuesFound.put(baseName, false);
+            mantaClient.put(path, TEST_DATA);
         }
 
-        final String baseName1 = StringUtils.substringAfterLast(basePath1, SEPARATOR);
-        final String baseName2 = StringUtils.substringAfterLast(basePath2, SEPARATOR);
+        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(bucketObjectsDir, 20)) {
+            Runnable search = () -> {
+                while (itr.hasNext()) {
+                    try {
+                        Map<String, Object> next = itr.next();
+                        String name = next.get("name").toString();
+                        valuesFound.replace(name, false, true);
+                    } catch (NoSuchElementException e) {
+                        /* we don't care about these exceptions because it is
+                         * just another thread beating us to the end. */
+                    }
+                }
+            };
 
-        verifyPrefixPagingForBuckets(bucketObjectsDir, baseName2, MAX);
-        verifyPrefixPagingForBuckets(bucketObjectsDir, baseName1, MAX);
+            // Start 3 threads that iterate at the same time
+            Thread thread1 = new Thread(search);
+            Thread thread2 = new Thread(search);
+            Thread thread3 = new Thread(search);
 
-        for (int i = 1; i <= MAX; i++) {
-            String name = String.format("%05d", i);
-            String path1 = String.format("%s%s", basePath1, name);
-            String path2 = String.format("%s%s", basePath2, name);
-            mantaClient.delete(path2);
-            mantaClient.delete(path1);
+            thread1.start();
+            thread2.start();
+            thread3.start();
+
+            // Wait in the current thread for them all to exit
+            while (itr.hasNext()) {
+                Thread.sleep(2000);
+
+                if (!thread1.isAlive() && !thread2.isAlive() && !thread3.isAlive()) {
+                    // one last check
+                    if (itr.hasNext()) {
+                        throw new AssertionError("We are in a dead-lock or a bad state");
+                    }
+                }
+            }
+
+            // Validate that all files were found
+            valuesFound.forEach((key, value) -> Assert.assertTrue(value));
+        } catch (InterruptedException e) {
+            afterClass();
         }
+
+        deleteMultipleObjects(basePath, MAX);
     }
 
     // TEST UTILITY METHODS
 
     private String prefixObjectPath() {
-        final String objectPath = testPathPrefix.substring(0, testPathPrefix.lastIndexOf(SEPARATOR));
+        final String objectPath = formatPath(testPathPrefix.substring(0, testPathPrefix.lastIndexOf(SEPARATOR)));
 
         Validate.notNull(objectPath, "Parsing object path failed");
         return objectPath;
     }
 
+    private void putMultipleObjects(final String basePath, final int count) throws IOException{
+        for (int i = 1; i <= count; i++) {
+            String name = String.format("%05d", i);
+            String path = formatPath(String.format("%s%s", basePath, name));
+            mantaClient.put(path, TEST_DATA);
+        }
+    }
+
+    private void deleteMultipleObjects(final String basePath, final int count) throws IOException{
+        for (int i = 1; i <= count; i++) {
+            String name = String.format("%05d", i);
+            String path = formatPath(String.format("%s%s", basePath, name));
+            mantaClient.delete(path);
+        }
+    }
+
+    private void verifyListCountForBuckets(final String path,
+                                           final String prefix,
+                                           final int count) throws IOException {
+        final Stream<MantaObject> objs = mantaClient.listBucketObjects(path, prefix);
+        final AtomicInteger result = new AtomicInteger(0);
+
+        objs.forEach(obj -> {
+            result.incrementAndGet();
+            Assert.assertTrue(obj.getPath().startsWith(testPathPrefix));
+        });
+
+        Assert.assertEquals(count, result.get());
+    }
+
     private void verifyPrefixPagingForBuckets(final String path,
                                               final String prefix,
+                                              final int pagingSize,
                                               final int count) {
-        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(path, prefix,10)) {
+        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(path, prefix, pagingSize)) {
             for (int i = 1; i <= count; i++) {
                 Assert.assertTrue(itr.hasNext(), "We should have the next element");
                 Map<String, Object> next = itr.next();
@@ -220,4 +337,15 @@ public class MantaBucketListingIteratorIT {
         }
     }
 
+    private void verifyDelimiterPagingForBuckets(final String path,
+                                                 final String delimiterSubstr,
+                                                 final Character delimiter) {
+        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(path, delimiter, 5)) {
+            for (int i = 1; i <= 30; i++) {
+                Assert.assertTrue(itr.hasNext(), "We should have the next element");
+                Map<String, Object> next = itr.next();
+                Assert.assertEquals(next.get("name").toString(), delimiterSubstr);
+            }
+        }
+    }
 }
