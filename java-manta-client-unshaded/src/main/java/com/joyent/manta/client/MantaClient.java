@@ -760,6 +760,39 @@ public class MantaClient implements AutoCloseable {
      * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
      *
      * @param path The fully qualified path of the bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param marker marker we use to request against the Manta API.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final int pagingSize,
+                                                              final String prefix,
+                                                              final String marker) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, prefix, marker, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @param marker marker we use to request against the Manta API.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final int pagingSize,
+                                                              final String marker) {
+        return streamingBucketIterator(path, pagingSize, null, marker);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
      * @param delimiter filter to group names with a common prefix ending in its first occurrence
      * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
      */

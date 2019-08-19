@@ -92,8 +92,9 @@ public class IntegrationTestHelper {
                 client.deleteBucket(bucket_path);
             } catch (MantaClientHttpResponseException e) {
                 if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR)) {
-                    e.setContextValue("Cleanup of non-empty test bucket attempted at:", testPath);
-                    throw e;
+                    MantaIOException mioe = new MantaIOException("Cannot delete bucket containing objects", e);
+                    mioe.setContextValue("bucket_path", testPath);
+                    throw mioe;
                 }
             }
         } else {

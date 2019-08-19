@@ -76,7 +76,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
     /**
      * Size of result set requested against the Manta API (2-1024).
      */
-    private final int pagingSize;
+    private final int limit;
 
     /**
      * Prefix filter that helps in optimizing a buckets listing.
@@ -141,14 +141,14 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @param path path to bucket in which we will iterate through its contents
      * @param httpHelper HTTP request helper class
      * @param prefix prefix filter that helps in optimizing a buckets listing
-     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @param limit size of result set requested against the Manta API (2-1024)
      * @param delimiter filter to group names with a common prefix ending in its first occurrence
      */
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
                                       final String prefix,
                                       final Character delimiter,
-                                      final int pagingSize) {
+                                      final int limit) {
         Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
         Validate.notNull(prefix, "Prefix parameter must not be null");
@@ -157,12 +157,12 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
         this.path = path;
         this.httpHelper = httpHelper;
 
-        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+        if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
                     + "1 and less than or equal to 1024");
         }
 
-        this.pagingSize = pagingSize;
+        this.limit = limit;
         this.prefix = prefix;
         this.delimiter = delimiter;
     }
@@ -173,12 +173,12 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @param path path to bucket in which we will iterate through its contents
      * @param httpHelper HTTP request helper class
      * @param prefix prefix filter that helps in optimizing a buckets listing
-     * @param pagingSize size of result set requested against the Manta API (2-1024).
+     * @param limit size of result set requested against the Manta API (2-1024).
      */
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
                                       final String prefix,
-                                      final int pagingSize) {
+                                      final int limit) {
         Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
         Validate.notNull(prefix, "Prefix parameter must not be null");
@@ -186,12 +186,42 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
         this.path = path;
         this.httpHelper = httpHelper;
 
-        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+        if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
                     + "1 and less than or equal to 1024");
         }
 
-        this.pagingSize = pagingSize;
+        this.limit = limit;
+        this.prefix = prefix;
+    }
+
+    /**
+     * Create a new instance of a bucket list iterator.
+     *
+     * @param path path to bucket in which we will iterate through its contents
+     * @param httpHelper HTTP request helper class
+     * @param prefix prefix filter that helps in optimizing a buckets listing
+     * @param marker marker we use to request against the Manta API.
+     * @param limit size of result set requested against the Manta API (2-1024).
+     */
+    public MantaBucketListingIterator(final String path,
+                                      final HttpHelper httpHelper,
+                                      final String prefix,
+                                      final String marker,
+                                      final int limit) {
+        Validate.notBlank(path, "Path must not be blank");
+        Validate.notNull(httpHelper, "HTTP help must not be null");
+
+        this.path = path;
+        this.httpHelper = httpHelper;
+
+        if (!(limit >= 2 && limit <= MAX_RESULTS)) {
+            throw new IllegalArgumentException("Paging size must be greater than "
+                    + "1 and less than or equal to 1024");
+        }
+
+        this.marker = marker;
+        this.limit = limit;
         this.prefix = prefix;
     }
 
@@ -201,12 +231,12 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @param path path to bucket in which we will iterate through its contents
      * @param httpHelper HTTP request helper class
      * @param delimiter filter to group names with a common prefix ending in its first occurrence
-     * @param pagingSize size of result set requested against the Manta API (2-1024).
+     * @param limit size of result set requested against the Manta API (2-1024).
      */
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
                                       final Character delimiter,
-                                      final int pagingSize) {
+                                      final int limit) {
         Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
         Validate.notNull(delimiter, "Delimiter parameter must not be null");
@@ -214,12 +244,12 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
         this.path = path;
         this.httpHelper = httpHelper;
 
-        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+        if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
                     + "1 and less than or equal to 1024");
         }
 
-        this.pagingSize = pagingSize;
+        this.limit = limit;
         this.delimiter = delimiter;
     }
 
@@ -228,23 +258,23 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      *
      * @param path path to bucket in which we will iterate through its contents
      * @param httpHelper HTTP request helper class
-     * @param pagingSize size of result set requested against the Manta API (2-1024).
+     * @param limit size of result set requested against the Manta API (2-1024).
      */
     public MantaBucketListingIterator(final String path,
                                       final HttpHelper httpHelper,
-                                      final int pagingSize) {
+                                      final int limit) {
         Validate.notBlank(path, "Path must not be blank");
         Validate.notNull(httpHelper, "HTTP help must not be null");
 
         this.path = path;
         this.httpHelper = httpHelper;
 
-        if (!(pagingSize >= 2 && pagingSize <= MAX_RESULTS)) {
+        if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
                     + "1 and less than or equal to 1024");
         }
 
-        this.pagingSize = pagingSize;
+        this.limit = limit;
     }
 
     /**
@@ -446,7 +476,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
      * @return desired executable query for Manta Server
      */
     private synchronized String queryGenerator() {
-        StringBuilder finalQuery = new StringBuilder(String.format("&limit=%d", pagingSize));
+        StringBuilder finalQuery = new StringBuilder(String.format("&limit=%d", limit));
 
         if (marker != null) {
             finalQuery.append(String.format("&marker=%s", UTF8_URL_ENCODER.encodeQueryElement(marker)));

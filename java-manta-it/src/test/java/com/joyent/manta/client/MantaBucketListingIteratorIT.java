@@ -167,7 +167,7 @@ public class MantaBucketListingIteratorIT {
         deleteMultipleObjects(path2, count2);
     }
 
-    public void prefixPaginationListForBucketsCorrect() throws IOException {
+    public void testPrefixPaginationListingForBuckets() throws IOException {
         final String path1 = String.format("%s%s", testPathPrefix, "7d3d5d84-2124-443b-9257-680887befa07");
         final String path2 = String.format("%s%s", testPathPrefix, "594c434b-231a-4");
         final String bucketObjectsDir = prefixObjectPath();
