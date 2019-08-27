@@ -159,7 +159,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
 
         if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
-                    + "1 and less than or equal to 1024");
+                    + "or equal to 2 and less than or equal to 1024");
         }
 
         this.limit = limit;
@@ -188,7 +188,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
 
         if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
-                    + "1 and less than or equal to 1024");
+                    + "or equal to 2 and less than or equal to 1024");
         }
 
         this.limit = limit;
@@ -217,7 +217,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
 
         if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
-                    + "1 and less than or equal to 1024");
+                    + "or equal to 2 and less than or equal to 1024");
         }
 
         this.marker = marker;
@@ -246,7 +246,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
 
         if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
-                    + "1 and less than or equal to 1024");
+                    + "or equal to 2 and less than or equal to 1024");
         }
 
         this.limit = limit;
@@ -271,7 +271,7 @@ public class MantaBucketListingIterator implements Iterator<Map<String, Object>>
 
         if (!(limit >= 2 && limit <= MAX_RESULTS)) {
             throw new IllegalArgumentException("Paging size must be greater than "
-                    + "1 and less than or equal to 1024");
+                    + "or equal to 2 and less than or equal to 1024");
         }
 
         this.limit = limit;

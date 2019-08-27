@@ -23,7 +23,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  * to a {@link MantaObject}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
- *  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.1.7
  */
 public class MantaObjectConversionFunction implements Function<Map<String, Object>, MantaObject> {

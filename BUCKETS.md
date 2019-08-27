@@ -1,6 +1,6 @@
 ## Description
 
-This document is a proposal for the java-manta CLI for Manta buckets. It will potentially contain information needed
+Documentation substantiating the java-manta CLI support for Manta buckets. It will potentially contain information needed
 for developers to interact with Manta Buckets leveraging the Java SDK
 
 ### Operations
@@ -39,16 +39,16 @@ Note: Some complex operations will be potentially included in later stages:
 ### Manta Java SDK.
 
 ```
-- Create bucket:           client.createBucket(bucket_path).
-- List buckets:            client.listBuckets().
-- Delete bucket:           client.deleteBucket(bucket_path).
-- head bucket:             client.exitsAndIsAccessible(bucket_path).
-- Options for buckets:     client.options(buckets_root_dir).
-- list objects:            client.listBucketObjects(bucket_path).
-- head object:             client.exitsAndIsAccessible(object_path).
-- put object(s).           client.put(bucket_path, new File(file_path))
-- get object(s):           client.get(object_path)
-- delete object(s):        client.delete(object_path)
+- Create bucket:           manta.createBucket(bucket_path).
+- List buckets:            manta.listBuckets().
+- Delete bucket:           manta.deleteBucket(bucket_path).
+- head bucket:             manta.exitsAndIsAccessible(bucket_path).
+- Options for buckets:     manta.options(buckets_root_dir).
+- list objects:            manta.listBucketObjects(bucket_path).
+- head object:             manta.exitsAndIsAccessible(object_path).
+- put object(s).           manta.put(bucket_path, new File(file_path))
+- get object(s):           manta.get(object_path)
+- delete object(s):        manta.delete(object_path)
 ```
 
 

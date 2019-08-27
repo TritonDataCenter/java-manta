@@ -63,30 +63,30 @@ public enum MantaErrorCode {
      */
     AUTH_SCHEME_ERROR("AuthScheme"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muppet, mahi, haproxy, sdc-cloudapi.
      */
     BAD_REQUEST_ERROR("BadRequest"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muskie.
      * statusCode: 409.
      */
     BUCKET_EXISTS_ERROR("BucketAlreadyExists"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muskie.
      * statusCode: 409.
      */
     BUCKET_NOT_EMPTY_ERROR("BucketNotEmpty"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muskie.
      * statusCode: 404.
      */
     BUCKET_NOT_FOUND_ERROR("BucketNotFound"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * No known server-side code with that name, should be deprecated.
      * Server status /rest-code = ChecksumError
      */
@@ -173,7 +173,7 @@ public enum MantaErrorCode {
      */
     INVALID_AUTH_TOKEN_ERROR("InvalidAuthenticationToken"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muskie.
      * * statusCode: 422.
      */
@@ -348,7 +348,7 @@ public enum MantaErrorCode {
      */
     NO_MATCHING_ROLE_TAG_ERROR("NoMatchingRoleTag"),
     /**
-     * @since 3.5.0, rest code for error corrected.
+     * @since 3.4.1, rest code for error corrected.
      * Known component sources: muskie, moray, electric-moray, marlin, manta-mako, manta-mola.
      * statusCode: 404.
      */
@@ -362,13 +362,13 @@ public enum MantaErrorCode {
      */
     OPERATION_NOT_ALLOWED_ON_ROOT_DIRECTORY_ERROR("OperationNotAllowedOnRootDirectory"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muskie.
      * statusCode: 400.
      */
     PARENT_NOT_BUCKET_ERROR("ParentNotBucket"),
     /**
-     * @since 3.5.0
+     * @since 3.4.1
      * Known component sources: muskie.
      * statusCode: 400.
      */

@@ -75,6 +75,7 @@ JavaDoc can also be browsed online at [javadoc.io](https://javadoc.io/doc/com.jo
 * [Get request and client setup](/java-manta-examples/src/main/java/SimpleClient.java)
 * [Multipart upload](/java-manta-examples/src/main/java/ServerMultipart.java)
 * [Client-side Encryption](/java-manta-examples/src/main/java/SimpleClientEncryption.java)
+* [Simple Bucket Operations](/java-manta-examples/src/main/java/BucketsWithMantaClient.java)
 
 ### Job Examples
 

@@ -177,13 +177,13 @@ public class MantaObjectResponse implements MantaObject {
             if (contentType == null) {
                 this.type = null;
             } else if (contentType.equals(DIRECTORY_RESPONSE_CONTENT_TYPE)) {
-                this.type = "directory";
+                this.type = MANTA_OBJECT_TYPE_DIRECTORY;
             } else if (contentType.equals(BUCKET_RESPONSE_CONTENT_TYPE)) {
-                this.type = "bucket";
+                this.type = MANTA_OBJECT_TYPE_BUCKET;
             } else if (contentType.equals(BUCKETOBJECT_RESPONSE_CONTENT_TYPE)) {
-                this.type = "bucketobject";
+                this.type = MANTA_OBJECT_TYPE_BUCKETOBJECT;
             } else {
-                this.type = "object";
+                this.type = MANTA_OBJECT_TYPE_OBJECT;
             }
         } else {
             this.type = null;

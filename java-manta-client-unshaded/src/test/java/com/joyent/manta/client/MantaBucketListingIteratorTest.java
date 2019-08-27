@@ -119,11 +119,10 @@ public class MantaBucketListingIteratorTest {
         when(response.getFirstHeader(CONTENT_TYPE)).thenReturn(contentTypeHeader);
         when(response.getAllHeaders()).thenReturn( new Header[] {contentTypeHeader});
 
-        // uncomment once it's okay to call next before hasNext
         Assert.expectThrows(MantaUnexpectedObjectTypeException.class, () ->
-                new MantaBucketListingIterator(dirPath, httpHelper, MantaDirectoryListingIterator.MAX_RESULTS).next());
+                new MantaBucketListingIterator(dirPath, httpHelper, MantaBucketListingIterator.MAX_RESULTS).next());
 
         Assert.expectThrows(MantaUnexpectedObjectTypeException.class, () ->
-                new MantaBucketListingIterator(dirPath, httpHelper, MantaDirectoryListingIterator.MAX_RESULTS).hasNext());
+                new MantaBucketListingIterator(dirPath, httpHelper, MantaBucketListingIterator.MAX_RESULTS).hasNext());
     }
 }

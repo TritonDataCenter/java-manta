@@ -481,7 +481,6 @@ public class MantaClient implements AutoCloseable {
         try {
             httpHelper.httpDelete(path, requestHeaders);
         } catch (MantaClientHttpResponseException e) {
-
             // Attempting to delete a non-empty bucket will result in an error
             if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_FOUND_ERROR)
                     || e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR)) {
