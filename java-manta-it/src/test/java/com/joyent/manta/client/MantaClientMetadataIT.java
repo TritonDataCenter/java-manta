@@ -147,7 +147,7 @@ public class MantaClientMetadataIT {
         MantaMetadata updated = (MantaMetadata)metadata.clone();
         updated.delete("m-force");
 
-        final String metadataPath = formatBucketsMetadataPath(path);
+        String metadataPath = formatBucketsMetadataPath(path);
         MantaObject updateResult = mantaClient.putMetadata(metadataPath, updated);
         Assert.assertEquals(updated, updateResult.getMetadata());
 
@@ -251,9 +251,9 @@ public class MantaClientMetadataIT {
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
-    private String formatBucketsMetadataPath(final String path) throws IOException {
+    private String formatBucketsMetadataPath(final String path) {
         String metadataPath = path;
-        if (IntegrationTestHelper.verifyBucketsSupport(mantaClient.getContext(), mantaClient)) {
+        if (testPathPrefix.contains(mantaClient.getContext().getMantaBucketsDirectory())) {
             metadataPath = MantaUtils.formatPath(String.format("%s" + MantaClient.SEPARATOR + "%s",
                     path, "metadata"));
         }

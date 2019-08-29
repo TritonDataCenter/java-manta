@@ -279,7 +279,12 @@ public class MantaClientSigningIT {
                     throw new SkipException(msg);
                 }
 
-                Assert.fail(errorText);
+                if (testPathPrefix.contains(config.getMantaBucketsDirectory())) {
+                    final String msg = "{\"code\":\"MethodNotAllowedError\",\"message\":\"OPTIONS is not allowed\"}";
+                    Assert.fail(msg);
+                } else {
+                    Assert.fail(errorText);
+                }
             }
 
             Assert.assertNotNull(headers);

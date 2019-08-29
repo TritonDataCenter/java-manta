@@ -120,8 +120,8 @@ public class MantaClientAuthenticationChangeIT {
 
         Assert.assertTrue(homeListing.contains(home + "/stor"));
         Assert.assertTrue(homeListing.contains(home + "/public"));
-        if (testPathPrefix.contains("buckets")) {
-            Assert.assertTrue(homeListing.contains(home + "/buckets"));
+        if (testPathPrefix.contains(config.getMantaBucketsDirectory())) {
+            Assert.assertFalse(homeListing.contains(home + "/buckets"));
         }
 
         config.setNoAuth(true);

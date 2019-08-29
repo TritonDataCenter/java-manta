@@ -17,11 +17,7 @@ import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,8 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
 
 /**
  * Tests the basic functionality of the {@link MantaClient} class.
@@ -87,7 +81,7 @@ public class MantaClientIT {
 
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -155,14 +149,14 @@ public class MantaClientIT {
         }
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test
     public final void testManyOperations() throws IOException {
         String dir = testPathPrefix + "multiple";
-        final boolean bucketsEnabled = testPathPrefix.contains("buckets");
+        final boolean bucketsEnabled = testPathPrefix.contains(mantaClient.getContext().getMantaBucketsDirectory());
 
         if (!bucketsEnabled) {
             mantaClient.putDirectory(dir);
@@ -175,6 +169,7 @@ public class MantaClientIT {
                 mantaClient.put(path, TEST_DATA);
                 String actual = mantaClient.getAsString(path);
                 Assert.assertEquals(actual, TEST_DATA);
+                mantaClient.deleteRecursive(dir);
             } else {
                 final String path = String.format("%s%s", testPathPrefix, name);
                 mantaClient.put(path, TEST_DATA);
@@ -182,11 +177,10 @@ public class MantaClientIT {
                 Assert.assertEquals(actual, TEST_DATA);
                 mantaClient.delete(path);
 
-                MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+                MantaAssert.assertResponseFailureCode(404,
                         (MantaFunction<Object>) () -> mantaClient.get(path));
             }
         }
-        mantaClient.deleteRecursive(dir);
     }
 
     @Test
@@ -201,7 +195,7 @@ public class MantaClientIT {
         Assert.assertEquals(data, TEST_DATA);
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -216,7 +210,7 @@ public class MantaClientIT {
         Assert.assertEquals(actual, TEST_DATA);
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -235,7 +229,7 @@ public class MantaClientIT {
             mantaClient.delete(gotObject.getPath());
         }
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -254,7 +248,7 @@ public class MantaClientIT {
             mantaClient.delete(path);
         }
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -270,7 +264,7 @@ public class MantaClientIT {
                 "Empty string not returned as expected");
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -286,7 +280,7 @@ public class MantaClientIT {
                 "text/html", "Content type wasn't auto-assigned");
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
@@ -301,7 +295,7 @@ public class MantaClientIT {
         Assert.assertEquals(actual, TEST_DATA);
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 
@@ -316,7 +310,7 @@ public class MantaClientIT {
         Assert.assertTrue(actual, "File object should exist");
 
         mantaClient.delete(path);
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 

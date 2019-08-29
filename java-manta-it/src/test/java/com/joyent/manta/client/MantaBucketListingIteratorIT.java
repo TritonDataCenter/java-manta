@@ -237,7 +237,7 @@ public class MantaBucketListingIteratorIT {
         final String basePath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         final String bucketObjectsDir = prefixObjectPath();
 
-        final int MAX = 600;
+        final int MAX = 100;
         final Map<String, Boolean> valuesFound = new ConcurrentHashMap<>(MAX);
 
         for (int i = 1; i <= MAX; i++) {
