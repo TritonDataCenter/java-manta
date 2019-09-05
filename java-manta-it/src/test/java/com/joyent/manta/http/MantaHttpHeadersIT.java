@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,31 +10,35 @@ package com.joyent.manta.http;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.util.MantaUtils;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.DateUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 import static com.joyent.manta.exception.MantaErrorCode.INVALID_ROLE_TAG_ERROR;
 import static com.joyent.manta.util.MantaUtils.asString;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.expectThrows;
+import static org.apache.commons.lang3.time.DateUtils.addDays;
+import static org.testng.Assert.*;
 
 /**
  * Integration tests for verifying the behavior of HTTP header assignment.
@@ -45,7 +49,7 @@ import static org.testng.Assert.expectThrows;
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
  */
 @SuppressWarnings("Duplicates")
-@Test(groups = { "headers" })
+@Test(groups = {"headers", "buckets"})
 public class MantaHttpHeadersIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -65,19 +69,55 @@ public class MantaHttpHeadersIT {
             "secondary");
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(@Optional Boolean usingEncryption,
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
-        ConfigContext config = new IntegrationTestConfigContext();
+        ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void cleanup() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
+    }
+
+
+    @Test(groups = { "mtime" })
+    public final void testGetLastModifiedDate() {
+        final String mtime = "Wed, 11 Nov 2015 18:20:20 GMT";
+        final Date expected = MantaUtils.parseHttpDate(mtime);
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
+        obj.setMtime(mtime);
+
+        Assert.assertEquals(obj.getLastModifiedTime(), expected,
+                "Last modified date should equal input to mtime");
+    }
+
+    @Test(groups = { "mtime" })
+    public final void testGetNullLastModifiedDate() {
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
+        obj.setMtime(null);
+
+        Assert.assertNull(obj.getLastModifiedTime(),
+                "Last modified date should be null when mtime is null");
+    }
+
+    @Test(groups = { "mtime" })
+    public final void testGetLastModifiedDateWithUnparseableMtime() {
+        final String mtime = "Bad unparseable string";
+        final MantaObjectResponse obj = new MantaObjectResponse(testPathPrefix);
+        obj.setMtime(mtime);
+
+        Assert.assertNull(obj.getLastModifiedTime(),
+                "Last modified date should be null when mtime is null");
     }
 
     public void cantSetUnknownTags() throws IOException {
@@ -125,6 +165,9 @@ public class MantaHttpHeadersIT {
                                        asString(roles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canSetMultipleRoleTags() throws IOException {
@@ -162,6 +205,9 @@ public class MantaHttpHeadersIT {
                     asString(roles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canOverwriteRoleTags() throws IOException {
@@ -216,6 +262,9 @@ public class MantaHttpHeadersIT {
                                        asString(updatedRoles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canClearRoles() throws IOException {
@@ -255,6 +304,9 @@ public class MantaHttpHeadersIT {
                                        asString(actualUpdatedRoles));
             Assert.fail(msg);
         }
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     public void canSetDurability() throws IOException {
@@ -270,14 +322,17 @@ public class MantaHttpHeadersIT {
         MantaHttpHeaders actualHeaders = object.getHttpHeaders();
         Assert.assertEquals(actualHeaders.getDurabilityLevel().intValue(), durability,
                 "Durability not set to value on put");
+
+        mantaClient.delete(path);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
-    public void canFailToDeleteDirectoryOnBadIfMatch() throws IOException {
+    public void canFailToDeleteObjectOnBadIfMatch() throws IOException {
         final String path = generatePath();
 
         final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
         // the etag reversed should not be equal to the etag (so we can fail if-match on purpose)
-        assertFalse(empty.getEtag().equals(StringUtils.reverse(empty.getEtag())));
+        assertNotEquals(StringUtils.reverse(empty.getEtag()), empty.getEtag());
 
         final MantaHttpHeaders headers = new MantaHttpHeaders();
 
@@ -297,6 +352,47 @@ public class MantaHttpHeadersIT {
         mantaClient.delete(path, headers);
 
         // the object should not exist
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    public void canFailToDeleteObjectOnBadIfNoneMatch() throws IOException {
+        final String path = generatePath();
+
+        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
+        assertNotEquals(StringUtils.reverse(empty.getEtag()), empty.getEtag());
+
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+
+        headers.setIfNoneMatch(empty.getEtag());
+        final MantaClientHttpResponseException badIfNoneMatchEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(path, headers));
+
+        assertEquals(badIfNoneMatchEx.getStatusCode(), 412);
+        assertTrue(mantaClient.existsAndIsAccessible(path));
+
+        headers.setIfNoneMatch(StringUtils.reverse(empty.getEtag()));
+        mantaClient.delete(path, headers);
+        assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    public void canFailToDeleteObjectOnBadIfUnmodifiedSince() throws IOException {
+        final String path = generatePath();
+
+        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
+        final MantaHttpHeaders headers = new MantaHttpHeaders();
+        final Date ifUnmodifiedSinceDate = addDays(empty.getLastModifiedTime(), -3);
+
+        headers.setIfUnmodifiedSince(DateUtils.formatDate(ifUnmodifiedSinceDate));
+        final MantaClientHttpResponseException badIfUnmodifiedSinceEx = expectThrows(
+                MantaClientHttpResponseException.class,
+                () -> mantaClient.delete(path, headers));
+
+        assertEquals(badIfUnmodifiedSinceEx.getStatusCode(), 412);
+        assertTrue(mantaClient.existsAndIsAccessible(path));
+
+        headers.setIfUnmodifiedSince(DateUtils.formatDate(empty.getLastModifiedTime()));
+        mantaClient.delete(path, headers);
         assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 

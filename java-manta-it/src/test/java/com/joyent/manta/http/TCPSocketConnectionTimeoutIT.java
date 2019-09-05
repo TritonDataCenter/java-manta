@@ -8,6 +8,7 @@
 package com.joyent.manta.http;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.AuthAwareConfigContext;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
@@ -17,8 +18,10 @@ import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.exception.MantaIOException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -32,7 +35,7 @@ import java.time.Instant;
  *
  * @author <a href="https://github.com/dekobon">Ashwin A Nair</a>
  */
-@Test(groups = {"timeout"})
+@Test(groups = {"timeout", "buckets"})
 public class TCPSocketConnectionTimeoutIT {
     private MantaClient mantaClient;
 
@@ -40,22 +43,23 @@ public class TCPSocketConnectionTimeoutIT {
 
     private ConfigContext config;
 
-    public TCPSocketConnectionTimeoutIT() {
+    @BeforeClass()
+    @Parameters({"testType"})
+    public void beforeClass(final @Optional String testType) throws IOException {
         // Let TestNG configuration take precedence over environment variables
 
         config = new IntegrationTestConfigContext();
-        mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-    }
+        final String testName = this.getClass().getSimpleName();
 
-    @BeforeClass
-    public void beforeClass() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+        mantaClient = new MantaClient(config);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void cleanup() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     /**

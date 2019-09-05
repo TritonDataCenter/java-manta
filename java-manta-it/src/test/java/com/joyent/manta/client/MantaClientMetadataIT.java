@@ -7,8 +7,12 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.util.MantaUtils;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -20,37 +24,35 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-
-
 /**
  * Tests for verifying the behavior of metadata with {@link MantaClient}.
  */
-@Test(groups = {"metadata"})
+@Test(groups = {"metadata", "buckets"})
 public class MantaClientMetadataIT {
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
 
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
-    @Parameters({"encryptionCipher"})
-    public MantaClientMetadataIT(final @Optional String encryptionCipher) {
+    @BeforeClass
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @Optional String encryptionCipher,
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(encryptionCipher);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-    }
-
-    @BeforeClass
-    public void beforeClass() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void cleanup() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public final void verifyAddMetadataToObjectOnPut() throws IOException {
@@ -76,6 +78,10 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("m-Yoda"), "Master");
         Assert.assertEquals(get.getHeaderAsString("m-Droids"), "1");
         Assert.assertEquals(get.getHeaderAsString("m-force"), "true");
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void verifyMetadataCanBeAddedLater() throws IOException {
@@ -94,7 +100,8 @@ public class MantaClientMetadataIT {
         metadata.put("m-Droids", "1");
         metadata.put("m-force", "true");
 
-        final MantaObject metadataResult = mantaClient.putMetadata(path, metadata);
+        final String metadataPath = formatBucketsMetadataPath(path);
+        final MantaObject metadataResult = mantaClient.putMetadata(metadataPath, metadata);
 
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
@@ -118,6 +125,9 @@ public class MantaClientMetadataIT {
                 Assert.assertEquals(actualMetadata.get(key), val);
             }
         }
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void verifyCanRemoveMetadata() throws IOException, CloneNotSupportedException {
@@ -137,7 +147,8 @@ public class MantaClientMetadataIT {
         MantaMetadata updated = (MantaMetadata)metadata.clone();
         updated.delete("m-force");
 
-        MantaObject updateResult = mantaClient.putMetadata(path, updated);
+        String metadataPath = formatBucketsMetadataPath(path);
+        MantaObject updateResult = mantaClient.putMetadata(metadataPath, updated);
         Assert.assertEquals(updated, updateResult.getMetadata());
 
         MantaObject head = mantaClient.head(path);
@@ -147,35 +158,10 @@ public class MantaClientMetadataIT {
         MantaObject get = mantaClient.get(path);
         Assert.assertNull(get.getMetadata().get("m-force"),
                 String.format("Actual metadata: %s", get.getMetadata()));
-    }
 
-    @Test
-    public void canAddMetadataToDirectory() throws IOException {
-        String dir = String.format("%s%s", testPathPrefix, UUID.randomUUID());
-        mantaClient.putDirectory(dir);
-
-        MantaMetadata metadata = new MantaMetadata();
-        metadata.put("m-test", "value");
-
-        mantaClient.putMetadata(dir, metadata);
-
-        {
-            MantaObject head = mantaClient.head(dir);
-            MantaMetadata remoteMetadata = head.getMetadata();
-
-            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
-            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
-                    "Set metadata doesn't equal actual metadata");
-        }
-
-        {
-            MantaObject get = mantaClient.get(dir);
-            MantaMetadata remoteMetadata = get.getMetadata();
-
-            Assert.assertTrue(remoteMetadata.containsKey("m-test"));
-            Assert.assertEquals(metadata.get("m-test"), remoteMetadata.get("m-test"),
-                    "Set metadata doesn't equal actual metadata");
-        }
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test(groups = "encrypted")
@@ -206,6 +192,10 @@ public class MantaClientMetadataIT {
         Assert.assertEquals(get.getHeaderAsString("e-Yoda"), "Master");
         Assert.assertEquals(get.getHeaderAsString("e-Droids"), "1");
         Assert.assertEquals(get.getHeaderAsString("e-force"), "true");
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test(groups = "encrypted")
@@ -229,7 +219,8 @@ public class MantaClientMetadataIT {
         metadata.put("e-Droids", "1");
         metadata.put("e-force", "true");
 
-        final MantaObject metadataResult = mantaClient.putMetadata(path, metadata);
+        final String metadataPath = formatBucketsMetadataPath(path);
+        final MantaObject metadataResult = mantaClient.putMetadata(metadataPath, metadata);
 
         Assert.assertEquals(metadataResult.getMetadata(), metadata);
 
@@ -254,5 +245,19 @@ public class MantaClientMetadataIT {
                 Assert.assertEquals(actualMetadata.get(key), val);
             }
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
+    }
+
+    private String formatBucketsMetadataPath(final String path) {
+        String metadataPath = path;
+        if (testPathPrefix.contains(mantaClient.getContext().getMantaBucketsDirectory())) {
+            metadataPath = MantaUtils.formatPath(String.format("%s" + MantaClient.SEPARATOR + "%s",
+                    path, "metadata"));
+        }
+
+        return metadataPath;
     }
 }

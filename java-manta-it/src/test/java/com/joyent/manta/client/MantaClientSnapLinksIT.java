@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
@@ -15,13 +16,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.SkipException;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.UUID;
 
-import static com.joyent.manta.exception.MantaErrorCode.SNAPLINKS_DISABLED_ERROR;
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
+import static com.joyent.manta.exception.MantaErrorCode.SNAPLINKS_DISABLED_ERROR;
 
 /**
  * Tests the basic functionality of operations related to snaplinks
@@ -32,7 +37,7 @@ import static com.joyent.manta.client.MantaClient.SEPARATOR;
  * {@link MantaClientSnapLinksIT#putSnapLinkAndSkipIfUnsupported(String, String)} will skip this integration-test from running.
  * </p>
  * <p>Remember to also pass system properties for client configuration (manta.user/etc.) or set the values in the
- * environment (MANTA_USER/etc).
+ * environment (MANTA_USER/etc). Note: Snaplinks are disabled for the Manta Buckets environment.
  * </p>
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
@@ -49,20 +54,27 @@ public class MantaClientSnapLinksIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String testType) throws IOException {
+        if ("buckets".equals(testType)) {
+            throw new SkipException("Skipping tests since snaplinks are disabled in Manta Buckets");
+        }
 
         // Let TestNG configuration take precedence over environment variables
+
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test(dependsOnMethods = "testPutLink")

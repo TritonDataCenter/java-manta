@@ -7,11 +7,17 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaUnexpectedObjectTypeException;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -19,6 +25,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * Tests the proper functioning of the dynamically paging iterator.
@@ -32,19 +39,49 @@ public class MantaDirectoryListingIteratorIT {
     private String testPathPrefix;
 
     @BeforeClass
-    public void beforeClass() throws IOException {
+    @Parameters("testType")
+    public void beforeClass(final @Optional String testType) throws IOException {
+        if ("buckets".equals(testType)) {
+            throw new SkipException("Directory tests will be skipped in Manta Buckets");
+        }
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext();
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
+    }
+
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test(expectedExceptions = MantaUnexpectedObjectTypeException.class)
+    public final void testListNotADir() throws IOException {
+        final String name = UUID.randomUUID().toString();
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA);
+
+        try (Stream<MantaObject> objects = mantaClient.listObjects(path)) {
+            objects.count();
+        }
+    }
+
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test(expectedExceptions = MantaClientHttpResponseException.class)
+    public final void testListNonexistentDir() throws IOException {
+        final String doesntExist = String.format("%s/stor/doesnt-exist-%s/",
+                mantaClient.getContext().getMantaHomeDirectory(), UUID.randomUUID());
+
+        try (Stream<MantaObject> objects = mantaClient.listObjects(doesntExist)) {
+            objects.count();
+        }
     }
 
     public void isPagingCorrectly() throws IOException {

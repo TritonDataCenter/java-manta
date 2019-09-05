@@ -13,9 +13,20 @@ import org.apache.http.entity.ContentType;
  * Enum defining custom content-types used only by Manta.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  * @since 3.0.0
  */
 public enum MantaContentTypes {
+    /**
+     * The content-type used to represent Manta Buckets in http requests.
+     */
+    BUCKET("application/json; type=bucket"),
+
+    /**
+     * The content-type used to represent objects in Manta Buckets in http requests.
+     */
+    BUCKET_OBJECT("application/json; type=bucketobject"),
+
     /**
      * The content-type used to represent Manta directory resources in http requests.
      */

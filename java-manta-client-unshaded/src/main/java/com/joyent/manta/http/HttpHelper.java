@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2017-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,7 +52,7 @@ public interface HttpHelper extends AutoCloseable, HttpConnectionAware {
     /**
      * Executes a HTTP OPTIONS against the remote Manta API.
      *
-     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path The fully qualified path of buckets or object in Manta. i.e. /user/buckets
      * @return Apache HTTP Client response object
      * @throws IOException when there is a problem getting the object over the network
      */

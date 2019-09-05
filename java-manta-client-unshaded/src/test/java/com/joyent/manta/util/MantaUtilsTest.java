@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,6 +27,7 @@ import static org.testng.Assert.assertEquals;
  * Test class for all-purpose utility methods.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test
 public class MantaUtilsTest {

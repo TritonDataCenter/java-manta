@@ -75,6 +75,7 @@ JavaDoc can also be browsed online at [javadoc.io](https://javadoc.io/doc/com.jo
 * [Get request and client setup](/java-manta-examples/src/main/java/SimpleClient.java)
 * [Multipart upload](/java-manta-examples/src/main/java/ServerMultipart.java)
 * [Client-side Encryption](/java-manta-examples/src/main/java/SimpleClientEncryption.java)
+* [Simple Bucket Operations](/java-manta-examples/src/main/java/BucketsWithMantaClient.java)
 
 ### Job Examples
 
@@ -97,6 +98,10 @@ Known edge cases and other topics are covered in [the FAQ](/FAQ.md).
 
 Contributions are welcome! Please read the [CONTRIBUTING.md](/CONTRIBUTING.md) document for details
 on getting started.
+
+### Buckets
+
+Please refer to the [buckets documentation](/BUCKETS.md).
 
 ## Developing
 

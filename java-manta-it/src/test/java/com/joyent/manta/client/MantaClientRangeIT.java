@@ -7,12 +7,11 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.config.BaseChainedConfigContext;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.EncryptionAuthenticationMode;
-import com.joyent.manta.config.IntegrationTestConfigContext;
-import com.joyent.manta.config.SettableConfigContext;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
+import com.joyent.manta.config.*;
 import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
@@ -31,7 +30,7 @@ import java.util.UUID;
  * Tests for verifying the correct behavior of range operations performed by
  * the {@link MantaClient} class.
  */
-@Test
+@Test(groups = {"buckets"})
 public class MantaClientRangeIT {
     private static final String TEST_DATA =
             "A SERGEANT OF THE LAW, wary and wise, " +
@@ -57,17 +56,21 @@ public class MantaClientRangeIT {
             "Girt with a seint* of silk, with barres small; " +
             "Of his array tell I no longer tale.";
 
-    private final MantaClient mantaClient;
+    private MantaClient mantaClient;
 
-    private final ConfigContext config;
+    private ConfigContext config;
 
-    private final String testPathPrefix;
+    private String testPathPrefix;
 
-    @Parameters({"encryptionCipher"})
-    public MantaClientRangeIT(final @Optional String encryptionCipher) {
+    @BeforeClass
+    @Parameters({"encryptionCipher", "testType"})
+    public void beforeClass(final @Optional String encryptionCipher,
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         SettableConfigContext<BaseChainedConfigContext> config = new IntegrationTestConfigContext(encryptionCipher);
+        final String testName = this.getClass().getSimpleName();
+
         // Range request have to be in optional authentication mode
         if (config.isClientEncryptionEnabled()) {
             config.setEncryptionAuthenticationMode(EncryptionAuthenticationMode.Optional);
@@ -75,18 +78,14 @@ public class MantaClientRangeIT {
 
         mantaClient = new MantaClient(config);
         this.config = config;
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-
-    }
-
-    @BeforeClass
-    public void beforeClass() throws IOException {
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     public final void canGetWithRangeHeader() throws IOException {
@@ -104,6 +103,10 @@ public class MantaClientRangeIT {
             String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithComputedRangeHeader() throws IOException {
@@ -120,6 +123,10 @@ public class MantaClientRangeIT {
             String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithUnboundedEndRange() throws IOException {
@@ -137,6 +144,10 @@ public class MantaClientRangeIT {
             String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithUnboundedStartRange() throws IOException {
@@ -154,6 +165,10 @@ public class MantaClientRangeIT {
             String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithEndRangeBeyondObjectSize() throws IOException {
@@ -171,6 +186,10 @@ public class MantaClientRangeIT {
             String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     public final void canGetWithZeroRange() throws IOException {
@@ -188,6 +207,10 @@ public class MantaClientRangeIT {
             String actual = IOUtils.toString(min, Charset.defaultCharset());
             Assert.assertEquals(actual, expected, "Didn't receive correct range value");
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test
@@ -218,5 +241,9 @@ public class MantaClientRangeIT {
                 }
             }
         }
+
+        mantaClient.delete(path);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 }

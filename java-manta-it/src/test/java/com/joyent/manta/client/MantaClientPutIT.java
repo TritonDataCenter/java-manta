@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
@@ -39,12 +40,12 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+import static com.joyent.manta.util.MantaUtils.formatPath;
 
 /**
  * Tests the basic functionality of the put operations in {@link MantaClient} class.
  */
-@Test(groups = {"put"})
+@Test(groups = {"put", "buckets"})
 public class MantaClientPutIT {
 
     private static final String TEST_DATA = "EPISODEII_IS_BEST_EPISODE";
@@ -53,29 +54,34 @@ public class MantaClientPutIT {
     private MantaClient mantaClient;
 
     private String testPathPrefix;
+
     private Boolean usingEncryption;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
-        this.usingEncryption = usingEncryption;
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(@Optional Boolean usingEncryption,
+                            @Optional String testType) throws IOException {
+
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test
     public final void testPutWithStringUTF8() throws IOException {
         final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
 
         MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_8);
         String contentType = response.getContentType();
@@ -88,12 +94,14 @@ public class MantaClientPutIT {
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
     public final void testPutWithErrorProneCharacters() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -`~!@#$%^&*().txt";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
 
         MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_8);
         try (MantaObjectInputStream object = mantaClient.getAsInputStream(path)) {
@@ -104,12 +112,14 @@ public class MantaClientPutIT {
             Assert.assertEquals(response.getPath(), path, "path not returned as written");
             Assert.assertEquals(object.getPath(), path, "path not returned as written");
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
     public final void testPutWithStringUTF16() throws IOException {
         final String name = UUID.randomUUID().toString();
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
 
         MantaObject response = mantaClient.put(path, TEST_DATA, StandardCharsets.UTF_16);
         String contentType = response.getContentType();
@@ -122,6 +132,8 @@ public class MantaClientPutIT {
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -144,6 +156,8 @@ public class MantaClientPutIT {
                 byte[] actualBytes = IOUtils.readFully(in, (int) localFile.length());
                 AssertJUnit.assertArrayEquals(expectedBytes, actualBytes);
             }
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -159,6 +173,8 @@ public class MantaClientPutIT {
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             Assert.assertFalse(testDataInputStream.markSupported());
             mantaClient.put(path, testDataInputStream);
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -172,6 +188,8 @@ public class MantaClientPutIT {
         final int length = 20 * 1024;
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             mantaClient.put(path, testDataInputStream, length, null, null);
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -185,13 +203,15 @@ public class MantaClientPutIT {
         final int length = mantaClient.getContext().getUploadBufferSize() + 1024;
         try (InputStream testDataInputStream = new RandomInputStream(length)) {
             mantaClient.put(path, testDataInputStream, length, null, null);
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
     @Test
     public final void testPutWithStreamAndErrorProneName() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -!@#$%^&*().txt";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Assert.assertNotNull(classLoader.getResource(TEST_FILENAME));
 
@@ -206,6 +226,8 @@ public class MantaClientPutIT {
             byte[] actualBytes = IOUtils.readFully(object, length);
             Assert.assertTrue(actualBytes.length > 0);
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -223,12 +245,14 @@ public class MantaClientPutIT {
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
     public final void testPutWithByteArrayAndErrorProneCharacters() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -!@#$%^&*().bin";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
         final byte[] content = TEST_DATA.getBytes(StandardCharsets.UTF_8);
 
         MantaObject response = mantaClient.put(path, content);
@@ -240,6 +264,8 @@ public class MantaClientPutIT {
 
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded byte array was malformed");
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -272,6 +298,8 @@ public class MantaClientPutIT {
                         "Plaintext content type was leaked");
             }
         }
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -290,6 +318,9 @@ public class MantaClientPutIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded file didn't match expectation");
+
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -310,12 +341,15 @@ public class MantaClientPutIT {
         String actual = mantaClient.getAsString(path);
         Assert.assertEquals(actual, content,
                 "Uploaded file didn't match expectation");
+
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
     public final void testPutWithPlainTextFileWithErrorProneName() throws IOException {
         final String name = UUID.randomUUID().toString() + "- -~!@#$%^&*().txt";
-        final String path = testPathPrefix + name;
+        final String path = formatPath(testPathPrefix + name);
         File temp = File.createTempFile("upload", ".txt");
         FileUtils.forceDeleteOnExit(temp);
 
@@ -329,6 +363,9 @@ public class MantaClientPutIT {
         Assert.assertEquals(actual, TEST_DATA,
                 "Uploaded file didn't match expectation");
         Assert.assertEquals(response.getPath(), path, "path returned as written");
+
+        mantaClient.delete(path);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
     @Test
@@ -354,6 +391,8 @@ public class MantaClientPutIT {
                 Assert.assertTrue(Arrays.equals(actual, expected),
                         "Uploaded file isn't the same as actual file");
             }
+            mantaClient.delete(path);
+            Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
         }
     }
 
@@ -384,7 +423,7 @@ public class MantaClientPutIT {
 
         mantaClient.delete(path);
 
-        MantaAssert.assertResponseFailureStatusCode(404, RESOURCE_NOT_FOUND_ERROR,
+        MantaAssert.assertResponseFailureCode(404,
                 (MantaFunction<Object>) () -> mantaClient.get(testPathPrefix + name));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,6 +62,46 @@ public class MantaAssert {
         if (!actualErrorCode.equals(expectedErrorCode)) {
             String msg = String.format("Expected Manta error code [%s] was not received: %s",
                     expectedErrorCode, actualErrorCode);
+            throw new AssertionError(msg);
+        }
+
+        return result;
+    }
+
+    /**
+     * Functional wrapper that validates if a given closures throws a
+     * {@link MantaClientHttpResponseException} and that it has the
+     * correct status code.
+     *
+     * @param expectedStatusCode HTTP status code to verify
+     * @param function block to verify
+     * @param <R> return type
+     * @return return value of underlying block
+     */
+    public static <R> R assertResponseFailureCode(
+            final int expectedStatusCode, final MantaFunction<R> function) {
+        boolean thrown = false;
+        int actualStatusCode = -1;
+        R result = null;
+
+        try {
+            result = function.apply();
+        } catch (MantaClientHttpResponseException e) {
+            actualStatusCode = e.getStatusCode();
+            thrown = true;
+        } catch (IOException e) {
+            throw new MantaException(e);
+        }
+
+        if (!thrown) {
+            String msg = String.format("Expected %s to be thrown, but it was not thrown",
+                    MantaClientHttpResponseException.class);
+            throw new AssertionError(msg);
+        }
+
+        if (actualStatusCode != expectedStatusCode) {
+            String msg = String.format("Expected HTTP status code [%d] was: %d",
+                    expectedStatusCode, actualStatusCode);
             throw new AssertionError(msg);
         }
 

@@ -113,6 +113,7 @@ import static com.joyent.manta.util.MantaUtils.formatPath;
  *
  * @author <a href="https://github.com/yunong">Yunong Xiao</a>
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class MantaClient implements AutoCloseable {
 
@@ -412,6 +413,470 @@ public class MantaClient implements AutoCloseable {
     }
 
     /* ======================================================================
+     * Buckets Access And Operations
+     * ====================================================================== */
+
+    /**
+     * Creates a bucket in Manta.
+     *
+     * @param path The fully qualified path of the Manta bucket.
+     * @return true when bucket was created
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     */
+    public boolean createBucket(final String path) throws IOException {
+        return createBucket(path, null);
+    }
+
+    /**
+     * Creates a bucket in Manta.
+     *
+     * @param rawPath The fully qualified path of the Manta bucket.
+     * @param rawHeaders Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
+     * @return true when bucket was created
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
+     */
+    public boolean createBucket(final String rawPath, final MantaHttpHeaders rawHeaders)
+            throws IOException {
+        Validate.notBlank(rawPath, "CREATE bucket path must not be empty nor null");
+
+        String path = formatPath(rawPath);
+
+        LOG.debug("CREATE    {} [bucket]", path);
+
+        final HttpPut put = httpHelper.getRequestFactory().put(path);
+        final MantaHttpHeaders headers;
+
+        if (rawHeaders == null) {
+            headers = new MantaHttpHeaders();
+        } else {
+            headers = rawHeaders;
+        }
+
+        MantaHttpRequestFactory.addHeaders(put, headers.asApacheHttpHeaders());
+
+        put.setHeader(HttpHeaders.CONTENT_TYPE, MantaContentTypes.BUCKET.getContentType());
+        HttpResponse response = httpHelper.executeAndCloseRequest(put,
+                HttpStatus.SC_NO_CONTENT,
+                "PUT    {} response [{}] {} ");
+
+        // When LastModified is set, the bucket already exists
+        return response.getFirstHeader(HttpHeaders.LAST_MODIFIED) == null;
+    }
+
+    /**
+     * Deletes a bucket in Manta with the given path.
+     * @param rawPath Path of the bucket you want to delete.
+     * @param requestHeaders requestHeaders HTTP headers to attach to request (may be null)
+     * @throws IOException Problem getting object over the network
+     */
+    void deleteBucket(final String rawPath, final MantaHttpHeaders requestHeaders)
+            throws IOException {
+        Validate.notBlank(rawPath, "rawPath must not be blank");
+        final String path = formatPath(rawPath);
+        LOG.debug("DELETE {} bucket", path);
+
+        try {
+            httpHelper.httpDelete(path, requestHeaders);
+        } catch (MantaClientHttpResponseException e) {
+            // Attempting to delete a non-empty bucket will result in an error
+            if (e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_FOUND_ERROR)
+                    || e.getServerCode().equals(MantaErrorCode.BUCKET_NOT_EMPTY_ERROR)) {
+                final MantaIOException mioe = new MantaIOException("Unable to delete bucket", e);
+                mioe.setContextValue("bucket", path);
+                throw mioe;
+            }
+        } catch (ConnectionPoolTimeoutException e) {
+            final MantaClientException clientException = new MantaClientException(
+                    "Connection pool timeout while deleting bucket" + e.getMessage());
+            clientException.setContextValue("path", path);
+            throw clientException;
+
+        }
+
+        LOG.debug("DELETE    {} [bucket]", path);
+    }
+
+    /**
+     * Deletes a bucket from Manta.
+     *
+     * @param rawPath The fully qualified path of the Manta bucket.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a HTTP status code other than {@code 200 | 202 | 204} is encountered
+     */
+    public void deleteBucket(final String rawPath) throws IOException {
+        this.deleteBucket(rawPath, null);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath) throws IOException {
+        return listBucketObjects(bucketPath, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final int pagingSize) throws IOException {
+        final MantaBucketListingIterator bucketIterator = streamingBucketIterator(bucketPath, pagingSize);
+
+        try {
+            if (!bucketIterator.hasNext()) {
+                bucketIterator.close();
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                throw e.getCause();
+            } else {
+                throw e;
+            }
+        }
+
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        bucketIterator, additionalCharacteristics), false);
+
+        Stream<MantaObject> stream = backingStream
+                .map(MantaObjectConversionFunction.INSTANCE)
+                .onClose(bucketIterator::close);
+
+        danglingStreams.add(stream);
+        return stream;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final char delimiter) throws IOException {
+        return listBucketObjects(bucketPath, delimiter, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final char delimiter,
+                                                 final int pagingSize) throws IOException {
+        final MantaBucketListingIterator bucketIterator = streamingBucketIterator(bucketPath, delimiter, pagingSize);
+
+        try {
+            if (!bucketIterator.hasNext()) {
+                bucketIterator.close();
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                throw e.getCause();
+            } else {
+                throw e;
+            }
+        }
+
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        bucketIterator, additionalCharacteristics), false);
+
+        Stream<MantaObject> stream = backingStream
+                .map(MantaObjectConversionFunction.INSTANCE)
+                .onClose(bucketIterator::close);
+
+        danglingStreams.add(stream);
+        return stream;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final String prefix) throws IOException {
+        return listBucketObjects(bucketPath, prefix, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final String prefix,
+                                                 final int pagingSize) throws IOException {
+        final MantaBucketListingIterator bucketIterator = streamingBucketIterator(bucketPath, prefix, pagingSize);
+
+        try {
+            if (!bucketIterator.hasNext()) {
+                bucketIterator.close();
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                throw e.getCause();
+            } else {
+                throw e;
+            }
+        }
+
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        bucketIterator, additionalCharacteristics), false);
+
+        Stream<MantaObject> stream = backingStream
+                .map(MantaObjectConversionFunction.INSTANCE)
+                .onClose(bucketIterator::close);
+
+        danglingStreams.add(stream);
+        return stream;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final String prefix,
+                                                 final char delimiter) throws IOException {
+        return listBucketObjects(bucketPath, prefix, delimiter, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta.
+     *
+     * @param bucketPath The fully qualified path of a bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Stream} of {@link MantaObjectResponse} listing the contents of the bucket.
+     * @throws IOException thrown when there is a problem getting the listing over the network
+     */
+    public Stream<MantaObject> listBucketObjects(final String bucketPath,
+                                                 final String prefix,
+                                                 final char delimiter,
+                                                 final int pagingSize) throws IOException {
+        final MantaBucketListingIterator bucketIterator = streamingBucketIterator(bucketPath,
+                prefix, delimiter, pagingSize);
+
+        try {
+            if (!bucketIterator.hasNext()) {
+                bucketIterator.close();
+                return Stream.empty();
+            }
+        } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof MantaClientHttpResponseException) {
+                throw e.getCause();
+            } else {
+                throw e;
+            }
+        }
+
+        final int additionalCharacteristics = Spliterator.CONCURRENT
+                | Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.DISTINCT;
+
+        Stream<Map<String, Object>> backingStream =
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                        bucketIterator, additionalCharacteristics), false);
+
+        Stream<MantaObject> stream = backingStream
+                .map(MantaObjectConversionFunction.INSTANCE)
+                .onClose(bucketIterator::close);
+
+        danglingStreams.add(stream);
+        return stream;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path) {
+        return streamingBucketIterator(path, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path, final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param marker marker we use to request against the Manta API.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final int pagingSize,
+                                                              final String prefix,
+                                                              final String marker) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, prefix, marker, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @param marker marker we use to request against the Manta API.
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final int pagingSize,
+                                                              final String marker) {
+        return streamingBucketIterator(path, pagingSize, null, marker);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path, final char delimiter) {
+        return streamingBucketIterator(path, delimiter, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final char delimiter,
+                                                              final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, delimiter, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix prefix filter that helps in optimizing a buckets listing
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path, final String prefix) {
+        return streamingBucketIterator(path, prefix, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final String prefix,
+                                                              final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, prefix, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix filter that helps in optimizing a buckets listing
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final String prefix,
+                                                              final char delimiter) {
+        return streamingBucketIterator(path, prefix, delimiter, MAX_RESULTS);
+    }
+
+    /**
+     * Return a stream of the contents of a bucket in Manta as an {@link Iterator}.
+     *
+     * @param path The fully qualified path of the bucket.
+     * @param prefix prefix filter that helps in optimizing a buckets listing
+     * @param delimiter filter to group names with a common prefix ending in its first occurrence
+     * @param pagingSize size of result set requested against the Manta API (2-1024)
+     * @return A {@link Iterator} of {@link MantaObjectResponse} listing the contents of the bucket.
+     */
+    public MantaBucketListingIterator streamingBucketIterator(final String path,
+                                                              final String prefix,
+                                                              final char delimiter,
+                                                              final int pagingSize) {
+        MantaBucketListingIterator itr =
+                new MantaBucketListingIterator(path, httpHelper, prefix, delimiter, pagingSize);
+        danglingStreams.add(itr);
+        return itr;
+    }
+
+    /* ======================================================================
      * Object Access
      * ====================================================================== */
 
@@ -443,7 +908,7 @@ public class MantaClient implements AutoCloseable {
      * @param rawPath  Path of the object you want to delete.
      * @param requestHeaders  requestHeaders HTTP headers to attach to request (may be null)
      * @param pruneDepth the number of parent directories to be deleted if empty.
-     * @throws IOException
+     * @throws IOException If an IO exception has occurred.
      */
     void delete(final String rawPath, final MantaHttpHeaders requestHeaders, final Integer pruneDepth)
             throws IOException {
@@ -451,6 +916,10 @@ public class MantaClient implements AutoCloseable {
         String path = formatPath(rawPath);
         if (pruneDepth == null || pruneDepth == DEFAULT_PRUNE_DEPTH) {
             LOG.debug("DELETE {}", path);
+            httpHelper.httpDelete(path, requestHeaders);
+        } else if (path.startsWith(config.getMantaBucketsDirectory())) {
+            LOG.debug("DELETE {}", path);
+            LOG.warn("Prune Directory settings should be disabled in a Buckets Environment");
             httpHelper.httpDelete(path, requestHeaders);
         } else {
             PruneEmptyParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
@@ -612,8 +1081,8 @@ public class MantaClient implements AutoCloseable {
      *
      * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @return The {@link MantaObjectResponse}.
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse get(final String rawPath) throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
@@ -896,12 +1365,13 @@ public class MantaClient implements AutoCloseable {
     }
 
     /**
-     * Get the options associated with a Manta object.
+     * Get the allowed methods or options associated with a Manta object or bucket.
      *
-     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param rawPath The fully qualified path of the bcukets root directory or object.
+     * i.e. /user/buckets, /user/stor/foo/bar/baz.
      * @return The {@link MantaObjectResponse}.
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse options(final String rawPath) throws IOException {
         Validate.notBlank(rawPath, "Path must not be empty nor null");
@@ -1163,8 +1633,8 @@ public class MantaClient implements AutoCloseable {
      * @param source   {@link InputStream} to copy object data from
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public MantaObjectResponse put(final String path,
                                    final InputStream source,
@@ -1294,8 +1764,8 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param string   string to copy
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string string to copy
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
@@ -1399,9 +1869,9 @@ public class MantaClient implements AutoCloseable {
      * Copies the supplied {@link String} to a remote Manta object at the specified
      * path using the default JVM character encoding as a binary representation.
      *
-     * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param string   string to copy
-     * @param headers  optional HTTP headers to include when copying the object
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param string string to copy
+     * @param headers optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
@@ -1496,8 +1966,8 @@ public class MantaClient implements AutoCloseable {
     /**
      * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param file     file to upload
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param file file to upload
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
      */
@@ -1539,9 +2009,9 @@ public class MantaClient implements AutoCloseable {
     /**
      * Copies the supplied {@link File} to a remote Manta object at the specified path.
      *
-     * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param file     file to upload
-     * @param headers  optional HTTP headers to include when copying the object
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param file file to upload
+     * @param headers optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
@@ -1576,8 +2046,8 @@ public class MantaClient implements AutoCloseable {
     /**
      * Copies the supplied byte array to a remote Manta object at the specified path.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param bytes    byte array to upload
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes byte array to upload
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
      */
@@ -1589,8 +2059,8 @@ public class MantaClient implements AutoCloseable {
     /**
      * Copies the supplied byte array to a remote Manta object at the specified path.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param bytes    byte array to upload
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes byte array to upload
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
@@ -1604,9 +2074,9 @@ public class MantaClient implements AutoCloseable {
     /**
      * Copies the supplied byte array to a remote Manta object at the specified path.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param bytes    byte array to upload
-     * @param headers  optional HTTP headers to include when copying the object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes byte array to upload
+     * @param headers optional HTTP headers to include when copying the object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
      */
@@ -1619,9 +2089,9 @@ public class MantaClient implements AutoCloseable {
     /**
      * Copies the supplied byte array to a remote Manta object at the specified path.
      *
-     * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param bytes    byte array to upload
-     * @param headers  optional HTTP headers to include when copying the object
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param bytes byte array to upload
+     * @param headers optional HTTP headers to include when copying the object
      * @param metadata optional user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the object over the network
@@ -1644,7 +2114,7 @@ public class MantaClient implements AutoCloseable {
     /**
      * Appends the specified metadata to an existing Manta object.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
      * @param metadata user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the metadata over the network
@@ -1658,8 +2128,8 @@ public class MantaClient implements AutoCloseable {
     /**
      * Appends metadata derived from HTTP headers to an existing Manta object.
      *
-     * @param path     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers  HTTP headers to include when copying the object
+     * @param path The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers HTTP headers to include when copying the object
      * @return Manta response object
      * @throws IOException when there is a problem sending the metadata over the network
      */
@@ -1675,8 +2145,8 @@ public class MantaClient implements AutoCloseable {
      * Replaces the specified metadata to an existing Manta object using the
      * specified HTTP headers.
      *
-     * @param rawPath     The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
-     * @param headers  HTTP headers to include when copying the object
+     * @param rawPath The fully qualified path of the object. i.e. /user/stor/foo/bar/baz
+     * @param headers HTTP headers to include when copying the object
      * @param metadata user-supplied metadata for object
      * @return Manta response object
      * @throws IOException when there is a problem sending the metadata over the network
@@ -1705,8 +2175,8 @@ public class MantaClient implements AutoCloseable {
      *
      * @param path The fully qualified path of the Manta directory.
      * @return true when directory was created
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public boolean putDirectory(final String path) throws IOException {
         return putDirectory(path, null);
@@ -1715,11 +2185,11 @@ public class MantaClient implements AutoCloseable {
     /**
      * Creates a directory in Manta.
      *
-     * @param rawPath    The fully qualified path of the Manta directory.
+     * @param rawPath The fully qualified path of the Manta directory.
      * @param rawHeaders Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
      * @return true when directory was created
-     * @throws IOException                                     If an IO exception has occurred.
-     * @throws MantaClientHttpResponseException                If a http status code {@literal > 300} is returned.
+     * @throws IOException If an IO exception has occurred.
+     * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public boolean putDirectory(final String rawPath, final MantaHttpHeaders rawHeaders)
             throws IOException {
@@ -1770,7 +2240,7 @@ public class MantaClient implements AutoCloseable {
      * @param rawPath   The fully qualified path of the Manta directory.
      * @param recursive recursive create all of the directories specified in the path
      * @param headers   Optional {@link MantaHttpHeaders}. Consult the Manta api for more header information.
-     * @throws IOException                      If an IO exception has occurred.
+     * @throws IOException If an IO exception has occurred.
      * @throws MantaClientHttpResponseException If a http status code {@literal > 300} is returned.
      */
     public void putDirectory(final String rawPath,
@@ -1827,7 +2297,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * <p>Moves an object from one path to another path. When moving
-     * directories or files between different directories, this operation is
+     * directories or files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.</p>
@@ -1846,7 +2316,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * <p>Moves an object from one path to another path. When moving
-     * directories or files between different directories, this operation is
+     * directories or files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.</p>
@@ -1878,7 +2348,7 @@ public class MantaClient implements AutoCloseable {
 
     /**
      * Moves a file from one path to another path. When moving
-     * files between different directories, this operation is
+     * files between different directories/buckets, this operation is
      * not transactional and may fail or produce inconsistent result if
      * the source or the destination is modified while the operation is
      * in progress.

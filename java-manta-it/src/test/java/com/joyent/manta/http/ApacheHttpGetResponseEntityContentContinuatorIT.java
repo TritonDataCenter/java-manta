@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2018-2019, Joyent, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.joyent.manta.http;
 
 import com.codahale.metrics.Counter;
@@ -7,6 +14,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -14,6 +22,8 @@ import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.config.MantaClientMetricConfiguration;
 import com.joyent.manta.config.MetricReporterMode;
+import com.joyent.test.util.MantaAssert;
+import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,8 +34,10 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import javax.crypto.SecretKey;
@@ -124,7 +136,7 @@ import static org.testng.Assert.fail;
  * HTTP it provides no way to terminate in-flight requests.
  * </p>
  */
-@Test(groups = {"range-downloads"}, singleThreaded = true)
+@Test(groups = {"range-downloads", "buckets"}, singleThreaded = true)
 public class ApacheHttpGetResponseEntityContentContinuatorIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(ApacheHttpGetResponseEntityContentContinuatorIT.class);
@@ -154,11 +166,13 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
 
     private final Map<SupportedCipherDetails, Pair<String, SecretKey>> cipherToObjectAndSecretKey;
 
-    public ApacheHttpGetResponseEntityContentContinuatorIT() throws IOException {
+    public ApacheHttpGetResponseEntityContentContinuatorIT(final @Optional String testType) throws IOException {
         dummyConfig = new IntegrationTestConfigContext(false);
+        final String testName = this.getClass().getSimpleName();
+        final MantaClient mantaClient = new MantaClient(dummyConfig);
 
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(dummyConfig,
-                                                                       this.getClass().getSimpleName());
+        testPathPrefix = IntegrationTestHelper.setupTestPath(dummyConfig, mantaClient,
+                testName, testType);
 
         final HashMap<SupportedCipherDetails, Pair<String, SecretKey>> cipherToPathAndKey = new HashMap<>();
         cipherToPathAndKey.put(null,
@@ -172,7 +186,8 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
     }
 
     @BeforeClass
-    public void prepare() throws IOException {
+    @Parameters({"testType"})
+    public void prepare(final @Optional String testType) throws IOException {
         // this only needs to be run once but since the constructor shouldn't throw it's placed here
         verifyProxyInUse();
 
@@ -181,7 +196,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
 
         // we want to upload both encrypted and unencrypted copies of the same file
         // the same parent directory is used for both
-        unencryptedClient.putDirectory(testPathPrefix, true);
+        IntegrationTestHelper.createTestBucketOrDirectory(unencryptedClient, testPathPrefix, testType);
         final String unencryptedObjectPath = cipherToObjectAndSecretKey.get(null).getLeft();
         final String encryptedObjectPath = cipherToObjectAndSecretKey.get(AesCtrCipherDetails.INSTANCE_128_BIT).getLeft();
         unencryptedClient.put(unencryptedObjectPath, STUB_PLAINTEXT_OBJECT_CONTENT);
@@ -226,7 +241,7 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         LOG.warn(" <<< Finishing download continuation tests. You can stop manually terminating requests now.");
 
         try (final MantaClient cleanupClient = prepareClient(null, null, null)) {
-            IntegrationTestConfigContext.cleanupTestDirectory(cleanupClient, testPathPrefix);
+            IntegrationTestHelper.cleanupTestBucketOrDirectory(cleanupClient, testPathPrefix);
         }
     }
 
@@ -248,6 +263,9 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         final Counter exceptions = extractExceptionCounter(metrics);
         assertTrue(0 < exceptions.getCount());
 
+        client.delete(unencryptedObjectPath);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> client.get(unencryptedObjectPath));
         client.close();
     }
 
@@ -281,6 +299,9 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         final Counter exceptions = extractExceptionCounter(metrics);
         assertTrue(0 < exceptions.getCount());
 
+        client.delete(unencryptedObjectPath);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> client.get(unencryptedObjectPath));
         client.close();
     }
 
@@ -301,6 +322,9 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         final Counter exceptions = extractExceptionCounter(metrics);
         assertTrue(0 < exceptions.getCount());
 
+        client.delete(encryptedObjectPath);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> client.get(encryptedObjectPath));
         client.close();
     }
 
@@ -334,6 +358,9 @@ public class ApacheHttpGetResponseEntityContentContinuatorIT {
         assertEquals(received,
                      ArrayUtils.subarray(STUB_PLAINTEXT_OBJECT_CONTENT, offset, STUB_PLAINTEXT_OBJECT_CONTENT.length));
 
+        client.delete(encryptedObjectPath);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> client.get(encryptedObjectPath));
         client.close();
     }
 

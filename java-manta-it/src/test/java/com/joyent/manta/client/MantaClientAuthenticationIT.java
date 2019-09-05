@@ -7,10 +7,15 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.*;
 import com.joyent.manta.exception.ConfigurationException;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -21,6 +26,7 @@ import java.util.UUID;
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>-
  */
+@Test(groups = { "buckets" })
 public class MantaClientAuthenticationIT {
     private static final String TEST_DATA = "Arise,Awake And Do Not Stop Until Your Goal Is Reached.";
 
@@ -29,20 +35,23 @@ public class MantaClientAuthenticationIT {
     private String testPathPrefix;
 
     @BeforeClass
-    @Parameters({"usingEncryption"})
-    public void beforeClass(@Optional Boolean usingEncryption) throws IOException {
+    @Parameters({"usingEncryption", "testType"})
+    public void beforeClass(final @Optional Boolean usingEncryption,
+                            final @Optional String testType) throws IOException {
 
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        final String testName = this.getClass().getSimpleName();
 
         mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
-        mantaClient.putDirectory(testPathPrefix, true);
+        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
+                testName, testType);
+        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
     }
 
     @AfterClass
     public void afterClass() throws IOException {
-        IntegrationTestConfigContext.cleanupTestDirectory(mantaClient, testPathPrefix);
+        IntegrationTestHelper.cleanupTestBucketOrDirectory(mantaClient, testPathPrefix);
     }
 
     @Test(expectedExceptions = { ConfigurationException.class })
