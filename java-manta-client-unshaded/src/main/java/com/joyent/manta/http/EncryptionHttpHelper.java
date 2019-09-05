@@ -542,7 +542,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
                     metadataPath = StringUtils.substringBeforeLast(path, SEPARATOR);
         }
 
-        Validate.notNull(metadataPath, "Http Response cannot be retrieved for an empty path");
+        Validate.notEmpty(metadataPath, "Http Response cannot be retrieved for an empty path");
         HttpResponse response = httpHead(metadataPath);
 
         boolean isEncryptedObject = response.getFirstHeader(MantaHttpHeaders.ENCRYPTION_CIPHER) != null;

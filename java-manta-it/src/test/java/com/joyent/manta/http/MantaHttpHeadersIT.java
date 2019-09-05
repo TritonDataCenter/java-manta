@@ -376,31 +376,6 @@ public class MantaHttpHeadersIT {
         assertFalse(mantaClient.existsAndIsAccessible(path));
     }
 
-    public void canFailToDeleteObjectOnBadIfModifiedSince() throws IOException {
-        if (testPathPrefix.contains(mantaClient.getContext().getMantaBucketsDirectory())) {
-            throw new SkipException("Test skipped for a buckets environment");
-        }
-
-        final String path = generatePath();
-        final MantaObjectResponse empty = mantaClient.put(path, new byte[0]);
-        final MantaHttpHeaders headers = new MantaHttpHeaders();
-
-        headers.setIfModifiedSince(DateUtils.formatDate(empty.getLastModifiedTime()));
-        final MantaClientHttpResponseException badIfModifiedSinceEx = expectThrows(
-                MantaClientHttpResponseException.class,
-                () -> mantaClient.delete(path, headers));
-
-        assertEquals(badIfModifiedSinceEx.getStatusCode(), 412);
-        assertTrue(mantaClient.existsAndIsAccessible(path));
-
-        final Date ifModifiedSinceDate = addDays(empty.getLastModifiedTime(),-3);
-        headers.setIfUnmodifiedSince(DateUtils.formatDate(ifModifiedSinceDate));
-        mantaClient.delete(path, headers);
-
-        mantaClient.delete(path);
-        assertFalse(mantaClient.existsAndIsAccessible(path));
-    }
-
     public void canFailToDeleteObjectOnBadIfUnmodifiedSince() throws IOException {
         final String path = generatePath();
 
