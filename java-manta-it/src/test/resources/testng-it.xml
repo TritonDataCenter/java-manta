@@ -106,7 +106,7 @@
     <test name="Manta Client Integration Tests [AES128/CBC Encrypted]">
         <parameter name="encryptionCipher" value="AES128/CBC/PKCS5Padding"/>
         <classes>
-            <class name="com.joyent.manta.client.MantaClientIT" />
+            <!--class name="com.joyent.manta.client.MantaClientIT" / -->
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
 
