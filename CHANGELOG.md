@@ -2,16 +2,18 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.4.1]
+## [3.4.1] - 2019-10-29
 ### Added
- - [Updated](https://github.com/joyent/java-manta/pull/527) where
-   `ChainedConfigContext` would "forget" that `mantaKeyPath` was set
-   by a `DefaultConfigContext`
- - [Updated](https://github.com/joyent/java-manta/pull/512) `AuthAwareConfigContext` with missing configuration parameters and exposed 
-   client configuration parameters like `MANTA_DOWNLOAD_CONTINUATIONS_KEY` and  `MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY` 
-   using `MetricReporterSupplier`.
+ - [Updated](https://github.com/joyent/java-manta/pull/527) where `ChainedConfigContext` would "forget" that 
+   `mantaKeyPath` was set by a `DefaultConfigContext`.
+ - [Introduced](https://github.com/joyent/java-manta/pull/507) new test group Definitions error, seekable, etc 
+   and subsequently eliminated redundant test runs. Added test-configuration parameter `it.dryRun` for 
+   integration-test run simulations within the SDK test-suite.
+ - [Updated](https://github.com/joyent/java-manta/pull/512) `AuthAwareConfigContext` with missing configuration parameters
+   and exposed client configuration parameters like `MANTA_DOWNLOAD_CONTINUATIONS_KEY` and  
+   `MANTA_CONTENT_TYPE_DETECTION_ENABLED_KEY` using `MetricReporterSupplier`.
  - Added `MANTA_TLS_INSECURE` to allow disabling TLS certificate verification in
-   certain test environmnts.  Not intended to be used in porduction.
+   certain test environments.  Not intended to be used in production.
  - Updated `MantaErrorCode` Enum Values, mapping more errors from Manta components including muskie, mahi,
    moray, electric-moray, piranha and marlin. Deprecated errors with invalid rest codes and removed undefined 
    Manta Errors in the SDK.
@@ -25,7 +27,15 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - Copyright Header updates for files that have been modified recently within the Client Java SDK.     
 ### Fixed
  - [Specifying key content will conflict with the default key path](https://github.com/joyent/java-manta/issues/116)
+ - [Directory-maven-plugin and maven-assembly-plugin not marked as thread-safe](https://github.com/joyent/java-manta/issues/531)
+ - [MantaClientDirectoriesIT.pruneParentDirectoriesFull fails at certain use-cases](https://github.com/joyent/java-manta/issues/542)
+ - [Configuration Params Missing in AuthAwareConfigContext](https://github.com/joyent/java-manta/issues/511)
+ - [MantaClientSigningIT presumes HTTP header case](https://github.com/joyent/java-manta/issues/549)
+ - [Testng encryptionCipher seems innocuous](https://github.com/joyent/java-manta/issues/336)
  - [Standardize .equals() and .hashCode() behaviour](https://github.com/joyent/java-manta/issues/477)
+ - [References to org.apache.http.* in integration tests are causing test failures](https://github.com/joyent/java-manta/issues/537)
+ - [TLS Cert import documentation is missing steps](https://github.com/joyent/java-manta/issues/513)
+ - [MantaVersion.DATE has become hard coded](https://github.com/joyent/java-manta/issues/482)
  - [Review correctness of integer division in floating point context](https://github.com/joyent/java-manta/issues/479)
  - [Integration tests structured better to support accounts having SnapLinks disabled](https://github.com/joyent/java-manta/issues/480)
  - [NoApiServersAvailable is not present in MantaErrorCode enums](https://github.com/joyent/java-manta/issues/470)
