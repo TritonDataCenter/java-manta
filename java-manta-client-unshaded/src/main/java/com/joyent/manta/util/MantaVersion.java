@@ -22,7 +22,7 @@ public final class MantaVersion {
     /**
      * Release version of the SDK.
      */
-    public static final String VERSION = "3.4.1-SNAPSHOT";
+    public static final String VERSION = "3.4.2-SNAPSHOT";
 
     /**
      * Minimum version of client-side encryption supported.
