@@ -1,7 +1,8 @@
 # Installation
 
 ## Requirements
-* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html). Java 1.9 is not yet supported.
+* [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is required for compiling the SDK. 
+  Java 1.8 and Java 11 application usage is now supported.
 * [Java Cryptography Extension](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html) to
   use Client-side Encryption with stronger ciphers (192/256-bit).
 * [Maven 3.1.x](https://maven.apache.org/) to contribute to the project.

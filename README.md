@@ -11,16 +11,29 @@ SDK for interacting with Joyent's Manta system.
 * [Hadoop Filesystem Driver for Manta](https://github.com/joyent/hadoop-manta)
 * [Manta Logback Rollover](https://github.com/dekobon/manta-logback-rollover)
 * [COSBench Adaptor for Manta - Object Store Benchmarks](https://github.com/joyent/cosbench-manta)
+* [Manta Monitor](https://github.com/joyent/manta-monitor)
+* [Java Manta Test Harness](https://github.com/joyent/java-manta-test-harness)
 
 ## Installation
 
-[Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is required. The main client module can
-be installed by adding the following dependency using [Maven 3.1.x](https://maven.apache.org/):
+[Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is required for SDK compilation. 
+It successfully supports both [Java 8 and Java 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html) 
+in application usage. The main client module can be installed by adding the following dependency using 
+[Maven 3.1.x](https://maven.apache.org/):
 
 ```
 <dependency>
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta-client</artifactId>
+    <version>LATEST</version>
+</dependency>
+```
+and the unshaded module can be installed by adding the following dependency using [Maven 3.1.x](https://maven.apache.org/):
+
+```
+<dependency>
+    <groupId>com.joyent.manta</groupId>
+    <artifactId>java-manta-client-unshaded</artifactId>
     <version>LATEST</version>
 </dependency>
 ```

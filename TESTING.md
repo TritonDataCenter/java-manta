@@ -118,3 +118,10 @@ There is still work being done to provide a workaround for this situation.
 [Failsafe](http://maven.apache.org/surefire/maven-failsafe-plugin/) plugins are
 configured to look for [TestNG](http://testng.org/doc/) configuration
 in their module's `resource` folders.
+
+# Java Manta Test Harness
+
+[java-manta-test-harness](https://github.com/joyent/java-manta-test-harness) is a community-maintained Java
+testing app used for verifying Java 11 support by [java-manta](https://github.com/joyent/java-manta) client SDK for manta.
+It is a tool to efficiently leverage and verify java sdk compatibilities with different java versions whenever required.
+Instructions on how to use this application is [available here](https://github.com/joyent/java-manta-test-harness#java-manta-test-harness).
