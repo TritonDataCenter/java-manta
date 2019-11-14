@@ -17,8 +17,8 @@ SDK for interacting with Joyent's Manta system.
 ## Installation
 
 [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is required for SDK compilation. 
-It successfully supports both [Java 8 and Java 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html) 
-in application usage. The main client module can be installed by adding the following dependency using 
+It effectively supports both [Java 8 and Java 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html) 
+in *application usage*. The main client module can be installed by adding the following dependency using 
 [Maven 3.1.x](https://maven.apache.org/):
 
 ```
