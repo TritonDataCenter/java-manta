@@ -919,7 +919,6 @@ public class MantaClient implements AutoCloseable {
             httpHelper.httpDelete(path, requestHeaders);
         } else if (path.startsWith(config.getMantaBucketsDirectory())) {
             LOG.debug("DELETE {}", path);
-            LOG.warn("Prune Directory settings should be disabled in a Buckets Environment");
             httpHelper.httpDelete(path, requestHeaders);
         } else {
             PruneEmptyParentDirectoryStrategy.pruneParentDirectories(this, requestHeaders, path, pruneDepth);
