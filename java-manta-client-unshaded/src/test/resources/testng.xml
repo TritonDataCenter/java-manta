@@ -54,7 +54,6 @@
     <test name="Multipart Tests">
         <classes>
             <class name="com.joyent.manta.client.multipart.EncryptedMultipartManagerTest" />
-            <class name="com.joyent.manta.client.multipart.JobsMultipartManagerTest" />
             <class name="com.joyent.manta.client.multipart.MultipartOutputStreamTest" />
             <class name="com.joyent.manta.client.multipart.ServerSideMultipartManagerTest" />
             <class name="com.joyent.manta.client.multipart.TestMultipartManagerTest" />
