@@ -10,6 +10,7 @@ package com.joyent.manta.client;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -42,7 +43,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Tests the functionality of signing private Manta URLs for public access.
  *
- * @author Elijah Zupancic
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test
 public class MantaClientSigningIT {
@@ -261,7 +263,7 @@ public class MantaClientSigningIT {
                 Assert.fail(errorText);
             }
 
-            String server = connection.getHeaderField("Server");
+            String server = StringUtils.substringBefore(connection.getHeaderField("Server"), "/");
             Assert.assertEquals(server, "Manta");
         } finally {
             connection.disconnect();
