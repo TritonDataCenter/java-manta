@@ -166,7 +166,7 @@
         <dependency.jnagmp.version>2.1.0</dependency.jnagmp.version>
         <dependency.urlbuilder.version>2.0.9</dependency.urlbuilder.version>
 
-        <dependency.checkstyle.version>8.18</dependency.checkstyle.version>
+        <dependency.checkstyle.version>8.29</dependency.checkstyle.version>
         <dependency.logback.version>1.2.3</dependency.logback.version>
         <dependency.mockito.version>2.24.5</dependency.mockito.version>
         <dependency.slfj.version>1.7.25</dependency.slfj.version>
