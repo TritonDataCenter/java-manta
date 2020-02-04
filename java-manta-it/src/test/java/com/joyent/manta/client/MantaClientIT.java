@@ -17,7 +17,12 @@ import com.joyent.test.util.RandomInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.SkipException;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -154,33 +159,27 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void testManyOperations() throws IOException {
+    public final void testManyOperationsWithDirectories() throws IOException {
         String dir = testPathPrefix + "multiple";
         final boolean bucketsEnabled = testPathPrefix.contains(mantaClient.getContext().getMantaBucketsDirectory());
 
-        if (!bucketsEnabled) {
-            mantaClient.putDirectory(dir);
+        if (bucketsEnabled) {
+            throw new SkipException("Test skipped since it's invalid for MantaV2");
         }
+
+        mantaClient.putDirectory(dir);
 
         for (int i = 0; i < 100; i++) {
             final String name = UUID.randomUUID().toString();
-            if (!bucketsEnabled) {
-                final String path = String.format("%s/%s", dir, name);
-                mantaClient.put(path, TEST_DATA);
-                String actual = mantaClient.getAsString(path);
-                Assert.assertEquals(actual, TEST_DATA);
-                mantaClient.deleteRecursive(dir);
-            } else {
-                final String path = String.format("%s%s", testPathPrefix, name);
-                mantaClient.put(path, TEST_DATA);
-                String actual = mantaClient.getAsString(path);
-                Assert.assertEquals(actual, TEST_DATA);
-                mantaClient.delete(path);
-
-                MantaAssert.assertResponseFailureCode(404,
-                        (MantaFunction<Object>) () -> mantaClient.get(path));
-            }
+            final String path = String.format("%s/%s", dir, name);
+            mantaClient.put(path, TEST_DATA);
+            String actual = mantaClient.getAsString(path);
+            Assert.assertEquals(actual, TEST_DATA);
         }
+
+        mantaClient.deleteRecursive(dir);
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(dir));
     }
 
     @Test

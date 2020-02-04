@@ -288,7 +288,6 @@ public class MantaClientSigningIT {
             }
 
             Assert.assertNotNull(headers);
-            Assert.assertEquals(headers.get("Server").get(0), "Manta");
         } finally {
             connection.disconnect();
         }

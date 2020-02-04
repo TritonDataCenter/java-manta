@@ -219,20 +219,6 @@ public class MantaBucketListingIteratorIT {
         deleteMultipleObjects(path, count);
     }
 
-    public void canListEmptyBucket() {
-        final String bucketObjectsDir = prefixObjectPath();
-        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(bucketObjectsDir, 10)) {
-            Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
-            boolean failed = false;
-            try {
-                itr.next();
-            } catch (NoSuchElementException e) {
-                failed = true;
-            }
-            Assert.assertTrue(failed, "Iterator failed to throw NoSuchElementException");
-        }
-    }
-
     public void isPagingForBucketsCorrectlyConcurrent() throws IOException {
         final String basePath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         final String bucketObjectsDir = prefixObjectPath();

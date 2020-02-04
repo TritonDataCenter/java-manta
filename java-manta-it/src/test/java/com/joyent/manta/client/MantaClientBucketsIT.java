@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static com.joyent.manta.client.MantaClient.SEPARATOR;
@@ -58,6 +59,7 @@ public class MantaClientBucketsIT {
         generateBucketName(path);
     }
 
+    @Test
     public void createAndDeleteBucket() throws IOException {
         final String name = generateBucketName(testPathPrefix);
         final String bucketPath = testPathPrefix + name;
@@ -66,6 +68,29 @@ public class MantaClientBucketsIT {
         Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
     }
 
+    @Test
+    public void canListEmptyBucket() throws IOException {
+        final String name = generateBucketName(testPathPrefix);
+        final String bucketPath = testPathPrefix + name;
+        final String bucketObjectsDir = String.format("%s%s%s", bucketPath, SEPARATOR, "objects");
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
+
+        try (MantaBucketListingIterator itr = mantaClient.streamingBucketIterator(bucketObjectsDir, 10)) {
+            Assert.assertFalse(itr.hasNext(), "There shouldn't be a next element");
+            boolean failed = false;
+            try {
+                itr.next();
+            } catch (NoSuchElementException e) {
+                failed = true;
+            }
+            Assert.assertTrue(failed, "Iterator failed to throw NoSuchElementException");
+        }
+
+        mantaClient.deleteBucket(bucketPath);
+        Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    @Test
     public void createAndOverwriteExistingBucket() throws IOException {
         final String name = generateBucketName(testPathPrefix);
         final String bucketPath = testPathPrefix + name;
@@ -80,6 +105,7 @@ public class MantaClientBucketsIT {
         Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
     }
 
+    @Test
     public void checkNonExistentBucket() {
         final String name = generateBucketName(testPathPrefix);
         final String bucketPath = testPathPrefix + name;
@@ -87,36 +113,42 @@ public class MantaClientBucketsIT {
         Assert.assertThrows(MantaIOException.class, () -> mantaClient.deleteBucket(bucketPath));
     }
 
+    @Test
     public void createBucketWithUnderscores() throws IOException {
         final String name = generateBucketName(testPathPrefix) + "___" + "754";
         final String bucketPath = testPathPrefix + name;
         verifyBucketNamingRestrictions(bucketPath);
     }
 
+    @Test
     public void createBucketEndingWithNonAlphaNumeric() throws IOException {
         final String name = generateBucketName(testPathPrefix) + "-";
         final String bucketPath = testPathPrefix + name;
         verifyBucketNamingRestrictions(bucketPath);
     }
 
+    @Test
     public void createBucketWithUpperCaseCharacters() throws IOException {
         final String name = generateBucketName(testPathPrefix).toUpperCase();
         final String bucketPath = testPathPrefix + name;
         verifyBucketNamingRestrictions(bucketPath);
     }
 
+    @Test
     public void createBucketWithSubsequentPeriods() throws IOException {
         final String name = generateBucketName(testPathPrefix) + ".." + "118";
         final String bucketPath = testPathPrefix + name;
         verifyBucketNamingRestrictions(bucketPath);
     }
 
+    @Test
     public void createBucketWithFormattedIPAddress() throws IOException {
         final String bucketPath = config.getMantaBucketsDirectory()
                 + SEPARATOR +"192.0.2.0";
         verifyBucketNamingRestrictions(bucketPath);
     }
 
+    @Test
     public void createBucketWithoutFormattedIPAddress() throws IOException {
         final String name = generateBucketName(testPathPrefix) + "172.25.1234.1";
         final String bucketPath = testPathPrefix + name;
@@ -125,12 +157,14 @@ public class MantaClientBucketsIT {
         Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
     }
 
+    @Test
     public void createBucketWithErrorProneCharacters() throws IOException {
         final String name = generateBucketName(testPathPrefix) + ".-";
         final String bucketPath = testPathPrefix + name;
         verifyBucketNamingRestrictions(bucketPath);
     }
 
+    @Test
     public void createBucketWithSmallAndLargeNames() throws IOException {
         final String name = generateBucketName(testPathPrefix) + "wehaveaverylargetbucketnamecomingoutexceedingmaxlimit64646466165";
         final String largeName = testPathPrefix + name;
@@ -139,6 +173,7 @@ public class MantaClientBucketsIT {
         verifyBucketNamingRestrictions(smallName);
     }
 
+    @Test
     public void checkBucketObjectOperations() throws IOException {
         final String name = generateBucketName(testPathPrefix);
         final String bucketPath = testPathPrefix + name;
@@ -154,6 +189,25 @@ public class MantaClientBucketsIT {
         mantaClient.deleteBucket(bucketPath);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(objectPath));
         Assert.assertFalse(mantaClient.existsAndIsAccessible(bucketPath));
+    }
+
+    @Test
+    public final void testManyOperationsWithBuckets() throws IOException {
+        final String name = generateBucketName(testPathPrefix);
+        final String bucketPath = testPathPrefix + name;
+        final String bucketObjectsDir = String.format("%s%s%s", bucketPath, SEPARATOR, "objects");
+        Assert.assertTrue(mantaClient.createBucket(bucketPath));
+
+        for (int i = 0; i < 100; i++) {
+            final String objectPath = generateBucketObjectPath(bucketPath) + UUID.randomUUID().toString();
+            mantaClient.put(objectPath, TEST_DATA);
+            String actual = mantaClient.getAsString(objectPath);
+            Assert.assertEquals(actual, TEST_DATA);
+            mantaClient.delete(objectPath);
+
+            MantaAssert.assertResponseFailureCode(404,
+                    (MantaFunction<Object>) () -> mantaClient.get(objectPath));
+        }
     }
 
     // TEST UTILITY METHODS
