@@ -113,6 +113,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    | false                                |                          |
 | manta.encryption_auth_mode         | MANTA_ENCRYPTION_AUTH_MODE     | Mandatory                            |                          |
 | manta.encryption_key_path          | MANTA_ENCRYPTION_KEY_PATH      |                                      |                          |
+| manta.preferred.security.providers |                                |SunPKCS11-NSS,BC,SunJCE               |                          |
 | manta.encryption_key_bytes         |                                |                                      |                          |
 | manta.encryption_key_bytes_base64  | MANTA_ENCRYPTION_KEY_BYTES     |                                      |                          |
 
@@ -317,7 +318,9 @@ attributes = compatibility
 ```
 
 Make sure that the name field is `NSS` because the SDK will only use the library if that specific
-name is set. Next, edit the following file: `$JAVA_HOME/jre/lib/security/java.security`
+name is set. Next, edit the following file: `$JAVA_HOME/jre/lib/security/java.security`:
+
+##### For JAVA 8
 
 Find the lines specifying security providers. It should look something like:
 ```
@@ -348,6 +351,44 @@ security.provider.9=org.jcp.xml.dsig.internal.dom.XMLDSigRI
 security.provider.10=sun.security.smartcardio.SunPCSC
 ```
 
+##### For JAVA 11
+
+Find the lines specifying security providers. It should look something like:
+```
+security.provider.1=SUN
+security.provider.2=SunRsaSign
+security.provider.3=SunEC
+security.provider.4=SunJSSE
+security.provider.5=SunJCE
+security.provider.6=SunJGSS
+security.provider.7=SunSASL
+security.provider.8=XMLDSig
+security.provider.9=SunPCSC
+security.provider.10=JdkLDAP
+security.provider.11=JdkSASL
+security.provider.12=Apple
+security.provider.13=SunPKCS11
+```
+
+Now, add a line in front of the first provider and make it provider number one,
+then appropriately increment the other providers:
+
+```
+security.provider.1=SunPKCS11 /etc/nss.cfg
+security.provider.2=SUN
+security.provider.3=SunRsaSign
+security.provider.4=SunEC
+security.provider.5=SunJSSE
+security.provider.6=SunJCE
+security.provider.7=SunJGSS
+security.provider.8=SunSASL
+security.provider.9=XMLDSig
+security.provider.10=SunPCSC
+security.provider.11=JdkLDAP
+security.provider.12=JdkSASL
+security.provider.13=Apple
+```
+
 Once this is complete, you should now have libnss providing your cryptographic
 functions.
 
@@ -373,7 +414,9 @@ java <...> -Dmanta.preferred.security.providers=SunJCE,BC,SunPKCS11-NSS
 ```  
 
 You may want to change the ranking if you are unable to use the libnss provider
-and still want the performance benefits of AES-NI via the SunJCE provider.
+and still want the performance benefits of AES-NI via the SunJCE provider. The 
+default encryption-provider precedence for SDK is mentioned in the configuration table 
+above.
 
 #### Enabling Native FastMD5 Support
 
