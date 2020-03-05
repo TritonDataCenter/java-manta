@@ -317,10 +317,10 @@ nssDbMode = noDb
 attributes = compatibility
 ```
 
+##### For JAVA 8
+
 Make sure that the name field is `NSS` because the SDK will only use the library if that specific
 name is set. Next, edit the following file: `$JAVA_HOME/jre/lib/security/java.security`:
-
-##### For JAVA 8
 
 Find the lines specifying security providers. It should look something like:
 ```
@@ -353,6 +353,7 @@ security.provider.10=sun.security.smartcardio.SunPCSC
 
 ##### For JAVA 11
 
+Edit the following file: `$JAVA_HOME/conf/security/java.security`:
 Find the lines specifying security providers. It should look something like:
 ```
 security.provider.1=SUN
