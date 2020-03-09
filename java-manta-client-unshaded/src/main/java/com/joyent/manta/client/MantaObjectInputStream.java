@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,6 +25,7 @@ import java.util.Date;
  * {@link MantaObject} so that you can obtain metadata information.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class MantaObjectInputStream extends InputStream implements MantaObject,
         AutoCloseable {
@@ -54,8 +55,8 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     /**
      * Create a new instance from the results of a GET HTTP call to the Manta API.
      *
-     * @param response Metadata object built from request
-     * @param httpResponse Response object created
+     * @param response      Metadata object built from request
+     * @param httpResponse  Response object created
      * @param backingStream Underlying stream being wrapped
      */
     public MantaObjectInputStream(final MantaObjectResponse response,
@@ -145,6 +146,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
         return response.getRequestId();
     }
 
+    @SuppressWarnings("unused")
     protected MantaObjectResponse getResponse() {
         return response;
     }
@@ -182,6 +184,21 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
         return backingStream.available();
     }
 
+    /**
+     * <p>Closes this stream.</p>
+     *
+     * <p>This is a special version of {@link #close close()} which prevents
+     * re-use of the underlying connection, if any. Calling this method
+     * indicates that there should be no attempt to read until the end of
+     * the stream.</p>
+     *
+     * <p>If the backing stream of the connection is not a
+     * {@link EofSensorInputStream}, this method will call {@link #close()}.
+     * This subsequently closes the input stream and releases any system resources associated
+     * with the stream.</p>
+     *
+     * @throws IOException thrown when unable to close connection
+     */
     @Override
     public void close() throws IOException {
         if (LOGGER.isTraceEnabled()) {
@@ -189,33 +206,46 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
                     this.backingStream, httpResponse);
         }
 
-        try {
+        if (backingStream instanceof EofSensorInputStream) {
+                ((EofSensorInputStream) backingStream).close();
+                closeHttpResponse();
+            } else {
+            try {
             if (backingStream != null) {
                 backingStream.close();
+                }
+            } catch (IOException e) {
+                /* Since we will be throwing an exception when closing the backing
+                * stream, we will only log the error thrown when closing the
+                * response because we can only throw up a single exception. */
+                closeHttpResponse();
+            } finally {
+                closeHttpResponse();
             }
-        } catch (IOException e) {
-            /* Since we will be throwing an exception when closing the backing
-             * stream, we will only log the error thrown when closing the
-             * response because we can only throw up a single exception. */
-            try {
-                httpResponse.close();
-            } catch (IOException ioe) {
-                MantaIOException responseMio = new MantaIOException(ioe);
-                HttpHelper.annotateContextedException(responseMio, null, httpResponse);
-                LOGGER.error("Unable to close HTTP response resource", responseMio);
-            }
-
-            MantaIOException mio = new MantaIOException(e);
-            HttpHelper.annotateContextedException(mio, null, httpResponse);
-            throw mio;
         }
-
+    }
+    /**
+     * Closes the underlying response sent by Manta API and
+     * releases any system resources associated with it.
+     * If stream is already closed then invoking this
+     * method has no effect.
+     *
+     * <p> As noted in {@link AutoCloseable#close()}, cases where the
+     * close may fail require careful attention. It is strongly advised
+     * to relinquish the underlying resources and to internally
+     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
+     * the {@code IOException}.
+     *
+     */
+    private void closeHttpResponse() {
         try {
-            httpResponse.close();
+            if (httpResponse != null) {
+                httpResponse.close();
+            }
         } catch (IOException e) {
-            MantaIOException mio = new MantaIOException(e);
+            MantaIOException mio = new MantaResourceCloseException(e);
             HttpHelper.annotateContextedException(mio, null, httpResponse);
-            throw mio;
+            LOGGER.error("Unable to close HTTP response object", mio);
         }
     }
 
@@ -245,24 +275,16 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
      * <p>If the backing stream of the connection is not a
      * {@link EofSensorInputStream}, this method with call {@link #close()}.</p>
      *
-     * <p>This method is deprecated because we can't relay on the underlying
+     * <p>This method is deprecated because we can't rely on the underlying
      * backing stream to always be a {@link EofSensorInputStream}.</p>
      *
      * @throws IOException thrown when unable to abort connection
      */
-    @Deprecated
+    @SuppressWarnings("unused")
     public void abortConnection() throws IOException {
         if (backingStream instanceof EofSensorInputStream) {
             ((EofSensorInputStream) backingStream).abortConnection();
-            try {
-                if (httpResponse != null) {
-                    httpResponse.close();
-                }
-            } catch (IOException e) {
-                MantaIOException mio = new MantaResourceCloseException(e);
-                HttpHelper.annotateContextedException(mio, null, httpResponse);
-                LOGGER.error("Unable to close HTTP response object", mio);
-            }
+            closeHttpResponse();
         } else {
             close();
         }
