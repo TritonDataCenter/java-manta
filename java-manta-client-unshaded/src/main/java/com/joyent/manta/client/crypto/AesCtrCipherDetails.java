@@ -16,6 +16,7 @@ import javax.crypto.spec.IvParameterSpec;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 
 /**
  * Class that provides details about how the AES-CTR cipher's settings.
@@ -137,7 +138,7 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         final long startingBlock = position / blockSize;
         final byte[] counter = ByteBuffer.allocate(16).putLong(startingBlock).array();
         final BigInteger ivBigInt = new BigInteger(iv);
-        final byte[] updatedIV = ivBigInt.add(BigInteger.valueOf(startingBlock)).toByteArray();
+        byte[] updatedIV = Arrays.copyOf(ivBigInt.add(BigInteger.valueOf(startingBlock)).toByteArray(), 16);
 
         return new IvParameterSpec(updatedIV);
     }

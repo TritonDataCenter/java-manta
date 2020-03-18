@@ -238,11 +238,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final int mode = Cipher.DECRYPT_MODE;
 
         try {
-            this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv, startPosition));
-
             if (startPosition != null && startPosition > 0) {
+                this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv, startPosition));
                 return startPosition % cipherDetails.getBlockSizeInBytes();
             } else {
+                this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
                 return 0L;
             }
         } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
