@@ -132,6 +132,17 @@ public interface SupportedCipherDetails {
     AlgorithmParameterSpec getEncryptionParameterSpec(byte[] iv);
 
     /**
+     * Creates the {@link AlgorithmParameterSpec} object needed for the associated
+     * algorithm that is seeded with the passed initialization vector (IV) and counter
+     * value. This variant is only useful for ciphers in counter mode.
+     *
+     * @param iv initialization vector
+     * @param counter counter value indicating counter mode cipher block
+     * @return configured instance
+     */
+    AlgorithmParameterSpec getEncryptionParameterSpec(byte[] iv, long counter);
+
+    /**
      * Creates a new instance of a HMAC calculating class that performs
      * authentication against the ciphertext.
      *

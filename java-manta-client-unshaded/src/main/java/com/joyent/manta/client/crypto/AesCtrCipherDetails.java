@@ -11,6 +11,11 @@ import com.joyent.manta.client.crypto.AesCipherDetailsFactory.CipherMode;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.security.spec.AlgorithmParameterSpec;
 
 /**
  * Class that provides details about how the AES-CTR cipher's settings.
@@ -120,6 +125,23 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         return new ByteRangeConversion(ciphertextStartPositionInclusive, plaintextBytesToSkipInitially,
                 ciphertextEndPositionInclusive, lengthOfPlaintextIncludingSkipBytes, startingBlockNumberInclusive);
     }
+
+    @Override
+    public AlgorithmParameterSpec getEncryptionParameterSpec(final byte[] iv, final long position) {
+        Validate.notNull(iv, "Initialization vector must not be null");
+        Validate.isTrue(iv.length == getIVLengthInBytes(),
+                "Initialization vector has the wrong byte count [%d] "
+                        + "expected [%d] bytes", iv.length, getIVLengthInBytes());
+
+        final int blockSize = getBlockSizeInBytes();
+        final long startingBlock = position / blockSize;
+        final byte[] counter = ByteBuffer.allocate(16).putLong(startingBlock).array();
+        final BigInteger ivBigInt = new BigInteger(iv);
+        final byte[] updatedIV = ivBigInt.add(BigInteger.valueOf(startingBlock)).toByteArray();
+
+        return new IvParameterSpec(updatedIV);
+    }
+
 
     @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {
