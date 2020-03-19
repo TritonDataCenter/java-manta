@@ -187,15 +187,14 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     /**
      * <p>Closes this stream.</p>
      *
-     * <p>This is a special version of {@link #close close()} which prevents
-     * re-use of the underlying connection, if any. Calling this method
-     * indicates that there should be no attempt to read until the end of
-     * the stream.</p>
+     * <p>This is a special version of {@link AutoCloseable#close()}
+     * which allows re-use of the underlying connection,
+     * if any.</p>
      *
      * <p>If the backing stream of the connection is not a
-     * {@link EofSensorInputStream}, this method will call {@link #close()}.
-     * This subsequently closes the input stream and releases any system resources associated
-     * with the stream.</p>
+     * {@link EofSensorInputStream}, this method will call
+     * {@link InputStream#close()}. This subsequently closes the input stream
+     * and releases any system resources associated with the stream.</p>
      *
      * @throws IOException thrown when unable to close connection
      */
@@ -218,12 +217,14 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
                 /* Since we will be throwing an exception when closing the backing
                 * stream, we will only log the error thrown when closing the
                 * response because we can only throw up a single exception. */
-                closeHttpResponse();
+                MantaIOException mio = new MantaResourceCloseException(e);
+                LOGGER.error("Unable to close backing stream", mio);
             } finally {
                 closeHttpResponse();
             }
         }
     }
+
     /**
      * Closes the underlying response sent by Manta API and
      * releases any system resources associated with it.
@@ -273,10 +274,9 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
      * the stream.</p>
      *
      * <p>If the backing stream of the connection is not a
-     * {@link EofSensorInputStream}, this method with call {@link #close()}.</p>
-     *
-     * <p>This method is deprecated because we can't rely on the underlying
-     * backing stream to always be a {@link EofSensorInputStream}.</p>
+     * {@link EofSensorInputStream}, this method with call {@link #close()}.
+     * This method relies on the assumption positing backing stream to always
+     * be an instance of {@link EofSensorInputStream}.</p>
      *
      * @throws IOException thrown when unable to abort connection
      */
