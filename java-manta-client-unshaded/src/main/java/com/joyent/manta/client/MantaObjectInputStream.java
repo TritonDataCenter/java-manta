@@ -55,8 +55,8 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
     /**
      * Create a new instance from the results of a GET HTTP call to the Manta API.
      *
-     * @param response      Metadata object built from request
-     * @param httpResponse  Response object created
+     * @param response Metadata object built from request
+     * @param httpResponse Response object created
      * @param backingStream Underlying stream being wrapped
      */
     public MantaObjectInputStream(final MantaObjectResponse response,
@@ -280,7 +280,6 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
      *
      * @throws IOException thrown when unable to abort connection
      */
-    @SuppressWarnings("unused")
     public void abortConnection() throws IOException {
         if (backingStream instanceof EofSensorInputStream) {
             ((EofSensorInputStream) backingStream).abortConnection();
