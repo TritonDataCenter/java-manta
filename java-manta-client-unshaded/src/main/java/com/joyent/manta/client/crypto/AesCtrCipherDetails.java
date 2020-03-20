@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright 2020 Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,11 @@ import com.joyent.manta.client.crypto.AesCipherDetailsFactory.CipherMode;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+
+import java.math.BigInteger;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 
 /**
  * Class that provides details about how the AES-CTR cipher's settings.
@@ -120,6 +125,22 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
         return new ByteRangeConversion(ciphertextStartPositionInclusive, plaintextBytesToSkipInitially,
                 ciphertextEndPositionInclusive, lengthOfPlaintextIncludingSkipBytes, startingBlockNumberInclusive);
     }
+
+    @Override
+    public AlgorithmParameterSpec getEncryptionParameterSpec(final byte[] iv, final long position) {
+        Validate.notNull(iv, "Initialization vector must not be null");
+        Validate.isTrue(iv.length == getIVLengthInBytes(),
+                "Initialization vector has the wrong byte count [%d] "
+                        + "expected [%d] bytes", iv.length, getIVLengthInBytes());
+
+        final int blockSize = getBlockSizeInBytes();
+        final long startingBlock = position / blockSize;
+        final BigInteger ivBigInt = new BigInteger(iv);
+        byte[] updatedIV = Arrays.copyOf(ivBigInt.add(BigInteger.valueOf(startingBlock)).toByteArray(), 16);
+
+        return new IvParameterSpec(updatedIV);
+    }
+
 
     @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {

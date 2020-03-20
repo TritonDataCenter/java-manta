@@ -141,6 +141,12 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
     }
 
     @Override
+    public AlgorithmParameterSpec getEncryptionParameterSpec(final byte[] iv, final long counter) {
+        fail();
+        return null;
+    }
+
+    @Override
     public HMac getAuthenticationHmac() {
         fail();
         return null;

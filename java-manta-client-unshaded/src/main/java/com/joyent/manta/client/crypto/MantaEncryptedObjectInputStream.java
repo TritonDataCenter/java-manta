@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright 2020 Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -177,7 +177,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         super(backingStream);
 
         this.authenticateCiphertext = authenticateCiphertext;
-        this.startPosition = startPositionInclusive;
+        if (startPositionInclusive != null) {
+            this.startPosition = startPositionInclusive;
+        } else {
+            this.startPosition = 0L;
+        }
         this.plaintextRangeLength = plaintextRangeLength;
         this.cipherDetails = cipherDetails;
         this.contentLength = super.getContentLength();
@@ -238,11 +242,11 @@ public class MantaEncryptedObjectInputStream extends MantaObjectInputStream {
         final int mode = Cipher.DECRYPT_MODE;
 
         try {
-            this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
-
-            if (startPosition != null && startPosition > 0) {
-                return cipherDetails.updateCipherToPosition(this.cipher, startPosition);
+            if (startPosition > 0) {
+                this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv, startPosition));
+                return startPosition % cipherDetails.getBlockSizeInBytes();
             } else {
+                this.cipher.init(mode, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
                 return 0L;
             }
         } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
