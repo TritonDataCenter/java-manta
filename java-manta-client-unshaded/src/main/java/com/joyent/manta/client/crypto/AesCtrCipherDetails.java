@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright 2020 Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
@@ -136,7 +135,6 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
 
         final int blockSize = getBlockSizeInBytes();
         final long startingBlock = position / blockSize;
-        final byte[] counter = ByteBuffer.allocate(16).putLong(startingBlock).array();
         final BigInteger ivBigInt = new BigInteger(iv);
         byte[] updatedIV = Arrays.copyOf(ivBigInt.add(BigInteger.valueOf(startingBlock)).toByteArray(), 16);
 
