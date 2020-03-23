@@ -122,28 +122,28 @@
         <surefire.useSystemClassLoader>true</surefire.useSystemClassLoader>
         <failsafe.useSystemClassLoader>true</failsafe.useSystemClassLoader>
         <!-- Plugin versions -->
-        <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
-        <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
-        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-        <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
-        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
-        <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
+        <maven-checkstyle-plugin.version>3.1.1</maven-checkstyle-plugin.version>
+        <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+        <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
+        <maven-deploy-plugin.version>3.0.0-M1</maven-deploy-plugin.version>
+        <maven-enforcer-plugin.version>3.0.0-M2</maven-enforcer-plugin.version>
         <maven-extra-enforcer-rules.version>1.1</maven-extra-enforcer-rules.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
-        <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
-        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
-        <maven-jarsigner-plugin.version>1.4</maven-jarsigner-plugin.version>
-        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
-        <maven-jxr-plugin.version>2.5</maven-jxr-plugin.version>
+        <maven-install-plugin.version>3.0.0-M1</maven-install-plugin.version>
+        <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
+        <maven-jarsigner-plugin.version>3.0.0</maven-jarsigner-plugin.version>
+        <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
+        <maven-jxr-plugin.version>3.0.0</maven-jxr-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
-        <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
-        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
-        <maven-surefire-plugin.version>2.20.1</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>2.20.1</maven-failsafe-plugin.version>
+        <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
+        <maven-shade-plugin.version>3.2.2</maven-shade-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>2.22.2</maven-failsafe-plugin.version>
         <maven-exec-plugin.version>1.6.0</maven-exec-plugin.version>
-        <maven-jacoco-plugin.version>0.7.9</maven-jacoco-plugin.version>
-        <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
+        <maven-jacoco-plugin.version>0.8.5</maven-jacoco-plugin.version>
+        <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
         <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
         <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
         <maven-directory-maven-plugin.version>0.3.1</maven-directory-maven-plugin.version>
@@ -154,35 +154,35 @@
         <maven-assembly-plugin.version>3.1.0</maven-assembly-plugin.version>
 
         <!-- Maven plugin dependency versions -->
-        <maven-plexus-compiler-javac-errorprone.version>2.8.5</maven-plexus-compiler-javac-errorprone.version>
+        <maven-plexus-compiler-javac-errorprone.version>2.8.6</maven-plexus-compiler-javac-errorprone.version>
         <maven-error-prone-core.version>2.3.4</maven-error-prone-core.version>
 
         <!-- Dependency versions -->
-        <dependency.http-client-signature.version>4.0.10</dependency.http-client-signature.version>
-        <dependency.apache-http-client.version>4.5.7</dependency.apache-http-client.version>
-        <dependency.bouncycastle.version>1.61</dependency.bouncycastle.version>
-        <dependency.fasterxml-uuid>3.1.5</dependency.fasterxml-uuid>
-        <dependency.jackson.version>2.9.9</dependency.jackson.version>
-        <dependency.jnagmp.version>2.1.0</dependency.jnagmp.version>
+        <dependency.http-client-signature.version>4.1.0</dependency.http-client-signature.version>
+        <dependency.apache-http-client.version>4.5.11</dependency.apache-http-client.version>
+        <dependency.bouncycastle.version>1.64</dependency.bouncycastle.version>
+        <dependency.fasterxml-uuid>4.0.1</dependency.fasterxml-uuid>
+        <dependency.jackson.version>2.10.3</dependency.jackson.version>
+        <dependency.jnagmp.version>3.0.0</dependency.jnagmp.version>
         <dependency.urlbuilder.version>2.0.9</dependency.urlbuilder.version>
 
-        <dependency.checkstyle.version>8.18</dependency.checkstyle.version>
+        <dependency.checkstyle.version>8.30</dependency.checkstyle.version>
         <dependency.logback.version>1.2.3</dependency.logback.version>
         <dependency.mockito.version>2.24.5</dependency.mockito.version>
-        <dependency.slfj.version>1.7.25</dependency.slfj.version>
+        <dependency.slfj.version>1.7.29</dependency.slfj.version>
         <dependency.testng.version>6.14.3</dependency.testng.version>
-        <dependency.commons-collections.version>4.3</dependency.commons-collections.version>
-        <dependency.commons-lang.version>3.8.1</dependency.commons-lang.version>
+        <dependency.commons-collections.version>4.4</dependency.commons-collections.version>
+        <dependency.commons-lang.version>3.9</dependency.commons-lang.version>
         <dependency.commons-io.version>2.6</dependency.commons-io.version>
-        <dependency.commons-codec.version>1.12</dependency.commons-codec.version>
-        <dependency.commons-text.version>1.6</dependency.commons-text.version>
+        <dependency.commons-codec.version>1.13</dependency.commons-codec.version>
+        <dependency.commons-text.version>1.8</dependency.commons-text.version>
         <dependency.commons-math.version>3.6.1</dependency.commons-math.version>
-        <dependency.kryo.version>4.0.2</dependency.kryo.version>
+        <dependency.kryo.version>5.0.0-RC5</dependency.kryo.version>
         <dependency.objenesis.version>3.0.1</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.12</dependency.cloning.version>
-        <dependency.picocli.version>3.9.5</dependency.picocli.version>
-        <dependency.dropwizard-metrics.version>4.0.5</dependency.dropwizard-metrics.version>
+        <dependency.picocli.version>4.2.0</dependency.picocli.version>
+        <dependency.dropwizard-metrics.version>4.1.5</dependency.dropwizard-metrics.version>
     </properties>
 
     <dependencies>
