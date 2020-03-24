@@ -37,6 +37,8 @@ public class LocallyIllegalAesCipherDetails implements SupportedCipherDetails {
      * Fail immediately, we don't belong on this JVM. We throw an Error instead of an Exception because it is unlikely
      * the runtime could recover from a missing extension. Additionally, Errors are unchecked exceptions so they don't
      * require callers to change their method signatures.
+     *
+     * @throws Error when cipher's incompatible
      */
     private void fail() {
         throw new Error("This cipher is not compatible with the current runtime: (keyLengthBits="

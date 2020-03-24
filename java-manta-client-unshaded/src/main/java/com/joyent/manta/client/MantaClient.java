@@ -660,6 +660,7 @@ public class MantaClient implements AutoCloseable {
      * @param endPosition see {@link MantaHttpHeaders#setByteRange(Long, Long)}
      * @return {@link InputStream} that extends {@link MantaObjectResponse}.
      * @throws IOException when there is a problem getting the object over the network
+     * @throws IllegalArgumentException request headers should have range
      */
     public MantaObjectInputStream getAsInputStream(final String rawPath,
                                                    final MantaHttpHeaders requestHeaders,
@@ -2270,6 +2271,7 @@ public class MantaClient implements AutoCloseable {
      * @param limit the maximum number of jobs to list 0-1024
      * @return a stream with the amount of jobs as specified in the limit parameter
      * @throws IOException thrown when we can't get a list of jobs over the network
+     * @throws IllegalArgumentException for invalid limit
      */
     public Stream<MantaJob> getAllJobs(final int limit) throws IOException {
         if (limit < 0 || limit > MAX_RESULTS) {
@@ -2374,6 +2376,7 @@ public class MantaClient implements AutoCloseable {
      * @param limit the maximum number of job ids to list 0-1024
      * @return a stream with the amount of jobs as specified in the limit parameter
      * @throws IOException thrown when we can't get a list of jobs over the network
+     * @throws IllegalArgumentException for invalid limit
      */
     public Stream<UUID> getAllJobIds(final int limit) throws IOException {
         if (limit < 0 || limit > MAX_RESULTS) {

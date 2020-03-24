@@ -158,7 +158,7 @@
 
         <!-- Dependency versions -->
         <dependency.http-client-signature.version>4.1.1</dependency.http-client-signature.version>
-        <dependency.apache-http-client.version>4.5.11</dependency.apache-http-client.version>
+        <dependency.apache-http-client.version>4.5.12</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.64</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>4.0.1</dependency.fasterxml-uuid>
         <dependency.jackson.version>2.10.3</dependency.jackson.version>
@@ -176,12 +176,12 @@
         <dependency.commons-codec.version>1.13</dependency.commons-codec.version>
         <dependency.commons-text.version>1.8</dependency.commons-text.version>
         <dependency.commons-math.version>3.6.1</dependency.commons-math.version>
-        <dependency.kryo.version>5.0.0-RC5</dependency.kryo.version>
+        <dependency.kryo.version>4.0.2</dependency.kryo.version>
         <dependency.objenesis.version>3.0.1</dependency.objenesis.version>
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.12</dependency.cloning.version>
         <dependency.picocli.version>4.2.0</dependency.picocli.version>
-        <dependency.dropwizard-metrics.version>4.1.2</dependency.dropwizard-metrics.version>
+        <dependency.dropwizard-metrics.version>4.1.5</dependency.dropwizard-metrics.version>
     </properties>
 
     <dependencies>
