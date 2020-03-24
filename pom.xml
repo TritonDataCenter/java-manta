@@ -145,20 +145,19 @@
         <maven-jacoco-plugin.version>0.8.5</maven-jacoco-plugin.version>
         <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
         <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
-        <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
+        <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
         <maven-directory-maven-plugin.version>0.3.1</maven-directory-maven-plugin.version>
-        <maven-build-helper-maven-plugin.version>3.0.0</maven-build-helper-maven-plugin.version>
-        <maven-maven-resources-plugin.version>3.0.2</maven-maven-resources-plugin.version>
-        <maven-build-helper-maven-plugin.version>3.0.0</maven-build-helper-maven-plugin.version>
-        <maven-spotbugs-maven-plugin.version>3.1.3</maven-spotbugs-maven-plugin.version>
-        <maven-assembly-plugin.version>3.1.0</maven-assembly-plugin.version>
+        <maven-build-helper-maven-plugin.version>3.1.0</maven-build-helper-maven-plugin.version>
+        <maven-maven-resources-plugin.version>3.1.0</maven-maven-resources-plugin.version>
+        <maven-spotbugs-maven-plugin.version>4.0.0</maven-spotbugs-maven-plugin.version>
+        <maven-assembly-plugin.version>3.2.0</maven-assembly-plugin.version>
 
         <!-- Maven plugin dependency versions -->
         <maven-plexus-compiler-javac-errorprone.version>2.8.6</maven-plexus-compiler-javac-errorprone.version>
         <maven-error-prone-core.version>2.3.4</maven-error-prone-core.version>
 
         <!-- Dependency versions -->
-        <dependency.http-client-signature.version>4.1.0</dependency.http-client-signature.version>
+        <dependency.http-client-signature.version>4.1.1</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.11</dependency.apache-http-client.version>
         <dependency.bouncycastle.version>1.64</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>4.0.1</dependency.fasterxml-uuid>
@@ -182,7 +181,7 @@
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.12</dependency.cloning.version>
         <dependency.picocli.version>4.2.0</dependency.picocli.version>
-        <dependency.dropwizard-metrics.version>4.1.5</dependency.dropwizard-metrics.version>
+        <dependency.dropwizard-metrics.version>4.1.2</dependency.dropwizard-metrics.version>
     </properties>
 
     <dependencies>
