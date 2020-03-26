@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.4.2] - 2019-03-26
+### Added
+ - [Instructions on improving encryption performance with Java 11](https://github.com/joyent/java-manta/pull/561) 
+   for SunPKCS11 with NSS support.
+ - [java-manta-test-harness](https://github.com/joyent/java-manta-test-harness), a community-maintained Java testing 
+   maven application initially developed to verify Java 11 support for java-manta. It will be used henceforth to 
+   validate Manta's behavior on server-side comprehensively from a SDK standpoint.
+### Changed
+ - [Dependent test modifications to validate Mantav2 Server Response](https://github.com/joyent/java-manta/pull/559).
+ - [Deleted irrelevant/deprecated classes in the SDK codebase](https://github.com/joyent/java-manta/pull/558).
+ - [Verify java-manta-client supports use of Java 11 projects](https://github.com/joyent/java-manta/pull/554).
+### Fixed
+ - [MantaObjectInputStream close() function is working as expected](https://github.com/joyent/java-manta/pull/563).
+ - [Client is taking too long to get file when range start is big](https://github.com/joyent/java-manta/pull/562).
+
 ## [3.4.1] - 2019-10-29
 ### Added
  - [Updated](https://github.com/joyent/java-manta/pull/527) where `ChainedConfigContext` would "forget" that 
