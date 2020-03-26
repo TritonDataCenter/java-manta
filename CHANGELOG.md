@@ -14,7 +14,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Deleted irrelevant/deprecated classes in the SDK codebase](https://github.com/joyent/java-manta/pull/558).
  - [Verify java-manta-client supports use of Java 11 projects](https://github.com/joyent/java-manta/pull/554).
 ### Fixed
- - [MantaObjectInputStream close() function is working as expected](https://github.com/joyent/java-manta/pull/563).
+ - [MantaObjectInputStream close() function is not working as expected](https://github.com/joyent/java-manta/pull/563).
  - [Client is taking too long to get file when range start is big](https://github.com/joyent/java-manta/pull/562).
 
 ## [3.4.1] - 2019-10-29
