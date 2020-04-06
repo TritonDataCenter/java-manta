@@ -39,6 +39,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_PRUNE_DEPTH;
+
 @CommandLine.Command(name = "java-manta-cli", sortOptions = false,
         header = {
              "@|cyan                 .     .             |@",
@@ -65,6 +67,7 @@ import java.util.stream.Stream;
              MantaCLI.ListDir.class,
              MantaCLI.GetFile.class,
              MantaCLI.PutFile.class,
+             MantaCLI.DeleteFile.class,
              MantaCLI.ObjectInfo.class,
              MantaCLI.ValidateKey.class
          })
@@ -72,11 +75,11 @@ import java.util.stream.Stream;
 @SuppressWarnings({"checkstyle:javadocmethod", "checkstyle:javadoctype", "checkstyle:javadocvariable"})
 public final class MantaCLI {
     @SuppressWarnings("unused")
-    @CommandLine.Option(names = {"-v", "--version"}, help = true)
+    @CommandLine.Option(names = {"-v", "--version"})
     private boolean isVersionRequested;
 
     @SuppressWarnings("unused")
-    @CommandLine.Option(names = {"-h", "--help"}, help = true)
+    @CommandLine.Option(names = {"-h", "--help"})
     private boolean isHelpRequested;
 
     private MantaCLI() { }
@@ -138,7 +141,7 @@ public final class MantaCLI {
         protected static final String INDENT = "  ";
 
         @SuppressWarnings("unused")
-        @CommandLine.Option(names = {"-h", "--help"}, help = true)
+        @CommandLine.Option(names = {"-h", "--help"})
         private boolean isHelpRequested;
 
         @SuppressWarnings("unused")
@@ -282,14 +285,19 @@ public final class MantaCLI {
         @CommandLine.Option(names = {"-o", "--output"},
                             description = "write output to <file> instead of stdout")
         private String outputFileName;
+
         @CommandLine.Option(names = {"-O", "--remote-name"},
                             description = "write output to a file using remote object"
                             + "name as filename")
         private boolean inferOutputFileName = false;
-        @CommandLine.Option(names = {"--start-bytes"},
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-s", "--start-bytes"},
                             description = "start bytes for range download")
         private Long startBytes;
-        @CommandLine.Option(names = {"--end-bytes"},
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-e", "--end-bytes"},
                             description = "end bytes for range download")
         private Long endBytes;
 
@@ -304,14 +312,14 @@ public final class MantaCLI {
                 if (inferOutputFileName) {
                     outputFileName = MantaUtils.lastItemInPath(filePath);
                 }
+                final MantaHttpHeaders headers = new MantaHttpHeaders();
+                headers.setByteRange(startBytes, endBytes);
 
                 if (outputFileName != null) {
                     try (OutputStream out = new FileOutputStream(outputFileName);
-                         InputStream objectStream = client.getAsInputStream(filePath)) {
-                        final MantaHttpHeaders headers = new MantaHttpHeaders();
-                        headers.setByteRange(startBytes, endBytes);
-                        IOUtils.copyLarge(objectStream, out);
-                        out.flush();
+                         InputStream objectStream = client.getAsInputStream(filePath, headers)) {
+                            IOUtils.copyLarge(objectStream, out);
+                            out.flush();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -350,6 +358,49 @@ public final class MantaCLI {
                 MantaObjectResponse response = client.put(mantaPath, file);
                 b.append(response.toString());
                 b.append("Request was successful");
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            System.out.println(b.toString());
+        }
+    }
+
+    @CommandLine.Command(name = "delete-file",
+            header = "Performs delete of a local file in Manta",
+            description = "Performs delete of a local file in Manta.")
+    public static class DeleteFile extends MantaSubCommand {
+        @SuppressWarnings("unused")
+        @CommandLine.Parameters(index = "0", description = "path in Manta to perform delete to")
+        private String mantaPath;
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"--prune-depth"},
+                description = "number of parent directories to be deleted if empty")
+        private Integer pruneDepth;
+
+        @Override
+        public void run() {
+            final StringBuilder b = new StringBuilder();
+
+            b.append("Creating connection configuration").append(BR);
+            ConfigContext config = buildConfig();
+            b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
+
+            b.append("Creating new connection object").append(BR);
+            try (MantaClient client = new MantaClient(config)) {
+                b.append(INDENT).append(client).append(BR);
+
+                b.append("Attempting DELETE request to: ").append(mantaPath).append(BR);
+                if (pruneDepth != null) {
+                    client.delete(mantaPath, new MantaHttpHeaders(), pruneDepth);
+                } else {
+                    client.delete(mantaPath, new MantaHttpHeaders(), DEFAULT_PRUNE_DEPTH);
+                }
+
+                if (client.existsAndIsAccessible(mantaPath)) {
+                    b.append("Request was successful");
+                }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
