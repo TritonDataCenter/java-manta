@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,6 +12,7 @@ import ch.qos.logback.classic.Logger;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
@@ -285,6 +286,12 @@ public final class MantaCLI {
                             description = "write output to a file using remote object"
                             + "name as filename")
         private boolean inferOutputFileName = false;
+        @CommandLine.Option(names = {"--start-bytes"},
+                            description = "start bytes for range download")
+        private Long startBytes;
+        @CommandLine.Option(names = {"--end-bytes"},
+                            description = "end bytes for range download")
+        private Long endBytes;
 
         @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "Object path in Manta to download")
@@ -294,24 +301,21 @@ public final class MantaCLI {
         public void run() {
             ConfigContext config = buildConfig();
             try (MantaClient client = new MantaClient(config)) {
-                OutputStream out = System.out;
                 if (inferOutputFileName) {
                     outputFileName = MantaUtils.lastItemInPath(filePath);
                 }
-                if (outputFileName != null) {
-                    out = new FileOutputStream(outputFileName);
-                }
 
-                InputStream objectStream = client.getAsInputStream(filePath);
-                IOUtils.copyLarge(objectStream, out);
-                objectStream.close();
-
-                out.flush();
                 if (outputFileName != null) {
-                    out.close();
+                    try (OutputStream out = new FileOutputStream(outputFileName);
+                         InputStream objectStream = client.getAsInputStream(filePath)) {
+                        final MantaHttpHeaders headers = new MantaHttpHeaders();
+                        headers.setByteRange(startBytes, endBytes);
+                        IOUtils.copyLarge(objectStream, out);
+                        out.flush();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
             }
         }
     }
