@@ -169,7 +169,7 @@
         <dependency.logback.version>1.2.3</dependency.logback.version>
         <dependency.mockito.version>2.24.5</dependency.mockito.version>
         <dependency.slfj.version>1.7.29</dependency.slfj.version>
-        <dependency.wiremock.version>2.26.3</dependency.wiremock.version>
+        <dependency.wiremock.version>2.24.1</dependency.wiremock.version>
         <dependency.testng.version>6.14.3</dependency.testng.version>
         <dependency.commons-collections.version>4.4</dependency.commons-collections.version>
         <dependency.commons-lang.version>3.9</dependency.commons-lang.version>
@@ -182,7 +182,7 @@
         <dependency.fast-md5.version>2.7.1</dependency.fast-md5.version>
         <dependency.cloning.version>1.9.12</dependency.cloning.version>
         <dependency.picocli.version>4.2.0</dependency.picocli.version>
-        <dependency.dropwizard-metrics.version>4.1.5</dependency.dropwizard-metrics.version>
+        <dependency.dropwizard-metrics.version>4.1.2</dependency.dropwizard-metrics.version>
     </properties>
 
     <dependencies>
