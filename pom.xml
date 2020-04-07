@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright (c) 2012-2017, Joyent, Inc. All rights reserved.
+ Copyright (c) 2012-2020, Joyent, Inc. All rights reserved.
 
  This Source Code Form is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -169,6 +169,7 @@
         <dependency.logback.version>1.2.3</dependency.logback.version>
         <dependency.mockito.version>2.24.5</dependency.mockito.version>
         <dependency.slfj.version>1.7.29</dependency.slfj.version>
+        <dependency.wiremock.version>2.26.3</dependency.wiremock.version>
         <dependency.testng.version>6.14.3</dependency.testng.version>
         <dependency.commons-collections.version>4.4</dependency.commons-collections.version>
         <dependency.commons-lang.version>3.9</dependency.commons-lang.version>
