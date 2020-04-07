@@ -157,24 +157,24 @@
         <maven-error-prone-core.version>2.3.4</maven-error-prone-core.version>
 
         <!-- Dependency versions -->
-        <dependency.http-client-signature.version>4.1.1</dependency.http-client-signature.version>
+        <dependency.http-client-signature.version>4.1.2</dependency.http-client-signature.version>
         <dependency.apache-http-client.version>4.5.12</dependency.apache-http-client.version>
-        <dependency.bouncycastle.version>1.64</dependency.bouncycastle.version>
+        <dependency.bouncycastle.version>1.65</dependency.bouncycastle.version>
         <dependency.fasterxml-uuid>4.0.1</dependency.fasterxml-uuid>
         <dependency.jackson.version>2.10.3</dependency.jackson.version>
         <dependency.jnagmp.version>3.0.0</dependency.jnagmp.version>
         <dependency.urlbuilder.version>2.0.9</dependency.urlbuilder.version>
 
-        <dependency.checkstyle.version>8.30</dependency.checkstyle.version>
+        <dependency.checkstyle.version>8.31</dependency.checkstyle.version>
         <dependency.logback.version>1.2.3</dependency.logback.version>
         <dependency.mockito.version>2.24.5</dependency.mockito.version>
         <dependency.slfj.version>1.7.29</dependency.slfj.version>
         <dependency.wiremock.version>2.24.1</dependency.wiremock.version>
         <dependency.testng.version>6.14.3</dependency.testng.version>
         <dependency.commons-collections.version>4.4</dependency.commons-collections.version>
-        <dependency.commons-lang.version>3.9</dependency.commons-lang.version>
+        <dependency.commons-lang.version>3.10</dependency.commons-lang.version>
         <dependency.commons-io.version>2.6</dependency.commons-io.version>
-        <dependency.commons-codec.version>1.13</dependency.commons-codec.version>
+        <dependency.commons-codec.version>1.14</dependency.commons-codec.version>
         <dependency.commons-text.version>1.8</dependency.commons-text.version>
         <dependency.commons-math.version>3.6.1</dependency.commons-math.version>
         <dependency.kryo.version>4.0.2</dependency.kryo.version>
