@@ -11,17 +11,24 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCipherDetails;
+import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EnvVarConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.MapConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
@@ -30,7 +37,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -63,6 +69,7 @@ import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_PRUNE_DEPTH;
          subcommands = {
              MantaCLI.ConnectTest.class,
              MantaCLI.DumpConfig.class,
+             MantaCLI.EncryptionConfig.class,
              MantaCLI.GenerateKey.class,
              MantaCLI.ListDir.class,
              MantaCLI.GetFile.class,
@@ -163,7 +170,48 @@ public final class MantaCLI {
                                             new EnvVarConfigContext(),
                                             new MapConfigContext(System.getProperties()));
         }
+
+    /**
+     * Builds a new {@link ConfigContext} instance that could be leveraged
+     * for encryption/decryption using {@link MantaCLI} commands.
+     *
+     * @return chained configuration context object
+     */
+    protected ConfigContext buildEncryptionConfig() {
+        final EncryptionAuthenticationMode envSettingsMode = MantaUtils.parseEnumOrNull(
+                encryptionAuthenticationMode(), EncryptionAuthenticationMode.class);
+
+        final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher(),
+                AesCtrCipherDetails.INSTANCE_256_BIT);
+
+        final SecretKey key = SecretKeyUtils.generate(cipherDetails);
+
+        return new ChainedConfigContext(new StandardConfigContext()
+                .setClientEncryptionEnabled(true)
+                .setEncryptionAlgorithm(cipherDetails.getCipherId())
+                .setEncryptionKeyId("manta-cli-encryption-key")
+                .setEncryptionAuthenticationMode(ObjectUtils.firstNonNull(
+                        envSettingsMode, EncryptionAuthenticationMode.Optional))
+                .setEncryptionPrivateKeyBytes(key.getEncoded()),
+                new DefaultsConfigContext(),
+                new EnvVarConfigContext(),
+                new MapConfigContext(System.getProperties()));
     }
+
+        protected static String encryptionCipher() {
+            String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
+            String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
+
+            return ObjectUtils.firstNonNull(sysProp, envVar);
+        }
+
+        protected static String encryptionAuthenticationMode() {
+            String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
+            String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY);
+
+            return ObjectUtils.firstNonNull(sysProp, envVar);
+        }
+}
 
 
     @CommandLine.Command(name = "connect-test",
@@ -206,6 +254,19 @@ public final class MantaCLI {
             StringBuilder b = new StringBuilder();
             ConfigContext config = buildConfig();
             b.append(ConfigContext.toString(config));
+            System.out.println(b.toString());
+        }
+    }
+
+
+    @CommandLine.Command(name = "cse-config",
+            header = "Dumps encryption-configuration used for configuring Manta client.")
+    public static class EncryptionConfig extends MantaSubCommand {
+        @Override
+        public void run() {
+            StringBuilder b = new StringBuilder();
+            ConfigContext encryptionConfig = buildEncryptionConfig();
+            b.append(ConfigContext.toString(encryptionConfig));
             System.out.println(b.toString());
         }
     }
@@ -282,32 +343,42 @@ public final class MantaCLI {
                          header = "Performs a download of file in Manta",
                          description = "Performs a download of file in Manta.")
     public static class GetFile extends MantaSubCommand {
-        @CommandLine.Option(names = {"-o", "--output"},
-                            description = "write output to <file> instead of stdout")
-        private String outputFileName;
-
-        @CommandLine.Option(names = {"-O", "--remote-name"},
-                            description = "write output to a file using remote object"
-                            + "name as filename")
-        private boolean inferOutputFileName = false;
-
-        @SuppressWarnings("unused")
-        @CommandLine.Option(names = {"-s", "--start-bytes"},
-                            description = "start bytes for range download")
-        private Long startBytes;
-
-        @SuppressWarnings("unused")
-        @CommandLine.Option(names = {"-e", "--end-bytes"},
-                            description = "end bytes for range download")
-        private Long endBytes;
-
         @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "Object path in Manta to download")
         private String filePath;
 
+        @CommandLine.Option(names = {"-o", "--output"},
+                description = "write output to <file> instead of stdout")
+        private String outputFileName;
+
+        @CommandLine.Option(names = {"-O", "--remote-name"},
+                description = "write output to a file using remote object"
+                        + "name as filename")
+        private boolean inferOutputFileName = false;
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-cse", "--using-encryption"},
+                description = "flag to enable client-side encryption")
+        private boolean usingEncryption;
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-s", "--start-bytes"},
+                description = "start bytes for range download")
+        private Long startBytes;
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-e", "--end-bytes"},
+                description = "end bytes for range download")
+        private Long endBytes;
+
         @Override
         public void run() {
             ConfigContext config = buildConfig();
+
+            if (usingEncryption) {
+                config = buildEncryptionConfig();
+            }
+
             try (MantaClient client = new MantaClient(config)) {
                 if (inferOutputFileName) {
                     outputFileName = MantaUtils.lastItemInPath(filePath);
@@ -317,7 +388,7 @@ public final class MantaCLI {
 
                 if (outputFileName != null) {
                     try (OutputStream out = new FileOutputStream(outputFileName);
-                         InputStream objectStream = client.getAsInputStream(filePath, headers)) {
+                         MantaObjectInputStream objectStream = client.getAsInputStream(filePath, headers)) {
                             IOUtils.copyLarge(objectStream, out);
                             out.flush();
                     } catch (IOException e) {
@@ -341,15 +412,24 @@ public final class MantaCLI {
         @CommandLine.Parameters(index = "1", description = "path in Manta to upload to")
         private String mantaPath;
 
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-cse", "--using-encryption"},
+                description = "flag to enable client-side encryption")
+        private boolean usingEncryption;
+
         @Override
         public void run() {
             final StringBuilder b = new StringBuilder();
 
             b.append("Creating connection configuration").append(BR);
             ConfigContext config = buildConfig();
-            b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
+            if (usingEncryption) {
+                config = buildEncryptionConfig();
+            }
 
+            b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
             b.append("Creating new connection object").append(BR);
+
             try (MantaClient client = new MantaClient(config)) {
                 b.append(INDENT).append(client).append(BR);
 
@@ -366,16 +446,16 @@ public final class MantaCLI {
         }
     }
 
-    @CommandLine.Command(name = "delete-file",
-            header = "Performs delete of a local file in Manta",
-            description = "Performs delete of a local file in Manta.")
+    @CommandLine.Command(name = "rm",
+            header = "delete object",
+            description = "Performs delete of object in Manta.")
     public static class DeleteFile extends MantaSubCommand {
         @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "path in Manta to perform delete to")
         private String mantaPath;
 
         @SuppressWarnings("unused")
-        @CommandLine.Option(names = {"--prune-depth"},
+        @CommandLine.Option(names = {"-d", "--prune-depth"},
                 description = "number of parent directories to be deleted if empty")
         private Integer pruneDepth;
 
@@ -385,7 +465,6 @@ public final class MantaCLI {
 
             b.append("Creating connection configuration").append(BR);
             ConfigContext config = buildConfig();
-            b.append(INDENT).append(ConfigContext.toString(config)).append(BR);
 
             b.append("Creating new connection object").append(BR);
             try (MantaClient client = new MantaClient(config)) {
@@ -399,8 +478,9 @@ public final class MantaCLI {
                 }
 
                 if (client.existsAndIsAccessible(mantaPath)) {
-                    b.append("Request was successful");
+                    b.append("Request failed!").append(BR);
                 }
+                b.append("Request was successful").append(BR);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

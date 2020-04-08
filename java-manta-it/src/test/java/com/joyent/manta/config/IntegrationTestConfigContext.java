@@ -115,14 +115,14 @@ public class IntegrationTestConfigContext extends SystemSettingsConfigContext {
         String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
         String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_ALGORITHM_ENV_KEY);
 
-        return sysProp != null ? sysProp : envVar;
+        return ObjectUtils.firstNonNull(sysProp, envVar);
     }
 
     public static String encryptionAuthenticationMode() {
         String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
         String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY);
 
-        return sysProp != null ? sysProp : envVar;
+        return ObjectUtils.firstNonNull(sysProp, envVar);
     }
 
     public static String generateSuiteBasePath(final ConfigContext config) {
