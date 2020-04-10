@@ -42,6 +42,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -182,12 +183,15 @@ public final class MantaCLI {
                 encryptionAuthenticationMode(), EncryptionAuthenticationMode.class);
 
         final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher(),
-                AesCtrCipherDetails.INSTANCE_256_BIT);
+                AesCtrCipherDetails.INSTANCE_128_BIT);
+        final byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
 
-        final SecretKey key = SecretKeyUtils.generate(cipherDetails);
+        final SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
 
         return new ChainedConfigContext(new StandardConfigContext()
                 .setClientEncryptionEnabled(true)
+                .setPermitUnencryptedDownloads(true)
+                .setContentTypeDetectionEnabled(false)
                 .setEncryptionAlgorithm(cipherDetails.getCipherId())
                 .setEncryptionKeyId("manta-cli-encryption-key")
                 .setEncryptionAuthenticationMode(ObjectUtils.firstNonNull(
@@ -260,7 +264,9 @@ public final class MantaCLI {
 
 
     @CommandLine.Command(name = "cse-config",
-            header = "Dumps encryption-configuration used for configuring Manta client.")
+                         header = "default encryption-config used for Manta client.",
+                         description = "shows configuration for --cse flag for uploads/downloads."
+                         + "can be overwritten with system/environement settings")
     public static class EncryptionConfig extends MantaSubCommand {
         @Override
         public void run() {
@@ -273,8 +279,8 @@ public final class MantaCLI {
 
 
     @CommandLine.Command(name = "generate-key",
-                         header = "Generate an encryption key",
-                         description = "Generates a client-side encryption key with the specified "
+                         header = "generate an encryption key",
+                         description = "generates a client-side encryption key with the specified "
                          + "cipher and bits at the specified path.")
     public static class GenerateKey extends MantaSubCommand {
         @SuppressWarnings("unused")
@@ -317,11 +323,11 @@ public final class MantaCLI {
 
 
     @CommandLine.Command(name = "ls",
-                         header = "list",
-                         description = "List directory contents")
+                         header = "list operation",
+                         description = "lists contents of the path supplied")
     public static class ListDir extends MantaSubCommand {
         @SuppressWarnings("unused")
-        @CommandLine.Parameters(index = "0", description = "dir to ls")
+        @CommandLine.Parameters(index = "0", description = "directory to list contents of")
         private String dirPath;
 
         @Override
@@ -340,8 +346,8 @@ public final class MantaCLI {
 
 
     @CommandLine.Command(name = "get-file",
-                         header = "Performs a download of file in Manta",
-                         description = "Performs a download of file in Manta.")
+                         header = "download a file in Manta",
+                         description = "performs download/range-downloads operations on file(s) in Manta.")
     public static class GetFile extends MantaSubCommand {
         @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "Object path in Manta to download")
@@ -383,8 +389,10 @@ public final class MantaCLI {
                 if (inferOutputFileName) {
                     outputFileName = MantaUtils.lastItemInPath(filePath);
                 }
-                final MantaHttpHeaders headers = new MantaHttpHeaders();
-                headers.setByteRange(startBytes, endBytes);
+                MantaHttpHeaders headers = new MantaHttpHeaders();
+                if (startBytes != null) {
+                    headers.setByteRange(startBytes, endBytes);
+                }
 
                 if (outputFileName != null) {
                     try (OutputStream out = new FileOutputStream(outputFileName);
@@ -401,8 +409,8 @@ public final class MantaCLI {
 
 
     @CommandLine.Command(name = "put-file",
-                         header = "Performs a put of a local file to Manta",
-                         description = "Performs a put of a local file to Manta.")
+                         header = "uploads local file to Manta",
+                         description = "performs a put of a local file to Manta.")
     public static class PutFile extends MantaSubCommand {
         @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "file to upload/put")
@@ -436,8 +444,8 @@ public final class MantaCLI {
                 b.append("Attempting PUT request to: ").append(filePath).append(BR);
                 File file = new File(filePath);
                 MantaObjectResponse response = client.put(mantaPath, file);
-                b.append(response.toString());
-                b.append("Request was successful");
+                b.append(response.toString()).append(BR);
+                b.append("Request was successful").append(BR);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -456,8 +464,14 @@ public final class MantaCLI {
 
         @SuppressWarnings("unused")
         @CommandLine.Option(names = {"-d", "--prune-depth"},
-                description = "number of parent directories to be deleted if empty")
+                description = "number of parent directories to be deleted if empty."
+                + "operation deletes all empty parents if value is -1.")
         private Integer pruneDepth;
+
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-r", "--recursive"},
+                description = "recursively deletes all contents of the path")
+        private boolean recursive;
 
         @Override
         public void run() {
@@ -473,6 +487,8 @@ public final class MantaCLI {
                 b.append("Attempting DELETE request to: ").append(mantaPath).append(BR);
                 if (pruneDepth != null) {
                     client.delete(mantaPath, new MantaHttpHeaders(), pruneDepth);
+                } else if (recursive) {
+                    client.deleteRecursive(mantaPath);
                 } else {
                     client.delete(mantaPath, new MantaHttpHeaders(), DEFAULT_PRUNE_DEPTH);
                 }
@@ -490,7 +506,7 @@ public final class MantaCLI {
     }
 
     @CommandLine.Command(name = "object-info",
-                         header = "show HTTP headers for a Manta object",
+                         header = "headers for a Manta object",
                          description = "show HTTP headers for a Manta object.")
     public static class ObjectInfo extends MantaSubCommand {
         @SuppressWarnings("unused")
@@ -511,9 +527,9 @@ public final class MantaCLI {
 
 
     @CommandLine.Command(name = "validate-key",
-                         header = "Validate an encryption key",
-                         description = "Validates that the supplied key is supported by the "
-                         + "SDK's client-side encryption functionality.")
+                         header = "validate an encryption key",
+                         description = "validates that the supplied key is supported by the "
+                         + "client-side encryption.")
     public static class ValidateKey extends MantaSubCommand {
         @SuppressWarnings("unused")
         @CommandLine.Parameters(index = "0", description = "cipher to validate the key against")
@@ -562,5 +578,4 @@ public final class MantaCLI {
             System.out.println(b.toString());
         }
     }
-
 }
