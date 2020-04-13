@@ -13,9 +13,8 @@ import org.apache.commons.lang3.Validate;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
-import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.Arrays;
 
 /**
  * Class that provides details about how the AES-CTR cipher's settings.
@@ -133,14 +132,28 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
                 "Initialization vector has the wrong byte count [%d] "
                         + "expected [%d] bytes", iv.length, getIVLengthInBytes());
 
+        final int ivLength = getIVLengthInBytes();
         final int blockSize = getBlockSizeInBytes();
         final long startingBlock = position / blockSize;
-        final BigInteger ivBigInt = new BigInteger(iv);
-        byte[] updatedIV = Arrays.copyOf(ivBigInt.add(BigInteger.valueOf(startingBlock)).toByteArray(), 16);
 
+        // putLong will only populate 8 bytes of the array so it is important for correctness of
+        // the calculation to start at the offset of 8
+        byte[] startingBlockArray = ByteBuffer.allocate(ivLength).putLong(8, startingBlock).array();
+        byte[] updatedIV = new byte[ivLength];
+        // Loop over the IV starting with the least significant byte to ensure
+        // our carry values are correctly calculated.
+        int carry = 0;
+        for (int ivIndex = ivLength - 1; ivIndex >= 0; ivIndex--) {
+            // Widen the byte types to int types for the arithmetic. The bit
+            // mask is used so that the addition is not performed on negative
+            // values because all Java types are signed.
+            int newIVByteAsInt = ((int)iv[ivIndex] & 0xff) + ((int)startingBlockArray[ivIndex] & 0xff) + carry;
+            byte newIVByte = (byte) newIVByteAsInt;
+            carry = newIVByteAsInt >>> 8;
+            updatedIV[ivIndex] = (byte)newIVByte;
+        }
         return new IvParameterSpec(updatedIV);
     }
-
 
     @Override
     public long updateCipherToPosition(final Cipher cipher, final long position) {

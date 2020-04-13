@@ -16,8 +16,10 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
 @Test
@@ -197,6 +199,38 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 Assert.assertEquals(adjustedText, decryptedText,
                         "Random read output from ciphertext doesn't match expectation " +
                                 "[cipher=" + cipherDetails.getCipherId() + "]");
+            }
+        }
+    }
+
+    public void verifyIvParameterSpecIdentity() throws Exception {
+        boolean done = false;
+        int iterations = 0;
+        final int maxIterations = 10000;
+        while (!done && iterations++ < maxIterations) {
+            SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+            final byte[] iv = cipherDetails.generateIv();
+
+            // Verify that calling getEncryptionParameterSpec with the IV and
+            // a zero offset results in the same IV in the resulting output.
+            // This serves as a regression test for an issue where this property
+            // did not always hold and led to decryption issues. The problem was
+            // specifically related to IV values whose BigInteger representation
+            // was negative and for that reason this test iterates for up to
+            // 10,000 iterations or until an IV whose BigInteger representation
+            // is negative is generated.
+            AlgorithmParameterSpec spec = cipherDetails.getEncryptionParameterSpec(iv, 0L);
+            Cipher cipher = cipherDetails.getCipher();
+            SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+            Assert.assertEquals(iv, cipher.getIV(), "Calculated initialization " +
+                    "vector does not match expected value [expected=" + Arrays.toString(iv) +
+                    " actual=" + Arrays.toString(cipher.getIV()) + "]");
+
+            // Calculate BigInteger value of IV
+            final BigInteger ivBigInt = new BigInteger(iv);
+            if (ivBigInt.compareTo(BigInteger.ZERO) == -1) {
+                done = true;
             }
         }
     }
