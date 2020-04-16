@@ -92,8 +92,9 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
     @Test(groups = {"unlimited-crypto"})
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        SupportedCipherDetails cipherDetails2 = AesCtrCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails, cipherDetails2);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -133,7 +134,8 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
     }
 
     protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
-                                                                  final SupportedCipherDetails cipherDetails)
+                                                                  final SupportedCipherDetails cipherDetails,
+                                                                  final SupportedCipherDetails cipherDetails2)
             throws IOException, GeneralSecurityException {
         String text = "A SERGEANT OF THE LAW, wary and wise, " +
                 "That often had y-been at the Parvis, <26> " +
@@ -183,6 +185,9 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 long endCipherTextRange = ranges.getCiphertextEndPositionInclusive();
                 long adjustedPlaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
 
+                // Decrypt using the old method of advancing the Cipher to the correct cipher block.
+                // This method was correct, but had poor performance. It is still useful for testing to
+                // verify the current calculation method is correct.
                 Cipher decryptor = cipherDetails.getCipher();
 
                 decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
@@ -193,12 +198,29 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 byte[] decrypted = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
                         (int) Math.min(out.length, adjustedPlaintextLength));
 
+                // Decrypt using the current method of advancing the Cipher to the correct cipher block
+                Cipher decryptor2 = cipherDetails2.getCipher();
+                AlgorithmParameterSpec spec = cipherDetails2.getEncryptionParameterSpec(iv, startCipherTextRange);
+                decryptor2.init(Cipher.DECRYPT_MODE, secretKey, spec);
+
+                byte[] out2 = decryptor2.doFinal(adjustedCipherText);
+                byte[] decrypted2 = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
+                        (int) Math.min(out2.length, adjustedPlaintextLength));
+
                 String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
+                String decryptedText2 = new String(decrypted2, StandardCharsets.UTF_8);
                 String adjustedText = new String(adjustedPlaintext, StandardCharsets.UTF_8);
 
                 Assert.assertEquals(adjustedText, decryptedText,
                         "Random read output from ciphertext doesn't match expectation " +
                                 "[cipher=" + cipherDetails.getCipherId() + "]");
+                Assert.assertEquals(adjustedText, decryptedText2,
+                        "Random read output from ciphertext doesn't match expectation " +
+                                "[cipher=" + cipherDetails2.getCipherId() + "]");
+                Assert.assertEquals(decryptedText, decryptedText2,
+                        "Decrypted texts using different IV initialization methods do not match " +
+                                "[cipher1=" + cipherDetails.getCipherId() +
+                                " cipher12=" + cipherDetails2.getCipherId() + "]");
             }
         }
     }
