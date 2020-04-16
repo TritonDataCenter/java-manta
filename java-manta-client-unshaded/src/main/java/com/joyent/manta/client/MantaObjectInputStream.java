@@ -206,7 +206,7 @@ public class MantaObjectInputStream extends InputStream implements MantaObject,
         }
 
         if (backingStream instanceof EofSensorInputStream) {
-                ((EofSensorInputStream) backingStream).close();
+                ((EofSensorInputStream) backingStream).abortConnection();
                 closeHttpResponse();
             } else {
             try {
