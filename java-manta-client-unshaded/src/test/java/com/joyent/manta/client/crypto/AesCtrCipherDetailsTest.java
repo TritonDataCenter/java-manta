@@ -229,7 +229,7 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
 
             // Calculate BigInteger value of IV
             final BigInteger ivBigInt = new BigInteger(iv);
-            if (ivBigInt.compareTo(BigInteger.ZERO) == -1) {
+            if (ivBigInt.compareTo(BigInteger.ZERO) < 0) {
                 done = true;
             }
         }

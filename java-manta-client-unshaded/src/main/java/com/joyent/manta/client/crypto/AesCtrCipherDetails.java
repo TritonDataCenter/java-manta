@@ -148,9 +148,9 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
             // mask is used so that the addition is not performed on negative
             // values because all Java types are signed.
             int newIVByteAsInt = ((int)iv[ivIndex] & 0xff) + ((int)startingBlockArray[ivIndex] & 0xff) + carry;
-            byte newIVByte = (byte) newIVByteAsInt;
             carry = newIVByteAsInt >>> 8;
-            updatedIV[ivIndex] = (byte)newIVByte;
+            byte newIVByte = (byte) newIVByteAsInt;
+            updatedIV[ivIndex] = newIVByte;
         }
         return new IvParameterSpec(updatedIV);
     }
