@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright 2020 Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -441,6 +441,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
 
             // Forward on all headers to the HEAD request
             final HttpHead head = getRequestFactory().head(path);
+            head.removeHeaders(MantaHttpHeaders.ACCEPT_VERSION);
             MantaHttpRequestFactory.addHeaders(head, request.getAllHeaders());
             head.removeHeaders(HttpHeaders.RANGE);
 
