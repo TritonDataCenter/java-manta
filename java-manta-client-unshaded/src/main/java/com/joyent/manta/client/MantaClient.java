@@ -1948,7 +1948,7 @@ public class MantaClient implements AutoCloseable {
     public UUID createJob(final MantaJob job) throws IOException {
         Validate.notNull(job, "Manta job must not be null");
 
-        String path = formatPath(String.format("%s/jobs", config.getMantaHomeDirectory()));
+        String path = formatPath(config.getMantaJobsDirectory());
         ObjectMapper mapper = MantaObjectMapper.INSTANCE;
         byte[] json = mapper.writeValueAsBytes(job);
 
@@ -2055,7 +2055,7 @@ public class MantaClient implements AutoCloseable {
                                     final HttpEntity entity)
             throws IOException {
 
-        String path = String.format("%s/jobs/%s/live/in", config.getMantaHomeDirectory(), jobId);
+        String path = String.format("%s/%s/live/in", config.getMantaJobsDirectory(), jobId);
 
         HttpPost post = httpHelper.getRequestFactory().post(path);
         post.setHeader(HttpHeaders.CONTENT_ENCODING, "chunked");
@@ -2076,7 +2076,7 @@ public class MantaClient implements AutoCloseable {
      */
     public Stream<String> getJobInputs(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
-        String path = String.format("%s/jobs/%s/live/in", config.getMantaHomeDirectory(), jobId);
+        String path = String.format("%s/%s/live/in", config.getMantaJobsDirectory(), jobId);
 
         HttpGet get = httpHelper.getRequestFactory().get(path);
         HttpResponse response = httpHelper.executeRequest(get,
@@ -2093,7 +2093,7 @@ public class MantaClient implements AutoCloseable {
      */
     public boolean endJobInput(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
-        String path = String.format("%s/jobs/%s/live/in/end", config.getMantaHomeDirectory(), jobId);
+        String path = String.format("%s/%s/live/in/end", config.getMantaJobsDirectory(), jobId);
 
         HttpResponse response = httpHelper.httpPost(path);
         StatusLine statusLine = response.getStatusLine();
@@ -2118,8 +2118,8 @@ public class MantaClient implements AutoCloseable {
      */
     public boolean cancelJob(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
-        String path = String.format("%s/jobs/%s/live/cancel",
-                config.getMantaHomeDirectory(), jobId);
+        String path = String.format("%s/%s/live/cancel",
+                config.getMantaJobsDirectory(), jobId);
 
         HttpResponse response = httpHelper.httpPost(path);
         StatusLine statusLine = response.getStatusLine();
@@ -2139,8 +2139,8 @@ public class MantaClient implements AutoCloseable {
      */
     public MantaJob getJob(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Manta job id must not be null");
-        final String livePath = String.format("%s/jobs/%s/live/status",
-                config.getMantaHomeDirectory(), jobId);
+        final String livePath = String.format("%s/%s/live/status",
+                config.getMantaJobsDirectory(), jobId);
 
         final CloseableHttpClient client = httpHelper.getConnectionContext().getHttpClient();
         final HttpUriRequest initialRequest = httpHelper.getRequestFactory().get(livePath);
@@ -2156,8 +2156,8 @@ public class MantaClient implements AutoCloseable {
             // If we can't get the live status of the job, we try to get the archived
             // status of the job just like the CLI mjob utility.
             if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                final String archivePath = String.format("%s/jobs/%s/job.json",
-                        config.getMantaHomeDirectory(), jobId);
+                final String archivePath = String.format("%s/%s/job.json",
+                        config.getMantaJobsDirectory(), jobId);
 
                 final HttpUriRequest archiveRequest = httpHelper.getRequestFactory().get(archivePath);
                 CloseableHttpResponse archiveResponse = client.execute(archiveRequest);
@@ -2347,7 +2347,7 @@ public class MantaClient implements AutoCloseable {
      * @return a stream with all of the job IDs (actually all that Manta will give us)
      */
     public Stream<UUID> getAllJobIds() {
-        final String path = String.format("%s/jobs", config.getMantaHomeDirectory());
+        final String path = formatPath(config.getMantaJobsDirectory());
 
         final MantaDirectoryListingIterator itr = new MantaDirectoryListingIterator(
                 path,
@@ -2431,7 +2431,7 @@ public class MantaClient implements AutoCloseable {
             params = Collections.emptyList();
         }
 
-        final String path = formatPath(String.format("%s/jobs", config.getMantaHomeDirectory()));
+        final String path = formatPath(config.getMantaJobsDirectory());
         final HttpGet get = httpHelper.getRequestFactory().get(path, params);
 
         final HttpResponse response = httpHelper.executeRequest(get,
@@ -2477,7 +2477,7 @@ public class MantaClient implements AutoCloseable {
      */
     public Stream<String> getJobOutputs(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
-        String path = String.format("%s/jobs/%s/live/out", config.getMantaHomeDirectory(), jobId);
+        String path = String.format("%s/%s/live/out", config.getMantaJobsDirectory(), jobId);
 
         HttpGet get = httpHelper.getRequestFactory().get(path);
         HttpResponse response = httpHelper.executeRequest(get,
@@ -2560,7 +2560,7 @@ public class MantaClient implements AutoCloseable {
     public Stream<String> getJobFailures(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        String path = String.format("%s/jobs/%s/live/fail", config.getMantaHomeDirectory(), jobId);
+        String path = String.format("%s/%s/live/fail", config.getMantaJobsDirectory(), jobId);
 
         final HttpGet get = httpHelper.getRequestFactory().get(path);
         final HttpResponse response = httpHelper.executeRequest(get,
@@ -2583,7 +2583,7 @@ public class MantaClient implements AutoCloseable {
     public Stream<MantaJobError> getJobErrors(final UUID jobId) throws IOException {
         Validate.notNull(jobId, "Job id must not be null");
 
-        final String path = String.format("%s/jobs/%s/live/err", config.getMantaHomeDirectory(), jobId);
+        final String path = String.format("%s/%s/live/err", config.getMantaJobsDirectory(), jobId);
 
         final HttpGet get = httpHelper.getRequestFactory().get(path);
         final HttpResponse response = httpHelper.executeRequest(get,

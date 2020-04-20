@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.config;
 
+import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaMBeanable;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
 import com.joyent.manta.exception.ConfigurationException;
@@ -78,6 +79,13 @@ public interface ConfigContext extends MantaMBeanable {
      */
     default String getMantaHomeDirectory() {
         return deriveHomeDirectoryFromUser(getMantaUser());
+    }
+
+    /**
+     * @return String of jobs directory based on Manta username.
+     */
+    default String getMantaJobsDirectory() {
+        return deriveHomeDirectoryFromUser(getMantaUser()) + MantaClient.SEPARATOR + "jobs";
     }
 
     /**
