@@ -439,11 +439,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
              * the information needed to do a proper range request. */
             final String path = request.getURI().getPath();
 
-            // Forward on all headers to the HEAD request
             final HttpHead head = getRequestFactory().head(path);
-            head.removeHeaders(MantaHttpHeaders.ACCEPT_VERSION);
-            MantaHttpRequestFactory.addHeaders(head, request.getAllHeaders());
-            head.removeHeaders(HttpHeaders.RANGE);
 
             HttpResponse headResponse = super.executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
             final MantaHttpHeaders headers = new MantaHttpHeaders(headResponse.getAllHeaders());
