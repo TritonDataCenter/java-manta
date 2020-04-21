@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -1116,6 +1116,41 @@ public class MantaClient implements AutoCloseable {
     public boolean existsAndIsAccessible(final String path) {
         try {
             head(path);
+        } catch (MantaClientHttpResponseException e) {
+            switch (e.getServerCode()) {
+                case DIRECTORY_DOES_NOT_EXIST_ERROR:
+                    LOG.error("{} Directory invalid for given path: {}", e.getMessage(), path);
+                    break;
+                case ACCOUNT_DOES_NOT_EXIST_ERROR:
+                    LOG.error("{} Non-existent account for given path: {}", e.getMessage(), path);
+                    break;
+                case AUTHORIZATION_FAILED_ERROR:
+                case INVALID_CREDENTIALS_ERROR:
+                    LOG.error("{} Invalid authorization credentials for given path: {}", e.getMessage(), path);
+                    break;
+                case RESOURCE_NOT_FOUND_ERROR:
+                case MULTIPART_UPLOAD_STATE_ERROR:
+                    LOG.error("{} Unavailable Resource for given path: {}", e.getMessage(), path);
+                    break;
+                case INVALID_KEY_ID_ERROR:
+                    LOG.error("{} Invalid key-id for given path: {}", e.getMessage(), path);
+                    break;
+                case JOB_NOT_FOUND_ERROR:
+                    LOG.error("{} Non-existent Job Id for given path: {}", e.getMessage(), path);
+                    break;
+                case REQUEST_TIMEOUT_ERROR:
+                    LOG.error("{} Request time-out for given path: {}", e.getMessage(), path);
+                    break;
+                case INTERNAL_ERROR:
+                    LOG.error("{} Internal Server error for given path: {}", e.getMessage(), path);
+                    break;
+                case SNAPLINKS_DISABLED_ERROR:
+                    LOG.error("{} Snaplinks disabled for given path: {}", e.getMessage(), path);
+                    break;
+                default:
+                    LOG.error("{} doesn't exist for given path: {}", e.getMessage(), path);
+            }
+            return false;
         } catch (IOException e) {
             return false;
         }
