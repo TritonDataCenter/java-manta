@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.helper.IntegrationTestHelper;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.test.util.ThreeTriesRetryAnalyzer;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -34,9 +35,19 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.joyent.manta.exception.MantaErrorCode.RESOURCE_NOT_FOUND_ERROR;
+
 /**
  * Tests the execution of Manta compute jobs.
- * <p>Note: Jobs are disabled for the Manta Buckets environment.</p>
+ *
+ * <p>
+ * Since we want to make it possible to run this test without a code change, this test throws a {@link
+ * org.testng.SkipException} if jobs are disabled for the "manta.user" account, the method
+ * {@link MantaClientJobIT#createJobAndSkipIfUnsupported(MantaJob)} will skip this integration-test from
+ * running.
+ * </p>
+ *
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = { "expensive" }, retryAnalyzer = ThreeTriesRetryAnalyzer.class)
 public class MantaClientJobIT {
@@ -75,7 +86,7 @@ public class MantaClientJobIT {
     @Test(groups = { "expensive" })
     public void createJob() throws IOException {
         MantaJob job = buildJob();
-        UUID jobId = mantaClient.createJob(job);
+        UUID jobId = createJobAndSkipIfUnsupported(job);
         Assert.assertNotNull(jobId);
 
         boolean accepted = mantaClient.cancelJob(jobId);
@@ -85,7 +96,7 @@ public class MantaClientJobIT {
     @Test(groups = { "expensive" }, dependsOnMethods = { "createJob" })
     public void getJob() throws IOException {
         MantaJob job = buildJob();
-        UUID jobId = mantaClient.createJob(job);
+        UUID jobId = createJobAndSkipIfUnsupported(job);
         MantaJob jobResponse = mantaClient.getJob(jobId);
 
         Assert.assertEquals(jobResponse.getName(),
@@ -109,7 +120,7 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = { "createJob", "getJob" })
     public void cancelJob() throws IOException {
         MantaJob job = buildJob();
-        UUID jobId = mantaClient.createJob(job);
+        UUID jobId = createJobAndSkipIfUnsupported(job);
         mantaClient.cancelJob(jobId);
 
         MantaJob jobResponse = mantaClient.getJob(jobId);
@@ -132,10 +143,10 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = {"createJob"}, successPercentage = 66)
     public void canAddAndGetInputsFromIterator() throws IOException {
         MantaJob job = buildJob();
-        UUID jobId = mantaClient.createJob(job);
+        UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
-        
+
         String objPath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(objPath, TEST_DATA);
         inputs.add(objPath);
@@ -155,10 +166,10 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = { "createJob" }, successPercentage = 66)
     public void canAddAndGetInputsFromStream() throws IOException {
         MantaJob job = buildJob();
-        UUID jobId = mantaClient.createJob(job);
+        UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
-        
+
         String objPath = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(objPath, TEST_DATA);
         inputs.add(objPath);
@@ -178,9 +189,9 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllJobIDs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
-        final UUID job1id = mantaClient.createJob(job1);
+        final UUID job1id = createJobAndSkipIfUnsupported(job1);
         final MantaJob job2 = buildJob();
-        final UUID job2id = mantaClient.createJob(job2);
+        final UUID job2id = createJobAndSkipIfUnsupported(job2);
 
         Assert.assertTrue(mantaClient.endJobInput(job1id));
         Assert.assertTrue(mantaClient.endJobInput(job2id));
@@ -208,9 +219,9 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllJobs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
-        final UUID job1id = mantaClient.createJob(job1);
+        final UUID job1id = createJobAndSkipIfUnsupported(job1);
         final MantaJob job2 = buildJob();
-        final UUID job2id = mantaClient.createJob(job2);
+        final UUID job2id = createJobAndSkipIfUnsupported(job2);
 
         Assert.assertTrue(mantaClient.endJobInput(job1id));
         Assert.assertTrue(mantaClient.endJobInput(job2id));
@@ -239,11 +250,11 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllRunningJobIDs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
-        final UUID job1id = mantaClient.createJob(job1);
+        final UUID job1id = createJobAndSkipIfUnsupported(job1);
         final MantaJob job2 = buildJob();
-        final UUID job2id = mantaClient.createJob(job2);
+        final UUID job2id = createJobAndSkipIfUnsupported(job2);
         final MantaJob job3 = buildJob();
-        final UUID job3id = mantaClient.createJob(job3);
+        final UUID job3id = createJobAndSkipIfUnsupported(job3);
 
         Assert.assertTrue(mantaClient.endJobInput(job3id));
 
@@ -272,11 +283,11 @@ public class MantaClientJobIT {
     @Test(dependsOnMethods = { "createJob", "getJob" }, groups = { "expensive" })
     public void canListAllRunningJobs() throws IOException, InterruptedException {
         final MantaJob job1 = buildJob();
-        final UUID job1id = mantaClient.createJob(job1);
+        final UUID job1id = createJobAndSkipIfUnsupported(job1);
         final MantaJob job2 = buildJob();
-        final UUID job2id = mantaClient.createJob(job2);
+        final UUID job2id = createJobAndSkipIfUnsupported(job2);
         final MantaJob job3 = buildJob();
-        final UUID job3id = mantaClient.createJob(job3);
+        final UUID job3id = createJobAndSkipIfUnsupported(job3);
 
         Assert.assertTrue(mantaClient.endJobInput(job3id));
 
@@ -306,9 +317,9 @@ public class MantaClientJobIT {
     public void canListJobIdsByName() throws IOException {
         final String name = String.format("by_name_%s", UUID.randomUUID());
         final MantaJob job1 = buildJob(name, "cat");
-        final UUID job1id = mantaClient.createJob(job1);
+        final UUID job1id = createJobAndSkipIfUnsupported(job1);
         MantaJob job2 = buildJob(name, "cat");
-        final UUID job2id = mantaClient.createJob(job2);
+        final UUID job2id = createJobAndSkipIfUnsupported(job2);
 
         try (Stream<UUID> jobs = mantaClient.getJobIdsByName(name)) {
             List<UUID> found = jobs.collect(Collectors.toList());
@@ -329,7 +340,7 @@ public class MantaClientJobIT {
     @Test
     public void canListOutputsForJobWithNoInputs() throws IOException, InterruptedException {
         final MantaJob job = buildJob();
-        final UUID jobId = mantaClient.createJob(job);
+        final UUID jobId = createJobAndSkipIfUnsupported(job);
         Assert.assertTrue(mantaClient.endJobInput(jobId));
 
         awaitJobCompletion(jobId);
@@ -346,7 +357,7 @@ public class MantaClientJobIT {
         mantaClient.put(path, TEST_DATA);
 
         final MantaJob job = buildJob();
-        final UUID jobId = mantaClient.createJob(job);
+        final UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
         inputs.add(path);
@@ -370,12 +381,12 @@ public class MantaClientJobIT {
     public void canListOutputsForJobAsStreams() throws IOException, InterruptedException {
         String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path1, TEST_DATA);
-        
+
         String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         mantaClient.put(path2, TEST_DATA);
 
         final MantaJob job = buildJob();
-        final UUID jobId = mantaClient.createJob(job);
+        final UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
         inputs.add(path1);
@@ -411,7 +422,7 @@ public class MantaClientJobIT {
         mantaClient.put(path2, TEST_DATA);
 
         final MantaJob job = buildJob();
-        final UUID jobId = mantaClient.createJob(job);
+        final UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
         inputs.add(path1);
@@ -439,7 +450,7 @@ public class MantaClientJobIT {
         mantaClient.put(path, TEST_DATA);
 
         final MantaJob job = buildJob("failed_job", "grep foo");
-        final UUID jobId = mantaClient.createJob(job);
+        final UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
         inputs.add(path);
@@ -464,7 +475,7 @@ public class MantaClientJobIT {
         mantaClient.put(path2, TEST_DATA);
 
         final MantaJob job = buildJob("failed_job", "grep foo");
-        final UUID jobId = mantaClient.createJob(job);
+        final UUID jobId = createJobAndSkipIfUnsupported(job);
 
         List<String> inputs = new ArrayList<>();
         inputs.add(path1);
@@ -506,5 +517,23 @@ public class MantaClientJobIT {
         }
 
         throw new AssertionError("Waited too long (~20 seconds) for job state to become \"done\" ");
+    }
+
+    private UUID createJobAndSkipIfUnsupported(final MantaJob mantaJob) throws IOException {
+        try {
+            final UUID jobId = mantaClient.createJob(mantaJob);
+            return jobId;
+
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getServerCode().equals(RESOURCE_NOT_FOUND_ERROR)) {
+                final String message =
+                        "This integration-test class can't be run since Jobs" +
+                                "have been disabled for this account";
+                LOG.warn(message);
+                throw new SkipException(message, e);
+            }
+
+            throw e;
+        }
     }
 }

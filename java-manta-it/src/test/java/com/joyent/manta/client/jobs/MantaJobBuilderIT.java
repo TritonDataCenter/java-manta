@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,8 @@ import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -31,10 +33,18 @@ import java.util.stream.Collectors;
 
 /**
  * Tests the execution of Manta compute jobs using the builder fluent interface.
- * <p>Note: Jobs are disabled for the Manta Buckets environment.</p>
+ *
+ * <p>
+ * Since we want to make it possible to run this test without a code change, this test throws a {@link
+ * org.testng.SkipException} if jobs are disabled for the "manta.user" account.
+ * </p>
+ *
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test
 public class MantaJobBuilderIT {
+    private static final Logger LOG = LoggerFactory.getLogger(MantaJobBuilderIT.class);
+
     private static final String TEST_DATA =
               "line 01 aa\n"
             + "line 02 bb\n"
@@ -62,10 +72,18 @@ public class MantaJobBuilderIT {
         ConfigContext config = new IntegrationTestConfigContext();
         final String testName = this.getClass().getSimpleName();
 
-        mantaClient = new MantaClient(config);
-        testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,
-                testName, testType);
-        IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType);
+        if (mantaClient.existsAndIsAccessible(config.getMantaJobsDirectory())) {
+            mantaClient = new MantaClient(config);                                                                                                                                          
+            testPathPrefix = IntegrationTestHelper.setupTestPath(config, mantaClient,                                                                                                       
+                                    testName, testType);                                                                                                                                                    
+            IntegrationTestHelper.createTestBucketOrDirectory(mantaClient, testPathPrefix, testType); 
+        } else {
+            final String message =
+                    "This integration-test class can't be run since Jobs" +
+                            "have been disabled for this account";
+            LOG.warn(message);
+            throw new SkipException(message);
+        }
     }
 
     @AfterClass
@@ -78,7 +96,7 @@ public class MantaJobBuilderIT {
         final MantaJobBuilder builder = mantaClient.jobBuilder();
 
         String jobName = String.format("job_%s", UUID.randomUUID());
-       
+
         String path1 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         String path2 = String.format("%s%s", testPathPrefix, UUID.randomUUID());
         String path3 = String.format("%s%s", testPathPrefix, UUID.randomUUID());

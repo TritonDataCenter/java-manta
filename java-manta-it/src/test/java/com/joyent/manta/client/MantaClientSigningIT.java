@@ -13,6 +13,7 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -47,7 +48,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Tests the functionality of signing private Manta URLs for public access.
  *
- * @author Elijah Zupancic
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test(groups = { "buckets" })
 public class MantaClientSigningIT {
@@ -267,8 +269,6 @@ public class MantaClientSigningIT {
             connection.setReadTimeout(3000);
             connection.setRequestMethod("OPTIONS");
             connection.connect();
-
-            Map<String, List<String>> headers = connection.getHeaderFields();
 
             if (connection.getResponseCode() != 200) {
                 String errorText = IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset());

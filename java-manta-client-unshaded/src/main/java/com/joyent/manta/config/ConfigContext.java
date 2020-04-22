@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -82,10 +82,17 @@ public interface ConfigContext extends MantaMBeanable {
     }
 
     /**
-     * @return String of buckets directory based on Manta username.
+     * @retrn String of buckets directory based on Manta username.
      */
     default String getMantaBucketsDirectory() {
         return deriveHomeDirectoryFromUser(getMantaUser()) + MantaClient.SEPARATOR + "buckets";
+    }
+
+    /**
+     * @return String of jobs directory based on Manta username.
+     */
+    default String getMantaJobsDirectory() {
+        return deriveHomeDirectoryFromUser(getMantaUser()) + MantaClient.SEPARATOR + "jobs";
     }
 
     /**

@@ -217,6 +217,11 @@ public abstract class AbstractAesCipherDetails implements SupportedCipherDetails
 
     @Override
     public AlgorithmParameterSpec getEncryptionParameterSpec(final byte[] iv) {
+        return getEncryptionParameterSpec(iv, 0L);
+    }
+
+    @Override
+    public AlgorithmParameterSpec getEncryptionParameterSpec(final byte[] iv, final long position) {
         Validate.notNull(iv, "Initialization vector must not be null");
         Validate.isTrue(iv.length == getIVLengthInBytes(),
                 "Initialization vector has the wrong byte count [%d] "

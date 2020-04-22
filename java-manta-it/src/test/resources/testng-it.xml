@@ -144,7 +144,7 @@
         <parameter name="preferredProviders" value="SunPKCS11-NSS" />
         <parameter name="testType" value="directory"/>
         <classes>
-            <class name="com.joyent.manta.client.MantaClientIT" />
+            <!--class name="com.joyent.manta.client.MantaClientIT" / -->
             <class name="com.joyent.manta.client.MantaClientPutIT" />
             <class name="com.joyent.manta.client.MantaClientMetadataIT" />
 

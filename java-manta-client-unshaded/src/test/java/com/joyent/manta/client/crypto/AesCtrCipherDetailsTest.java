@@ -16,8 +16,10 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
 @Test
@@ -90,8 +92,9 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
     @Test(groups = {"unlimited-crypto"})
     public void canQueryCiphertextByteRangeAes256() throws Exception {
         SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+        SupportedCipherDetails cipherDetails2 = AesCtrCipherDetails.INSTANCE_256_BIT;
         SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
-        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails);
+        canRandomlyReadPlaintextPositionFromCiphertext(secretKey, cipherDetails, cipherDetails2);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -131,7 +134,8 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
     }
 
     protected void canRandomlyReadPlaintextPositionFromCiphertext(final SecretKey secretKey,
-                                                                  final SupportedCipherDetails cipherDetails)
+                                                                  final SupportedCipherDetails cipherDetails,
+                                                                  final SupportedCipherDetails cipherDetails2)
             throws IOException, GeneralSecurityException {
         String text = "A SERGEANT OF THE LAW, wary and wise, " +
                 "That often had y-been at the Parvis, <26> " +
@@ -181,6 +185,9 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 long endCipherTextRange = ranges.getCiphertextEndPositionInclusive();
                 long adjustedPlaintextLength = ranges.getLengthOfPlaintextIncludingSkipBytes();
 
+                // Decrypt using the old method of advancing the Cipher to the correct cipher block.
+                // This method was correct, but had poor performance. It is still useful for testing to
+                // verify the current calculation method is correct.
                 Cipher decryptor = cipherDetails.getCipher();
 
                 decryptor.init(Cipher.DECRYPT_MODE, secretKey, cipherDetails.getEncryptionParameterSpec(iv));
@@ -191,12 +198,61 @@ public class AesCtrCipherDetailsTest extends AbstractCipherDetailsTest {
                 byte[] decrypted = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
                         (int) Math.min(out.length, adjustedPlaintextLength));
 
+                // Decrypt using the current method of advancing the Cipher to the correct cipher block
+                Cipher decryptor2 = cipherDetails2.getCipher();
+                AlgorithmParameterSpec spec = cipherDetails2.getEncryptionParameterSpec(iv, startCipherTextRange);
+                decryptor2.init(Cipher.DECRYPT_MODE, secretKey, spec);
+
+                byte[] out2 = decryptor2.doFinal(adjustedCipherText);
+                byte[] decrypted2 = Arrays.copyOfRange(out, (int) adjustedPlaintextRange,
+                        (int) Math.min(out2.length, adjustedPlaintextLength));
+
                 String decryptedText = new String(decrypted, StandardCharsets.UTF_8);
+                String decryptedText2 = new String(decrypted2, StandardCharsets.UTF_8);
                 String adjustedText = new String(adjustedPlaintext, StandardCharsets.UTF_8);
 
                 Assert.assertEquals(adjustedText, decryptedText,
                         "Random read output from ciphertext doesn't match expectation " +
                                 "[cipher=" + cipherDetails.getCipherId() + "]");
+                Assert.assertEquals(adjustedText, decryptedText2,
+                        "Random read output from ciphertext doesn't match expectation " +
+                                "[cipher=" + cipherDetails2.getCipherId() + "]");
+                Assert.assertEquals(decryptedText, decryptedText2,
+                        "Decrypted texts using different IV initialization methods do not match " +
+                                "[cipher1=" + cipherDetails.getCipherId() +
+                                " cipher12=" + cipherDetails2.getCipherId() + "]");
+            }
+        }
+    }
+
+    public void verifyIvParameterSpecIdentity() throws Exception {
+        boolean done = false;
+        int iterations = 0;
+        final int maxIterations = 10000;
+        while (!done && iterations++ < maxIterations) {
+            SupportedCipherDetails cipherDetails = AesCtrCipherDetails.INSTANCE_256_BIT;
+            final byte[] iv = cipherDetails.generateIv();
+
+            // Verify that calling getEncryptionParameterSpec with the IV and
+            // a zero offset results in the same IV in the resulting output.
+            // This serves as a regression test for an issue where this property
+            // did not always hold and led to decryption issues. The problem was
+            // specifically related to IV values whose BigInteger representation
+            // was negative and for that reason this test iterates for up to
+            // 10,000 iterations or until an IV whose BigInteger representation
+            // is negative is generated.
+            AlgorithmParameterSpec spec = cipherDetails.getEncryptionParameterSpec(iv, 0L);
+            Cipher cipher = cipherDetails.getCipher();
+            SecretKey secretKey = SecretKeyUtils.generate(cipherDetails);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+            Assert.assertEquals(iv, cipher.getIV(), "Calculated initialization " +
+                    "vector does not match expected value [expected=" + Arrays.toString(iv) +
+                    " actual=" + Arrays.toString(cipher.getIV()) + "]");
+
+            // Calculate BigInteger value of IV
+            final BigInteger ivBigInt = new BigInteger(iv);
+            if (ivBigInt.compareTo(BigInteger.ZERO) < 0) {
+                done = true;
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright 2020 Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,10 @@ import com.joyent.manta.client.crypto.AesCipherDetailsFactory.CipherMode;
 import org.apache.commons.lang3.Validate;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+
+import java.nio.ByteBuffer;
+import java.security.spec.AlgorithmParameterSpec;
 
 /**
  * Class that provides details about how the AES-CTR cipher's settings.
@@ -119,6 +123,36 @@ public final class AesCtrCipherDetails extends AbstractAesCipherDetails {
 
         return new ByteRangeConversion(ciphertextStartPositionInclusive, plaintextBytesToSkipInitially,
                 ciphertextEndPositionInclusive, lengthOfPlaintextIncludingSkipBytes, startingBlockNumberInclusive);
+    }
+
+    @Override
+    public AlgorithmParameterSpec getEncryptionParameterSpec(final byte[] iv, final long position) {
+        Validate.notNull(iv, "Initialization vector must not be null");
+        Validate.isTrue(iv.length == getIVLengthInBytes(),
+                "Initialization vector has the wrong byte count [%d] "
+                        + "expected [%d] bytes", iv.length, getIVLengthInBytes());
+
+        final int ivLength = getIVLengthInBytes();
+        final int blockSize = getBlockSizeInBytes();
+        final long startingBlock = position / blockSize;
+
+        // putLong will only populate 8 bytes of the array so it is important for correctness of
+        // the calculation to start at the offset of 8
+        byte[] startingBlockArray = ByteBuffer.allocate(ivLength).putLong(8, startingBlock).array();
+        byte[] updatedIV = new byte[ivLength];
+        // Loop over the IV starting with the least significant byte to ensure
+        // our carry values are correctly calculated.
+        int carry = 0;
+        for (int ivIndex = ivLength - 1; ivIndex >= 0; ivIndex--) {
+            // Widen the byte types to int types for the arithmetic. The bit
+            // mask is used so that the addition is not performed on negative
+            // values because all Java types are signed.
+            int newIVByteAsInt = ((int)iv[ivIndex] & 0xff) + ((int)startingBlockArray[ivIndex] & 0xff) + carry;
+            carry = newIVByteAsInt >>> 8;
+            byte newIVByte = (byte) newIVByteAsInt;
+            updatedIV[ivIndex] = newIVByte;
+        }
+        return new IvParameterSpec(updatedIV);
     }
 
     @Override

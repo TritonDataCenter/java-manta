@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,7 @@ import java.util.Set;
  * Tests for verifying the behavior of HTTP header assignment.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @Test
 public class MantaHttpHeadersTest {
@@ -54,7 +55,8 @@ public class MantaHttpHeadersTest {
         Assert.assertEquals(headers.getContentType(), DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.getResultSetSize().toString(), DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.getDate(), DIR_LIST_HEADERS[i++].getValue());
-        Assert.assertEquals(headers.get(HttpHeaders.SERVER), DIR_LIST_HEADERS[i++].getValue());
+        Assert.assertEquals(StringUtils.substringBefore(headers.get(HttpHeaders.SERVER).toString(), "/"),
+                DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.getRequestId(), DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.get("X-Response-Time"), DIR_LIST_HEADERS[i++].getValue());
         Assert.assertEquals(headers.get("X-Server-Name"), DIR_LIST_HEADERS[i++].getValue());

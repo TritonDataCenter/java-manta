@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Joyent, Inc. All rights reserved.
+ * Copyright 2020 Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -442,10 +442,7 @@ public class EncryptionHttpHelper extends StandardHttpHelper {
              * the information needed to do a proper range request. */
             final String path = request.getURI().getPath();
 
-            // Forward on all headers to the HEAD request
             final HttpHead head = getRequestFactory().head(path);
-            MantaHttpRequestFactory.addHeaders(head, request.getAllHeaders());
-            head.removeHeaders(HttpHeaders.RANGE);
 
             HttpResponse headResponse = super.executeAndCloseRequest(head, "HEAD   {} response [{}] {} ");
             final MantaHttpHeaders headers = new MantaHttpHeaders(headResponse.getAllHeaders());
