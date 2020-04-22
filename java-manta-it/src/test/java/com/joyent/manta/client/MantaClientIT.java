@@ -159,7 +159,6 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void testManyOperationsWithDirectories() throws IOException {
     public final void createMantaObjectStreamCloseInOneThreadAndAbortInAnother()
             throws Exception {
         final String name = UUID.randomUUID().toString();
@@ -192,8 +191,7 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void testManyOperations() throws IOException {
->>>>>>> master
+    public final void testManyOperationsWithDirectories() throws IOException {
         String dir = testPathPrefix + "multiple";
         final boolean bucketsEnabled = testPathPrefix.contains(mantaClient.getContext().getMantaBucketsDirectory());
 

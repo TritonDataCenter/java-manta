@@ -82,7 +82,7 @@ public interface ConfigContext extends MantaMBeanable {
     }
 
     /**
-     * @retrn String of buckets directory based on Manta username.
+     * @return String of buckets directory based on Manta username.
      */
     default String getMantaBucketsDirectory() {
         return deriveHomeDirectoryFromUser(getMantaUser()) + MantaClient.SEPARATOR + "buckets";

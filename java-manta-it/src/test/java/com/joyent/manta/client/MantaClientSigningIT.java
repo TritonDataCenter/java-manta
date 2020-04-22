@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,6 @@ import com.joyent.manta.config.IntegrationTestConfigContext;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -269,6 +268,8 @@ public class MantaClientSigningIT {
             connection.setReadTimeout(3000);
             connection.setRequestMethod("OPTIONS");
             connection.connect();
+
+            Map<String, List<String>> headers = connection.getHeaderFields();
 
             if (connection.getResponseCode() != 200) {
                 String errorText = IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset());
