@@ -2,7 +2,19 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.4.2] - 2019-03-26
+## [3.4.3] - 2020-04-24
+### Added
+ - [Skipping job dependent tests for MantaV2](https://github.com/joyent/java-manta/pull/571).
+ - [existsAndIsAccessible rethrows detailed and  severe exceptions](https://github.com/joyent/java-manta/pull/540).
+### Changed
+ - [MANTA-5075 Refactor close() implementation in MantaObjectInputStream](https://github.com/joyent/java-manta/pull/569).
+### Fixed
+ - [MANTA-5143 Data integrity issue](https://github.com/joyent/java-manta/pull/568) caused due to range-downloads 
+   decryption improvement introduced in 3.4.2.
+ - [MANTA-5191 BadRequest Error caused by a valid Range Request](https://github.com/joyent/java-manta/pull/572).
+ - [existsAndIsAccessible returns false for ANY thrown exception](https://github.com/joyent/java-manta/issue/267).
+
+## [3.4.2] - 2020-03-26
 ### Added
  - [Instructions on improving encryption performance with Java 11](https://github.com/joyent/java-manta/pull/561) 
    for SunPKCS11 with NSS support.
@@ -55,6 +67,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Integration tests structured better to support accounts having SnapLinks disabled](https://github.com/joyent/java-manta/issues/480)
  - [NoApiServersAvailable is not present in MantaErrorCode enums](https://github.com/joyent/java-manta/issues/470)
  - [Formatting Mbean attribute 999thPercentile for the metric object requests](https://github.com/joyent/java-manta/issues/436)
+ - [Unable to run MantaClientSigningIT with HTTP connections to Manta](https://github.com/joyent/java-manta/issues/534)
  
 ## [3.4.0] - 2019-03-22
 ### Added
