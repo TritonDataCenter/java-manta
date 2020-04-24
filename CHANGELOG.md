@@ -67,6 +67,7 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
  - [Integration tests structured better to support accounts having SnapLinks disabled](https://github.com/joyent/java-manta/issues/480)
  - [NoApiServersAvailable is not present in MantaErrorCode enums](https://github.com/joyent/java-manta/issues/470)
  - [Formatting Mbean attribute 999thPercentile for the metric object requests](https://github.com/joyent/java-manta/issues/436)
+ - [Unable to run MantaClientSigningIT with HTTP connections to Manta](https://github.com/joyent/java-manta/issues/534)
  
 ## [3.4.0] - 2019-03-22
 ### Added
