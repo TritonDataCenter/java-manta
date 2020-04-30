@@ -134,6 +134,7 @@ public class EncryptionContext {
      * Initializes the cipher with an IV (initialization vector), so that
      * the cipher is ready to be used to encrypt.
      * @param suppliedIv IV to use in case of a retry or test case, null indicates we should generate one
+     * @throws MantaClientEncryptionException for wrong algorithm parameters or problems when loading private key
      */
     @SuppressWarnings({"Duplicates"})
     private void initializeCipher(final byte[] suppliedIv) {

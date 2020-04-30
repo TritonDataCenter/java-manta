@@ -46,6 +46,10 @@
     <module name="FileLength">
         <property name="max" value="2500"/>
     </module>
+    <module name="LineLength">
+        <property name="max" value="120" />
+        <property name="tabWidth" value="4" />
+    </module>
 
     <!-- Checks for whitespace                               -->
     <!-- See http://checkstyle.sf.net/config_whitespace.html -->
@@ -74,11 +78,11 @@
 
         <!-- Checks for Javadoc comments.                     -->
         <!-- See http://checkstyle.sf.net/config_javadoc.html -->
+        <module name="InvalidJavadocPosition"/>
         <module name="JavadocMethod">
-            <property name="allowUndeclaredRTE" value="true"/>
-            <property name="allowThrowsTagsForSubclasses" value="true"/>
-            <property name="suppressLoadErrors" value="true"/>
-            <property name="allowMissingPropertyJavadoc" value="true"/>
+            <property name="validateThrows" value="true"/>
+            <property name="allowMissingParamTags" value="true"/>
+            <property name="allowMissingReturnTag" value="true"/>
             <property name="excludeScope" value="package"/>
         </module>
         <module name="JavadocType" />
@@ -110,10 +114,6 @@
 
         <!-- Checks for Size Violations.                    -->
         <!-- See http://checkstyle.sf.net/config_sizes.html -->
-        <module name="LineLength">
-            <property name="max" value="120" />
-            <property name="tabWidth" value="4" />
-        </module>
         <module name="MethodLength" />
         <module name="ParameterNumber" />
 

@@ -143,6 +143,7 @@ public class MantaJobPhase {
     /**
      * @param count an optional number of reducers for this phase (reduce-only)
      * @return reference to the current instance
+     * @throws IllegalArgumentException for invalid count value
      */
     public MantaJobPhase setCount(final Integer count) {
         if (getType() != null && !getType().equals("reduce")) {
@@ -167,6 +168,7 @@ public class MantaJobPhase {
     /**
      * @param memory an optional amount of DRAM to give to your compute zone (MB)
      * @return reference to the current instance
+     * @throws IllegalArgumentException for invalid count value
      */
     public MantaJobPhase setMemory(final Integer memory) {
         if (memory != null && memory < 1) {
@@ -187,6 +189,7 @@ public class MantaJobPhase {
     /**
      * @param disk an optional amount of disk space to give to your compute zone (GB)
      * @return reference to the current instance
+     * @throws IllegalArgumentException for invalid count value
      */
     public MantaJobPhase setDisk(final Integer disk) {
         if (disk != null && disk < 1) {

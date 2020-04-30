@@ -55,6 +55,7 @@ public final class SupportedHmacsLookupMap extends LookupMap<String, Supplier<HM
      *
      * @param algorithm algorithm to instantiate HMAC instance as
      * @return supplier wrapping getInstance call to get HMAC instance
+     * @throws MantaClientEncryptionException for invalid hmac algorithm
      */
     private static Supplier<HMac> hmacSupplierByName(final String algorithm) {
         return () -> {

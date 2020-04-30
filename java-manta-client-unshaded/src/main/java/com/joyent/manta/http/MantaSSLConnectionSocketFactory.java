@@ -19,6 +19,9 @@ import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -27,9 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 
 /**
  * Custom {@link SSLConnectionSocketFactory} implementation that consumes Manta
@@ -80,6 +80,7 @@ public class MantaSSLConnectionSocketFactory extends SSLConnectionSocketFactory 
     /**
      * @param config configuration context containing SSL config params
      * @return reference to SSL Context
+     * @throws MantaException for disabling TLS security
      */
     private static SSLContext buildContext(final ConfigContext config) {
         if (config.tlsInsecure()) {
