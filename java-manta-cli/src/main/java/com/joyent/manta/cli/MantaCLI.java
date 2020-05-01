@@ -14,35 +14,25 @@ import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.crypto.AesCtrCipherDetails;
+import com.joyent.manta.client.crypto.SecretKeyUtils;
 import com.joyent.manta.client.crypto.SupportedCipherDetails;
 import com.joyent.manta.client.crypto.SupportedCiphersLookupMap;
-import com.joyent.manta.client.crypto.SecretKeyUtils;
-import com.joyent.manta.config.ChainedConfigContext;
-import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.DefaultsConfigContext;
-import com.joyent.manta.config.EnvVarConfigContext;
-import com.joyent.manta.config.EncryptionAuthenticationMode;
-import com.joyent.manta.config.MapConfigContext;
-import com.joyent.manta.config.StandardConfigContext;
+import com.joyent.manta.config.*;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -179,27 +169,33 @@ public final class MantaCLI {
      * @return chained configuration context object
      */
     protected ConfigContext buildEncryptionConfig() {
-        final EncryptionAuthenticationMode envSettingsMode = MantaUtils.parseEnumOrNull(
+        final EncryptionAuthenticationMode envEncryptionAuthentication = MantaUtils.parseEnumOrNull(
                 encryptionAuthenticationMode(), EncryptionAuthenticationMode.class);
 
         final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher(),
-                AesCtrCipherDetails.INSTANCE_128_BIT);
-        final byte[] keyBytes = Base64.getDecoder().decode("qAnCNUmmFjUTtImNGv241Q==");
+                AesCtrCipherDetails.INSTANCE_256_BIT);
 
-        final SecretKey key = SecretKeyUtils.loadKey(keyBytes, cipherDetails);
-
-        return new ChainedConfigContext(new StandardConfigContext()
-                .setClientEncryptionEnabled(true)
-                .setPermitUnencryptedDownloads(true)
-                .setContentTypeDetectionEnabled(false)
-                .setEncryptionAlgorithm(cipherDetails.getCipherId())
-                .setEncryptionKeyId("manta-cli-encryption-key")
-                .setEncryptionAuthenticationMode(ObjectUtils.firstNonNull(
-                        envSettingsMode, EncryptionAuthenticationMode.Optional))
-                .setEncryptionPrivateKeyBytes(key.getEncoded()),
+        final ConfigContext config = new ChainedConfigContext(
                 new DefaultsConfigContext(),
-                new EnvVarConfigContext(),
-                new MapConfigContext(System.getProperties()));
+                new SystemSettingsConfigContext(),
+                new StandardConfigContext()
+                    .setClientEncryptionEnabled(true)
+                    .setContentTypeDetectionEnabled(false)
+                    .setEncryptionAlgorithm(cipherDetails.getCipherId())
+                    .setEncryptionKeyId("manta-cli-encryption-key")
+                    .setEncryptionAuthenticationMode(ObjectUtils.firstNonNull(
+                        envEncryptionAuthentication, EncryptionAuthenticationMode.Optional))
+                    .setEncryptionPrivateKeyPath(encryptionPrivateKeyPath()));
+
+        ConfigContext finalConfig = config;
+
+        if (encryptionPrivateKeyPath() != null) {
+             finalConfig = new ChainedConfigContext(config,
+                    new StandardConfigContext()
+                        .setEncryptionPrivateKeyBytes(null));
+        }
+
+        return finalConfig;
     }
 
         protected static String encryptionCipher() {
@@ -212,6 +208,13 @@ public final class MantaCLI {
         protected static String encryptionAuthenticationMode() {
             String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
             String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_ENV_KEY);
+
+            return ObjectUtils.firstNonNull(sysProp, envVar);
+        }
+
+        protected static String encryptionPrivateKeyPath() {
+            String sysProp = System.getProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY);
+            String envVar = System.getenv(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY);
 
             return ObjectUtils.firstNonNull(sysProp, envVar);
         }
@@ -266,7 +269,7 @@ public final class MantaCLI {
     @CommandLine.Command(name = "cse-config",
                          header = "default encryption-config used for Manta client.",
                          description = "shows configuration for --cse flag for uploads/downloads."
-                         + "can be overwritten with system/environement settings")
+                         + "can be overwritten with system/environment settings")
     public static class EncryptionConfig extends MantaSubCommand {
         @Override
         public void run() {
@@ -295,6 +298,11 @@ public final class MantaCLI {
         @CommandLine.Parameters(index = "2", description = "path to write the key to")
         private Path path;
 
+        @SuppressWarnings("unused")
+        @CommandLine.Option(names = {"-key", "--set-env"}, description = "configure environment "
+                + "for MANTA_ENCRYPTION_KEY_PATH")
+        private boolean setEncryptionKeyPath;
+
         @Override
         public void run() {
             StringBuilder b = new StringBuilder();
@@ -303,12 +311,32 @@ public final class MantaCLI {
                 b.append("Generating key").append(BR);
                 SecretKey key = SecretKeyUtils.generate(cipher, bits);
 
-                b.append(String.format("Writing [%s-%d] key to [%s]", cipher, bits, path));
+                b.append(String.format("Writing [%s-%d] key to [%s]", cipher, bits, path)).append(BR);
                 SecretKeyUtils.writeKeyToPath(key, path);
+
+                if (setEncryptionKeyPath) {
+                    final String pathName = StringUtils.replace(MantaUtils.formatPath(MantaUtils.asString(path)),
+                            ",",
+                             MantaClient.SEPARATOR);
+                    System.setProperty(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
+                            pathName);
+                    b.append(String.format("Configure java-manta property:[%s] with value:[%s]",
+                            EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
+                            System.getProperty(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY)))
+                     .append(BR);
+                    System.err.println();
+                }
             } catch (NoSuchAlgorithmException e) {
                 System.err.printf("The running JVM [%s/%s] doesn't support the "
                                   + "supplied cipher name [%s]", System.getProperty("java.version"),
                                   System.getProperty("java.vendor"), cipher);
+                System.err.println();
+                return;
+            } catch (IllegalArgumentException e) {
+                System.err.printf("Supplied  value:[%s] for configuration variable"
+                                + "[%s] is invalid",
+                        System.getProperty(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY),
+                        EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY);
                 System.err.println();
                 return;
             } catch (IOException e) {
