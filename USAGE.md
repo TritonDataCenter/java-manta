@@ -107,7 +107,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
 | manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
 | manta.client_encryption            | MANTA_CLIENT_ENCRYPTION        | false                                |                          |
-| manta.content_type_detection       | MANTA_CONTENT_TYPE_DETECTION   | true                                 |                          |
+| manta.content_type_detection       | MANTA_CONTENT_TYPE_DETECTION   | false                                 |                          |
 | manta.encryption_key_id            | MANTA_CLIENT_ENCRYPTION_KEY_ID |                                      |                          |
 | manta.encryption_algorithm         | MANTA_ENCRYPTION_ALGORITHM     | AES128/CTR/NoPadding                 |                          |
 | manta.permit_unencrypted_downloads | MANTA_UNENCRYPTED_DOWNLOADS    | false                                |                          |
@@ -265,7 +265,7 @@ was not modified.
 
 ### Improving Encryption Performance
 
-## Automated Content-Type Detection
+#### Automated Content-Type Detection
 
 While uploading any file in Manta using the Java SDK, depending on the data type, Users could opt to disable a particular 
 feature of the SDK which enables it to internally detect the HTTP content-type of any given file or stream. The following 

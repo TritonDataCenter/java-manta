@@ -285,18 +285,6 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void testContentTypeSetByFilename() throws IOException {
-        final String name = UUID.randomUUID().toString() + ".html";
-        final String path = testPathPrefix + name;
-
-        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
-        MantaObject object = mantaClient.head(path);
-
-        Assert.assertEquals(object.getContentType(),
-                "text/html", "Content type wasn't auto-assigned");
-    }
-
-    @Test
     public final void testRecursiveDeleteObject() throws IOException {
         final String dir1 = String.format("%s1", testPathPrefix);
                 mantaClient.putDirectory(testPathPrefix + "1", null);
