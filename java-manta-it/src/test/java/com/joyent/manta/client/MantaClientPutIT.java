@@ -7,8 +7,10 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.IntegrationTestConfigContext;
+import com.joyent.manta.config.StandardConfigContext;
 import com.joyent.manta.http.MantaHttpHeaders;
 import com.joyent.test.util.MantaAssert;
 import com.joyent.test.util.MantaFunction;
@@ -19,18 +21,9 @@ import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.lang3.BooleanUtils;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -61,8 +54,11 @@ public class MantaClientPutIT {
         this.usingEncryption = usingEncryption;
         // Let TestNG configuration take precedence over environment variables
         ConfigContext config = new IntegrationTestConfigContext(usingEncryption);
+        ConfigContext context = new ChainedConfigContext(
+                config, new StandardConfigContext()
+                    .setContentTypeDetectionEnabled(true));
 
-        mantaClient = new MantaClient(config);
+        mantaClient = new MantaClient(context);
         testPathPrefix = IntegrationTestConfigContext.generateBasePath(config, this.getClass().getSimpleName());
         mantaClient.putDirectory(testPathPrefix, true);
     }
@@ -88,6 +84,19 @@ public class MantaClientPutIT {
             Assert.assertEquals(actual, TEST_DATA,
                     "Uploaded string didn't match expectation");
         }
+    }
+
+
+    @Test
+    public final void testContentTypeSetByFilename() throws IOException {
+        final String name = UUID.randomUUID().toString() + ".html";
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
+        MantaObject object = mantaClient.head(path);
+
+        Assert.assertEquals(object.getContentType(),
+                "text/html", "Content type wasn't auto-assigned");
     }
 
     @Test
