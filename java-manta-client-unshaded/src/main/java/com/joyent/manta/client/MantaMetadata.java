@@ -16,11 +16,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import java.io.Serializable;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -350,16 +346,12 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          */
         private boolean hasIllegalKeyChars(final String input) {
             final char[] chars = input.toCharArray();
+            Arrays.sort(ILLEGAL_KEY_CHARS);
 
             for (final char c : chars) {
-                if (isControlCharacter(c)) {
+                final int illegalKeyCharPresent = Arrays.binarySearch(ILLEGAL_KEY_CHARS, c);
+                if (isControlCharacter(c) || illegalKeyCharPresent >= 0) {
                     return true;
-                }
-
-                for (char illegalKeyChar : ILLEGAL_KEY_CHARS) {
-                    if (c == illegalKeyChar) {
-                        return true;
-                    }
                 }
             }
 
