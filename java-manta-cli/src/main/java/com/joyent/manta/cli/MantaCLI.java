@@ -186,9 +186,8 @@ public final class MantaCLI {
         final SupportedCipherDetails cipherDetails = SupportedCiphersLookupMap.INSTANCE.getOrDefault(encryptionCipher(),
                 AesCtrCipherDetails.INSTANCE_256_BIT);
 
-        final ConfigContext config = new ChainedConfigContext(
+        return new ChainedConfigContext(
                 new DefaultsConfigContext(),
-                new SystemSettingsConfigContext(),
                 new StandardConfigContext()
                     .setClientEncryptionEnabled(true)
                     .setContentTypeDetectionEnabled(false)
@@ -196,17 +195,8 @@ public final class MantaCLI {
                     .setEncryptionKeyId("manta-cli-encryption-key")
                     .setEncryptionAuthenticationMode(ObjectUtils.firstNonNull(
                         envEncryptionAuthentication, EncryptionAuthenticationMode.Optional))
-                    .setEncryptionPrivateKeyPath(encryptionPrivateKeyPath()));
-
-        ConfigContext finalConfig = config;
-
-        if (encryptionPrivateKeyPath() != null) {
-             finalConfig = new ChainedConfigContext(config,
-                    new StandardConfigContext()
-                        .setEncryptionPrivateKeyBytes(null));
-        }
-
-        return finalConfig;
+                    .setEncryptionPrivateKeyPath(encryptionPrivateKeyPath()),
+                new SystemSettingsConfigContext());
     }
 
         protected static String encryptionCipher() {
@@ -329,11 +319,11 @@ public final class MantaCLI {
                     final String pathName = StringUtils.replace(MantaUtils.formatPath(MantaUtils.asString(path)),
                             ",",
                              MantaClient.SEPARATOR);
-                    System.setProperty(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
+                    System.setProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
                             pathName);
                     b.append(String.format("Configure java-manta property:[%s] with value:[%s]",
-                            EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY,
-                            System.getProperty(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY)))
+                            MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
+                            System.getProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY)))
                      .append(BR);
                     System.err.println();
                 }
@@ -346,8 +336,8 @@ public final class MantaCLI {
             } catch (IllegalArgumentException e) {
                 System.err.printf("Supplied  value:[%s] for configuration variable"
                                 + "[%s] is invalid",
-                        System.getProperty(EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY),
-                        EnvVarConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_ENV_KEY);
+                        System.getProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY),
+                        MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY);
                 System.err.println();
                 return;
             } catch (IOException e) {
