@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@ import org.apache.commons.collections4.map.PredicatedMap;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Locale;
@@ -44,26 +45,42 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      * Prefix required for metadata keys being stored via HTTP headers on Manta.
      */
     public static final String METADATA_PREFIX = "m-";
+
     /**
      * Prefix required for encrypted metadata keys being stored in ciphertext.
      */
     public static final String ENCRYPTED_METADATA_PREFIX = "e-";
+
     /**
      * An array of characters considered to be illegal in metadata keys.
      */
     static final char[] ILLEGAL_KEY_CHARS = "()<>@,;:</[]?={}\\ \n\t\r".toCharArray();
+
     private static final long serialVersionUID = -5828336629480323042L;
+
     /**
      * The character value of the ASCII code for a space character (decimal value 32).
      */
     private static final char ASCIICODE_32_SPACE = ' ';
+
     /**
      * The backing map data structure.
      */
     private final PredicatedMap<String, String> innerMap;
 
     /**
+     * Helper object for validating keys.
+     */
+    private static final Predicate<String> PREDICATE_KEY = new HttpHeaderPredicate(true);
+
+    /**
+     * Helper object for validating values.
+     */
+    private static final Predicate<String> PREDICATE_VALUE = new HttpHeaderPredicate(false);
+
+    /**
      * Create a new instance backed with the specified map.
+     *
      * @param m the backing map
      */
     public MantaMetadata(final Map<? extends String, ? extends String> m) {
@@ -76,8 +93,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
      */
     public MantaMetadata() {
         final Map<String, String> map = new CaseInsensitiveMap<>();
-        final Predicate<String> keyPredicate = new HttpHeaderNameKeyPredicate();
-        this.innerMap = PredicatedMap.predicatedMap(map, keyPredicate, null);
+        this.innerMap = PredicatedMap.predicatedMap(map, PREDICATE_KEY, PREDICATE_VALUE);
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -93,11 +109,12 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
         final Set<Map.Entry<String, String>> set = entrySet();
 
         set.removeIf(entry -> entry.getKey()
-           .startsWith(ENCRYPTED_METADATA_PREFIX));
+                .startsWith(ENCRYPTED_METADATA_PREFIX));
     }
 
     /**
      * Deletes user-supplied metadata associated with a Manta object.
+     *
      * @param key key to delete
      */
     public void delete(final String key) {
@@ -253,7 +270,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
 
         for (Map.Entry<String, String> entry : innerMap.entrySet()) {
             builder.append(" [").append(entry.getKey()).append("] = [")
-                   .append(entry.getValue()).append("]\n");
+                    .append(entry.getValue()).append("]\n");
         }
 
         return builder.toString();
@@ -262,30 +279,56 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     /**
      * Implements the predicate used to validate header key values.
      */
-    protected static class HttpHeaderNameKeyPredicate implements Predicate<String> {
+    protected static class HttpHeaderPredicate implements Predicate<String> {
+
+        /**
+         * ASCII-based character set encoder to determine if the input is valid.
+         */
+        private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
+
+        /**
+         * Includes header prefix rule (m- and e-) which is only relevant for metadata header names and
+         * forbids null.
+         */
+        private final boolean keyPredicate;
+
+        /**
+         * Construct a header validator.
+         *
+         * @param keyPredicate Whether or not to include the prefix rule and forbid null.
+         */
+        protected HttpHeaderPredicate(final boolean keyPredicate) {
+            this.keyPredicate = keyPredicate;
+        }
 
         /**
          * {@inheritDoc}
          */
         @Override
         public boolean evaluate(final String object) {
-            return object != null
-                    && !object.isEmpty()
-                    && !hasIllegalChars(object)
-                    && isIso88591(object)
-                    && validPrefix(object);
+            // NEXT: throw MantaIllegalMetadataException instead
+
+            if (keyPredicate) {
+                return object != null
+                        && !object.isEmpty()
+                        && validPrefix(object)
+                        && !hasIllegalKeyChars(object)
+                        && isAscii(object)
+                        && validPrefix(object);
+            } else {
+                // delete is put(key, null) so we must permit a null value
+                return object == null || isAscii(object);
+            }
         }
 
         /**
-         * Test a string for iso8859-1 character encoding.
+         * Test a string for US ASCII character encoding.
          *
          * @param input string value to be tested
          * @return true if the string is entirely iso8859-1, false otherwise.
          */
-        private boolean isIso88591(final String input) {
-            final byte[] bytes = input.getBytes(StandardCharsets.ISO_8859_1);
-            final String result = new String(bytes, StandardCharsets.ISO_8859_1);
-            return result.equals(input);
+        private boolean isAscii(final String input) {
+            return ASCII_ENCODER.canEncode(input);
         }
 
         /**
@@ -296,7 +339,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          */
         private boolean validPrefix(final String input) {
             return input.toLowerCase(Locale.ENGLISH).startsWith(METADATA_PREFIX)
-                   || input.toLowerCase(Locale.ENGLISH).startsWith(ENCRYPTED_METADATA_PREFIX);
+                    || input.toLowerCase(Locale.ENGLISH).startsWith(ENCRYPTED_METADATA_PREFIX);
         }
 
         /**
@@ -305,7 +348,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          * @param input string value to be tested
          * @return true if the string contains illegal characters, false otherwise.
          */
-        private boolean hasIllegalChars(final String input) {
+        private boolean hasIllegalKeyChars(final String input) {
             final char[] chars = input.toCharArray();
 
             for (final char c : chars) {
@@ -330,7 +373,7 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          * @return true if the character is a control character, false otherwise.
          */
         private boolean isControlCharacter(final char c) {
-            final int intVal = (int)c;
+            final int intVal = (int) c;
             return intVal < ASCIICODE_32_SPACE;
         }
 

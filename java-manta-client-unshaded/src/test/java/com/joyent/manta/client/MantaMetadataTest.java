@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,13 +7,18 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaIllegalMetadataException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Unit test class that verifies the correct functioning of {@link MantaMetadata}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @SuppressWarnings("ModifiedButNotUsed") // Errorprone is confused by these tests
 public class MantaMetadataTest {
@@ -65,12 +70,35 @@ public class MantaMetadataTest {
 
             try {
                 instance.put(key, "world");
-            } catch (IllegalArgumentException e) {
+            } catch (final IllegalArgumentException e) {
                 caught = true;
             }
 
             Assert.assertTrue(caught, String.format("No exception thrown for char: %s", c));
         }
+    }
+
+    /* Until MANTA-3527 is resolved we should prevent users from using non-ascii values for both keys
+    and values */
+    @Test
+    public void cantAddMetadataKeyWithNonAsciiCharacters() {
+        final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+
+        final char[] firstNonAsciiCharacter = Character.toChars(128);
+        final String badChar = String.format("%s", firstNonAsciiCharacter[0]);
+        Assert.assertFalse(asciiEncoder.canEncode(badChar));
+
+        final MantaMetadata instance = new MantaMetadata();
+        final MantaIllegalMetadataException keyEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+                instance.put(String.format("m-%s", badChar), "value"));
+        final MantaIllegalMetadataException valEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+                instance.put("m-key", badChar));
+        final MantaIllegalMetadataException bothEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+                instance.put(String.format("m-%s", badChar), badChar));
+
+        Assert.assertTrue(keyEx.getMessage().contains("ASCII"));
+        Assert.assertTrue(valEx.getMessage().contains("ASCII"));
+        Assert.assertTrue(bothEx.getMessage().contains("ASCII"));
     }
 
     @Test
