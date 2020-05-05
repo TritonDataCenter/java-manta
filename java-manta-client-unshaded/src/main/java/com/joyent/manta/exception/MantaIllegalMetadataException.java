@@ -12,6 +12,7 @@ package com.joyent.manta.exception;
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
+@SuppressWarnings("unused")
 public class MantaIllegalMetadataException extends MantaException {
 
     private static final long serialVersionUID = 3946821793051523289L;
