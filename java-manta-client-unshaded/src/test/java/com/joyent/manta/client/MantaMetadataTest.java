@@ -7,7 +7,7 @@
  */
 package com.joyent.manta.client;
 
-import com.joyent.manta.exception.MantaIllegalMetadataException;
+import com.joyent.manta.exception.MantaInvalidMetadataException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -29,31 +29,31 @@ public class MantaMetadataTest {
         Assert.assertEquals(instance.get("m-hello"), "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddNullMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put(null, "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddEmptyMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("", "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddMetadataKeyThatDoesntBeginWithM() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("hello", "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddMetadataKeyThatContainsSpace() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("m-hello my dear", "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddMetadataKeyThatIsntISO88591() {
         MantaMetadata instance = new MantaMetadata();
         String key = "m-\u3053\u3093\u306B\u3061\u306F";
@@ -70,7 +70,7 @@ public class MantaMetadataTest {
 
             try {
                 instance.put(key, "world");
-            } catch (final IllegalArgumentException e) {
+            } catch (final MantaInvalidMetadataException e) {
                 caught = true;
             }
 
@@ -89,11 +89,11 @@ public class MantaMetadataTest {
         Assert.assertFalse(asciiEncoder.canEncode(badChar));
 
         final MantaMetadata instance = new MantaMetadata();
-        final MantaIllegalMetadataException keyEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+        final MantaInvalidMetadataException keyEx = Assert.expectThrows(MantaInvalidMetadataException.class, () ->
                 instance.put(String.format("m-%s", badChar), "value"));
-        final MantaIllegalMetadataException valEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+        final MantaInvalidMetadataException valEx = Assert.expectThrows(MantaInvalidMetadataException.class, () ->
                 instance.put("m-key", badChar));
-        final MantaIllegalMetadataException bothEx = Assert.expectThrows(MantaIllegalMetadataException.class, () ->
+        final MantaInvalidMetadataException bothEx = Assert.expectThrows(MantaInvalidMetadataException.class, () ->
                 instance.put(String.format("m-%s", badChar), badChar));
 
         Assert.assertTrue(keyEx.getMessage().contains("ASCII"));

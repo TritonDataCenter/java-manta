@@ -11,23 +11,25 @@ package com.joyent.manta.exception;
  * Exception while adding metadata.
  *
  * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
+ * @since 3.5.0
  */
-@SuppressWarnings("unused")
-public class MantaIllegalMetadataException extends MantaException {
+public class MantaInvalidMetadataException extends MantaClientException {
 
     private static final long serialVersionUID = 3946821793051523289L;
 
     /**
      * @param message The error message.
      */
-    public MantaIllegalMetadataException(final String message) {
+    @SuppressWarnings("unused")
+    public MantaInvalidMetadataException(final String message) {
         super(message);
     }
 
     /**
      * @param cause The cause of the exception.
      */
-    public MantaIllegalMetadataException(final Throwable cause) {
+    @SuppressWarnings("unused")
+    public MantaInvalidMetadataException(final Throwable cause) {
         super(cause);
     }
 
@@ -35,7 +37,7 @@ public class MantaIllegalMetadataException extends MantaException {
      * @param message The error message.
      * @param cause   The cause.
      */
-    public MantaIllegalMetadataException(final String message, final Throwable cause) {
+    public MantaInvalidMetadataException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

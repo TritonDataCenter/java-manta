@@ -7,6 +7,7 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaInvalidMetadataException;
 import com.joyent.manta.util.NotThreadSafe;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
@@ -249,8 +250,14 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
     }
 
     @Override
-    public String put(final String key, final String value) {
-        return innerMap.put(key, value);
+    public String put(final String key, final String value) throws IllegalArgumentException {
+        try {
+            return innerMap.put(key, value);
+        } catch (IllegalArgumentException e) {
+            final String msg = String.format("[%s, %s] is in non-ASCII format",
+                    key, value);
+            throw new MantaInvalidMetadataException(msg, e);
+        }
     }
 
     @Override
@@ -307,8 +314,6 @@ public class MantaMetadata implements Map<String, String>, Cloneable, Serializab
          */
         @Override
         public boolean evaluate(final String object) {
-            // NEXT: throw MantaIllegalMetadataException instead
-
             if (keyPredicate) {
                 return object != null
                         && !object.isEmpty()
