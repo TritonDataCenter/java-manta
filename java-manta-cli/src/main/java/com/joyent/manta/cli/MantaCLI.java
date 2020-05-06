@@ -30,7 +30,6 @@ import com.joyent.manta.util.MantaUtils;
 import com.joyent.manta.util.MantaVersion;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
@@ -299,11 +298,6 @@ public final class MantaCLI {
         @CommandLine.Parameters(index = "2", description = "path to write the key to")
         private Path path;
 
-        @SuppressWarnings("unused")
-        @CommandLine.Option(names = {"-key", "--set-env"}, description = "configure environment "
-                + "for MANTA_ENCRYPTION_KEY_PATH")
-        private boolean setEncryptionKeyPath;
-
         @Override
         public void run() {
             StringBuilder b = new StringBuilder();
@@ -314,30 +308,10 @@ public final class MantaCLI {
 
                 b.append(String.format("Writing [%s-%d] key to [%s]", cipher, bits, path)).append(BR);
                 SecretKeyUtils.writeKeyToPath(key, path);
-
-                if (setEncryptionKeyPath) {
-                    final String pathName = StringUtils.replace(MantaUtils.formatPath(MantaUtils.asString(path)),
-                            ",",
-                             MantaClient.SEPARATOR);
-                    System.setProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
-                            pathName);
-                    b.append(String.format("Configure java-manta property:[%s] with value:[%s]",
-                            MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY,
-                            System.getProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY)))
-                     .append(BR);
-                    System.err.println();
-                }
             } catch (NoSuchAlgorithmException e) {
                 System.err.printf("The running JVM [%s/%s] doesn't support the "
                                   + "supplied cipher name [%s]", System.getProperty("java.version"),
                                   System.getProperty("java.vendor"), cipher);
-                System.err.println();
-                return;
-            } catch (IllegalArgumentException e) {
-                System.err.printf("Supplied  value:[%s] for configuration variable"
-                                + "[%s] is invalid",
-                        System.getProperty(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY),
-                        MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY);
                 System.err.println();
                 return;
             } catch (IOException e) {
