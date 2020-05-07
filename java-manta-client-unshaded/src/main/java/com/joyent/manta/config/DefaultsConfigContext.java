@@ -85,7 +85,7 @@ public class DefaultsConfigContext implements ConfigContext {
     /**
      * Usage of content type auto-detection while uploading files in Manta is enabled by default.
      */
-    public static final boolean DEFAULT_CONTENT_TYPE_DETECTION_ENABLED = true;
+    public static final boolean DEFAULT_CONTENT_TYPE_DETECTION_ENABLED = false;
 
     /**
      * Being insecure is definitely *not* the default.

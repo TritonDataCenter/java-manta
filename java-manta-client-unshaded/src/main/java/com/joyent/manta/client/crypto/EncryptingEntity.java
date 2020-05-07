@@ -84,6 +84,7 @@ public class EncryptingEntity implements HttpEntity {
      * @param key key to encrypt stream with
      * @param cipherDetails cipher to encrypt stream with
      * @param wrapped underlying stream to encrypt
+     * @throws MantaClientEncryptionException for wrong plaintext content length
      */
     public EncryptingEntity(final SecretKey key,
                             final SupportedCipherDetails cipherDetails,

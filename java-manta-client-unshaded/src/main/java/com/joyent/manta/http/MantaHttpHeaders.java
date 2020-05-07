@@ -349,6 +349,7 @@ public class MantaHttpHeaders implements Map<String, Object>, Serializable {
      * Sets the number of replicated copies of the object in Manta.
      *
      * @param copies number of copies
+     * @throws IllegalArgumentException for non-positive value
      */
     public void setDurabilityLevel(final int copies) {
         if (copies < 0) {
