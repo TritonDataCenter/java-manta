@@ -300,22 +300,6 @@ public class MantaClientIT {
     }
 
     @Test
-    public final void testContentTypeSetByFilename() throws IOException {
-        final String name = UUID.randomUUID().toString() + ".html";
-        final String path = testPathPrefix + name;
-
-        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
-        MantaObject object = mantaClient.head(path);
-
-        Assert.assertEquals(object.getContentType(),
-                "text/html", "Content type wasn't auto-assigned");
-        mantaClient.delete(path);
-
-        MantaAssert.assertResponseFailureCode(404,
-                (MantaFunction<Object>) () -> mantaClient.get(path));
-    }
-
-    @Test
     public final void testRFC3986() throws IOException {
         final String name = "spaces in the name of the file";
         final String path = testPathPrefix + name;

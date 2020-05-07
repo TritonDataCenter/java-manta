@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -96,6 +96,22 @@ public class MantaClientPutIT {
         }
         mantaClient.delete(path);
         Assert.assertFalse(mantaClient.existsAndIsAccessible(path));
+    }
+
+    @Test
+    public final void testContentTypeSetByFilename() throws IOException {
+        final String name = UUID.randomUUID().toString() + ".html";
+        final String path = testPathPrefix + name;
+
+        mantaClient.put(path, TEST_DATA.getBytes(StandardCharsets.UTF_8));
+        MantaObject object = mantaClient.head(path);
+
+        Assert.assertEquals(object.getContentType(),
+                "text/html", "Content type wasn't auto-assigned");
+        mantaClient.delete(path);
+
+        MantaAssert.assertResponseFailureCode(404,
+                (MantaFunction<Object>) () -> mantaClient.get(path));
     }
 
     @Test
