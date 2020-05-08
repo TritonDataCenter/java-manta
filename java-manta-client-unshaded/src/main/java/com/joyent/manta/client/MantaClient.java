@@ -910,7 +910,7 @@ public class MantaClient implements AutoCloseable {
      * @param pruneDepth the number of parent directories to be deleted if empty.
      * @throws IOException If an IO exception has occurred.
      */
-    void delete(final String rawPath, final MantaHttpHeaders requestHeaders, final Integer pruneDepth)
+     public void delete(final String rawPath, final MantaHttpHeaders requestHeaders, final Integer pruneDepth)
             throws IOException {
         Validate.notBlank(rawPath, "rawPath must not be blank");
         String path = formatPath(rawPath);
