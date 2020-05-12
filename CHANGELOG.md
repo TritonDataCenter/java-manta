@@ -2,6 +2,32 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
+## [3.5.0]
+### Added 
+ - Java 11 compatibility improvements.
+### Changed
+ - [Dependency upgrade for java-client](https://github.com/joyent/java-manta/pull/567).
+      - HTTP Signatures dependency: 4.0.10 → 4.1.2
+      - BouncyCastle: 1.61 → 1.65
+      - Apache HttpClient: 4.5.7 → 4.5.12
+      - Jackson 2.9.9 → 2.10.3
+      - Jnagmp 2.1.0 → 3.0.0
+      - FasterXml-UUID 3.1.5 → 4.0.1
+      - Checkstyle 8.18 → 8.31
+      - Slfj 1.7.25 → 1.7.29
+      - Wiremock 2.21.0 → 2.24.1
+      - Commons-Collections 4.3 → 4.4
+      - Commons-Lang 3.8.1 → 3.10
+      - Commons-Codec 1.12 → 1.14
+      - Commons-Text 1.6 → 1.8
+      - Objenesis 2.6 →  3.0.1
+      - Cloning 1.9.6 → 1.9.12
+      - Picocli 3.9.5 → 4.2.0
+      - Dropwizard-Metrics 4.0.5 → 4.1.2
+  - Upgraded supporting maven plugins.
+### Fixed
+ - [Unable to run MantaClientSigningIT with HTTP connections to Manta](https://github.com/joyent/java-manta/issues/534).
+ 
 ## [3.4.3] - 2020-04-24
 ### Added
  - [Skipping job dependent tests for MantaV2](https://github.com/joyent/java-manta/pull/571).
