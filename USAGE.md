@@ -8,13 +8,13 @@
 * [Maven 3.1.x](https://maven.apache.org/) to contribute to the project.
 
 ### CLI Requirements
-
 Add [BouncyCastle](http://www.bouncycastle.org/latest_releases.html) as a security provider
  1. Edit "$JAVA_HOME/jre/lib/security/java.security " Add an entry for BouncyCastle
  `security.provider.11=org.bouncycastle.jce.provider.BouncyCastleProvider`
  2. Download `bcprov-jdk15on-N.jar` and `bcpkix-jdk15on-N.jar` from the BouncyCastle releases page, where N is the
  latest release version (158 at the time of writing).
  3. Copy the downloaded JARs to the JVM extensions folder: `cp bcprov-jdk15on-158.jar bcpkix-jdk15on-158.jar $JAVA_HOME/jre/lib/ext`
+*Note:* Instructions on how to leverage CLI commands to interact with Manta can be found in [MantaCLI](/MantaCLI.md).
 
 ### Unlimited Encryption Requirements
 Using stronger encryption modes (192 and 256-bit) with the Oracle and Azul JVMs before version 8u152 requires installation of the
