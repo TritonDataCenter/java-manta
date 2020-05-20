@@ -2,10 +2,13 @@
 All notable changes to this project will be documented in this file.
 This project aims to adhere to [Semantic Versioning](http://semver.org/).
 
-## [3.5.0]
+## [3.5.0] - 2020-05-20
 ### Added 
  - Java 11 compatibility improvements.
+ - [MANTA-5153 Updates for MantaCLI commands](https://github.com/joyent/java-manta/pull/566).
+ - [Supporting documentation for MantaCLI](https://github.com/joyent/java-manta/blob/master/MantaCLI.md).
 ### Changed
+ - [MANTA-5040 Refactored default config for manta.content_type_detection](https://github.com/joyent/java-manta/pull/575).
  - [Dependency upgrade for java-client](https://github.com/joyent/java-manta/pull/567).
       - HTTP Signatures dependency: 4.0.10 → 4.1.2
       - BouncyCastle: 1.61 → 1.65
@@ -24,7 +27,8 @@ This project aims to adhere to [Semantic Versioning](http://semver.org/).
       - Cloning 1.9.6 → 1.9.12
       - Picocli 3.9.5 → 4.2.0
       - Dropwizard-Metrics 4.0.5 → 4.1.2
-  - Upgraded supporting maven plugins.
+      - Upgraded supporting maven plugins.
+      - maven-site-plugin for the build phase in SDK.
 ### Fixed
  - [Unable to run MantaClientSigningIT with HTTP connections to Manta](https://github.com/joyent/java-manta/issues/534).
  
