@@ -12,11 +12,11 @@
     <parent>
         <artifactId>java-manta</artifactId>
         <groupId>com.joyent.manta</groupId>
-        <version>3.4.4-SNAPSHOT</version>
+        <version>3.5.0</version>
     </parent>
 
     <artifactId>java-manta-it</artifactId>
-    <version>3.4.4-SNAPSHOT</version>
+    <version>3.5.0</version>
     <packaging>jar</packaging>
 
     <name>java-manta-it</name>
@@ -26,14 +26,14 @@
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
-            <version>3.4.4-SNAPSHOT</version>
+            <version>3.5.0</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client-kryo-serialization</artifactId>
-            <version>3.4.4-SNAPSHOT</version>
+            <version>3.5.0</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
