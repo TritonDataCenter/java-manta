@@ -11,7 +11,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>java-manta</artifactId>
-    <version>3.4.4-SNAPSHOT</version>
+    <version>3.5.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>java-manta</name>
@@ -144,8 +144,8 @@
         <maven-exec-plugin.version>1.6.0</maven-exec-plugin.version>
         <maven-jacoco-plugin.version>0.8.5</maven-jacoco-plugin.version>
         <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
+        <maven-site-plugin.version>3.9.0</maven-site-plugin.version>
         <maven-replacer-plugin-plugin.version>1.5.3</maven-replacer-plugin-plugin.version>
-        <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
         <maven-directory-maven-plugin.version>0.3.1</maven-directory-maven-plugin.version>
         <maven-build-helper-maven-plugin.version>3.1.0</maven-build-helper-maven-plugin.version>
         <maven-maven-resources-plugin.version>3.1.0</maven-maven-resources-plugin.version>
@@ -321,6 +321,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>${maven-deploy-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>${maven-site-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
