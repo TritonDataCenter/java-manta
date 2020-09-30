@@ -102,7 +102,7 @@ Below is a table of available configuration parameters followed by detailed desc
 | manta.expect_continue_timeout      | MANTA_EXPECT_CONTINUE_TIMEOUT  |                                      |                          |
 | manta.upload_buffer_size           | MANTA_UPLOAD_BUFFER_SIZE       | 16384                                |                          |
 | manta.skip_directory_depth         | MANTA_SKIP_DIRECTORY_DEPTH     |                                      |                          |
-| manta.prune_empty_parent_depth     | MANTA_PRUNE_EMPTY_PARENT_DEPTH |                                     |                          |
+| manta.prune_empty_parent_depth     | MANTA_PRUNE_EMPTY_PARENT_DEPTH | 0 - [see code](/java-manta-client/src/main/java/com/joyent/manta/config/DefaultsConfigContext.java#L109) | |                                    |                          |
 | manta.download_continuations       | MANTA_DOWNLOAD_CONTINUATIONS   | 0                                    |                          |
 | manta.metric_reporter.mode         | MANTA_METRIC_REPORTER_MODE     |                                      |                          |
 | manta.metric_reporter.output_interval | MANTA_METRIC_REPORTER_OUTPUT_INTERVAL |                            |                          |
@@ -624,11 +624,12 @@ In order to ease migration from other object stores which do not treat directori
     - `PUT /$MANTA_USER/stor/foo/bar`
     - `PUT /$MANTA_USER/stor/foo/bar/baz`
 
-\* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is being revisited in [#414](https://github.com/joyent/java-manta/issues/414)
+\* Note that in Scenario 4 where the setting is more aggressive than needed, the current behavior is to fall back to creating all intermediate directories. This situation is revisited in [#414](https://github.com/joyent/java-manta/issues/414)
 
 ### Pruning empty parent directories
 
-When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to `-1` or a positive value, when deleting an object in Manta, either a file or a directory, the client will attempt to delete parent directories that are empty. If a positive integer is supplied the client will only try to delete up to the number supplied. If -1 is given the client will try to delete in the path until it finds a directory that it can not delete.  
+When `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is set to `-1` or a positive value, when deleting an object in Manta, either a file or a directory, the client will attempt to delete parent directories that are empty. If a positive integer is supplied the client will only try to delete up to the number supplied. If -1 is given the client will try to delete in the path until it finds a directory that it can not delete.
+The default configuration value for `manta.prune_empty_parent_depth`/`MANTA_PRUNE_EMPTY_PARENT_DEPTH` is `0` which means it will only delete the object(file) path that has been supplied to the client. For more details regarding default prune depth usage see [test-case illustrating that example](/java-manta-client-unshaded/src/test/java/com/joyent/manta/client/PruneEmptyParentDirectoryStrategyTest.java#L91).
 
 #### Scenario 1 : Prune Empty Parent Depth positive int
 - Given the directory structure : 
