@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2016-2019, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Manta. Connection opening to the remote server happens lazily upon the
  * first read() or size() method invoked.
  *
- * @author Elijah Zupancic
+ * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 public class MantaSeekableByteChannel extends InputStream
         implements SeekableByteChannel {
@@ -186,7 +187,7 @@ public class MantaSeekableByteChannel extends InputStream
     }
 
     @Override
-    public int read(final ByteBuffer dst) throws IOException {
+    public int read(final ByteBuffer dst) throws IOException, UnsupportedOperationException {
         if (!open) {
             throw new ClosedChannelException();
         }
@@ -198,12 +199,28 @@ public class MantaSeekableByteChannel extends InputStream
             return EOF;
         }
 
-        final byte[] buff = dst.array();
-        final int bytesRead = stream.read(buff);
+        if (dst.isReadOnly()) {
+            throw new MantaClientException("Read-only buffer", new IllegalArgumentException());
+        }
 
-        position.addAndGet(bytesRead);
+        if (!dst.hasArray()) {
+            throw new MantaClientException("Buffer read not backed by an accessible\n"
+                    + "byte array", new UnsupportedOperationException());
+        } else {
 
-        return bytesRead;
+            final byte[] buff = new byte[dst.remaining()];
+            ByteBuffer dstCopy = dst.get(buff);
+            dst.position(dstCopy.position() - buff.length); // Restores the buffer position
+
+            final int startIndex = dstCopy.arrayOffset();
+            final int endIndex = startIndex + dstCopy.position() + dstCopy.remaining();
+            final int buffLength = endIndex - startIndex;
+            final int bytesRead = stream.read(buff, startIndex, buffLength);
+
+            this.position.addAndGet(bytesRead);
+
+            return bytesRead;
+        }
     }
 
     /**
