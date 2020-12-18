@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015-2020, Joyent, Inc. All rights reserved.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,13 +7,18 @@
  */
 package com.joyent.manta.client;
 
+import com.joyent.manta.exception.MantaInvalidMetadataException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Unit test class that verifies the correct functioning of {@link MantaMetadata}.
  *
  * @author <a href="https://github.com/dekobon">Elijah Zupancic</a>
+ * @author <a href="https://github.com/nairashwin952013">Ashwin A Nair</a>
  */
 @SuppressWarnings("ModifiedButNotUsed") // Errorprone is confused by these tests
 public class MantaMetadataTest {
@@ -24,31 +29,31 @@ public class MantaMetadataTest {
         Assert.assertEquals(instance.get("m-hello"), "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddNullMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put(null, "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddEmptyMetadataKey() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("", "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddMetadataKeyThatDoesntBeginWithM() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("hello", "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddMetadataKeyThatContainsSpace() {
         MantaMetadata instance = new MantaMetadata();
         instance.put("m-hello my dear", "world");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class})
+    @Test(expectedExceptions = {MantaInvalidMetadataException.class})
     public void cantAddMetadataKeyThatIsntISO88591() {
         MantaMetadata instance = new MantaMetadata();
         String key = "m-\u3053\u3093\u306B\u3061\u306F";
@@ -65,12 +70,35 @@ public class MantaMetadataTest {
 
             try {
                 instance.put(key, "world");
-            } catch (IllegalArgumentException e) {
+            } catch (final MantaInvalidMetadataException e) {
                 caught = true;
             }
 
             Assert.assertTrue(caught, String.format("No exception thrown for char: %s", c));
         }
+    }
+
+    /* Until MANTA-3527 is resolved we should prevent users from using non-ascii values for both keys
+    and values */
+    @Test
+    public void cantAddMetadataKeyWithNonAsciiCharacters() {
+        final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+
+        final char[] firstNonAsciiCharacter = Character.toChars(128);
+        final String badChar = String.format("%s", firstNonAsciiCharacter[0]);
+        Assert.assertFalse(asciiEncoder.canEncode(badChar));
+
+        final MantaMetadata instance = new MantaMetadata();
+        final MantaInvalidMetadataException keyEx = Assert.expectThrows(MantaInvalidMetadataException.class, () ->
+                instance.put(String.format("m-%s", badChar), "value"));
+        final MantaInvalidMetadataException valEx = Assert.expectThrows(MantaInvalidMetadataException.class, () ->
+                instance.put("m-key", badChar));
+        final MantaInvalidMetadataException bothEx = Assert.expectThrows(MantaInvalidMetadataException.class, () ->
+                instance.put(String.format("m-%s", badChar), badChar));
+
+        Assert.assertTrue(keyEx.getMessage().contains("ASCII"));
+        Assert.assertTrue(valEx.getMessage().contains("ASCII"));
+        Assert.assertTrue(bothEx.getMessage().contains("ASCII"));
     }
 
     @Test
